@@ -8,7 +8,7 @@ Please configure your git before doing anything!!!!!!
 
 To clone this repository :
 
-  git -c http.sslVerify=false clone https://dXXXXXX@sc-crt-1.safran/git-ms/OTToomls
+  git -c http.sslVerify=false clone https://dXXXXXX@sc-crt-1.safran/git-ms/OTTools
   XXXXX to be replaced with your safran number 
   
 To configure the tools :
@@ -23,19 +23,29 @@ The page for the bug repports and more:
 
 2) NOTES FOR CONTRIBUTORS
 
-Please Read the folowing page before contributing code :
+    We recomend to use the "simple"  behavior for pushing :
 
-https://www.python.org/dev/peps/pep-0008/
+       git config --global push.default simple
 
-The only differences from PEP 0008 are :
+
+    Please Read the following page before contributing code :
+
+        https://www.python.org/dev/peps/pep-0008/
+
+    For the moment the only differences from PEP 0008 are :
     
-    Function Names: "CamelCase"
+      Function Names: "CamelCase"
 
         CamelCase starting with uppercase
 
-    Variables Names: "camelCase"        
+      Variables Names: "camelCase"        
         
         camelCase starting with lowercase
+
+    For the moment you must bypass the ssl certificate verification, use the 
+    following command to push your changes:
+
+        git -c http.sslVerify=false push
 
 
 3) TESTING INFRASTRUCTURE
@@ -51,7 +61,7 @@ The only differences from PEP 0008 are :
     -   GetTestDataPath() : Function to get the path of the data directory
     -   TestTempDir(): Function to get a temporary directory (to store temp data)
 
-    To test the library the function TestAll() is used (see doc of this funciton
+    To test the library the function TestAll() is used (see doc of this function
     for more information).
 
 
