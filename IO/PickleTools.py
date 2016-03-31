@@ -14,7 +14,7 @@ class IOHelper:
         self.named = data[1]
 
 
-    def __str__(self)        :
+    def __str__(self):
         res  = " named : "  + str(self.named)  + "\n"
         res += " unamed : " + str(self.unamed) + "\n"
         return res
