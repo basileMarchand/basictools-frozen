@@ -20,13 +20,13 @@ class Interface:
         self.parameterValues = []
         
         # Template
-        self.tplDirectory = self.workingDirectory + '/CodeInterfaceFiles/'
+        self.tplDirectory = self.workingDirectory + os.sep
         if not os.path.exists(self.tplDirectory): os.mkdir(self.tplDirectory)
         self.tplFilename = 'template.tpl'
         self.tpl = self.ReadFile(self.tplDirectory + self.tplFilename)
         
         # Temporary files folder creation
-        self.processDirectory = self.workingDirectory + '/CodeInterfaceFiles/Temp/'
+        self.processDirectory = self.tplDirectory
         if not os.path.exists(self.processDirectory): os.mkdir(self.processDirectory)
         
         # Output file name
@@ -72,12 +72,13 @@ class Interface:
 
 def CheckIntegrity():
     import OTTools.IO.CodeInterface as CI
-    interface = CI.Interface()
+    import OTTools.Helpers.Tests as T
+    interface = CI.Interface(T.GetTestDataPath())
     interface.parameterNames  = ['a', 'b']
     interface.parameterValues = [1., 2.]
     interface.WriteFile(1)
     #interface.SingleRunCode(1)
-    return 'ok, interface.SingleRunCode not tested'
+    return 'ok'
         
         
 if __name__ == '__main__':
