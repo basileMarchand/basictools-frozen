@@ -36,3 +36,8 @@
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+
+# Kdevelop
+##########
+*.kdev4*
