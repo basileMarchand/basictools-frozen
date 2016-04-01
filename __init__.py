@@ -2,7 +2,7 @@
 
 import Helpers
 
-__all__ = ["Helpers","IO","FE","T"];
+__all__ = ["Helpers","IO","FE","T","Numerical"];
 #__all__ = ["FE","IO", "RM", "T","Helpers"];
 
 
