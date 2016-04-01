@@ -127,8 +127,7 @@ def CheckIntegrity():
     ZIO.ReadMat(dataPath+'Zmatrix')
     ZIO.ReadMat(dataPath+'Zmatrix', True)
     vec = ZIO.ReadVec(dataPath+'Zvector')
-    TestTempDir = T.TestTempDir()
-    tempPath = TestTempDir.GetTempPath()
+    tempPath = T.TestTempDir.GetTempPath()
     ZIO.WriteVec(vec, tempPath+'Zvector')
     return 'ok'
         
