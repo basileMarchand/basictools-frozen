@@ -131,7 +131,10 @@ class Fea(object):
             res = linalg.lgmres(K, rhs, x0 = self.u[self.free, 0] , M = M, outer_v = self.outer_v   ) 
             self.u[self.free, 0] = res[0]
         elif self.linearSolver == "AMG":
-            import pyamg  
+            try:
+                import pyamg  
+            except:
+                raise Exception('AMG module not installed')
             K = K.tocsr()
             ml = pyamg.ruge_stuben_solver(K)
             #print ml
@@ -256,8 +259,13 @@ def CheckIntegrity():
     starttime = time.time()
     myProblem.linearSolver = 'Direct'
     myProblem.Solve()
-    myProblem.linearSolver = 'AMG'
-    myProblem.Solve()
+    
+    try:
+       myProblem.linearSolver = 'AMG'
+       myProblem.Solve()
+    except Exception as inst:
+       print(inst.args[0])
+        
     print("Time for Fea solve : " + str(time.time() -starttime))
 
     path = TestTempDir.GetTempPath() +'TestThermal.xmf'
