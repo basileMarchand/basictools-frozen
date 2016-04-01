@@ -311,6 +311,9 @@ class XdmfWriter:
             elif type(data[0]) == np.int32:
                 typename = 'Int'
                 s = data.dtype.itemsize
+            elif type(data[0]) == np.int64:
+                typename = 'Int'
+                s = data.dtype.itemsize
             else:
                 print('Output Not implemented for data of type ')              # pragma: no cover 
                 print(type(data[0]))                                           # pragma: no cover 
