@@ -159,5 +159,6 @@ if __name__ == '__main__':
     #TestAll() # pragma: no cover 
     #TestAllWithCoverage(  fulloutput=False,stopAtFirstError= True) # pragma: no cover 
     #TestAllWithCoverage( modulestotreat=['IO.XdmfWriter' ], fulloutput=False,stopAtFirstError= True) # pragma: no cover 
-    TestAll(modulestotreat=['ALL'], fulloutput=False,coverage= True,extraToolsBoxs=["MyOtherToolBox"])# pragma: no cover 
+    TestAll(modulestotreat=['OTTools'], fulloutput=False,coverage=False,extraToolsBoxs=["MyOtherToolBox"])# pragma: no cover 
+    #TestAll(modulestotreat=['ALL'], fulloutput=False,coverage= True,extraToolsBoxs=["MyOtherToolBox"])# pragma: no cover 
     #TestAllWithCoverage(modulestotreat=['T.Formats' ], fulloutput=True)
