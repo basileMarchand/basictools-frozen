@@ -48,7 +48,7 @@ class Interface:
         with open(self.processDirectory + inpFilename, 'w') as inpFile:
             inpFile.write(inpString)
         
-    def SingleRunCode(self, idProc):
+    def SingleRunCode(self, idProc):# pragma: no cover
       
         inpFilename = self.inputFilename + str(idProc) + self.inputFileExtension
         
