@@ -363,7 +363,7 @@ def WriteTest(tempdir,Temporal, Binary):
     
     dataDep.shape = (2,3,4,3)
     
-    writer = XdmfWriter(tempdir + '\TestOutput_Bin_'+str(Binary)+'_Temp_'+str(Temporal)+'.xmf')
+    writer = XdmfWriter(tempdir + 'TestOutput_Bin_'+str(Binary)+'_Temp_'+str(Temporal)+'.xmf')
     writer.SetTemporal(Temporal)
     writer.SetBinary(Binary)
     writer.Open()

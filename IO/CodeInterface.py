@@ -76,6 +76,7 @@ def CheckIntegrity():
     interface = CI.Interface(T.GetTestDataPath())
     interface.parameterNames  = ['calcul', 'Ti', 'mesh', 'solver', 'python_script', 'sequence', 'time', 'increment', 'iteration', 'ratio', 'algorithm', 'table', 'bc', 'conductivity', 'coefficient']
     interface.parameterValues = ['thermal_transient', 1000.0, 'Cube_3D.geof', 'mumps', 'reduction', 1, 2000., 20, 1000, 0.001, 'p1p2p3', '**name ptab\n*time  0.0  10000000.0  \n*value  1.0  1.0', '**surface_heat_flux\nface_x_0  1000.0  ptab\nface_x_1  1000.0  ptab', '280.+100.*atan(0.01*(1100-temperature));', '8.*(430.+40.*atan(0.01*(temperature-500.)))*(1.5-0.5*exp(-200./((temperature-1200.)*(temperature-1200.))));']
+    interface.processDirectory  = T.TestTempDir.GetTempPath()
     interface.WriteFile(1)
     #interface.SingleRunCode(1)
     return 'ok'
