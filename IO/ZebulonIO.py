@@ -18,7 +18,7 @@ def ReadMat(fileName, returnReorderOnly=False):
                         numReorderLines = int(numReorder/10.)+4
                     if splittedLine[0]=='column_pointer':
                         break
-                except IndexError:
+                except IndexError:# pragma: no cover
                     continue
         f.close()
         reorder = []
@@ -124,7 +124,8 @@ def CheckIntegrity():
     import OTTools.IO.ZebulonIO as ZIO
     import OTTools.Helpers.Tests as T
     dataPath = T.GetTestDataPath()
-    mat = ZIO.ReadMat(dataPath+'Zmatrix')
+    ZIO.ReadMat(dataPath+'Zmatrix')
+    ZIO.ReadMat(dataPath+'Zmatrix', True)
     vec = ZIO.ReadVec(dataPath+'Zvector')
     TestTempDir = T.TestTempDir()
     tempPath = TestTempDir.GetTempPath()
