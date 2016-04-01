@@ -30,21 +30,10 @@ class TestTempDir():
             shutil.rmtree(cls.path)
         cls.path = None
             
-def __RunAndCheck(lis,bp,stopAtFirstError, cover):
+def __RunAndCheck(lis,bp,stopAtFirstError):
     import sys
     import time
     
-    if cover :
-       import coverage
-       ss = [ k for k in lis ]
-       cov = coverage.coverage(source=ss, omit=['pyexpat','*__init__.py'])
-       cov.start()
-       import importlib
-
-       for name  in lis:
-           ll = importlib.import_module(name)
-           reload(ll)
-           
     from OTTools.Helpers.TextFormatHelper import TFormat
 
     res = {}
@@ -80,22 +69,6 @@ def __RunAndCheck(lis,bp,stopAtFirstError, cover):
         else: 
             bp.Print(TFormat.InRed( "NOT OK !!!! " + name )  )
     
-    bp.Restore()
-    
-    if cover:
-        cov.stop()
-        cov.save()
-        
-        # create a temp file 
-        tempdir = TestTempDir.GetTempPath()
-        # tempdir = 'c:/users/d584808/appdata/local/temp/tmp4ipmul/'
-        cov.html_report(directory = tempdir)
-        import webbrowser
-        import os
-        print('Coverage Report in ')
-        print(tempdir +"index.html")
-        webbrowser.open(tempdir +os.sep+"index.html")
-        
     return res
 
     
@@ -127,6 +100,14 @@ def __tryImport(noduleName):
         return {}
     
 def TestAll(modulestotreat=['ALL'], fulloutput=False, stopAtFirstError= False, coverage= False, extraToolsBoxs= None) :
+    from OTTools.Helpers.TextFormatHelper import TFormat
+    cov = None
+    if coverage :
+       import coverage
+       #ss = [ k for k in lis ]
+       #cov = coverage.coverage(source=ss, omit=['pyexpat','*__init__.py'])
+       cov = coverage.coverage(omit=['pyexpat','*__init__.py'])
+       cov.start()
 
     # calls to print, ie import module1
     from OTTools.Helpers.PrintBypass import PrintBypass
@@ -148,22 +129,87 @@ def TestAll(modulestotreat=['ALL'], fulloutput=False, stopAtFirstError= False, c
     if not fulloutput:
         bp.ToSink()
 
-    if modulestotreat[0] == 'ALL':
-        __RunAndCheck(tocheck,bp,stopAtFirstError,coverage)
-    else:
+    if modulestotreat[0] is not  'ALL':
         filtered =  dict((k, v) for k, v in tocheck.items() if any(s in k for s in modulestotreat ) )
-        __RunAndCheck(filtered,bp,stopAtFirstError,coverage);
-        
+        tocheck = filtered
     
+    __RunAndCheck(tocheck,bp,stopAtFirstError);
+        
+
+    bp.Restore()
+
+    if coverage :
+        cov.stop()
+        cov.save()
+        
+        # create a temp file 
+        tempdir = TestTempDir.GetTempPath()
+        # tempdir = 'c:/users/d584808/appdata/local/temp/tmp4ipmul/'
+        ss = [ ("*"+k.split(".")[-1]+"*") for k in tocheck ]
+        cov.html_report(directory = tempdir, include=ss )
+        import webbrowser
+        import os
+        print('Coverage Report in ')
+        print(tempdir +"index.html")
+        webbrowser.open(tempdir +os.sep+"index.html")
+
     print("--- End Test ---")
     
 def CheckIntegrity():
     return "Ok"
     
 if __name__ == '__main__':
-    #TestAll() # pragma: no cover 
-    #TestAllWithCoverage(  fulloutput=False,stopAtFirstError= True) # pragma: no cover 
-    #TestAllWithCoverage( modulestotreat=['IO.XdmfWriter' ], fulloutput=False,stopAtFirstError= True) # pragma: no cover 
-    TestAll(modulestotreat=['OTTools'], fulloutput=False,coverage=False,extraToolsBoxs=["MyOtherToolBox"])# pragma: no cover 
-    #TestAll(modulestotreat=['ALL'], fulloutput=False,coverage= True,extraToolsBoxs=["MyOtherToolBox"])# pragma: no cover 
-    #TestAllWithCoverage(modulestotreat=['T.Formats' ], fulloutput=True)
+    import sys, getopt
+    if len(sys.argv) == 1:
+        TestAll(modulestotreat=['OTTools'], fulloutput=False,coverage=False)# pragma: no cover 
+    else:
+      try:
+          opts, args = getopt.getopt(sys.argv[1:],"hcfe:m:")
+      except getopt.GetoptError:
+          print 'python  Tests.py -c -f -e <extraModules> -m <moduleFilter>'
+          print 'options :'
+          print '       -c    To activate coverage and generate a html report'
+          print '       -f    Full output for all the test'
+          print '       -e    To test extra Modules (-e can be repeated)'
+          print '       -m    To filter the output by this string (-e can be repeated)'
+          sys.exit(2)
+
+      coverage = False
+      fulloutput = False
+      stopAtFirstError = False
+      extraToolsBoxs = []
+      modulestotreat=[]
+
+
+      for opt, arg in opts:
+         if opt == '-h':
+             print 'python  Tests.py -c -f -s -e <extraModules> -m <moduleFilter>'
+             print 'options :'
+             print '       -c    To activate coverage and generate a html report'
+             print '       -f    Full output for all the test'
+             print '       -s    Stop at first error'
+             print '       -e    To test extra Modules (-e can be repeated)'
+             print '       -m    To filter the output by this string (-m can be repeated)'
+             sys.exit()
+         elif opt in ("-c"):
+            coverage = True
+         elif opt in ("-f"):
+            fulloutput = True
+         elif opt in ("-s"):
+            stopAtFirstError = True
+         elif opt in ("-e"):
+            extraToolsBoxs.append(arg)
+         elif opt in ("-m"):
+            modulestotreat.append(arg)
+
+      if len(modulestotreat) == 0:
+         modulestotreat.append("ALL")
+
+      TestAll(  modulestotreat=modulestotreat,
+                coverage=coverage,
+                fulloutput=fulloutput,
+                stopAtFirstError= stopAtFirstError,
+                extraToolsBoxs=extraToolsBoxs ) 
+
+
+
