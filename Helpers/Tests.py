@@ -19,7 +19,8 @@ class TestTempDir():
         if cls.path is not None:
             return cls.path
         import tempfile
-        cls.path = tempfile.mkdtemp() + "\\"
+        import os
+        cls.path = tempfile.mkdtemp() + os.sep
         return TestTempDir.path
     
     @classmethod 
@@ -36,7 +37,7 @@ def __RunAndCheck(lis,bp,stopAtFirstError, cover):
     if cover :
        import coverage
        ss = [ k for k in lis ]
-       cov = coverage.Coverage(source=ss, omit=['pyexpat','*__init__.py'])
+       cov = coverage.coverage(source=ss, omit=['pyexpat','*__init__.py'])
        cov.start()
        import importlib
 
@@ -67,7 +68,8 @@ def __RunAndCheck(lis,bp,stopAtFirstError, cover):
         except :
             bp.Print( "Unexpected error:" + str(sys.exc_info()[0]) )
             res[name] = "error"
-            traceback.print_exc()
+            traceback.print_exc(file=bp.stdout_)
+            
             r = 'Not OK'
             if stopAtFirstError : 
                 bp.Restore()
@@ -76,8 +78,10 @@ def __RunAndCheck(lis,bp,stopAtFirstError, cover):
         if r.lower() == 'ok':
             bp.Print( "OK " +name + " : %.3f seconds " %  (stop_time -start_time ))
         else: 
-            bp.Print("NOT OK !!!! " + name  )
-            
+            bp.Print(TFormat.InRed( "NOT OK !!!! " + name )  )
+    
+    bp.Restore()
+    
     if cover:
         cov.stop()
         cov.save()
@@ -86,10 +90,11 @@ def __RunAndCheck(lis,bp,stopAtFirstError, cover):
         tempdir = TestTempDir.GetTempPath()
         # tempdir = 'c:/users/d584808/appdata/local/temp/tmp4ipmul/'
         cov.html_report(directory = tempdir)
-        print('Coverage Report in ')
         import webbrowser
-        print(tempdir +"\index.html")
-        webbrowser.open(tempdir +"\index.html")
+        import os
+        print('Coverage Report in ')
+        print(tempdir +"index.html")
+        webbrowser.open(tempdir +os.sep+"index.html")
         
     return res
 
@@ -149,7 +154,7 @@ def TestAll(modulestotreat=['ALL'], fulloutput=False, stopAtFirstError= False, c
         filtered =  dict((k, v) for k, v in tocheck.items() if any(s in k for s in modulestotreat ) )
         __RunAndCheck(filtered,bp,stopAtFirstError,coverage);
         
-    bp.Restore()
+    
     print("--- End Test ---")
     
 def CheckIntegrity():
