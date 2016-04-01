@@ -67,7 +67,8 @@ def __RunAndCheck(lis,bp,stopAtFirstError, cover):
         except :
             bp.Print( "Unexpected error:" + str(sys.exc_info()[0]) )
             res[name] = "error"
-            traceback.print_exc()
+            traceback.print_exc(file=bp.stdout_)
+            
             r = 'Not OK'
             if stopAtFirstError : 
                 bp.Restore()
@@ -76,7 +77,7 @@ def __RunAndCheck(lis,bp,stopAtFirstError, cover):
         if r.lower() == 'ok':
             bp.Print( "OK " +name + " : %.3f seconds " %  (stop_time -start_time ))
         else: 
-            bp.Print("NOT OK !!!! " + name  )
+            bp.Print(TFormat.InRed( "NOT OK !!!! " + name )  )
             
     if cover:
         cov.stop()
