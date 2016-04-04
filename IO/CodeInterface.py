@@ -4,7 +4,7 @@ import numpy as np
 import os
 import time
 
-class Interface:
+class Interface(object):
     
     def __init__(self, workingDirectory = os.getcwd()):
       
