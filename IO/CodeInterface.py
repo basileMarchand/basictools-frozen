@@ -42,7 +42,6 @@ class Interface(object):
         
         inpFilename = self.inputFilename + str(idProc) + self.inputFileExtension
         
-        print "inpFilename = ", self.processDirectory + inpFilename
         with open(self.processDirectory + inpFilename, 'w') as inpFile:
             inpFile.write(inpString)
         
