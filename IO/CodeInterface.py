@@ -16,8 +16,7 @@ class Interface(object):
         self.workingDirectory = workingDirectory
         
         # Model parameters
-        self.parameterNames  = []
-        self.parameterValues = []
+        self.parameters = {}
         
         # Template
         self.tplDirectory = self.workingDirectory + os.sep
@@ -38,13 +37,12 @@ class Interface(object):
         
     def WriteFile(self, idProc):
         
-        parametersDict = dict((name, self.parameterValues[i]) for i, name in enumerate(self.parameterNames))
-        
         # Write code input file
-        inpString = self.tpl.format(**parametersDict)
+        inpString = self.tpl.format(**self.parameters)
         
         inpFilename = self.inputFilename + str(idProc) + self.inputFileExtension
         
+        print "inpFilename = ", self.processDirectory + inpFilename
         with open(self.processDirectory + inpFilename, 'w') as inpFile:
             inpFile.write(inpString)
         
@@ -74,8 +72,23 @@ def CheckIntegrity():
     import OTTools.IO.CodeInterface as CI
     import OTTools.Helpers.Tests as T
     interface = CI.Interface(T.GetTestDataPath())
-    interface.parameterNames  = ['calcul', 'Ti', 'mesh', 'solver', 'python_script', 'sequence', 'time', 'increment', 'iteration', 'ratio', 'algorithm', 'table', 'bc', 'conductivity', 'coefficient']
-    interface.parameterValues = ['thermal_transient', 1000.0, 'Cube_3D.geof', 'mumps', 'reduction', 1, 2000., 20, 1000, 0.001, 'p1p2p3', '**name ptab\n*time  0.0  10000000.0  \n*value  1.0  1.0', '**surface_heat_flux\nface_x_0  1000.0  ptab\nface_x_1  1000.0  ptab', '280.+100.*atan(0.01*(1100-temperature));', '8.*(430.+40.*atan(0.01*(temperature-500.)))*(1.5-0.5*exp(-200./((temperature-1200.)*(temperature-1200.))));']
+    
+    interface.parameters['calcul']        = 'thermal_transient'
+    interface.parameters['Ti']            = 1000.0
+    interface.parameters['mesh']          = 'Cube_3D.geof'
+    interface.parameters['solver']        = 'mumps'
+    interface.parameters['python_script'] = 'reduction'
+    interface.parameters['sequence']      = 1
+    interface.parameters['time']          = 2000.
+    interface.parameters['increment']     = 20
+    interface.parameters['iteration']     = 1000
+    interface.parameters['ratio']         = 0.001
+    interface.parameters['algorithm']     = 'p1p2p3'
+    interface.parameters['table']         = '**name ptab\n*time  0.0  10000000.0  \n*value  1.0  1.0'
+    interface.parameters['bc']            = '**surface_heat_flux\nface_x_0  1000.0  ptab\nface_x_1  1000.0  ptab'
+    interface.parameters['conductivity']  = '280.+100.*atan(0.01*(1100-temperature));'
+    interface.parameters['coefficient']   = '8.*(430.+40.*atan(0.01*(temperature-500.)))*(1.5-0.5*exp(-200./((temperature-1200.)*(temperature-1200.))));'
+    
     interface.processDirectory  = T.TestTempDir.GetTempPath()
     interface.WriteFile(1)
     #interface.SingleRunCode(1)
