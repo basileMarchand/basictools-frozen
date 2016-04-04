@@ -1,6 +1,9 @@
 import numpy as np
 
 class GramSchmidt():
+    """Modified Gram-Schmidt orthonormalization routine, with user-provided scalar product
+    
+    """
     
     def __init__(self):
         self.sizeVec = None
