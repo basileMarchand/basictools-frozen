@@ -123,7 +123,8 @@ def WriteVec(data, fileName):
 def CheckIntegrity():
     import OTTools.IO.ZebulonIO as ZIO
     import OTTools.Helpers.Tests as T
-    dataPath = T.GetTestDataPath()
+    import OTTools.TestData as T2
+    dataPath = T2.GetTestDataPath()
     ZIO.ReadMat(dataPath+'Zmatrix')
     ZIO.ReadMat(dataPath+'Zmatrix', True)
     vec = ZIO.ReadVec(dataPath+'Zvector')

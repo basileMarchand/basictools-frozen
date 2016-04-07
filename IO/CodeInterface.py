@@ -21,14 +21,11 @@ class Interface(object):
         self.bc         = {}
         
         # Template
-        self.tplDirectory = self.workingDirectory + os.sep
-        if not os.path.exists(self.tplDirectory): os.mkdir(self.tplDirectory)
         self.tplFilename = 'template.tpl'
-        self.tpl = self.ReadFile(self.tplDirectory + self.tplFilename)
+        self.tpl = self.ReadFile(self.workingDirectory + os.sep + self.tplFilename)
         
         # Temporary files folder creation
-        self.processDirectory = self.tplDirectory
-        if not os.path.exists(self.processDirectory): os.mkdir(self.processDirectory)
+        self.processDirectory = self.workingDirectory + os.sep
     
         # Output file name
         self.inputFilename      = 'calcul'
@@ -46,7 +43,7 @@ class Interface(object):
         with open(self.processDirectory + inpFilename, 'w') as inpFile:
             inpFile.write(inpString)
         
-    def SingleRunCode(self, idProc):# pragma: no cover
+    def SingleRunComputation(self, idProc):# pragma: no cover
       
         inpFilename = self.inputFilename + str(idProc) + self.inputFileExtension
         
@@ -93,7 +90,10 @@ class Interface(object):
 def CheckIntegrity():
     import OTTools.IO.CodeInterface as CI
     import OTTools.Helpers.Tests as T
-    interface = CI.Interface(T.GetTestDataPath())
+    import OTTools.TestData as T2
+    dataPath = T2.GetTestDataPath()
+    
+    interface = CI.Interface(dataPath)
     
     interface.parameters['calcul']        = 'thermal_transient'
     interface.parameters['Ti']            = 1000.0
@@ -122,9 +122,8 @@ def CheckIntegrity():
     interface.parameters['coefficient']   = '8.*(430.+40.*atan(0.01*(temperature-500.)))*(1.5-0.5*exp(-200./((temperature-1200.)*(temperature-1200.))));'
     
     interface.processDirectory  = T.TestTempDir.GetTempPath()
-    print "interface.processDirectory", interface.processDirectory
     interface.WriteFile(1)
-    #interface.SingleRunCode(1)
+    #interface.SingleRunComputation(1)
     interface.WriteCubeZebulonMesher(1., 1., 1., 3)
     return 'ok'
         
