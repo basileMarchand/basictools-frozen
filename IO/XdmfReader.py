@@ -683,7 +683,7 @@ def CheckIntegrity():
 
 
 def Example1():
-    import OTTools.Helpers.Tests as test    
+    import OTTools.TestData as test
     # Create a Reader 
     reader = XdmfReader(filename = test.GetTestDataPath() + "Unstructured.xmf")
     # Do the reading (only the xml part, to read all the data set lazy to False)
@@ -713,7 +713,7 @@ def Example1():
     #print(dataField3.shape)
 
 def Example2():    
-    import OTTools.Helpers.Tests as test    
+    import OTTools.TestData as test
     
     reader = XdmfReader(filename = test.GetTestDataPath() + "TensorTestData.xmf")
     
