@@ -22,7 +22,10 @@ class Interface(object):
         
         # Template
         self.tplFilename = 'template.tpl'
-        self.tpl = self.ReadFile(self.workingDirectory + os.sep + self.tplFilename)
+        try:
+          self.tpl = self.ReadFile(self.workingDirectory + os.sep + self.tplFilename)
+        except IOError:
+	  True
         
         # Temporary files folder creation
         self.processDirectory = self.workingDirectory + os.sep

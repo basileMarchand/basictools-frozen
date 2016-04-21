@@ -1,4 +1,4 @@
 # -*- coding: utf-8 -*-
 
-__all__ = ['GramSchmidt', 'Pod', 'GappyPod.py']
+__all__ = ['GramSchmidt', 'Pod', 'GappyPod.py', 'MatrixOperations', 'SVD']
 
