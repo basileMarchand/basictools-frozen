@@ -113,13 +113,12 @@ def discarded_energy_fractions(singular_values):
     np.divide(cumulated_energies[1:], total_energy, out=result[:-1])
 
     return result
-  
 
 
 def PODSnapshot(a, epsilon):
     eigenValues, eigenVectors = np.linalg.eigh(a,UPLO='L')
 
-    idx = eigenValues.argsort()[::-1]   
+    idx = eigenValues.argsort()[::-1]
     eigenValues = eigenValues[idx]
     eigenVectors = eigenVectors[:,idx]
 
@@ -146,7 +145,7 @@ def CheckIntegrity():
     PODSnapshot(a, 1.e-6)
     pod_basis(a, None, 1.e-6)
     return 'ok'
-        
-        
+
+
 if __name__ == '__main__':
-    print(CheckIntegrity())# pragma: no cover 
+    print(CheckIntegrity())# pragma: no cover
