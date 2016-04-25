@@ -12,12 +12,12 @@ def pod_basis(snapshots, rank_max=None, truncation_tol=None):
         A multivector of n snapshots of size N.
     rank_max : int, optional
         An upper bound on the size of the POD basis. Truncation will be
-        performed if necessary.  By default, do not perform truncation.
+        performed if necessary. By default, do not perform truncation.
     truncation_tol : float, optional
-        An energy-based criterion controlling truncation. Keep as many vectors
-        in the POD basis such that the energy fraction of the discarded
-        components is lower than truncation_tol. By default, do not perform
-        truncation.
+        An energy-based criterion controlling truncation. Keep as few vectors
+        in the POD basis as necessary such that the cumulated energy fraction
+        of the discarded components is lower than or equal to truncation_tol.
+        By default, do not perform truncation.
 
     Returns
     -------
@@ -46,12 +46,12 @@ def pod_basis_and_singular_values(snapshots, rank_max=None, truncation_tol=None)
         A multivector of n snapshots of size N.
     rank_max : int, optional
         An upper bound on the size of the POD basis. Truncation will be
-        performed if necessary.  By default, do not perform truncation.
+        performed if necessary. By default, do not perform truncation.
     truncation_tol : float, optional
-        An energy-based criterion controlling truncation. Keep as many vectors
-        in the POD basis such that the energy fraction of the discarded
-        components is lower than truncation_tol. By default, do not perform
-        truncation.
+        An energy-based criterion controlling truncation. Keep as few vectors
+        in the POD basis as necessary such that the cumulated energy fraction
+        of the discarded components is lower than or equal to truncation_tol.
+        By default, do not perform truncation.
 
     Returns
     -------
@@ -75,9 +75,8 @@ def pod_basis_and_singular_values(snapshots, rank_max=None, truncation_tol=None)
 
     if truncation_tol is not None:
         truncation_thresholds = discarded_energy_fractions(s)[::-1]
-        drop_count = \
-                min(np.searchsorted(truncation_thresholds, truncation_tol), \
-                snapshot_count - 1)
+        drop_count = np.searchsorted( \
+                truncation_thresholds, truncation_tol, side='right')
         rank_max = min(snapshot_count - drop_count, rank_max)
 
     return (u, s) if rank_max >= snapshot_count else (u[:rank_max, :], s[:rank_max])
@@ -86,7 +85,7 @@ def pod_basis_and_singular_values(snapshots, rank_max=None, truncation_tol=None)
 def discarded_energy_fractions(singular_values):
     """
     Compute the fraction of energy that would be discarded if truncation was
-    performed right after the corresponding singular value.
+    performed just before the corresponding singular value.
 
     Parameters
     ----------
@@ -108,9 +107,9 @@ def discarded_energy_fractions(singular_values):
             out=cumulated_energies_squared)
 
     result = np.empty_like(singular_values)
-    result[-1] = 0.0
+    result[0] = 1.0
     total_energy = cumulated_energies[0]
-    np.divide(cumulated_energies[1:], total_energy, out=result[:-1])
+    np.divide(cumulated_energies[1:], total_energy, out=result[1:])
 
     return result
 
