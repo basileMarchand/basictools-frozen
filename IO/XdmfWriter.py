@@ -2,11 +2,92 @@
 
 from OTTools.Helpers.TextFormatHelper import TFormat
 import numpy as np
+import os
 
 def ArrayToString(data):
     return " ".join(str(x) for x in data)
 
-def WriteMeshToXdmf(filename, baseMeshObject, PointFields = None, CellFields = None,GridFields= None, PointFieldsNames = None, CellFieldsNames=None, GridFieldsNames=None ):
+XdmfName = {}
+XdmfName['bar2'] = 'Polyline'
+XdmfName['tri3'] = 'Triagle'
+XdmfName['quad4'] = 'Quadrilateral'
+XdmfName['tet4'] ="Tetrahedron"
+XdmfName['pyr5'] = 'Pyramid'
+XdmfName['wed6'] = 'Wedge'
+XdmfName['hex8'] = 'Hexahedron'
+
+
+XdmfName['bar3'] = "Edge_3"
+XdmfName['tri6'] = 'Triagle_6'
+XdmfName['quad9'] = 'Quadrilateral_9'
+XdmfName['quad8'] = 'Quadrilateral_8'
+XdmfName['tet10'] = 'Tetrahedron_10'
+XdmfName['pyr13'] = 'Pyramid_13'
+XdmfName['wed15'] = 'Wedge_13'
+XdmfName['wed18'] = 'Wedge_18'
+XdmfName['hex20'] = 'Hexahedron_20'
+
+XdmfNumber = {}
+XdmfNumber['vertex'] = 0x1
+XdmfNumber['bar2'] = 0x2
+XdmfNumber['tri3'] = 0x4
+XdmfNumber['quad4'] = 0x5
+XdmfNumber['tet4'] = 0x6
+XdmfNumber['pyr5'] = 0x7
+XdmfNumber['wed6'] = 0x8
+XdmfNumber['hex8'] = 0x9
+
+XdmfNumber['bar3'] = 0x22
+XdmfNumber['quad9'] = 0x23
+XdmfNumber['tri6'] = 0x24
+XdmfNumber['quad8'] = 0x25
+XdmfNumber['tet10'] = 0x26
+XdmfNumber['pyr13'] = 0x27
+XdmfNumber['wed15'] = 0x28
+XdmfNumber['wed18'] = 0x29
+XdmfNumber['hex20'] = 0x30
+
+#* Xdmf supports the following topology types:
+# *   NoTopologyType
+# *   Polyvertex - Unconnected Points
+# *   Polyline - Line Segments
+# *   Polygon - N Edge Polygon
+# *   Triangle - 3 Edge Polygon
+# *   Quadrilateral - 4 Edge Polygon
+# *   Tetrahedron - 4 Triangular Faces
+# *   Wedge - 4 Triangular Faces, Quadrilateral Base
+# *   Hexahedron - 6 Quadrilateral Faces
+# *   Edge_3 - 3 Node Quadratic Line
+# *   Triangle_6 - 6 Node Quadratic Triangle
+# *   Quadrilateral_8 - 8 Node Quadratic Quadrilateral
+# *   Quadrilateral_9 - 9 Node Bi-Quadratic Quadrilateral
+# *   Tetrahedron_10 - 10 Node Quadratic Tetrahedron
+# *   Pyramid_13 - 13 Node Quadratic Pyramid
+# *   Wedge_15 - 15 Node Quadratic Wedge
+# *   Wedge_18 - 18 Node Bi-Quadratic Wedge
+# *   Hexahedron_20 - 20 Node Quadratic Hexahedron
+# *   Hexahedron_24 - 24 Node Bi-Quadratic Hexahedron
+# *   Hexahedron_27 - 27 Node Tri-Quadratic Hexahedron
+# *   Hexahedron_64 - 64 Node Tri-Cubic Hexahedron
+# *   Hexahedron_125 - 125 Node Tri-Quartic Hexahedron
+# *   Hexahedron_216 - 216 Node Tri-Quintic Hexahedron
+# *   Hexahedron_343 - 343 Node Tri-Hexic Hexahedron
+# *   Hexahedron_512 - 512 Node Tri-Septic Hexahedron
+# *   Hexahedron_729 - 729 Node Tri-Octic Hexahedron
+# *   Hexahedron_1000 - 1000 Node Tri-Nonic Hexahedron
+# *   Hexahedron_1331 - 1331 Node Tri-Decic Hexahedron
+# *   Hexahedron_Spectral_64 - 64 Node Spectral Tri-Cubic Hexahedron
+# *   Hexahedron_Spectral_125 - 125 Node Spectral Tri-Quartic Hexahedron
+# *   Hexahedron_Spectral_216 - 216 Node Spectral Tri-Quintic Hexahedron
+# *   Hexahedron_Spectral_343 - 343 Node Spectral Tri-Hexic Hexahedron
+# *   Hexahedron_Spectral_512 - 512 Node Spectral Tri-Septic Hexahedron
+# *   Hexahedron_Spectral_729 - 729 Node Spectral Tri-Octic Hexahedron
+# *   Hexahedron_Spectral_1000 - 1000 Node Spectral Tri-Nonic Hexahedron
+# *   Hexahedron_Spectral_1331 - 1331 Node Spectral Tri-Decic Hexahedron
+#  *   Mixed - Mixture of Unstructured Topologies
+ 
+
+def WriteMeshToXdmf(filename, baseMeshObject, PointFields = None, CellFields = None,GridFields= None, PointFieldsNames = None, CellFieldsNames=None, GridFieldsNames=None , Binary= True):
     
     if PointFields is None:
         PointFields = [];
@@ -27,7 +108,7 @@ def WriteMeshToXdmf(filename, baseMeshObject, PointFields = None, CellFields = N
         GridFieldsNames  = [];
 
     writer = XdmfWriter(filename)
-    writer.SetBinary()
+    writer.SetBinary(Binary)
     writer.Open()
     writer.Write(baseMeshObject, 
                  PointFields= PointFields,
@@ -53,7 +134,7 @@ class XdmfWriter:
         self.__filePointer = None;        
         self.__isOpen = False;
         self.__binarycpt = 0;
-        
+        self.__binfilecounter = 0
         self.SetFileName(fileName)
         
     def __str__(self):
@@ -77,13 +158,19 @@ class XdmfWriter:
             return 
 
         #print('Setting filename '+ fileName)
-        import os
+       
         
         self.fileName = fileName;
         self.__path  = os.path.abspath(os.path.dirname(fileName));
-        self.__binFileName = os.path.splitext(os.path.abspath(fileName))[0] + ".bin"
+        self.binfilecounter = 0
+        self.NewBinaryFilename()
+        
+    def NewBinaryFilename(self):
+        
+        self.__binFileName = os.path.splitext(os.path.abspath(self.fileName))[0] +"_" +str(self.__binfilecounter) +"_"+".bin"
         self.__binFileNameOnly = os.path.basename(self.__binFileName)
-
+        self.__binfilecounter +=1
+        
     def Step(self, dt = 1):
         self.currentTime += dt;
         self.timeSteps.append(self.currentTime);
@@ -131,7 +218,7 @@ class XdmfWriter:
         #clean the binary file  =
         if self.__isBinary:
             self.__binaryFilePointer = open (self.__binFileName, "wb")
-                
+    
     def Close(self):
         if self.__isOpen:
             if self.__isTemporalOutput:
@@ -146,7 +233,7 @@ class XdmfWriter:
             #print("File : '" + self.fileName + "' is close.")         
     
     def __WriteGeoAndTopo(self,baseMeshObject):
-        if baseMeshObject.isConstantRectilinear() :
+        if baseMeshObject.IsConstantRectilinear() :
             origin = baseMeshObject.GetOrigin()
             spacing = baseMeshObject.GetSpacing()
             dims = baseMeshObject.GetDimensions() ## number of nodes per 
@@ -155,15 +242,53 @@ class XdmfWriter:
             self.filePointer.write('      <DataItem DataType="Float" Dimensions="3" Format="XML" Precision="8">'+ArrayToString(reversed(spacing)) +'</DataItem>\n')
             self.filePointer.write('    </Geometry>\n')
             self.filePointer.write('    <Topology Dimensions="'+ArrayToString(reversed(dims))  +'" Type="3DCoRectMesh"/>\n')
-        elif baseMeshObject.isRectilinear() :# pragma: no cover 
+        elif baseMeshObject.IsRectilinear() :# pragma: no cover 
             print(TFormat.InRed("Mesh Type Rectilinear Not Supported"))        # pragma: no cover 
             raise Exception                                                    # pragma: no cover 
-        elif baseMeshObject.isStructured() :                                   # pragma: no cover 
+        elif baseMeshObject.IsStructured() :                                   # pragma: no cover 
             print(TFormat.InRed("Mesh Type Structured Not Supported"))         # pragma: no cover 
             raise Exception                                                    # pragma: no cover 
-        elif baseMeshObject.isUnstructured() :                                 # pragma: no cover 
-            print(TFormat.InRed("Mesh Type Unstructured Not Supported"))       # pragma: no cover 
-            raise Exception                                                    # pragma: no cover 
+        elif baseMeshObject.IsUnstructured() :
+            self.filePointer.write('    <Geometry Type="XYZ">\n')
+            self.__WriteDataItem(baseMeshObject.GetPosOfNode().flatten(), (baseMeshObject.GetNumberOfNodes(),3)  )
+            self.filePointer.write('    </Geometry>\n')
+            if len(baseMeshObject.elements) > 1: 
+                self.filePointer.write('    <Topology TopologyType="Mixed" NumberOfElements="{}">\n'.format(baseMeshObject.GetNumberOfElements()))
+                ntotalentries = 0
+                for ntype, data in baseMeshObject.elements.iteritems(): 
+                    ntotalentries += data.GetNumberOfElements()*(data.GetNumberOfNodesPerElement()+1)
+                    if data.elementType == 'bar2':
+                        ntotalentries += data.GetNumberOfElements()
+                    
+                
+                dataarray = np.empty((ntotalentries,),dtype=np.int)
+                cpt =0;
+                for ntype, data in baseMeshObject.elements.iteritems(): 
+                   print("printing {}  elements".format(data.elementType) )
+                   print("printing {}  elements".format(data.GetNumberOfElements()) )
+                   print("with  {}  nodes per element ".format(data.GetNumberOfNodesPerElement()) )
+                   elemtype = XdmfNumber[ntype]
+                   for i in xrange(data.GetNumberOfElements() ):
+                       dataarray[cpt] = elemtype
+                       cpt += 1;
+                       if elemtype == 0x2:
+                           dataarray[cpt] = 2
+                           cpt += 1;
+                       for j in xrange(data.GetNumberOfNodesPerElement()):
+                           dataarray[cpt] = data.connectivity[i,j]
+                           cpt += 1;
+                print("Number Of Entries {}".format(ntotalentries))
+                print("counter {}".format(cpt))          
+                
+                self.__WriteDataItem(dataarray)    
+            else:
+                #
+                elementType = XdmfName[baseMeshObject.elements.keys()[0]]
+                self.filePointer.write('    <Topology TopologyType="{}" NumberOfElements="{}"  >\n'.format(elementType,baseMeshObject.GetNumberOfElements()))
+                self.__WriteDataItem(baseMeshObject.elements[baseMeshObject.elements.keys()[0]].connectivity)
+                
+            self.filePointer.write('    </Topology> \n')
+            
         else:                                                                  # pragma: no cover 
             print(TFormat.InRed("Mesh Type Not Supported"))                    # pragma: no cover 
             raise Exception                                                    # pragma: no cover 
@@ -175,7 +300,7 @@ class XdmfWriter:
            attype = "Scalar"
            #print(shape)
            #print(data.shape)
-           if baseMeshObject.isConstantRectilinear() and len(shape)>1 :
+           if baseMeshObject.IsConstantRectilinear() and len(shape)>1 :
            
                if len(data.shape) <= 2:
                    data.shape = tuple(shape)
@@ -189,7 +314,7 @@ class XdmfWriter:
            #print(attype)
            #print(data.shape)
            #print(shape)
-           if baseMeshObject.isConstantRectilinear() and len(shape)>1:
+           if baseMeshObject.IsConstantRectilinear() and len(shape)>1:
                shape = (shape[0], shape[1],shape[2],3)
                if len(data.shape) <= 2:
                    shape = (shape[0], shape[1],shape[2],3)
@@ -246,6 +371,28 @@ class XdmfWriter:
          
          self.__WriteGeoAndTopo(baseMeshObject)
 
+         #Writing tags for points 
+         #try:
+         for tagname in baseMeshObject.nodesTags:
+                 name = "Tag_" + tagname 
+                 data = np.zeros((baseMeshObject.GetNumberOfNodes(),1),dtype=np.int)
+                 data[baseMeshObject.nodesTags[tagname].id] = 1;
+                 self.__WriteAttribute(np.array(data), name, "Node", (baseMeshObject.GetNumberOfNodes(),),baseMeshObject)
+         #except:
+         #   pass
+                 
+         #Cell Tags         
+         baseMeshObject.PrepareForOutput();
+         
+         celtags = baseMeshObject.GetNamesOfCellTags()
+         for tagname in celtags:
+             name = "Tag_" + tagname
+             #data = baseMeshObject.GetElementTag(tagname)
+             data = baseMeshObject.GetElementsInTag(tagname)
+             res = np.zeros((baseMeshObject.GetNumberOfElements(),1),dtype=np.int)
+             res[data] = 1;                 
+
+             self.__WriteAttribute(np.array(res), name, "Cell", (baseMeshObject.GetNumberOfElements(),),baseMeshObject)
          
          for i in range(len(PointFields)): 
            name = 'PField'+str(i)
@@ -297,10 +444,14 @@ class XdmfWriter:
             #self.filePointer.write('</Time>\n')
             self.filePointer.write('<Time Value="'+ (" ".join(str(x) for x in self.timeSteps)) +'"/>\n')
             
-    def __WriteDataItem(self,_data, _shape):
+    def __WriteDataItem(self,_data, _shape= None):
+        
         import numpy as np
         data = np.array(_data)
+        if _shape is None:
+            _shape = _data.shape
         shape = np.array(_shape)
+        
         if self.__isOpen:
             if type(data[0]) == np.float64:
                 typename = 'Float'
@@ -322,6 +473,12 @@ class XdmfWriter:
             dimension = ArrayToString(shape)
             
             if self.__isBinary and len(data) > self.__XmlSizeLimit:
+                if self.__binarycpt > (2**30) :
+                    self.__binaryFilePointer.close()
+                    self.NewBinaryFilename()
+                    self.__binaryFilePointer = open (self.__binFileName, "wb")
+                    self.__binarycpt = 0
+                    
                 #bindata = bytearray(data.flatten())
                 
                 #self.__binaryFilePointer.write(bindata)  
@@ -375,7 +532,7 @@ def WriteTest(tempdir,Temporal, Binary):
 def CheckIntegrity():
     from OTTools.Helpers.Tests import TestTempDir
     from OTTools.FE.ConstantRectilinearMesh import ConstantRectilinearMesh
-
+    
 
     tempdir = TestTempDir.GetTempPath()
     
@@ -430,9 +587,22 @@ def CheckIntegrity():
     #    return 'Not ok'# pragma: no cover 
     #except:
     #    pass
+    import OTTools.IO.AscReader as AR
+    m =  AR.ReadAsc(fileName='C:\\Users\\D584808\\Documents\\Projects\\Python\\Topotools\\SUPPORT_VERIN_DATA1.ASC')
+    #import OTTools.IO.PickleTools as PT
+    #m = PT.LoadData("ASCReadermesh").unamed[0]
+    WriteMeshToXdmf('FromASCReader.xdmf',m ,Binary= False)
+
     
     return 'ok'
 
 if __name__ == '__main__':
     print(CheckIntegrity()) # pragma: no cover 
-    
+
+    #import OTTools.IO.AscReader as AR
+    #m =  AR.ReadAsc(fileName='C:\\Users\\D584808\\Documents\\Projects\\Python\\Topotools\\SUPPORT_VERIN_DATA1.ASC')
+    #WriteMeshToXdmf('FromASCReader.xdmf',m ,Binary= False)
+
+    #m.ComputeBoundingBox()
+    #print(m.boundingMin)
+    #print(m.boundingMax)
