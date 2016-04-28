@@ -12,7 +12,6 @@ class BaseOutputObject(object):
     def __init__(self):
         super(BaseOutputObject,self).__init__()
         self.__classDebugMode = False
-        
     
     @classmethod
     def SetVerboseLevel(cls,level):
@@ -36,7 +35,6 @@ class BaseOutputObject(object):
         self.PrintInternal(mess, 1)
         
     def PrintInternal(self, mess, level=1):
-        
         if BaseOutputObject.__globalDebugMode or self.__classDebugMode :
             ## we only load modules in debug mode
             import inspect

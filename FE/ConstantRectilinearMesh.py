@@ -8,7 +8,7 @@ from scipy.sparse import coo_matrix
 
 class ConstantRectilinearMesh(MeshBase):
     
-    def isConstantRectilinear(self): 
+    def IsConstantRectilinear(self): 
         return True
         
     def __init__(self):
@@ -17,8 +17,10 @@ class ConstantRectilinearMesh(MeshBase):
         self.__dimensions = np.array([2, 2, 2]);
         self.__origin = np.array([0, 0, 0])
         self.__spacing = np.array([1, 1, 1])
-
+        self.elemTags = {}
         
+    def GetNamesOfCellTags(self):
+        return self.elemTags.keys()
     
     def GetSubSuperMesh(self,_newDimensions):
         newDimensions = np.array(_newDimensions)
@@ -57,8 +59,8 @@ class ConstantRectilinearMesh(MeshBase):
         
     def GetElementTrasfertMatrix(self, destination):
         
-        nps = 4
-        nps3 = nps*nps*nps
+        nps = 10
+        nps3 = nps**3
         oldToNewVals = np.zeros((destination.GetNumberOfNodes(),nps3))
         oldToNewIK = np.zeros((destination.GetNumberOfNodes(),nps3), dtype=np.int_)
         oldToNewJK = np.zeros((destination.GetNumberOfNodes(),nps3), dtype=np.int_)
@@ -71,7 +73,7 @@ class ConstantRectilinearMesh(MeshBase):
             for cx in range(0,nps):
                 for cy in range(0,nps):
                     for cz in range(0,nps):
-                        pos = n0pos + (destination.GetSpacing()*[cx,cy,cz])/nps
+                        pos = n0pos + destination.GetSpacing()*([cx+0.5,cy+0.5,cz+0.5])/nps
                         el = self.GetElementAtPos(pos)
                         oldToNewVals[i,cpt] += 1./nps3
                         oldToNewIK[i,cpt] += i
@@ -124,12 +126,13 @@ class ConstantRectilinearMesh(MeshBase):
         return 3
             
     def GetMultiIndexOfNode(self,index):
+        index = int(index)
         planesize = self.__dimensions[1] *self.__dimensions[2]
         nx = index / planesize
         resyz = index - nx*(planesize)
         ny = resyz /self.__dimensions[2]
         nz =  resyz - ny*self.__dimensions[2]
-        return np.array([nx,ny,nz])
+        return np.array([nx,ny,nz],dtype= np.int_)
         
     def GetMonoIndexOfNode(self,indexs):
         planesize = self.__dimensions[1] *self.__dimensions[2]
@@ -137,6 +140,7 @@ class ConstantRectilinearMesh(MeshBase):
         
      
     def GetMultiIndexOfElement(self,index):
+        index = int(index)
         planesize = (self.__dimensions[1]-1) *(self.__dimensions[2]-1)
         nx = index / planesize
         resyz = index - nx*(planesize)
@@ -151,6 +155,20 @@ class ConstantRectilinearMesh(MeshBase):
     def GetPosOfNode(self,index):
         [nx,ny,nz] = self.GetMultiIndexOfNode(index)
         return np.multiply([nx,ny,nz],self.__spacing)+self.__origin
+        
+    def GetPosOfNodes(self):
+        np.meshgrid()
+        x = np.arange(self.__dimensions[0])*self.__spacing[0]+self.__origin[0]
+        y = np.arange(self.__dimensions[1])*self.__spacing[1]+self.__origin[1]
+        z = np.arange(self.__dimensions[2])*self.__spacing[2]+self.__origin[2]
+        #x = np.arange(self.__origin[0],(self.__dimensions[0])*self.__spacing[0]+self.__origin[0],self.__spacing[0])
+        #y = np.arange(self.__origin[1],(self.__dimensions[1])*self.__spacing[1]+self.__origin[1],self.__spacing[1])
+        #z = np.arange(self.__origin[2],(self.__dimensions[2])*self.__spacing[2]+self.__origin[2],self.__spacing[2])
+        #print(x.shape)
+        #print(y.shape)
+        #print(z.shape)
+        xv, yv, zv = np.meshgrid(x, y,z,indexing='ij')
+        return np.array([xv.ravel(),yv.ravel(),zv.ravel()]).T
         
     def GetElementAtPos(self,pos):
         pos = pos-self.__origin
@@ -174,6 +192,13 @@ class ConstantRectilinearMesh(MeshBase):
         myElem = Hexa8Cuboid()
         myElem.delta = self.__spacing
         return myElem.GetShapeFunc(n0)
+        
+    def GetValueAtPos(self,field,pos):
+        
+            el = self.GetElementAtPos(pos)
+            coon = self.GetConnectivityForElement(el)
+            xiChiEta = self.GetElementShapeFunctionsAtPos(el,pos)
+            return field[coon].dot(xiChiEta)
         
     def GetConnectivityForElement(self, index):
         exyz = self.GetMultiIndexOfElement(index)
@@ -221,6 +246,7 @@ def CheckIntegrity():
     print(myMesh.GetElementTrasfertMatrix(newmesh).todense())
     print(newmesh.GetElementTrasfertMatrix(myMesh).todense())
     print(newmesh.GetDimensionality())
+    print(myMesh.GetValueAtPos(np.array([1,2,3,4,5,6,7,8]),[0.5,0.5,0.5]))
     return "OK"
     
 if __name__ == '__main__':
