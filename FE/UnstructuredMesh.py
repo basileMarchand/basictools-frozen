@@ -1,11 +1,7 @@
 # -*- coding: utf-8 -*-
-
-# -*- coding: utf-8 -*-
-
 from OTTools.FE.MeshBase import MeshBase
 from OTTools.FE.MeshBase import Tag
 import OTTools.FE.ElementNames as EN
-
 import numpy as np
 
 class ElementsContainer():
@@ -95,7 +91,7 @@ class UnstructuredMesh(MeshBase):
                 data.tags[tagname].AddToTag(w[0])
                 break
         else:
-            raise Exception("No element with id " + str(oid))
+            raise Exception("No element with id " + str(oid)) #pragma: no cover  
         
     def GetPosOfNode(self):
         return self.nodes
@@ -140,3 +136,41 @@ class UnstructuredMesh(MeshBase):
         res += "  Node Tags : " + str([x for x in self.nodesTags]) + "\n"
         res += "  Cell Tags : " + str([x for x in self.GetNamesOfCellTags()])+ "\n"
         return res
+        
+def CheckIntegrity():
+    res = CreateMeshOfTetras([[0,0,0],[1,2,3]], [[0,2,3]])
+    
+    elements = res.GetElementsOfType(EN.Triangle_3)
+        
+    elements = res.GetElementsOfType(EN.Bar_2)
+    elements.AddNewElement([1,2],1)
+    elements.GetNumberOfNodesPerElement()
+    
+    res.IsUnstructured()
+    
+    if res.GetNumberOfElements() != 2: raise Exception()
+    res.ComputeGlobalOffset()
+    
+    res.ComputeBoundingBox()
+    
+    print(res.boundingMin)
+    print(res.boundingMax)
+    
+    res.nodesTags['toto'] = Tag('toto')
+    print(res.GetNodalTag('toto'))
+    print(res.GetNodalTag('toto2') )    
+    
+    res.AddElementToTagUsingOriginalId(1,"bars")
+    
+    if res.GetPosOfNode()[1,1] != 2: raise Exception()
+    
+    print(res.PrepareForOutput())
+    print(res.GetElementsInTag("bars"))
+    print(res.GetElementsInTag("bars",useOriginalId=True))    
+    
+    print(res)
+    return "ok"    
+    
+if __name__ == '__main__':
+   print(CheckIntegrity()) #pragma: no cover     
+   

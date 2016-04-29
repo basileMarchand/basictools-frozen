@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
 
 __all__ = [
+'MeshBase',
+'UnstructuredMesh',
 'ConstantRectilinearMesh',
 'ConstantRectilinearFea',
 'MaterialHelp',
-'MeshBase',
 'FemHelp',
 'FElement',
 'Hexa8Cuboid',
-#'Tet4',
+'ElementNames',
+'LinearSolver',
 ]
 

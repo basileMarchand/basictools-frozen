@@ -17,3 +17,11 @@ def LaplaceOrtho(k1,k2,k3):
                    [0  , k2,  0  ],
                    [0  ,0  ,  k3 ]]);
     return res
+    
+def CheckIntegrity():
+    HI = HookeIso(1,0.3)
+    LO = LaplaceOrtho(1,2,3)
+    return 'ok'
+    
+if __name__ == '__main__':
+    print(CheckIntegrity())# pragma: no cover 

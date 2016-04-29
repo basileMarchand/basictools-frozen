@@ -16,13 +16,22 @@ class MeshBase(object):
         self.nodesTags = {}
 
     def GetNumberOfNodes(self):
-        raise
+        raise Exception()# pragma: no cover 
         
     def PrepareForOutput(self):
-        pass    
+        pass    # pragma: no cover 
       
     def IsConstantRectilinear(self): return False
     def IsRectilinear(self): return False
     def IsStructured(self): return False
     def IsUnstructured(self): return False
         
+def CheckIntegrity():
+    obj = MeshBase()
+    tag = Tag("toto") 
+    tag.AddToTag(0)
+    
+    return "ok"
+    
+if __name__ == '__main__':
+    print(CheckIntegrity())# pragma: no cover 
