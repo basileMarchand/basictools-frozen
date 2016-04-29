@@ -7,21 +7,24 @@ from scipy.sparse import coo_matrix
 import scipy.sparse.linalg as linalg
 import scipy.linalg as denselinalg
 
-import  scipy.sparse as sp
+import  scipy.sparse as sps
 from OTTools.FE.Hexa8Cuboid import Hexa8Cuboid
+from OTTools.Helpers.BaseOutputObject import BaseOutputObject as BOO
 
 
-
-class Fea(object):
+class Fea(BOO):
     
-    def __init__(self, theMeshObj, dofpernode = 1, dirichlet_bcs = [], neumann_bcs= [], KOperator= None, MOperator= None):
-
+    def __init__(self, theMeshObj, dofpernode = 1, dirichlet_bcs = [], neumann_bcs= [], KOperator= None, MOperator= None,  neumann_nodal= None):
+        super(Fea,self).__init__()
+        
         self.linearSolver = "CG"
-        self.outer_v = None        
+        self.outer_v = []
         
         self.theMeshObj = theMeshObj ;
         
         self.dofpernode = dofpernode
+        
+        self.writer = None
         
         if KOperator is not None:
             self.KE    = KOperator            
@@ -69,25 +72,37 @@ class Fea(object):
         self.f = np.zeros((self.ndof, 1), dtype=np.double)
         self.u = np.zeros((self.ndof, 1), dtype=np.double)
 
-        # Set load
-        for n in neumann_bcs:
-            self.f[dofpernode * theMeshObj.GetMonoIndexOfNode(n[0:3]) + n[3]] = n[4]
+
+        if (neumann_bcs is not None) or  (neumann_nodal is not None):
+            MassMatrix = self.BuildMassMatrix()    
+            # Set load
+            if  neumann_bcs is not  None:
+                for n in neumann_bcs:
+                    self.f[dofpernode * theMeshObj.GetMonoIndexOfNode(n[0:3]) + n[3]] = n[4]
+                
+                self.f[:,0] = MassMatrix*self.f[:,0]
         
+            if  neumann_nodal is not  None:
+                nodal_f = np.zeros((self.ndof, 1), dtype=np.double)
+                for n in neumann_nodal:
+                    nodal_f[dofpernode * theMeshObj.GetMonoIndexOfNode(n[0:3]) + n[3]] = n[4]
         
-        self.f = self.BuildMassMatrix()*self.f
-            
+                dd = MassMatrix.diagonal()
+                self.f[:,0] += np.multiply(dd,nodal_f[:,0])
+                
         # Element elastic energy density
         # (equivalent to the elastic energy for an element fully in the structure)
         self.eed = np.zeros(theMeshObj.GetNumberOfElements())
+        
+        self.last_element_elastic_energy = None
+        self.last_element_Eeff = None
         
     def BuildMassMatrix(self, Eeff = None):
         if Eeff is None:
             Eeff = np.ones(self.theMeshObj.GetNumberOfElements())
             
         sM = ((self.ME.flatten()[np.newaxis]).T * Eeff.ravel()).flatten(order='F')
-        
-        M = coo_matrix((sM, (self.iK, self.jK)), shape=(self.ndof, self.ndof)).tocsc()
-                
+        M = coo_matrix((sM, (self.iK, self.jK)), shape=(self.ndof, self.ndof)).tocsr()
         return M
     
 
@@ -99,56 +114,50 @@ class Fea(object):
 #        starttime = time.time()
         
         # Setup and solve FE problem
-        #
+        
+        self.PrintDebug("Construction of the tangent matrix")
         sK = ((self.KE.flatten()[np.newaxis]).T * Eeff.ravel()).flatten(order='F')
-#        print("Time for sK calculation : " + str(time.time() -starttime))
-#        starttime = time.time()
-        
-        K = coo_matrix((sK, (self.iK, self.jK)), shape=(self.ndof, self.ndof)).tocsc()
-#        print("Time for coo matrix : " + str(time.time() -starttime))
-#        starttime = time.time()
-        
-        # Remove constrained dofs from matrix
-        [K, rhsfixed] = deleterowcol(K, self.fixed, self.fixed, self.fixedValues)
-#        print("Time for deleterowcol : " + str(time.time() -starttime))
-#        starttime = time.time()
-        
-        # Solve system
-        
+        #K = coo_matrix((sK, (self.iK, self.jK)), shape=(self.ndof, self.ndof)).tocsc()
+        K = coo_matrix((sK, (self.iK, self.jK)), shape=(self.ndof, self.ndof)).tocsr()
+        zerosdof = np.where(K.diagonal()== 0 )[0]
+        Kones = coo_matrix( (np.ones((len(zerosdof),) ) ,(zerosdof,zerosdof)), shape =(self.ndof, self.ndof)).tocsr()
+        K = (K + Kones).tocsr()
 
-        #print(K.diagonal())
+        # Remove constrained dofs from matrix
+        self.PrintDebug(" Delete fixed Dofs")
+        [K, rhsfixed] = deleterowcol(K, self.fixed, self.fixed, self.fixedValues)
+        
+        self.PrintDebug(" Start solver")
         rhs = self.f[self.free, 0]-rhsfixed[self.free, 0]
         if self.linearSolver == "Direct":
             self.u[self.free, 0] = linalg.spsolve(K, self.f[self.free, 0]-rhsfixed[self.free, 0])            
         elif self.linearSolver == "DirectDense":
             self.u[self.free, 0] = denselinalg.solve(K.toarray(), self.f[self.free, 0]-rhsfixed[self.free, 0],sym_pos=True,overwrite_a=True)            
         elif self.linearSolver == "CG":
-            M = sp.dia_matrix((1./K.diagonal(),0), shape=K.shape)
+            M = sps.dia_matrix((1./K.diagonal(),0), shape=K.shape)
             res = linalg.cg(K, rhs, x0 = self.u[self.free, 0] , M = M)#,tol=  1e-4) 
             self.u[self.free, 0] = res[0]
         elif self.linearSolver == "LGMRES":
-            M = sp.dia_matrix((1./K.diagonal(),0), shape=K.shape)
-            res = linalg.lgmres(K, rhs, x0 = self.u[self.free, 0] , M = M, outer_v = self.outer_v   ) 
+            M = sps.dia_matrix((1./K.diagonal(),0), shape=K.shape)
+            res = linalg.lgmres(K, rhs, x0 = self.u[self.free, 0] , M = M  ) 
+            #, outer_k=1, store_outer_Av= True,outer_v = self.outer_v 
+            #print(self.outer_v)
             self.u[self.free, 0] = res[0]
         elif self.linearSolver == "AMG":
             try:
                 import pyamg  
-            except:
-                raise Exception('AMG module not installed')
+            except:#pragma: no cover
+                raise Exception('AMG module not installed')#pragma: no cover
             K = K.tocsr()
             ml = pyamg.ruge_stuben_solver(K)
-            #print ml
             res = ml.solve(rhs,x0 = self.u[self.free, 0] , tol=1e-12,accel='cg')
-            #print "residual norm is", np.norm(rhs - K*res)  # compute norm of residual vector
             self.u[self.free, 0] = res
         else :
             print("'"+self.linearSolver + "' is not a valid linear solver")#pragma: no cover
             print('Please set a type of linear solver')#pragma: no cover
             raise Exception()#pragma: no cover
             
-            
-#        print("Time for spsolve : " + str(time.time() -starttime))
-#        starttime = time.time()
+        self.PrintDebug('Post Process')
         
         self.u = self.u + self.fixedValues
         # Compute element elastic energy density
@@ -156,8 +165,7 @@ class Fea(object):
         u_reshaped.shape = (self.theMeshObj.GetNumberOfElements(), 8*self.dofpernode)
         Ku_reshaped = np.dot(u_reshaped, self.KE)
         np.einsum('ij,ij->i', Ku_reshaped, u_reshaped, out=self.eed)
-#        print("Time for all the rest : " + str(time.time() -starttime))
-#        starttime = time.time()
+        self.PrintDebug('Post Process Done')
         
     def element_elastic_energy(self, Eeff= None):
         
@@ -165,6 +173,10 @@ class Fea(object):
             Eeff = np.ones(self.theMeshObj.GetNumberOfElements())
             
         result = np.ravel(Eeff) * self.eed
+        
+        self.last_element_elastic_energy = result
+        self.last_element_Eeff = Eeff
+        
         return result
 
     def nodal_elastic_energy(self, Eeff=None):
@@ -174,6 +186,23 @@ class Fea(object):
             
         return node_averaged_element_field(self.element_elastic_energy(Eeff),self.theMeshObj)
 
+    def Write(self):
+        
+        if self.writer is not None:
+          if self.last_element_elastic_energy is not None:
+            self.writer.Write(self.theMeshObj,
+                PointFields     = [self.u, self.f],
+                PointFieldsNames= ["u", "f"],
+                CellFields     = [self.last_element_elastic_energy, self.last_element_Eeff],
+                CellFieldsNames= ["elastic_enery", "Eeff"]
+                )
+          else:
+            self.writer.Write(self.theMeshObj,
+                PointFields     = [self.u, self.f],
+                PointFieldsNames= ["u", "f"]
+                )
+                
+                
 def deleterowcol(A, delrow, delcol, fixedValues ):
     # Assumes that matrix is in symmetric csc form !
     m = A.shape[0]
@@ -256,17 +285,31 @@ def CheckIntegrity():
         
     print("Time for Fea definition : " + str(time.time() -starttime))
     
-    starttime = time.time()
+    
+    myProblem.writer = XdmfWriter.XdmfWriter(TestTempDir.GetTempPath()+"Test_constantRectilinearThermal.xdmf")
+    myProblem.writer.SetBinary()
+    myProblem.writer.SetTemporal()
+    myProblem.writer.Open()
+    
     myProblem.linearSolver = 'Direct'
     myProblem.Solve()
-    
+    myProblem.Write()
+    myProblem.linearSolver = 'DirectDense'
+    myProblem.Solve()
+    myProblem.Write()
+    myProblem.linearSolver = 'LGMRES'
+    myProblem.Solve()    
+    myProblem.element_elastic_energy()
+    myProblem.Write()
     try:
        myProblem.linearSolver = 'AMG'
        myProblem.Solve()
-    except Exception as inst:
-       print(inst.args[0])
-        
-    print("Time for Fea solve : " + str(time.time() -starttime))
+       myProblem.Write()
+    except Exception as inst: # pragma: no cover 
+       print(inst.args[0])# pragma: no cover 
+       
+    myProblem.writer.Close()
+
 
     path = TestTempDir.GetTempPath() +'TestThermal.xmf'
     XdmfWriter.WriteMeshToXdmf(path,myMesh,
@@ -277,7 +320,7 @@ def CheckIntegrity():
     print(max(myProblem.u))
    
     if abs(max(myProblem.u)-50.) > 1e-5:
-        raise # pragma: no cover 
+        raise Exception()# pragma: no cover 
         
     
     #print('-----------------------------------------------------------------------------')
@@ -287,7 +330,8 @@ def CheckIntegrity():
     dirichlet_bcs =( [(x, y, z, coor, 0) for x in range(ny) for y in range(ny) for z in [0]  for coor in range(3)] +
                     [(x, y, z, coor, 1) for x in range(ny) for y in range(ny) for z in [nz-1]  for coor in range(3)])
 
-    neumann_bcs = ()
+    neumann_bcs = ((0,0,0,0,0),)
+    neumann_nodal = ((0,0,0,0,0),)
     starttime = time.time()
 
     #myElement = Hexa8Cuboid()
@@ -295,7 +339,9 @@ def CheckIntegrity():
     
     myProblem = Fea(myMesh, dofpernode = 3, 
         dirichlet_bcs = dirichlet_bcs, 
-        neumann_bcs = neumann_bcs)
+        neumann_bcs = neumann_bcs,
+        neumann_nodal = neumann_nodal)
+        
     print("Time for Fea definition : " + str(time.time() -starttime))
     
     starttime = time.time()
