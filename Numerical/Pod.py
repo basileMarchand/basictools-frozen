@@ -78,12 +78,12 @@ def pod_basis_and_singular_values(snapshots, \
           n denotes the number of vectors
           N denotes the number of entries in each vector
     """
-    snapshot_count = snapshots.shape[0]
+    v, s, u = la.svd(snapshots, full_matrices=False, compute_uv=True)
+
+    snapshot_count = v.shape[-2]
 
     if rank_max is None:
         rank_max = snapshot_count
-
-    v, s, u = la.svd(snapshots, full_matrices=False, compute_uv=True)
 
     if truncation_tol is not None:
         truncation_thresholds = discarded_energy_fractions(s)[::-1]
