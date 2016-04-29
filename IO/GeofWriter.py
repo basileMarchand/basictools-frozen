@@ -10,7 +10,7 @@ GeofName = {}
 GeofName[EN.Point_1] = "l2d1"
 
 #1d
-GeofName[EN.Bar_2] = "line"
+GeofName[EN.Bar_2] = "l2d2"
 #2d
 GeofName[EN.Triangle_3] = "t3"
 GeofName[EN.Triangle_6] = "t6"
@@ -103,6 +103,7 @@ def CheckIntegrity():
     import OTTools.FE.UnstructuredMesh as UM
  
     from OTTools.Helpers.Tests import TestTempDir
+
     tempdir = TestTempDir.GetTempPath()
 
     mymesh = UM.UnstructuredMesh()
