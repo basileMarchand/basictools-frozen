@@ -7,13 +7,19 @@ import numpy as np
 
 GeofName = {}
 #0d
-GeofName["bar2"] = "line"
+GeofName["point1"] = "l2d1"
+
 #1d
+GeofName["bar2"] = "line"
 #2d
-GeofName["tri"] = "t3"
+GeofName["tri3"] = "t3"
 GeofName["tri6"] = "t6"
 #3d
 GeofName["tet10"] = "c3d10"
+GeofName["quad4"] = "c2d4"
+GeofName["hex8"] = "c3d8"
+
+GeofName["wed6"] = "c3d6"
 
 def WriteMeshToGeof(filename,mesh, useOriginalId=False):    
     OW = GeofWriter()
@@ -45,7 +51,7 @@ class GeofWriter(WB):
         posn = meshObject.GetPosOfNode()
         if useOriginalId:
            for n in xrange(numberofpoints):
-               self.filePointer.write("{} ".format(meshObject.originalIDNodes[n]  ) )
+               self.filePointer.write("{} ".format(int(meshObject.originalIDNodes[n])))
                np.savetxt(self.filePointer, posn[np.newaxis,n,:] ) 
         else:
            for n in xrange(numberofpoints):
@@ -70,8 +76,7 @@ class GeofWriter(WB):
                 self.filePointer.write("\n")
 
         self.filePointer.write(" ***group \n")
-        self.filePointer.write("  **elset name \n")
-        
+                
         for tagname in meshObject.nodesTags:
             self.filePointer.write("  **nset {} \n".format(tagname))
             data = np.zeros((meshObject.GetNumberOfNodes(),1),dtype=np.int)
@@ -104,7 +109,7 @@ if __name__ == '__main__':
     tag.AddToTag(0)
     mymesh.nodesTags["coucou"] = tag
 
-    tris = mymesh.GetElementsOfType('tri')
+    tris = mymesh.GetElementsOfType('tri3')
     tris.AddNewElement([0,1,2],0)
     tris.AddNewElement([2,1,3],3)
     tris.originalIds = np.array([3, 5],dtype=np.int)

@@ -8,6 +8,7 @@ def ArrayToString(data):
     return " ".join(str(x) for x in data)
 
 XdmfName = {}
+XdmfName['point1'] = 'Polyvertex'
 XdmfName['bar2'] = 'Polyline'
 XdmfName['tri3'] = 'Triagle'
 XdmfName['quad4'] = 'Quadrilateral'
@@ -28,7 +29,7 @@ XdmfName['wed18'] = 'Wedge_18'
 XdmfName['hex20'] = 'Hexahedron_20'
 
 XdmfNumber = {}
-XdmfNumber['vertex'] = 0x1
+XdmfNumber['point1'] = 0x1
 XdmfNumber['bar2'] = 0x2
 XdmfNumber['tri3'] = 0x4
 XdmfNumber['quad4'] = 0x5
@@ -257,8 +258,9 @@ class XdmfWriter:
                 ntotalentries = 0
                 for ntype, data in baseMeshObject.elements.iteritems(): 
                     ntotalentries += data.GetNumberOfElements()*(data.GetNumberOfNodesPerElement()+1)
-                    if data.elementType == 'bar2':
+                    if data.elementType == 'bar2' or data.elementType == 'point1':
                         ntotalentries += data.GetNumberOfElements()
+                        
                     
                 
                 dataarray = np.empty((ntotalentries,),dtype=np.int)
@@ -271,9 +273,13 @@ class XdmfWriter:
                    for i in xrange(data.GetNumberOfElements() ):
                        dataarray[cpt] = elemtype
                        cpt += 1;
-                       if elemtype == 0x2:
+                       if elemtype == 0x2 :
                            dataarray[cpt] = 2
                            cpt += 1;
+                       elif elemtype == 0x1 :
+                           dataarray[cpt] = 1
+                           cpt += 1;
+                           
                        for j in xrange(data.GetNumberOfNodesPerElement()):
                            dataarray[cpt] = data.connectivity[i,j]
                            cpt += 1;
