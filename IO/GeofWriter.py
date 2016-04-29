@@ -12,8 +12,8 @@ GeofName[EN.Point_1] = "l2d1"
 #1d
 GeofName[EN.Bar_2] = "l2d2"
 #2d
-GeofName[EN.Triangle_3] = "t3"
-GeofName[EN.Triangle_6] = "t6"
+GeofName[EN.Triangle_3] = "c2d3"
+GeofName[EN.Triangle_6] = "c2d6"
 #3d
 GeofName[EN.Tetrahedron_10] = "c3d10"
 GeofName[EN.Quadrangle_4] = "c2d4"
