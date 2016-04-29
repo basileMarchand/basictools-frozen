@@ -2,7 +2,8 @@ import numpy as np
 import numpy.linalg as la
 
 
-def pod_basis(snapshots, rank_max=None, truncation_tol=None):
+def pod_basis(snapshots, \
+        rank_max=None, truncation_tol=None, alternate_truncation_tol=None):
     """
     Generate a POD basis from a set of snapshots
 
@@ -18,6 +19,11 @@ def pod_basis(snapshots, rank_max=None, truncation_tol=None):
         in the POD basis as necessary such that the cumulated energy fraction
         of the discarded components is lower than or equal to truncation_tol.
         By default, do not perform truncation.
+    alternate_truncation_tol: float, optional
+        An energy-based criterion controlling truncation. Discard from the POD
+        basis any vector such that the ratio of the associated energy to the
+        energy of the leading vector is lower than or equal to
+        alternate_truncation_tol. By default, do not perform truncation.
 
     Returns
     -------
@@ -30,12 +36,13 @@ def pod_basis(snapshots, rank_max=None, truncation_tol=None):
           n denotes the number of vectors
           N denotes the number of entries in each vector
     """
-    result, _ = pod_basis_and_singular_values(snapshots, rank_max, \
-            truncation_tol)
+    result, _ = pod_basis_and_singular_values(snapshots, \
+            rank_max, truncation_tol, alternate_truncation_tol)
     return result
 
 
-def pod_basis_and_singular_values(snapshots, rank_max=None, truncation_tol=None):
+def pod_basis_and_singular_values(snapshots, \
+        rank_max=None, truncation_tol=None, alternate_truncation_tol=None):
     """
     Generate a POD basis and the associated singular values from a set of
     snapshots
@@ -52,6 +59,11 @@ def pod_basis_and_singular_values(snapshots, rank_max=None, truncation_tol=None)
         in the POD basis as necessary such that the cumulated energy fraction
         of the discarded components is lower than or equal to truncation_tol.
         By default, do not perform truncation.
+    alternate_truncation_tol: float, optional
+        An energy-based criterion controlling truncation. Discard from the POD
+        basis any vector such that the ratio of the associated energy to the
+        energy of the leading vector is lower than or equal to
+        alternate_truncation_tol. By default, do not perform truncation.
 
     Returns
     -------
@@ -77,6 +89,12 @@ def pod_basis_and_singular_values(snapshots, rank_max=None, truncation_tol=None)
         truncation_thresholds = discarded_energy_fractions(s)[::-1]
         drop_count = np.searchsorted( \
                 truncation_thresholds, truncation_tol, side='right')
+        rank_max = min(snapshot_count - drop_count, rank_max)
+
+    if alternate_truncation_tol is not None and snapshot_count > 0:
+        leading_vector_energy = s[0]
+        cutoff = leading_vector_energy * alternate_truncation_tol
+        drop_count = np.searchsorted(s[::-1], cutoff, side='right')
         rank_max = min(snapshot_count - drop_count, rank_max)
 
     return (u, s) if rank_max >= snapshot_count else (u[:rank_max, :], s[:rank_max])
