@@ -3,10 +3,16 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
-
 import OTTools.FE.UnstructuredMesh as UM
+import OTTools.FE.ElementNames as EN
 
-                
+AscNumber = {}
+
+AscNumber['2006'] = EN.Triangle_6
+AscNumber['3010'] = EN.Tetrahedron_10
+AscNumber['1002'] = EN.Bar_2
+
+    
 def ReadAsc(fileName=None,string=None):
     import shlex
     from cStringIO import StringIO
@@ -69,31 +75,19 @@ def ReadAsc(fileName=None,string=None):
                     break
                 s = l.split()
                 
-                if s[1] == '2006' :
-                    nametype = 'tri6'
-                elif s[1] == '3010' :
-                    nametype = 'tet10'
-                elif s[1] == '1002' :
-                    nametype = 'bar2'
-                else:
-                    print("This type of element is not suppoerted")
-                    print(s[1])
-                    continue
-                #print(s)
+                nametype = AscNumber[s[1]];
+                
                 conn = [filetointernalid[x] for x in  map(int,s[5:]) ]
                 
-                if nametype == 'tri6':
+                # for some types we need permutation
+                if nametype == EN.Triangle_6:
                     conn = [ conn[per] for per in [0, 2, 4, 1, 3, 5] ]
-                    
-                if nametype == 'tet10':
-                    #nametype = 'tet4'
-                    #conn = [ conn[per] for per in [0, 2, 4, 9] ]
+                elif nametype == EN.Tetrahedron_10:
                     conn = [ conn[per] for per in [0, 2, 4, 9, 1,3 ,5,6,7,8] ]
+                    
                 elements = res.GetElementsOfType(nametype)    
                 oid = int(s[0])
-                
 
-                    
                 elements.AddNewElement(conn,oid)
                 cpt +=1
             continue
@@ -123,45 +117,40 @@ def ReadAsc(fileName=None,string=None):
                     tag.id = np.array( [filetointernalid[x] for x in  map(int,s[7:]) ] ,dtype=np.int)
                 else:
                     #element group
-                
                     for x in range(7,len(s)) :
                         Oid = int(s[x])
                         #print(Oid)
                         res.AddElementToTagUsingOriginalId(Oid,s[1])
                 cpt +=1
             continue
-        print("ignoring line : " + l )
+        print("Ignoring line : " + l )
     return res
     
-data = """   
-BEGIN_NODES 4 3
+
+
+def CheckIntegrity():
+        
+    __checkintegritydata = """   
+BEGIN_NODES 6 3
 1 0 0 0 0 0 295.673175860532 28.0704731415872 346.109138100075
 2 0 0 0 0 0 295.105225 28.260575 345.628395
 3 0 0 0 0 0 295.180501114015 25.8084581250318 344.876373186428
 4 0 0 0 0 0 295.3886425 28.1693925 345.8617875
+5 0 0 0 0 0 295.231426751792 27.0671220355891 345.153077365196
+6 0 0 0 0 0 295.629817604236 26.9160040797623 345.45435766729
 END_NODES
 BEGIN_ELEMENTS 1
-21 2006 0 0 0 1 2 3 4 
+21 2006 0 0 0  1 2 3 4 5 6
 END_ELEMENTS
 BEGIN_GROUPS 1
 2 M2D 2 0 "PART_ID 2"  ""  "PART built in Visual-Environment" 21
 END_GROUPS
 """
-
-def CheckIntegrity():
-        
-    
-    res = ReadAsc(string=data)
-
+    res = ReadAsc(string=__checkintegritydata)
+    print(res)
+    if res.GetElementsOfType(EN.Triangle_6).originalIds[0] != 21:
+        raise
     return 'ok'
  
 if __name__ == '__main__':
-    #print(CheckIntegrity())# pragma: no cover   
-    res = ReadAsc(string=data)
-    print("----")
-    print(res.nodes)
-    print(res.originalIDNodes)
-    print(res.GetElementsOfType('tri6').connectivity)
-    print(res.elements['tri6'].tags['M2D'].id)
-    
-    res = ReadAsc(fileName='C:\\Users\\D584808\\Documents\\Projects\\Python\\Topotools\\SUPPORT_VERIN_DATA1.ASC')
+    print(CheckIntegrity())# pragma: no cover   

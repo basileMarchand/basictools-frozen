@@ -3,50 +3,51 @@
 from OTTools.Helpers.TextFormatHelper import TFormat
 import numpy as np
 import os
+import OTTools.FE.ElementNames as EN
 
 def ArrayToString(data):
     return " ".join(str(x) for x in data)
 
 XdmfName = {}
-XdmfName['point1'] = 'Polyvertex'
-XdmfName['bar2'] = 'Polyline'
-XdmfName['tri3'] = 'Triagle'
-XdmfName['quad4'] = 'Quadrilateral'
-XdmfName['tet4'] ="Tetrahedron"
-XdmfName['pyr5'] = 'Pyramid'
-XdmfName['wed6'] = 'Wedge'
-XdmfName['hex8'] = 'Hexahedron'
+XdmfName[EN.Point_1] = 'Polyvertex'
+XdmfName[EN.Bar_2] = 'Polyline'
+XdmfName[EN.Triangle_3] = 'Triagle'
+XdmfName[EN.Quadrangle_4] = 'Quadrilateral'
+XdmfName[EN.Tetrahedron_4] ="Tetrahedron"
+XdmfName[EN.Pyramid_5] = 'Pyramid'
+XdmfName[EN.Wedge_6] = 'Wedge'
+XdmfName[EN.Hexaedron_8] = 'Hexahedron'
 
 
-XdmfName['bar3'] = "Edge_3"
-XdmfName['tri6'] = 'Triagle_6'
-XdmfName['quad9'] = 'Quadrilateral_9'
-XdmfName['quad8'] = 'Quadrilateral_8'
-XdmfName['tet10'] = 'Tetrahedron_10'
-XdmfName['pyr13'] = 'Pyramid_13'
-XdmfName['wed15'] = 'Wedge_13'
-XdmfName['wed18'] = 'Wedge_18'
-XdmfName['hex20'] = 'Hexahedron_20'
+XdmfName[EN.Bar_3] = "Edge_3"
+XdmfName[EN.Triangle_6] = 'Triagle_6'
+XdmfName[EN.Quadrangle_9] = 'Quadrilateral_9'
+XdmfName[EN.Quadrangle_8] = 'Quadrilateral_8'
+XdmfName[EN.Tetrahedron_10] = 'Tetrahedron_10'
+XdmfName[EN.Pyramid_13] = 'Pyramid_13'
+XdmfName[EN.Wedge_15] = 'Wedge_13'
+XdmfName[EN.Wedge_18] = 'Wedge_18'
+XdmfName[EN.Hexaedron_20] = 'Hexahedron_20'
 
 XdmfNumber = {}
-XdmfNumber['point1'] = 0x1
-XdmfNumber['bar2'] = 0x2
-XdmfNumber['tri3'] = 0x4
-XdmfNumber['quad4'] = 0x5
-XdmfNumber['tet4'] = 0x6
-XdmfNumber['pyr5'] = 0x7
-XdmfNumber['wed6'] = 0x8
-XdmfNumber['hex8'] = 0x9
+XdmfNumber[EN.Point_1] = 0x1
+XdmfNumber[EN.Bar_2] = 0x2
+XdmfNumber[EN.Triangle_3] = 0x4
+XdmfNumber[EN.Quadrangle_4] = 0x5
+XdmfNumber[EN.Tetrahedron_4] = 0x6
+XdmfNumber[EN.Pyramid_5] = 0x7
+XdmfNumber[EN.Wedge_6] = 0x8
+XdmfNumber[EN.Hexaedron_8] = 0x9
 
-XdmfNumber['bar3'] = 0x22
-XdmfNumber['quad9'] = 0x23
-XdmfNumber['tri6'] = 0x24
-XdmfNumber['quad8'] = 0x25
-XdmfNumber['tet10'] = 0x26
-XdmfNumber['pyr13'] = 0x27
-XdmfNumber['wed15'] = 0x28
-XdmfNumber['wed18'] = 0x29
-XdmfNumber['hex20'] = 0x30
+XdmfNumber[EN.Bar_3] = 0x22
+XdmfNumber[EN.Triangle_6] = 0x23
+XdmfNumber[EN.Quadrangle_9] = 0x24
+XdmfNumber[EN.Quadrangle_8] = 0x25
+XdmfNumber[EN.Tetrahedron_10] = 0x26
+XdmfNumber[EN.Pyramid_13] = 0x27
+XdmfNumber[EN.Wedge_15] = 0x28
+XdmfNumber[EN.Wedge_18] = 0x29
+XdmfNumber[EN.Hexaedron_20] = 0x30
 
 #* Xdmf supports the following topology types:
 # *   NoTopologyType

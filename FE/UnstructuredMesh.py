@@ -129,4 +129,6 @@ class UnstructuredMesh(MeshBase):
         res  = "UnstructuredMesh \n" 
         res += "  Number Of Nodes : {}\n".format(self.GetNumberOfNodes()) 
         res += "  Number Of Elements : {}\n".format(self.GetNumberOfElements()) 
+        res += "  Node Tags : " + str([x for x in self.nodesTags]) + "\n"
+        res += "  Cell Tags : " + str([x for x in self.GetNamesOfCellTags()])+ "\n"
         return res

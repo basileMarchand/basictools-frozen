@@ -1,25 +1,25 @@
 # -*- coding: utf-8 -*-
 
 from OTTools.FE.MeshBase import Tag as Tag
-from OTTools.IO.WriterBase import WriterBase as WB
+from OTTools.IO.WriterBase import WriterBase as WriterBase
 import numpy as np
-
+import OTTools.FE.ElementNames as EN
 
 GeofName = {}
 #0d
-GeofName["point1"] = "l2d1"
+GeofName[EN.Point_1] = "l2d1"
 
 #1d
-GeofName["bar2"] = "line"
+GeofName[EN.Bar_2] = "line"
 #2d
-GeofName["tri3"] = "t3"
-GeofName["tri6"] = "t6"
+GeofName[EN.Triangle_3] = "t3"
+GeofName[EN.Triangle_6] = "t6"
 #3d
-GeofName["tet10"] = "c3d10"
-GeofName["quad4"] = "c2d4"
-GeofName["hex8"] = "c3d8"
+GeofName[EN.Tetrahedron_10] = "c3d10"
+GeofName[EN.Quadrangle_4] = "c2d4"
+GeofName[EN.Hexaedron_8] = "c3d8"
 
-GeofName["wed6"] = "c3d6"
+GeofName[EN.Wedge_6] = "c3d6"
 
 def WriteMeshToGeof(filename,mesh, useOriginalId=False):    
     OW = GeofWriter()
@@ -27,7 +27,7 @@ def WriteMeshToGeof(filename,mesh, useOriginalId=False):
     OW.Write(mesh,useOriginalId = useOriginalId)
     OW.Close()
     
-class GeofWriter(WB):
+class GeofWriter(WriterBase):
     def __init__(self):
         super(GeofWriter,self).__init__()
     
@@ -99,8 +99,12 @@ class GeofWriter(WB):
 
         self.filePointer.write("****return \n")
 
-if __name__ == '__main__':
+def CheckIntegrity():
     import OTTools.FE.UnstructuredMesh as UM
+ 
+    from OTTools.Helpers.Tests import TestTempDir
+    tempdir = TestTempDir.GetTempPath()
+
     mymesh = UM.UnstructuredMesh()
     mymesh.nodes = np.array([[0.00000000001,0,0],[1,0,0],[0,1,0],[1,1,0]],dtype=np.float)
     mymesh.originalIDNodes = np.array([1, 3, 4, 5],dtype=np.int)
@@ -118,10 +122,10 @@ if __name__ == '__main__':
     mymesh.AddElementToTagUsingOriginalId(5,"Tag3") 
     
     OW = GeofWriter()
-    OW.Open("TestOutputGeo.geof")
+    OW.Open(tempdir+"Test_GeoWriter.geof")
     OW.Write(mymesh, useOriginalId=True)
     OW.Close()
+    return "ok"
     
-    #import OTTools.IO.AscReader as AR
-    #m =  AR.ReadAsc(fileName='C:\\Users\\D584808\\Documents\\Projects\\Python\\Topotools\\SUPPORT_VERIN_DATA1.ASC')
-    #WriteMeshToGeof('FromASCReader.geof',m, useOriginalId=True)
+if __name__ == '__main__':
+    print(CheckIntegrity())# pragma: no cover   

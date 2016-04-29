@@ -1,30 +1,22 @@
 # -*- coding: utf-8 -*-
 import OTTools.FE.UnstructuredMesh  as UM
 import numpy as np
-
+import OTTools.FE.ElementNames as EN
 
 
 gmshNumber = {}
-#0d
-gmshNumber['1'] = "bar2"
-gmshNumber['2'] = "tri3"
-gmshNumber['3'] = "quad4"
-gmshNumber['4'] = "tet4"
-gmshNumber['5'] = "hex8"
-gmshNumber['6'] = "wed6"
-gmshNumber['7'] = "pyr5"
-gmshNumber['15'] = "point1"
-
-#1d
-#2d
-#gmshNumber[] = "tri3"
-#gmshNumber[] = "tri6"
-#3d
-#gmshNumber[] = "tet4"
+gmshNumber['1'] = EN.Bar_2
+gmshNumber['2'] = EN.Triangle_3
+gmshNumber['3'] = EN.Quadrangle_4
+gmshNumber['4'] = EN.Tetrahedron_4
+gmshNumber['5'] = EN.Hexaedron_8
+gmshNumber['6'] = EN.Wedge_6
+gmshNumber['7'] = EN.Pyramid_5
+gmshNumber['15'] = EN.Point_1
 
 
 def ReadGmsh(fileName=None,string=None):
-    import shlex
+
     from cStringIO import StringIO
 
     if fileName is not None:
@@ -120,7 +112,11 @@ def ReadGmsh(fileName=None,string=None):
         print("ignoring line : " + l )
     return res
 
-data = """ 
+
+
+def CheckIntegrity():
+
+    __teststring = """ 
 $MeshFormat
 2.2 0 8
 $EndMeshFormat
@@ -137,22 +133,13 @@ $Elements
 $EndElements
 """
 
- 
-if __name__ == '__main__':
+    res = ReadGmsh(string=__teststring)
 
-    #res = ReadGmsh(string=data)
-    res = ReadGmsh(fileName="Soudage.msh")
     print("----")
     print(res.nodes)
     print(res.originalIDNodes)
     print(res.GetElementsOfType('bar2').connectivity)
+    return 'ok'
     
-    from OTTools.IO.GeofWriter import GeofWriter
-    OW = GeofWriter()
-    OW.Open("Soudage.geof")
-    OW.Write(res, useOriginalId=True)
-    OW.Close()
-
-    from OTTools.IO.XdmfWriter import WriteMeshToXdmf
-    
-    WriteMeshToXdmf("Soudage.xdmf",res)
+if __name__ == '__main__':
+    print(CheckIntegrity())# pragma: no cover   
