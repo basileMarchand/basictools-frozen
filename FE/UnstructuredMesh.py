@@ -4,6 +4,7 @@
 
 from OTTools.FE.MeshBase import MeshBase
 from OTTools.FE.MeshBase import Tag
+import OTTools.FE.ElementNames as EN
 
 import numpy as np
 
@@ -29,11 +30,18 @@ class ElementsContainer():
         return self.connectivity.shape[1]
 
 
-
+def CreateMeshOfTetras(points,tetras):
+    res = UnstructuredMesh()
+    res.nodes = np.array(points, dtype=np.double)
+    res.originalIDNodes = np.arange(0,res.GetNumberOfNodes(),dtype=np.int)
+    
+    elements = res.GetElementsOfType(EN.Triangle_3)
+    elements.connectivity = np.array(tetras,dtype=np.int)
+    elements.originalIds = np.arange(0,elements.GetNumberOfElements(),dtype=np.int)
+    return res 
+    
 class UnstructuredMesh(MeshBase):
 
-            
-            
     def IsUnstructured(self): 
         return True
 
