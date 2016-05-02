@@ -5,35 +5,30 @@ from OTTools.IO.WriterBase import WriterBase as WriterBase
 import numpy as np
 import OTTools.FE.ElementNames as EN
 
-GeofName = {}
-#0d
-GeofName[EN.Point_1] = "l2d1"
+gmshName = {}
+gmshName[EN.Bar_2]         = '1'
+gmshName[EN.Triangle_3]    = '2'
+gmshName[EN.Quadrangle_4]  = '3'
+gmshName[EN.Tetrahedron_4] = '4'
+gmshName[EN.Hexaedron_8]   = '5'
+gmshName[EN.Wedge_6]       = '6'
+gmshName[EN.Pyramid_5]     = '7'
+gmshName[EN.Point_1]   = '15'
 
-#1d
-GeofName[EN.Bar_2] = "l2d2"
-#2d
-GeofName[EN.Triangle_3] = "c2d3"
-GeofName[EN.Triangle_6] = "c2d6"
-#3d
-GeofName[EN.Tetrahedron_4] = "c3d4"
-GeofName[EN.Tetrahedron_10] = "c3d10"
-GeofName[EN.Quadrangle_4] = "c2d4"
-GeofName[EN.Hexaedron_8] = "c3d8"
 
-GeofName[EN.Wedge_6] = "c3d6"
 
-def WriteMeshToGeof(filename,mesh, useOriginalId=False):    
-    OW = GeofWriter()
+def WriteMeshToGmsh(filename,mesh, useOriginalId=False):    
+    OW = GmshWriter()
     OW.Open(filename)
     OW.Write(mesh,useOriginalId = useOriginalId)
     OW.Close()
     
-class GeofWriter(WriterBase):
+class GmshWriter(WriterBase):
     def __init__(self):
-        super(GeofWriter,self).__init__()
+        super(GmshWriter,self).__init__()
     
     def __str__(self):
-        res  = 'GeofWriter : \n'
+        res  = 'GmshWriter : \n'
         res += '   FileName : '+self.fileName+'\n'
         
     def SetFileName(self,fileName):
@@ -41,13 +36,15 @@ class GeofWriter(WriterBase):
 
     def Write(self,meshObject,useOriginalId=False):
         
-        self.filePointer.write("% This file has been writen by the python routine GeofWriter of the OTTools package\n") 
+        self.filePointer.write("% This file has been writen by the python routine GmshWriter of the OTTools package\n") 
         self.filePointer.write("% For any question about this routine, please contact SAFRAN TECH Pole M&S Team OT\n") 
 
-        self.filePointer.write("***geometry\n");
-        self.filePointer.write("  **node\n");
+        self.filePointer.write("$MeshFormat\n");
+        self.filePointer.write("2.2 0 8\n");
+        self.filePointer.write("$EndMeshFormat\n");
+        self.filePointer.write("$Nodes\n");
         numberofpoints = meshObject.GetNumberOfNodes()
-        self.filePointer.write("{} {} \n".format(numberofpoints,3) )
+        self.filePointer.write("{} \n".format(numberofpoints) )
         #
         posn = meshObject.GetPosOfNode()
         if useOriginalId:
@@ -58,48 +55,47 @@ class GeofWriter(WriterBase):
            for n in xrange(numberofpoints):
                self.filePointer.write("{} ".format(n+1) )
                np.savetxt(self.filePointer, posn[np.newaxis,n,:] ) 
-        #
-        self.filePointer.write("  **element\n")
+        self.filePointer.write("$EndNodes\n");
+        self.filePointer.write("$Elements\n");
         self.filePointer.write("{}\n".format(meshObject.GetNumberOfElements()))
 
-        cpt =0;
+        cpt = 1
         for ntype, data in meshObject.elements.iteritems(): 
-            elemtype = GeofName[ntype]
-            #npe = data.GetNumberOfNodesPerElement()
+	  if ntype == 'tet4':
+            elemtype = gmshName[ntype]
             for i in xrange(data.GetNumberOfElements() ):
                 if useOriginalId:
-                    self.filePointer.write("{} {} ".format(data.originalIds[i],elemtype) )
+                    self.filePointer.write("{} {} {} ".format(data.originalIds[i],elemtype,0) )
                     self.filePointer.write(" ".join([str(meshObject.originalIDNodes[x]) for x in data.connectivity[i,:].flatten()]))
                 else:
-                    self.filePointer.write("{} {} ".format(cpt+1,elemtype) )
-                    self.filePointer.write(" ".join([str(x+1) for x in data.connectivity[i,:].flatten()]))
-                cpt += 1;
+                    self.filePointer.write("{} {} {} ".format(cpt,elemtype,0) )
+                    self.filePointer.write(" ".join([str(x) for x in data.connectivity[i,:].flatten()]))
+                cpt += 1
                 self.filePointer.write("\n")
-
-        self.filePointer.write(" ***group \n")
-                
-        for tagname in meshObject.nodesTags:
-            self.filePointer.write("  **nset {} \n".format(tagname))
-            data = np.zeros((meshObject.GetNumberOfNodes(),1),dtype=np.int)
-            if useOriginalId:
-                self.filePointer.write(" ".join([str(meshObject.originalIDNodes[x]) for x in meshObject.nodesTags[tagname].id]))
-            else:
-                self.filePointer.write(" ".join([str(x+1) for x in meshObject.nodesTags[tagname].id]))
-            self.filePointer.write("\n")
         
-        meshObject.PrepareForOutput();
+        #meshObject.PrepareForOutput();
 
         celtags = meshObject.GetNamesOfCellTags()
+        elements = meshObject.elements.keys()
+        tagcounter = 1
         for tagname in celtags:
-            self.filePointer.write("  **elset {} \n".format(tagname))
-            data = meshObject.GetElementsInTag(tagname,useOriginalId=useOriginalId)
-            self.filePointer.write(" ".join([str(x) for x in data]))
-            self.filePointer.write("\n")
+          for elementContainer in elements:
+	    elemtype = gmshName[elementContainer]
+            try:
+              for connectivity in meshObject.elements[elementContainer].connectivity[meshObject.elements[elementContainer].tags[tagname].id-1]:
+                if useOriginalId:
+                  print "yet to implement"
+                else:
+                  self.filePointer.write("{} {} {} {} ".format(cpt,elemtype,1,tagcounter) )
+                  self.filePointer.write(" ".join([str(x) for x in connectivity]))
+                cpt += 1
+                self.filePointer.write("\n")
+            except KeyError:
+	      continue
+	  tagcounter += 1
+	    
+        self.filePointer.write("$EndElements\n")
          
-
-
-        self.filePointer.write("****return \n")
-
 def CheckIntegrity():
     import OTTools.FE.UnstructuredMesh as UM
  
@@ -123,11 +119,11 @@ def CheckIntegrity():
     mymesh.AddElementToTagUsingOriginalId(3,"Tag1") 
     mymesh.AddElementToTagUsingOriginalId(5,"Tag3") 
     
-    OW = GeofWriter()
-    OW.Open(tempdir+"Test_GeoWriter.geof")
-    OW.Write(mymesh, useOriginalId=True)
+    OW = GmshWriter()
+    OW.Open(tempdir+"Test_GmshWriter.geof")
+    OW.Write(mymesh, useOriginalId=False)
     OW.Close()
     return "ok"
     
 if __name__ == '__main__':
-    print(CheckIntegrity())# pragma: no cover   
+    print(CheckIntegrity())# pragma: no cover  

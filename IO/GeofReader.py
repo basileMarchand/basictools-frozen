@@ -50,6 +50,7 @@ def ReadGeof(fileName=None,string=None):
                 l = string.readline().strip('\n').lstrip().rstrip()
             continue
 	  
+	  
       if l.find("**element")>-1:
         l = string.readline().strip('\n').lstrip().rstrip()
         nbElements = int(l.split()[0])
