@@ -42,6 +42,8 @@ def __RunAndCheck(lis,bp,stopAtFirstError):
             stop_time = time.time()
             print(lis[name])
             r = lis[name]()
+            sys.stdout.flush()
+            sys.stderr.flush()
             stop_time = time.time()
             res[name] = r
             if not isinstance(r,str): 
@@ -49,6 +51,8 @@ def __RunAndCheck(lis,bp,stopAtFirstError):
                 #raise Exception()
                 r = 'Not OK'
         except :
+            sys.stdout.flush()
+            sys.stderr.flush()
             bp.Print( "Unexpected error:" + str(sys.exc_info()[0]) )
             res[name] = "error"
             traceback.print_exc(file=bp.stdout_)
@@ -155,15 +159,16 @@ def CheckIntegrity():
 if __name__ == '__main__':
     import sys, getopt
     if len(sys.argv) == 1:
-        TestAll(modulestotreat=['OTTools'], fulloutput=False,coverage=False)# pragma: no cover 
+        TestAll(modulestotreat=['ALL'], fulloutput=False,coverage=False)# pragma: no cover 
     else:
       try:
-          opts, args = getopt.getopt(sys.argv[1:],"hcfe:m:")
+          opts, args = getopt.getopt(sys.argv[1:],"hcfse:m:")
       except getopt.GetoptError:
           print 'python  Tests.py -c -f -e <extraModules> -m <moduleFilter>'
           print 'options :'
           print '       -c    To activate coverage and generate a html report'
           print '       -f    Full output for all the test'
+          print '       -s    Stop at first error'
           print '       -e    To test extra Modules (-e can be repeated)'
           print '       -m    To filter the output by this string (-e can be repeated)'
           sys.exit(2)
