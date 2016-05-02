@@ -33,3 +33,5 @@ Wedge_15 = 'hex15'
 Wedge_18 = 'hex18'
 Hexaedron_20 = 'hex20'
 
+def CheckIntegrity():
+    return "ok"
