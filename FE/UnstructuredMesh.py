@@ -21,11 +21,16 @@ class ElementsContainer():
             self.connectivity = np.empty((0,len(conn)),dtype=np.int)    
         self.connectivity = np.vstack((self.connectivity,conn))
         self.originalIds = np.append(self.originalIds,originalid)
+        return self.connectivity.shape[0]
         
     def GetNumberOfNodesPerElement(self):
         return self.connectivity.shape[1]
 
-
+    def GetTag(self, tagName):
+        if not self.tags.has_key(tagName):
+           self.tags[tagName] = Tag(tagName)
+        return self.tags[tagName]
+               
 def CreateMeshOfTetras(points,tetras):
     res = UnstructuredMesh()
     res.nodes = np.array(points, dtype=np.double)

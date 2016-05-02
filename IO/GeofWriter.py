@@ -16,6 +16,7 @@ GeofName[EN.Triangle_3] = "c2d3"
 GeofName[EN.Triangle_6] = "c2d6"
 #3d
 GeofName[EN.Tetrahedron_10] = "c3d10"
+GeofName[EN.Tetrahedron_4] = "c3d4"
 GeofName[EN.Quadrangle_4] = "c2d4"
 GeofName[EN.Hexaedron_8] = "c3d8"
 
