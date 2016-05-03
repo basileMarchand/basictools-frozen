@@ -83,7 +83,7 @@ def ReadGmsh(fileName=None,string=None):
                 if len(l) == 0: continue
                 if l.find("$EndElements") > -1:
                     if nbElements != cpt:
-                        print("File problem!! number of elements read not equal to the total number of elemetns")
+                        print("File problem!! number of elements read not equal to the total number of elements")
                         print(nbElements)
                         print(cpt)
                     break

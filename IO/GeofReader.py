@@ -32,7 +32,7 @@ def ReadGeof(fileName=None,string=None):
             s       = l.split()
             nbNodes = int(s[0])
             dim     = int(s[1])
-            print("Reading "+str(nbNodes)+ " Nodes of dimension "+str(dim))
+            print("Reading "+str(nbNodes)+ " Nodes in dimension "+str(dim))
             res.nodes = np.empty((nbNodes,dim))
             res.originalIDNodes= np.empty((nbNodes,))
             cpt = 0
