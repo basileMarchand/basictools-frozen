@@ -36,9 +36,6 @@ class GmshWriter(WriterBase):
 
     def Write(self,meshObject,useOriginalId=False):
         
-        self.filePointer.write("% This file has been writen by the python routine GmshWriter of the OTTools package\n") 
-        self.filePointer.write("% For any question about this routine, please contact SAFRAN TECH Pole M&S Team OT\n") 
-
         self.filePointer.write("$MeshFormat\n");
         self.filePointer.write("2.2 0 8\n");
         self.filePointer.write("$EndMeshFormat\n");
@@ -65,11 +62,11 @@ class GmshWriter(WriterBase):
             elemtype = gmshName[ntype]
             for i in xrange(data.GetNumberOfElements() ):
                 if useOriginalId:
-                    self.filePointer.write("{} {} {} ".format(data.originalIds[i],elemtype,0) )
+                    self.filePointer.write("{} {} {} {} {} ".format(data.originalIds[i],elemtype,2,1,1) )
                     self.filePointer.write(" ".join([str(meshObject.originalIDNodes[x]) for x in data.connectivity[i,:].flatten()]))
                 else:
-                    self.filePointer.write("{} {} {} ".format(cpt,elemtype,0) )
-                    self.filePointer.write(" ".join([str(x) for x in data.connectivity[i,:].flatten()]))
+                    self.filePointer.write("{} {} {} {} {} ".format(data.originalIds[i],elemtype,2,1,1) )
+                    self.filePointer.write(" ".join([str(x+1) for x in data.connectivity[i,:].flatten()]))
                 cpt += 1
                 self.filePointer.write("\n")
         
@@ -77,7 +74,7 @@ class GmshWriter(WriterBase):
 
         celtags = meshObject.GetNamesOfCellTags()
         elements = meshObject.elements.keys()
-        tagcounter = 1
+        tagcounter = 2
         for tagname in celtags:
           for elementContainer in elements:
 	    elemtype = gmshName[elementContainer]
@@ -86,8 +83,8 @@ class GmshWriter(WriterBase):
                 if useOriginalId:
                   print "yet to implement"
                 else:
-                  self.filePointer.write("{} {} {} {} ".format(cpt,elemtype,1,tagcounter) )
-                  self.filePointer.write(" ".join([str(x) for x in connectivity]))
+                  self.filePointer.write("{} {} {} {} {} ".format(cpt,elemtype,2,tagcounter,tagcounter) )
+                  self.filePointer.write(" ".join([str(x+1) for x in connectivity]))
                 cpt += 1
                 self.filePointer.write("\n")
             except KeyError:
