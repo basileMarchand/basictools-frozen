@@ -35,7 +35,7 @@ class GmshWriter(WriterBase):
         self.fileName = fileName;
 
     def Write(self,meshObject,useOriginalId=False):
-        
+        print "Option <<useOriginalId = True>> is yet to implement"
         self.filePointer.write("$MeshFormat\n");
         self.filePointer.write("2.2 0 8\n");
         self.filePointer.write("$EndMeshFormat\n");
@@ -81,7 +81,7 @@ class GmshWriter(WriterBase):
             try:
               for connectivity in meshObject.elements[elementContainer].connectivity[meshObject.elements[elementContainer].tags[tagname].id-1]:
                 if useOriginalId:
-                  print "yet to implement"
+                  continue
                 else:
                   self.filePointer.write("{} {} {} {} {} ".format(cpt,elemtype,2,tagcounter,tagcounter) )
                   self.filePointer.write(" ".join([str(x+1) for x in connectivity]))

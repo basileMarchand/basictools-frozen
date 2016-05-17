@@ -69,7 +69,7 @@ class GeofWriter(WriterBase):
             for i in xrange(data.GetNumberOfElements() ):
                 if useOriginalId:
                     self.filePointer.write("{} {} ".format(data.originalIds[i],elemtype) )
-                    self.filePointer.write(" ".join([str(meshObject.originalIDNodes[x]) for x in data.connectivity[i,:].flatten()]))
+                    self.filePointer.write(" ".join([str(int(meshObject.originalIDNodes[x])) for x in data.connectivity[i,:].flatten()]))
                 else:
                     self.filePointer.write("{} {} ".format(cpt+1,elemtype) )
                     self.filePointer.write(" ".join([str(x+1) for x in data.connectivity[i,:].flatten()]))
