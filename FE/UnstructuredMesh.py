@@ -93,7 +93,7 @@ class UnstructuredMesh(MeshBase):
         else:
             raise Exception("No element with id " + str(oid)) #pragma: no cover  
         
-    def GetPosOfNode(self):
+    def GetPosOfNodes(self):
         return self.nodes
         
     def GetNamesOfCellTags(self):
@@ -162,7 +162,7 @@ def CheckIntegrity():
     
     res.AddElementToTagUsingOriginalId(1,"bars")
     
-    if res.GetPosOfNode()[1,1] != 2: raise Exception()
+    if res.GetPosOfNodes()[1,1] != 2: raise Exception()
     
     print(res.PrepareForOutput())
     print(res.GetElementsInTag("bars"))
