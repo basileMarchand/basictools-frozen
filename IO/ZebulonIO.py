@@ -4,7 +4,7 @@ from scipy.sparse import csr_matrix
 from scipy.sparse import lil_matrix
 import time
 
-def ReadMat(fileName, returnReorderOnly=False):
+def ReadMat(fileName, symetry=True , returnReorderOnly=False):
 
     if returnReorderOnly==True:
 
@@ -97,8 +97,10 @@ def ReadMat(fileName, returnReorderOnly=False):
         f.close()
     
         A = csr_matrix((data, row, col), shape=(sizeMat, sizeMat), dtype = float)
-        A = A + A.T
-        A.setdiag(A.diagonal()/2)
+
+        if symetry == True:
+          A = A + A.T
+          A.setdiag(A.diagonal()/2)
 
         return A
 

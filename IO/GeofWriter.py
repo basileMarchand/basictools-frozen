@@ -15,6 +15,7 @@ GeofName[EN.Bar_2] = "l2d2"
 GeofName[EN.Triangle_3] = "c2d3"
 GeofName[EN.Triangle_6] = "c2d6"
 #3d
+GeofName[EN.Tetrahedron_4] = "c3d4"
 GeofName[EN.Tetrahedron_10] = "c3d10"
 GeofName[EN.Quadrangle_4] = "c2d4"
 GeofName[EN.Hexaedron_8] = "c3d8"
@@ -55,7 +56,7 @@ class GeofWriter(WriterBase):
                np.savetxt(self.filePointer, posn[np.newaxis,n,:] ) 
         else:
            for n in xrange(numberofpoints):
-               self.filePointer.write("{} ".format(n) )
+               self.filePointer.write("{} ".format(n+1) )
                np.savetxt(self.filePointer, posn[np.newaxis,n,:] ) 
         #
         self.filePointer.write("  **element\n")
@@ -68,10 +69,10 @@ class GeofWriter(WriterBase):
             for i in xrange(data.GetNumberOfElements() ):
                 if useOriginalId:
                     self.filePointer.write("{} {} ".format(data.originalIds[i],elemtype) )
-                    self.filePointer.write(" ".join([str(meshObject.originalIDNodes[x]) for x in data.connectivity[i,:].flatten()]))
+                    self.filePointer.write(" ".join([str(int(meshObject.originalIDNodes[x])) for x in data.connectivity[i,:].flatten()]))
                 else:
-                    self.filePointer.write("{} {} ".format(cpt,elemtype) )
-                    self.filePointer.write(" ".join([str(x) for x in data.connectivity[i,:].flatten()]))
+                    self.filePointer.write("{} {} ".format(cpt+1,elemtype) )
+                    self.filePointer.write(" ".join([str(x+1) for x in data.connectivity[i,:].flatten()]))
                 cpt += 1;
                 self.filePointer.write("\n")
 
@@ -83,7 +84,7 @@ class GeofWriter(WriterBase):
             if useOriginalId:
                 self.filePointer.write(" ".join([str(meshObject.originalIDNodes[x]) for x in meshObject.nodesTags[tagname].id]))
             else:
-                self.filePointer.write(" ".join([str(x) for x in meshObject.nodesTags[tagname].id]))
+                self.filePointer.write(" ".join([str(x+1) for x in meshObject.nodesTags[tagname].id]))
             self.filePointer.write("\n")
         
         meshObject.PrepareForOutput();
