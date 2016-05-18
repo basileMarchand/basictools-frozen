@@ -11,7 +11,7 @@ def ArrayToString(data):
 XdmfName = {}
 XdmfName[EN.Point_1] = 'Polyvertex'
 XdmfName[EN.Bar_2] = 'Polyline'
-XdmfName[EN.Triangle_3] = 'Triagle'
+XdmfName[EN.Triangle_3] = 'Triangle'
 XdmfName[EN.Quadrangle_4] = 'Quadrilateral'
 XdmfName[EN.Tetrahedron_4] ="Tetrahedron"
 XdmfName[EN.Pyramid_5] = 'Pyramid'
@@ -252,7 +252,7 @@ class XdmfWriter:
             raise Exception                                                    # pragma: no cover 
         elif baseMeshObject.IsUnstructured() :
             self.filePointer.write('    <Geometry Type="XYZ">\n')
-            self.__WriteDataItem(baseMeshObject.GetPosOfNode().flatten(), (baseMeshObject.GetNumberOfNodes(),3)  )
+            self.__WriteDataItem(baseMeshObject.GetPosOfNodes().flatten(), (baseMeshObject.GetNumberOfNodes(),3)  )
             self.filePointer.write('    </Geometry>\n')
             if len(baseMeshObject.elements) > 1: 
                 self.filePointer.write('    <Topology TopologyType="Mixed" NumberOfElements="{}">\n'.format(baseMeshObject.GetNumberOfElements()))
@@ -292,7 +292,7 @@ class XdmfWriter:
                 #
                 elementType = XdmfName[baseMeshObject.elements.keys()[0]]
                 self.filePointer.write('    <Topology TopologyType="{}" NumberOfElements="{}"  >\n'.format(elementType,baseMeshObject.GetNumberOfElements()))
-                self.__WriteDataItem(baseMeshObject.elements[baseMeshObject.elements.keys()[0]].connectivity)
+                self.__WriteDataItem(baseMeshObject.elements[baseMeshObject.elements.keys()[0]].connectivity.flatten())
                 
             self.filePointer.write('    </Topology> \n')
             
@@ -300,15 +300,30 @@ class XdmfWriter:
             print(TFormat.InRed("Mesh Type Not Supported"))                    # pragma: no cover 
             raise Exception                                                    # pragma: no cover 
 
-    def __WriteAttribute(self,data,name,center,shape,baseMeshObject):
-        
-       ndata = np.prod(shape)
+    def __WriteAttribute(self,data,name,center,baseMeshObject):
+       shape = None
+       if center == "Node":
+           ndata = baseMeshObject.GetNumberOfNodes()
+       elif center == "Cell":
+           ndata = baseMeshObject.GetNumberOfElements()
+       elif center == "Grid":
+           ndata = 1;
+       else:
+          raise Exception('Cant treat this type of field support' + center )
+          
        if data.size == ndata:
            attype = "Scalar"
            #print(shape)
            #print(data.shape)
-           if baseMeshObject.IsConstantRectilinear() and len(shape)>1 :
-           
+           if baseMeshObject.IsConstantRectilinear():
+             if center == "Node":
+                  shape = baseMeshObject.GetDimensions()
+             elif center == "Cell":
+                  shape = baseMeshObject.GetDimensions() -1
+             else:
+                  shape = [1]
+                  
+             if len(shape)>1 :
                if len(data.shape) <= 2:
                    data.shape = tuple(shape)
                    data = data.T
@@ -321,7 +336,17 @@ class XdmfWriter:
            #print(attype)
            #print(data.shape)
            #print(shape)
-           if baseMeshObject.IsConstantRectilinear() and len(shape)>1:
+           if baseMeshObject.IsConstantRectilinear() :
+             if center == "Node":
+                  shape = baseMeshObject.GetDimensions()
+             elif center == "Cell":
+                  shape = baseMeshObject.GetDimensions() -1
+             else:
+                  shape = [1]
+                  
+             if len(shape)>1:
+                   
+               shape = baseMeshObject.GetDimensions()
                shape = (shape[0], shape[1],shape[2],3)
                if len(data.shape) <= 2:
                    shape = (shape[0], shape[1],shape[2],3)
@@ -336,7 +361,8 @@ class XdmfWriter:
            
        self.filePointer.write('    <Attribute Center="'+center+'" Name="'+name+'" Type="'+attype+'">\n')#
 
-       self.__WriteDataItem(data.flatten(),shape  )
+          
+       self.__WriteDataItem(data.flatten(),shape)
 
        self.filePointer.write('    </Attribute>\n')
 
@@ -399,21 +425,21 @@ class XdmfWriter:
              res = np.zeros((baseMeshObject.GetNumberOfElements(),1),dtype=np.int)
              res[data] = 1;                 
 
-             self.__WriteAttribute(np.array(res), name, "Cell", (baseMeshObject.GetNumberOfElements(),),baseMeshObject)
+             self.__WriteAttribute(np.array(res), name, "Cell", baseMeshObject)
          
          for i in range(len(PointFields)): 
            name = 'PField'+str(i)
            if len(PointFields)  == len(PointFieldsNames):
                name = PointFieldsNames[i]
                
-           self.__WriteAttribute(np.array(PointFields[i]), name, "Node",baseMeshObject.GetDimensions(),baseMeshObject)
+           self.__WriteAttribute(np.array(PointFields[i]), name, "Node",baseMeshObject)
            
          for i in range(len(CellFields)): 
            name = 'CField'+str(i)
            if len(CellFields) == len(CellFieldsNames):
                name = CellFieldsNames[i]
 
-           self.__WriteAttribute(np.array(CellFields[i]), name, "Cell",baseMeshObject.GetDimensions()-1,baseMeshObject)
+           self.__WriteAttribute(np.array(CellFields[i]), name, "Cell",baseMeshObject)
            
           
            
@@ -438,7 +464,7 @@ class XdmfWriter:
            if len(GridFields) == len(GridFieldsNames):
                name = GridFieldsNames[i]
                
-           self.__WriteAttribute(np.array(GridFields[i]), name, "Grid",[1],baseMeshObject)
+           self.__WriteAttribute(np.array(GridFields[i]), name, "Grid",baseMeshObject)
            
           
          self.filePointer.write('    </Grid>\n')  
@@ -539,9 +565,21 @@ def WriteTest(tempdir,Temporal, Binary):
 def CheckIntegrity():
     from OTTools.Helpers.Tests import TestTempDir
     from OTTools.FE.ConstantRectilinearMesh import ConstantRectilinearMesh
+    import OTTools.FE.UnstructuredMesh as UM
     
-
     tempdir = TestTempDir.GetTempPath()
+    
+    res = UM.CreateMeshOfTetras([[0.,0.,0],[1.,2.,3],[1, 3, 2]], np.array([[0,1,2]])) 
+    print(res)
+    WriteMeshToXdmf(tempdir+"TestUnstructured.xdmf", res, PointFields = [np.array([1.,2,3])], CellFields =[ np.array([1])] ,GridFields= [[0]],
+                                                                    PointFieldsNames = ["PS"], 
+                                                                    CellFieldsNames = ["CS"], 
+                                                                    GridFieldsNames = ["GS"] , Binary= True)
+
+
+    #----------------------
+
+    
     
     WriteTest(tempdir,False, False)
     WriteTest(tempdir,False, True)
@@ -594,12 +632,6 @@ def CheckIntegrity():
     #    return 'Not ok'# pragma: no cover 
     #except:
     #    pass
-    import OTTools.IO.AscReader as AR
-    m =  AR.ReadAsc(fileName='C:\\Users\\D584808\\Documents\\Projects\\Python\\Topotools\\SUPPORT_VERIN_DATA1.ASC')
-    #import OTTools.IO.PickleTools as PT
-    #m = PT.LoadData("ASCReadermesh").unamed[0]
-    WriteMeshToXdmf('FromASCReader.xdmf',m ,Binary= False)
-
     
     return 'ok'
 
