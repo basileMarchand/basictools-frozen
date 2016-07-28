@@ -22,6 +22,8 @@ def deim(basis):
         A multivector is (n, N)-array where n is the number of vectors and N
         the numbers of dofs.
 
+    References
+    ----------
         [1] S. Chaturantabut & D. Sorensen, "Nonlinear Model Reduction via
         Discrete Empirical Interpolation", SIAM Journal on Scientific
         Computing, vol. 32, num. 5, pp. 2737-2764, 2010.
@@ -70,6 +72,8 @@ def q_deim(basis):
         A multivector is (n, N)-array where n is the number of vectors and N
         the numbers of dofs.
 
+    References
+    ----------
         [1] Z. Drmac and S. Gugercin. A New Selection Operator for the Discrete
         Empirical Interpolation Method : Improved a priori error bound and
         extensions, 2015. URL: http://arxiv.org/abs/1505.00370.
