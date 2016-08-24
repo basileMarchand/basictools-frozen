@@ -79,29 +79,27 @@ def pod_basis_and_singular_values(snapshots, \
           N denotes the number of entries in each vector
     """
     __, s, u = la.svd(snapshots, full_matrices=False, compute_uv=True)
-
-    return truncated_pod_basis_and_singular_values(u, s, \
+    rank = truncated_pod_basis_rank(s, \
             rank_max, truncation_tol, alternate_truncation_tol)
+    return (u[:rank, :], s[:rank])
 
 
-def truncated_pod_basis_and_singular_values(basis, singular_values, \
+def truncated_pod_basis_rank(singular_values, \
         rank_max=None, truncation_tol=None, alternate_truncation_tol=None):
     snapshot_count = singular_values.size
+    result = min(snapshot_count, max(rank_max, 0)) \
+            if rank_max is not None else snapshot_count
 
-    if rank_max is None:
-        rank_max = snapshot_count
-
-    if truncation_tol is not None and snapshot_count > 0:
+    if truncation_tol is not None and result > 0:
         fractions = discarded_energy_fractions(singular_values)
-        rank_max -= truncation_level(fractions[:rank_max], truncation_tol)
+        result -= truncation_level(fractions[:result], truncation_tol)
 
-    if alternate_truncation_tol is not None and snapshot_count > 0:
+    if alternate_truncation_tol is not None and result > 0:
         leading_vector_energy = singular_values[0]
         threshold = leading_vector_energy * alternate_truncation_tol
-        rank_max -= truncation_level(singular_values[:rank_max], threshold)
+        result -= truncation_level(singular_values[:result], threshold)
 
-    return (basis, singular_values) if rank_max >= snapshot_count else \
-            (basis[:rank_max, :], singular_values[:rank_max])
+    return result
 
 
 def discarded_energy_fractions(singular_values):
