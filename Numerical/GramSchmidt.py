@@ -36,7 +36,8 @@ class GramSchmidt(object):
                 matCheck[i,j] = self.ScalProd(self.e[i], self.e[j])
         matCheck -= np.eye(self.nbVec)
         
-        print("Gram-Schmidt relative error = "+ TFH.TFormat.GoodBad(np.linalg.norm(matCheck)/np.linalg.norm(np.eye(self.nbVec)),1.e-10))
+        error = np.linalg.norm(matCheck)/np.linalg.norm(np.eye(self.nbVec))
+        print("Gram-Schmidt relative error = "+ TFH.TFormat.GoodBad(error,error<1.e-10))
         return
         
 
