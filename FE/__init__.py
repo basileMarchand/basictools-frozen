@@ -7,9 +7,12 @@ __all__ = [
 'ConstantRectilinearFea',
 'MaterialHelp',
 'FemHelp',
-'FElement',
-'Hexa8Cuboid',
 'ElementNames',
 'LinearSolver',
+'FElement',
+'ElementBuilder',
+'Hexa8Cuboid',
+'Tri3',
+'FeaBase'
 ]
 
