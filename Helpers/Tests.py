@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 
 import traceback
-    
-""" 
+
+"""
 Function to generate and destroy a temporary directory
 """
 class TestTempDir():
     path = None
-    
-    @classmethod 
+
+    @classmethod
     def GetTempPath(cls):
         if cls.path is not None:
             return cls.path
@@ -16,18 +16,18 @@ class TestTempDir():
         import os
         cls.path = tempfile.mkdtemp() + os.sep
         return TestTempDir.path
-    
-    @classmethod 
+
+    @classmethod
     def DeleteTempPath(cls):
         import shutil
         if cls.path is not None:
             shutil.rmtree(cls.path)
         cls.path = None
-            
+
 def __RunAndCheck(lis,bp,stopAtFirstError):
     import sys
     import time
-    
+
     from OTTools.Helpers.TextFormatHelper import TFormat
 
     res = {}
@@ -46,8 +46,8 @@ def __RunAndCheck(lis,bp,stopAtFirstError):
             sys.stderr.flush()
             stop_time = time.time()
             res[name] = r
-            if not isinstance(r,str): 
-                bp.Print(TFormat.InRed( TFormat().GetIndent() + "Please add a correct return statement in the CheckIntegrity of the module" + name)) 
+            if not isinstance(r,str):
+                bp.Print(TFormat.InRed( TFormat().GetIndent() + "Please add a correct return statement in the CheckIntegrity of the module" + name))
                 #raise Exception()
                 r = 'Not OK'
         except :
@@ -56,47 +56,47 @@ def __RunAndCheck(lis,bp,stopAtFirstError):
             bp.Print( "Unexpected error:" + str(sys.exc_info()[0]) )
             res[name] = "error"
             traceback.print_exc(file=bp.stdout_)
-            
+
             r = 'Not OK'
-            if stopAtFirstError : 
+            if stopAtFirstError :
                 bp.Restore()
                 raise
-            
+
         if r.lower() == 'ok':
             bp.Print( "OK " +name + " : %.3f seconds " %  (stop_time -start_time ))
-        else: 
+        else:
             bp.Print(TFormat.InRed( "NOT OK !!!! " + name )  )
-    
+
     return res
 
-    
+
 def __tryImport(noduleName):
-    
-    try :   
+
+    try :
         import importlib
         tocheck = {}
         m = importlib.import_module(noduleName)
         for submod in [ noduleName+ '.'+x for x in  m.__all__ ]:
             sm = importlib.import_module(submod)
-            cif = getattr( sm, "CheckIntegrity", None)            
+            cif = getattr( sm, "CheckIntegrity", None)
             if cif is not None:
                 tocheck[submod ] = cif
             else :
                 try:
                     for subsubmod  in [ submod +'.' + x for x in sm.__all__]:
                         ssm = importlib.import_module(subsubmod)
-                        cif  = getattr( ssm, "CheckIntegrity", None)   
+                        cif  = getattr( ssm, "CheckIntegrity", None)
                         tocheck[subsubmod ] = cif
                 except:
                     tocheck[submod ] = None
-                    
+
 
         return tocheck
     except:
         print("Error loading module '" + noduleName +"'")
         print("This module will not be tested ")
         return {}
-    
+
 def TestAll(modulestotreat=['ALL'], fulloutput=False, stopAtFirstError= False, coverage= False, extraToolsBoxs= None) :
     from OTTools.Helpers.TextFormatHelper import TFormat
     cov = None
@@ -109,38 +109,41 @@ def TestAll(modulestotreat=['ALL'], fulloutput=False, stopAtFirstError= False, c
 
     # calls to print, ie import module1
     from OTTools.Helpers.PrintBypass import PrintBypass
-    
-    print("Runnig Tests : ")  
+
+    print("Runnig Tests : ")
     print("--- Begin Test ---")
 
     tocheck = {}
-    
+
     tocheck.update(__tryImport('OTTools'))
     tocheck.update(__tryImport('rmtools'))
     tocheck.update(__tryImport('TopoTools'))
     if extraToolsBoxs is not None:
         for tool in extraToolsBoxs:
-            tocheck.update(__tryImport(tool))        
-        
-    
-    bp = PrintBypass()
-    if not fulloutput:
-        bp.ToSink()
+            tocheck.update(__tryImport(tool))
 
-    if modulestotreat[0] is not  'ALL':
-        filtered =  dict((k, v) for k, v in tocheck.items() if any(s in k for s in modulestotreat ) )
-        tocheck = filtered
-    
-    __RunAndCheck(tocheck,bp,stopAtFirstError);
-        
 
-    bp.Restore()
+    with PrintBypass() as bp:
+        if not fulloutput:
+            bp.ToSink()
+            bp.Print("Sending all the output of the tests to sink")
+
+
+        if modulestotreat[0] is not  'ALL':
+            filtered =  dict((k, v) for k, v in tocheck.items() if any(s in k for s in modulestotreat ) )
+            tocheck = filtered
+
+        __RunAndCheck(tocheck,bp,stopAtFirstError);
+
+        #bp.Restore()
+        #now the restore is done automaticaly
+
 
     if coverage :
         cov.stop()
         cov.save()
-        
-        # create a temp file 
+
+        # create a temp file
         tempdir = TestTempDir.GetTempPath()
         # tempdir = 'c:/users/d584808/appdata/local/temp/tmp4ipmul/'
         ss = [ ("*"+k.split(".")[-1]+"*") for k in tocheck ]
@@ -152,14 +155,14 @@ def TestAll(modulestotreat=['ALL'], fulloutput=False, stopAtFirstError= False, c
         webbrowser.open(tempdir +os.sep+"index.html")
 
     print("--- End Test ---")
-    
+
 def CheckIntegrity():
     return "Ok"
-    
+
 if __name__ == '__main__':
     import sys, getopt
     if len(sys.argv) == 1:
-        TestAll(modulestotreat=['ALL'], fulloutput=False,coverage=False)# pragma: no cover 
+        TestAll(modulestotreat=['ALL'], fulloutput=False,coverage=False)# pragma: no cover
     else:
       try:
           opts, args = getopt.getopt(sys.argv[1:],"hcfse:m:")
@@ -208,7 +211,7 @@ if __name__ == '__main__':
                 coverage=coverage,
                 fulloutput=fulloutput,
                 stopAtFirstError= stopAtFirstError,
-                extraToolsBoxs=extraToolsBoxs ) 
+                extraToolsBoxs=extraToolsBoxs )
 
 
 
