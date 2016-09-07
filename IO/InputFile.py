@@ -7,25 +7,23 @@ class InputFile(BaseOutputObject):
         super(InputFile,self).__init__()
         self.fileName = None
         self.filePointer = None
-        
+
     def SetFileName(self, fname):
         self.fileName = fname
 
     def Open(self):
         self.filePointer = open(self.filename,'r')
-        
+
     def Close(self):
         self.filePointer.close()
-        
-    def GetCObjectName()
-        
+
+    def GetCObjectName():
+        pass
+
 def CheckIntegrity():
     myObj = InputFile()
-    
-    
-        
+
     return 'ok'
-        
-        
+
 if __name__ == '__main__':
-    print(CheckIntegrity())# pragma: no cover 
+    print(CheckIntegrity())# pragma: no cover
