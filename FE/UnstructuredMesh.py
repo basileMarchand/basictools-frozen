@@ -19,7 +19,7 @@ class ElementsContainer():
     def AddNewElement(self,conn,originalid):
         if(self.connectivity.shape[1] == 0):
             self.connectivity = np.empty((0,len(conn)),dtype=np.int)    
-        self.connectivity = np.vstack((self.connectivity,conn))
+        self.connectivity = np.vstack((self.connectivity,np.array(conn,dtype=int) ))
         self.originalIds = np.append(self.originalIds,originalid)
         return self.connectivity.shape[0]
         
@@ -40,6 +40,22 @@ def CreateMeshOfTetras(points,tetras):
     elements.connectivity = np.array(tetras,dtype=np.int)
     elements.originalIds = np.arange(0,elements.GetNumberOfElements(),dtype=np.int)
     return res 
+
+def CreateMeshFromConstantRectilinearMesh(CRM):
+    res = UnstructuredMesh()
+    res.nodes = CRM.GetPosOfNodes();
+    res.originalIDNodes = np.arange(0,res.GetNumberOfNodes(),dtype=np.int);
+    #CRM.originalIDNodes
+
+    elements = res.GetElementsOfType(EN.Hexaedron_8)
+    nbelements = CRM.GetNumberOfElements()
+    print(nbelements)
+    elements.connectivity = np.zeros((nbelements,8),dtype=np.int)
+    for i in xrange(nbelements):
+        elements.connectivity[i,:] = CRM.GetConnectivityForElement(i)
+    elements.originalIds = np.arange(0,elements.GetNumberOfElements(),dtype=np.int)
+
+    return res
     
 class UnstructuredMesh(MeshBase):
 
@@ -133,15 +149,14 @@ class UnstructuredMesh(MeshBase):
     def PrepareForOutput(self):
        self.ComputeGlobalOffset()
 
-        
     def __str__(self):
         res  = "UnstructuredMesh \n" 
-        res += "  Number Of Nodes : {}\n".format(self.GetNumberOfNodes()) 
-        res += "  Number Of Elements : {}\n".format(self.GetNumberOfElements()) 
-        res += "  Node Tags : " + str([x for x in self.nodesTags]) + "\n"
-        res += "  Cell Tags : " + str([x for x in self.GetNamesOfCellTags()])+ "\n"
+        res += "  Number Of Nodes    : {}\n".format(self.GetNumberOfNodes())
+        res += "  Number Of Elements : {}\n".format(self.GetNumberOfElements())
+        res += "  Node Tags          : " + str([x for x in self.nodesTags]) + "\n"
+        res += "  Cell Tags          : " + str([x for x in self.GetNamesOfCellTags()])+ "\n"
         return res
-        
+
 def CheckIntegrity():
     res = CreateMeshOfTetras([[0,0,0],[1,2,3]], [[0,2,3]])
     
@@ -177,5 +192,5 @@ def CheckIntegrity():
     return "ok"    
     
 if __name__ == '__main__':
-   print(CheckIntegrity()) #pragma: no cover     
+    print(CheckIntegrity()) #pragma: no cover
    

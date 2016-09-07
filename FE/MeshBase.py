@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
+from OTTools.Helpers.BaseOutputObject import BaseOutputObject
 
 class Tag():
         def __init__(self,tagname):
@@ -8,8 +9,10 @@ class Tag():
             self.id = np.empty((0,1),dtype=np.int)
         def AddToTag(self,tid):
             self.id = np.append(self.id,tid)
+        def __len__(self):
+            return len(self.id)
             
-class MeshBase(object):
+class MeshBase(BaseOutputObject):
     
     def __init__(self):
         super(MeshBase,self).__init__()

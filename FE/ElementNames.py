@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-
 #0d
 Point_1  = 'point1'
 
@@ -9,7 +8,6 @@ Point_1  = 'point1'
 Bar_2 = 'bar2'
 #quadratic
 Bar_3 = 'bar3'
-
 
 #2d
 #linear
