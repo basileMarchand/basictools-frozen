@@ -270,7 +270,13 @@ class XdmfWriter:
             self.filePointer.write('    <Topology Dimensions="'+ArrayToString(reversed(dims))  +'" Type="'+str(dimensionality)+'DSMesh"/>\n')
         elif baseMeshObject.IsUnstructured() :
             self.filePointer.write('    <Geometry Type="XYZ">\n')
-            self.__WriteDataItem(baseMeshObject.GetPosOfNodes().flatten(), (baseMeshObject.GetNumberOfNodes(),3)  )
+            if ( len(baseMeshObject.GetPosOfNodes()[0])  == 2 ):
+                nodes = baseMeshObject.GetPosOfNodes()
+                nodes = np.concatenate((nodes,np.zeros((baseMeshObject.GetNumberOfNodes(),1))), axis=1 );
+                self.__WriteDataItem(nodes.flatten(), (baseMeshObject.GetNumberOfNodes(),3)  )
+            else:
+                self.__WriteDataItem(baseMeshObject.GetPosOfNodes().flatten(), (baseMeshObject.GetNumberOfNodes(),3)  )
+
             self.filePointer.write('    </Geometry>\n')
             if len(baseMeshObject.elements) > 1:
                 self.filePointer.write('    <Topology TopologyType="Mixed" NumberOfElements="{}">\n'.format(baseMeshObject.GetNumberOfElements()))
