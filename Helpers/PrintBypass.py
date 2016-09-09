@@ -30,7 +30,7 @@ class PrintBypass():
     def ToDisk(self,filename, filenamecerr=None):
         sys.stdout = open(filename, 'w') # Something here that provides a write method.
         self.bypassCout = True;
-        if filenamecerr is not  None:
+        if filenamecerr is None:
             sys.stderr = sys.stdout
         else:
             sys.stderr = open(filenamecerr, 'w')
@@ -45,10 +45,11 @@ class PrintBypass():
             self.bypassCerr = True;
 
     def Restore(self):
-        self.Print("Restore pipes")
         if self.bypassCout :
+            self.Print("Restore stdout")
             sys.stdout.close()
         if self.bypassCerr :
+            self.Print("Restore stdcerr")
             sys.stderr.close()
         sys.stdout = self.stdout_ # restore the previous stdout.
         sys.stderr = self.stderr_ # restore the previous stdout.
@@ -64,5 +65,25 @@ class PrintBypass():
 def CheckIntegrity():
     #carefull, this class is used during the test.
     #do not use this class inside a CheckIntegrity
-    PB = PrintBypass()
+    from OTTools.Helpers.Tests import TestTempDir
+    fname = TestTempDir.GetTempPath() + "sink"
+    with PrintBypass() as f:
+        f.ToSink();
+        f.Print(fname)
+        f.ToDisk(filename=fname+"_cout.txt" )
+        f.ToDisk(filename=fname+"_cout.txt",filenamecerr= fname+"_cerr.txt" )
+
+        class mySink():
+            def flush(self):pass
+            def close(self): pass
+            def write(self,data): pass
+
+        f.ToRedirect(mySink(), mySink())
+        f.PrintCerr(' sent to cerr')
+        print('sent to mySink')
+
+
     return "ok"
+
+if __name__ == '__main__':
+    CheckIntegrity()# pragma: no cover

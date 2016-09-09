@@ -13,7 +13,7 @@ from OTTools.IO.XdmfTools import FieldNotFound
 
 class Xdmfbase(object):
     """ Base class for all the xdmf Releated objects """
-    
+
     def ReadAttribute(self,attrs,name,default=None):
         """" Helper to read attributes"""
         if attrs.has_key(name):
@@ -23,7 +23,7 @@ class Xdmfbase(object):
                 raise KeyError("Key :'" +name+"' not avilable (you can add a default value to bypass this error)")
             else:
                 return default
-            
+
     def TreatCDATA(self):
         """Default inplementation to read the heavy data"""
         pass
@@ -40,12 +40,12 @@ class Xdmfbase(object):
             res += TFormat.GetIndent() + str(a[0]) +' : '+ str(a[1]) +    '\n'
         TFormat.DI()
         return res
-        
+
 class Xdmf(Xdmfbase):
     """ Top class for the xdmf Document """
     def __init__(self):
       self.domains = []
-      
+
     def GetDomain(self,nameornumber):
         """ Get a Grid (XdmfGrid) using a name or a number """
         if isinstance(nameornumber,str):
@@ -54,7 +54,7 @@ class Xdmf(Xdmfbase):
             raise Exception("Domain '"+nameornumber +"' not Found");
         else:
             return self.domains[nameornumber]
-            
+
     def __str__(self):
         res = 'Xdmf\n'
         TFormat.II()
@@ -62,7 +62,7 @@ class Xdmf(Xdmfbase):
             res += d.__str__();
         TFormat.DI()
         return res
-    
+
 class XdmfDomain(Xdmfbase):
     """A Domain. Can contain many grids"""
     def __init__(self):
@@ -78,11 +78,11 @@ class XdmfDomain(Xdmfbase):
             raise
         else:
             return self.grids[nameornumber]
-            
+
     def ReadAttributes(self,attrs):
-        
+
         self.Name = self.ReadAttribute(attrs,'Name','')
-        
+
     def __str__(self):
         res = TFormat.GetIndent() + 'XdmfDomain\n'
         TFormat.II()
@@ -101,41 +101,41 @@ class XdmfGrid(Xdmfbase):
         self.geometry = None;
         self.attributes = []
         self.Name ='';
-        
+
     def ReadAttributes(self,attrs):
         self.Name = self.ReadAttribute(attrs,'Name')
-        
-    def HasField(self,name):    
+
+    def HasField(self,name):
         for a in self.attributes:
             if a.Name == name : return True;
         return False
-    
+
     def GetFieldsNames(self):
         return [a.Name for a in self.attributes ]
-        
+
     def GetPointFieldsNames(self):
         return [a.Name for a in self.attributes if a.Center == "Node"]
-        
+
     def GetCellFieldsNames(self):
         return [a.Name for a in self.attributes if a.Center == "Cell"]
-        
+
     def GetGridFieldsNames(self):
         return [a.Name for a in self.attributes if a.Center == "Grid" ]
-        
+
     def GetPointFields(self):
         return self.GetFieldsOfType("Node")
-        
+
     def GetCellFields(self):
         return self.GetFieldsOfType("Cell")
-        
+
     def GetGridFields(self):
         return self.GetFieldsOfType("Grid")
-        
+
     def GetFieldsOfType(self,ftype):
         import numpy as np
         res = []
         for a in self.attributes:
-            if a.Center == ftype : 
+            if a.Center == ftype :
                 data = a.dataitems[0].GetData()
                 if self.geometry.Type == "ORIGIN_DXDYDZ":
                     if a.Type == "Vector":
@@ -144,14 +144,14 @@ class XdmfGrid(Xdmfbase):
                         data = data.T
                 res.append(np.copy(data))
         return res ;
-        
-        
+
+
     def GetFieldData(self,name):
         for a in self.attributes:
-            if a.Name == name : 
+            if a.Name == name :
                 return a.dataitems[0].GetData();
         raise FieldNotFound(name)
-    
+
     def GetFieldTermsAsColMatrix(self,fieldname, offset = 0):
         import numpy as __np
         #first we check the padding max 8 zeros of padding
@@ -160,7 +160,7 @@ class XdmfGrid(Xdmfbase):
             padding = i
             ss = fieldname+str(offset).zfill(padding)
             #print ss
-            if( self.HasField(ss)):        
+            if( self.HasField(ss)):
                 break
             #print(padding)
         else:
@@ -172,11 +172,11 @@ class XdmfGrid(Xdmfbase):
             cpt +=1;
         # get the firt data to get the type and the size
         d_0 = self.GetFieldData(fieldname+str(offset).zfill(padding) )
-        
+
         # now we allocate the np matrix for the data
         res = __np.empty([d_0.size, cpt], dtype=d_0.dtype);
         res[:,0] = d_0.reshape(d_0.size);
-        
+
         for i in range(1,cpt):
             res[:,i] = self.GetFieldData(fieldname+str(offset+i).zfill(padding) ).reshape(d_0.size)
 
@@ -189,26 +189,26 @@ class XdmfGrid(Xdmfbase):
         paddingj = 0
         for i,j in product(range(8),range(8)):
             paddingi = i
-            paddingj = j    
+            paddingj = j
             ss = fieldname + str(offseti).zfill(paddingi) + sep + str(offsetj).zfill(paddingj)
-            if( self.HasField(ss)):        
+            if( self.HasField(ss)):
                 break
         else:
             raise FieldNotFound(fieldname+"*"+ str(offseti)+ sep + "*" +str(offsetj))
-            
-        
+
+
         #first we check the number of terms
         cpti =0;
         while(self.HasField(fieldname+str(offseti+cpti).zfill(paddingi) + sep + str(offsetj).zfill(paddingj) )):
            cpti +=1;
-            
+
         cptj =0;
         while(self.HasField(fieldname+str(offseti).zfill(paddingi)  + sep + str(offsetj+cptj).zfill(paddingj) )):
             cptj +=1;
-            
+
         # get the firt data to get the type and the size
         d_0_0 = self.GetFieldData(fieldname+str(offseti).zfill(paddingi)  + sep + str(offsetj).zfill(paddingj) )
-        
+
         # now we allocate the np matrix for the data
         res = __np.empty([d_0_0.size, cpti, cptj], dtype=d_0_0.dtype);
         for i in range(0,cpti):
@@ -216,7 +216,7 @@ class XdmfGrid(Xdmfbase):
                 #print(fieldname + str(offseti+i).zfill(paddingi)  + sep + str(offsetj+j).zfill(paddingj))
                 res[:,i,j] = self.GetFieldData(fieldname + str(offseti+i).zfill(paddingi)  + sep + str(offsetj+j).zfill(paddingj) ).reshape(d_0_0.size);
         return res
-       
+
     def __str__(self):
         res = TFormat.GetIndent() + 'XdmfGrid\n'
         TFormat.II()
@@ -235,19 +235,19 @@ class XdmfInformation(Xdmfbase):
     def __init__(self):
         self.Name = '';
         self.Value = '';
-        
+
     def ReadAttributes(self,attrs):
         self.Name = self.ReadAttribute(attrs,'Name')
         self.Value = self.ReadAttribute(attrs,'Value')
-        
+
     def __str__(self):
         res = TFormat.GetIndent() + 'XdmfInformation\n'
         res += self._Xdmfbase__AttributsToStr()
         return res
 
 class XdmfTopology(Xdmfbase):
-    """ XdmfTopology class: stores the connectivity of the Grid""" 
-    def __init__(self):  
+    """ XdmfTopology class: stores the connectivity of the Grid"""
+    def __init__(self):
         self.dataitems= []
         self.Dimensions = None
         self.Type = None
@@ -256,57 +256,57 @@ class XdmfTopology(Xdmfbase):
         res = TFormat.GetIndent() + 'XdmfTopology\n'
         res += self._Xdmfbase__AttributsToStr()
         return res
-        
+
     def ReadAttributes(self,attrs):
         import numpy as np
         self.Dimensions = np.array(self.ReadAttribute(attrs,'Dimensions').split(), dtype='int')[::-1]
-        
+
         self.Type = self.ReadAttribute(attrs,'Type')
-        
+
     def GetDimensions(self):
-            return self.Dimensions        
+            return self.Dimensions
 
 class XdmfGeometry(Xdmfbase):
     """XdmfGeometry class:  stores the point positions """
-    
-    def __init__(self):  
+
+    def __init__(self):
         self.dataitems= []
         self.Type = None
-        
+
     def __str__(self):
         res = TFormat.GetIndent() + 'XdmfGeometry\n'
         res += self._Xdmfbase__AttributsToStr()
         return res
-    
+
     def ReadAttributes(self,attrs):
         self.Type = self.ReadAttribute(attrs,'Type')
-        
+
     def GetOrigin(self):
         if self.Type == "ORIGIN_DXDYDZ":
             #self.Read()
-            return self.dataitems[0].GetData()[::-1]         
+            return self.dataitems[0].GetData()[::-1]
         else:
-            raise Exception
-            
+            raise Exception# pragma: no cover
+
     def GetSpacing(self):
         if self.Type == "ORIGIN_DXDYDZ":
             #self.Read()
-            return self.dataitems[1].GetData()[::-1]         
+            return self.dataitems[1].GetData()[::-1]
         else:
-            raise Exception
+            raise Exception# pragma: no cover
 
-        
-        
+
+
 class XdmfAttribute(Xdmfbase):
     """  XdmfAttribute class: to store the data over the grids """
-    
+
     def __init__(self):
         self.dataitems= []
         self.Name = '';
         self.Type =  '';
         self.Center = '';
         self.CDATA = '';
-        
+
     def ReadAttributes(self,attrs):
         self.Name = self.ReadAttribute(attrs,'Name')
         try :
@@ -314,7 +314,7 @@ class XdmfAttribute(Xdmfbase):
         except:
             self.Type = self.ReadAttribute(attrs,'AttributeType')
         self.Center = self.ReadAttribute(attrs,'Center')
-        
+
     def __str__(self):
         res = TFormat.GetIndent() + 'XdmfAttribute\n'
         TFormat.II()
@@ -325,11 +325,11 @@ class XdmfAttribute(Xdmfbase):
             res += d.__str__();
         TFormat.DI();
         return res
-    
+
 
 class XdmfDataItem(Xdmfbase):
     """ XdmfDataItem class : class to manage the reading of the data Heavy and light """
-    
+
     def __init__(self):
         self.Type = None
         self.Dimensions= [];
@@ -337,6 +337,7 @@ class XdmfDataItem(Xdmfbase):
         self.Format = None
         self.Data = [];
         self.CDATA = '';
+        self.Seek = 0;
 
     def ReadAttributes(self,attrs, path):
         import numpy as __np
@@ -350,7 +351,7 @@ class XdmfDataItem(Xdmfbase):
             self.Precision = int(self.ReadAttribute(attrs,'Precision'))
         self.Format = self.ReadAttribute(attrs,'Format')
         self.Seek = int(self.ReadAttribute(attrs,'Seek',0))
-        
+
     def __str__(self):
         res = TFormat.GetIndent() +'XdmfDataItem \n'
         TFormat.II();
@@ -358,56 +359,56 @@ class XdmfDataItem(Xdmfbase):
         res += TFormat.GetIndent() + 'Dimensions : '+ str(self.Dimensions) +  '\n'
         if(self.Type.lower() == 'float'):
             res += TFormat.GetIndent() + 'Precision : '+ str(self.Precision) +  '\n'
-        res += TFormat.GetIndent() + 'Format : '+ str(self.Format) +  '\n'        
+        res += TFormat.GetIndent() + 'Format : '+ str(self.Format) +  '\n'
         res += TFormat.GetIndent() + 'Data : \n  '+  TFormat.GetIndent()  +str(self.Data) +  '\n'
         res += TFormat.GetIndent() + 'CDATA : \n  '+  TFormat.GetIndent()  +str(self.CDATA) +  '\n'
-        TFormat.DI();        
+        TFormat.DI();
         return res
-        
+
     def TreatCDATA(self):
         import numpy as np
         import os as os
-        if len(self.CDATA) == 0: 
+        if len(self.CDATA) == 0:
             return ;
-            
-            
+
+
         if( self.Format  == 'XML'):
-            
+
           if(self.Type.lower() =='float'):
               if(self.Precision == 4):
-                  numpytype = 'float32'        
+                  numpytype = 'float32'
               else:
-                  numpytype = 'float_'        
+                  numpytype = 'float_'
           elif(self.Type.lower() =='int'):
-              numpytype = 'int_'        
-                      
+              numpytype = 'int_'
+
           self.Data= np.array(self.CDATA.split(), dtype=numpytype);
           self.Data = self.Data.reshape(self.Dimensions)
           self.CDATA = '';
         elif ( self.Format  == 'HDF'):
-            
+
             filename,dataSetPath  = str(self.CDATA).lstrip().rstrip().split(":")
             #print(dataSetPath)
-            from h5py import File as __File 
+            from h5py import File as __File
             f = __File(os.path.join(self.path, filename),'r')
             #print(f[dataSetPath])
             self.Data =  np.array(f[dataSetPath])
             #print(self.Data)
             self.CDATA = '';
-            
+
         elif ( self.Format  == 'Binary'):
             if(self.Type.lower() =='float'):
                 if(self.Precision == 4):
-                  numpytype = 'float32'        
+                  numpytype = 'float32'
                 else:
-                  numpytype = 'float_'        
+                  numpytype = 'float_'
             elif(self.Type.lower() =='int'):
-                numpytype = 'int_'  
-                  
+                numpytype = 'int_'
+
             binfilename  = str(self.CDATA).lstrip().rstrip()
             binfile = open (os.path.join(self.path, binfilename ), "rb")
             binfile.seek(self.Seek)
-            
+
             self.Data = np.fromfile(binfile, dtype=numpytype, count=np.prod(self.Dimensions))
             self.Data.shape = self.Dimensions
             #print(self.Data.shape)
@@ -415,15 +416,15 @@ class XdmfDataItem(Xdmfbase):
             self.CDATA = '';
         else :
             raise Exception("Heavy data in format '" + self.Format + "' not suported yet") # pragma: no cover
-            
+
     def GetData(self):
         self.TreatCDATA()
         return self.Data
 
 
-import xml.sax 
+import xml.sax
 class XdmfReader(xml.sax.ContentHandler):
-    
+
     def __init__(self,filename=''):
         self.xdmf = Xdmf();
         self.pile = [];
@@ -432,47 +433,47 @@ class XdmfReader(xml.sax.ContentHandler):
         self.SetFileName(filename);
         self.readed = False;
         self.lazy = True;
-        
+
     def Reset(self):
         self.xdmf = Xdmf();
         self.pile = [];
         self.readed = False;
-                
+
     def SetFileName(self,filename):
         #if same filename no need to read the file again
-        if  self.filename == filename: return 
+        if  self.filename == filename: return
         import os as __os
-       
+
         self.readed = False;
         self.filename = filename;
         self.path = __os.path.dirname(filename)
-            
-        
+
+
     def Read(self):
         if len(self.filename) == 0 :
             raise Exception('Need a filename ')
-            
-        # read only one time the file             
+
+        # read only one time the file
         if( self.readed ): return;
         self.Reset();
-        
+
         thefile = open(self.filename,"r")
-        # to deactivate the DTD validation        
+        # to deactivate the DTD validation
         parser = xml.sax.make_parser()
         parser.setContentHandler(self)
         parser.setFeature(xml.sax.handler.feature_external_ges, False)
-        parser.parse(thefile)        
+        parser.parse(thefile)
         thefile.close();
-  
+
     # this a a overloaded function (must start with lower case)      !!!!!
     def startElement(self, name, attrs):
 
-        if name == "Xdmf": 
+        if name == "Xdmf":
             self.pile.append(self.xdmf)
             return
-            
+
         father = self.pile[-1];
-        
+
         if name == "Domain":
             res = XdmfDomain()
             res.ReadAttributes(attrs)
@@ -507,23 +508,23 @@ class XdmfReader(xml.sax.ContentHandler):
             father.attributes.append(res)
         else:
             raise Exception("Unkown tag :  '"+ name +"' Sorry!") # pragma: no cover
-        
+
         self.pile.append(res)
-        
+
     # this a a overloaded function (must start with lower case)      !!!!!
     def characters(self, content):
         #print("*** " + content + " +++ ")
         father = self.pile[-1];
         if isinstance(father,XdmfDataItem):
             father.CDATA += content  # Note: '+=', not '='
-    
-    # this a a overloaded function (must start with lower case)      !!!!!    
+
+    # this a a overloaded function (must start with lower case)      !!!!!
     def endElement(self, name):
-        if self.lazy : 
+        if self.lazy :
             self.pile.pop();
         else:
             self.pile.pop().TreatCDATA();
-            
+
     def __str__(self):
         res = ''
         for d in self.xdmf.domains:
@@ -531,8 +532,8 @@ class XdmfReader(xml.sax.ContentHandler):
         return res
 
 def GetTensorRepOfField(domain,fieldname):
-    """ Get The tensor representation of a field in a xdmf domain 
-    
+    """ Get The tensor representation of a field in a xdmf domain
+
     Get The tensor representation of a field in a xdmf domain, for the moment
     works for Cannonic and Train Tensor formats
     """
@@ -568,36 +569,36 @@ def GetTensorRepOfField(domain,fieldname):
                 G.array = g.GetFieldTermsAsTensor(fieldname+"_")
             res.AddSubTensor(G)
     return res
-    
+
 
 def CheckIntegrity():
 
 
-    # All the try pasrt are to execute the code for error handling. 
+    # All the try pasrt are to execute the code for error handling.
     # The code in the try(s) must raise exceptions
     # TODO Verified if the exceptions are the good ones
-   
-    # Get TestData directory    
+
+    # Get TestData directory
     import os
     TestDataPath = os.path.dirname(os.path.abspath(__file__))+os.sep + '..' + os.sep +'TestData' + os.sep
-    
-    # Create a Reader 
+
+    # Create a Reader
     res = XdmfReader()
     try :
         res.Read();
         return 'Not OK' # pragma: no cover
     except Exception as e :
-        pass    
+        pass
 
     res = XdmfReader(filename = TestDataPath + "Unstructured.xmf" )
     res.lazy = False;
     res.Read();
-    
+
     res = XdmfReader(filename = TestDataPath + "Unstructured.xmf" )
-    # read only the xml part 
+    # read only the xml part
     res.Read();
 
-    
+
     rep = res.__str__()
     #print(rep)
     #Test xdmf part***********************
@@ -607,48 +608,48 @@ def CheckIntegrity():
         res.xdmf.GetDomain("Imaginary Domain");
         return 'Not OK' # pragma: no cover
     except Exception as e :
-        pass    
-    
+        pass
+
     res.xdmf.GetDomain("Dom 1");
-        
+
     domain = res.xdmf.GetDomain(0)
     #Test domain part***********************
     try :
         domain.GetGrid("imaginary grid");
         return 'Not OK' # pragma: no cover
     except Exception as e :
-        pass    
-    
+        pass
+
     domain.GetGrid(0);
     grid  = domain.GetGrid("Grid")
 
-    
+
     #Test Grid part**************************************************************
 
-    
+
     names = grid.GetFieldsNames()
     if(names[0] != u'RTData'): raise Exception();
-    
+
     grid.HasField(names[0])
     grid.HasField('toto')
-    
+
     try:
-        data = res.xdmf.GetDomain("Dom 1").GetGrid("Grid").GetFieldData('ImaginaryField');    
+        data = res.xdmf.GetDomain("Dom 1").GetGrid("Grid").GetFieldData('ImaginaryField');
         return 'Not OK' # pragma: no cover
     except Exception as e :
         pass
 
     grid.GetFieldTermsAsColMatrix('term_')
-        
+
     try:
         grid.GetFieldTermsAsColMatrix('ImaginaryField_')
         return 'Not OK' # pragma: no cover
     except Exception as e :
         pass
-    
-    
+
+
     grid.GetFieldTermsAsTensor('TensorField_',offsetj=1)
-    
+
     try:
         grid.GetFieldTermsAsTensor('ImaginaryField_',offsetj=1)
         return 'Not OK' # pragma: no cover
@@ -656,45 +657,59 @@ def CheckIntegrity():
         pass
 
     grid.GetFieldData('IntField')
-    
+
     try:
         grid.GetFieldData('UnknownField')
         return 'Not OK' # pragma: no cover
     except Exception as e :
         pass
-    
-    
+
+
     data = res.xdmf.domains[0].GetGrid("Grid").GetFieldData('RTData');
     if( data[49] != 260.0 ): raise ;
 
-    geo = res.xdmf.domains[0].GetGrid("Grid").geometry.dataitems[0].GetData() 
+    geo = res.xdmf.domains[0].GetGrid("Grid").geometry.dataitems[0].GetData()
     #print(geo)
     if( geo[0,2] != -1 ): raise ;
 
-    topo = res.xdmf.domains[0].GetGrid("Grid").topology.dataitems[0].GetData() 
+    topo = res.xdmf.domains[0].GetGrid("Grid").topology.dataitems[0].GetData()
     #print(topo)
     if( topo[2] != 1 ): raise ;
 
+    ######################### Structured #########################
+    res = XdmfReader(filename = TestDataPath + "Structured.xmf" )
+    # read only the xml part
+    res.Read();
+    domain = res.xdmf.GetDomain(0)
+    #Test domain part***********************
+
+    grid  = domain.GetGrid(0)
+    print(grid.GetFieldsOfType("Node"))
+    print("--")
+    print(grid.GetFieldsOfType("Cell"))
+    grid.geometry.GetOrigin()
+    grid.geometry.GetSpacing()
+    ##################################
     Example1()
     Example2()
-    
+
     return 'OK'
 
 
 
 def Example1():
     import OTTools.TestData as test
-    # Create a Reader 
+    # Create a Reader
     reader = XdmfReader(filename = test.GetTestDataPath() + "Unstructured.xmf")
     # Do the reading (only the xml part, to read all the data set lazy to False)
     #res.lazy = False;
-    reader.Read();   
-    
+    reader.Read();
+
     # Get the domaine "Dom 1"
     dom = reader.xdmf.GetDomain("Dom 1");
-    
+
     # Get the first Grid
-    grid = dom.GetGrid(0)    
+    grid = dom.GetGrid(0)
     grid.topology.GetDimensions()
     names = grid.GetPointFieldsNames()
     names = grid.GetCellFieldsNames()
@@ -702,34 +717,37 @@ def Example1():
     allFields = grid.GetPointFields()
     allFields = grid.GetCellFields()
     allFields = grid.GetGridFields()
-    #Get one field (or term) 
-    dataField1= grid.GetFieldData('RTData');  
+    #Get one field (or term)
+    dataField1= grid.GetFieldData('RTData');
+
+    dataField1= grid.GetFieldsOfType('Node');
     #print(dataField1.shape)
-    #Get all the term as a matrix     
+    #Get all the term as a matrix
     dataField2=  grid.GetFieldTermsAsColMatrix('term_')
     #print(dataField2.shape)
-    #Get all the term as a matrix     
+    #Get all the term as a matrix
     dataField3=  grid.GetFieldTermsAsTensor('TensorField_',offsetj=1)
     #print(dataField3.shape)
 
-def Example2():    
+
+def Example2():
     import OTTools.TestData as test
-    
+
     reader = XdmfReader(filename = test.GetTestDataPath() + "TensorTestData.xmf")
-    
+
     # Do the reading (only the xml part, to read all the data set lazy to False)
     #res.lazy = False;
-    reader.Read();   
-    
-    
+    reader.Read();
+
+
     # Get the domaine "Dom 1"
     dom = reader.xdmf.GetDomain(0);
-    
+
     CT = GetTensorRepOfField(dom,'CanonicField')
-    
+
     TT = GetTensorRepOfField(dom,'TTField')
     TT.CheckIntegrity(verbose=False)
     #print(TT)
 
 if __name__ == '__main__':
-    CheckIntegrity() # pragma: no cover 
+    CheckIntegrity() # pragma: no cover

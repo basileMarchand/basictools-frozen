@@ -206,7 +206,7 @@ class XdmfWriter:
         ## we use unbuffered so we can repaire broken files easily
         try :
             self.filePointer = open(self.fileName, 'w',0)
-        except:
+        except: # pragma: no cover
             print(TFormat.InRed("Error File Not Open"))
             raise
 
@@ -247,10 +247,10 @@ class XdmfWriter:
                 dims = np.append(dims,1)
 
             dimensionality = 3
-            if dimensionality == 3:
-                self.filePointer.write('    <Geometry Type="ORIGIN_DXDYDZ">\n')
-            else:
-                self.filePointer.write('    <Geometry Type="ORIGIN_DXDY">\n')
+            #if dimensionality == 3:
+            self.filePointer.write('    <Geometry Type="ORIGIN_DXDYDZ">\n')
+            #else:
+            #    self.filePointer.write('    <Geometry Type="ORIGIN_DXDY">\n')
 
 
             self.filePointer.write('      <DataItem DataType="Float" Dimensions="'+str(dimensionality)+'" Format="XML" Precision="8">'+ArrayToString(reversed(origin)) +'</DataItem>\n')
@@ -333,7 +333,7 @@ class XdmfWriter:
        elif center == "Grid":
            ndata = 1;
        else:
-          raise Exception('Cant treat this type of field support' + center )
+          raise Exception('Cant treat this type of field support' + center )    # pragma: no cover
 
        if data.size == ndata:
            attype = "Scalar"
@@ -368,25 +368,42 @@ class XdmfWriter:
              else:
                   shape = [1]
 
-             if len(shape)>1:
 
-               shape = tuple(baseMeshObject.GetDimensions()) + (3,)
-               #print(shape)
-               if baseMeshObject.GetDimensionality() == 3:
-                   if len(data.shape) <= 2:
-                       #shape = (shape[0], shape[1],shape[2],3)
-                       data.shape = shape
-                   data = data.transpose(2,1,0,3)
+             if len(shape)>1:
+               if baseMeshObject.GetDimensionality() == 2:
+                   shape = tuple(shape) + (1,3,)
                else:
-                   if len(data.shape) <= 2:
-                       data.shape = shape
-                   data = data.transpose(1,0,2)
+                  shape = tuple(shape) + (3,)
+               #print(shape)
+               #if baseMeshObject.GetDimensionality() == 3:
+               if len(data.shape) <= 2:
+                  #shape = (shape[0], shape[1],shape[2],3)
+                  data.shape = shape
+               data = data.transpose(2,1,0,3)
+               #else:
+               #    if len(data.shape) <= 2:
+               #        data.shape = shape
+               #    data = data.transpose(1,0,2)
 
 
        elif data.size == ndata*2:
-           # add an extra zeros to the data and print it out as Vector 3
-           shape = tuple(baseMeshObject.GetDimensions())+ (2,)
+           if baseMeshObject.IsConstantRectilinear() :
+             if center == "Node":
+                  shape = baseMeshObject.GetDimensions()
+             elif center == "Cell":
+                  shape = baseMeshObject.GetDimensions() -1
+             else:
+                  shape = [1]
 
+           # add an extra zeros to the data and print it out as Vector 3
+           if baseMeshObject.GetDimensionality() == 2:
+                 shape = tuple(shape) + (1,2,)
+           else:
+                 shape = tuple(shape) + (2,)
+
+
+           print(data.shape)
+           print(shape)
            if len(data.shape) <= 2:
                data.shape = shape
 
@@ -457,7 +474,7 @@ class XdmfWriter:
                  name = "Tag_" + tagname
                  data = np.zeros((baseMeshObject.GetNumberOfNodes(),1),dtype=np.int)
                  data[baseMeshObject.nodesTags[tagname].id] = 1;
-                 self.__WriteAttribute(np.array(data), name, "Node", (baseMeshObject.GetNumberOfNodes(),),baseMeshObject)
+                 self.__WriteAttribute(np.array(data), name, "Node",baseMeshObject)
          #except:
          #   pass
 
@@ -549,7 +566,8 @@ class XdmfWriter:
 
             dimension = ArrayToString(shape)
 
-            if self.__isBinary and len(data) > self.__XmlSizeLimit:
+            # to test this feature a big file must be created (so we dont test it)
+            if self.__isBinary and len(data) > self.__XmlSizeLimit:# pragma: no cover
                 if self.__binarycpt > (2**30) :
                     self.__binaryFilePointer.close()
                     self.NewBinaryFilename()
@@ -609,9 +627,23 @@ def CheckIntegrity():
 
     tempdir = TestTempDir.GetTempPath()
 
-    res = UM.CreateMeshOfTetras([[0.,0.,0],[1.,2.,3],[1, 3, 2]], np.array([[0,1,2]]))
+    res = UM.CreateMeshOfTriangles([[0.,0.,0],[1.,2.,3],[1, 3, 2]], np.array([[0,1,2]]))
     print(res)
-    WriteMeshToXdmf(tempdir+"TestUnstructured.xdmf", res, PointFields = [np.array([1.,2,3])], CellFields =[ np.array([1])] ,GridFields= [[0]],
+    WriteMeshToXdmf(tempdir+"TestUnstructured.xdmf", res, PointFields = [np.array([1.,2,3])], CellFields =[ np.array([1])] ,GridFields= [[0],  np.array([1,2,3]).astype(np.int64) ],
+                                                                    PointFieldsNames = ["PS"],
+                                                                    CellFieldsNames = ["CS"],
+                                                                    GridFieldsNames = ["GS", "GV"] , Binary= True)
+
+    elements = res.GetElementsOfType(EN.Bar_2)
+    elements.AddNewElement([1,2],1)
+    elements = res.GetElementsOfType(EN.Point_1)
+    elements.AddNewElement([0],2)
+    res.nodes = res.nodes[:,0:2]
+    res.GetNodalTag("First_Point").AddToTag(0)
+
+    res.AddElementToTagUsingOriginalId(1,"bars")
+
+    WriteMeshToXdmf(tempdir+"TestUnstructured_multielements.xdmf", res, PointFields = [np.array([1.,2,3])], CellFields =[ np.array([1,0,4])] ,GridFields= [[0]],
                                                                     PointFieldsNames = ["PS"],
                                                                     CellFieldsNames = ["CS"],
                                                                     GridFieldsNames = ["GS"] , Binary= True)
@@ -644,10 +676,11 @@ def CheckIntegrity():
     except:
         pass
 
-    try:
-        writer.Open();
-    except:
-        pass
+    # no error anymore just a warning
+    #try:
+    writer.Open();
+    #except:
+    #    pass
 
     writer.Close()
 
@@ -670,7 +703,26 @@ def CheckIntegrity():
 
     print("ConstantRectilinearMesh in 2D")
     CRM2D = ConstantRectilinearMesh(2);
-    WriteMeshToXdmf('testdirect.xdmf',CRM2D, PointFields = [ np.zeros((CRM2D.GetNumberOfNodes(),) ) ], PointFieldsNames = ["Test"]);
+
+    writer = XdmfWriter()
+    writer.SetFileName(None)
+    writer.SetXmlSizeLimit(0)
+    writer.SetBinary(True)
+    writer.Open(filename=tempdir+'testdirect.xdmf');
+    writer.Write(CRM2D, PointFields = [ np.zeros((CRM2D.GetNumberOfNodes(),) ).astype(np.float32), np.zeros((CRM2D.GetNumberOfNodes(),) ).astype(np.int) ],
+                                                            PointFieldsNames = ["Test", "testint"],
+                                                            CellFields= [ np.arange(CRM2D.GetNumberOfElements()*2 ).astype(np.float64)],
+                                                            CellFieldsNames = [ "TestV"] );
+    writer.Close()
+
+
+    from OTTools.IO.XdmfReader import XdmfReader  as XR
+    f = XR(filename = tempdir+'testdirect.xdmf' )
+    f.lazy = False;
+    f.Read();
+    print(tempdir+'testdirect.xdmf')
+    f.xdmf.GetDomain(0).GetGrid(0).GetFieldsOfType("Cell")
+    print(f.xdmf.GetDomain(0).GetGrid(0).attributes )
 
     #print('testdirect.xdmf')
     #os.system('cmd /C C:\Users\D584808\Apps\ParaView-5.0.1-Qt4-OpenGL2-Windows-64bit\\bin\paraview.exe ' + 'testdirect.xdmf')
@@ -681,8 +733,20 @@ def CheckIntegrity():
     SM3D = SM.StructuredMesh();
 
 
-    WriteMeshToXdmf(tempdir+'StructuredMesh.xdmf',SM3D, PointFields = [ np.arange(SM3D.GetNumberOfNodes()) ], PointFieldsNames = ["Test"]);
+    WriteMeshToXdmf(tempdir+'StructuredMesh.xdmf',SM3D, PointFields = [ np.arange(SM3D.GetNumberOfNodes()) ],
+                                                                       PointFieldsNames = ["Test"],
+                                                                       CellFields= [ np.arange(SM3D.GetNumberOfElements()*3)],
+                                                                       CellFieldsNames = [ "TestV"] );
     print(tempdir)
+
+    from OTTools.IO.XdmfReader import XdmfReader  as XR
+    f = XR(filename = tempdir+'StructuredMesh.xdmf' )
+    f.lazy = False;
+    f.Read();
+
+    domain = f.xdmf.GetDomain(0)
+    grid  = domain.GetGrid(0)
+    grid.GetFieldsOfType("Cell")
     return 'ok'
 
 if __name__ == '__main__':

@@ -11,7 +11,35 @@ import scipy.linalg as denselinalg
 import  scipy.sparse as sps
 
 from OTTools.FE.FeaBase import FeaBase as FeaBase
+
 import OTTools.FE.ElementBuildier  as ElementBuildier
+from OTTools.Helpers.BaseOutputObject import BaseOutputObject
+class BundaryCondition(BaseOutputObject):
+    def __init__(self,dim=3, size= 1):
+        super(BundaryCondition,self).__init__()
+        self.sz = size
+        self.nodes = np.empty((self.sz,dim),dtype=int)
+        self.dofs = np.empty((self.sz,),dtype=int)
+        self.vals = np.empty((self.sz,1),dtype=float)
+        self.dim = dim
+        self.cpt = 0
+
+    def reserve(self, size):
+        self.nodes.resize( (size,self.dim))
+        self.dofs.resize( ( size,))
+        self.vals.resize( ( size,1))
+        self.sz = size
+
+    def tighten(self):
+        self.reserve(self.cpt)
+
+    def append(self, nodes, dof,val):
+        if self.cpt >= self.sz:
+            self.reserve(self.sz*2)
+        self.nodes[self.cpt,:] = nodes
+        self.dofs[self.cpt] = dof
+        self.vals[self.cpt] = val
+        self.cpt += 1
 
 
 class Fea(FeaBase):
@@ -39,6 +67,8 @@ class Fea(FeaBase):
 
         self.fixed = np.zeros(self.ndof, dtype=np.bool)
         if dirichlet_bcs is not None :
+            dirichlet_bcs.tighten()
+            print(dirichlet_bcs.nodes)
             indexs = support.GetMonoIndexOfNode(dirichlet_bcs.nodes)
             indexs *= dofpernode
             indexs += dirichlet_bcs.dofs
@@ -182,7 +212,8 @@ class Fea(FeaBase):
 
     def Solve(self, CleanZerosLines = True):
 
-        if CleanZerosLines and len(np.where(self.K.diagonal()== 0 )[0]) > 0:
+        print(self.K.diagonal())
+        if CleanZerosLines and len(np.where( self.K.diagonal() == 0 )[0]) > 0:
             zerosdof = np.where(self.K.diagonal()== 0 )[0]
             self.PrintDebug("Number of active nodes : " + str(self.ndof-len(zerosdof) ) + "  of " + str(self.ndof) + "   "+ str(float(len(zerosdof)*100.)/self.ndof)+ "% of empty nodes"  )
             Kones = coo_matrix( (np.ones((len(zerosdof),) ) ,(zerosdof,zerosdof)), shape =(self.ndof, self.ndof)).tocsr()#(self.dofpernode,self.dofpernode))
@@ -268,7 +299,7 @@ def deleterowcol(A, delrow, delcol, fixedValues ):
 
 
 
-def CheckIntegrity():
+def CheckIntegrityold():
 
     import OTTools.IO.GmshReader as GR
     import OTTools.TestData as test
@@ -451,7 +482,6 @@ def CheckIntegrity():
     if abs(max(myProblem.u)-.5) > 1e-5:
         raise Exception()# pragma: no cover
 
-    CheckIntegrityDep2D()
     return 'OK'
     #dirichlet_bcs =( [(0, y, z, cor) for y in range(ny) for z in range(nz) for cor in range(3)] )
     #neumann_bcs = ([(nx-1, y, z, 2) for y in range(ny) for z in range(nz) ])
@@ -473,13 +503,27 @@ def CheckIntegrityDep2D():
     myMesh.SetOrigin([0, 0]);
     print(myMesh)
     # block all the faces rith
+    dirichlet_bcs = BundaryCondition(dim=2);
 
-    dirichlet_bcs =( [(x, y, coor, 0) for x in range(nx) for y in [0]  for coor in range(2)] +
-                    [(x, y, coor, 1) for x in range(nx) for y in  [ny-1]  for coor in range(2)])
-    print(dirichlet_bcs )
+    for x in range(nx):
+        for y in [0]:
+            for coor in range(2):
+               dirichlet_bcs.append([x,y],coor , 0 )
+        for y in [ny-1]:
+            for coor in range(2):
+               dirichlet_bcs.append([x,y],coor , 1 )
 
-    neumann_bcs = ((0,0,0,0),) # (x,y,coor, value)
-    neumann_nodal = ((0,0,0,0),)
+    print(dirichlet_bcs)
+    #dirichlet_bcs =( [(x, y, coor, 0) for x in range(nx) for y in [0]  for coor in range(2)] +
+    #                [(x, y, coor, 1) for x in range(nx) for y in  [ny-1]  for coor in range(2)])
+    #print(dirichlet_bcs )
+
+    neumann_bcs = BundaryCondition(dim=2)
+    neumann_bcs.append([0,0],0,0) # ([x,y],coor, value)
+
+    neumann_nodal = BundaryCondition(dim=2)
+    neumann_nodal.append([0,0],0,0) # ([x,y],coor, value)
+
     starttime = time.time()
 
     myProblem = Fea(myMesh, dofpernode = 2,
@@ -520,6 +564,16 @@ def CheckIntegrityDep2D():
     #if abs(max(myProblem.u)-1.0128810548) > 1e-5:
     #    raise   # pragma: no cover
 
+def CheckIntegrity():
+    #try:
+        #print(CheckIntegrityThermal3D())
+        #print(CheckIntegrityDep3D())
+        #print(CheckIntegrityThermal2D())
+        print(CheckIntegrityDep2D())
+    #except:# pragma: no cover
+    #    return "Not ok"# pragma: no cover
+    #return "ok"
+
+
 if __name__ == '__main__':
-    print(CheckIntegrity())
-    #print(CheckIntegrity()) #pragma: no cover
+    print(CheckIntegrity())#pragma: no cover

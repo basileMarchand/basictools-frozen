@@ -117,7 +117,7 @@ class TFormat(object):
             else:
                 return '\x1b['+color+';1m'
         else:
-            return text
+            return text# pragma: no cover
 
     @staticmethod
     def WithUnderline(text=''):
@@ -127,7 +127,7 @@ class TFormat(object):
             else:
                 return '\033[4m'
         else:
-            return text
+            return text# pragma: no cover
 
     @staticmethod
     def WithItalic (text=''):
@@ -137,14 +137,14 @@ class TFormat(object):
             else:
                 return '\033[3m'
         else:
-            return text
+            return text# pragma: no cover
 
     @staticmethod
     def CleanFormat():
         if TFormat.SupportsColor():
             return '\x1b[0m'
         else:
-            return ''
+            return ''# pragma: no cover
 
 
     @staticmethod
@@ -158,9 +158,9 @@ class TFormat(object):
     def InIPython():
         try:
             __IPYTHON__
-            return True
+            return True# pragma: no cover
         except NameError:
-            return False
+            return False# pragma: no cover
 
     @staticmethod
     def SupportsColor():
@@ -179,13 +179,13 @@ class TFormat(object):
         #hack for spyder
         if 'SPYDER_SHELL_ID' in os.environ:
             return True
-        if hasattr(sys.stdout, 'color') :
+        if hasattr(sys.stdout, 'color') :# pragma: no cover
             return sys.stdout.color
 
 
-        if not supported_platform or not is_a_tty:
+        if not supported_platform or not is_a_tty:# pragma: no cover
             return False
-        return True
+        return True# pragma: no cover
 
 
 def CheckIntegrity():
@@ -228,9 +228,10 @@ def CheckIntegrity():
     print(TFormat.WithItalic("This is a message usign WithItalic"))
 
     print("Warning about the formating :")
-    print(TFormat.WithUnderline()+ 'WithUnderline '  +TFormat.InRed()+"Red/WithUnderline" )
+    print(TFormat.WithUnderline()+ 'WithUnderline '  +TFormat.InRed()+"Red/WithUnderline"  + TFormat.WithItalic() )
     print("you must clean the format at the end " + TFormat.CleanFormat() + " Good")
 
+    TFormat.InIPython()
     return 'ok'
 
 if __name__ == '__main__':

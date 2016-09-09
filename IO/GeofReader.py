@@ -17,16 +17,16 @@ def ReadGeof(fileName=None,string=None):
         f = open(fileName, 'r')
         string = f.read()
         f.close()
-    
+
     string = StringIO(string)
-    
+
     res = UM.UnstructuredMesh()
     filetointernalid = {}
     l = string.readline().strip('\n').lstrip().rstrip()
-    
+
     while(True):
       if len(l) == 0: l = string.readline().strip('\n').lstrip().rstrip(); continue
-      
+
       if l.find("**node")>-1:
             l       = string.readline().strip('\n').lstrip().rstrip()
             s       = l.split()
@@ -49,8 +49,8 @@ def ReadGeof(fileName=None,string=None):
                 cpt += 1
                 l = string.readline().strip('\n').lstrip().rstrip()
             continue
-	  
-	  
+
+
       if l.find("**element")>-1:
         l = string.readline().strip('\n').lstrip().rstrip()
         nbElements = int(l.split()[0])
@@ -60,20 +60,20 @@ def ReadGeof(fileName=None,string=None):
 	  if len(l) == 0: l = string.readline().strip('\n').lstrip().rstrip(); continue
           if l.find("**") > -1:
                break
-          s = l.split()      
+          s = l.split()
           nametype = GeofNumber[s[1]]
           conn = [filetointernalid[x] for x in  map(int,s[2:]) ]
           elements = res.GetElementsOfType(nametype)
           oid = int(s[0])
-          elements.AddNewElement(conn,oid)    
-          l = string.readline().strip('\n').lstrip().rstrip() 	
+          elements.AddNewElement(conn,oid)
+          l = string.readline().strip('\n').lstrip().rstrip()
         continue
-      
-      
+
+
       if l.find("**faset")>-1:
         fasetName = l[8:]
         print("Reading Group " + fasetName)
-        l = string.readline().strip('\n').lstrip().rstrip()  
+        l = string.readline().strip('\n').lstrip().rstrip()
         while(True):
 	  if len(l) == 0: l = string.readline().strip('\n').lstrip().rstrip(); continue
           if l.find("**") > -1:
@@ -86,8 +86,8 @@ def ReadGeof(fileName=None,string=None):
           elements.GetTag(fasetName).AddToTag(localId)
           l = string.readline().strip('\n').lstrip().rstrip()
         continue
-      
-      if l.find("***return")>-1: 
+
+      if l.find("***return")>-1:
         print("End file")
         break
 
@@ -102,12 +102,12 @@ def ReadGeof(fileName=None,string=None):
       if l.find("***geometry")>-1 or l.find("***group")>-1:
 	  l = string.readline().strip('\n').lstrip().rstrip()
 	  continue
-      
+
       #case not treated
       print("line starting with <<"+l[:20]+">> not considered in the reader")
       l = string.readline().strip('\n').lstrip().rstrip()
       continue
-    
+
     return res
 
 
@@ -117,21 +117,32 @@ def CheckIntegrity():
     ***geometry
     **node
     4 3
-    1 0.0000000000000000e+00          0.0000000000000000e+00          0.0000000000000000e+00         
-    2 6.0000000000000019e-02          0.0000000000000000e+00          0.0000000000000000e+00         
-    3 6.0000000000000012e-02          7.4999999999999928e-02          0.0000000000000000e+00         
-    4 0.0000000000000000e+00          7.4999999999999900e-02          0.0000000000000000e+00 
+    1 0.0000000000000000e+00          0.0000000000000000e+00          0.0000000000000000e+00
+    2 6.0000000000000019e-02          0.0000000000000000e+00          0.0000000000000000e+00
+    3 6.0000000000000012e-02          7.4999999999999928e-02          0.0000000000000000e+00
+    4 0.0000000000000000e+00          7.4999999999999900e-02          0.0000000000000000e+00
     **element
     1
     1 c3d4 1 2 3 4
     ***group
+    **nset g1
+    1 2 3
+    **elset g2
+    1
     **faset tri
     t3  1 2 3
+    **not treaged
     ***return
     """
-        
+
     res = ReadGeof(string=data)
+
+    from OTTools.Helpers.Tests import TestTempDir
+    newFileName = TestTempDir().GetTempPath()+"GeofFile"
+    open(newFileName,'w').write(data)
+    res = ReadGeof(fileName=newFileName)
+    print(res)
     return 'ok'
-           
+
 if __name__ == '__main__':
-    print(CheckIntegrity())# pragma: no cover   
+    print(CheckIntegrity())# pragma: no cover

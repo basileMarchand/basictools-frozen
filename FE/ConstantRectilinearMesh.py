@@ -8,10 +8,10 @@ import numpy as np
 from scipy.sparse import coo_matrix
 
 class ConstantRectilinearMesh(MeshBase):
-    
-    def IsConstantRectilinear(self): 
+
+    def IsConstantRectilinear(self):
         return True
-        
+
     def __init__(self,dim = 3):
         super(ConstantRectilinearMesh,self).__init__()
         #Number of nodes
@@ -19,32 +19,32 @@ class ConstantRectilinearMesh(MeshBase):
         self.__origin = np.zeros((dim,) )
         self.__spacing = np.ones((dim,))
         self.elemTags = {}
-        
+
     def GetNamesOfCellTags(self):
         return self.elemTags.keys()
-    
+
     def GetSubSuperMesh(self,_newDimensions):
         newDimensions = np.array(_newDimensions)
         ## to generate meshes with more or less elements in each directions
         ## return the mesh
         newSpac = (self.__dimensions-1)*self.__spacing/(newDimensions-1)
-        
+
         res = type(self)(dim=self.GetDimensionality())
         res.SetSpacing(newSpac)
         res.SetDimensions(newDimensions)
         res.SetOrigin(self.GetOrigin())
-        
+
         return res
-        
+
     def GetNodeTrasfertMatrix(self, destination):
         # newVector   = oldToNew * oldVector
         nbNodes = 2**self.GetDimensionality()
         oldToNewVals = np.zeros((destination.GetNumberOfNodes(),nbNodes))
         oldToNewIK = np.zeros((destination.GetNumberOfNodes(),nbNodes), dtype=np.int_)
         oldToNewJK = np.zeros((destination.GetNumberOfNodes(),nbNodes), dtype=np.int_)
-        
+
         for i in  xrange(destination.GetNumberOfNodes()):
-            
+
             pos= destination.GetPosOfNode(i)
             el = self.GetElementAtPos(pos)
             coon = self.GetConnectivityForElement(el)
@@ -52,22 +52,22 @@ class ConstantRectilinearMesh(MeshBase):
             oldToNewVals[i,:] = xiChiEta
             oldToNewIK[i,:] = i
             oldToNewJK[i,:] = coon
-            
+
         oldToNew =  coo_matrix((oldToNewVals.flatten(), (oldToNewIK.flatten(), oldToNewJK.flatten())), shape=(destination.GetNumberOfNodes(), self.GetNumberOfNodes())).tocsc()
 
         return oldToNew
-        
+
     def GetElementTrasfertMatrix(self, destination):
-        
+
         nps = 10
         nps3 = nps**self.GetDimensionality()
         oldToNewVals = np.zeros((destination.GetNumberOfNodes(),nps3))
         oldToNewIK = np.zeros((destination.GetNumberOfNodes(),nps3), dtype=np.int_)
         oldToNewJK = np.zeros((destination.GetNumberOfNodes(),nps3), dtype=np.int_)
-                
+
         for i in  xrange(destination.GetNumberOfElements()):
             coon = destination.GetConnectivityForElement(i)
-            
+
             n0pos = destination.GetPosOfNode(coon[0])
             cpt =0
             for cx in range(0,nps):
@@ -98,25 +98,25 @@ class ConstantRectilinearMesh(MeshBase):
 
     def SetDimensions(self,data):
         self.__dimensions = np.array(data,"int");
-   
+
     def GetDimensions(self):
         return self.__dimensions ;
-        
+
     def SetSpacing(self,data):
         self.__spacing = np.array(data, "float");
-        
+
     def GetSpacing(self):
         return self.__spacing;
 
     def GetOrigin(self):
-        return self.__origin;        
-        
+        return self.__origin;
+
     def SetOrigin(self,data):
-        self.__origin = np.array(data);        
-      
+        self.__origin = np.array(data);
+
     def GetNumberOfNodes(self):
         return np.prod(self.__dimensions)
-        
+
     def GetNumberOfElements(self):
         res = 1;
         if self.__dimensions[0] >= 1:
@@ -127,7 +127,7 @@ class ConstantRectilinearMesh(MeshBase):
 
         if self.GetDimensionality() == 2:
             return res
-            
+
         if self.__dimensions[2] >= 1:
             res = res * (self.__dimensions[2]-1)
 
@@ -135,7 +135,7 @@ class ConstantRectilinearMesh(MeshBase):
 
     def GetDimensionality(self):
         return len(self.__dimensions)
-            
+
     def GetMultiIndexOfNode(self,index):
         index = int(index)
         if self.GetDimensionality() == 3:
@@ -189,7 +189,7 @@ class ConstantRectilinearMesh(MeshBase):
         else :
             planesize = (self.__dimensions[1]-1)
             return indexs[0]*planesize+indexs[1]
-       
+
     def GetPosOfNode(self,index):
         if self.GetDimensionality() == 3 :
             [nx,ny,nz] = self.GetMultiIndexOfNode(index)
@@ -209,7 +209,7 @@ class ConstantRectilinearMesh(MeshBase):
         z = np.arange(self.__dimensions[2])*self.__spacing[2]+self.__origin[2]
         xv, yv, zv = np.meshgrid(x, y,z,indexing='ij')
         return np.array([xv.ravel(),yv.ravel(),zv.ravel()]).T
-        
+
     def GetElementAtPos(self,pos):
         pos = pos-self.__origin
         pos /= self.__spacing
@@ -217,7 +217,7 @@ class ConstantRectilinearMesh(MeshBase):
         elemindex = np.minimum(elemindex, self.__dimensions-2)
         elemindex = np.maximum(elemindex, 0.)
         return self.GetMonoIndexOfElement(elemindex)
-    
+
     def GetElementShapeFunctionsAtPos(self,el, pos):
         coon = self.GetConnectivityForElement(el)
         p0 = self.GetPosOfNode(coon[0])
@@ -291,25 +291,34 @@ class ConstantRectilinearMesh(MeshBase):
         res = res + ("  origin             : "+str(self.__origin)) + "\n"
         res = res + ("  spacing            : "+str(self.__spacing)) + "\n"
         return res
-        
+
 
 def CheckIntegrity():
     myMesh = ConstantRectilinearMesh()
     myMesh.SetDimensions([2,2,2]);
     myMesh.SetSpacing([1, 1, 1]);
     #myMesh.SetOrigin([-2.5,-1.2,-1.5]);
-    
+
     print(myMesh)
+    print(myMesh.IsConstantRectilinear())
+    print(myMesh.GetNamesOfCellTags())
+    print(myMesh.GetDimensions())
+    print(myMesh.GetMonoIndexOfNode(np.array([0,0,0]) ))
+    print(myMesh.GetMonoIndexOfNode(np.array([[0,0,0],[1,1,1]]) ))
+    print(myMesh.GetPosOfNodes())
+
     print(myMesh.GetConnectivityForElement(0))
-    
+
+    print(myMesh.GetElementShapeFunctionsDerAtPos(0,[0.5,0.5,0.5] ))
+
     np.set_printoptions(threshold='nan')
     newmesh = myMesh.GetSubSuperMesh([3,3,3])
-    
+
     oldtonew = myMesh.GetNodeTrasfertMatrix(newmesh)
     print(newmesh)
     print(oldtonew.todense())
     print(newmesh.GetNodeTrasfertMatrix(myMesh).todense())
-    
+
     print(myMesh.GetElementTrasfertMatrix(newmesh).todense())
     print(newmesh.GetElementTrasfertMatrix(myMesh).todense())
     print(newmesh.GetDimensionality())
@@ -322,7 +331,15 @@ def CheckIntegrity():
     myMesh.SetOrigin([0.,0.]);
 
     print(myMesh)
+
+    print(myMesh.GetMonoIndexOfNode(np.array([0,0]) ))
+    print(myMesh.GetMonoIndexOfNode(np.array([[0,0],[1,1]]) ))
+    print(myMesh.GetPosOfNodes())
+
     print(myMesh.GetConnectivityForElement(0))
+    print(myMesh.GetElementShapeFunctionsDerAtPos(0,[0.5,0.5] ))
+
+
 
     np.set_printoptions(threshold='nan')
     newmesh = myMesh.GetSubSuperMesh([3,3])
@@ -336,7 +353,8 @@ def CheckIntegrity():
     print(newmesh.GetElementTrasfertMatrix(myMesh).todense())
     print(newmesh.GetDimensionality())
     print(myMesh.GetValueAtPos(np.array([1,2,3,4]),[0.5,0.5]))
+    print(myMesh.GetDefValueAtPos(np.array([1,2,3,4]),[0.5,0.5] ))
     return "OK"
 
 if __name__ == '__main__':
-    CheckIntegrity() # pragma: no cover 
+    CheckIntegrity() # pragma: no cover

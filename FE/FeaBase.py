@@ -21,4 +21,8 @@ def deleterowcol(A, delrow, delcol, fixedValues ):
 
 
 def CheckIntegrity():
+    FeaBase()
+
+    K = np.array([[1, 2], [3, 4]]);
+    deleterowcol(K, [1], [1], [0] )
     return "ok"

@@ -5,6 +5,7 @@ import traceback
 """
 Function to generate and destroy a temporary directory
 """
+
 class TestTempDir():
     path = None
 
@@ -17,18 +18,19 @@ class TestTempDir():
         cls.path = tempfile.mkdtemp() + os.sep
         return TestTempDir.path
 
+    #  we cant test this funciotn, because the temp path will be delete
     @classmethod
-    def DeleteTempPath(cls):
+    def DeleteTempPath(cls):# pragma: no cover
         import shutil
         if cls.path is not None:
             shutil.rmtree(cls.path)
         cls.path = None
 
-def __RunAndCheck(lis,bp,stopAtFirstError):
-    import sys
-    import time
+def __RunAndCheck(lis,bp,stopAtFirstError):# pragma: no cover
 
     from OTTools.Helpers.TextFormatHelper import TFormat
+    import sys
+    import time
 
     res = {}
     for name in lis:
@@ -70,7 +72,8 @@ def __RunAndCheck(lis,bp,stopAtFirstError):
     return res
 
 
-def __tryImport(noduleName):
+def __tryImport(noduleName,stopAtFirstError):# pragma: no cover
+
 
     try :
         import importlib
@@ -84,21 +87,27 @@ def __tryImport(noduleName):
             else :
                 try:
                     for subsubmod  in [ submod +'.' + x for x in sm.__all__]:
-                        ssm = importlib.import_module(subsubmod)
+                        try:
+                          ssm = importlib.import_module(subsubmod)
+                        except:
+                            print(TFormat.InRed('Error Loading File')+' : ' + subsubmod + '.py'  )
+                            raise
                         cif  = getattr( ssm, "CheckIntegrity", None)
                         tocheck[subsubmod ] = cif
                 except:
                     tocheck[submod ] = None
+                    if(stopAtFirstError): raise
 
 
         return tocheck
     except:
         print("Error loading module '" + noduleName +"'")
         print("This module will not be tested ")
+        if(stopAtFirstError): raise
         return {}
 
-def TestAll(modulestotreat=['ALL'], fulloutput=False, stopAtFirstError= False, coverage= False, extraToolsBoxs= None) :
-    from OTTools.Helpers.TextFormatHelper import TFormat
+def TestAll(modulestotreat=['ALL'], fulloutput=False, stopAtFirstError= False, coverage= False, extraToolsBoxs= None) :# pragma: no cover
+
     cov = None
     if coverage :
        import coverage
@@ -115,12 +124,10 @@ def TestAll(modulestotreat=['ALL'], fulloutput=False, stopAtFirstError= False, c
 
     tocheck = {}
 
-    tocheck.update(__tryImport('OTTools'))
-    tocheck.update(__tryImport('rmtools'))
-    tocheck.update(__tryImport('TopoTools'))
+
     if extraToolsBoxs is not None:
         for tool in extraToolsBoxs:
-            tocheck.update(__tryImport(tool))
+            tocheck.update(__tryImport(tool,stopAtFirstError))
 
 
     with PrintBypass() as bp:
@@ -130,7 +137,9 @@ def TestAll(modulestotreat=['ALL'], fulloutput=False, stopAtFirstError= False, c
 
 
         if modulestotreat[0] is not  'ALL':
-            filtered =  dict((k, v) for k, v in tocheck.items() if any(s in k for s in modulestotreat ) )
+            #bp.Print(str(modulestotreat))
+            filtered =  dict((k, v) for k, v in tocheck.items() if all(s in k for s in modulestotreat ) )
+            #bp.Print(str(filtered))
             tocheck = filtered
 
         __RunAndCheck(tocheck,bp,stopAtFirstError);
@@ -152,14 +161,16 @@ def TestAll(modulestotreat=['ALL'], fulloutput=False, stopAtFirstError= False, c
         import os
         print('Coverage Report in ')
         print(tempdir +"index.html")
-        webbrowser.open(tempdir +os.sep+"index.html")
+        webbrowser.open(tempdir+"index.html")
 
     print("--- End Test ---")
 
 def CheckIntegrity():
+    TestTempDir().GetTempPath()
+    TestTempDir().GetTempPath()
     return "Ok"
 
-if __name__ == '__main__':
+if __name__ == '__main__':# pragma: no cover
     import sys, getopt
     if len(sys.argv) == 1:
         TestAll(modulestotreat=['ALL'], fulloutput=False,coverage=False)# pragma: no cover
@@ -173,7 +184,7 @@ if __name__ == '__main__':
           print '       -f    Full output for all the test'
           print '       -s    Stop at first error'
           print '       -e    To test extra Modules (-e can be repeated)'
-          print '       -m    To filter the output by this string (-e can be repeated)'
+          print '       -m    To filter the output by this string (-m can be repeated)'
           sys.exit(2)
 
       coverage = False
@@ -206,6 +217,10 @@ if __name__ == '__main__':
 
       if len(modulestotreat) == 0:
          modulestotreat.append("ALL")
+
+      if len(extraToolsBoxs) == 0:
+         extraToolsBoxs.append("OTTools")
+
 
       TestAll(  modulestotreat=modulestotreat,
                 coverage=coverage,

@@ -3,10 +3,10 @@ from OTTools.IO.WriterBase import WriterBase as WriterBase
 import OTTools.FE.ElementNames as EN
 import numpy as np
 
-def WriteMeshToStl(filename,mesh, Normals= None):
+def WriteMeshToStl(filename,mesh, normals= None):
     OW = StlWriter()
     OW.Open(filename)
-    OW.Write(mesh, Normals=Normals)
+    OW.Write(mesh, normals=normals)
     OW.Close()
 
 class StlWriter(WriterBase):
@@ -15,19 +15,20 @@ class StlWriter(WriterBase):
 
     def __str__(self):
         res  = 'StlWriter : \n'
-        res += '   FileName : '+self.fileName+'\n'
+        res += '   FileName : '+str(self.fileName)+'\n'
+        return res
 
     def SetFileName(self,fileName):
         self.fileName = fileName;
 
-    def Write(self,meshObject,Normals=None,Name= None):
+    def Write(self,meshObject,normals=None,Name= None):
 
         elements = meshObject.GetElementsOfType(EN.Triangle_3)
 
         self.filePointer.write("solid {}\n".format(Name))
         for i in xrange(elements.GetNumberOfElements()):
-            if Normals is not None:
-                self.filePointer.write(" facet normal {}\n".format(" ".join(map(str,Normals[i,:])) ))
+            if normals is not None:
+                self.filePointer.write(" facet normal {}\n".format(" ".join(map(str,normals[i,:])) ))
             else:
                 p0 = meshObject.nodes[elements.connectivity[i,0],:]
                 p1 = meshObject.nodes[elements.connectivity[i,1],:]
@@ -77,9 +78,14 @@ def CheckIntegrity():
     from OTTools.IO.StlReader import ReadStl as ReadStl
     from OTTools.Helpers.Tests import TestTempDir
 
-    res = ReadStl(string=data)
+    res,normals = ReadStl(string=data)
     tempdir = TestTempDir.GetTempPath()
     WriteMeshToStl(tempdir+"Test_StlWriter.stl",res)
+    WriteMeshToStl(tempdir+"Test_StlWriter_with_normals.stl",res, normals=normals)
+
+    ow = StlWriter()
+    print(ow)
+
     return("ok")
 
 if __name__ == '__main__':

@@ -22,27 +22,28 @@ GeofName[EN.Hexaedron_8] = "c3d8"
 
 GeofName[EN.Wedge_6] = "c3d6"
 
-def WriteMeshToGeof(filename,mesh, useOriginalId=False):    
+def WriteMeshToGeof(filename,mesh, useOriginalId=False):
     OW = GeofWriter()
     OW.Open(filename)
     OW.Write(mesh,useOriginalId = useOriginalId)
     OW.Close()
-    
+
 class GeofWriter(WriterBase):
     def __init__(self):
         super(GeofWriter,self).__init__()
-    
+
     def __str__(self):
         res  = 'GeofWriter : \n'
-        res += '   FileName : '+self.fileName+'\n'
-        
+        res += '   FileName : '+ str(self.fileName) +'\n'
+        return res
+
     def SetFileName(self,fileName):
         self.fileName = fileName;
 
     def Write(self,meshObject,useOriginalId=False):
-        
-        self.filePointer.write("% This file has been writen by the python routine GeofWriter of the OTTools package\n") 
-        self.filePointer.write("% For any question about this routine, please contact SAFRAN TECH Pole M&S Team OT\n") 
+
+        self.filePointer.write("% This file has been writen by the python routine GeofWriter of the OTTools package\n")
+        self.filePointer.write("% For any question about this routine, please contact SAFRAN TECH Pole M&S Team OT\n")
 
         self.filePointer.write("***geometry\n");
         self.filePointer.write("  **node\n");
@@ -53,17 +54,17 @@ class GeofWriter(WriterBase):
         if useOriginalId:
            for n in xrange(numberofpoints):
                self.filePointer.write("{} ".format(int(meshObject.originalIDNodes[n])))
-               np.savetxt(self.filePointer, posn[np.newaxis,n,:] ) 
+               np.savetxt(self.filePointer, posn[np.newaxis,n,:] )
         else:
            for n in xrange(numberofpoints):
                self.filePointer.write("{} ".format(n+1) )
-               np.savetxt(self.filePointer, posn[np.newaxis,n,:] ) 
+               np.savetxt(self.filePointer, posn[np.newaxis,n,:] )
         #
         self.filePointer.write("  **element\n")
         self.filePointer.write("{}\n".format(meshObject.GetNumberOfElements()))
 
         cpt =0;
-        for ntype, data in meshObject.elements.iteritems(): 
+        for ntype, data in meshObject.elements.iteritems():
             elemtype = GeofName[ntype]
             #npe = data.GetNumberOfNodesPerElement()
             for i in xrange(data.GetNumberOfElements() ):
@@ -77,7 +78,7 @@ class GeofWriter(WriterBase):
                 self.filePointer.write("\n")
 
         self.filePointer.write(" ***group \n")
-                
+
         for tagname in meshObject.nodesTags:
             self.filePointer.write("  **nset {} \n".format(tagname))
             data = np.zeros((meshObject.GetNumberOfNodes(),1),dtype=np.int)
@@ -86,7 +87,7 @@ class GeofWriter(WriterBase):
             else:
                 self.filePointer.write(" ".join([str(x+1) for x in meshObject.nodesTags[tagname].id]))
             self.filePointer.write("\n")
-        
+
         meshObject.PrepareForOutput();
 
         celtags = meshObject.GetNamesOfCellTags()
@@ -95,14 +96,14 @@ class GeofWriter(WriterBase):
             data = meshObject.GetElementsInTag(tagname,useOriginalId=useOriginalId)
             self.filePointer.write(" ".join([str(x) for x in data]))
             self.filePointer.write("\n")
-         
+
 
 
         self.filePointer.write("****return \n")
 
 def CheckIntegrity():
     import OTTools.FE.UnstructuredMesh as UM
- 
+
     from OTTools.Helpers.Tests import TestTempDir
 
     tempdir = TestTempDir.GetTempPath()
@@ -110,7 +111,7 @@ def CheckIntegrity():
     mymesh = UM.UnstructuredMesh()
     mymesh.nodes = np.array([[0.00000000001,0,0],[1,0,0],[0,1,0],[1,1,0]],dtype=np.float)
     mymesh.originalIDNodes = np.array([1, 3, 4, 5],dtype=np.int)
-    
+
     tag = Tag("coucou")
     tag.AddToTag(0)
     mymesh.nodesTags["coucou"] = tag
@@ -119,15 +120,18 @@ def CheckIntegrity():
     tris.AddNewElement([0,1,2],0)
     tris.AddNewElement([2,1,3],3)
     tris.originalIds = np.array([3, 5],dtype=np.int)
-    
-    mymesh.AddElementToTagUsingOriginalId(3,"Tag1") 
-    mymesh.AddElementToTagUsingOriginalId(5,"Tag3") 
-    
+
+    mymesh.AddElementToTagUsingOriginalId(3,"Tag1")
+    mymesh.AddElementToTagUsingOriginalId(5,"Tag3")
+
     OW = GeofWriter()
+    print(OW)
     OW.Open(tempdir+"Test_GeoWriter.geof")
     OW.Write(mymesh, useOriginalId=True)
     OW.Close()
+
+    WriteMeshToGeof(tempdir+"Test_GeoWriter_II.geof", mymesh,useOriginalId=False )
     return "ok"
-    
+
 if __name__ == '__main__':
-    print(CheckIntegrity())# pragma: no cover   
+    print(CheckIntegrity())# pragma: no cover

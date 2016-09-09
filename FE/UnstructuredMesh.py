@@ -33,6 +33,7 @@ class ElementsContainer():
 
 def CreateMeshOfTriangles(points,tris):
     res = UnstructuredMesh()
+    res
     res.nodes = np.array(points, dtype=np.double)
     res.originalIDNodes = np.arange(0,res.GetNumberOfNodes(),dtype=np.int)
 

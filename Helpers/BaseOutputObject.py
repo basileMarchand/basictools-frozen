@@ -120,6 +120,10 @@ def CheckIntegrity():
     var = 4
     myObj.Print(var)
 
+    myObj.Print2("Print 5")
+    myObj.PrintError("Print 6")
+    myObj.InDebugMode()
+
     return "OK"
 
 if __name__ == '__main__':

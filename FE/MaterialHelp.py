@@ -37,6 +37,7 @@ def LaplaceOrtho(k1,k2,k3=1, dim = 3):
 def CheckIntegrity():
     HI3D = HookeIso(1,0.3)
     HI2D = HookeIso(1,0.3,dim=2)
+    HI2D = HookeIso(1,0.3,dim=2,PlaneStress= False)
 
     LO3D = LaplaceOrtho(1,2,3)
     LO2D= LaplaceOrtho(1,2,dim=2)

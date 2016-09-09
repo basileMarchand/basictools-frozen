@@ -1,13 +1,9 @@
 # -*- coding: utf-8 -*-
-
-# -*- coding: utf-8 -*-
 """
 Created on Wed Jun 15 10:58:44 2016
 
 @author: d584808
 """
-
-# -*- coding: utf-8 -*-
 
 import numpy as np
 from OTTools.FE.FElement import FElement
@@ -26,7 +22,7 @@ class Tri3(FElement):
 
     def GetDetJack(self,qcoor, pos=None):
         if pos == None:
-            raise(Exception('Need position to calculate gradient'))
+            raise(Exception('Need position to calculate gradient'))# pragma: no cover
 
         dx = float(self.delta[0]);   dy = float(self.delta[1]);
         return dx*dy/4.;
@@ -42,7 +38,7 @@ class Tri3(FElement):
     def compute_gradient(self, qcoor, pos=None):
         #[B det_jac]=
        if pos is  None:
-            raise(Exception('Need position to calculate gradient'))
+            raise(Exception('Need position to calculate gradient'))# pragma: no cover
 
        dN_xi = np.array([-1, 1, 0])
        dN_eta = np.array([-1, 0, 1])
@@ -70,6 +66,18 @@ class Tri3(FElement):
          B = np.array([[dN_x[0], dN_x[1], dN_x[2]],
                        [dN_y[0], dN_y[1], dN_y[2]]]);
          return B,det_jac
+
+#----------------mass matrices ----------
+    def IsoDispM(self,qcoor,pos=None):
+        N = self.GetShapeFunc(qcoor)
+        B = np.array([[N[0], 0   , N[1], 0   , N[2], 0   ,  ],
+                      [0   , N[0], 0   , N[1], 0   , N[2], ]])
+        return B, self.GetDetJack(qcoor,pos)
+
+    def IsoLaplaceM(self,qcoor,pos=None):
+         N = self.GetShapeFunc(qcoor)
+         B = np.array([[N[0], N[1], N[2]]])
+         return B, self.GetDetJack(qcoor,pos)
 #-------------------------
 
     def GetIsotropLaplaceK(self,k,pos):
@@ -102,6 +110,11 @@ def CheckIntegrity():
     myElement = Tri3()
     pos = np.array([ [0,0], [1,0] , [0,1] ])
     KK = myElement.GetIsotropDispK(1,0.3,pos)
+    myElement.GetIsotropLaplaceM(1,pos)
+    myElement.GetIsotropDispM(1,pos)
+
+    myElement.GetDetJack([0.5,0.5],pos)
+    myElement.GetShapeFunc([0.5,0.5])
     print("--------------------------")
     print(KK)
     VV =lin.eig(KK)
@@ -112,7 +125,6 @@ def CheckIntegrity():
     K2 = myElement.GetIsotropLaplaceK(1,pos)
     VV =lin.eig(K2)
     if np.sum(VV[0].real < 1e-10) != 1:
-        VV[0].real
         return "not ok "# pragma: no cover
 
     #print(VV[0])

@@ -12,44 +12,45 @@ def ReadStl(fileName=None,string=None):
         f = open(fileName, 'r')
         string = f.read()
         f.close()
-    
+
     string = StringIO(string)
-    
+
     resUM = UM.UnstructuredMesh()
 
     l = string.readline();
     name = l.strip('\n').lstrip().rstrip().split()[1]
-        
+
     p = []
+    normals = np.empty((0,3), dtype=float)
     for line in string:
         l = line.strip('\n').lstrip().rstrip()
-        if l.find("facet")>-1 : 
-            if l.find("normal")>-1 : 
-             #normal = np.fromstring(l.split("normal")[1],sep=" ")
+        if l.find("facet")>-1 :
+            if l.find("normal")>-1 :
+             normals = np.concatenate((normals, np.fromstring(l.split("normal")[1],sep=" ")[np.newaxis]),axis=0)
              continue
-        if l.find("outer loop")>-1 :  
+        if l.find("outer loop")>-1 :
           for i in range(3):
             line = string.readline()
             l = line.strip('\n').lstrip().rstrip()
-            if l.find("vertex")>-1 : 
+            if l.find("vertex")>-1 :
               p.append(np.fromstring(l.split("vertex")[1],sep=" ") )
           if len(p) == 3:
             resUM.nodes = np.vstack((resUM.nodes,p[0][np.newaxis,:],p[1][np.newaxis,:],p[2][np.newaxis,:]))
             p = []
-          else:
+          else:# pragma: no cover
             print("error: outer loop with less than 3 vertex")
             raise
 
-    elements = resUM.GetElementsOfType(EN.Triangle_3)    
+    elements = resUM.GetElementsOfType(EN.Triangle_3)
     elements.connectivity = np.array(xrange(resUM.GetNumberOfNodes()),dtype=np.int)
     elements.connectivity.shape = (resUM.GetNumberOfNodes()/3,3)
-    #elements.connectivity = elements.connectivity.T 
+    #elements.connectivity = elements.connectivity.T
     elements.originalIds = np.arange(resUM.GetNumberOfNodes()/3,dtype=np.int )
 
-    return resUM
+    return resUM, normals
 
 
-        
+
 def LoadSTLWithVTK(filenameSTL):
     import vtk
     readerSTL = vtk.vtkSTLReader()
@@ -61,12 +62,10 @@ def LoadSTLWithVTK(filenameSTL):
 
     # If there are no points in 'vtkPolyData' something went wrong
     if polydata.GetNumberOfPoints() == 0:
-        raise ValueError(
-            "No point data could be loaded from '" + filenameSTL)
-        return None
-    
+        raise ValueError("No point data could be loaded from '" + filenameSTL)# pragma: no cover
+
     return polydata
-    
+
 
 def CheckIntegrity():
     data = """   solid cube_corner
@@ -99,30 +98,36 @@ def CheckIntegrity():
             endloop
           endfacet
         endsolid"""
-        
-    
-    res = ReadStl(string=data)
+
+
+    res,_ = ReadStl(string=data)
     print(res)
     if res.GetNumberOfNodes() != 12: raise Exception()
     if res.GetNumberOfElements() != 4: raise Exception()
-        
-    
+
+    from OTTools.Helpers.Tests import TestTempDir
+    tempdir = TestTempDir.GetTempPath()
+    f =open(tempdir+"test_input_stl_data.stl","w")
+    f.write(data)
+    f.close()
+    res = ReadStl(fileName=tempdir+"test_input_stl_data.stl")
+
     try:
         import vtk
-        import OTTools.TestData as T2
         print('reading mesh using vtk')
-        mesh = LoadSTLWithVTK(T2.GetTestDataPath()+"stlexample.stl")
+        mesh = LoadSTLWithVTK(tempdir+"test_input_stl_data.stl")
         print(mesh)
-    except:
+    except:# pragma: no cover
+        print("warning : error importing vtk, disabling some tests ")
         pass
-        
+
     return 'ok'
-  
+
 if __name__ == '__main__':
-    print(CheckIntegrity())# pragma: no cover   
+    print(CheckIntegrity())# pragma: no cover
 
-    
-    
 
-    
-    
+
+
+
+

@@ -27,11 +27,12 @@ class LinearProblem(BOO):
             self.solver = None
             pass
         self.PrintDebug('In SetOp Done')
+
     def SetAlgo(self, algoType):
         if algoType == "Direct" or algoType == "CG":
             self.type = algoType
         else:
-            self.Print(TF.InRed("Error : ") + "Type not allowed ("+algoType+")"  )
+            self.Print(TF.InRed("Error : ") + "Type not allowed ("+algoType+")"  ) #pragma: no cover
 
     def Solve(self, rhs):
         self.PrintDebug('In LinearProblem Solve')
@@ -50,9 +51,9 @@ class LinearProblem(BOO):
             self.u = res[0][np.newaxis].T*norm
 
             if res[1] > 0 :
-                self.Print(TF.InYellowBackGround(TF.InRed("Convergence to tolerance not achieved")))
+                self.Print(TF.InYellowBackGround(TF.InRed("Convergence to tolerance not achieved"))) #pragma: no cover
             if res[1] < 0 :
-                self.Print(TF.InYellowBackGround(TF.InRed("Illegal input or breakdown")))
+                self.Print(TF.InYellowBackGround(TF.InRed("Illegal input or breakdown"))) #pragma: no cover
 
         if self.InDebugMode():
             self.Print("Done Linear solver")
@@ -66,16 +67,20 @@ class LinearProblem(BOO):
 def CheckIntegrity():
 
     LS = LinearProblem ()
+
+    LS.SetAlgo('CG')
     LS.SetGlobalDebugMode()
 
     LS.SetOp(sps.csc_matrix(np.array([[0.5,0],[0,1]])) )
     sol = LS.Solve(np.array([[1],[2]]))
+    # second run
+    sol = LS.Solve(np.array([[1],[2]]))
     if abs(sol[0] - 2.) >1e-15  :
-        print(sol[0]-2)
-        raise Exception()
+        print(sol[0]-2) #pragma: no cover
+        raise Exception() #pragma: no cover
     if abs(sol[1] - 2.) > 1e-15 : raise Exception()
 
-    LS.type = "Direct"
+    LS.SetAlgo("Direct")
 
     LS.SetOp(sps.csc_matrix(np.array([[0.5,0],[0,1]])))
     sol = LS.Solve(np.array([[1],[2]]))

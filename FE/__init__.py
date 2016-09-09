@@ -3,6 +3,7 @@
 __all__ = [
 'MeshBase',
 'UnstructuredMesh',
+'UnstructuredFea',
 'ConstantRectilinearMesh',
 'ConstantRectilinearFea',
 'MaterialHelp',
@@ -10,7 +11,7 @@ __all__ = [
 'ElementNames',
 'LinearSolver',
 'FElement',
-'ElementBuilder',
+'ElementBuildier',
 'Hexa8Cuboid',
 'Tri3',
 'FeaBase'

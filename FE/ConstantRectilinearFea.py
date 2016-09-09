@@ -47,7 +47,7 @@ class Fea(FeaBase.FeaBase):
         super(Fea,self).__init__()
 
         if support.IsConstantRectilinear() == False :
-            raise Exception("Must be a ConstantRectilinear mesh type ")
+            raise Exception("Must be a ConstantRectilinear mesh type ") #pragma: no cover
 
         self.linearSolver = "CG"
         self.outer_v = []
@@ -389,6 +389,7 @@ def CheckIntegrityThermal3D():
     myProblem.element_elastic_energy()
     myProblem.Write()
     try:
+       import pyamg
        myProblem.linearSolver = 'AMG'
        myProblem.Solve()
        myProblem.Write()
@@ -406,7 +407,7 @@ def CheckIntegrityThermal3D():
     print('DONE')
     print(max(myProblem.u))
 
-    if abs(max(myProblem.u)-50.) > 1e-5:
+    if abs(max(myProblem.u)-50.) > 1e-4:
         raise Exception()# pragma: no cover
     return("ok")
 
@@ -532,11 +533,12 @@ def CheckIntegrityThermal2D():
     myProblem.element_elastic_energy()
     myProblem.Write()
     try:
+       import pyamg
        myProblem.linearSolver = 'AMG'
        myProblem.Solve()
        myProblem.Write()
     except Exception as inst: # pragma: no cover
-       print(inst.args[0])# pragma: no cover
+        print(inst.args[0])# pragma: no cover
 
     myProblem.writer.Close()
 
@@ -605,6 +607,9 @@ def CheckIntegrityDep2D():
     print("Time for Fea solve : " + str(time.time() -starttime))
     print(myProblem.u.T)
 
+    # build mass matrix
+    myProblem.BuildMassMatrix(densities);
+
     fixed = np.zeros((myProblem.ndof, 1), dtype=np.double)
 
     for i in myProblem.fixed:
@@ -621,14 +626,14 @@ def CheckIntegrityDep2D():
     return 'ok'
 
 def CheckIntegrity():
-    #try:
+    try:
         print(CheckIntegrityThermal3D())
         print(CheckIntegrityDep3D())
         print(CheckIntegrityThermal2D())
         print(CheckIntegrityDep2D())
-    #except:
-    #    return "Not ok"
-    #return "ok"
+    except:# pragma: no cover
+        return "Not ok"# pragma: no cover
+    return "ok"
 
 if __name__ == '__main__':
     print(CheckIntegrity()) #pragma: no cover

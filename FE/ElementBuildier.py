@@ -13,9 +13,8 @@ def GetElementFromName(name):
         return Tri3()
 #    elif name == ElementsNames.:
 #        return ()
-    raise        
-    
+    raise #pragma: no cover
+
 def CheckIntegrity():
     GetElementFromName(ElementsNames.Triangle_3)
     return "OK"
-    
