@@ -156,6 +156,14 @@ class UnstructuredMesh(MeshBase):
 
     def PrepareForOutput(self):
        self.ComputeGlobalOffset()
+       
+
+    """def GenerateManufacturedOriginalIDs(self):
+       counter = 1
+       for key, value in self.elements.iteritems():
+         for i in xrange(value.originalIds.shape[0]):
+           value.originalIds[i] = counter
+           counter += 1"""
 
     def __str__(self):
         res  = "UnstructuredMesh \n"
