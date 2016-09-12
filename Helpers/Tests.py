@@ -15,7 +15,7 @@ class TestTempDir():
             return cls.path
         import tempfile
         import os
-        cls.path = tempfile.mkdtemp() + os.sep
+        cls.path = tempfile.mkdtemp(prefix="OTTools_Test_Directory_",suffix="_safe_to_delete") + os.sep
         return TestTempDir.path
 
     #  we cant test this funciotn, because the temp path will be delete
@@ -42,7 +42,7 @@ def __RunAndCheck(lis,bp,stopAtFirstError):# pragma: no cover
         try:
             start_time = time.time()
             stop_time = time.time()
-            print(lis[name])
+            #print(lis[name])
             r = lis[name]()
             sys.stdout.flush()
             sys.stderr.flush()
@@ -164,7 +164,9 @@ def TestAll(modulestotreat=['ALL'], fulloutput=False, stopAtFirstError= False, c
         import os
         print('Coverage Report in ')
         print(tempdir +"index.html")
+        print(cov.report(show_missing=False))
         webbrowser.open(tempdir+"index.html")
+
 
     print("--- End Test ---")
 
