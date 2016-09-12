@@ -78,8 +78,10 @@ def __tryImport(noduleName,stopAtFirstError):# pragma: no cover
     try :
         import importlib
         tocheck = {}
+        currentModuleName = noduleName
         m = importlib.import_module(noduleName)
         for submod in [ noduleName+ '.'+x for x in  m.__all__ ]:
+            currentModuleName = submod
             sm = importlib.import_module(submod)
             cif = getattr( sm, "CheckIntegrity", None)
             if cif is not None:
@@ -88,6 +90,7 @@ def __tryImport(noduleName,stopAtFirstError):# pragma: no cover
                 try:
                     for subsubmod  in [ submod +'.' + x for x in sm.__all__]:
                         try:
+                          currentModuleName = subsubmod
                           ssm = importlib.import_module(subsubmod)
                         except:
                             print(TFormat.InRed('Error Loading File')+' : ' + subsubmod + '.py'  )
@@ -101,7 +104,7 @@ def __tryImport(noduleName,stopAtFirstError):# pragma: no cover
 
         return tocheck
     except:
-        print("Error loading module '" + noduleName +"'")
+        print("Error loading module '" + currentModuleName +"'")
         print("This module will not be tested ")
         if(stopAtFirstError): raise
         return {}
