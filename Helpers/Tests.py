@@ -26,6 +26,14 @@ class TestTempDir():
             shutil.rmtree(cls.path)
         cls.path = None
 
+    @classmethod
+    def OpenTempFolder(cls):
+        import subprocess
+        import os
+        if os.name == "nt":
+            subprocess.Popen('explorer "' + cls.GetTempPath() +'"')
+
+
 def __RunAndCheck(lis,bp,stopAtFirstError):# pragma: no cover
 
     from OTTools.Helpers.TextFormatHelper import TFormat
