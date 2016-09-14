@@ -79,9 +79,11 @@ def __tryImport(noduleName,stopAtFirstError):# pragma: no cover
         import importlib
         tocheck = {}
         currentModuleName = noduleName
+        #print("I1 " + currentModuleName )
         m = importlib.import_module(noduleName)
         for submod in [ noduleName+ '.'+x for x in  m.__all__ ]:
             currentModuleName = submod
+            #print("I2 " + currentModuleName )
             sm = importlib.import_module(submod)
             cif = getattr( sm, "CheckIntegrity", None)
             if cif is not None:
@@ -91,10 +93,12 @@ def __tryImport(noduleName,stopAtFirstError):# pragma: no cover
                     for subsubmod  in [ submod +'.' + x for x in sm.__all__]:
                         try:
                           currentModuleName = subsubmod
+                          #print("I3 " + currentModuleName ),
                           ssm = importlib.import_module(subsubmod)
+                          #print("Done "  )
                         except:
-                            print(TFormat.InRed('Error Loading File')+' : ' + subsubmod + '.py'  )
-                            raise
+                            print('Error Loading File : ' + subsubmod + '.py'  )
+                            if(stopAtFirstError): raise
                         cif  = getattr( ssm, "CheckIntegrity", None)
                         tocheck[subsubmod ] = cif
                 except:
