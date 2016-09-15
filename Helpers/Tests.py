@@ -190,7 +190,7 @@ def CheckIntegrity():
 if __name__ == '__main__':# pragma: no cover
     import sys, getopt
     if len(sys.argv) == 1:
-        TestAll(modulestotreat=['ALL'], fulloutput=False,coverage=False)# pragma: no cover
+        TestAll(modulestotreat=['ALL'],extraToolsBoxs= ["OTTools"], fulloutput=False,coverage=False)# pragma: no cover
     else:
       try:
           opts, args = getopt.getopt(sys.argv[1:],"hcfse:m:")

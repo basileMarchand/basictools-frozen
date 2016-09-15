@@ -13,5 +13,5 @@ if __name__ == '__main__':# pragma: no cover
     print("")    
     
     import OTTools.Helpers.Tests
-    OTTools.Helpers.Tests.TestAll()
+    OTTools.Helpers.Tests.TestAll(extraToolsBoxs= ["OTTools"])
     
