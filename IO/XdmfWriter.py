@@ -137,7 +137,9 @@ class XdmfWriter:
         self.__isOpen = False;
         self.__binarycpt = 0;
         self.__binfilecounter = 0
+        self.__keepXmlFileInSaneState = True;
         self.SetFileName(fileName)
+        
 
     def __str__(self):
         res  = 'XdmfWriter : \n'
@@ -221,20 +223,30 @@ class XdmfWriter:
         #clean the binary file  =
         if self.__isBinary:
             self.__binaryFilePointer = open (self.__binFileName, "wb")
-
+        if self.__keepXmlFileInSaneState:
+            self.WriteTail()
+            
     def Close(self):
         if self.__isOpen:
-            if self.__isTemporalOutput:
-                self.__WriteTime()
-                self.filePointer.write('    </Grid>\n')
-            self.filePointer.write('  </Domain>\n')
-            self.filePointer.write('</Xdmf>\n')
+            self.WriteTail()
             self.filePointer.close()
             self.__isOpen = False
             if self.__isBinary:
                 self.__binaryFilePointer.close()
             #print("File : '" + self.fileName + "' is close.")
-
+                
+    def WriteTail(self):
+        if self.__isOpen:
+            filepos = self.filePointer.tell()
+            if self.__isTemporalOutput:
+                self.__WriteTime()
+                self.filePointer.write('    </Grid>\n')
+            self.filePointer.write('  </Domain>\n')
+            self.filePointer.write('</Xdmf>\n')
+            # we put the pointer just before the tail so we can continue writting
+            # to the file
+            self.filePointer.seek(filepos)
+            
     def __WriteGeoAndTopo(self,baseMeshObject):
         if baseMeshObject.IsConstantRectilinear() :
             origin = baseMeshObject.GetOrigin()
@@ -529,9 +541,13 @@ class XdmfWriter:
            self.__WriteAttribute(np.array(GridFields[i]), name, "Grid",baseMeshObject)
 
          self.filePointer.write('    </Grid>\n')
+         
+         if(self.__keepXmlFileInSaneState):
+             self.WriteTail()
 
     def __WriteTime(self):
-
+        """ this function is called by the WriteTail, this function must NOT change  
+         the state of the instance, also no writting to binary neader hdf5 files """
         if self.__isOpen:
             #self.filePointer.write('<Time TimeType="List">\n')
             #self.__WriteDataItem(self.timeSteps)
