@@ -135,7 +135,7 @@ def greedy_gappy_mask(basis, \
         Estimation Procedure", SIAM Journal on Scientific Computing, vol.38,
         num. 5, pp 2827--2850, 2016.
     """
-    sg = ExactSpectrumGenerator(basis) if acceleration is False \
+    sg = ExactSpectrumGenerator(basis) if not acceleration \
             else AcceleratedSpectrumGenerator(basis)
     ec = eigenvalue_harmonic_mean
     sc = ErrorBoundCriterion(error_bound_max)
