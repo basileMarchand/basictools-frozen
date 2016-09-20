@@ -3,6 +3,8 @@ import numpy.linalg as la
 import scipy.linalg as sla
 
 
+
+# Generation of gappy masks via greedy algorithms
 def deim(basis):
     """
     Generate empirical sample entries using the standard DEIM algorithm [1].
@@ -14,12 +16,12 @@ def deim(basis):
 
     Returns
     -------
-    ndarray
+    ndarray of ints
         An 1-d array containing the sample entries.
 
     Notes
     -----
-        A multivector is (n, N)-array where n is the number of vectors and N
+        A multivector is an (n, N)-array where n is the number of vectors and N
         the numbers of dofs.
 
     References
@@ -64,12 +66,12 @@ def q_deim(basis):
 
     Returns
     -------
-    ndarray
+    ndarray of ints
         An 1-d array containing the sample entries.
 
     Notes
     -----
-        A multivector is (n, N)-array where n is the number of vectors and N
+        A multivector is an (n, N)-array where n is the number of vectors and N
         the numbers of dofs.
 
     References
