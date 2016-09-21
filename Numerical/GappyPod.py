@@ -93,7 +93,7 @@ def greedy_gappy_mask(basis, \
         mask_size_max=None, \
         error_bound_max=None, \
         initial_mask=None, \
-        acceleration=False):
+        use_acceleration=False):
     """
     Generate sample entries defining a gappy POD mask according to a greedy
     algorithm aiming at limiting both mask size and error due to the gappy
@@ -107,16 +107,15 @@ def greedy_gappy_mask(basis, \
         An upper bound on the size of the mask. None implies that the option is
         inactive. Default is None.
     error_bound_max : scalar or None, optional
-        Specifies the threshold below which the gappy aliasing error bound
-        associated with the mask should be. None implies that the option is
-        inactive. Default is None.
+        An upper bound for the gappy aliasing error bound associated with the
+        mask. None implies that the option is inactive. Default is None.
     initial_mask : (m,) ndarray of ints or None, optional
         Makes the first m mask entries match those in initial_mask. None lets
         the algorithm determine all mask entries. Default is None.
-    acceleration: bool, optional
-        Replaces the exact computation of the spectrum by a faster
-        approximation based on the secular equation adapted from [1]. Default
-        is False.
+    use_acceleration: bool, optional
+        Enables the replacement of the exact computation of the spectrum by a
+        faster but less robust approximation based on the secular equation
+        adapted from [1]. Default is False.
 
     Returns
     -------
@@ -135,7 +134,7 @@ def greedy_gappy_mask(basis, \
         Estimation Procedure", SIAM Journal on Scientific Computing, vol.38,
         num. 5, pp 2827--2850, 2016.
     """
-    sg = ExactSpectrumGenerator(basis) if not acceleration \
+    sg = ExactSpectrumGenerator(basis) if not use_acceleration \
             else AcceleratedSpectrumGenerator(basis)
     ec = eigenvalue_harmonic_mean
     sc = ErrorBoundCriterion(error_bound_max)
