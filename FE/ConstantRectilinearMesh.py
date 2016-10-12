@@ -151,6 +151,7 @@ class ConstantRectilinearMesh(MeshBase):
             return np.array([nx,ny],dtype= np.int_)
 
     def GetMonoIndexOfNode(self,_indexs):
+        _indexs= np.asarray(_indexs)
         if len(_indexs.shape) == 1:
             indexs = _indexs[np.newaxis]
         else:
