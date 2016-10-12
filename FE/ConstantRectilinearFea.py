@@ -59,7 +59,7 @@ class Fea(FeaBase.FeaBase):
 
         self.writer = None
 
-        self.minthreshold = 1.e-3
+        self.minthreshold = 0.9e-3
         self.tol = 1.e-6
 
         if KOperator is not None:
