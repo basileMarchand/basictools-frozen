@@ -9,9 +9,12 @@ class BaseOutputObject(object):
     __globalDebugMode = False
     __verboseLevel = 1
 
-    def __init__(self):
+    def __init__(self, other = None):
         super(BaseOutputObject,self).__init__()
-        self.__classDebugMode = False
+        if other is not None:
+            self.__classDebugMode = other.__classDebugMode
+        else:
+            self.__classDebugMode = False
 
     @classmethod
     def SetVerboseLevel(cls,level):
