@@ -149,11 +149,35 @@ class TFormat(object):
 
     @staticmethod
     def Center(text,fill= "*",width=60):
-        width=width//2-1
-        lo = len(text)
-        l = (lo/2) if (lo/2)<width else width
-        return ( fill*(width-l)+ ' '  + text+ ' ' + fill*(width-l) +fill*((lo/2) == ((lo+1)/2) ) )
 
+        if fill != " ":
+            if (width - TFormat.__nonAnsiStringLen(text)) > 0 :
+                text = ' ' + text
+
+            if (width - TFormat.__nonAnsiStringLen(text)) > 0 :
+                text = text + ' '
+
+        #if width < len(text)  :
+        #    text = text[0:width-1] + '.'
+
+        lt = TFormat.__nonAnsiStringLen(text)
+        fwidth = width - lt
+        rfw = max(fwidth//2,0)
+        lfw = max(width- lt - rfw ,0)
+
+        return  fill*(lfw)  + text +  fill*(rfw)
+
+    @staticmethod
+    def __nonAnsiStringLen(text):
+        import pyparsing
+        ESC = pyparsing.Literal('\x1b')
+        integer = pyparsing.Word(pyparsing.nums)
+        escapeSeq = pyparsing.Combine(ESC + '[' + pyparsing.Optional(pyparsing.delimitedList(integer,';')) + pyparsing.oneOf(list(pyparsing.alphas)))
+
+        nonAnsiString = lambda s : pyparsing.Suppress(escapeSeq).transformString(s)
+
+        return len(nonAnsiString(text))
+#
     @staticmethod
     def InIPython():
         try:
@@ -210,9 +234,25 @@ def CheckIntegrity():
     r += TFormat.InGreyBackGround(TFormat.InPurple('InPurple with grey backfround')) + '\n'
     r += TFormat.InPurpleBackGround(TFormat.InGrey('InGrey with purple backfround')) + '\n'
     r += '\n'
-    r += TFormat.InRed(TFormat.Center("toto"))+'\n'
-    r += TFormat.InBlue(TFormat.Center("toto",width=15)) + '\n'
-    r += TFormat.WithUnderline('^      15     ^') + '\n\n'
+    r += TFormat.InRed(TFormat.Center("toto"))+'-\n'
+    r += '-'+TFormat.InBlue(TFormat.Center("toto",width=8)) + '-\n'
+    r += ' '+TFormat.WithUnderline('^   8  ^') + '\n\n'
+
+    r += '-'+TFormat.InBlue(TFormat.Center("toto",width=7)) + '-\n'
+    r += ' '+TFormat.WithUnderline('^  7  ^') + '\n\n'
+
+    r += '-'+TFormat.InBlue(TFormat.Center("toto",width=6)) + '-\n'
+    r += ' '+TFormat.WithUnderline('^  6 ^') + '\n\n'
+
+    r += '-'+TFormat.InBlue(TFormat.Center("toto",width=5)) + '-\n'
+    r += ' '+TFormat.WithUnderline('^ 5 ^') + '\n\n'
+
+    r += '-'+TFormat.InBlue(TFormat.Center("toto",width=4)) + '-\n'
+    r += ' '+TFormat.WithUnderline('^ 4^') + '\n\n'
+
+    r += '-'+TFormat.InBlue(TFormat.Center("toto",width=3)) + '-\n'
+    r += ' '+TFormat.WithUnderline('^3^') + '\n\n'
+
     TFormat.II()
     r += TFormat.GetIndent() + 'One Level Of Indentations \n'
     TFormat.II()
