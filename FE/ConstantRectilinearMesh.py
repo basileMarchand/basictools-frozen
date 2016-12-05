@@ -19,6 +19,7 @@ class ConstantRectilinearMesh(MeshBase):
         self.__origin = np.zeros((dim,) )
         self.__spacing = np.ones((dim,))
         self.elemTags = {}
+        self.connectivity = None
 
     def GetNamesOfCellTags(self):
         return self.elemTags.keys()
@@ -172,11 +173,14 @@ class ConstantRectilinearMesh(MeshBase):
         index = int(index)
         if self.GetDimensionality() == 3:
             planesize = (self.__dimensions[1]-1) *(self.__dimensions[2]-1)
-            nx = index / planesize
-            resyz = index - nx*(planesize)
-            ny = resyz /(self.__dimensions[2]-1)
-            nz =  resyz - ny*(self.__dimensions[2]-1)
-            return np.array([nx,ny,nz])
+
+            res = np.empty(3,dtype=int)
+            res[0] = index / planesize
+            resyz = index - res[0]*(planesize)
+            res[1] = resyz /(self.__dimensions[2]-1)
+            res[2] =  resyz - res[1]*(self.__dimensions[2]-1)
+            return res
+
         else:
             planesize = (self.__dimensions[1]-1)
             nx = index / planesize
@@ -282,6 +286,13 @@ class ConstantRectilinearMesh(MeshBase):
             n3 = n0 + 1
             ##u0,u1,u3
             return np.array([n0, n1, n2, n3])
+
+    def GenerateFullConnectivity(self):
+        if(self.connectivity is None):
+            self.connectivity = np.empty((self.GetNumberOfElements(),2**self.GetDimensionality() ), dtype=np.int)
+            for i in xrange(self.GetNumberOfElements()):
+                self.connectivity[i,:] = self.GetConnectivityForElement(i)
+
 
     def __str__(self):
         res = ''

@@ -25,13 +25,52 @@ class BundaryCondition(BaseOutputObject):
         self.cpt = 0
 
     def reserve(self, size):
-        self.nodes.resize( (size,self.dim))
-        self.dofs.resize( ( size,))
-        self.vals.resize( ( size,1))
+        self.nodes = np.resize(self.nodes, (size,self.dim))
+        self.dofs = np.resize(self.dofs, ( size,))
+        self.vals = np.resize(self.vals, ( size,1))
+
         self.sz = size
 
     def tighten(self):
         self.reserve(self.cpt)
+
+    def eliminate_double(self):
+
+        m = np.amax(self.nodes, axis=0)
+        fcpt = np.zeros(m+1,dtype=np.int);
+
+        i = 0 ;
+        self.PrintDebug(self.cpt)
+        fac = 100./self.cpt
+        c = 0
+        while (i < self.cpt):
+          if i*fac >c:
+              self.Print2(round(i*fac))
+              c +=1
+
+          node = self.nodes[i]
+          if fcpt[node[0],node[1],node[2]] == 0:
+              fcpt[node[0],node[1],node[2]] += 1
+              i += 1
+              continue
+          fcpt[node[0],node[1],node[2]] += 1
+
+          dofs = self.dofs[i]
+          #val = self.vals[i]
+          j = 0
+          while(j < i-1 and i < self.cpt ):
+             xyz =self.nodes[j]
+             if ( xyz[0] == node[0] and xyz[1] == node[1] and xyz[2] == node[2]  and self.dofs[j] == dofs   ):
+                 #(self.nodes[j] == node).all()
+                 self.nodes[j] = self.nodes[self.cpt-1]
+                 self.dofs[j] = self.dofs[self.cpt-1]
+                 self.vals[j] = self.vals[self.cpt-1]
+                 self.cpt -=1
+                 continue
+             j +=1
+
+          i +=1
+        self.tighten()
 
     def append(self, nodes, dof,val):
         if self.cpt >= self.sz:
@@ -115,7 +154,12 @@ class Fea(FeaBase.FeaBase):
         if  neumann_bcs is not  None:
 
             neumann_bcs.tighten()
-            MassMatrix = self.BuildMassMatrix()
+            self.support.GenerateFullConnectivity()
+            z = np.zeros((self.support.GetNumberOfNodes(),))
+            z[support.GetMonoIndexOfNode(neumann_bcs.nodes)] +=  1.;
+            eff = np.clip((np.sum(z[self.support.connectivity],axis=1) ),0, 1)
+
+            MassMatrix = self.BuildMassMatrix(eff)
             self.f[support.GetMonoIndexOfNode(neumann_bcs.nodes)*dofpernode + neumann_bcs.dofs] += neumann_bcs.vals
             self.f[:,0] = MassMatrix*self.f[:,0]
 
