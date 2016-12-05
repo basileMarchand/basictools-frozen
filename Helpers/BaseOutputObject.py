@@ -49,6 +49,7 @@ class BaseOutputObject(object):
 
     def PrintInternal(self, mess, level=1):
         if BaseOutputObject.__globalDebugMode or self.__classDebugMode :
+            res = ""
             ## we only load modules in debug mode
             import inspect
             import time
@@ -66,22 +67,25 @@ class BaseOutputObject(object):
             m, s = divmod(time.time(), 60.)
             h, m = divmod(m, 60)
             d, h = divmod(h, 24)
-            print("%d:%02d:%02d" % (h+1, m, s)),
+            res += ("%d:%02d:%02d" % (h+1, m, s))
 
-            print(": "+str(stack[1]) + ":" +str(stack[2]) ),
+            res += (": "+str(stack[1]) + ":" +str(stack[2]) )
             if level == 1 :
-                print(TFormat.InBlue(" -->")),
+                res += (TFormat.InBlue(" --> "))
             elif level == 2:
-                print(TFormat.InGreen(" V->")),
+                res += (TFormat.InGreen(" V-> "))
             else:
-                print(TFormat.InRed(" D->")),
+                res += (TFormat.InRed(" D-> "))
             # we recover the code of the line to print it
             # some cleaning
             if type(mess) is not str:
                 stack = inspect.stack()[stnumber]
-                print(")".join("(".join(str(stack[4][0]).split("(")[1:]).split(")")[0:-1]) ),
-                print(" -> "),
-            print(mess)
+                res += (")".join("(".join(str(stack[4][0]).split("(")[1:]).split(")")[0:-1]) )
+                res += (" -> ")
+            #print(" [" + str(memory()) + "]"),
+            res += (str(mess))
+            res += "\n"
+            print(res),
             return
         elif level <= BaseOutputObject.__verboseLevel :
             print(mess)
