@@ -292,6 +292,7 @@ class ConstantRectilinearMesh(MeshBase):
             self.connectivity = np.empty((self.GetNumberOfElements(),2**self.GetDimensionality() ), dtype=np.int)
             for i in xrange(self.GetNumberOfElements()):
                 self.connectivity[i,:] = self.GetConnectivityForElement(i)
+        return self.connectivity
 
 
     def __str__(self):

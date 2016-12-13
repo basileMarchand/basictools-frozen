@@ -225,7 +225,7 @@ class Fea(FeaBase.FeaBase):
 
         zerosdof = np.where(K.diagonal()== 0 )[0]
 
-        self.PrintVerbose("Number of active nodes : " + str(self.ndof-len(zerosdof) ) + "  of " + str(self.ndof) + "   "+ str(float(len(zerosdof)*100.)/self.ndof)+ "% of empty nodes"  )
+        self.PrintVerbose("Number of active nodes : " + str(self.ndof-len(zerosdof) ) + "  of " + str(self.ndof) + "   "+ str(float(len(zerosdof)*100.)/self.ndof)+ "% of empty dofs"  )
         Kones = coo_matrix( (np.ones((len(zerosdof),) ) ,(zerosdof,zerosdof)), shape =(self.ndof, self.ndof)).tocsr()#(self.dofpernode,self.dofpernode))
         K = (K.tocsr() + Kones.tocsr()).tocsr()
 
