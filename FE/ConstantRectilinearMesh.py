@@ -204,7 +204,7 @@ class ConstantRectilinearMesh(MeshBase):
             return np.multiply([nx,ny],self.__spacing)+self.__origin
 
     def GetPosOfNodes(self):
-        np.meshgrid()
+
         x = np.arange(self.__dimensions[0])*self.__spacing[0]+self.__origin[0]
         y = np.arange(self.__dimensions[1])*self.__spacing[1]+self.__origin[1]
         if self.GetDimensionality() == 2:
@@ -292,6 +292,12 @@ class ConstantRectilinearMesh(MeshBase):
             self.connectivity = np.empty((self.GetNumberOfElements(),2**self.GetDimensionality() ), dtype=np.int)
             for i in xrange(self.GetNumberOfElements()):
                 self.connectivity[i,:] = self.GetConnectivityForElement(i)
+        from OTTools.FE.UnstructuredMesh import ElementsContainer as ElementsContainer
+        import OTTools.FE.ElementNames
+        self.elements = {}
+        self.elements[OTTools.FE.ElementNames.Hexaedron_8 ] = ElementsContainer(OTTools.FE.ElementNames.Hexaedron_8)
+        self.elements[OTTools.FE.ElementNames.Hexaedron_8 ].connectivity = self.connectivity
+        self.elements[OTTools.FE.ElementNames.Hexaedron_8 ].tags =  self.elemTags 
         return self.connectivity
 
 
