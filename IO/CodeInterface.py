@@ -1,24 +1,26 @@
 # -*-coding:Latin-1 -*
 import subprocess
-import numpy as np
 import os
-import time
+from OTTools.Helpers.BaseOutputObject import BaseOutputObject
 
-class Interface(object):
+
+class Interface(BaseOutputObject):
 
     def __init__(self, workingDirectory = os.getcwd()):
+        super(Interface,self).__init__()
 
         # Working Folder
         """Working folder must contain:
             a folder 'self.tpl_directory' containing :
                 'self.tpl_filename'
         """
-        self.workingDirectory = workingDirectory
+        self.SetWorkingDirectory(workingDirectory)
 
         # Model parameters
         self.parameters = {}
         self.ptab       = {}
         self.bc         = {}
+
 
         # Template
         self.tplFilename = 'template.tpl'
@@ -36,26 +38,36 @@ class Interface(object):
 
         # Code command
         self.codeCommand = 'Zrun'
+        self.lastCommandExecuted = None
 
     def WriteFile(self, idProc):
 
         # Write code input file
-        inpString = self.tpl.format(**self.parameters)
-
+        try:
+            inpString = self.tpl.format(**self.parameters)
+        except KeyError, e: # pragma: no cover
+            print("The user must supply the key: %s" % str(e))
+            raise
+            
         inpFilename = self.inputFilename + str(idProc) + self.inputFileExtension
         with open(self.processDirectory + inpFilename, 'w') as inpFile:
             inpFile.write(inpString)
 
-    def SingleRunComputation(self, idProc):# pragma: no cover
+    def SingleRunComputation(self, idProc,stdout = None):# pragma: no cover
 
         inpFilename = self.inputFilename + str(idProc) + self.inputFileExtension
 
         # Command to execute
         cmd = 'cd ' + self.processDirectory + ' && ' + self.codeCommand + ' ' + inpFilename
 
+        if stdout is None:
+            out = open(os.devnull, 'w')    
+        else:
+            out = stdout    
+            
         # Commande execution
-        FNULL = open(os.devnull, 'w')
-        proc = subprocess.Popen(cmd , stdout=FNULL, shell=True)
+        self.lastCommandExecuted = cmd;
+        proc = subprocess.Popen(cmd , stdout=out, shell=True)
 
         return proc
 
@@ -66,6 +78,25 @@ class Interface(object):
             string = File.read()
 
         return string
+
+
+    def SetWorkingDirectory(self,Dir):
+        self.workingDirectory = Dir;
+
+    def SetProcessDirectory(self,Dir):
+        self.processDirectory = Dir;
+    
+    def SetCodeCommand(self,ccommand):          # Code command
+        self.codeCommand = ccommand 
+
+    def SetTemplateFile(self,filename):
+        self.tplFilename = filename;
+        
+    def ReadTemplateFile(self, filename = None):
+        if filename is not None:
+            self.SetTemplateFile(filename)
+        self.tpl = open(self.workingDirectory + os.sep + self.tplFilename).read()
+
 
 
 def CheckIntegrity():
@@ -94,9 +125,13 @@ def CheckIntegrity():
     interface.parameters['conductivity']  = '280.+100.*atan(0.01*(1100-temperature));'
     interface.parameters['coefficient']   = '8.*(430.+40.*atan(0.01*(temperature-500.)))*(1.5-0.5*exp(-200./((temperature-1200.)*(temperature-1200.))));'
 
-    interface.processDirectory  = T.TestTempDir.GetTempPath()
+    interface.SetProcessDirectory(T.TestTempDir.GetTempPath())
+    interface.SetCodeCommand("ls -l ")
+    #interface.SetTemplateFile('template.tpl')
+    interface.ReadTemplateFile('template.tpl')
     interface.WriteFile(1)
-    #interface.SingleRunComputation(1)
+    import sys
+    interface.SingleRunComputation(1,sys.stdout).wait()
     return 'ok'
 
 
