@@ -7,17 +7,40 @@ class Tag():
         def __init__(self,tagname):
             self.name = tagname
             self.id = np.empty((0,1),dtype=np.int)
+            self.cpt =0
+            
         def AddToTag(self,tid):
-            self.id = np.append(self.id,tid)
+            if len(self.id) <= self.cpt:
+                self.id.resize((self.cpt*2+1,1)) 
+                
+            self.id[self.cpt] = tid
+            self.cpt += 1
+        
         def __len__(self):
-            return len(self.id)
+            return self.cpt
 
+        def tighten(self):
+            self.id = np.resize(self.id, (self.cpt,))
+            
+        def SetIds(self, ids):
+            self.id = ids
+            self.cpt = len(ids)
+            
+        
 class MeshBase(BaseOutputObject):
 
     def __init__(self):
         super(MeshBase,self).__init__()
         self.nodesTags = {}
 
+    def GetNodalTag(self, tagName):
+        if not self.nodesTags.has_key(tagName):
+           res = Tag(tagName)
+           self.nodesTags[tagName] = res 
+           return res
+        else: 
+           return self.nodesTags[tagName]
+        
     def GetNumberOfNodes(self):
         raise Exception()# pragma: no cover
 
@@ -31,7 +54,7 @@ class MeshBase(BaseOutputObject):
 
 def CheckIntegrity():
     obj = MeshBase()
-    tag = Tag("toto")
+    tag = obj.GetNodalTag("toto")
     tag.AddToTag(0)
     len(tag)
     return "ok"
