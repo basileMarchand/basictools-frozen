@@ -4,15 +4,30 @@ from OTTools.Helpers.TextFormatHelper import TFormat as TFormat
 
 class WriterBase(BaseOutputObject):
     def __init__(self, fileName = None):
+        super(WriterBase,self).__init__()
         self.fileName = None;
         self.SetFileName(fileName)
-        self.__isOpen = False
+        self._isOpen = False
+        self._isBinary = False
 
+    def SetBinary(self, val = True):
+        if self._isOpen :
+            print(TFormat.InRed("SetBinary before opening"))
+            raise Exception
+        self._isBinary = val
+        
+    def isBinary(self):
+        return self._isBinary
+        
+    def isOpen(self):
+        return self._isOpen
+        
+        
     def SetFileName(self,fileName):
         self.fileName = fileName;
 
     def Open(self, filename = None):
-        if self.__isOpen :
+        if self._isOpen :
             print(TFormat.InRed("The file is already open !!!!!"))
             raise Exception
 
@@ -22,17 +37,22 @@ class WriterBase(BaseOutputObject):
 
         ## we use unbuffered so we can repaire broken files easily
         try :
-            self.filePointer = open(self.fileName, 'w',0)
+            if self._isBinary == True :
+                mode = "wb"
+            else:
+                mode = "w"
+            self.filePointer = open(self.fileName, mode,0)
+            
         except:
             print(TFormat.InRed("Error File Not Open"))
             raise
 
-        self.__isOpen = True
+        self._isOpen = True
 
     def Close(self):
-        if self.__isOpen:
+        if self._isOpen:
             self.filePointer.close()
-            self.__isOpen = False
+            self._isOpen = False
         else :
             self.PrintVerbose(TFormat.InRed("File Not Open"))
 
