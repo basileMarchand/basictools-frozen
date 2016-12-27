@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 from OTTools.FE.MeshBase import MeshBase
 from OTTools.FE.MeshBase import Tag
-import OTTools.FE.ElementNames as EN
 import numpy as np
+import OTTools.FE.ElementNames as ElementNames
 
 class ElementsContainer():
     def __init__(self,typename):
@@ -11,59 +11,50 @@ class ElementsContainer():
         self.globaloffset   = 0
         self.originalIds = np.empty((0,),dtype=np.int)
         self.tags = {}
+        self.cpt = 0;
 
 
+    
     def GetNumberOfElements(self):
-        return self.connectivity.shape[0]
+        return self.cpt
+        #return self.connectivity.shape[0]
 
     def AddNewElement(self,conn,originalid):
-        if(self.connectivity.shape[1] == 0):
-            self.connectivity = np.empty((0,len(conn)),dtype=np.int)
-        self.connectivity = np.vstack((self.connectivity,np.array(conn,dtype=int) ))
-        self.originalIds = np.append(self.originalIds,originalid)
-        return self.connectivity.shape[0]
+        if self.cpt >= self.connectivity.shape[0]:
+            self.Reserve(2*self.cpt+1) 
+            
+        self.connectivity[self.cpt,:] =conn
+        self.originalIds[self.cpt] =originalid   
+        self.cpt +=1
+        
+        #if(self.connectivity.shape[1] == 0):
+        #    self.connectivity = np.empty((0,len(conn)),dtype=np.int)
+        #self.connectivity = np.vstack((self.connectivity,np.array(conn,dtype=int) ))
+        #self.originalIds = np.append(self.originalIds,originalid)
+        
+        return self.cpt
 
     def GetNumberOfNodesPerElement(self):
-        return self.connectivity.shape[1]
+        if  self.connectivity.shape[1] : return self.connectivity.shape[1]
+        return ElementNames.numberOfNodes[self.elementType]
 
     def GetTag(self, tagName):
         if not self.tags.has_key(tagName):
            self.tags[tagName] = Tag(tagName)
         return self.tags[tagName]
+    
+    def Reserve(self,nbElements):
+        if (nbElements != self.connectivity.shape[0]):
+            self.connectivity =  np.resize(self.connectivity, (nbElements,self.GetNumberOfNodesPerElement()))
+            self.originalIds =  np.resize(self.originalIds, (nbElements,))
+            
+            #self.connectivity = np.empty((nbElements,self.GetNumberOfNodesPerElement()),dtype=np.int)
+            #self.originalIds = np.empty((nbElements,),dtype=np.int)
 
-def CreateMeshOfTriangles(points,tris):
-    res = UnstructuredMesh()
-    res
-    res.nodes = np.array(points, dtype=np.double)
-    res.originalIDNodes = np.arange(0,res.GetNumberOfNodes(),dtype=np.int)
-
-    elements = res.GetElementsOfType(EN.Triangle_3)
-    elements.connectivity = np.array(tris,dtype=np.int)
-    elements.originalIds = np.arange(0,elements.GetNumberOfElements(),dtype=np.int)
-    return res
-
-def CreateMeshFromConstantRectilinearMesh(CRM):
-    res = UnstructuredMesh()
-    res.nodes = CRM.GetPosOfNodes();
-    res.originalIDNodes = np.arange(0,res.GetNumberOfNodes(),dtype=np.int);
-    #CRM.originalIDNodes
-
-    nbelements = CRM.GetNumberOfElements()
-
-    res.PrintDebug(nbelements)
-
-    if(CRM.GetDimensionality() == 3):
-        elements = res.GetElementsOfType(EN.Hexaedron_8)
-        elements.connectivity = np.zeros((nbelements,8),dtype=np.int)
-    else:
-        elements = res.GetElementsOfType(EN.Quadrangle_4)
-        elements.connectivity = np.zeros((nbelements,4),dtype=np.int)
-
-    for i in xrange(nbelements):
-        elements.connectivity[i,:] = CRM.GetConnectivityForElement(i)
-    elements.originalIds = np.arange(0,elements.GetNumberOfElements(),dtype=np.int)
-
-    return res
+    def tighten(self):
+        self.Reserve(self.cpt)
+        
+        
 
 class UnstructuredMesh(MeshBase):
 
@@ -81,6 +72,9 @@ class UnstructuredMesh(MeshBase):
     def GetNumberOfNodes(self):
         return self.nodes.shape[0]
 
+    def GetDimensionality(self):
+        return self.nodes.shape[1]
+        
     def GetNumberOfElements(self):
         n = 0
         for type, data in self.elements.iteritems():
@@ -106,11 +100,6 @@ class UnstructuredMesh(MeshBase):
         self.boundingMin = np.amin(self.nodes, axis=0);
         self.boundingMax = np.amax(self.nodes, axis=0);
 
-    def GetNodalTag(self, tagname):
-        if not self.nodesTags.has_key(tagname):
-            self.nodesTags[tagname] = Tag(tagname)
-        return self.nodesTags[tagname]
-
     def AddElementToTagUsingOriginalId(self,oid,tagname):
         for ntype, data in self.elements.iteritems():
             w = np.where(data.originalIds == oid)
@@ -131,7 +120,7 @@ class UnstructuredMesh(MeshBase):
             for tagname in data.tags:
                 res.add(tagname)
 
-        return res
+        return list(res)
 #    def GetElementTag(self,tagname):
 #        ne = self.GetNumberOfElements()
 #        res = np.zeros((ne,1),dtype=np.int)
@@ -142,20 +131,27 @@ class UnstructuredMesh(MeshBase):
 #        return res
 
     def GetElementsInTag(self,tagname,useOriginalId=False) :
+        self.ComputeGlobalOffset();
         ne = self.GetNumberOfElements()
         res = np.zeros((ne,),dtype=np.int)
         cpt =0
         for ntype, elem in self.elements.iteritems():
             if elem.tags.has_key(tagname):
+                
+                tag = elem.tags[tagname].id
                 if useOriginalId:
-                    res[cpt:cpt+len(elem.tags[tagname].id) ] = elem.originalIds[elem.tags[tagname].id];
+                    res[cpt:cpt+len(tag) ] = elem.originalIds[tag];
                 else:
-                    res[cpt:cpt+len(elem.tags[tagname].id) ] = elem.globaloffset+elem.tags[tagname].id;
-                cpt +=  len(elem.tags[tagname].id)
+                    res[cpt:cpt+len(elem.tags[tagname].id) ] = elem.globaloffset+tag;
+                cpt +=  len(tag)
         return res[0:cpt]
 
     def PrepareForOutput(self):
        self.ComputeGlobalOffset()
+       for ntype, data in self.elements.iteritems():
+             for name, tag in data.tags.iteritems():
+                   tag.tighten()
+
        
 
     """def GenerateManufacturedOriginalIDs(self):
@@ -174,11 +170,14 @@ class UnstructuredMesh(MeshBase):
         return res
 
 def CheckIntegrity():
+    from OTTools.FE.UnstructuredMeshTools import CreateMeshOfTriangles
+    from OTTools.FE.UnstructuredMeshTools import CreateMeshFromConstantRectilinearMesh
+    
     res = CreateMeshOfTriangles([[0,0,0],[1,2,3]], [[0,2,3]])
 
-    elements = res.GetElementsOfType(EN.Triangle_3)
+    elements = res.GetElementsOfType(ElementNames.Triangle_3)
 
-    elements = res.GetElementsOfType(EN.Bar_2)
+    elements = res.GetElementsOfType(ElementNames.Bar_2)
     elements.AddNewElement([1,2],1)
     elements.GetNumberOfNodesPerElement()
 
@@ -187,8 +186,8 @@ def CheckIntegrity():
     if res.GetNumberOfElements() != 2: raise Exception()
     res.ComputeGlobalOffset()
 
+    print(res.GetDimensionality())
     res.ComputeBoundingBox()
-
     print(res.boundingMin)
     print(res.boundingMax)
 
@@ -206,19 +205,6 @@ def CheckIntegrity():
 
     print(res.GetElementsOfType("bars").GetTag("toto"))
     print(res)
-
-    ###########################
-    from OTTools.FE.ConstantRectilinearMesh import ConstantRectilinearMesh
-    myMesh = ConstantRectilinearMesh()
-    myMesh.SetDimensions([2,2,2]);
-    myMesh.SetSpacing([1, 1, 1]);
-    print(CreateMeshFromConstantRectilinearMesh(myMesh))
-
-    ###########################
-    myMesh = ConstantRectilinearMesh()
-    myMesh.SetDimensions([2,2]);
-    myMesh.SetSpacing([1, 1]);
-    print(CreateMeshFromConstantRectilinearMesh(myMesh))
 
     return "ok"
 

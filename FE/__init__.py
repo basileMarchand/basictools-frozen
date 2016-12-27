@@ -3,6 +3,7 @@
 __all__ = [
 'MeshBase',
 'UnstructuredMesh',
+'UnstructuredMeshTools',
 'UnstructuredFea',
 'ConstantRectilinearMesh',
 'ConstantRectilinearFea',
