@@ -84,11 +84,16 @@ def ReadAsc(fileName=None,string=None):
                     conn = [ conn[per] for per in [0, 2, 4, 9, 1,3 ,5,6,7,8] ]
 
                 elements = res.GetElementsOfType(nametype)
+                elements.Reserve(nbElements)
+                
                 oid = int(s[0])
 
                 elements.AddNewElement(conn,oid)
                 cpt +=1
+            for etype, data in res.elements.iteritems():
+                data.tighten()
             continue
+        
         if l.find("BEGIN_GROUPS")>-1 :
 
             nbgroups = int(l.split()[1])
@@ -112,7 +117,13 @@ def ReadAsc(fileName=None,string=None):
                 if s[2] == '1' :
                     #node group
                     tag = res.GetNodalTag(s[1])
-                    tag.id = np.array( [filetointernalid[x] for x in  map(int,s[7:]) ] ,dtype=np.int)
+                    tag.SetIds(np.array( [filetointernalid[x] for x in  map(int,s[7:]) ] ,dtype=np.int))
+                    #tag.ids = np.zeros(len(s[7:]),dtype=np.int)
+                    #cpt =0 
+                    #for i in s[7:]:
+                    #    tag.ids[cpt] = filetointernalid[int(i)]
+                    #    cpt +=1
+                    #
                 else:
                     #element group
                     for x in range(7,len(s)) :
@@ -122,6 +133,7 @@ def ReadAsc(fileName=None,string=None):
                 cpt +=1
             continue
         print("Ignoring line : " + l )
+    res.PrepareForOutput()
     return res
 
 

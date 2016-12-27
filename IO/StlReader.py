@@ -46,7 +46,7 @@ def ReadStl(fileName=None,string=None):
     elements.connectivity.shape = (resUM.GetNumberOfNodes()/3,3)
     #elements.connectivity = elements.connectivity.T
     elements.originalIds = np.arange(resUM.GetNumberOfNodes()/3,dtype=np.int )
-
+    elements.cpt = elements.connectivity.shape[0]
     return resUM, normals
 
 
