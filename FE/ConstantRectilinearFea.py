@@ -391,18 +391,22 @@ def CheckIntegrityThermal3D():
     #dirichlet at plane z =0
     dirichlet_bcs = BundaryCondition()
 
-    for x in range(nx):
-        for y in range(ny):
+    for x in xrange(nx):
+        for y in xrange(ny):
             for z in [0]:
                 dirichlet_bcs.append([x,y,z],0 , 0 )
+                
 
     # Homogenous body flux
     neumann_bcs = BundaryCondition()
-    for x in range(nx):
-        for y in range(ny):
-            for z in range(nz):
+    for x in xrange(nx):
+        for y in xrange(ny):
+            for z in xrange(nz):
                 neumann_bcs.append([x,y,z],0 , 1 )
 
+    neumann_bcs.append([0,0,0],0 , 1 )
+    neumann_bcs.append([1,1,0],0 , 1 )
+    neumann_bcs.eliminate_double()
 
     starttime = time.time()
     myElement = Hexa8Cuboid()
@@ -670,13 +674,11 @@ def CheckIntegrityDep2D():
     return 'ok'
 
 def CheckIntegrity():
-    try:
-        print(CheckIntegrityThermal3D())
-        print(CheckIntegrityDep3D())
-        print(CheckIntegrityThermal2D())
-        print(CheckIntegrityDep2D())
-    except:# pragma: no cover
-        return "Not ok"# pragma: no cover
+    
+    print(CheckIntegrityThermal3D())
+    print(CheckIntegrityDep3D())
+    print(CheckIntegrityThermal2D())
+    print(CheckIntegrityDep2D())
     return "ok"
 
 if __name__ == '__main__':
