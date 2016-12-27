@@ -3,6 +3,8 @@
 import numpy as np
 import OTTools.FE.ElementNames as EN
 
+#  for ABAQUS input file
+
 InpNumber = {}
 
 InpNumber['C3D4'] = EN.Tetrahedron_4
