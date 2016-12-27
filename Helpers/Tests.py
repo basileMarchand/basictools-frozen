@@ -33,6 +33,10 @@ class TestTempDir():
         if os.name == "nt":
             subprocess.Popen('explorer "' + cls.GetTempPath() +'"')
 
+    @classmethod
+    def SetTempPath(cls,path):
+        import os
+        cls.path = os.path.abspath(path+os.sep) + os.sep
 
 def __RunAndCheck(lis,bp,stopAtFirstError):# pragma: no cover
 
