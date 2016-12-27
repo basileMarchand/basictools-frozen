@@ -5,6 +5,8 @@ import OTTools.FE.ElementNames as EN
 
 GeofNumber = {}
 
+GeofNumber['quad4'] = EN.Quadrangle_4
+GeofNumber['c2d4'] = EN.Quadrangle_4
 GeofNumber['c3d4'] = EN.Tetrahedron_4
 GeofNumber['t3']   = EN.Triangle_3
 
