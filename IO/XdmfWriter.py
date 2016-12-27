@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
 from OTTools.Helpers.TextFormatHelper import TFormat
+from OTTools.IO.WriterBase import WriterBase as WriterBase
+
 import numpy as np
 import os
 import OTTools.FE.ElementNames as EN
@@ -20,7 +22,7 @@ XdmfName[EN.Hexaedron_8] = 'Hexahedron'
 
 
 XdmfName[EN.Bar_3] = "Edge_3"
-XdmfName[EN.Triangle_6] = 'Triagle_6'
+XdmfName[EN.Triangle_6] = 'Triangle_6'
 XdmfName[EN.Quadrangle_9] = 'Quadrilateral_9'
 XdmfName[EN.Quadrangle_8] = 'Quadrilateral_8'
 XdmfName[EN.Tetrahedron_10] = 'Tetrahedron_10'
@@ -40,8 +42,8 @@ XdmfNumber[EN.Wedge_6] = 0x8
 XdmfNumber[EN.Hexaedron_8] = 0x9
 
 XdmfNumber[EN.Bar_3] = 0x22
-XdmfNumber[EN.Triangle_6] = 0x23
-XdmfNumber[EN.Quadrangle_9] = 0x24
+XdmfNumber[EN.Triangle_6] = 0x24
+XdmfNumber[EN.Quadrangle_9] = 0x23
 XdmfNumber[EN.Quadrangle_8] = 0x25
 XdmfNumber[EN.Tetrahedron_10] = 0x26
 XdmfNumber[EN.Pyramid_13] = 0x27
@@ -123,19 +125,21 @@ def WriteMeshToXdmf(filename, baseMeshObject, PointFields = None, CellFields = N
     writer.Close()
 #
 
-class XdmfWriter:
+class XdmfWriter(WriterBase):
     def __init__(self, fileName = None):
+        super(XdmfWriter,self).__init__()
+
         self.fileName = None;
         self.timeSteps = [];
         self.currentTime = 0;
         self.__XmlSizeLimit = 10
         self.automaticOpen = False;
 
-        self.__isBinary = False;
+        self.SetBinary(False)
         self.__isTemporalOutput = False
         self.__binFileName = None;
         self.__filePointer = None;
-        self.__isOpen = False;
+        #self.__isOpen = False;
         self.__binarycpt = 0;
         self.__binfilecounter = 0
         self.__keepXmlFileInSaneState = True;
@@ -145,13 +149,13 @@ class XdmfWriter:
     def __str__(self):
         res  = 'XdmfWriter : \n'
         res += '   FileName : '+self.fileName+'\n'
-        if self.__isBinary:
+        if self.isBinary():
            res += '   Binary output Active \n'
            res += '   Binary FileName : '+ self.__binFileName +'\n'
         if self.__isTemporalOutput:
            res += '   Temporal output Active \n'
            res += '   TimeSteps : '+ str(self.timeSteps) + '\n'
-        if self.__isOpen:
+        if self.isOpen():
            res += '   The File is Open!! \n'
         return res
 
@@ -181,23 +185,18 @@ class XdmfWriter:
         self.timeSteps.append(self.currentTime);
 
     def SetTemporal(self, val = True):
-        if self.__isOpen :
+        if self.isOpen() :
             print(TFormat.InRed("SetTemporal before opening"))
             raise Exception
         self.__isTemporalOutput = val
 
-    def SetBinary(self, val = True):
-        if self.__isOpen :
-            print(TFormat.InRed("SetBinary before opening"))
-            raise Exception
-        self.__isBinary = val
 
     def SetXmlSizeLimit(self,val):
         self.__XmlSizeLimit= val
 
     def Open(self, filename = None):
 
-        if self.__isOpen :
+        if self.isOpen() :
             print(TFormat.InRed("The file is already open !!!!!"))
             return
             #raise Exception
@@ -214,7 +213,7 @@ class XdmfWriter:
             raise
 
         #print("File : '" + self.fileName + "' is open.")
-        self.__isOpen = True
+        self._isOpen = True
         self.filePointer.write('<?xml version="1.0" encoding="utf-8"?>\n')
         self.filePointer.write('<Xdmf xmlns:xi="http://www.w3.org/2001/XInclude" Version="2.92">\n')
         self.filePointer.write('<Domain>\n')
@@ -222,22 +221,22 @@ class XdmfWriter:
         if self.__isTemporalOutput:
             self.filePointer.write('<Grid Name="Grid_T" GridType="Collection" CollectionType="Temporal"  >\n')
         #clean the binary file  =
-        if self.__isBinary:
+        if self.isBinary():
             self.__binaryFilePointer = open (self.__binFileName, "wb")
         if self.__keepXmlFileInSaneState:
             self.WriteTail()
 
     def Close(self):
-        if self.__isOpen:
+        if self.isOpen():
             self.WriteTail()
             self.filePointer.close()
-            self.__isOpen = False
-            if self.__isBinary:
+            self._isOpen = False
+            if self.isBinary():
                 self.__binaryFilePointer.close()
             #print("File : '" + self.fileName + "' is close.")
 
     def WriteTail(self):
-        if self.__isOpen:
+        if self.isOpen():
             filepos = self.filePointer.tell()
             if self.__isTemporalOutput:
                 self.__WriteTime()
@@ -283,7 +282,7 @@ class XdmfWriter:
             self.filePointer.write('    <Topology Dimensions="'+ArrayToString(reversed(dims))  +'" Type="'+str(dimensionality)+'DSMesh"/>\n')
         elif baseMeshObject.IsUnstructured() :
             self.filePointer.write('    <Geometry Type="XYZ">\n')
-            if ( len(baseMeshObject.GetPosOfNodes()[0])  == 2 ):
+            if ( baseMeshObject.GetDimensionality()  == 2 ):
                 nodes = baseMeshObject.GetPosOfNodes()
                 nodes = np.concatenate((nodes,np.zeros((baseMeshObject.GetNumberOfNodes(),1))), axis=1 );
                 self.__WriteDataItem(nodes.flatten(), (baseMeshObject.GetNumberOfNodes(),3)  )
@@ -327,9 +326,18 @@ class XdmfWriter:
                 self.__WriteDataItem(dataarray)
             else:
                 #
-                elementType = XdmfName[baseMeshObject.elements.keys()[0]]
-                self.filePointer.write('    <Topology TopologyType="{}" NumberOfElements="{}"  >\n'.format(elementType,baseMeshObject.GetNumberOfElements()))
-                self.__WriteDataItem(baseMeshObject.elements[baseMeshObject.elements.keys()[0]].connectivity.flatten())
+                if len(baseMeshObject.elements.keys()):
+                    elementType = XdmfName[baseMeshObject.elements.keys()[0]]
+                    self.filePointer.write('    <Topology TopologyType="{}" NumberOfElements="{}" '.format(elementType,baseMeshObject.GetNumberOfElements()))
+                    if XdmfNumber[baseMeshObject.elements.keys()[0]] == 0x2:
+                        self.filePointer.write('NodesPerElement="2"  ')
+                    if XdmfNumber[baseMeshObject.elements.keys()[0]] == 0x1:
+                        self.filePointer.write('NodesPerElement="1"  ')
+                    self.filePointer.write(' >\n')
+
+                    self.__WriteDataItem(baseMeshObject.elements[baseMeshObject.elements.keys()[0]].connectivity.flatten())
+                else:
+                    self.filePointer.write('    <Topology TopologyType="mixed" NumberOfElements="0"  >\n')
 
             self.filePointer.write('    </Topology> \n')
 
@@ -464,7 +472,7 @@ class XdmfWriter:
          if GridFieldsNames is None:
             GridFieldsNames  = [];
 
-         if not self.__isOpen :
+         if not self.isOpen() :
             if self.automaticOpen:
                 self.Open()
             else:
@@ -552,7 +560,7 @@ class XdmfWriter:
     def __WriteTime(self):
         """ this function is called by the WriteTail, this function must NOT change
          the state of the instance, also no writting to binary neader hdf5 files """
-        if self.__isOpen:
+        if self.isOpen():
             #self.filePointer.write('<Time TimeType="List">\n')
             #self.__WriteDataItem(self.timeSteps)
             #self.filePointer.write('</Time>\n')
@@ -566,17 +574,17 @@ class XdmfWriter:
             _shape = _data.shape
         shape = np.array(_shape)
 
-        if self.__isOpen:
-            if type(data[0]) == np.float64:
+        if self.isOpen():
+            if data.dtype == np.float64:
                 typename = 'Float'
                 s = data.dtype.itemsize
-            elif type(data[0]) == np.float32:
+            elif data.dtype == np.float32:
                 typename = 'Float'
                 s = data.dtype.itemsize
-            elif type(data[0]) == np.int32:
+            elif data.dtype == np.int32:
                 typename = 'Int'
                 s = data.dtype.itemsize
-            elif type(data[0]) == np.int64:
+            elif data.dtype == np.int64:
                 typename = 'Int'
                 s = data.dtype.itemsize
             else:
@@ -587,7 +595,7 @@ class XdmfWriter:
             dimension = ArrayToString(shape)
 
             # to test this feature a big file must be created (so we dont test it)
-            if self.__isBinary and len(data) > self.__XmlSizeLimit:# pragma: no cover
+            if self.isBinary() and len(data) > self.__XmlSizeLimit:# pragma: no cover
                 if self.__binarycpt > (2**30) :
                     self.__binaryFilePointer.close()
                     self.NewBinaryFilename()
@@ -644,10 +652,11 @@ def CheckIntegrity():
     from OTTools.Helpers.Tests import TestTempDir
     from OTTools.FE.ConstantRectilinearMesh import ConstantRectilinearMesh
     import OTTools.FE.UnstructuredMesh as UM
+    from OTTools.FE.UnstructuredMeshTools import CreateMeshOfTriangles
 
     tempdir = TestTempDir.GetTempPath()
 
-    res = UM.CreateMeshOfTriangles([[0.,0.,0],[1.,2.,3],[1, 3, 2]], np.array([[0,1,2]]))
+    res = CreateMeshOfTriangles([[0.,0.,0],[1.,2.,3],[1, 3, 2]], np.array([[0,1,2]]))
     print(res)
     WriteMeshToXdmf(tempdir+"TestUnstructured.xdmf", res, PointFields = [np.array([1.,2,3])], CellFields =[ np.array([1])] ,GridFields= [[0],  np.array([1,2,3]).astype(np.int64) ],
                                                                     PointFieldsNames = ["PS"],
@@ -667,6 +676,22 @@ def CheckIntegrity():
                                                                     PointFieldsNames = ["PS"],
                                                                     CellFieldsNames = ["CS"],
                                                                     GridFieldsNames = ["GS"] , Binary= True)
+    #----------------------
+    res = UM.UnstructuredMesh()
+    WriteMeshToXdmf(tempdir+"TestUnstructured_EmptyMesh.xdmf", res)
+
+    res.nodes = np.array([[0,0,0],[1,0,0]],dtype=np.float32)
+    elements = res.GetElementsOfType(EN.Point_1)
+    elements.AddNewElement([0],1)
+    WriteMeshToXdmf(tempdir+"TestUnstructured_OnlyPoints.xdmf", res)
+
+    res = UM.UnstructuredMesh()
+    res.nodes = np.array([[0,0,0],[1,0,0]],dtype=np.float32)
+    elements = res.GetElementsOfType(EN.Bar_2)
+    elements.AddNewElement([0,1],1)
+    WriteMeshToXdmf(tempdir+"TestUnstructured_OnlyBars.xdmf", res)
+
+
 
     #----------------------
 
@@ -706,7 +731,7 @@ def CheckIntegrity():
 
     try:
         writer.Write(ConstantRectilinearMesh())
-        return "Not ok"# pragma: no cover
+        return "Not   ok"# pragma: no cover
     except:
         pass
 
