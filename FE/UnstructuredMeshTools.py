@@ -7,9 +7,9 @@ import OTTools.FE.ElementNames as ElementNames
 
 
 def CreateMeshOfTriangles(points,tris):
-    
+
     res = UnstructuredMesh()
-    
+
     res.nodes = np.array(points, dtype=np.double)
     res.originalIDNodes = np.arange(0,res.GetNumberOfNodes(),dtype=np.int)
 
@@ -18,13 +18,13 @@ def CreateMeshOfTriangles(points,tris):
     elements.originalIds = np.arange(0,elements.connectivity.shape[0],dtype=np.int)
     elements.cpt = elements.connectivity.shape[0]
     return res
-    
+
 def CreateMeshFromConstantRectilinearMesh(CRM, ofTetras= False):
     res = UnstructuredMesh()
     res.nodes = CRM.GetPosOfNodes();
     res.originalIDNodes = np.arange(0,res.GetNumberOfNodes(),dtype=np.int);
-    
-    
+
+
     nbelements = CRM.GetNumberOfElements()
 
     elementtype = ElementNames.Tetrahedron_4
@@ -37,9 +37,9 @@ def CreateMeshFromConstantRectilinearMesh(CRM, ofTetras= False):
     else:
         if ofTetras:# pragma: no cover
             raise
-            
+
         elementtype = ElementNames.Quadrangle_4
-        
+
     elements = res.GetElementsOfType(elementtype)
     elements.connectivity = np.zeros((nbelements,ElementNames.numberOfNodes[elementtype]),dtype=np.int)
     elements.cpt = nbelements
@@ -48,10 +48,10 @@ def CreateMeshFromConstantRectilinearMesh(CRM, ofTetras= False):
         p0 = np.array([0,1,2,3,4,5,6,7])
         p1=  np.array([1,2,3,0,5,6,7,4])
         p2=  np.array([3,0,1,2,7,4,5,6])
-        p3=  np.array([2,3,0,1,6,7,4,5])  
+        p3=  np.array([2,3,0,1,6,7,4,5])
 
         for elem in xrange(CRM.GetNumberOfElements()):
-            
+
             index = CRM.GetMultiIndexOfElement(elem)
             idx = index[0]%2+ 2*(index[1]%2)+4*(index[2]%2)
             if idx == 0:
@@ -59,7 +59,7 @@ def CreateMeshFromConstantRectilinearMesh(CRM, ofTetras= False):
             elif idx == 1:
                 per = p1
             elif idx == 2:
-                per = p2 
+                per = p2
             elif idx == 3:
                 per = p3
             elif idx == 4:
@@ -67,14 +67,14 @@ def CreateMeshFromConstantRectilinearMesh(CRM, ofTetras= False):
             elif idx == 5:
                 per = p2
             elif idx == 6:
-                per = p1 
+                per = p1
             elif idx == 7:
                 per = p0
             else:
                 raise # pragma: no cover
-                
-                
-                
+
+
+
             conn = CRM.GetConnectivityForElement(elem)
             elements.connectivity[elem*6+0,:] = conn[per[[0,6,5,1]]];
             elements.connectivity[elem*6+1,:] = conn[per[[0,6,1,2]]];
@@ -82,27 +82,27 @@ def CreateMeshFromConstantRectilinearMesh(CRM, ofTetras= False):
             elements.connectivity[elem*6+3,:] = conn[per[[0,6,3,7]]];
             elements.connectivity[elem*6+4,:] = conn[per[[0,6,7,4]]];
             elements.connectivity[elem*6+5,:] = conn[per[[0,6,4,5]]];
-            
+
     else:
         CRM.GenerateFullConnectivity()
         elements.connectivity  =  CRM.connectivity
-        
+
     elements.originalIds = np.arange(0,elements.GetNumberOfElements(),dtype=np.int)
-    
+
     return res
-    
+
 def QuadToLin(inputmesh, divideQuadElements=True,lineariseMiddlePoints=False):
-   
+
     res = UnstructuredMesh()
     res.nodes = inputmesh.GetPosOfNodes();
     res.originalIDNodes = np.arange(0,res.GetNumberOfNodes(),dtype=np.int);
-    import copy 
+    import copy
     res.nodesTags = copy.deepcopy(inputmesh.nodesTags)
-    
+
     for elementName in inputmesh.elements.keys():
         quadElement = inputmesh.elements[elementName]
         if elementName == ElementNames.Tetrahedron_10:
-            
+
             lineelements = res.GetElementsOfType(ElementNames.Tetrahedron_4)
             initNbElem = lineelements.GetNumberOfElements();
             if divideQuadElements:
@@ -133,10 +133,10 @@ def QuadToLin(inputmesh, divideQuadElements=True,lineariseMiddlePoints=False):
                 for i in xrange(quadElement.GetNumberOfElements()):
                     quadConn = quadElement.connectivity[i,:];
                     lineelements.connectivity[initNbElem+i,:] = quadConn[[0,1,2,3]];
-                
-                
+
+
         elif elementName == ElementNames.Triangle_6:
-            
+
             lineelements = res.GetElementsOfType(ElementNames.Triangle_3)
             initNbElem = lineelements.GetNumberOfElements();
             if divideQuadElements:
@@ -160,9 +160,9 @@ def QuadToLin(inputmesh, divideQuadElements=True,lineariseMiddlePoints=False):
                 for i in xrange(quadElement.GetNumberOfElements()):
                     quadConn = quadElement.connectivity[i,:];
                     lineelements.connectivity[initNbElem+i,:] = quadConn[[0,1,2]];
-    
+
         elif elementName == ElementNames.Bar_3:
-            
+
             lineelements = res.GetElementsOfType(ElementNames.Bar_2)
             initNbElem = lineelements.GetNumberOfElements();
             if divideQuadElements:
@@ -181,38 +181,37 @@ def QuadToLin(inputmesh, divideQuadElements=True,lineariseMiddlePoints=False):
                 lineelements.cpt = initNbElem+quadElement.GetNumberOfElements()
                 for i in xrange(quadElement.GetNumberOfElements()):
                     quadConn = quadElement.connectivity[i,:];
-                    lineelements.connectivity[initNbElem+i,:] = quadConn[[0,1]];                
+                    lineelements.connectivity[initNbElem+i,:] = quadConn[[0,1]];
         elif elementName == ElementNames.Bar_2:
             lineelements = res.GetElementsOfType(ElementNames.Bar_2)
             initNbElem = lineelements.GetNumberOfElements();
-            
+
             lineelements.Reserve(initNbElem+quadElement.GetNumberOfElements())
             nbOfNewElements = 1
             lineelements.connectivity[initNbElem:initNbElem+quadElement.GetNumberOfElements(),:] = quadElement.connectivity
             lineelements.cpt = initNbElem+quadElement.GetNumberOfElements()
         else:
             raise Exception('Error : not coded yet for this type of elements ' + str(elementName))# pragma: no cover
-        #copy of tags 
-        for originaltagName in quadElement.tags :
-            destinationtag = lineelements.GetTag(originaltagName)
-            originaltag = quadElement.tags[originaltagName]
+        #copy of tags
+        for originaltag in quadElement.tags :
+            destinationtag = lineelements.GetTag(originaltag.name)
             for i in xrange(originaltag.cpt):
                 for t in xrange(nbOfNewElements):
                     destinationtag.AddToTag(initNbElem+originaltag.id[i]*nbOfNewElements+t)
-                    
+
             destinationtag.tighten()
-            
-        res.ComputeGlobalOffset()            
+
+        res.ComputeGlobalOffset()
 
 
     if divideQuadElements == False:
-        CleanLonelyNodes(res)      
-    
+        CleanLonelyNodes(res)
+
     return res
-    
-    
+
+
 def CleanLonelyNodes(res):
-    
+
     usedNodes = np.zeros(res.GetNumberOfNodes(),dtype=np.bool )
     NewIndex =  np.zeros(res.GetNumberOfNodes(),dtype=np.int )
     for elementName in res.elements.keys():
@@ -223,27 +222,98 @@ def CleanLonelyNodes(res):
     for n in xrange(res.GetNumberOfNodes()):
         NewIndex[n] = cpt
         cpt += usedNodes[n]
-        
+
     #filter the nodes
     res.nodes = res.nodes[usedNodes ,:]
     res.originalIDNodes = res.originalIDNodes[usedNodes ]
-    
+
     #node tags
-    for tagName in res.nodesTags :
-        tag = res.nodesTags[tagName]
+    for tag in res.nodesTags :
         tag.tighten()
         tag.SetIds(NewIndex[np.extract(usedNodes[tag.id],tag.id )])
-    
+
     #renumbering the connectivity matrix
     for elementName in res.elements.keys():
         elements = res.elements[elementName]
         elements.connectivity = NewIndex[elements.connectivity]
-    
-    
+
+def MirrorMesh(inmesh,x=None,y=None,z=None) :
+    nbpoints = inmesh.GetNumberOfNodes()
+
+    outmesh = type(inmesh)()
+    d = 0
+    if x is not None:
+        d += 1
+    if y is not None:
+        d += 1
+    if z is not None:
+        d += 1
+
+    outmesh.nodes = np.empty((nbpoints*(2**d),inmesh.GetDimensionality()), dtype=np.float)
+
+    #copy of points:
+    outmesh.nodes[0:nbpoints,:] = inmesh.nodes
+    cpt = nbpoints
+
+    if x is not None:
+        vec = np.array([ [  -1,1,1], ],dtype=np.float)
+        outmesh.nodes[cpt:(2*cpt),:] = outmesh.nodes[0:cpt,:]*vec
+        cpt = cpt*2
+
+    if y is not None:
+        vec = np.array([ [  1,-1,1], ],dtype=np.float)
+        outmesh.nodes[cpt:2*cpt,:] = outmesh.nodes[0:cpt,:]*vec
+        cpt = cpt*2
+
+    if z is not None:
+        vec = np.array([ [  1,1,-1], ],dtype=np.float)
+        outmesh.nodes[cpt:2*cpt,:] = outmesh.nodes[0:cpt,:]*vec
+        cpt = cpt*2
+
+    for name,vals in inmesh.elements.iteritems():
+        nbelements = vals.GetNumberOfElements()
+        outelements = outmesh.GetElementsOfType(name)
+        outelements.Reserve(nbelements*(2**d))
+        outelements.connectivity[0:nbelements,:] = vals.connectivity
+        cpt = nbelements
+        pcpt = nbpoints
+        if x is not None:
+            outelements.connectivity[cpt:(2*cpt),:] = outelements.connectivity[0:cpt,:]+pcpt
+            pcpt = pcpt *2
+            cpt = cpt*2
+
+        if y is not None:
+            outelements.connectivity[cpt:(2*cpt),:] = outelements.connectivity[0:cpt,:]+pcpt
+            pcpt = pcpt *2
+            cpt = cpt*2
+
+        if z is not None:
+            outelements.connectivity[cpt:(2*cpt),:] = outelements.connectivity[0:cpt,:]+pcpt
+            pcpt = pcpt *2
+            cpt = cpt*2
+
+        outelements.cpt = cpt
+
+
+
+    return outmesh
+
+def ExtractElementByTags(inmesh,tags):
+
+    outmesh = type(inmesh)()
+
+    outmesh.nodes = np.copy(inmesh.nodes)
+
+    CleanLonelyNodes(outmesh)
+    return outmesh
+
+
+
+
 def CheckIntegrity():
     res = CreateMeshOfTriangles([[0,0,0],[1,0,0],[0,1,0],[0,0,1] ], [[0,1,2],[0,2,3]])
     CleanLonelyNodes(res)
-    
+
     ###########################
     from OTTools.FE.ConstantRectilinearMesh import ConstantRectilinearMesh
 
@@ -261,8 +331,8 @@ def CheckIntegrity():
     print(CreateMeshFromConstantRectilinearMesh(myMesh))
     res2 = CreateMeshFromConstantRectilinearMesh(myMesh,ofTetras=True)
     print(res2.GetNumberOfElements())
-    
-    
+
+
     myMesh = UnstructuredMesh()
     myMesh.nodes = np.array([[0,0,0],[1,0,0],[0,1,0],[0,0,1],[0.5,0,0],[0.5,0.5,0],[0,0.5,0],[0,0,0.5],[0.5,0,0.5],[0,0.5,0.5]] ,dtype=np.float)
     tag = myMesh.GetNodalTag("linPoints")
@@ -277,20 +347,20 @@ def CheckIntegrity():
     elements = myMesh.GetElementsOfType(ElementNames.Triangle_6)
     elements.AddNewElement([0,1,2,4,5,6],1)
     elements = myMesh.GetElementsOfType(ElementNames.Bar_3)
-    elements.AddNewElement([0,1,4],2)    
+    elements.AddNewElement([0,1,4],2)
     elements = myMesh.GetElementsOfType(ElementNames.Bar_2)
-    elements.AddNewElement([0,1],3)        
-    
+    elements.AddNewElement([0,1],3)
+
     myMesh.AddElementToTagUsingOriginalId(3,'LinElements')
-    
-    
+
+
     print(myMesh)
-    
+
     print("-----")
     print(QuadToLin(myMesh,divideQuadElements=False))
     print(QuadToLin(myMesh,divideQuadElements=True))
     print(QuadToLin(myMesh,divideQuadElements=True,lineariseMiddlePoints=True))
     return "ok"
-    
+
 if __name__ == '__main__':
     print(CheckIntegrity())# pragma: no cover

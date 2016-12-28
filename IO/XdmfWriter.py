@@ -494,10 +494,10 @@ class XdmfWriter(WriterBase):
 
          #Writing tags for points
          #try:
-         for tagname in baseMeshObject.nodesTags:
-                 name = "Tag_" + tagname
+         for tag in baseMeshObject.nodesTags:
+                 name = "Tag_" + tag.name
                  data = np.zeros((baseMeshObject.GetNumberOfNodes(),1),dtype=np.int)
-                 data[baseMeshObject.nodesTags[tagname].id] = 1;
+                 data[baseMeshObject.nodesTags[tag.name].id] = 1;
                  self.__WriteAttribute(np.array(data), name, "Node",baseMeshObject)
          #except:
          #   pass
@@ -506,10 +506,10 @@ class XdmfWriter(WriterBase):
          baseMeshObject.PrepareForOutput();
 
          celtags = baseMeshObject.GetNamesOfCellTags()
-         for tagname in celtags:
-             name = "Tag_" + tagname
+         for tag in celtags:
+             name = "Tag_" + tag.name
              #data = baseMeshObject.GetElementTag(tagname)
-             data = baseMeshObject.GetElementsInTag(tagname)
+             data = baseMeshObject.GetElementsInTag(tag.name)
              res = np.zeros((baseMeshObject.GetNumberOfElements(),1),dtype=np.int)
              res[data] = 1;
 

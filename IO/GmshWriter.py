@@ -100,9 +100,8 @@ def CheckIntegrity():
     mymesh.nodes = np.array([[0.00000000001,0,0],[1,0,0],[0,1,0],[1,1,0]],dtype=np.float)
     mymesh.originalIDNodes = np.array([1, 3, 4, 5],dtype=np.int)
 
-    tag = Tag("coucou")
-    tag.AddToTag(0)
-    mymesh.nodesTags["coucou"] = tag
+
+    mymesh.nodesTags.CreateTag("coucou").AddToTag(0)
 
     tris = mymesh.GetElementsOfType('tri3')
     tris.AddNewElement([0,1,2],0)

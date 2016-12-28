@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from OTTools.FE.MeshBase import MeshBase
 from OTTools.FE.MeshBase import Tag
+from OTTools.FE.MeshBase import Tags
 import numpy as np
 import OTTools.FE.ElementNames as ElementNames
 
@@ -10,28 +11,28 @@ class ElementsContainer():
         self.connectivity = np.empty((0,0),dtype=np.int)
         self.globaloffset   = 0
         self.originalIds = np.empty((0,),dtype=np.int)
-        self.tags = {}
+        self.tags = Tags()
         self.cpt = 0;
 
 
-    
+
     def GetNumberOfElements(self):
         return self.cpt
         #return self.connectivity.shape[0]
 
     def AddNewElement(self,conn,originalid):
         if self.cpt >= self.connectivity.shape[0]:
-            self.Reserve(2*self.cpt+1) 
-            
+            self.Reserve(2*self.cpt+1)
+
         self.connectivity[self.cpt,:] =conn
-        self.originalIds[self.cpt] =originalid   
+        self.originalIds[self.cpt] =originalid
         self.cpt +=1
-        
+
         #if(self.connectivity.shape[1] == 0):
         #    self.connectivity = np.empty((0,len(conn)),dtype=np.int)
         #self.connectivity = np.vstack((self.connectivity,np.array(conn,dtype=int) ))
         #self.originalIds = np.append(self.originalIds,originalid)
-        
+
         return self.cpt
 
     def GetNumberOfNodesPerElement(self):
@@ -39,22 +40,20 @@ class ElementsContainer():
         return ElementNames.numberOfNodes[self.elementType]
 
     def GetTag(self, tagName):
-        if not self.tags.has_key(tagName):
-           self.tags[tagName] = Tag(tagName)
-        return self.tags[tagName]
-    
+        return self.tags.CreateTag(tagName,False)
+
     def Reserve(self,nbElements):
         if (nbElements != self.connectivity.shape[0]):
             self.connectivity =  np.resize(self.connectivity, (nbElements,self.GetNumberOfNodesPerElement()))
             self.originalIds =  np.resize(self.originalIds, (nbElements,))
-            
+
             #self.connectivity = np.empty((nbElements,self.GetNumberOfNodesPerElement()),dtype=np.int)
             #self.originalIds = np.empty((nbElements,),dtype=np.int)
 
     def tighten(self):
         self.Reserve(self.cpt)
-        
-        
+
+
 
 class UnstructuredMesh(MeshBase):
 
@@ -74,7 +73,7 @@ class UnstructuredMesh(MeshBase):
 
     def GetDimensionality(self):
         return self.nodes.shape[1]
-        
+
     def GetNumberOfElements(self):
         n = 0
         for type, data in self.elements.iteritems():
@@ -104,9 +103,7 @@ class UnstructuredMesh(MeshBase):
         for ntype, data in self.elements.iteritems():
             w = np.where(data.originalIds == oid)
             if len(w[0]) > 0 :
-                if not data.tags.has_key(tagname):
-                    data.tags[tagname] = Tag(tagname)
-                data.tags[tagname].AddToTag(w[0])
+                data.tags.CreateTag(tagname,False).AddToTag(w[0])
                 break
         else:
             raise Exception("No element with id " + str(oid)) #pragma: no cover
@@ -137,7 +134,7 @@ class UnstructuredMesh(MeshBase):
         cpt =0
         for ntype, elem in self.elements.iteritems():
             if elem.tags.has_key(tagname):
-                
+
                 tag = elem.tags[tagname].id
                 if useOriginalId:
                     res[cpt:cpt+len(tag) ] = elem.originalIds[tag];
@@ -149,17 +146,17 @@ class UnstructuredMesh(MeshBase):
     def PrepareForOutput(self):
        self.ComputeGlobalOffset()
        for ntype, data in self.elements.iteritems():
-             for name, tag in data.tags.iteritems():
+             for tag in data.tags:
                    tag.tighten()
 
-       
 
-    """def GenerateManufacturedOriginalIDs(self):
-       counter = 1
+
+    def GenerateManufacturedOriginalIDs(self):
+       counter = 0
        for key, value in self.elements.iteritems():
-         for i in xrange(value.originalIds.shape[0]):
+         for i in xrange(value.GetNumberOfElements()):
            value.originalIds[i] = counter
-           counter += 1"""
+           counter += 1
 
     def __str__(self):
         res  = "UnstructuredMesh \n"
@@ -172,7 +169,7 @@ class UnstructuredMesh(MeshBase):
 def CheckIntegrity():
     from OTTools.FE.UnstructuredMeshTools import CreateMeshOfTriangles
     from OTTools.FE.UnstructuredMeshTools import CreateMeshFromConstantRectilinearMesh
-    
+
     res = CreateMeshOfTriangles([[0,0,0],[1,2,3]], [[0,2,3]])
 
     elements = res.GetElementsOfType(ElementNames.Triangle_3)
@@ -191,7 +188,7 @@ def CheckIntegrity():
     print(res.boundingMin)
     print(res.boundingMax)
 
-    res.nodesTags['toto'] = Tag('toto')
+    res.nodesTags.CreateTag('toto')
     print(res.GetNodalTag('toto'))
     print(res.GetNodalTag('toto2') )
 

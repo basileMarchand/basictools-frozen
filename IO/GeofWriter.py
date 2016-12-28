@@ -79,13 +79,13 @@ class GeofWriter(WriterBase):
 
         self.filePointer.write(" ***group \n")
 
-        for tagname in meshObject.nodesTags:
-            self.filePointer.write("  **nset {} \n".format(tagname))
+        for tag in meshObject.nodesTags:
+            self.filePointer.write("  **nset {} \n".format(tag.name))
             data = np.zeros((meshObject.GetNumberOfNodes(),1),dtype=np.int)
             if useOriginalId:
-                self.filePointer.write(" ".join([str(meshObject.originalIDNodes[x]) for x in meshObject.nodesTags[tagname].id]))
+                self.filePointer.write(" ".join([str(meshObject.originalIDNodes[x]) for x in tag.id]))
             else:
-                self.filePointer.write(" ".join([str(x+1) for x in meshObject.nodesTags[tagname].id]))
+                self.filePointer.write(" ".join([str(x+1) for x in tag.id]))
             self.filePointer.write("\n")
 
         meshObject.PrepareForOutput();
@@ -112,9 +112,7 @@ def CheckIntegrity():
     mymesh.nodes = np.array([[0.00000000001,0,0],[1,0,0],[0,1,0],[1,1,0]],dtype=np.float)
     mymesh.originalIDNodes = np.array([1, 3, 4, 5],dtype=np.int)
 
-    tag = Tag("coucou")
-    tag.AddToTag(0)
-    mymesh.nodesTags["coucou"] = tag
+    mymesh.nodesTags.CreateTag("coucou").AddToTag(0)
 
     tris = mymesh.GetElementsOfType('tri3')
     tris.AddNewElement([0,1,2],0)

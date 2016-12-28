@@ -231,28 +231,34 @@ class MeshReader(ReaderBase):
 
 
 
-    def ReadMeshAscii(self, fileName=None,string=None, fieldFileName= None):
+    def ReadMeshAscii(self, _fileName=None,_string=None, fieldFileName= None):
 
-        from cStringIO import StringIO
 
-        if fileName is not None:
-            f = open(fileName, 'r')
-            string = f.read()
-            f.close()
+        if _fileName is not None:
+            self.SetFileName(_fileName)
 
-        string = StringIO(string)
+        if _string is not None:
+            self.SetStringToRead(_string)
+
+        self.readFormat = 'r'
+        self.StartReading()
+
 
         res = UM.UnstructuredMesh()
         self.output = res
 
         dataType = float
-        for line in string:
+        while(True):
+            line = self.filePointer.readline()
+            if line == "" :
+                break
+        #for line in self.filePointer:
             l = line.strip('\n').lstrip().rstrip()
             if len(l) == 0: continue
 
             if l.find("MeshVersionFormatted")>-1 :
 
-                formatFile = int(string.readline())
+                formatFile = int(self.filePointer.readline())
                 if formatFile == 2:
                     dataType = np.float64
                 print ('formatFile  : '+ str(dataType))
@@ -264,13 +270,13 @@ class MeshReader(ReaderBase):
                     s.pop(0)
                     l = " ".join(s)
                 else:
-                    l = string.readline()
+                    l = self.filePointer.readline()
                 dimension = int(l)
                 print ('Dimension : '+ str(dimension))
                 continue
 
             if l.find("Vertices")>-1 :
-                line = string.readline()
+                line = self.filePointer.readline()
                 l = line.strip('\n').lstrip().rstrip()
 
                 nbNodes = int(l.split()[0])
@@ -280,7 +286,7 @@ class MeshReader(ReaderBase):
                 res.originalIDNodes= np.empty((nbNodes,),dtype=np.int)
                 cpt =0;
                 while(True):
-                    line = string.readline()
+                    line = self.filePointer.readline()
                     l = line.strip('\n').lstrip().rstrip()
                     if len(l) == 0: continue
                     s = l.split()
@@ -301,14 +307,14 @@ class MeshReader(ReaderBase):
             if meditName.has_key(l):
                 elements = res.GetElementsOfType(meditName[l])
                 nbNodes = elements.GetNumberOfNodesPerElement()
-                line = string.readline()
+                line = self.filePointer.readline()
                 l = line.strip('\n').lstrip().rstrip()
 
                 nbElements = int(l.split()[0])
                 print("Reading "+str(nbElements)+ " Elements")
                 cpt =0;
                 while(True):
-                    line = string.readline()
+                    line = self.filePointer.readline()
                     l = line.strip('\n').lstrip().rstrip()
                     if len(l) == 0:
                         continue

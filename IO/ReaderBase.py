@@ -14,9 +14,10 @@ class ReaderBase(BaseOutputObject):
         self.elementsFields = {}
         self.readFormat = 'r'
         self.output = None
-        
+        self.string = None
+
     def StartReading(self):
-           
+
         if self.fileName is None:
             if self.string is None:
                 raise ('Need a file or a string to read')
@@ -25,25 +26,27 @@ class ReaderBase(BaseOutputObject):
                 self.filePointer =  StringIO(self.string)
         else:
             self.filePointer =  open(self.fileName, self.readFormat)
-    
+
+
+
     def EndReading(self):
         self.filePointer.close()
-                
+
     def SetFileName(self,fileName):
-           
-           
+
+
         self.fileName = fileName;
         if fileName is None :
             self.__path = None;
+            self.string = None;
         else:
             self.filePath = os.path.abspath(os.path.dirname(fileName));
             self.string = None
-        
+
 
     def SetStringToRead(self,string):
         self.string = string
-        
+
         if string is not None:
             self.fileName = None
-        
-            
+
