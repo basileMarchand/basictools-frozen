@@ -27,11 +27,11 @@ class BaseOutputObject(object):
     def SetInstanceDebugMode(self, mode = True):
         self.__classDebugMode = mode
 
-    def PrintProgress(self,val, minn= 0, maxx = 100, step= 5):
+    def PrintProgress(self,val,  maxx = 100,minn= 0):
         per = (float(val) -minn)*100/(maxx-minn)
         if per == round(per):
             self.Print(str(round(per)) +"%")
-            
+
     def PrintDebug(self, mess):
         self.PrintInternal( mess, 3)
 
@@ -135,9 +135,9 @@ def CheckIntegrity():
     myObj.Print2("Print 5")
     myObj.PrintError("Print 6")
     myObj.InDebugMode()
-    
+
     myObj.PrintProgress(50)
-    
+
     myObj2 = BaseOutputObject(myObj)
 
     return "OK"

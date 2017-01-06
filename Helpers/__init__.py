@@ -1,9 +1,13 @@
 # -*- coding: utf-8 -*-
 
 
-__all__ = ['TextFormatHelper','BaseOutputObject', 'Tests','PrintBypass']
+__all__ = [
+'BaseOutputObject',
+'PrintBypass',
+'Tests',
+'TextFormatHelper' ]
 
-"""Helpers classes and functions 
+"""Helpers classes and functions
 
    Please read the help for each individual module.
 """
