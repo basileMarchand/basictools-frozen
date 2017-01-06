@@ -161,7 +161,10 @@ def CheckIntegrity():
 
     print(myMesh)
     print(myMesh.GetConnectivityForElement(0))
-
+    print(myMesh.GetMultiIndexOfNode(0))
+    print(myMesh.GetMonoIndexOfNode([1,0,0]))
+    print(myMesh.GetMonoIndexOfElement([0,0,0]))
+    print(myMesh.GetPosOfNode(2))
     print("-----------------2D const rectilinear mesh------------------------")
     myMesh = StructuredMesh(2)
     myMesh.SetDimensions([2,2]);
@@ -172,7 +175,9 @@ def CheckIntegrity():
 
     print(myMesh)
     print(myMesh.GetConnectivityForElement(0))
-
+    print(myMesh.GetMultiIndexOfNode(0))
+    print(myMesh.GetMonoIndexOfNode([1,0]))
+    print(myMesh.GetMonoIndexOfElement([0,0]))
     return "OK"
 
 if __name__ == '__main__':

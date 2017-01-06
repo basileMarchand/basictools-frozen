@@ -20,6 +20,7 @@ class ConstantRectilinearMesh(MeshBase):
         self.__spacing = np.ones((dim,))
         self.elemTags = {}
         self.connectivity = None
+        self.nodes = None
 
     def GetNamesOfCellTags(self):
         return self.elemTags.keys()
@@ -99,21 +100,25 @@ class ConstantRectilinearMesh(MeshBase):
 
     def SetDimensions(self,data):
         self.__dimensions = np.array(data,"int");
+        self.nodes = None
 
     def GetDimensions(self):
         return self.__dimensions ;
 
     def SetSpacing(self,data):
         self.__spacing = np.array(data, "float");
+        self.nodes = None
 
     def GetSpacing(self):
         return self.__spacing;
 
+    def SetOrigin(self,data):
+        self.__origin = np.array(data);
+        self.nodes = None
+
     def GetOrigin(self):
         return self.__origin;
 
-    def SetOrigin(self,data):
-        self.__origin = np.array(data);
 
     def GetNumberOfNodes(self):
         return np.prod(self.__dimensions)
@@ -213,7 +218,11 @@ class ConstantRectilinearMesh(MeshBase):
 
         z = np.arange(self.__dimensions[2])*self.__spacing[2]+self.__origin[2]
         xv, yv, zv = np.meshgrid(x, y,z,indexing='ij')
-        return np.array([xv.ravel(),yv.ravel(),zv.ravel()]).T
+
+        if self.nodes is None:
+            self.nodes = np.array([xv.ravel(),yv.ravel(),zv.ravel()]).T
+
+        return self.nodes
 
     def GetElementAtPos(self,pos):
         pos = pos-self.__origin
@@ -297,7 +306,7 @@ class ConstantRectilinearMesh(MeshBase):
         self.elements = {}
         self.elements[OTTools.FE.ElementNames.Hexaedron_8 ] = ElementsContainer(OTTools.FE.ElementNames.Hexaedron_8)
         self.elements[OTTools.FE.ElementNames.Hexaedron_8 ].connectivity = self.connectivity
-        self.elements[OTTools.FE.ElementNames.Hexaedron_8 ].tags =  self.elemTags 
+        self.elements[OTTools.FE.ElementNames.Hexaedron_8 ].tags =  self.elemTags
         return self.connectivity
 
 

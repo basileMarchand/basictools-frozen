@@ -49,6 +49,9 @@ class ElementsContainer():
 
             #self.connectivity = np.empty((nbElements,self.GetNumberOfNodesPerElement()),dtype=np.int)
             #self.originalIds = np.empty((nbElements,),dtype=np.int)
+    def Allocate(self,nbElements):
+        self.Reserve(nbElements)
+        self.cpt = nbElements
 
     def tighten(self):
         self.Reserve(self.cpt)
@@ -63,7 +66,7 @@ class UnstructuredMesh(MeshBase):
     def __init__(self):
         super(UnstructuredMesh,self).__init__()
         self.nodes = np.empty((0,3),dtype=np.double)
-        self.originalIDNodes =[]
+        self.originalIDNodes = np.empty((0,),dtype=np.int)
         self.elements = {}
         self.boundingMin = [0,0,0];
         self.boundingMax = [0,0,0];
@@ -108,14 +111,17 @@ class UnstructuredMesh(MeshBase):
         else:
             raise Exception("No element with id " + str(oid)) #pragma: no cover
 
+    def GetPosOfNode(self, i ):
+        return self.nodes[i,:]
+
     def GetPosOfNodes(self):
         return self.nodes
 
     def GetNamesOfCellTags(self):
         res = set()
         for ntype, data in self.elements.iteritems():
-            for tagname in data.tags:
-                res.add(tagname)
+            for tag in data.tags:
+                res.add(tag.name)
 
         return list(res)
 #    def GetElementTag(self,tagname):
@@ -162,7 +168,7 @@ class UnstructuredMesh(MeshBase):
         res  = "UnstructuredMesh \n"
         res += "  Number Of Nodes    : {}\n".format(self.GetNumberOfNodes())
         res += "  Number Of Elements : {}\n".format(self.GetNumberOfElements())
-        res += "  Node Tags          : " + str([x for x in self.nodesTags]) + "\n"
+        res += "  Node Tags          : " + str(self.nodesTags) + "\n"
         res += "  Cell Tags          : " + str([x for x in self.GetNamesOfCellTags()])+ "\n"
         return res
 
@@ -201,6 +207,7 @@ def CheckIntegrity():
     print(res.GetElementsInTag("bars",useOriginalId=True))
 
     print(res.GetElementsOfType("bars").GetTag("toto"))
+    print(res.GetPosOfNode(0))
     print(res)
 
     return "ok"

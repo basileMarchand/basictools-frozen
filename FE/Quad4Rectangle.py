@@ -112,7 +112,6 @@ def CheckIntegrity():
     K2 = myElement.GetIsotropLaplaceK(1)
     VV =lin.eig(K2)
     if np.sum(VV[0].real < 1e-10) != 1:
-        VV[0].real
         return "not ok "# pragma: no cover
 
     #print(VV[0])

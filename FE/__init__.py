@@ -1,20 +1,22 @@
 # -*- coding: utf-8 -*-
 
 __all__ = [
-'MeshBase',
-'UnstructuredMesh',
-'UnstructuredMeshTools',
-'UnstructuredFea',
-'ConstantRectilinearMesh',
 'ConstantRectilinearFea',
-'MaterialHelp',
-'FemHelp',
-'ElementNames',
-'LinearSolver',
-'FElement',
+'ConstantRectilinearMesh',
 'ElementBuildier',
+'ElementNames',
+'FeaBase',
+'FElement',
+'FemHelp',
 'Hexa8Cuboid',
+'LinearSolver',
+'MaterialHelp',
+'MeshBase',
+'Quad4Rectangle',
+'StructuredMesh',
 'Tri3',
-'FeaBase'
+'UnstructuredFea',
+'UnstructuredMesh',
+'UnstructuredMeshTools'
 ]
 
