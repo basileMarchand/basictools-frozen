@@ -48,7 +48,7 @@ class Interface(BaseOutputObject):
         except KeyError, e: # pragma: no cover
             print("The user must supply the key: %s" % str(e))
             raise
-            
+
         inpFilename = self.inputFilename + str(idProc) + self.inputFileExtension
         with open(self.processDirectory + inpFilename, 'w') as inpFile:
             inpFile.write(inpString)
@@ -61,15 +61,28 @@ class Interface(BaseOutputObject):
         cmd = 'cd ' + self.processDirectory + ' && ' + self.codeCommand + ' ' + inpFilename
 
         if stdout is None:
-            out = open(os.devnull, 'w')    
+            out = open(os.devnull, 'w')
         else:
-            out = stdout    
-            
+            out = stdout
+
         # Commande execution
         self.lastCommandExecuted = cmd;
         proc = subprocess.Popen(cmd , stdout=out, shell=True)
 
         return proc
+
+    def SingleRunComputationAndReturnOutput(self, idProc):# pragma: no cover
+
+        inpFilename = self.inputFilename + str(idProc) + self.inputFileExtension
+
+        # Command to execute
+        cmd = self.codeCommand + ' ' + inpFilename
+
+        # Commande execution
+        self.lastCommandExecuted = cmd;
+        out = subprocess.check_output(cmd, cwd=self.processDirectory, shell=True ).decode("utf-8")
+
+        return out
 
     def ReadFile(self, filenameDir):
 
@@ -85,13 +98,13 @@ class Interface(BaseOutputObject):
 
     def SetProcessDirectory(self,Dir):
         self.processDirectory = Dir;
-    
+
     def SetCodeCommand(self,ccommand):          # Code command
-        self.codeCommand = ccommand 
+        self.codeCommand = ccommand
 
     def SetTemplateFile(self,filename):
         self.tplFilename = filename;
-        
+
     def ReadTemplateFile(self, filename = None):
         if filename is not None:
             self.SetTemplateFile(filename)
@@ -132,6 +145,8 @@ def CheckIntegrity():
     interface.WriteFile(1)
     import sys
     interface.SingleRunComputation(1,sys.stdout).wait()
+
+    print("output is :" + str(interface.SingleRunComputationAndReturnOutput(1)))
     return 'ok'
 
 

@@ -27,11 +27,11 @@ meshNumber[EN.Quadrangle_4] = 7
 meshNumber[EN.Tetrahedron_4] = 8
 
 
-def WriteMesh(filename,mesh,SolAtVertices=None,solutionOnOwnFile= False, binary=True, nodalRefNumber= None,elemRefNumber=None):
+def WriteMesh(filename,mesh,SolsAtVertices=None,solutionOnOwnFile= False, binary=True, nodalRefNumber= None,elemRefNumber=None):
     OW = MeshWriter()
     OW.SetBinary(binary);
     OW.Open(filename)
-    OW.Write(mesh,SolAtVertices = SolAtVertices,solutionOnOwnFile=solutionOnOwnFile, nodalRefNumber=nodalRefNumber,elemRefNumber=elemRefNumber)
+    OW.Write(mesh,SolsAtVertices = SolsAtVertices,solutionOnOwnFile=solutionOnOwnFile, nodalRefNumber=nodalRefNumber,elemRefNumber=elemRefNumber)
     OW.Close()
 
 class MeshWriter(WriterBase):
@@ -58,13 +58,13 @@ class MeshWriter(WriterBase):
             self.dataType = np.float64
             self.dataSize = 8;
 
-    def Write(self,meshObject,SolAtVertices=None, solutionOnOwnFile= False, nodalRefNumber= None, elemRefNumber=None):
+    def Write(self,meshObject,SolsAtVertices=None, solutionOnOwnFile= False, nodalRefNumber= None, elemRefNumber=None):
         if self.isBinary():
-            return self.WriteBINARY(meshObject,SolAtVertices=SolAtVertices, solutionOnOwnFile=solutionOnOwnFile, nodalRefNumber=nodalRefNumber,elemRefNumber=elemRefNumber )
+            return self.WriteBINARY(meshObject,SolsAtVertices=SolsAtVertices, solutionOnOwnFile=solutionOnOwnFile, nodalRefNumber=nodalRefNumber,elemRefNumber=elemRefNumber )
         else:
-            return self.WriteASCII(meshObject,SolAtVertices=SolAtVertices, solutionOnOwnFile= solutionOnOwnFile, nodalRefNumber =nodalRefNumber,elemRefNumber=elemRefNumber )
+            return self.WriteASCII(meshObject,SolsAtVertices=SolsAtVertices, solutionOnOwnFile= solutionOnOwnFile, nodalRefNumber =nodalRefNumber,elemRefNumber=elemRefNumber )
 
-    def WriteBINARY(self,meshObject,SolAtVertices=None, solutionOnOwnFile= False, nodalRefNumber = None,elemRefNumber=None):
+    def WriteBINARY(self,meshObject,SolsAtVertices=None, solutionOnOwnFile= False, nodalRefNumber = None,elemRefNumber=None):
 
 
         #key MeshVersionFormatted
@@ -100,12 +100,12 @@ class MeshWriter(WriterBase):
 
 
 
-        print("position at end " + str(self.filePointer.tell()))
-        print("calculate position at end " + str(endOfInformation))
+        self.PrintDebug("position at end " + str(self.filePointer.tell()))
+        self.PrintDebug("calculate position at end " + str(endOfInformation))
 
         globalOffset =0
         for elementContainer in meshObject.elements.keys():
-            print("Output of " + str(elementContainer ))
+            self.PrintDebug("Output of " + str(elementContainer ))
             elemtype = meshNumber[elementContainer]
             data = meshObject.elements[elementContainer]
             nbelements = data.GetNumberOfElements()
@@ -132,17 +132,17 @@ class MeshWriter(WriterBase):
 
             globalOffset += data.GetNumberOfElements()
 
-            print("position at end " + str(self.filePointer.tell()))
-            print("calculate position at end " + str(endOfInformation))
+            self.PrintDebug("position at end " + str(self.filePointer.tell()))
+            self.PrintDebug("calculate position at end " + str(endOfInformation))
 
 
 
-        if SolAtVertices is not None:
+        if SolsAtVertices is not None:
             if solutionOnOwnFile :
                 self.filePointer.write(struct.pack('i', 54)) #dimension
                 self.Close();
-                self._OpenSolutionFileBinary()
-            self._WriteFieldBinary(SolAtVertices)
+                self.OpenSolutionFileBinary()
+            self.WriteSolutionsFieldsBinary(meshObject,SolsAtVertices)
 
         #key End
         self.filePointer.write(struct.pack('i', 54)) #dimension
@@ -166,12 +166,12 @@ class MeshWriter(WriterBase):
         self.filePointer.write(struct.pack('i', self.filePointer.tell()+4*2))# end of information
         self.filePointer.write(struct.pack('i', dimension)) #dimension
 
-    def WriteSolutionsFieldsBinary(self,meshObject,SolAtVertices):
+    def WriteSolutionsFieldsBinary(self,meshObject,SolsAtVertices):
         numberofpoints = meshObject.GetNumberOfNodes()
 
         #key SolAtVertices
         self.filePointer.write(struct.pack('i', 62))
-        nbfields = len(SolAtVertices)
+        nbfields = len(SolsAtVertices)
         #          1       +    1             1 +  nfields + numberofpoints*nfields*dataSize
         # endOfInformation + numberofpoints + 1 + nfields +  +
         endOfInformation = self.filePointer.tell()+4*(1+1+1+nbfields)+nbfields*numberofpoints*self.dataSize
@@ -179,11 +179,11 @@ class MeshWriter(WriterBase):
 
 
         self.filePointer.write(struct.pack('i', numberofpoints))# numberofpoints
-        print(numberofpoints)
+        #print(numberofpoints)
         self.filePointer.write(struct.pack('i',nbfields))# numberofpoints
-        print(nbfields)
+        #print(nbfields)
 
-        for sol in SolAtVertices:
+        for sol in SolsAtVertices:
             self.filePointer.write(struct.pack('i',1))#
 
             # we add a extra axis for scalar field stored in a vector (only one index)
@@ -194,7 +194,7 @@ class MeshWriter(WriterBase):
                 raise Exception("for now only scalars field")
 
         for i in xrange(numberofpoints):
-            for sol in SolAtVertices:
+            for sol in SolsAtVertices:
                 if len(sol.shape)== 1:
                     sol = sol[:,np.newaxis]
                 sol[i,:].astype(self.dataType).tofile(self.filePointer, sep='')
@@ -206,7 +206,7 @@ class MeshWriter(WriterBase):
         self.filePointer.write(struct.pack('i', 54)) #dimension
         self.Close()
 
-    def WriteASCII(self,meshObject,SolAtVertices=None, solutionOnOwnFile= False, nodalRefNumber = None,elemRefNumber=None):
+    def WriteASCII(self,meshObject,SolsAtVertices=None, solutionOnOwnFile= False, nodalRefNumber = None,elemRefNumber=None):
         if  nodalRefNumber is not None or elemRefNumber is not None:
             raise Exception('Not implemented yet')
 
@@ -285,11 +285,11 @@ class MeshWriter(WriterBase):
             self.filePointer.write("Dimension\n" + str(meshObject.GetDimensionality()) + "\n\n")
 
 
-        if SolAtVertices is not None:
+        if SolsAtVertices is not None:
             self.filePointer.write("SolAtVertices\n")
             self.filePointer.write("{} \n".format(numberofpoints) )
-            self.filePointer.write("{} ".format(len(SolAtVertices)) )
-            for sol in SolAtVertices:
+            self.filePointer.write("{} ".format(len(SolsAtVertices)) )
+            for sol in SolsAtVertices:
                 # we add a extra axis for scalar field stored in a vector (only one index)
                 if len(sol.shape)== 1:
                     sol = sol[:,np.newaxis]
@@ -303,7 +303,7 @@ class MeshWriter(WriterBase):
             self.filePointer.write("\n ")
 
             for i in xrange(numberofpoints):
-                for sol in SolAtVertices:
+                for sol in SolsAtVertices:
                     if len(sol.shape)== 1:
                         sol = sol[:,np.newaxis]
                     np.savetxt(self.filePointer, sol[i,:], newline=" ", delimiter=" " )
@@ -317,9 +317,7 @@ def CheckIntegrity():
 
     from OTTools.Helpers.Tests import TestTempDir
 
-    TestTempDir.SetTempPath("/home/fbordeu-weld/tmp/mmg/")
     tempdir = TestTempDir.GetTempPath()
-
 
     mymesh = UM.UnstructuredMesh()
     mymesh.nodes = np.array([[0.00000000001,0,0],[1,0,0],[0,1,0],[1,1,0]],dtype=np.float)
@@ -347,7 +345,9 @@ def CheckIntegrity():
 
 
     print(mymesh)
-    WriteMesh(tempdir+"Test_MmgWriter_II.mesh", mymesh  )
+    sol = np.arange(mymesh.GetNumberOfNodes(),dtype=np.float)
+   # sol.shape = (mymesh.GetNumberOfNodes(),1)
+    WriteMesh(tempdir+"Test_MmgWriter_II.mesh", mymesh ,SolsAtVertices=[sol ] )
     #print(tempdir)
     #print(open(tempdir+"Test_GmshWriter_II.geof").read())
 

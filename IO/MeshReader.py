@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 
 # -*- coding: utf-8 -*-
-import OTTools.FE.UnstructuredMesh  as UM
+import struct
 import numpy as np
+
+import OTTools.FE.UnstructuredMesh  as UM
 import OTTools.FE.ElementNames as EN
 from OTTools.IO.ReaderBase import ReaderBase
 # for ascii files
@@ -33,6 +35,7 @@ class MeshReader(ReaderBase):
         super(MeshReader,self).__init__()
         self.refsAsAField = True
 
+
     def ReadRefsAsField(self, val):
         self.refsAsAField = val
 
@@ -42,192 +45,286 @@ class MeshReader(ReaderBase):
         else:
             self.ReadMeshAscii()
 
+    def ReadExtraFieldBinary(self,fileName):
+      self.PrintVerbose("Reading ExtraField")
+      f =  open(fileName, "rb")
+
+
+      dataType = np.float32
+      dataSize = 4;
+
+      data = f.read(4)
+      # end of file
+      if len(data) == 0:
+          raise Exception("Empty file")
+      key = struct.unpack("i", data)[0]
+
+     #MeshVersionFormatted
+      if key == 1:
+          data = f.read(4)
+          udata = struct.unpack("i", data)[0]
+          if udata == 2 :
+              dataType = np.float64
+              dataSize = 8
+              #print("data in double")
+      else:
+          raise Exception('Expected key value equal to 1 (binary), are you sure this file is binary??')
+
+      #if self.refsAsAField:
+      #   elemRefs = np.zeros(0 ,dtype=np.int)
+      res = {}
+      while True:
+          data = f.read(4)
+
+          # end of file
+          if len(data) == 0:
+             #print("EOF")
+             break
+          key = struct.unpack("i", data)[0]
+          #print("key : " +str(key))
+          #Dimension
+          if key == 3:
+              data = f.read(4)
+              endOfInformation = struct.unpack("i", data)[0]
+              #f.seek(endOfInformation-4)
+              data = f.read(4)
+              dimension = struct.unpack("i", data)[0]
+              f.seek(endOfInformation)
+              #print("dimension : " + str(dimension))
+              continue
+
+          #SolAtVertices
+          if key == 62:
+              data = f.read(4)
+              endOfInformation = struct.unpack("i", data)[0]
+
+              data = f.read(4)
+              nbNodes = struct.unpack("i", data)[0]
+
+              data = f.read(4)
+              nbfields = struct.unpack("i", data)[0]
+
+              fieldSizes = np.empty(nbfields, dtype=np.int)
+              self.Print("nbfields")
+              self.Print(str(nbfields))
+              for i in xrange(nbfields):
+                  data = f.read(4)
+                  fieldSizes[i] = struct.unpack("i", data)[0]
+
+              for i in xrange(nbfields):
+                  dataformat = ('f' if dataSize==4 else "d"    )
+
+                  data = f.read(dataSize*nbNodes*fieldSizes[i])
+
+                  field = np.empty((nbNodes,fieldSizes),dtype=np.float)
+                  data = struct.unpack(dataformat*(nbNodes*fieldSizes[i]), data)
+                  #print(data)
+                  cpt =0
+                  for n in xrange(nbNodes):
+                      for j in xrange(fieldSizes[i]):
+                          field[n,j] = data[cpt]
+                          cpt += 1
+
+                  res["SolAtVertices"+str(i)]  =  field
+              continue
+          #End key
+          if key == 54:
+             break
+
+          self.PrintVerbose("skiping key : "  + str(key) )
+          data = f.read(4)
+          endOfInformation = struct.unpack("i", data)[0]
+          f.seek(endOfInformation)
+      return res
+
     def ReadMeshBinary(self):
-        import struct
-        self.readFormat = 'rb'
-        self.StartReading()
+      self.readFormat = 'rb'
+      self.StartReading()
 
 
-        while True:
-          f = self.filePointer
-          res = UM.UnstructuredMesh()
-          self.output = res
-          dataType = np.float32
-          dataSize = 4;
+      f = self.filePointer
+      res = UM.UnstructuredMesh()
+      self.output = res
+      dataType = np.float32
+      dataSize = 4;
 
+      data = f.read(4)
+      # end of file
+      if len(data) == 0:
+          raise Exception("Empty file")
+      key = struct.unpack("i", data)[0]
+
+     #MeshVersionFormatted
+      if key == 1:
+          data = f.read(4)
+          udata = struct.unpack("i", data)[0]
+          if udata == 2 :
+              dataType = np.float64
+              dataSize = 8
+              #print("data in double")
+      else:
+          raise Exception('Expected key value equal to 1 (binary), are you sure this file is binary??')
+
+      globalElementCounter = 0;
+      #if self.refsAsAField:
+      #   elemRefs = np.zeros(0 ,dtype=np.int)
+      elemRefsDic = {}
+
+      while True:
           data = f.read(4)
           # end of file
           if len(data) == 0:
-              raise Exception("Empty file")
+             break
           key = struct.unpack("i", data)[0]
 
-         #MeshVersionFormatted
-          if key == 1:
-              data = f.read(4)
-              udata = struct.unpack("i", data)[0]
-              if udata == 2 :
-                  dataType = np.float64
-                  dataSize = 8
-                  #print("data in double")
-          else:
-              raise Exception('Expected key value equal to 1 (binary), are you sure this file is binary??')
-
-          globalElementCounter = 0;
-          #if self.refsAsAField:
-          #   elemRefs = np.zeros(0 ,dtype=np.int)
-          elemRefsDic = {}
-
-          while True:
-              data = f.read(4)
-              # end of file
-              if len(data) == 0:
-                 break
-              key = struct.unpack("i", data)[0]
-
-              #Dimension
-              if key == 3:
-                  data = f.read(4)
-                  endOfInformation = struct.unpack("i", data)[0]
-                  #f.seek(endOfInformation-4)
-                  data = f.read(4)
-                  dimension = struct.unpack("i", data)[0]
-                  f.seek(endOfInformation)
-                  #print("dimension : " + str(dimension))
-                  continue
-
-              #Vertices
-              if key == 4:
-                  data = f.read(4)
-                  endOfInformation = struct.unpack("i", data)[0]
-                  print(endOfInformation)
-                  # I dont undestant why I have to trask 4 bites
-                  data = f.read(4)
-                  nbNodes = struct.unpack("i", data)[0]
-
-                  res.nodes = np.empty((nbNodes,dimension),dtype=dataType)
-                  res.originalIDNodes= np.empty((nbNodes,),dtype=np.int)
-
-                  print("Reading " + str(nbNodes) + " nodes ")
-                  cpt =0;
-                  dataformat = ('f' if dataSize==4 else "d"    )*dimension + "i"
-                  if self.refsAsAField:
-                      nodalrefs = np.zeros(nbNodes ,dtype=np.int)
-                      self.nodalFields['refs'] = nodalrefs
-
-
-                  while(True):
-                      data = f.read(dataSize*dimension+4)
-                      #print(('f' if dataSize==4 else "d"    )*dimension + "i")
-                      udata = struct.unpack(dataformat,data)
-                      res.nodes[cpt,:] = udata[0:dimension]
-                      res.originalIDNodes[cpt] = int(cpt)
-                      ref = str(udata[dimension])
-                      #print(udata)
-                      if self.refsAsAField:
-                          nodalrefs[cpt] = ref
-                      else:
-                          res.GetNodalTag("NTag"+ref).AddToTag(cpt)
-
-                      cpt +=1
-                      self.PrintProgress(cpt,maxx = nbNodes)
-
-                      #if (cpt/10000 == float(cpt)/10000):
-                        #self.PrintProgress()
-                      #  print(100*float(cpt)/nbNodes)
-                      if cpt == nbNodes:
-                        break
-                  #print(f.tell())
-                  del cpt
-                  continue
-
-
-
-              # all kind of elements
-              if meditNumber.has_key(key):
-                  elements = res.GetElementsOfType(meditNumber[key])
-                  print("Reading elements of type " + elements.elementType )
-                  nbNodes = elements.GetNumberOfNodesPerElement()
-
-                  data = f.read(4)
-                  endOfInformation = struct.unpack("i", data)[0]
-
-
-                  # I dont undestant why I have to trask 4 bites
-
-                  data = f.read(4)
-                  nbElements = struct.unpack("i", data)[0]
-                  elements.Reserve(nbElements)
-                  #(endOfInformation- beginOfInformation)/((nbNodes+1)*5)
-                  print('Reading '+ str(nbElements) + " Elements ")
-                  elements.cpt =0;
-                  dataformat = "i"*(1+nbNodes)
-
-                  if self.refsAsAField:
-                        elemRefs = np.zeros(nbElements ,dtype=np.int)
-                        elemRefsDic[elements.elementType] = elemRefs
-
-                  while(elements.cpt < nbElements):
-                    data = f.read((nbNodes+1)*4)
-                    udata = struct.unpack(dataformat,data)
-                    conn = udata[:nbNodes]
-                    elements.connectivity[elements.cpt,:] = conn;
-                    elements.originalIds[elements.cpt] = globalElementCounter;
-
-
-                    #elements.AddNewElement(conn, cpt)
-
-
-
-                    if self.refsAsAField:
-                        ref = int(udata[nbNodes])
-                        #if globalElementCounter >= len(elemRefs) :
-                        #    elemRefs = np.resize(elemRefs, globalElementCounter*2+1)
-                        elemRefs[elements.cpt] = ref
-                    else:
-                        ref = str(udata[nbNodes])
-                        elements.GetTag("ETag"+ref).AddToTag(elements.cpt)
-
-                    globalElementCounter +=1
-                    elements.cpt +=1
-                    #if nbElements == cpt:
-                    #    break
-
-                    self.PrintProgress(elements.cpt, maxx = nbElements )
-                    #if (elements.cpt/10000 == float(elements.cpt)/10000):
-                    #    print(elements.cpt)
-
-
-                  elements.connectivity -= 1;
-                  continue
-
-              if key == 62:
-                 endOfInformation = struct.unpack("i", data)[0]
-                 f.seek(endOfInformation)
-                 break
-
-
-              #End key
-              if key == 54:
-                 break
-
-              print("skiping key : "  + str(key) )
+          #Dimension
+          if key == 3:
               data = f.read(4)
               endOfInformation = struct.unpack("i", data)[0]
+              #f.seek(endOfInformation-4)
+              data = f.read(4)
+              dimension = struct.unpack("i", data)[0]
               f.seek(endOfInformation)
+              #print("dimension : " + str(dimension))
+              continue
 
-          res.GenerateManufacturedOriginalIDs()
-          if self.refsAsAField:
-             elemRefs = np.resize(elemRefs,globalElementCounter )
-             cpt =0
-             for name,val in res.elements.iteritems():
-                 elemRefs[cpt:cpt+val.GetNumberOfElements()] = elemRefsDic[name]
-                 cpt += val.GetNumberOfElements()
-             self.elementsFields['refs'] = elemRefs
+          #Vertices
+          if key == 4:
+              data = f.read(4)
+              endOfInformation = struct.unpack("i", data)[0]
+              #print(endOfInformation)
+              # I dont undestant why I have to trash 4 bytes
+              data = f.read(4)
+              nbNodes = struct.unpack("i", data)[0]
 
-          self.EndReading()
-          return res
+              res.nodes = np.empty((nbNodes,dimension),dtype=dataType)
+              res.originalIDNodes= np.empty((nbNodes,),dtype=np.int)
 
-        print("Error opening file" + self.fileName)
+              self.PrintVerbose("Reading " + str(nbNodes) + " nodes ")
+              cpt =0;
+              dataformat = ('f' if dataSize==4 else "d"    )*dimension + "i"
+              if self.refsAsAField:
+                  nodalrefs = np.zeros(nbNodes ,dtype=np.int)
+                  self.nodalFields['refs'] = nodalrefs
+
+
+              while(True):
+                  data = f.read(dataSize*dimension+4)
+                  #print(('f' if dataSize==4 else "d"    )*dimension + "i")
+                  udata = struct.unpack(dataformat,data)
+                  res.nodes[cpt,:] = udata[0:dimension]
+                  res.originalIDNodes[cpt] = int(cpt)
+
+                  #print(udata)
+                  if self.refsAsAField:
+                      ref = int(udata[dimension])
+                      nodalrefs[cpt] = ref
+                      #print (str(cpt) +' : '+ str(ref) + ' | '),
+                  else:
+                      ref = str(udata[dimension])
+                      res.GetNodalTag("NTag"+ref).AddToTag(cpt)
+
+                  cpt +=1
+                  self.PrintProgress(cpt,maxx = nbNodes)
+
+                  #if (cpt/10000 == float(cpt)/10000):
+                    #self.PrintProgress()
+                  #  print(100*float(cpt)/nbNodes)
+                  if cpt == nbNodes:
+                    break
+              #print(f.tell())
+              del cpt
+              continue
+
+
+
+          # all kind of elements
+          if meditNumber.has_key(key):
+              elements = res.GetElementsOfType(meditNumber[key])
+              self.PrintVerbose("Reading elements of type " + elements.elementType )
+              nbNodes = elements.GetNumberOfNodesPerElement()
+
+              data = f.read(4)
+              endOfInformation = struct.unpack("i", data)[0]
+
+
+              # I dont undestant why I have to trask 4 bites
+
+              data = f.read(4)
+              nbElements = struct.unpack("i", data)[0]
+              elements.Reserve(nbElements)
+              #(endOfInformation- beginOfInformation)/((nbNodes+1)*5)
+              self.PrintVerbose('Reading '+ str(nbElements) + " Elements ")
+              elements.cpt =0;
+              dataformat = "i"*(1+nbNodes)
+
+              if self.refsAsAField:
+                    elemRefs = np.zeros(nbElements ,dtype=np.int)
+                    elemRefsDic[elements.elementType] = elemRefs
+
+              while(elements.cpt < nbElements):
+                data = f.read((nbNodes+1)*4)
+                udata = struct.unpack(dataformat,data)
+                conn = udata[:nbNodes]
+                elements.connectivity[elements.cpt,:] = conn;
+                elements.originalIds[elements.cpt] = globalElementCounter;
+
+
+                #elements.AddNewElement(conn, cpt)
+
+
+
+                if self.refsAsAField:
+                    ref = int(udata[nbNodes])
+                    #if globalElementCounter >= len(elemRefs) :
+                    #    elemRefs = np.resize(elemRefs, globalElementCounter*2+1)
+                    elemRefs[elements.cpt] = ref
+                else:
+                    ref = str(udata[nbNodes])
+                    elements.GetTag("ETag"+ref).AddToTag(elements.cpt)
+
+                globalElementCounter +=1
+                elements.cpt +=1
+                #if nbElements == cpt:
+                #    break
+
+                self.PrintProgress(elements.cpt, maxx = nbElements )
+                #if (elements.cpt/10000 == float(elements.cpt)/10000):
+                #    print(elements.cpt)
+
+
+              elements.connectivity -= 1;
+              continue
+
+          if key == 62:
+             endOfInformation = struct.unpack("i", data)[0]
+             f.seek(endOfInformation)
+             break
+
+
+          #End key
+          if key == 54:
+             break
+
+          self.PrintVerbose("skiping key : "  + str(key) )
+          data = f.read(4)
+          endOfInformation = struct.unpack("i", data)[0]
+          f.seek(endOfInformation)
+
+      res.GenerateManufacturedOriginalIDs()
+
+      if self.refsAsAField:
+         elemRefs = np.resize(elemRefs,globalElementCounter )
+         cpt =0
+         for name,val in res.elements.iteritems():
+             elemRefs[cpt:cpt+val.GetNumberOfElements()] = elemRefsDic[name]
+             cpt += val.GetNumberOfElements()
+         self.elementsFields['refs'] = elemRefs
+
+      self.EndReading()
+      return res
+
+
 
 
 
@@ -261,7 +358,7 @@ class MeshReader(ReaderBase):
                 formatFile = int(self.filePointer.readline())
                 if formatFile == 2:
                     dataType = np.float64
-                print ('formatFile  : '+ str(dataType))
+                #print ('formatFile  : '+ str(dataType))
                 continue
 
             if l.find("Dimension")>-1 :
@@ -272,16 +369,16 @@ class MeshReader(ReaderBase):
                 else:
                     l = self.filePointer.readline()
                 dimension = int(l)
-                print ('Dimension : '+ str(dimension))
+                #print ('Dimension : '+ str(dimension))
                 continue
 
-            if l.find("Vertices")>-1 :
+            if l.find("Vertices")>-1 and len(l) == 8:
                 line = self.filePointer.readline()
                 l = line.strip('\n').lstrip().rstrip()
 
                 nbNodes = int(l.split()[0])
-                print("Reading "+str(nbNodes)+ " Nodes")
-                res.nodes = np.empty((nbNodes,dimension))
+                self.PrintVerbose("Reading "+str(nbNodes)+ " Nodes")
+                res.nodes = np.empty((nbNodes,dimension),dtype = dataType)
                 #ref = UM.Tag('ref')
                 res.originalIDNodes= np.empty((nbNodes,),dtype=np.int)
                 cpt =0;
@@ -311,7 +408,7 @@ class MeshReader(ReaderBase):
                 l = line.strip('\n').lstrip().rstrip()
 
                 nbElements = int(l.split()[0])
-                print("Reading "+str(nbElements)+ " Elements")
+                self.PrintVerbose("Reading "+str(nbElements)+ " Elements")
                 cpt =0;
                 while(True):
                     line = self.filePointer.readline()
@@ -334,7 +431,7 @@ class MeshReader(ReaderBase):
             if l.find("End")>-1 :
                 break
 
-            print("ignoring line : " + l )
+            self.PrintVerbose("ignoring line : " + l )
 
         self.EndReading()
         return res
@@ -388,6 +485,11 @@ End
     open(newFileName,'w').write(__teststring)
     res = ReadMesh(fileName=newFileName)
 
+    newFileName = TestTempDir().GetTempPath()+"mshFile.sol"
+    open(newFileName,'w').write(__teststringField)
+    resfield = ReadMesh(fileName=newFileName)
+
+
     from OTTools.IO.MeshWriter import WriteMesh as WriteMesh
 
     newFileName = TestTempDir().GetTempPath()+"mshFile.meshb"
@@ -399,4 +501,6 @@ End
     return 'ok'
 
 if __name__ == '__main__':
+    from OTTools.Helpers.BaseOutputObject import BaseOutputObject
+    BaseOutputObject.SetGlobalDebugMode(True)
     print(CheckIntegrity())# pragma: no cover

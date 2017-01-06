@@ -15,20 +15,20 @@ class WriterBase(BaseOutputObject):
             print(TFormat.InRed("SetBinary before opening"))
             raise Exception
         self._isBinary = val
-        
+
     def isBinary(self):
         return self._isBinary
-        
+
     def isOpen(self):
         return self._isOpen
-        
-        
+
+
     def SetFileName(self,fileName):
         self.fileName = fileName;
 
     def Open(self, filename = None):
         if self._isOpen :
-            print(TFormat.InRed("The file is already open !!!!!"))
+            print(TFormat.InRed("The file is already open !!!!!"))# pragma: no cover
             raise Exception
 
 
@@ -42,9 +42,9 @@ class WriterBase(BaseOutputObject):
             else:
                 mode = "w"
             self.filePointer = open(self.fileName, mode,0)
-            
+
         except:
-            print(TFormat.InRed("Error File Not Open"))
+            print(TFormat.InRed("Error File Not Open"))# pragma: no cover
             raise
 
         self._isOpen = True
@@ -56,3 +56,11 @@ class WriterBase(BaseOutputObject):
         else :
             self.PrintVerbose(TFormat.InRed("File Not Open"))
 
+def CheckIntegrity():
+
+    obj = WriterBase()
+    return "ok"
+
+
+if __name__ == '__main__':
+    print(CheckIntegrity())# pragma: no cover

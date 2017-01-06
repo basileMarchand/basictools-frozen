@@ -303,9 +303,9 @@ class XdmfWriter(WriterBase):
                 dataarray = np.empty((ntotalentries,),dtype=np.int)
                 cpt =0;
                 for ntype, data in baseMeshObject.elements.iteritems():
-                   print("printing {}  elements".format(data.elementType) )
-                   print("printing {}  elements".format(data.GetNumberOfElements()) )
-                   print("with  {}  nodes per element ".format(data.GetNumberOfNodesPerElement()) )
+                   self.PrintVerbose("printing elements of type : {}".format(data.elementType) )
+                   self.PrintDebug("printing {}  elements".format(data.GetNumberOfElements()) )
+                   self.PrintDebug("with  {}  nodes per element ".format(data.GetNumberOfNodesPerElement()) )
                    elemtype = XdmfNumber[ntype]
                    for i in xrange(data.GetNumberOfElements() ):
                        dataarray[cpt] = elemtype
@@ -320,8 +320,8 @@ class XdmfWriter(WriterBase):
                        for j in xrange(data.GetNumberOfNodesPerElement()):
                            dataarray[cpt] = data.connectivity[i,j]
                            cpt += 1;
-                print("Number Of Entries {}".format(ntotalentries))
-                print("counter {}".format(cpt))
+                self.PrintDebug("Number Of Entries {}".format(ntotalentries))
+                self.PrintDebug("counter {}".format(cpt))
 
                 self.__WriteDataItem(dataarray)
             else:
@@ -506,10 +506,9 @@ class XdmfWriter(WriterBase):
          baseMeshObject.PrepareForOutput();
 
          celtags = baseMeshObject.GetNamesOfCellTags()
-         for tag in celtags:
-             name = "Tag_" + tag.name
-             #data = baseMeshObject.GetElementTag(tagname)
-             data = baseMeshObject.GetElementsInTag(tag.name)
+         for tagname in celtags:
+             name = "Tag_" + tagname
+             data = baseMeshObject.GetElementsInTag(tagname)
              res = np.zeros((baseMeshObject.GetNumberOfElements(),1),dtype=np.int)
              res[data] = 1;
 

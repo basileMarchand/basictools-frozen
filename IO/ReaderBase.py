@@ -50,3 +50,16 @@ class ReaderBase(BaseOutputObject):
         if string is not None:
             self.fileName = None
 
+def CheckIntegrity():
+
+    obj = ReaderBase()
+    try:
+        obj.StartReading()
+        raise
+    except :
+        pass
+    return "ok"
+
+
+if __name__ == '__main__':
+    print(CheckIntegrity())# pragma: no cover

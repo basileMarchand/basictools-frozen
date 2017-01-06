@@ -3,6 +3,7 @@
 import numpy as np
 import OTTools.FE.UnstructuredMesh as UM
 import OTTools.FE.ElementNames as EN
+from OTTools.Helpers.BaseOutputObject import BaseOutputObject
 
 AscNumber = {}
 
@@ -26,6 +27,8 @@ def ReadAsc(fileName=None,string=None):
 
     filetointernalid = {}
     #filetointernalidElem =  {}
+    BaseOutputObject().Print("Reading file : {} ".format(fileName))
+
     for line in string:
         l = line.strip('\n').lstrip().rstrip()
         if len(l) == 0: continue
@@ -33,7 +36,7 @@ def ReadAsc(fileName=None,string=None):
         if l.find("BEGIN_NODES")>-1 :
 
             nbNodes = int(l.split()[1])
-            print("Reading "+str(nbNodes)+ " Nodes")
+            BaseOutputObject().Print("Reading "+str(nbNodes)+ " Nodes")
             dim = int(l.split()[2])
             res.nodes = np.empty((nbNodes,dim))
             res.originalIDNodes= np.empty((nbNodes,))
@@ -57,7 +60,7 @@ def ReadAsc(fileName=None,string=None):
         if l.find("BEGIN_ELEMENTS")>-1 :
 
             nbElements = int(l.split()[1])
-            print("Reading "+str(nbElements)+ " Elements")
+            BaseOutputObject().Print("Reading "+str(nbElements)+ " Elements")
             #res.nodes = np.empty((nbNodes,dim))
             #res.originalIDNodes= np.empty((nbNodes,))
             cpt =0;
@@ -85,7 +88,7 @@ def ReadAsc(fileName=None,string=None):
 
                 elements = res.GetElementsOfType(nametype)
                 elements.Reserve(nbElements)
-                
+
                 oid = int(s[0])
 
                 elements.AddNewElement(conn,oid)
@@ -93,11 +96,11 @@ def ReadAsc(fileName=None,string=None):
             for etype, data in res.elements.iteritems():
                 data.tighten()
             continue
-        
+
         if l.find("BEGIN_GROUPS")>-1 :
 
             nbgroups = int(l.split()[1])
-            print("Reading "+str(nbgroups)+ " Groups")
+            BaseOutputObject().Print("Reading "+str(nbgroups)+ " Groups")
             #res.nodes = np.empty((nbNodes,dim))
             #res.originalIDNodes= np.empty((nbNodes,))
             cpt =0;
@@ -113,26 +116,29 @@ def ReadAsc(fileName=None,string=None):
                         print(cpt)
                     break
                 s = shlex.split(l)
-                print("Reading Group " + s[1])
+                tagname = s[1]
+                BaseOutputObject().Print("Reading Group " + tagname)
+
                 if s[2] == '1' :
                     #node group
-                    tag = res.GetNodalTag(s[1])
+                    tag = res.GetNodalTag(tagname)
                     tag.SetIds(np.array( [filetointernalid[x] for x in  map(int,s[7:]) ] ,dtype=np.int))
                     #tag.ids = np.zeros(len(s[7:]),dtype=np.int)
-                    #cpt =0 
+                    #cpt =0
                     #for i in s[7:]:
                     #    tag.ids[cpt] = filetointernalid[int(i)]
                     #    cpt +=1
                     #
                 else:
                     #element group
+
                     for x in range(7,len(s)) :
                         Oid = int(s[x])
                         #print(Oid)
-                        res.AddElementToTagUsingOriginalId(Oid,s[1])
+                        res.AddElementToTagUsingOriginalId(Oid,tagname)
                 cpt +=1
             continue
-        print("Ignoring line : " + l )
+        BaseOutputObject().PrintVerbose("Ignoring line : '" + str(l) + "'")
     res.PrepareForOutput()
     return res
 
