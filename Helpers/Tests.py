@@ -6,7 +6,7 @@ import traceback
 Function to generate and destroy a temporary directory
 """
 
-class TestTempDir():
+class TestTempDir(object):
     path = None
 
     @classmethod
