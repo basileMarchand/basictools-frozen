@@ -154,7 +154,7 @@ class MeshWriter(WriterBase):
 
 
         self.filePointer = open(".".join(self.fileName.split(".")[0:-1])+".solb" , 'wb',0)
-        self.__isOpen = True
+        self._isOpen = True
 
         #key MeshVersionFormatted
         self.filePointer.write(struct.pack('i', 1))
@@ -276,7 +276,7 @@ class MeshWriter(WriterBase):
             self.filePointer.write("End\n")
             self.Close();
             self.filePointer = open(".".join(self.fileName.split(".")[0:-1])+".sol" , 'w',0)
-            self.__isOpen = True
+            self._isOpen = True
             self.filePointer.write("# This file has been writen by the python routine MmgWriter of the OTTools package\n")
             self.filePointer.write("# For any question about this routine, please contact SAFRAN TECH Pole M&S Team OT\n")
 
