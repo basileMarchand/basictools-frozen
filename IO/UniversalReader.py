@@ -3,16 +3,6 @@
 import OTTools.FE.ElementNames as ElementNames
 
 
-vtknumbers = {}
-vtknumbers[ElementNames.Bar_2] = 3
-
-vtknumbers[ElementNames.Triangle_3] = 5
-vtknumbers[ElementNames.Quadrangle_4] = 9
-vtknumbers[ElementNames.Hexaedron_8] = 12
-vtknumbers[ElementNames.Bar_3] = 21
-vtknumbers[ElementNames.Triangle_6] = 22
-vtknumbers[ElementNames.Tetrahedron_4] = 10
-vtknumbers[ElementNames.Tetrahedron_10] = 24
 
 
 def ReadMesh(filename):
@@ -62,77 +52,10 @@ def ReadMesh(filename):
 
 def ReadMeshAndPopulateVtkObject(filename, vtkobject= None):
     mesh = ReadMesh(filename)
-
+    from OTTools.FE.UnstructuredTools import MeshToVtk
     return MeshToVtk(mesh, vtkobject)
 
 
-def MeshToVtk(mesh, vtkobject=None):
-
-    try:
-        from paraview import vtk
-    except :
-        import vtk
-
-    if vtkobject is not None:
-        output = vtkobject
-    else:
-        output = vtk.vtkUnstructuredGrid()
-
-
-    output.Allocate(mesh.GetNumberOfElements())
-    ##copy points
-    pts = vtk.vtkPoints()
-    pts.Allocate(mesh.GetNumberOfNodes())
-    if mesh.nodes.shape[1] == 3 :
-        for p in xrange(mesh.GetNumberOfNodes()):
-            point = mesh.nodes[p,:]
-            pts.InsertNextPoint(point[0],point[1],point[2])
-    else:
-        #2DCase
-        for p in xrange(mesh.GetNumberOfNodes()):
-            point = mesh.nodes[p,:]
-            pts.InsertNextPoint(point[0],point[1],0.0)
-
-    output.SetPoints(pts)
-
-    if hasattr(mesh,"nodeFields"):
-        for name,data in mesh.nodeFields.iteritems():
-            pd = vtk.vtkFloatArray()
-            pd.SetName(name)
-            pd.SetNumberOfComponents(data.shape[1])
-            pd.SetNumberOfTuples(mesh.GetNumberOfNodes())
-            cpt = 0
-            for i in xrange(mesh.GetNumberOfNodes()):
-                for j in xrange(data.shape[1]):
-                    pd.SetValue(cpt, data[i,j])
-                    cpt +=1
-
-            output.GetPointData().AddArray(pd)
-
-    for elementsname,elementContainer in mesh.elements.iteritems():
-        pointIds = vtk.vtkIdList()
-        npe = elementContainer.GetNumberOfNodesPerElement()
-        pointIds.SetNumberOfIds(npe)
-        vtknumber = vtknumbers[elementsname]
-        for e in xrange(elementContainer.GetNumberOfElements()):
-            for i in xrange(npe):
-                pointIds.SetId(i,elementContainer.connectivity[e,i])
-            output.InsertNextCell(vtknumber, pointIds)
-
-    if hasattr(mesh,"elemFields"):
-        for name,data in mesh.elemFields.iteritems():
-            pd = vtk.vtkFloatArray()
-            pd.SetName(name)
-            pd.SetNumberOfComponents(data.shape[1])
-            pd.SetNumberOfTuples(mesh.GetNumberOfElements())
-            cpt = 0
-            for i in xrange(mesh.GetNumberOfElements()):
-                for j in xrange(data.shape[1]):
-                    pd.SetValue(cpt, data[i,j])
-                    cpt +=1
-
-            output.GetCellData().AddArray(pd)
-    return output
 
 
 def CheckIntegrity():
@@ -143,8 +66,7 @@ def CheckIntegrity():
     res.elemFields["E"] = np.array([[1],[2]])
     res.nodeFields["nodeFields"] = np.arange(4)
     res.nodeFields["nodeFields"].shape = (4,1)
-    sol = MeshToVtk(res)
-    print(sol)
+
     return "ok"
 
 
