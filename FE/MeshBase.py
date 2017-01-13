@@ -6,30 +6,38 @@ from OTTools.Helpers.BaseOutputObject import BaseOutputObject
 class Tag():
     def __init__(self,tagname):
         self.name = tagname
-        self.id = np.empty(0,dtype=np.int)
+        self._id = np.empty(0,dtype=np.int)
         self.cpt =0
 
 
     def AddToTag(self,tid):
-        if len(self.id) <= self.cpt:
-            self.id.resize(self.cpt*2+1)
+        if len(self._id) <= self.cpt:
+            self._id.resize(self.cpt*2+1)
 
-        self.id[self.cpt] = tid
+        self._id[self.cpt] = tid
         self.cpt += 1
 
     def __len__(self):
         return self.cpt
 
-    def tighten(self):
-        self.id = np.resize(self.id, (self.cpt,))
+    def Tighten(self):
+        if self._id.shape[0] != self.cpt:
+            self._id = np.resize(self._id, (self.cpt,))
 
     def SetIds(self, ids):
-        self.id = ids
+        self._id = ids
         self.cpt = len(ids)
+
+    def SetId(self, pos, ids):
+        self._id[pos] = ids
 
     def Allocate(self,l):
         self.cpt = l
-        self.tighten()
+        self.Tighten()
+
+    def GetIds(self):
+        self.Tighten()
+        return self._id
 
     def __str__(self):
         res = ''
@@ -131,7 +139,7 @@ def CheckIntegrity():
     obj = MeshBase()
     tag = obj.GetNodalTag("toto")
     tag.Allocate(1)
-    tag.id[0] = 0
+    tag.SetId(0,0)
     tag.AddToTag(1)
     len(tag)
     obj.nodesTags.RenameTag('toto','newtoto')

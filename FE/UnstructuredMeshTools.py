@@ -3,7 +3,7 @@ import numpy as np
 
 from OTTools.FE.UnstructuredMesh import UnstructuredMesh
 import OTTools.FE.ElementNames as ElementNames
-
+import OTTools.Helpers.BaseOutputObject as BaseOutputObject
 
 
 def CreateMeshOfTriangles(points,tris):
@@ -199,11 +199,12 @@ def QuadToLin(inputmesh, divideQuadElements=True,lineariseMiddlePoints=False):
         #copy of tags
         for originaltag in quadElement.tags :
             destinationtag = lineelements.GetTag(originaltag.name)
+            ids = originaltag.GetIds()
             for i in xrange(originaltag.cpt):
                 for t in xrange(nbOfNewElements):
-                    destinationtag.AddToTag(initNbElem+originaltag.id[i]*nbOfNewElements+t)
+                    destinationtag.AddToTag(initNbElem+ids[i]*nbOfNewElements+t)
 
-            destinationtag.tighten()
+            destinationtag.Tighten()
 
         res.ComputeGlobalOffset()
 
@@ -213,7 +214,10 @@ def QuadToLin(inputmesh, divideQuadElements=True,lineariseMiddlePoints=False):
 
     return res
 
-def CleanDoubleNodes(res, tol = None):
+def CleanDoubleNodes(res, tol = None, nodesToTestMask= None):
+
+    BaseOutputObject.BaseOutputObject().PrintDebug("in CleanDoubleNodes")
+
     if tol is None:
         res.ComputeBoundingBox()
         tol = np.linalg.norm(res.boundingMax - res.boundingMin)*1e-7
@@ -221,24 +225,61 @@ def CleanDoubleNodes(res, tol = None):
     nbnodes = res.GetNumberOfNodes()
     toKeep = np.zeros(nbnodes, dtype=np.bool )
     newindex = np.zeros(nbnodes, dtype=np.int )
+    tol = tol**2
+    def dist2(array,value):
+        x = array-value
+        return x[0]**2 +x[1]**2+x[2]**2
 
-    cpt =0
-    for i in xrange(nbnodes):
-        for j in xrange(i):
-            dist =np.linalg.norm(res.nodes[i,:]-res.nodes[j,:])
-            if dist < tol and toKeep[j]:
-                newindex[i] = newindex[j]
-                break
-        else:
-            newindex[i] = cpt
-            cpt += 1
-            toKeep[i] = True;
+    if nodesToTestMask is None:
+        cpt =0
+        for i in xrange(nbnodes):
+            posi = res.nodes[i,:]
+            for j in xrange(i):
+                #dist =np.linalg.norm(res.nodes[i,:]-res.nodes[j,:])
+                dist = dist2(posi,res.nodes[j,:] )
+                if dist < tol and toKeep[j]:
+                    newindex[i] = newindex[j]
+                    break
+            else:
+                newindex[i] = cpt
+                cpt += 1
+                toKeep[i] = True;
+    else:
+        cpt =0
+        for i in xrange(nbnodes):
+            if not nodesToTestMask[i]:
+                  newindex[i] = cpt
+                  cpt += 1
+                  toKeep[i] = True;
+                  continue
+
+            posi = res.nodes[i,:]
+
+            for j in xrange(i):
+                if not nodesToTestMask[j]:
+                    continue
+                #dist =np.linalg.norm(res.nodes[i,:]-res.nodes[j,:])
+                if toKeep[j]:
+                    dist = dist2(posi,res.nodes[j,:] )
+                    if dist < tol :
+                        newindex[i] = newindex[j]
+                        break
+            else:
+                newindex[i] = cpt
+                cpt += 1
+                toKeep[i] = True;
+
+
+
+
 
     res.nodes = res.nodes[toKeep,:]
 
     for elementName in res.elements.keys():
         elements = res.elements[elementName]
         elements.connectivity = newindex[elements.connectivity]
+
+    BaseOutputObject.BaseOutputObject().PrintDebug("CleanDoubleNodes Done")
 
 def CleanLonelyNodes(res):
 
@@ -262,8 +303,7 @@ def CleanLonelyNodes(res):
 
     #node tags
     for tag in res.nodesTags :
-        tag.tighten()
-        tag.SetIds(NewIndex[np.extract(usedNodes[tag.id],tag.id )])
+        tag.SetIds(NewIndex[np.extract(usedNodes[tag.GetIds()],tag.GetIds() )])
 
     #renumbering the connectivity matrix
     for elementName in res.elements.keys():
@@ -286,21 +326,32 @@ def MirrorMesh(inmesh,x=None,y=None,z=None) :
 
     #copy of points:
     outmesh.nodes[0:nbpoints,:] = inmesh.nodes
+    import copy
+    outmesh.nodesTags = copy.deepcopy(inmesh.nodesTags)
     cpt = nbpoints
+
+    def increaseTags(tags,oldSize):
+        for tag in tags:
+            ids = tag.GetIds()[:]  # make a copy
+            tag.SetIds(np.hstack((ids,ids+oldSize)) )
+
 
     if x is not None:
         vec = np.array([ [  -1,1,1], ],dtype=np.float)
         outmesh.nodes[cpt:(2*cpt),:] = (outmesh.nodes[0:cpt,:]-[x,0,0])*vec+ [x,0,0]
+        increaseTags(outmesh.nodesTags,cpt)
         cpt = cpt*2
 
     if y is not None:
         vec = np.array([ [  1,-1,1], ],dtype=np.float)
         outmesh.nodes[cpt:(2*cpt),:] = (outmesh.nodes[0:cpt,:]-[0,y,0])*vec+ [0,y,0]
+        increaseTags(outmesh.nodesTags,cpt)
         cpt = cpt*2
 
     if z is not None:
         vec = np.array([ [  1,1,-1], ],dtype=np.float)
         outmesh.nodes[cpt:(2*cpt),:] = (outmesh.nodes[0:cpt,:]-[0,0,z])*vec+ [0,0,z]
+        increaseTags(outmesh.nodesTags,cpt)
         cpt = cpt*2
 
     for name,vals in inmesh.elements.iteritems():
@@ -308,22 +359,26 @@ def MirrorMesh(inmesh,x=None,y=None,z=None) :
         outelements = outmesh.GetElementsOfType(name)
         outelements.Reserve(nbelements*(2**d))
         outelements.connectivity[0:nbelements,:] = vals.connectivity
+        outelements.tags = copy.deepcopy(vals.tags)
         cpt = nbelements
         pcpt = nbpoints
         permutation = ElementNames.mirrorPermutation[name]
         if x is not None:
             outelements.connectivity[cpt:(2*cpt),:] = (outelements.connectivity[0:cpt,:]+pcpt)[:,permutation]
             pcpt = pcpt *2
+            increaseTags(outelements.tags,cpt)
             cpt = cpt*2
 
         if y is not None:
             outelements.connectivity[cpt:(2*cpt),:] = (outelements.connectivity[0:cpt,:]+pcpt)[:,permutation]
             pcpt = pcpt *2
+            increaseTags(outelements.tags,cpt)
             cpt = cpt*2
 
         if z is not None:
             outelements.connectivity[cpt:(2*cpt),:] = (outelements.connectivity[0:cpt,:]+pcpt)[:,permutation]
             pcpt = pcpt *2
+            increaseTags(outelements.tags,cpt)
             cpt = cpt*2
 
         outelements.cpt = cpt
@@ -356,16 +411,14 @@ def ExtractElementByTags(inmesh,tagsToKeep, allNodes=False):
        # check elements tags
        for tagToKeep in tagsToKeep:
            if elems.tags.has_key(tagToKeep):
-               elems.tags[tagToKeep].tighten()
-               toKeep[elems.tags[tagToKeep].id] = True
+               toKeep[elems.tags[tagToKeep].GetIds()] = True
 
        # check for nodes tags
        for tagToKeep in tagsToKeep:
            if inmesh.nodesTags.has_key(tagToKeep):
              nodalMask.fill(False)
              tag = inmesh.GetNodalTag(tagToKeep)
-             tag.tighten()
-             nodalMask[tag.id] = True
+             nodalMask[tag.GetIds()] = True
              elemMask = np.sum(nodalMask[elems.connectivity],axis=1)
              if allNodes :
                  toKeep[elemMask == elems.GetNumberOfNodesPerElement()] = True
@@ -387,9 +440,8 @@ def ExtractElementByTags(inmesh,tagsToKeep, allNodes=False):
        outelem.connectivity = elems.connectivity[toKeep,:]
 
        for tag in elems.tags  :
-           tag.tighten()
            #print(tag.id)
-           temp = np.extract(toKeep[tag.id],tag.id)
+           temp = np.extract(toKeep[tag.GetIds()],tag.GetIds())
            #print(temp)
            newid = newIndex[temp]
            #print(newid)
@@ -565,17 +617,32 @@ def MeshToVtk(mesh, vtkobject=None):
 
     if hasattr(mesh,"nodeFields"):
         for name,data in mesh.nodeFields.iteritems():
+            #VTK_data = numpy_support.numpy_to_vtk(num_array=np.swapaxes(phi,0,2).ravel(), deep=True, array_type=vtk.VTK_FLOAT)
+            #VTK_data.SetName(name)
+
             pd = vtk.vtkFloatArray()
             pd.SetName(name)
-            pd.SetNumberOfComponents(data.shape[1])
+            if len(data.shape) == 1:
+                pd.SetNumberOfComponents(1)
+            else:
+                pd.SetNumberOfComponents(data.shape[1])
             pd.SetNumberOfTuples(mesh.GetNumberOfNodes())
-            cpt = 0
-            for i in xrange(mesh.GetNumberOfNodes()):
-                for j in xrange(data.shape[1]):
+
+            if len(data.shape) > 1:
+              cpt = 0
+              for i in xrange(mesh.GetNumberOfNodes()):
+                 for j in xrange(data.shape[1]):
                     pd.SetValue(cpt, data[i,j])
                     cpt +=1
+              output.GetPointData().AddArray(pd)
+            else:
+              cpt = 0
+              for i in xrange(mesh.GetNumberOfNodes()):
+                    pd.SetValue(cpt, data[i])
+                    cpt +=1
+              output.GetPointData().AddArray(pd)
+              output.GetPointData().SetScalars(pd)
 
-            output.GetPointData().AddArray(pd)
 
     for elementsname,elementContainer in mesh.elements.iteritems():
         pointIds = vtk.vtkIdList()

@@ -72,7 +72,7 @@ class GeofWriter(WriterBase):
         maxDimensionalityOfelements = 0
         for ntype,elems in meshObject.elements.iteritems():
             maxDimensionalityOfelements = max(EN.dimension[ntype],maxDimensionalityOfelements)
-            if EN.dimension[ntype] == maxDimensionalityOfelements:
+            if EN.dimension[ntype] == maxDimensionalityOfelements or  False==lowerDimElementsAsSets :
                 nbElements += elems.GetNumberOfElements()
 
 
@@ -99,13 +99,13 @@ class GeofWriter(WriterBase):
         self.filePointer.write(" ***group \n")
 
         for tag in meshObject.nodesTags:
-            tag.tighten()
+
             self.filePointer.write("  **nset {} \n".format(tag.name))
             data = np.zeros((meshObject.GetNumberOfNodes(),1),dtype=np.int)
             if useOriginalId:
-                self.filePointer.write(" ".join([str(meshObject.originalIDNodes[x]) for x in tag.id]))
+                self.filePointer.write(" ".join([str(meshObject.originalIDNodes[x]) for x in tag.GetIds()]))
             else:
-                self.filePointer.write(" ".join([str(x+1) for x in tag.id]))
+                self.filePointer.write(" ".join([str(x+1) for x in tag.GetIds()]))
             self.filePointer.write("\n")
 
         meshObject.PrepareForOutput();
@@ -134,9 +134,8 @@ class GeofWriter(WriterBase):
                         continue
                     if elems.tags.has_key(tagname):
                         tag = elems.tags[tagname]
-                        tag.tighten()
                         if tag.cpt :
-                            self.filePointer.write(" ".join([str(x+1+cpt) for x in tag.id]))
+                            self.filePointer.write(" ".join([str(x+1+cpt) for x in tag.GetIds()]))
                     cpt += elems.GetNumberOfElements()
 
                 self.filePointer.write("\n")

@@ -22,6 +22,7 @@ def ReadStl(fileName=None,string=None):
 
     p = []
     normals = np.empty((0,3), dtype=float)
+    nodesbuffer = []
     for line in string:
         l = line.strip('\n').lstrip().rstrip()
         if l.find("facet")>-1 :
@@ -35,12 +36,16 @@ def ReadStl(fileName=None,string=None):
             if l.find("vertex")>-1 :
               p.append(np.fromstring(l.split("vertex")[1],sep=" ") )
           if len(p) == 3:
-            resUM.nodes = np.vstack((resUM.nodes,p[0][np.newaxis,:],p[1][np.newaxis,:],p[2][np.newaxis,:]))
+            nodesbuffer.extend(p)
+            #resUM.nodes = np.vstack((resUM.nodes,p[0][np.newaxis,:],p[1][np.newaxis,:],p[2][np.newaxis,:]))
             p = []
           else:# pragma: no cover
             print("error: outer loop with less than 3 vertex")
             raise
 
+
+    resUM.nodes = np.array(nodesbuffer)
+    del nodesbuffer
     elements = resUM.GetElementsOfType(EN.Triangle_3)
     elements.connectivity = np.array(xrange(resUM.GetNumberOfNodes()),dtype=np.int)
     elements.connectivity.shape = (resUM.GetNumberOfNodes()/3,3)

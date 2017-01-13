@@ -116,7 +116,8 @@ class MeshReader(ReaderBase):
 
                   data = f.read(dataSize*nbNodes*fieldSizes[i])
 
-                  field = np.empty((nbNodes,fieldSizes),dtype=np.float)
+                  field = np.empty((nbNodes,fieldSizes[i]),dtype=np.float)
+
                   data = struct.unpack(dataformat*(nbNodes*fieldSizes[i]), data)
                   #print(data)
                   cpt =0
@@ -125,7 +126,11 @@ class MeshReader(ReaderBase):
                           field[n,j] = data[cpt]
                           cpt += 1
 
-                  res["SolAtVertices"+str(i)]  =  field
+                  if fieldSizes[i] == 1 :
+                     field.shape = (len(field))
+                     res["SolAtVertices"+str(i)]  =  field
+                  else:
+                     res["SolAtVertices"+str(i)]  =  field
               continue
           #End key
           if key == 54:
@@ -217,7 +222,7 @@ class MeshReader(ReaderBase):
 
                   #print(udata)
                   if self.refsAsAField:
-                      ref = int(udata[dimension])
+                      ref = udata[dimension]
                       nodalrefs[cpt] = ref
                       #print (str(cpt) +' : '+ str(ref) + ' | '),
                   else:
@@ -288,12 +293,15 @@ class MeshReader(ReaderBase):
                 #if nbElements == cpt:
                 #    break
 
-                self.PrintProgress(elements.cpt, maxx = nbElements )
+                #self.PrintProgress(elements.cpt, maxx = nbElements )
                 #if (elements.cpt/10000 == float(elements.cpt)/10000):
                 #    print(elements.cpt)
 
 
               elements.connectivity -= 1;
+              self.PrintVerbose('Reading '+ str(nbElements) + " Elements Done ")
+
+
               continue
 
           if key == 62:

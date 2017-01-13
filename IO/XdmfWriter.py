@@ -496,8 +496,8 @@ class XdmfWriter(WriterBase):
          #try:
          for tag in baseMeshObject.nodesTags:
                  name = "Tag_" + tag.name
-                 data = np.zeros((baseMeshObject.GetNumberOfNodes(),1),dtype=np.int)
-                 data[baseMeshObject.nodesTags[tag.name].id] = 1;
+                 data = np.zeros((baseMeshObject.GetNumberOfNodes(),1),dtype=np.int8)
+                 data[baseMeshObject.nodesTags[tag.name].GetIds()] = 1;
                  self.__WriteAttribute(np.array(data), name, "Node",baseMeshObject)
          #except:
          #   pass
@@ -509,7 +509,7 @@ class XdmfWriter(WriterBase):
          for tagname in celtags:
              name = "Tag_" + tagname
              data = baseMeshObject.GetElementsInTag(tagname)
-             res = np.zeros((baseMeshObject.GetNumberOfElements(),1),dtype=np.int)
+             res = np.zeros((baseMeshObject.GetNumberOfElements(),1),dtype=np.int8)
              res[data] = 1;
 
              self.__WriteAttribute(np.array(res), name, "Cell", baseMeshObject)
@@ -529,20 +529,6 @@ class XdmfWriter(WriterBase):
            self.__WriteAttribute(np.array(CellFields[i]), name, "Cell",baseMeshObject)
 
 
-
-#         for i in range(len(CellFields)):
-#           name = 'CField'+str(i)
-#           if len(CellFields) == len(CellFieldsNames):
-#               name = CellFieldsNames[i]
-#
-#           self.filePointer.write('    <Attribute Center="Cell" Name="'+name+'" Type="Scalar">\n')
-#           self.filePointer.write('      <DataItem DataType="Float" Dimensions="'+" ".join(str(x-1) for x in np.flipud(baseMeshObject.GetDimensions())) +'" Format="XML" Precision="4">\n')
-#           field = CellFields[i].view()
-#           field.shape = tuple((x-1) for x in baseMeshObject.GetDimensions())
-#           self.filePointer.write(" ".join(str(x) for x in field.T.flatten()))
-#           self.filePointer.write('    </DataItem>\n')
-#           self.filePointer.write('    </Attribute>\n')
-
          for i in range(len(GridFields)):
 
            name = 'GField'+str(i)
@@ -555,10 +541,13 @@ class XdmfWriter(WriterBase):
 
          if(self.__keepXmlFileInSaneState):
              self.WriteTail()
+         if self.isBinary() :# pragma: no cover
+           self.__binaryFilePointer.flush()
+
 
     def __WriteTime(self):
         """ this function is called by the WriteTail, this function must NOT change
-         the state of the instance, also no writting to binary neader hdf5 files """
+         the state of the instance, also no writting to binary neither hdf5 files """
         if self.isOpen():
             #self.filePointer.write('<Time TimeType="List">\n')
             #self.__WriteDataItem(self.timeSteps)
@@ -585,6 +574,9 @@ class XdmfWriter(WriterBase):
                 s = data.dtype.itemsize
             elif data.dtype == np.int64:
                 typename = 'Int'
+                s = data.dtype.itemsize
+            elif data.dtype == np.int8:
+                typename = 'char'
                 s = data.dtype.itemsize
             else:
                 print('Output Not implemented for data of type ')              # pragma: no cover

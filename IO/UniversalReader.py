@@ -52,11 +52,8 @@ def ReadMesh(filename):
 
 def ReadMeshAndPopulateVtkObject(filename, vtkobject= None):
     mesh = ReadMesh(filename)
-    from OTTools.FE.UnstructuredTools import MeshToVtk
+    from OTTools.FE.UnstructuredMeshTools import MeshToVtk
     return MeshToVtk(mesh, vtkobject)
-
-
-
 
 def CheckIntegrity():
     from OTTools.FE.UnstructuredMeshTools import CreateMeshOfTriangles
