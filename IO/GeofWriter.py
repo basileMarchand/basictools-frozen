@@ -182,13 +182,13 @@ class GeofWriter(WriterBase):
                             continue
                         if elems.tags.has_key(tagname):
                             tag = elems.tags[tagname]
-                            tag.tighten()
+
                             name = GeofSetName[ntype];
 
-
-                            for e in xrange(tag.cpt):
+                            ids = tag.GetIds()
+                            for e in xrange(len(tag)):
                                 self.filePointer.write(" {} ".format(name))
-                                self.filePointer.write(" ".join([str(x+1) for x in elems.connectivity[tag.id[e],:] ]))
+                                self.filePointer.write(" ".join([str(x+1) for x in elems.connectivity[ids[e],:] ]))
                                 self.filePointer.write(" \n")
 
 
