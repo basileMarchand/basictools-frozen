@@ -5,7 +5,7 @@ import OTTools.FE.ElementNames as ElementNames
 
 
 
-def ReadMesh(filename):
+def ReadMesh(filename,out=None):# pragma: no cover
     extention = filename.split(".")[-1].lower()
     if extention ==  "asc":
         import OTTools.IO.AscReader as AscReader
@@ -15,7 +15,7 @@ def ReadMesh(filename):
         return GeofReader.ReadGeof(filename)
     elif extention ==  "msh":
         import OTTools.IO.GmshReader as GmshReader
-        return GmshReader.ReadGmsh(filename)
+        return GmshReader.ReadGmsh(filename,out=out)
     elif extention ==  "inp":
         import OTTools.IO.InpReader as ImpReader
         return ImpReader.ReadInp(filename)
@@ -27,15 +27,34 @@ def ReadMesh(filename):
         return MeshReader.ReadMesh(fileName=filename)
     elif extention ==  "gcode":
         import OTTools.IO.GReader as GReader
+
         return GReader.ReadGCode(fileName=filename)
-    elif extention ==  "solb":
+    elif extention ==  "solb" or extention ==  "sol":
         import OTTools.IO.MeshReader as MeshReader
-        f = ".".join(filename.split(".")[0:-1]) + ".meshb"
+        if extention[-1] == "b":
+            f = filename.split(".")[0] + ".meshb"
+        else:
+            f = filename.split(".")[0] + ".mesh"
+
+        # we check if the file exist, if not we try the other type
+        import os.path
+        if not os.path.isfile(f):
+            if extention[-1] == "b":
+                f = filename.split(".")[0] + ".mesh"
+            else:
+                f = filename.split(".")[0] + ".meshb"
+
+
         reader = MeshReader.MeshReader()
         reader.SetFileName(fileName=f)
         reader.Read()
         mesh = reader.output
-        mesh.nodeFields = reader.ReadExtraFieldBinary(filename);
+        fields = reader.ReadExtraField(filename);
+        mesh.nodeFields = {k:v for k,v in fields.iteritems() if k.find("SolAtVertices") != -1  }
+        if fields.has_key('SolAtTetrahedra0'):
+
+            if mesh.GetElementsOfType(ElementNames.Tetrahedron_4).GetNumberOfElements() == mesh.GetNumberOfElements():
+                mesh.elemFields = {k:v for k,v in fields.iteritems() if k.find("SolAtTetrahedra") != -1  }
         return mesh
     else:
         raise Exception ("Unkown file extention : " + str(extention))
@@ -48,21 +67,14 @@ def ReadMesh(filename):
 #UniversalReader.ReadMeshAnPopulateVtkObject(filename,self.GetOutput())
 #from OTTools.IO.UniversalReader import ReadMeshAndPopulateVtkObject as ReadMeshAndPopulateVtkObject
 #filename = "here you put your filename"
-#ReadMeshAndPopulateVtkObject(filename,self.GetOutput())
+#ReadMeshAndPopulateVtkObject(filename,self.GetOutput(),TagsAsFields=True/False )
 
-def ReadMeshAndPopulateVtkObject(filename, vtkobject= None):
+def ReadMeshAndPopulateVtkObject(filename, vtkobject= None,TagsAsFields=False):# pragma: no cover
     mesh = ReadMesh(filename)
     from OTTools.FE.UnstructuredMeshTools import MeshToVtk
-    return MeshToVtk(mesh, vtkobject)
+    return MeshToVtk(mesh, vtkobject,TagsAsFields=TagsAsFields)
 
 def CheckIntegrity():
-    from OTTools.FE.UnstructuredMeshTools import CreateMeshOfTriangles
-    import numpy as np
-
-    res = CreateMeshOfTriangles([[0,0,0],[1,0,0],[0,1,0],[0,0,1] ], [[0,1,2],[0,2,3]])
-    res.elemFields["E"] = np.array([[1],[2]])
-    res.nodeFields["nodeFields"] = np.arange(4)
-    res.nodeFields["nodeFields"].shape = (4,1)
 
     return "ok"
 

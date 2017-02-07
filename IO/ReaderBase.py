@@ -55,7 +55,7 @@ def CheckIntegrity():
     obj = ReaderBase()
     try:
         obj.StartReading()
-        raise
+        raise # pragma: no cover
     except :
         pass
     return "ok"
