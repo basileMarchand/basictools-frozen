@@ -255,7 +255,7 @@ class Fea(FeaBase.FeaBase):
             norm = np.linalg.norm(rhs)
             res = linalg.lgmres(K, rhs/norm, x0 = self.u[self.free, 0]/norm , M = M  )
             self.u[self.free, 0] = res[0]*norm
-          elif self.linearSolver == "AMG":
+          elif self.linearSolver == "AMG":# pragma: no cover
             try:
                 import pyamg
             except:#pragma: no cover
@@ -395,7 +395,7 @@ def CheckIntegrityThermal3D():
         for y in xrange(ny):
             for z in [0]:
                 dirichlet_bcs.append([x,y,z],0 , 0 )
-                
+
 
     # Homogenous body flux
     neumann_bcs = BundaryCondition()
@@ -436,7 +436,7 @@ def CheckIntegrityThermal3D():
     myProblem.Solve()
     myProblem.element_elastic_energy()
     myProblem.Write()
-    try:
+    try:# pragma: no cover
        import pyamg
        myProblem.linearSolver = 'AMG'
        myProblem.Solve()
@@ -580,7 +580,7 @@ def CheckIntegrityThermal2D():
     myProblem.Solve()
     myProblem.element_elastic_energy()
     myProblem.Write()
-    try:
+    try:# pragma: no cover
        import pyamg
        myProblem.linearSolver = 'AMG'
        myProblem.Solve()
@@ -656,6 +656,7 @@ def CheckIntegrityDep2D():
     print(myProblem.u.T)
 
     # build mass matrix
+    myProblem.BuildMassMatrix();
     myProblem.BuildMassMatrix(densities);
 
     fixed = np.zeros((myProblem.ndof, 1), dtype=np.double)
@@ -674,7 +675,7 @@ def CheckIntegrityDep2D():
     return 'ok'
 
 def CheckIntegrity():
-    
+
     print(CheckIntegrityThermal3D())
     print(CheckIntegrityDep3D())
     print(CheckIntegrityThermal2D())
