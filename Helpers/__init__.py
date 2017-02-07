@@ -5,11 +5,16 @@ __all__ = [
 'BaseOutputObject',
 'PrintBypass',
 'Tests',
-'TextFormatHelper' ]
+'TextFormatHelper',
+'ParserHelper'
+ ]
 
 """Helpers classes and functions
 
    Please read the help for each individual module.
 """
+
+
+
 
 
