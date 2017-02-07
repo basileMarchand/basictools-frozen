@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 
-def HookeIso(E,nu, dim = 3, PlaneStress = True):
+def HookeIso(E,nu, dim = 3, planeStress = True):
     if dim == 2:
-        if PlaneStress:
+        if planeStress:
           return ((float(E)/(1.-nu**2))*
           np.array([[1 , nu, 0     ],
                     [nu, 1 , 0     ],
@@ -37,7 +37,7 @@ def LaplaceOrtho(k1,k2,k3=1, dim = 3):
 def CheckIntegrity():
     HI3D = HookeIso(1,0.3)
     HI2D = HookeIso(1,0.3,dim=2)
-    HI2D = HookeIso(1,0.3,dim=2,PlaneStress= False)
+    HI2D = HookeIso(1,0.3,dim=2,planeStress= False)
 
     LO3D = LaplaceOrtho(1,2,3)
     LO2D= LaplaceOrtho(1,2,dim=2)

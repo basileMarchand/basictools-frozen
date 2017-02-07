@@ -13,6 +13,8 @@ import numpy.linalg as linalg
 import OTTools.FE.ElementNames as ElementsNames
 
 class Tri3(FElement):
+    planeStress = True
+
     def __init__(self):
         super(Tri3,self).__init__()
         self.delta = np.array([1,1]);
@@ -21,7 +23,7 @@ class Tri3(FElement):
         self.name = ElementsNames.Triangle_3
 
     def GetDetJack(self,qcoor, pos=None):
-        if pos == None:
+        if pos is None:
             raise(Exception('Need position to calculate gradient'))# pragma: no cover
 
         dx = float(self.delta[0]);   dy = float(self.delta[1]);
@@ -97,7 +99,8 @@ class Tri3(FElement):
 
     def GetIsotropDispK(self,E,nu,pos):
         #IsoHexaCubeK
-        k = MH.HookeIso(E,nu, dim=2)
+        k = MH.HookeIso(E,nu, dim=2,planeStress=self.planeStress)
+
         return Integral(k,self.IsoDispB,self,self.nnodes*2,pos)
 
     def GetIsotropDispM(self,rho,pos):
@@ -108,8 +111,11 @@ def CheckIntegrity():
 
     import numpy.linalg as lin
     myElement = Tri3()
+    Tri3.planeStress = False
+
     pos = np.array([ [0,0], [1,0] , [0,1] ])
     KK = myElement.GetIsotropDispK(1,0.3,pos)
+
     myElement.GetIsotropLaplaceM(1,pos)
     myElement.GetIsotropDispM(1,pos)
 
@@ -117,6 +123,7 @@ def CheckIntegrity():
     myElement.GetShapeFunc([0.5,0.5])
     print("--------------------------")
     print(KK)
+
     VV =lin.eig(KK)
     #print(VV)
     if np.sum(VV[0].real < 1e-10) != 3:
@@ -137,8 +144,10 @@ def CheckIntegrity():
     u = np.matrix([0,1,2],dtype=float).T;
     res1 =(b*u).T
     res2 = [1./myElement.delta[0],2./myElement.delta[1] ]
-    if np.all(res1==res2):
+
+    if np.all(np.abs(res1-res2) < 1e-10):
         return 'OK'
+
     return 'not OK  '# pragma: no cover
 
 if __name__ == '__main__':
