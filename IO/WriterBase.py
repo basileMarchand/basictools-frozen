@@ -27,8 +27,8 @@ class WriterBase(BaseOutputObject):
         self.fileName = fileName;
 
     def Open(self, filename = None):
-        if self._isOpen :
-            print(TFormat.InRed("The file is already open !!!!!"))# pragma: no cover
+        if self._isOpen :# pragma: no cover
+            print(TFormat.InRed("The file is already open !!!!!"))
             raise Exception
 
 
@@ -43,7 +43,7 @@ class WriterBase(BaseOutputObject):
                 mode = "w"
             self.filePointer = open(self.fileName, mode,0)
 
-        except:
+        except:# pragma: no cover
             print(TFormat.InRed("Error File Not Open"))# pragma: no cover
             raise
 
