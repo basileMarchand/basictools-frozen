@@ -27,14 +27,14 @@ class TestTempDir(object):
         cls.path = None
 
     @classmethod
-    def OpenTempFolder(cls):
+    def OpenTempFolder(cls):# pragma: no cover
         import subprocess
         import os
         if os.name == "nt":
             subprocess.Popen('explorer "' + cls.GetTempPath() +'"')
 
     @classmethod
-    def SetTempPath(cls,path):
+    def SetTempPath(cls,path):# pragma: no cover
         import os
         cls.path = os.path.abspath(path+os.sep) + os.sep
 
