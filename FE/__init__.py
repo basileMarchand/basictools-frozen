@@ -15,7 +15,7 @@ __all__ = [
 'Quad4Rectangle',
 'StructuredMesh',
 'Tri3',
-'UnstructuredFea',
+#'UnstructuredFea',
 'UnstructuredMesh',
 'UnstructuredMeshTools'
 ]
