@@ -146,7 +146,7 @@ def CheckIntegrity():
     import sys
     interface.SingleRunComputation(1,sys.stdout).wait()
 
-    print("output is :" + str(interface.SingleRunComputationAndReturnOutput(1)))
+    print("output is :" + str(interface.SingleRunComputationAndReturnOutput(1).encode("ascii","ignore") ))
     return 'ok'
 
 
