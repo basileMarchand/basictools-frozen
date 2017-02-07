@@ -81,6 +81,13 @@ def CheckIntegrity():
     TestFunction(ReadFloat,3.14159 )
     TestFunction(ReadFloats,"1 2 3 ")
 
+    # this call must fail
+    try:
+        ReadBool("toto")
+        raise # pragma: no cover
+    except:
+        pass
+
     return "ok"
 
 
