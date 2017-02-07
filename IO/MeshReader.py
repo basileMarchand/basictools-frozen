@@ -22,8 +22,9 @@ meditNumber[6] = EN.Triangle_3
 meditNumber[7] = EN.Quadrangle_4
 meditNumber[8] = EN.Tetrahedron_4
 
-def ReadMesh(fileName=None,string=None ):
+def ReadMesh(fileName=None,string=None,ReadRefsAsField=False ):
     reader = MeshReader()
+    reader.ReadRefsAsField(ReadRefsAsField)
     reader.SetFileName(fileName)
     reader.SetStringToRead(string)
     reader.Read()
@@ -33,17 +34,165 @@ def ReadMesh(fileName=None,string=None ):
 class MeshReader(ReaderBase):
     def __init__(self):
         super(MeshReader,self).__init__()
-        self.refsAsAField = True
+        self.refsAsAField = False
+        self.dim = 3
 
 
     def ReadRefsAsField(self, val):
-        self.refsAsAField = val
+        self.refsAsAField = bool(val)
 
-    def Read(self):
+    def Read(self,out=None):
         if self.fileName is not None and self.fileName[-1] == "b":
-            self.ReadMeshBinary()
+            return self.ReadMeshBinary(out=out)
         else:
-            self.ReadMeshAscii()
+            return self.ReadMeshAscii(out=out)
+
+    def ReadExtraField(self,fileName):
+        print(fileName[-1])
+        if  fileName[-1] == "b":
+            return self.ReadExtraFieldBinary(fileName)
+        else:
+            return self.ReadExtraFieldAscii(fileName)
+
+    def ReadExtraFieldAscii(self,fileName):
+
+        self.PrintVerbose("Reading ExtraField")
+        f =  open(fileName, "r")
+
+        res = {}
+
+
+        dataType = float
+        while(True):
+            line = f.readline()
+            if line == "" :
+                break
+
+            l = line.strip('\n').lstrip().rstrip()
+            if len(l) == 0: continue
+
+            if l.find("MeshVersionFormatted")>-1 :
+                if len(l.split()) > 1:
+                    formatFile = int(l.split()[1])
+                else:
+                    formatFile = int(f.readline())
+
+                if formatFile == 2:
+                    dataType = np.float64
+                #print ('formatFile  : '+ str(dataType))
+                continue
+
+            if l.find("Dimension")>-1 :
+                s = l.split()
+                if len(s)>1:
+                    s.pop(0)
+                    l = " ".join(s)
+                else:
+                    l = f.readline()
+                self.dim = int(l)
+                #print ('Dimension : '+ str(dimension))
+                continue
+
+            def ReadFieldsASCII(f):
+                datares = []
+                line = f.readline()
+                print(line)
+                l = line.strip('\n').lstrip().rstrip()
+                print(l)
+                nbentries = int(l.split()[0])
+                line = f.readline()
+                l = line.strip('\n').lstrip().rstrip()
+                nbfields = int(l.split()[0])
+                #print ("l"),
+                #print (l)
+                fieldSizes = [ int(x) for x in l.split()[1:] ]
+                for i in xrange(len(fieldSizes)):
+                    if fieldSizes[i] == 2 :
+                       fieldSizes[i] = self.dim
+                    elif fieldSizes[i] == 3 :
+                        raise
+
+
+                #print ("fieldSizes"),
+                #print (fieldSizes)
+                ncoomp = np.sum(fieldSizes)
+                self.PrintDebug("nbfields" + str(fieldSizes))
+                #print("nbentries "+str(nbentries)+ " ")
+                #print("ncoomp "+str(ncoomp)+ " ")
+                #print("Reading "+str(ncoomp*nbentries)+ " Entries")
+                data = np.fromfile(f,dtype=float,count=int(ncoomp*nbentries),sep=" ")
+                data.shape = (nbentries,ncoomp)
+                cpt = 0
+                for i in xrange(nbfields):
+                    datares.append(data[:,cpt:cpt+fieldSizes[i]])
+                    cpt += fieldSizes[i]
+                return datares
+
+            for fieldName in  ["SolAtVertices", "SolAtTetrahedra" ]:
+                found = False
+                if l.find(fieldName)>-1 and len(l) == len(fieldName):
+                    #print("reading SolAtVertices")
+                    data = ReadFieldsASCII(f)
+                    for i in xrange(len(data)) :
+                        res[fieldName+str(i)]  =  data[i]
+                    found = True
+                    break
+
+            if found:
+                continue
+
+            if l.find("End")>-1 :
+                break
+
+
+            print("Ignoring entrie " + str(l) )
+
+
+        return res
+
+    def _readExtraFieldBinary(self,f,dataSize):
+      data = f.read(4)
+      endOfInformation = struct.unpack("i", data)[0]
+
+      data = f.read(4)
+      nbNodes = struct.unpack("i", data)[0]
+
+      data = f.read(4)
+      nbfields = struct.unpack("i", data)[0]
+
+      fieldSizes = np.empty(nbfields, dtype=np.int)
+      #self.PrintDebug("nbfields" + str(nbfields))
+      res = []
+      for i in xrange(nbfields):
+          data = f.read(4)
+          fieldSizes[i] = struct.unpack("i", data)[0]
+
+      for i in xrange(nbfields):
+          dataformat = ('f' if dataSize==4 else "d"    )
+
+          if fieldSizes[i] == 2 :
+             fieldSizes[i] = self.dim
+          elif fieldSizes[i] == 3 :
+             raise
+
+          data = f.read(dataSize*nbNodes*fieldSizes[i])
+
+          field = np.empty((nbNodes,fieldSizes[i]),dtype=np.float)
+
+          data = struct.unpack(dataformat*(nbNodes*fieldSizes[i]), data)
+          #print(data)
+          cpt =0
+          for n in xrange(nbNodes):
+              for j in xrange(fieldSizes[i]):
+                  field[n,j] = data[cpt]
+                  cpt += 1
+
+          if fieldSizes[i] == 1 :
+             field.shape = (len(field))
+          res.append(field)
+      return res
+
+
 
     def ReadExtraFieldBinary(self,fileName):
       self.PrintVerbose("Reading ExtraField")
@@ -95,43 +244,23 @@ class MeshReader(ReaderBase):
 
           #SolAtVertices
           if key == 62:
-              data = f.read(4)
-              endOfInformation = struct.unpack("i", data)[0]
-
-              data = f.read(4)
-              nbNodes = struct.unpack("i", data)[0]
-
-              data = f.read(4)
-              nbfields = struct.unpack("i", data)[0]
-
-              fieldSizes = np.empty(nbfields, dtype=np.int)
-              self.Print("nbfields")
-              self.Print(str(nbfields))
-              for i in xrange(nbfields):
-                  data = f.read(4)
-                  fieldSizes[i] = struct.unpack("i", data)[0]
-
-              for i in xrange(nbfields):
-                  dataformat = ('f' if dataSize==4 else "d"    )
-
-                  data = f.read(dataSize*nbNodes*fieldSizes[i])
-
-                  field = np.empty((nbNodes,fieldSizes[i]),dtype=np.float)
-
-                  data = struct.unpack(dataformat*(nbNodes*fieldSizes[i]), data)
-                  #print(data)
-                  cpt =0
-                  for n in xrange(nbNodes):
-                      for j in xrange(fieldSizes[i]):
-                          field[n,j] = data[cpt]
-                          cpt += 1
-
-                  if fieldSizes[i] == 1 :
-                     field.shape = (len(field))
-                     res["SolAtVertices"+str(i)]  =  field
-                  else:
-                     res["SolAtVertices"+str(i)]  =  field
+              data = self._readExtraFieldBinary(f,dataSize)
+              for i in xrange(len(data)) :
+                  res["SolAtVertices"+str(i)]  =  data[i]
               continue
+          #SolAtTriangles
+          if key == 64:
+              data = self._readExtraFieldBinary(f,dataSize)
+              for i in xrange(len(data)) :
+                  res["SolAtTriangles"+str(i)]  =  data[i]
+              continue
+          #SolAtTetrahedra
+          if key == 66:
+              data = self._readExtraFieldBinary(f,dataSize)
+              for i in xrange(len(data)) :
+                  res["SolAtTetrahedra"+str(i)]  =  data[i]
+              continue
+
           #End key
           if key == 54:
              break
@@ -142,13 +271,17 @@ class MeshReader(ReaderBase):
           f.seek(endOfInformation)
       return res
 
-    def ReadMeshBinary(self):
+    def ReadMeshBinary(self,out=None):
       self.readFormat = 'rb'
       self.StartReading()
 
 
       f = self.filePointer
-      res = UM.UnstructuredMesh()
+      if out is None:
+          res = UM.UnstructuredMesh()
+      else:
+          res = out
+
       self.output = res
       dataType = np.float32
       dataSize = 4;
@@ -230,7 +363,7 @@ class MeshReader(ReaderBase):
                       res.GetNodalTag("NTag"+ref).AddToTag(cpt)
 
                   cpt +=1
-                  self.PrintProgress(cpt,maxx = nbNodes)
+                  #self.PrintProgress(cpt,maxx = nbNodes)
 
                   #if (cpt/10000 == float(cpt)/10000):
                     #self.PrintProgress()
@@ -304,10 +437,24 @@ class MeshReader(ReaderBase):
 
               continue
 
+          #ridges
+          if key == 14:
+              endOfInformation = struct.unpack("i", f.read(4))[0]
+              nbentries = struct.unpack("i", f.read(4))[0]
+              #ids = np.fromfile(f,dtype=int,count=int(nbentries),sep="")
+              data = f.read(nbentries*4)
+              ids = np.array(struct.unpack("i"*nbentries,data),dtype=np.int)-1
+              #print(ids)
+              #raise
+              bars = res.GetElementsOfType(EN.Bar_2)
+              bars.tags.CreateTag("Ridges").SetIds(ids)
+              continue
+
+
           if key == 62:
              endOfInformation = struct.unpack("i", data)[0]
              f.seek(endOfInformation)
-             break
+             continue
 
 
           #End key
@@ -336,8 +483,7 @@ class MeshReader(ReaderBase):
 
 
 
-    def ReadMeshAscii(self, _fileName=None,_string=None, fieldFileName= None):
-
+    def ReadMeshAscii(self, _fileName=None,_string=None, fieldFileName= None,out=None):
 
         if _fileName is not None:
             self.SetFileName(_fileName)
@@ -348,8 +494,11 @@ class MeshReader(ReaderBase):
         self.readFormat = 'r'
         self.StartReading()
 
+        if out is None:
+            res = UM.UnstructuredMesh()
+        else:
+            res = out
 
-        res = UM.UnstructuredMesh()
         self.output = res
 
         dataType = float
@@ -362,8 +511,10 @@ class MeshReader(ReaderBase):
             if len(l) == 0: continue
 
             if l.find("MeshVersionFormatted")>-1 :
-
-                formatFile = int(self.filePointer.readline())
+                if len(l.lstrip().rstrip().split()) > 1:
+                    formatFile = (l.lstrip().rstrip().split()[1])
+                else:
+                    formatFile = int(self.filePointer.readline())
                 if formatFile == 2:
                     dataType = np.float64
                 #print ('formatFile  : '+ str(dataType))
@@ -377,7 +528,7 @@ class MeshReader(ReaderBase):
                 else:
                     l = self.filePointer.readline()
                 dimension = int(l)
-                #print ('Dimension : '+ str(dimension))
+                self.PrintVerbose('Dimension : '+ str(dimension))
                 continue
 
             if l.find("Vertices")>-1 and len(l) == 8:
@@ -433,6 +584,7 @@ class MeshReader(ReaderBase):
                     cpt +=1
                     if nbElements == cpt:# pragma: no cover
                         break
+
                 elements.connectivity -= 1;
                 continue
 
@@ -469,14 +621,14 @@ End
 
 
     __teststringField="""
-MeshVersionFormatted
-2
+MeshVersionFormatted 2
 
-Dimension
-3
+Dimension 3
 
 SolAtVertices
 4
+1 1
+
 1.
 2.
 3.
@@ -503,12 +655,25 @@ End
     newFileName = TestTempDir().GetTempPath()+"mshFile.meshb"
     WriteMesh(newFileName, res,binary=True)
 
-    res = ReadMesh(newFileName)
+    res = ReadMesh(newFileName,ReadRefsAsField=True)
     print(res)
+
+
+    sol = MeshReader().ReadExtraField(TestTempDir().GetTempPath()+"mshFile.sol")
+    print(sol)
+    from OTTools.IO.MeshWriter import MeshWriter as MeshWriter
+    mw = MeshWriter()
+    mw.SetBinary(True)
+    mw.SetFileName(TestTempDir().GetTempPath()+"mshFile.solb")
+    mw.OpenSolutionFile(res)
+    mw.WriteSolutionsFields(res,SolsAtVertices=sol['SolAtVertices0'])
+    mw.CloseSolutionFile()
+
+    sol = MeshReader().ReadExtraField(TestTempDir().GetTempPath()+"mshFile.solb")
 
     return 'ok'
 
-if __name__ == '__main__':
+if __name__ == '__main__':# pragma: no cover
     from OTTools.Helpers.BaseOutputObject import BaseOutputObject
     BaseOutputObject.SetGlobalDebugMode(True)
     print(CheckIntegrity())# pragma: no cover
