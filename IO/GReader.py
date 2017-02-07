@@ -52,7 +52,7 @@ class GReader(ReaderBase):
                         val = float(s[1:])
                         if val > extrudeur :
                             thi = 1
-                        else:
+                        else:# pragma: no cover
                             thi = 0
                         extrudeur = val
 
