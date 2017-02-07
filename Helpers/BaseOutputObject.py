@@ -4,6 +4,13 @@ from OTTools.Helpers.TextFormatHelper import TFormat
 
 """ Base object to Help input and output """
 
+import time
+_startTime = time.time()
+useDifferentialTime = True
+
+def SetUseDifferentialTime(val):
+    global useDifferentialTime
+    useDifferentialTime = val
 
 class BaseOutputObject(object):
     __globalDebugMode = False
@@ -52,6 +59,11 @@ class BaseOutputObject(object):
         a = BaseOutputObject()
         a.PrintInternal(mess,1)
 
+    @classmethod
+    def GetDiffTime(obj = None):
+        global __startTime
+        return  (time.time() - _startTime)
+
     def PrintInternal(self, mess, level=1):
         if BaseOutputObject.__globalDebugMode or self.__classDebugMode :
             res = ""
@@ -69,12 +81,17 @@ class BaseOutputObject(object):
             stack = inspect.stack()[stnumber]
 
             # nice date
-            m, s = divmod(time.time(), 60.)
-            h, m = divmod(m, 60)
-            d, h = divmod(h, 24)
-            res += ("%d:%02d:%02d" % (h+1, m, s))
+            global useDifferentialTime
+            if(useDifferentialTime):
+                res += ("[%f]" % self.GetDiffTime() )
+            else:
+                m, s = divmod(time.time(), 60.)
+                h, m = divmod(m, 60)
+                d, h = divmod(h, 24)
+                res += ("[%d:%02d:%02d]" % (h+1, m, s))
 
-            res += (": "+str(stack[1]) + ":" +str(stack[2]) )
+            #res += (": "+str(stack[1]) + ":" +str(stack[2]) )
+            res += ' File "' + str(stack[1]) + '", line ' +str(stack[2])
             if level == 1 :
                 res += (TFormat.InBlue(" --> "))
             elif level == 2:
@@ -136,6 +153,9 @@ def CheckIntegrity():
     myObj.PrintError("Print 6")
     myObj.InDebugMode()
 
+    myObj.PrintProgress(50)
+    global useDifferentialTime
+    SetUseDifferentialTime(False)
     myObj.PrintProgress(50)
 
     myObj2 = BaseOutputObject(myObj)
