@@ -15,7 +15,7 @@ gmshNumber['7'] = EN.Pyramid_5
 gmshNumber['15'] = EN.Point_1
 
 
-def ReadGmsh(fileName=None,string=None):
+def ReadGmsh(fileName=None,string=None,out=None):
 
     from cStringIO import StringIO
 
@@ -26,7 +26,10 @@ def ReadGmsh(fileName=None,string=None):
 
     string = StringIO(string)
 
-    res = UM.UnstructuredMesh()
+    if out is None:
+        res = UM.UnstructuredMesh()
+    else:
+        res = out # pragma: no cover
 
     filetointernalid = {}
     #filetointernalidElem =  {}
@@ -48,7 +51,7 @@ def ReadGmsh(fileName=None,string=None):
             l = line.strip('\n').lstrip().rstrip()
 
             nbNodes = int(l.split()[0])
-            print("Reading "+str(nbNodes)+ " Nodes")
+            #print("Reading "+str(nbNodes)+ " Nodes")
             res.nodes = np.empty((nbNodes,3))
             res.originalIDNodes= np.empty((nbNodes,),dtype=np.int)
             cpt =0;
@@ -73,7 +76,7 @@ def ReadGmsh(fileName=None,string=None):
             l = line.strip('\n').lstrip().rstrip()
 
             nbElements = int(l.split()[0])
-            print("Reading "+str(nbElements)+ " Elements")
+            #print("Reading "+str(nbElements)+ " Elements")
             #res.nodes = np.empty((nbNodes,dim))
             #res.originalIDNodes= np.empty((nbNodes,))
             cpt =0;
@@ -110,6 +113,7 @@ def ReadGmsh(fileName=None,string=None):
                 cpt +=1
             continue
         print("ignoring line : " + l )
+    res.PrepareForOutput()
     return res
 
 
