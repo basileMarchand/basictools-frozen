@@ -441,7 +441,10 @@ class XdmfWriter(WriterBase):
 
            return
        else:
-           print(TFormat.InRed("I dont kow how to treak fields with " +str(data.size/ndata) +" components"))  # pragma: no cover
+           print(TFormat.InRed("I dont kow how to treak fields '"+ str(name)+"' with " +str(data.size/ndata) +" components"))  # pragma: no cover
+           print(TFormat.InRed("Data has size : " + str(data.size) ))  # pragma: no cover
+           print(TFormat.InRed("But support has size : " + str(ndata) ))  # pragma: no cover
+
            raise Exception                                                                                    # pragma: no cover
 
        self.filePointer.write('    <Attribute Center="'+center+'" Name="'+name+'" Type="'+attype+'">\n')#
@@ -505,7 +508,7 @@ class XdmfWriter(WriterBase):
          #Cell Tags
          baseMeshObject.PrepareForOutput();
 
-         celtags = baseMeshObject.GetNamesOfCellTags()
+         celtags = baseMeshObject.GetNamesOfElemTags()
          for tagname in celtags:
              name = "Tag_" + tagname
              data = baseMeshObject.GetElementsInTag(tagname)
@@ -576,7 +579,7 @@ class XdmfWriter(WriterBase):
                 typename = 'Int'
                 s = data.dtype.itemsize
             elif data.dtype == np.int8:
-                typename = 'char'
+                typename = 'Char'
                 s = data.dtype.itemsize
             else:
                 print('Output Not implemented for data of type ')              # pragma: no cover

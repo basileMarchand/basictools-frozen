@@ -9,12 +9,15 @@ import OTTools.Helpers.BaseOutputObject as BaseOutputObject
 def CreateMeshOfTriangles(points,tris):
     return CreateMeshOf(points,tris,elemName = ElementNames.Triangle_3 )
 
-def CreateMeshOf(points,connectivity,elemName = None):
+def CreateMeshOf(points,connectivity,elemName = None,out=None):
 
     if elemName is None:
         raise Exception("Need a element name ")# pragma: no cover
 
-    res = UnstructuredMesh()
+    if out is None:
+        res = UnstructuredMesh()
+    else:
+        res = out # pragma: no cover
 
     res.nodes = np.array(points, dtype=np.double)
     res.originalIDNodes = np.arange(0,res.GetNumberOfNodes(),dtype=np.int)
@@ -25,11 +28,16 @@ def CreateMeshOf(points,connectivity,elemName = None):
     elements.cpt = elements.connectivity.shape[0]
     return res
 
-def CreateMeshFromConstantRectilinearMesh(CRM, ofTetras= False):
-    res = UnstructuredMesh()
+def CreateMeshFromConstantRectilinearMesh(CRM, ofTetras= False,out=None):
+    if out is None:
+        res = UnstructuredMesh()
+    else:
+        res = out # pragma: no cover
+
     res.nodes = CRM.GetPosOfNodes();
     res.originalIDNodes = np.arange(0,res.GetNumberOfNodes(),dtype=np.int);
 
+    res.nodesTags = CRM.nodesTags
 
     nbelements = CRM.GetNumberOfElements()
 
@@ -97,7 +105,7 @@ def CreateMeshFromConstantRectilinearMesh(CRM, ofTetras= False):
 
 def QuadToLin(inputmesh, divideQuadElements=True,lineariseMiddlePoints=False):
 
-    res = UnstructuredMesh()
+    res = type(inputmesh)()
     res.nodes = inputmesh.GetPosOfNodes();
     res.originalIDNodes = np.arange(0,res.GetNumberOfNodes(),dtype=np.int);
     import copy
@@ -186,14 +194,15 @@ def QuadToLin(inputmesh, divideQuadElements=True,lineariseMiddlePoints=False):
                 for i in xrange(quadElement.GetNumberOfElements()):
                     quadConn = quadElement.connectivity[i,:];
                     lineelements.connectivity[initNbElem+i,:] = quadConn[[0,1]];
-        elif elementName == ElementNames.Bar_2:
-            lineelements = res.GetElementsOfType(ElementNames.Bar_2)
+        elif ElementNames.linear[elementName] :
+            lineelements = res.GetElementsOfType(elementName)
             initNbElem = lineelements.GetNumberOfElements();
 
             lineelements.Reserve(initNbElem+quadElement.GetNumberOfElements())
             nbOfNewElements = 1
             lineelements.connectivity[initNbElem:initNbElem+quadElement.GetNumberOfElements(),:] = quadElement.connectivity
             lineelements.cpt = initNbElem+quadElement.GetNumberOfElements()
+
         else:
             raise Exception('Error : not coded yet for this type of elements ' + str(elementName))# pragma: no cover
         #copy of tags
@@ -290,16 +299,16 @@ def CleanLonelyNodes(res):
 
     cpt = 0 ;
     NewIndex =  np.zeros(res.GetNumberOfNodes(),dtype=np.int )-1
+    originalIDNodes = np.zeros(res.GetNumberOfNodes(),dtype=np.int)
     for n in xrange(res.GetNumberOfNodes()):
         if usedNodes[n]:
             NewIndex[n] = cpt
+            originalIDNodes[cpt] = n
             cpt += 1
 
     #filter the nodes
     res.nodes = res.nodes[usedNodes ,:]
-    #print(res.originalIDNodes.shape)
-    #print(usedNodes.shape)
-#    res.originalIDNodes = res.originalIDNodes[usedNodes ]
+    res.originalIDNodes = originalIDNodes[0:cpt]
 
     #node tags
     for tag in res.nodesTags :
@@ -386,7 +395,41 @@ def MirrorMesh(inmesh,x=None,y=None,z=None) :
 
     return outmesh
 
-def ExtractElementByTags(inmesh,tagsToKeep, allNodes=False):
+
+def ExtractElementsByMask(inelems, _mask):
+    outelems = type(inelems)(inelems.elementType)
+
+    newIndex = np.empty(inelems.GetNumberOfElements(),dtype=np.int)
+
+
+    if _mask.dtype == np.bool:
+
+        nbels =0;
+        for i in xrange(inelems.GetNumberOfElements()):
+           newIndex[i] = nbels
+           nbels += 1 if _mask[i] else 0
+        mask = _mask
+    else:
+        nbels = len(_mask)
+        mask = np.zeros(inelems.GetNumberOfElements(),dtype=np.bool)
+        cpt =0;
+        for index in _mask:
+           newIndex[index ] = cpt
+           mask[index] = True
+           cpt += 1
+
+    outelems.Allocate(nbels)
+    outelems.connectivity = inelems.connectivity[mask,:]
+
+
+    for tag in inelems.tags  :
+       temp = np.extract(mask[tag.GetIds()],tag.GetIds())
+       newid = newIndex[temp]
+       outelems.tags.CreateTag(tag.name).SetIds(newid)
+
+    return outelems
+
+def ExtractElementByTags(inmesh,tagsToKeep, allNodes=False,dimensionalityFilter= None):
 
     outmesh = type(inmesh)()
 
@@ -401,7 +444,11 @@ def ExtractElementByTags(inmesh,tagsToKeep, allNodes=False):
     nodalMask = np.zeros(inmesh.GetNumberOfNodes(),dtype = np.bool)
     for name,elems in inmesh.elements.iteritems():
 
-       if np.any([x in elems.tags.keys() for x in tagsToKeep] ) == False:
+       #if dimensionalityFilter is not None:
+       #    if dimensionalityFilter !=  ElementNames.dimension[name]:
+       #        continue
+
+       if (np.any([x in elems.tags.keys() for x in tagsToKeep] ) == False) and (dimensionalityFilter is None) :
            if np.any([x in inmesh.nodesTags.keys() for x in tagsToKeep]) == False:
                continue# pragma: no cover
 
@@ -425,12 +472,20 @@ def ExtractElementByTags(inmesh,tagsToKeep, allNodes=False):
              else:
                  toKeep[elemMask > 0] = True
 
+       # if dimensionality is ok and no tag to keep, we keep all elements
+       if dimensionalityFilter is not None:
+           if dimensionalityFilter ==  ElementNames.dimension[name]:
+               toKeep[:] = True
+           #if len(tagsToKeep)  == 0:
+           #    toKeep[:] = True
 
        newIndex = np.empty(elems.GetNumberOfElements(), dtype=np.int )
        cpt =0;
        for i in xrange(elems.GetNumberOfElements()):
            newIndex[i] = cpt
            cpt += 1 if toKeep[i] else 0
+
+
 
 
 
@@ -445,35 +500,37 @@ def ExtractElementByTags(inmesh,tagsToKeep, allNodes=False):
            #print(temp)
            newid = newIndex[temp]
            #print(newid)
-           outelem.tags.CreateTag(tag.name).SetIds(newid)
+           outelem.tags.CreateTag(tag.name,errorIfAlreadyCreated=False).SetIds(newid)
 
 
     CleanLonelyNodes(outmesh)
     return outmesh
 
+def VolumeOfTetrahedrons(inmesh):
+
+    elems =inmesh.GetElementsOfType(ElementNames.Tetrahedron_4)
+    conn = elems.connectivity
+    a = inmesh.nodes[conn[:,0],:]
+    b = inmesh.nodes[conn[:,1],:]
+    c = inmesh.nodes[conn[:,2],:]
+    d = inmesh.nodes[conn[:,3],:]
+    e = np.cross(b-d,c-d)
+    f = (a-d)
+    res = np.empty(elems.GetNumberOfElements(),dtype=np.float)
+    for n in xrange(elems.GetNumberOfElements()):
+        res[n] = np.abs( np.dot(f[n,:],e[n,:])  )
+
+    return res*(1./6.)
+
+
 def GetVolume(inmesh) :
-
-    def VolumeOfTetrahedrons(nodes,tets):
-        lvol = 0.
-        conn = elems.connectivity
-        a = inmesh.nodes[conn[:,0],:]
-        b = inmesh.nodes[conn[:,1],:]
-        c = inmesh.nodes[conn[:,2],:]
-        d = inmesh.nodes[conn[:,3],:]
-        e = np.cross(b-d,c-d)
-        f = (a-d)
-        for n in xrange(elems.GetNumberOfElements()):
-            lvol += np.abs( np.dot(f[n,:],e[n,:])  )
-        #vol += (1./6.)* np.sum(np.abs( np.dot( a-d,np.cross(b-d,c-d) )  ) )
-        return lvol*(1./6.)
-
 
     vol = 0;
     for name,elems in inmesh.elements.iteritems():
         if ElementNames.dimension[name] != 3:
             continue# pragma: no cover
         if name == ElementNames.Tetrahedron_4:
-            vol += VolumeOfTetrahedrons(inmesh.nodes,elems.connectivity)
+            vol += np.sum(VolumeOfTetrahedrons(inmesh))
         else:
             raise Exception('code me please...')# pragma: no cover
     return vol
@@ -484,20 +541,16 @@ def CleanEmptyTags(inmesh):
         elems.tags.RemoveEmptyTags()
     inmesh.nodesTags.RemoveEmptyTags()
 
-# to generate one tag per body
-# body is defines by all the nodes connected by the elements
-def AddTagPerBody(inmesh):
+def GetDualGraph(inmesh, maxNumConnections=100):
 
     # generation of the dual graph
-    maxNumConnections = 100
-
     dualGraph = np.zeros((inmesh.GetNumberOfNodes(),maxNumConnections), dtype=int )-1
     usedPoints = np.zeros(inmesh.GetNumberOfNodes(), dtype=int );
 
     for name,elems in inmesh.elements.iteritems():
+        size = elems.GetNumberOfNodesPerElement()
         for i in xrange(elems.GetNumberOfElements()):
             coon = elems.connectivity[i,:]
-            size = elems.GetNumberOfNodesPerElement()
             for j in xrange(size):
                 myIndex = coon[j]
                 for k in xrange(size):
@@ -505,21 +558,42 @@ def AddTagPerBody(inmesh):
                         continue
                     dualGraph[myIndex,usedPoints[myIndex]] =  coon[k]
                     usedPoints[myIndex] += 1
-                    if usedPoints[myIndex] == maxNumConnections :
+                    # we reached the maximun number of connection
+                    # normally we have some data duplicated
+                    # we try to shrink the vector
+                    if usedPoints[myIndex] == maxNumConnections :# pragma: no cover
+                        # normaly we shouldn't pas here
                         c = np.unique(dualGraph[myIndex,:])
                         dualGraph[myIndex,0:len(c)] = c
                         usedPoints[myIndex] = len(c)
 
+    maxsize = 0
+    # we finish now we try to compact the structure
+    for i in xrange(inmesh.GetNumberOfNodes()):
+        c = np.unique(dualGraph[i,0:usedPoints[i]])
+        dualGraph[i,0:len(c)] = c
+        usedPoints[i] = len(c)
+        maxsize = max(len(c),maxsize)
+
+    #we crop the output data
+    dualGraph = dualGraph[:,0:maxsize]
+    return dualGraph,usedPoints
+
+# to generate one tag per body
+# a body is defines by all the nodes connected by the elements
+def AddTagPerBody(inmesh):
+
+    dualGraph,usedPoints = GetDualGraph(inmesh)
 
     # Connectivity walk
     nbOfNodes = inmesh.GetNumberOfNodes()
     treated = np.zeros(inmesh.GetNumberOfNodes(),dtype=np.bool)
     nextpoint = np.zeros(inmesh.GetNumberOfNodes(),dtype=np.int_)
-    nextpointcpt = 0
 
-    #print(dualGraph)
-    # loop over the bodies
+    # we start from the first point and body number 0
+    nextpointcpt = 0
     bodyCpt = 0
+
     cpt = 0
     pointsPerBody = []
     while(True):
@@ -530,17 +604,14 @@ def AddTagPerBody(inmesh):
         # we already explored all the point in this body
         if cpt == nextpointcpt:
             initialPoint = np.argmax(treated == False)
-            #in the case we have only False in the treated
-            if treated[initialPoint]:
+            #(edge case) in the case we have only Trues in the treated
+            if treated[initialPoint]:# pragma: no cover
                 break
             treated[initialPoint] = True
             nextpoint[nextpointcpt] = initialPoint
             nextpointcpt +=1
 
-
-
             tagName = "Body_"+str(bodyCpt)
-            #print("New Tag")
             tag = inmesh.GetNodalTag(tagName)
             bodyCpt += 1
             pointsInThisBody = 1
@@ -551,23 +622,15 @@ def AddTagPerBody(inmesh):
 
 
         while cpt < nextpointcpt:
-
-            # cover all the nodes connected to this node
             workingIndex = nextpoint[cpt]
             indexes = dualGraph[workingIndex,0:usedPoints[workingIndex]]
-            #print(indexes)
-            for index in indexes:
-                #print(index)
 
+            for index in indexes:
                 if not treated[index] :
-                    #sol[index] = fillField[index]
                     treated[index] = True
-                    #if phi[index] <= 0.:
                     nextpoint[nextpointcpt] = index
                     nextpointcpt +=1
                     tag.AddToTag(index)
-                    #print(tag.id)
-                    #raise
                     pointsInThisBody +=1
 
             cpt += 1
@@ -575,7 +638,7 @@ def AddTagPerBody(inmesh):
     return pointsPerBody
 
 
-def MeshToVtk(mesh, vtkobject=None):
+def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
 
     vtknumbers = {}
     vtknumbers[ElementNames.Bar_2] = 3
@@ -593,10 +656,11 @@ def MeshToVtk(mesh, vtkobject=None):
     except :
         import vtk
 
-    if vtkobject is not None:
-        output = vtkobject
-    else:
+    if vtkobject is None:
         output = vtk.vtkUnstructuredGrid()
+    else:
+        output = vtkobject # pragma: no cover
+
 
 
     output.Allocate(mesh.GetNumberOfElements())
@@ -643,6 +707,18 @@ def MeshToVtk(mesh, vtkobject=None):
               output.GetPointData().AddArray(pd)
               output.GetPointData().SetScalars(pd)
 
+    if TagsAsFields:
+        for tag in mesh.nodesTags:
+            pd = vtk.vtkIntArray()
+            pd.SetName(tag.name)
+            pd.SetNumberOfComponents(1)
+            pd.SetNumberOfTuples(mesh.GetNumberOfNodes())
+            pd.FillComponent(0,0);
+
+            for i in tag.GetIds():
+                pd.SetValue(i,1 )
+            output.GetPointData().AddArray(pd)
+
 
     for elementsname,elementContainer in mesh.elements.iteritems():
         pointIds = vtk.vtkIdList()
@@ -656,23 +732,60 @@ def MeshToVtk(mesh, vtkobject=None):
 
     if hasattr(mesh,"elemFields"):
         for name,data in mesh.elemFields.iteritems():
+
             pd = vtk.vtkFloatArray()
             pd.SetName(name)
-            pd.SetNumberOfComponents(data.shape[1])
+
+            if len(data.shape) == 1:
+                pd.SetNumberOfComponents(1)
+            else:
+                pd.SetNumberOfComponents(data.shape[1])
+
             pd.SetNumberOfTuples(mesh.GetNumberOfElements())
-            cpt = 0
-            for i in xrange(mesh.GetNumberOfElements()):
-                for j in xrange(data.shape[1]):
+
+            if len(data.shape) > 1:
+              cpt = 0
+              for i in xrange(mesh.GetNumberOfElements()):
+                 for j in xrange(data.shape[1]):
                     pd.SetValue(cpt, data[i,j])
+                    cpt +=1
+            else:
+              cpt = 0
+              for i in xrange(mesh.GetNumberOfElements()):
+                    pd.SetValue(cpt, data[i])
                     cpt +=1
 
             output.GetCellData().AddArray(pd)
+            #output.GetCellData().SetScalars(pd)
+
+    if TagsAsFields:
+        elementTags = mesh.GetNamesOfElemTags()
+        for tagname in elementTags:
+            ids = mesh.GetElementsInTag(tagname)
+            pd = vtk.vtkIntArray()
+            pd.SetName(tagname)
+            pd.SetNumberOfComponents(1)
+            pd.SetNumberOfTuples(mesh.GetNumberOfElements())
+            pd.FillComponent(0,0);
+            for i in ids:
+                pd.SetValue(i,1 )
+            output.GetCellData().AddArray(pd)
+
     return output
 
 ###############################################################################
 def CheckIntegrity_MeshToVtk():
     res = CreateMeshOfTriangles([[0,0,0],[1,0,0],[0,1,0],[0,0,1] ], [[0,1,2],[0,2,3]])
-    sol = MeshToVtk(res)
+    res.nodeFields = {"x": res.nodes[:,0], "Pos":res.nodes}
+    res.nodesTags.CreateTag("FirstPoint").AddToTag(0)
+    res.elemFields = {"firstPoint": res.GetElementsOfType(ElementNames.Triangle_3).connectivity[:,0], "conn": res.GetElementsOfType(ElementNames.Triangle_3).connectivity }
+    res.GetElementsOfType(ElementNames.Triangle_3).tags.CreateTag("FirstTriangle").AddToTag(0)
+    sol = MeshToVtk(res,TagsAsFields= True)
+
+    res = CreateMeshOfTriangles([[0,0],[1,0],[0,1],[1,1] ], [[0,1,2],[2,1,3]])
+
+    sol = MeshToVtk(res )
+
     return "OK"
 
 
@@ -738,6 +851,16 @@ def CheckIntegrity_CleanDoubleNodes():
     CleanDoubleNodes(mesh)
     if mesh.GetNumberOfNodes() != 4:
         raise# pragma: no cover
+
+    points = [[0,0,0],[1,0,0],[0,1,0],[0,0,1],[0,0,0] ]
+    tets = [[0,1,2,3],]
+    mesh = CreateMeshOf(points,tets,ElementNames.Tetrahedron_4)
+
+    CleanDoubleNodes(mesh, nodesToTestMask= np.array([True,False,True,False,True],dtype=np.bool) )
+    if mesh.GetNumberOfNodes() != 4:
+        raise# pragma: no cover
+
+
     return "ok"
 
 def CheckIntegrity_CleanLonelyNodes():
@@ -763,6 +886,8 @@ def CheckIntegrity_MirrorMesh():
     points = [[0,0,0],[1,0,0],[0,1,0],[0,0,1] ]
     tets = [[0,1,2,3],]
     mesh = CreateMeshOf(points,tets,ElementNames.Tetrahedron_4)
+    mesh.nodesTags.CreateTag("FirstPoint").AddToTag(0)
+    mesh.GetElementsOfType(ElementNames.Tetrahedron_4).tags.CreateTag("OnlyTet").AddToTag(0)
     outmesh = MirrorMesh(mesh,x=0)
 
     if outmesh.GetNumberOfNodes() != 8:
@@ -787,6 +912,9 @@ def CheckIntegrity_ExtractElementByTags():
     if ExtractElementByTags(res,["Point3"],allNodes=True ).GetNumberOfElements() != 0:
         raise# pragma: no cover
 
+    if ExtractElementByTags(res,[],dimensionalityFilter=2 ).GetNumberOfElements() != 2:
+        raise# pragma: no cover
+
 
 def CheckIntegrity_CleanEmptyTags():
     res = CreateMeshOfTriangles([[0,0,0],[1,0,0],[0,1,0],[0,0,1] ], [[0,1,2],[0,2,3]])
@@ -800,23 +928,45 @@ def CheckIntegrity_CleanEmptyTags():
     if len(res.nodesTags) != 1 :
         raise# pragma: no cover
 
-    if len(res.GetNamesOfCellTags()) != 1 :
+    if len(res.GetNamesOfElemTags()) != 1 :
         raise# pragma: no cover
     return "ok"
 
 def CheckIntegrity_AddTagPerBody():
     res = CreateMeshOfTriangles([[0,0,0],[1,0,0],[0,1,0],[0,0,1] ], [[0,1,2],[0,2,3]])
     resII = MirrorMesh(res,x=0,y=0,z=0)
+    print( resII.nodes)
+    print( resII.GetElementsOfType(ElementNames.Triangle_3))
     print(AddTagPerBody(resII))
 
     if len(resII.nodesTags) != 8:
-        raise# pragma: no cover
+        raise # pragma: no cover
     print(resII.nodesTags)
+
+    return "ok"
+
+def CheckIntegrity_ExtractElementsByMask():
+    res = CreateMeshOfTriangles([[0,0,0],[1,0,0],[0,1,0],[0,0,1] ], [[0,1,2],[0,2,3]])
+    res.GetElementsOfType(ElementNames.Triangle_3).tags.CreateTag("tri1").AddToTag(0)
+
+    #tri = ExtractElementsByMask(res.GetElementsOfType(ElementNames.Triangle_3),np.array([False,True]))
+    #print(tri.connectivity)
+
+    tri = ExtractElementsByMask(res.GetElementsOfType(ElementNames.Triangle_3),np.array([0],dtype=np.int))
+    tri = ExtractElementsByMask(res.GetElementsOfType(ElementNames.Triangle_3),np.array([0,1],dtype=np.bool))
+
+    print(tri.connectivity)
+    return "ok"
+
+def CheckIntegrity_GetDualGraph():
+    res = CreateMeshOfTriangles([[0,0,0],[1,0,0],[0,1,0],[0,0,1] ], [[0,1,2],[0,2,3]])
+    dg, nused = GetDualGraph(res)
 
     return "ok"
 
 
 def CheckIntegrity():
+    CheckIntegrity_ExtractElementsByMask()
     CheckIntegrity_GetVolume()
     CheckIntegrity_CreateMeshOfTriangles()
     CheckIntegrity_CreateMeshFromConstantRectilinearMesh()
@@ -828,6 +978,7 @@ def CheckIntegrity():
     CheckIntegrity_CleanEmptyTags()
     CheckIntegrity_AddTagPerBody()
     CheckIntegrity_MeshToVtk()
+    CheckIntegrity_GetDualGraph()
     return "ok"
 
 

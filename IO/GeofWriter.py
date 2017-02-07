@@ -111,7 +111,7 @@ class GeofWriter(WriterBase):
         meshObject.PrepareForOutput();
 
         if lowerDimElementsAsSets :
-            celtags = meshObject.GetNamesOfCellTags()
+            celtags = meshObject.GetNamesOfElemTags()
             for tagname in celtags:
 
                 idInTag = 0
@@ -140,7 +140,7 @@ class GeofWriter(WriterBase):
 
                 self.filePointer.write("\n")
         else:
-            celtags = meshObject.GetNamesOfCellTags()
+            celtags = meshObject.GetNamesOfElemTags()
             for tagname in celtags:
                 self.filePointer.write("  **elset {} \n".format(tagname))
                 data = meshObject.GetElementsInTag(tagname,useOriginalId=useOriginalId)
@@ -154,7 +154,7 @@ class GeofWriter(WriterBase):
         if lowerDimElementsAsSets:
             for dimToTreat in xrange(maxDimensionalityOfelements):
 
-                celtags = meshObject.GetNamesOfCellTags()
+                celtags = meshObject.GetNamesOfElemTags()
                 for tagname in celtags:
 
                     idInTag = 0
@@ -169,8 +169,9 @@ class GeofWriter(WriterBase):
                     if flag == False : continue
                     #empty tags
                     if idInTag == 0 :  continue
-                    if dimToTreat == 0:
-                        self.filePointer.write("  **doset {} \n".format(tagname))
+                    if dimToTreat == 0:# pragma: no cover
+                        raise Exception("Dont know how to treat the doset, please code me")
+                    #    self.filePointer.write("  **doset {} \n".format(tagname))
                     elif dimToTreat == 1:
                         self.filePointer.write("  **liset {} \n".format(tagname))
                     elif dimToTreat == 2:
@@ -203,6 +204,7 @@ def CheckIntegrity():
     from OTTools.Helpers.Tests import TestTempDir
 
     tempdir = TestTempDir.GetTempPath()
+    print(tempdir)
 
     mymesh = UM.UnstructuredMesh()
     mymesh.nodes = np.array([[0.00000000001,0,0],[1,0,0],[0,1,0],[1,1,0]],dtype=np.float)
@@ -210,14 +212,23 @@ def CheckIntegrity():
 
     mymesh.nodesTags.CreateTag("coucou").AddToTag(0)
 
+    tet = mymesh.GetElementsOfType(EN.Tetrahedron_4)
+    tet.AddNewElement([0,1,2,3],0)
+    tet.tags.CreateTag("TheOnlyTet").AddToTag(0)
+
     tris = mymesh.GetElementsOfType(EN.Triangle_3)
     tris.AddNewElement([0,1,2],0)
     tris.AddNewElement([2,1,3],3)
     tris.originalIds = np.array([3, 5],dtype=np.int)
 
-    tris = mymesh.GetElementsOfType(EN.Bar_2)
-    tris.AddNewElement([0,1],0)
-    tris.AddNewElement([1,3],1)
+    bars = mymesh.GetElementsOfType(EN.Bar_2)
+    bars.AddNewElement([0,1],0)
+    bars.AddNewElement([1,3],1)
+    bars.tags.CreateTag("firstBar").AddToTag(0)
+
+    #point = mymesh.GetElementsOfType(EN.Point_1)
+    #point.AddNewElement([0],0)
+    #point.tags.CreateTag("onlyPoint").AddToTag(0)
 
 
     mymesh.AddElementToTagUsingOriginalId(3,"Tag1")

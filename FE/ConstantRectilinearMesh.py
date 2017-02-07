@@ -22,7 +22,7 @@ class ConstantRectilinearMesh(MeshBase):
         self.connectivity = None
         self.nodes = None
 
-    def GetNamesOfCellTags(self):
+    def GetNamesOfElemTags(self):
         return self.elemTags.keys()
 
     def GetSubSuperMesh(self,_newDimensions):
@@ -329,7 +329,7 @@ def CheckIntegrity():
 
     print(myMesh)
     print(myMesh.IsConstantRectilinear())
-    print(myMesh.GetNamesOfCellTags())
+    print(myMesh.GetNamesOfElemTags())
     print(myMesh.GetDimensions())
     print(myMesh.GetMonoIndexOfNode(np.array([0,0,0]) ))
     print(myMesh.GetMonoIndexOfNode(np.array([[0,0,0],[1,1,1]]) ))

@@ -60,7 +60,7 @@ class GmshWriter(WriterBase):
 
         #meshObject.PrepareForOutput();
 
-        celtags = meshObject.GetNamesOfCellTags()
+        celltags = meshObject.GetNamesOfElemTags()
         elements = meshObject.elements.keys()
         tagcounter = 2
         #for tagname in celtags:

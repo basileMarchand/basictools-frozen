@@ -31,7 +31,7 @@ class StructuredMesh(MeshBase):
         self.__dimensions = np.ones((dim,),dtype=int)*2;
         self.elemTags = {}
 
-    def GetNamesOfCellTags(self):
+    def GetNamesOfElemTags(self):
         return self.elemTags.keys()
 
     def SetDimensions(self,data):

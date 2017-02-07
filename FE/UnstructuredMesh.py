@@ -1,20 +1,21 @@
 # -*- coding: utf-8 -*-
+import numpy as np
+
 from OTTools.FE.MeshBase import MeshBase
 from OTTools.FE.MeshBase import Tag
 from OTTools.FE.MeshBase import Tags
-import numpy as np
 import OTTools.FE.ElementNames as ElementNames
+from OTTools.Helpers.BaseOutputObject import BaseOutputObject
 
-class ElementsContainer():
-    def __init__(self,typename):
-        self.elementType = typename
+
+class ElementsContainer(BaseOutputObject):
+    def __init__(self,elementType):
+        self.elementType = elementType
         self.connectivity = np.empty((0,0),dtype=np.int)
         self.globaloffset   = 0
         self.originalIds = np.empty((0,),dtype=np.int)
         self.tags = Tags()
         self.cpt = 0;
-
-
 
     def GetNumberOfElements(self):
         return self.cpt
@@ -63,6 +64,13 @@ class ElementsContainer():
             return 1
         else:
             return 0
+
+    def __str__(self):
+        res  = "ElementsContainer \n"
+        res += "  elementType    : {}\n".format(self.elementType)
+        res += "  Number Of Elements : {}\n".format(self.GetNumberOfElements())
+        res += "  Tags          : " + str([x.name for x in self.tags]) + "\n"
+        return res
 
 class UnstructuredMesh(MeshBase):
 
@@ -123,7 +131,11 @@ class UnstructuredMesh(MeshBase):
         for ntype, data in self.elements.iteritems():
             if data.AddElementToTag(elemNumber,tagname):
                 return
-        raise Exception("No element found")
+        raise Exception("No element found") #pragma: no cover
+
+    def DeleteElemTags(self, tagNames):
+        for ntype, data in self.elements.iteritems():
+            data.tags.DeleteTags(tagNames)
 
 
     def GetPosOfNode(self, i ):
@@ -132,7 +144,7 @@ class UnstructuredMesh(MeshBase):
     def GetPosOfNodes(self):
         return self.nodes
 
-    def GetNamesOfCellTags(self):
+    def GetNamesOfElemTags(self):
         res = set()
         for ntype, data in self.elements.iteritems():
             for tag in data.tags:
@@ -167,6 +179,7 @@ class UnstructuredMesh(MeshBase):
     def PrepareForOutput(self):
        self.ComputeGlobalOffset()
        for ntype, data in self.elements.iteritems():
+             data.tighten()
              for tag in data.tags:
                    tag.Tighten()
 
@@ -184,7 +197,7 @@ class UnstructuredMesh(MeshBase):
         res += "  Number Of Nodes    : {}\n".format(self.GetNumberOfNodes())
         res += "  Number Of Elements : {}\n".format(self.GetNumberOfElements())
         res += "  Node Tags          : " + str(self.nodesTags) + "\n"
-        res += "  Cell Tags          : " + str([x for x in self.GetNamesOfCellTags()])+ "\n"
+        res += "  Cell Tags          : " + str([x for x in self.GetNamesOfElemTags()])+ "\n"
         return res
 
 def CheckIntegrity():
@@ -197,9 +210,13 @@ def CheckIntegrity():
 
     elements = res.GetElementsOfType(ElementNames.Bar_2)
     elements.AddNewElement([1,2],1)
+
     elements.GetNumberOfNodesPerElement()
 
     print(res.IsUnstructured())
+
+    res.ComputeGlobalOffset()
+    res.AddElementToTag(1,"SecondElement")
 
     if res.GetNumberOfElements() != 2: raise Exception()
     res.ComputeGlobalOffset()
@@ -224,7 +241,8 @@ def CheckIntegrity():
     print(res.GetElementsOfType("bars").GetTag("toto"))
     print(res.GetPosOfNode(0))
     print(res)
-
+    res.DeleteElemTags(["SecondElement"])
+    print(res)
     return "ok"
 
 if __name__ == '__main__':
