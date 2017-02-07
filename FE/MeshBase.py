@@ -56,11 +56,18 @@ class Tags(BaseOutputObject):
         self.storage.append(item)
         return item
 
+    def DeleteTags(self,tagNames):
+        for name in tagNames:
+            for i in xrange(len(self.storage)):
+                if self.storage[i].name == name:
+                    self.storage.pop(i)
+                    break
+
     def CreateTag(self,name, errorIfAlreadyCreated=True):
 
         if self.has_key(name):
             if errorIfAlreadyCreated :
-                raise Exception("Tag already exist")# pragma: no cover
+                raise Exception("Tag name '"+name+"' already exist")# pragma: no cover
             else:
                 return self[name]
         else:
@@ -144,6 +151,8 @@ def CheckIntegrity():
     len(tag)
     obj.nodesTags.RenameTag('toto','newtoto')
     obj.nodesTags.RenameTag('toto','newtoto', noError= True)
+
+    obj.nodesTags.DeleteTags(["newtoto"])
 
     return "ok"
 
