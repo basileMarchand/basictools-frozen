@@ -3,37 +3,47 @@ numberOfNodes = {}
 # permutation of index to make a valid element again after a mirror operation
 mirrorPermutation = {}
 dimension = {}
+linear = {}
 
 #0d
 Point_1  = 'point1'
 numberOfNodes[Point_1] = 1;
 mirrorPermutation[Point_1] = [0]
 dimension[Point_1] = 0
+linear[Point_1] = True
 #1d
 #linear
 Bar_2 = 'bar2'
 numberOfNodes[Bar_2] = 2;
 mirrorPermutation[Bar_2] = [1,0]
 dimension[Bar_2] = 1
+linear[Bar_2] = True
 #quadratic
 Bar_3 = 'bar3'
 numberOfNodes[Bar_3] = 3;
 mirrorPermutation[Bar_3] = [1,0,2]
 dimension[Bar_3] = 1
-
+linear[Bar_3] = False
 #2d
 #linear
 Triangle_3 = 'tri3'
 numberOfNodes[Triangle_3] = 3;
 mirrorPermutation[Triangle_3] = [0,2,1]
 dimension[Triangle_3] = 2
+linear[Triangle_3] = True
+
 Quadrangle_4  = 'quad4'
 numberOfNodes[Quadrangle_4] = 4;
 dimension[Quadrangle_4] = 2
+linear[Quadrangle_4] = True
+
 #quadratic
 Triangle_6 = 'tri6'
 numberOfNodes[Triangle_6] = 6;
 dimension[Triangle_6] = 2
+linear[Triangle_6] = True
+
+
 Quadrangle_8  = 'quad8'
 numberOfNodes[Quadrangle_8] = 8;
 dimension[Quadrangle_8] = 2
@@ -46,6 +56,7 @@ Tetrahedron_4 = 'tet4'
 numberOfNodes[Tetrahedron_4] = 4;
 mirrorPermutation[Tetrahedron_4] = [0,2,1,3]
 dimension[Tetrahedron_4] = 3
+linear[Tetrahedron_4] = True
 
 Pyramid_5  = 'pyr5'
 numberOfNodes[Pyramid_5] = 5;
