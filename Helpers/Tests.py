@@ -199,13 +199,13 @@ if __name__ == '__main__':# pragma: no cover
       try:
           opts, args = getopt.getopt(sys.argv[1:],"hcfse:m:")
       except getopt.GetoptError:
-          print 'python  Tests.py -c -f -e <extraModules> -m <moduleFilter>'
-          print 'options :'
-          print '       -c    To activate coverage and generate a html report'
-          print '       -f    Full output for all the test'
-          print '       -s    Stop at first error'
-          print '       -e    To test extra Modules (-e can be repeated)'
-          print '       -m    To filter the output by this string (-m can be repeated)'
+          print( 'python  Tests.py -c -f -e <extraModules> -m <moduleFilter>')
+          print( 'options :')
+          print( '       -c    To activate coverage and generate a html report')
+          print( '       -f    Full output for all the test')
+          print( '       -s    Stop at first error')
+          print( '       -e    To test extra Modules (-e can be repeated)')
+          print( '       -m    To filter the output by this string (-m can be repeated)')
           sys.exit(2)
 
       coverage = False
@@ -217,13 +217,13 @@ if __name__ == '__main__':# pragma: no cover
 
       for opt, arg in opts:
          if opt == '-h':
-             print 'python  Tests.py -c -f -s -e <extraModules> -m <moduleFilter>'
-             print 'options :'
-             print '       -c    To activate coverage and generate a html report'
-             print '       -f    Full output for all the test'
-             print '       -s    Stop at first error'
-             print '       -e    To test extra Modules (-e can be repeated)'
-             print '       -m    To filter the output by this string (-m can be repeated)'
+             print( 'python  Tests.py -c -f -s -e <extraModules> -m <moduleFilter>')
+             print( 'options :')
+             print( '       -c    To activate coverage and generate a html report')
+             print( '       -f    Full output for all the test')
+             print( '       -s    Stop at first error')
+             print( '       -e    To test extra Modules (-e can be repeated)')
+             print( '       -m    To filter the output by this string (-m can be repeated)')
              sys.exit()
          elif opt in ("-c"):
             coverage = True
