@@ -195,9 +195,9 @@ class Fea(FeaBase):
                  for i in xrange(nelemintag):
                      coon = conectivities[i,:]
                      coords = pos[coon,:]
-                     edofMat= np.array([(coon*self.dofpernode+y) for y in xrange(self.dofpernode)]).flatten('F')
-                     local_iK = np.kron(edofMat, np.ones((nodesPerElement*self.dofpernode, 1), dtype=np.int_)).flatten()
-                     local_jK = np.kron(edofMat, np.ones((1,nodesPerElement*self.dofpernode), dtype=np.int_)).flatten()
+                     edofMat= np.array([(coon*self.dofpernode+y) for y in xrange(self.dofpernode)]).ravel('F')
+                     local_iK = np.kron(edofMat, np.ones((nodesPerElement*self.dofpernode, 1), dtype=np.int_)).ravel()
+                     local_jK = np.kron(edofMat, np.ones((1,nodesPerElement*self.dofpernode), dtype=np.int_)).ravel()
                      iK[cpt:cpt+local_nvals] = local_iK
                      jK[cpt:cpt+local_nvals] = local_jK
 

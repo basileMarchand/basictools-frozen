@@ -55,7 +55,7 @@ class ConstantRectilinearMesh(MeshBase):
             oldToNewIK[i,:] = i
             oldToNewJK[i,:] = coon
 
-        oldToNew =  coo_matrix((oldToNewVals.flatten(), (oldToNewIK.flatten(), oldToNewJK.flatten())), shape=(destination.GetNumberOfNodes(), self.GetNumberOfNodes())).tocsc()
+        oldToNew =  coo_matrix((oldToNewVals.ravel(), (oldToNewIK.flatten(), oldToNewJK.flatten())), shape=(destination.GetNumberOfNodes(), self.GetNumberOfNodes())).tocsc()
 
         return oldToNew
 
@@ -94,7 +94,7 @@ class ConstantRectilinearMesh(MeshBase):
             #oldToNewVals[i,:] = 1
             #oldToNewIK[i,:] = i
             #oldToNewJK[i,:] = el
-        oldToNew =  coo_matrix((oldToNewVals.flatten(), (oldToNewIK.flatten(), oldToNewJK.flatten())), shape=(destination.GetNumberOfElements(), self.GetNumberOfElements())).tocsc()
+        oldToNew =  coo_matrix((oldToNewVals.ravel(), (oldToNewIK.flatten(), oldToNewJK.flatten())), shape=(destination.GetNumberOfElements(), self.GetNumberOfElements())).tocsc()
 
         return oldToNew
 

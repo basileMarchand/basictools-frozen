@@ -295,7 +295,7 @@ def CleanLonelyNodes(res):
     usedNodes = np.zeros(res.GetNumberOfNodes(),dtype=np.bool )
     for elementName in res.elements.keys():
         elements = res.elements[elementName]
-        usedNodes[elements.connectivity.flatten()] = True;
+        usedNodes[elements.connectivity.ravel()] = True;
 
     cpt = 0 ;
     NewIndex =  np.zeros(res.GetNumberOfNodes(),dtype=np.int )-1

@@ -72,7 +72,7 @@ class GmshWriter(WriterBase):
                  for i in xrange(data.GetNumberOfElements() ):
                     print(str(i)+ " coucou")
                     self.filePointer.write("{}{} {} {} {} ".format(data.originalIds[i],elemtype,2,1,1) )
-                    self.filePointer.write(" ".join([str(meshObject.originalIDNodes[x]) for x in data.connectivity[i,:].flatten()]))
+                    self.filePointer.write(" ".join([str(meshObject.originalIDNodes[x]) for x in data.connectivity[i,:].ravel()]))
                     cpt += 1
                     self.filePointer.write("\n")
             else:

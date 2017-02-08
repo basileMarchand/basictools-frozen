@@ -277,7 +277,7 @@ class XdmfWriter(WriterBase):
             dims = baseMeshObject.GetDimensions() ## number of nodes per
 
             self.filePointer.write('    <Geometry Type="XYZ">\n')
-            self.__WriteDataItem(baseMeshObject.GetPosOfNodes().flatten(), (baseMeshObject.GetNumberOfNodes(),3)  )
+            self.__WriteDataItem(baseMeshObject.GetPosOfNodes().ravel(), (baseMeshObject.GetNumberOfNodes(),3)  )
             self.filePointer.write('    </Geometry>\n')
             self.filePointer.write('    <Topology Dimensions="'+ArrayToString(reversed(dims))  +'" Type="'+str(dimensionality)+'DSMesh"/>\n')
         elif baseMeshObject.IsUnstructured() :
@@ -285,9 +285,9 @@ class XdmfWriter(WriterBase):
             if ( baseMeshObject.GetDimensionality()  == 2 ):
                 nodes = baseMeshObject.GetPosOfNodes()
                 nodes = np.concatenate((nodes,np.zeros((baseMeshObject.GetNumberOfNodes(),1))), axis=1 );
-                self.__WriteDataItem(nodes.flatten(), (baseMeshObject.GetNumberOfNodes(),3)  )
+                self.__WriteDataItem(nodes.ravel(), (baseMeshObject.GetNumberOfNodes(),3)  )
             else:
-                self.__WriteDataItem(baseMeshObject.GetPosOfNodes().flatten(), (baseMeshObject.GetNumberOfNodes(),3)  )
+                self.__WriteDataItem(baseMeshObject.GetPosOfNodes().ravel(), (baseMeshObject.GetNumberOfNodes(),3)  )
 
             self.filePointer.write('    </Geometry>\n')
             if len(baseMeshObject.elements) > 1:
@@ -335,7 +335,7 @@ class XdmfWriter(WriterBase):
                         self.filePointer.write('NodesPerElement="1"  ')
                     self.filePointer.write(' >\n')
 
-                    self.__WriteDataItem(baseMeshObject.elements[baseMeshObject.elements.keys()[0]].connectivity.flatten())
+                    self.__WriteDataItem(baseMeshObject.elements[baseMeshObject.elements.keys()[0]].connectivity.ravel())
                 else:
                     self.filePointer.write('    <Topology TopologyType="mixed" NumberOfElements="0"  >\n')
 
@@ -437,7 +437,7 @@ class XdmfWriter(WriterBase):
 
            data1[...,0:2] = data
 
-           self.__WriteAttribute(data1.flatten(),name,center,baseMeshObject)
+           self.__WriteAttribute(data1.ravel(),name,center,baseMeshObject)
 
            return
        else:
@@ -450,7 +450,7 @@ class XdmfWriter(WriterBase):
        self.filePointer.write('    <Attribute Center="'+center+'" Name="'+name+'" Type="'+attype+'">\n')#
 
 
-       self.__WriteDataItem(data.flatten(),shape)
+       self.__WriteDataItem(data.ravel(),shape)
 
        self.filePointer.write('    </Attribute>\n')
 
@@ -596,10 +596,10 @@ class XdmfWriter(WriterBase):
                     self.__binaryFilePointer = open (self.__binFileName, "wb")
                     self.__binarycpt = 0
 
-                #bindata = bytearray(data.flatten())
+                #bindata = bytearray(data.ravel())
 
                 #self.__binaryFilePointer.write(bindata)
-                data.flatten().tofile(self.__binaryFilePointer)
+                data.ravel().tofile(self.__binaryFilePointer)
 
                 self.filePointer.write(' <DataItem Format="Binary"'+
                 ' NumberType="'+typename+'"'+
@@ -613,7 +613,7 @@ class XdmfWriter(WriterBase):
                 self.__binarycpt += s*len(data)
             else:
                 self.filePointer.write(' <DataItem Format="XML" NumberType="'+typename+'" Dimensions="'+dimension+'">')
-                self.filePointer.write(" ".join(str(x) for x in data.flatten()))
+                self.filePointer.write(" ".join(str(x) for x in data.ravel()))
 
 
             self.filePointer.write('</DataItem>\n')
