@@ -60,10 +60,10 @@ def ReadGeof(fileName=None,string=None):
       if l.find("**element")>-1:
         l = string.readline().strip('\n').lstrip().rstrip()
         nbElements = int(l.split()[0])
-        print "nbElements", nbElements
+        print( "nbElements {}".format(nbElements) )
         l = string.readline().strip('\n').lstrip().rstrip()
         while(True):
-	  if len(l) == 0: l = string.readline().strip('\n').lstrip().rstrip(); continue
+          if len(l) == 0: l = string.readline().strip('\n').lstrip().rstrip(); continue
           if l.find("**") > -1:
                break
           s = l.split()
@@ -81,7 +81,7 @@ def ReadGeof(fileName=None,string=None):
         print("Reading Group " + fasetName)
         l = string.readline().strip('\n').lstrip().rstrip()
         while(True):
-	  if len(l) == 0: l = string.readline().strip('\n').lstrip().rstrip(); continue
+          if len(l) == 0: l = string.readline().strip('\n').lstrip().rstrip(); continue
           if l.find("**") > -1:
                break
           s = l.split()
@@ -98,16 +98,16 @@ def ReadGeof(fileName=None,string=None):
         break
 
       if l.find("**nset")>-1 or l.find("**elset")>-1:
-	    print(l+" not read")
-            while(True):
-                l = string.readline().strip('\n').lstrip().rstrip()
-                if l.find("**") > -1:
-                    break
-            continue
+          print(l+" not read")
+          while(True):
+              l = string.readline().strip('\n').lstrip().rstrip()
+              if l.find("**") > -1:
+                  break
+          continue
 
       if l.find("***geometry")>-1 or l.find("***group")>-1:
-	  l = string.readline().strip('\n').lstrip().rstrip()
-	  continue
+        l = string.readline().strip('\n').lstrip().rstrip()
+        continue
 
       #case not treated
       print("line starting with <<"+l[:20]+">> not considered in the reader")

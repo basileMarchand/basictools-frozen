@@ -5,7 +5,7 @@ import numpy as np
 
 
 def ReadResult(nbNodes, fileName=None, string=None):
-    from cStringIO import StringIO
+    from io import StringIO
 
     if fileName is not None:
       f = open(fileName, 'r')

@@ -27,7 +27,7 @@ class Interface(BaseOutputObject):
         try:
           self.tpl = self.ReadFile(self.workingDirectory + os.sep + self.tplFilename)
         except IOError:# pragma: no cover
-	    True
+          True
 
         # Temporary files folder creation
         self.processDirectory = self.workingDirectory + os.sep
@@ -45,7 +45,7 @@ class Interface(BaseOutputObject):
         # Write code input file
         try:
             inpString = self.tpl.format(**self.parameters)
-        except KeyError, e: # pragma: no cover
+        except KeyError as e: # pragma: no cover
             print("The user must supply the key: %s" % str(e))
             raise
 

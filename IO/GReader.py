@@ -94,7 +94,7 @@ def CheckIntegrity():
 
     res = ReadGCode(fileName=GetTestDataPath()+ "GCodeTest.gcode" )
 
-    print res
+    print(res)
 
     return 'ok'
 

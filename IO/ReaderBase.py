@@ -22,7 +22,7 @@ class ReaderBase(BaseOutputObject):
             if self.string is None:
                 raise ('Need a file or a string to read')
             else:
-                from cStringIO import StringIO
+                from io import StringIO
                 self.filePointer =  StringIO(self.string)
         else:
             self.filePointer =  open(self.fileName, self.readFormat)
