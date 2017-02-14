@@ -80,18 +80,21 @@ class BaseOutputObject(object):
             # the real stack
             stack = inspect.stack()[stnumber]
 
+
+
+            #res += (": "+str(stack[1]) + ":" +str(stack[2]) )
+            res += '  File "' + str(stack[1]) + '", line ' +str(stack[2])
+
             # nice date
             global useDifferentialTime
             if(useDifferentialTime):
-                res += ("[%f]" % self.GetDiffTime() )
+                res += (" [%f]" % self.GetDiffTime() )
             else:
                 m, s = divmod(time.time(), 60.)
                 h, m = divmod(m, 60)
                 d, h = divmod(h, 24)
                 res += ("[%d:%02d:%02d]" % (h+1, m, s))
 
-            #res += (": "+str(stack[1]) + ":" +str(stack[2]) )
-            res += ' File "' + str(stack[1]) + '", line ' +str(stack[2])
             if level == 1 :
                 res += (TFormat.InBlue(" --> "))
             elif level == 2:
