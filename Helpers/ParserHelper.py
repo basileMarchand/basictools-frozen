@@ -1,6 +1,12 @@
   # -*- coding: utf-8 -*-
 import numpy as np
 
+def Read(string, inout):
+    if type(inout).__module__ == np.__name__:
+        return ReadVector(string, inout.dtype)
+    else:
+        return ReadScalar(string, type(inout) )
+
 def ReadScalar(string,dtype):
     if dtype is bool:
         return ReadBool(string)
