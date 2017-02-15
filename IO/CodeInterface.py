@@ -25,7 +25,7 @@ class Interface(object):
         try:
           self.tpl = self.ReadFile(self.workingDirectory + os.sep + self.tplFilename)
         except IOError:
-	  True
+	  print "ALERT: "+self.workingDirectory + os.sep + self.tplFilename+" not found" 
         
         # Temporary files folder creation
         self.processDirectory = self.workingDirectory + os.sep

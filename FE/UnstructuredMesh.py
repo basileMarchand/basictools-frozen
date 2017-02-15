@@ -53,7 +53,7 @@ class UnstructuredMesh(MeshBase):
         self.elements = {}
         self.boundingMin = [0,0,0];
         self.boundingMax = [0,0,0];
-
+    
     def GetNumberOfNodes(self):
         return self.nodes.shape[0]
     
@@ -126,7 +126,7 @@ class UnstructuredMesh(MeshBase):
                 if useOriginalId:
                     res[cpt:cpt+len(elem.tags[tagname].id) ] = elem.originalIds[elem.tags[tagname].id];                 
                 else:
-                    res[cpt:cpt+len(elem.tags[tagname].id) ] = elem.globaloffset+elem.tags[tagname].id;                 
+                    res[cpt:cpt+len(elem.tags[tagname].id) ] = elem.globaloffset+elem.tags[tagname].id+1;                 
                 cpt +=  len(elem.tags[tagname].id)
         return res[0:cpt]
 

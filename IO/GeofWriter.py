@@ -49,7 +49,7 @@ class GeofWriter(WriterBase):
         numberofpoints = meshObject.GetNumberOfNodes()
         self.filePointer.write("{} {} \n".format(numberofpoints,3) )
         #
-        posn = meshObject.GetPosOfNode()
+        posn = meshObject.GetPosOfNodes()
         if useOriginalId:
            for n in xrange(numberofpoints):
                self.filePointer.write("{} ".format(int(meshObject.originalIDNodes[n])))
@@ -66,6 +66,7 @@ class GeofWriter(WriterBase):
         for ntype, data in meshObject.elements.iteritems(): 
             elemtype = GeofName[ntype]
             #npe = data.GetNumberOfNodesPerElement()
+            #if elemtype!="c2d3":
             for i in xrange(data.GetNumberOfElements() ):
                 if useOriginalId:
                     self.filePointer.write("{} {} ".format(data.originalIds[i],elemtype) )

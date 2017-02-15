@@ -41,7 +41,7 @@ class GramSchmidt(object):
         
 
 def CheckIntegrity():
-    v  = np.random.rand(3,10)
+    v  = np.random.rand(2,10)
     A  = np.eye(10)
     GS = GramSchmidt(A, v)
     GS.Compute()

@@ -89,15 +89,16 @@ def pod_basis_and_singular_values(snapshots, \
         truncation_thresholds = discarded_energy_fractions(s)[::-1]
         drop_count = np.searchsorted( \
                 truncation_thresholds, truncation_tol, side='right')
-        rank_max = min(snapshot_count - drop_count, rank_max)
+        rank_max = min(min(snapshot_count,s.shape[0]) - drop_count, rank_max)
 
     if alternate_truncation_tol is not None and snapshot_count > 0:
         leading_vector_energy = s[0]
         cutoff = leading_vector_energy * alternate_truncation_tol
         drop_count = np.searchsorted(s[::-1], cutoff, side='right')
-        rank_max = min(snapshot_count - drop_count, rank_max)
+        rank_max = min(min(snapshot_count,s.shape[0]) - drop_count, rank_max)
 
-    return (u, s) if rank_max >= snapshot_count else (u[:rank_max, :], s[:rank_max])
+    #return (u, s) if rank_max >= snapshot_count else (u[:rank_max, :], s[:rank_max])
+    return (u, s) if rank_max >= snapshot_count else (u[:rank_max, :], s)
 
 
 def discarded_energy_fractions(singular_values):
@@ -153,7 +154,7 @@ def PODSnapshot(a, epsilon):
         id_max2 += 1
     id_max = max(id_max, id_max2)
 
-    return eigenValues[0:id_max], eigenVectors[:,0:id_max]
+    return eigenValues, eigenValues[0:id_max], eigenVectors[:,0:id_max]
 
 
 def CheckIntegrity():

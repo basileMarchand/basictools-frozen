@@ -6,6 +6,10 @@ import OTTools.FE.ElementNames as EN
 InpNumber = {}
 
 InpNumber['C3D4'] = EN.Tetrahedron_4
+InpNumber['S3'] = EN.Triangle_3
+
+
+
 
 
 def ReadInp(fileName=None,string=None):
@@ -43,10 +47,11 @@ def ReadInp(fileName=None,string=None):
                     break
                 s = l.replace(',', '').split()
                 oid = int(s[0])
-                filetointernalid[oid] = cpt
-                res.originalIDNodes = np.vstack((res.originalIDNodes,int(s[0])))   
-                res.nodes = np.vstack((res.nodes,map(float,s[1:])))
-                cpt += 1
+                if oid not in filetointernalid:
+                  filetointernalid[oid] = cpt
+                  res.originalIDNodes = np.vstack((res.originalIDNodes,int(s[0])))   
+                  res.nodes = np.vstack((res.nodes,map(float,s[1:])))
+                  cpt += 1
                 l = string.readline().strip('\n').lstrip().rstrip()
             continue
 	  
