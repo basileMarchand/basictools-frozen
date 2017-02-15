@@ -36,7 +36,7 @@ def pod_basis(snapshots, \
           n denotes the number of vectors
           N denotes the number of entries in each vector
     """
-    result, _ = pod_basis_and_singular_values(snapshots, \
+    result, __ = pod_basis_and_singular_values(snapshots, \
             rank_max, truncation_tol, alternate_truncation_tol)
     return result
 
@@ -78,13 +78,19 @@ def pod_basis_and_singular_values(snapshots, \
           n denotes the number of vectors
           N denotes the number of entries in each vector
     """
-    v, s, u = la.svd(snapshots, full_matrices=False, compute_uv=True)
+    __, s, u = la.svd(snapshots, full_matrices=False, compute_uv=True)
+    rank = truncated_pod_basis_rank(s, \
+            rank_max, truncation_tol, alternate_truncation_tol)
+    return (u[:rank, :], s[:rank])
 
-    snapshot_count = v.shape[-2]
 
-    if rank_max is None:
-        rank_max = snapshot_count
+def truncated_pod_basis_rank(singular_values, \
+        rank_max=None, truncation_tol=None, alternate_truncation_tol=None):
+    snapshot_count = singular_values.size
+    result = min(snapshot_count, max(rank_max, 0)) \
+            if rank_max is not None else snapshot_count
 
+    """
     if truncation_tol is not None:
         truncation_thresholds = discarded_energy_fractions(s)[::-1]
         drop_count = np.searchsorted( \
@@ -98,7 +104,19 @@ def pod_basis_and_singular_values(snapshots, \
         rank_max = min(min(snapshot_count,s.shape[0]) - drop_count, rank_max)
 
     #return (u, s) if rank_max >= snapshot_count else (u[:rank_max, :], s[:rank_max])
-    return (u, s) if rank_max >= snapshot_count else (u[:rank_max, :], s)
+    return (u, s) if rank_max >= snapshot_count else (u[:rank_max, :], s)"""
+
+    if truncation_tol is not None and result > 0:
+        fractions = discarded_energy_fractions(singular_values)
+        result -= truncation_level(fractions[:result], truncation_tol)
+
+    if alternate_truncation_tol is not None and result > 0:
+        leading_vector_energy = singular_values[0]
+        threshold = leading_vector_energy * alternate_truncation_tol
+        result -= truncation_level(singular_values[:result], threshold)
+
+    return result
+
 
 
 def discarded_energy_fractions(singular_values):
@@ -131,6 +149,10 @@ def discarded_energy_fractions(singular_values):
     np.divide(cumulated_energies[1:], total_energy, out=result[1:])
 
     return result
+
+
+def truncation_level(values, threshold):
+    return np.searchsorted(values[::-1], threshold, side='right')
 
 
 def PODSnapshot(a, epsilon):

@@ -3,6 +3,8 @@
 import numpy as np
 import OTTools.FE.ElementNames as EN
 
+#  for ABAQUS input file
+
 InpNumber = {}
 
 InpNumber['C3D4'] = EN.Tetrahedron_4
@@ -20,16 +22,16 @@ def ReadInp(fileName=None,string=None):
         f = open(fileName, 'r')
         string = f.read()
         f.close()
-    
+
     string = StringIO(string)
-    
+
     coef = 1.
     res = UM.UnstructuredMesh()
     filetointernalid = {}
     l = string.readline().strip('\n').lstrip().rstrip()
-    
+
     while(True):
-      
+
       if l.find("**LENGTH UNITS")>-1:
           if l.find("mm")>-1:
               coef = 0.001
@@ -52,10 +54,11 @@ def ReadInp(fileName=None,string=None):
                   res.originalIDNodes = np.vstack((res.originalIDNodes,int(s[0])))   
                   res.nodes = np.vstack((res.nodes,map(float,s[1:])))
                   cpt += 1
+
                 l = string.readline().strip('\n').lstrip().rstrip()
             continue
-	  
-	  
+
+
       if l.find("*ELEMENT")>-1:
         s = l.replace(',', '').split()
         nametype = InpNumber[s[1][5:]]
@@ -65,26 +68,26 @@ def ReadInp(fileName=None,string=None):
         while(True):
           if l.find("*") > -1 or not l:
                break
-          s = l.replace(',', '').split()  
+          s = l.replace(',', '').split()
           conn = [filetointernalid[x] for x in  map(int,s[1:]) ]
           elements = res.GetElementsOfType(nametype)
           oid = int(s[0])
-          elements.AddNewElement(conn,oid)  
+          elements.AddNewElement(conn,oid)
           elements.GetTag(elset).AddToTag(cpt)
           cpt += 1
-          l = string.readline().strip('\n').lstrip().rstrip() 	
+          l = string.readline().strip('\n').lstrip().rstrip()
         continue
-      
+
 
       if not l: break
-      
+
       #case not treated
       print("line starting with <<"+l[:20]+">> not considered in the reader")
       l = string.readline().strip('\n').lstrip().rstrip()
       continue
-    
+
     res.originalIDNodes = np.squeeze(res.originalIDNodes)
-    
+
     return res
 
 
@@ -92,10 +95,10 @@ def ReadInp(fileName=None,string=None):
 def CheckIntegrity():
     data = """** -------------------------------------------------------
     ** ABAQUS input file
-    ** File exported by VISUAL-ENVIRONMENT : Version10.7 
+    ** File exported by VISUAL-ENVIRONMENT : Version10.7
     **      on 2016-4-8, at 10Hr:44min
     ** -------------------------------------------------------
-    **LENGTH UNITS: mm 
+    **LENGTH UNITS: mm
     *NODE
          1,      3.0310898125000696,      1.7500003247594429,  0.00059999999999149622
          2,      2.9785080000000002,     0.87500000000000011,     0.75012199999999996
@@ -106,9 +109,21 @@ def CheckIntegrity():
     *ELEMENT, TYPE=C3D4, ELSET=AM1_labo
          1,         1,         2,         3,         4
          2,         3,         5,         6,         4"""
-        
+
     res = ReadInp(string=data)
+
+    from OTTools.Helpers.Tests import TestTempDir
+    tempdir = TestTempDir.GetTempPath()
+    f =open(tempdir+"test.inp","w")
+    f.write(data)
+    f.close()
+    res = ReadInp(fileName=tempdir+"test.inp")
+
+
+
+
+
     return 'ok'
-           
+
 if __name__ == '__main__':
-    print(CheckIntegrity())# pragma: no cover   
+    print(CheckIntegrity())# pragma: no cover

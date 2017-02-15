@@ -1,4 +1,29 @@
 # -*- coding: utf-8 -*-
 
-__all__ = ['PickleTools','AcsReader','CodeInterface','GoefReader','GoefWriter','GmshReader','GmshWriter','InpReader','InputFile','PickleTools','StlReader','XdmfReader','XdmfTools','XdmfWriter','ZebulonIO','ProcastResultReader']
+__all__ = [
+
+'AscReader',
+'CodeInterface',
+'GeofReader',
+'GeofWriter',
+'GmshReader',
+'GmshWriter',
+'GReader',
+'InpReader',
+'InputFile',
+'MeshReader',
+'MeshWriter',
+'PickleTools',
+'PostReader',
+'ProcastResultReader',
+'ReaderBase',
+'StlReader',
+'StlWriter',
+'UniversalReader',
+'WriterBase',
+'XdmfReader',
+'XdmfTools',
+'XdmfWriter',
+'ZebulonIO'
+]
 
