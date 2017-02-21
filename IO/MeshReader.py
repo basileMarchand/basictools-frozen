@@ -48,7 +48,6 @@ class MeshReader(ReaderBase):
             return self.ReadMeshAscii(out=out)
 
     def ReadExtraField(self,fileName):
-        print(fileName[-1])
         if  fileName[-1] == "b":
             return self.ReadExtraFieldBinary(fileName)
         else:
@@ -96,9 +95,9 @@ class MeshReader(ReaderBase):
             def ReadFieldsASCII(f):
                 datares = []
                 line = f.readline()
-                print(line)
+                #print(line)
                 l = line.strip('\n').lstrip().rstrip()
-                print(l)
+                #print(l)
                 nbentries = int(l.split()[0])
                 line = f.readline()
                 l = line.strip('\n').lstrip().rstrip()

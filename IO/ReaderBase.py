@@ -6,6 +6,7 @@ from OTTools.Helpers.BaseOutputObject import BaseOutputObject
 
 
 class ReaderBase(BaseOutputObject):
+
     def __init__(self,fileName = None)    :
         super(ReaderBase,self).__init__()
         self.fileName = None;
@@ -15,6 +16,7 @@ class ReaderBase(BaseOutputObject):
         self.readFormat = 'r'
         self.output = None
         self.string = None
+        self.commentChar = None
 
     def StartReading(self):
 
@@ -25,7 +27,12 @@ class ReaderBase(BaseOutputObject):
                 from io import StringIO
                 self.filePointer =  StringIO(self.string)
         else:
-            self.filePointer =  open(self.fileName, self.readFormat)
+            if self.readFormat.find('b') > -1 :
+                self.filePointer =  open(self.fileName, self.readFormat)
+            else:
+                import codecs
+                self.filePointer = codecs.open(self.fileName, self.readFormat, 'utf-8')
+
 
 
 
@@ -49,6 +56,21 @@ class ReaderBase(BaseOutputObject):
 
         if string is not None:
             self.fileName = None
+
+    def ReadCleanLine(self):
+        while(True):
+            string = self.filePointer.readline()
+
+            string = string.rstrip('\r\n')
+            string = string.replace(u'\ufeff', '')
+            if len(string) == 0 :
+                continue
+            if self.commentChar is None:
+                break
+            else :
+                if string[0] != self.commentChar:
+                    break
+        return string
 
 def CheckIntegrity():
 
