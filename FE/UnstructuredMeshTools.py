@@ -657,7 +657,18 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
         import vtk
 
     if vtkobject is None:
-        output = vtk.vtkUnstructuredGrid()
+
+
+        usePoly = True
+        for  elementsname,elementContainer in mesh.elements.iteritems():
+            if ElementNames.dimension[elementsname] == 3:
+                usePoly = False
+                break
+        if usePoly:
+            output = vtk.vtkPolyData()
+        else:
+            output = vtk.vtkUnstructuredGrid()
+
     else:
         output = vtkobject # pragma: no cover
 
