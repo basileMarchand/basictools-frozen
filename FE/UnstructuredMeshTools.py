@@ -652,12 +652,33 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
     vtknumbers[ElementNames.Tetrahedron_10] = 24
 
     try:
-        from paraview import vtk
+        from paraview.vtk import vtkPolyData as vtkPolyData
+        from paraview.vtk import vtkUnstructuredGrid as vtkUnstructuredGrid
+        from paraview.vtk import vtkPoints
+        from paraview.vtk import vtkFloatArray
+        from paraview.vtk import vtkIntArray
+        from paraview.vtk import vtkIdList
     except :
-        import vtk
+        from vtk import vtkPolyData
+        from vtk import vtkUnstructuredGrid
+        from vtk import vtkPoints
+        from vtk import vtkFloatArray
+        from vtk import vtkIntArray
+        from vtk import vtkIdList
 
     if vtkobject is None:
-        output = vtk.vtkUnstructuredGrid()
+
+
+        usePoly = True
+        for  elementsname,elementContainer in mesh.elements.iteritems():
+            if ElementNames.dimension[elementsname] == 3:
+                usePoly = False
+                break
+        if usePoly:
+            output = vtkPolyData()
+        else:
+            output = vtkUnstructuredGrid()
+
     else:
         output = vtkobject # pragma: no cover
 
@@ -665,7 +686,7 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
 
     output.Allocate(mesh.GetNumberOfElements())
     ##copy points
-    pts = vtk.vtkPoints()
+    pts = vtkPoints()
     pts.Allocate(mesh.GetNumberOfNodes())
     if mesh.nodes.shape[1] == 3 :
         for p in xrange(mesh.GetNumberOfNodes()):
@@ -684,7 +705,7 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
             #VTK_data = numpy_support.numpy_to_vtk(num_array=np.swapaxes(phi,0,2).ravel(), deep=True, array_type=vtk.VTK_FLOAT)
             #VTK_data.SetName(name)
 
-            pd = vtk.vtkFloatArray()
+            pd = vtkFloatArray()
             pd.SetName(name)
             if len(data.shape) == 1:
                 pd.SetNumberOfComponents(1)
@@ -709,7 +730,7 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
 
     if TagsAsFields:
         for tag in mesh.nodesTags:
-            pd = vtk.vtkIntArray()
+            pd = vtkIntArray()
             pd.SetName(tag.name)
             pd.SetNumberOfComponents(1)
             pd.SetNumberOfTuples(mesh.GetNumberOfNodes())
@@ -721,7 +742,7 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
 
 
     for elementsname,elementContainer in mesh.elements.iteritems():
-        pointIds = vtk.vtkIdList()
+        pointIds = vtkIdList()
         npe = elementContainer.GetNumberOfNodesPerElement()
         pointIds.SetNumberOfIds(npe)
         vtknumber = vtknumbers[elementsname]
@@ -733,7 +754,7 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
     if hasattr(mesh,"elemFields"):
         for name,data in mesh.elemFields.iteritems():
 
-            pd = vtk.vtkFloatArray()
+            pd = vtkFloatArray()
             pd.SetName(name)
 
             if len(data.shape) == 1:
@@ -762,7 +783,7 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
         elementTags = mesh.GetNamesOfElemTags()
         for tagname in elementTags:
             ids = mesh.GetElementsInTag(tagname)
-            pd = vtk.vtkIntArray()
+            pd = vtkIntArray()
             pd.SetName(tagname)
             pd.SetNumberOfComponents(1)
             pd.SetNumberOfTuples(mesh.GetNumberOfElements())
@@ -785,12 +806,13 @@ def CheckIntegrity_MeshToVtk():
     res = CreateMeshOfTriangles([[0,0],[1,0],[0,1],[1,1] ], [[0,1,2],[2,1,3]])
 
     sol = MeshToVtk(res )
-
+    print(sol)
     return "OK"
 
 
 def CheckIntegrity_CreateMeshOfTriangles():
     res = CreateMeshOfTriangles([[0,0,0],[1,0,0],[0,1,0],[0,0,1] ], [[0,1,2],[0,2,3]])
+    print(res)
     return "OK"
 
 def CheckIntegrity_CreateMeshFromConstantRectilinearMesh():

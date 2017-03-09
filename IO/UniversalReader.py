@@ -29,6 +29,11 @@ def ReadMesh(filename,out=None):# pragma: no cover
         import OTTools.IO.GReader as GReader
 
         return GReader.ReadGCode(fileName=filename)
+    elif extention ==  "fem":
+        import OTTools.IO.FemReader as FemReader
+
+        return FemReader.ReadFem(fileName=filename)
+
     elif extention ==  "solb" or extention ==  "sol":
         import OTTools.IO.MeshReader as MeshReader
         if extention[-1] == "b":
@@ -56,6 +61,7 @@ def ReadMesh(filename,out=None):# pragma: no cover
             if mesh.GetElementsOfType(ElementNames.Tetrahedron_4).GetNumberOfElements() == mesh.GetNumberOfElements():
                 mesh.elemFields = {k:v for k,v in fields.iteritems() if k.find("SolAtTetrahedra") != -1  }
         return mesh
+
     else:
         raise Exception ("Unkown file extention : " + str(extention))
 
