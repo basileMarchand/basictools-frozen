@@ -72,6 +72,8 @@ def ReadGeof(fileName=None,string=None):
           conn = [filetointernalid[x] for x in  map(int,s[2:]) ]
           elements = res.GetElementsOfType(nametype)
           oid = int(s[0])
+          if nametype == EN.Hexaedron_20:
+              conn =  [conn[x] for x in [0,2,4,6,12,14,16,18,1,3,5,7,13,15,17,19,8,9,10,11]]
           elements.AddNewElement(conn,oid)
           l = string.readline().strip('\n').lstrip().rstrip()
         continue
