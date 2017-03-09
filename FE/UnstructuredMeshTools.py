@@ -646,6 +646,7 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
     vtknumbers[ElementNames.Triangle_3] = 5
     vtknumbers[ElementNames.Quadrangle_4] = 9
     vtknumbers[ElementNames.Hexaedron_8] = 12
+    vtknumbers[ElementNames.Hexaedron_20] = 25
     vtknumbers[ElementNames.Bar_3] = 21
     vtknumbers[ElementNames.Triangle_6] = 22
     vtknumbers[ElementNames.Tetrahedron_4] = 10

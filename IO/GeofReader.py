@@ -12,6 +12,7 @@ GeofNumber['c2d4'] = EN.Quadrangle_4
 GeofNumber["c2d3"] = EN.Triangle_3
 
 GeofNumber['c3d4'] = EN.Tetrahedron_4
+GeofNumber['c3d20'] = EN.Hexaedron_20
 GeofNumber['t3']   = EN.Triangle_3
 
 
