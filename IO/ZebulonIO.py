@@ -107,12 +107,12 @@ def ReadMat(fileName, symetry=True , returnReorderOnly=False):
         return A
 
 
-def ReadVec(fileName):
+def ReadVec(fileName, dtype = float):
 
     V = []
     with open(fileName, "r") as f:
         for line in f:
-            V.append(float(line))
+            V.append(dtype(float(line)))
 
     return np.array(V)
 
