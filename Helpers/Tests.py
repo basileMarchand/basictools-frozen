@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from __future__ import print_function
 
 import traceback
 
@@ -83,49 +84,53 @@ def __RunAndCheck(lis,bp,stopAtFirstError):# pragma: no cover
 
     return res
 
+def __tryImportRecursive(submod,tocheck,stopAtFirstError):
+
+
+  import importlib
+  sm = importlib.import_module(submod)
+
+  cif = getattr( sm, "CheckIntegrity", None)
+  if cif is not None:
+     tocheck[submod ] = cif
+  else :
+     try:
+         for subsubmod  in [ submod +'.' + x for x in sm.__all__]:
+             try:
+                 __tryImportRecursive(subsubmod,tocheck,stopAtFirstError)
+             except:
+                 print('Error Loading File : ' + subsubmod + '.py'  )
+                 if(stopAtFirstError): raise
+     except:
+        tocheck[submod ] = None
+        if(stopAtFirstError): raise
+
 
 def __tryImport(noduleName,stopAtFirstError):# pragma: no cover
 
-
+    tocheck = {}
     try :
-        import importlib
-        tocheck = {}
-        currentModuleName = noduleName
-        #print("I1 " + currentModuleName )
-        m = importlib.import_module(noduleName)
-        for submod in [ noduleName+ '.'+x for x in  m.__all__ ]:
-            currentModuleName = submod
-            #print("I2 " + currentModuleName )
-            sm = importlib.import_module(submod)
-            cif = getattr( sm, "CheckIntegrity", None)
-            if cif is not None:
-                tocheck[submod ] = cif
-            else :
-                try:
-                    for subsubmod  in [ submod +'.' + x for x in sm.__all__]:
-                        try:
-                          currentModuleName = subsubmod
-                          #print("I3 " + currentModuleName ),
-                          ssm = importlib.import_module(subsubmod)
-                          #print("Done "  )
-                        except:
-                            print('Error Loading File : ' + subsubmod + '.py'  )
-                            if(stopAtFirstError): raise
-                        cif  = getattr( ssm, "CheckIntegrity", None)
-                        tocheck[subsubmod ] = cif
-                except:
-                    tocheck[submod ] = None
-                    if(stopAtFirstError): raise
-
-
-        return tocheck
+        __tryImportRecursive(noduleName,tocheck,stopAtFirstError)
     except:
-        print("Error loading module '" + currentModuleName +"'")
+        print("Error loading module '" + noduleName +"'")
         print("This module will not be tested ")
         if(stopAtFirstError): raise
-        return {}
+    return tocheck
+
 
 def TestAll(modulestotreat=['ALL'], fulloutput=False, stopAtFirstError= False, coverage= False, extraToolsBoxs= None) :# pragma: no cover
+
+    print("")
+    print("modulestotreat   : ",end="")
+    print(modulestotreat)
+    print("fulloutput       : ",end="")
+    print(fulloutput)
+    print("stopAtFirstError : ",end="")
+    print(stopAtFirstError)
+    print("coverage         : ",end="")
+    print(coverage)
+    print("extraToolsBoxs: ",end="")
+    print(extraToolsBoxs)
 
     cov = None
     if coverage :

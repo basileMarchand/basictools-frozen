@@ -164,8 +164,8 @@ class MeshWriter(WriterBase):
             self.WriteSolutionsFieldsBinary(meshObject,SolsAtVertices)
 
         #key End
-        self.filePointer.write(struct.pack('i', 54)) #dimension
-        self.Close()
+        #self.filePointer.write(struct.pack('i', 54)) #dimension
+        #self.Close()
 
     def OpenSolutionFileAscii(self,support):
 
@@ -229,8 +229,9 @@ class MeshWriter(WriterBase):
 
     def CloseSolutionFileAscii(self):
         self.filePointer.write("End\n") #dimension
-        self._isOpen = False
-        self.filePointer.close()
+        #self._isOpen = False
+        #self.filePointer.close()
+
 
 
     def OpenSolutionFile(self,support):
@@ -246,10 +247,12 @@ class MeshWriter(WriterBase):
             self.WriteSolutionsFieldsAscii(meshObject,SolsAtVertices=SolsAtVertices,SolsAtTriangles=SolsAtTriangles,SolsAtTetrahedra=SolsAtTetrahedra)
 
     def CloseSolutionFile(self):
+
         if self.isBinary():
             self.CloseSolutionFileBinary()
         else:
             self.CloseSolutionFileAscii()
+        self.Close()
 
     def OpenSolutionFileBinary(self,support):
 
@@ -345,8 +348,6 @@ class MeshWriter(WriterBase):
         self.filePointer.close()
 
     def WriteASCII(self,meshObject,SolsAtVertices=None, solutionOnOwnFile= False, nodalRefNumber = None,elemRefNumber=None):
-        if  nodalRefNumber is not None or elemRefNumber is not None:
-            raise Exception('Not implemented yet')
 
         #self.filePointer.write("# This file has been writen by the python routine MmgWriter of the OTTools package\n")
         #self.filePointer.write("# For any question about this routine, please contact SAFRAN TECH Pole M&S Team OT\n")
