@@ -727,7 +727,6 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
                     pd.SetValue(cpt, data[i])
                     cpt +=1
               output.GetPointData().AddArray(pd)
-              output.GetPointData().SetScalars(pd)
 
     if TagsAsFields:
         for tag in mesh.nodesTags:
