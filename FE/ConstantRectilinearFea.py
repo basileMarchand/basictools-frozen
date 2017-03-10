@@ -253,7 +253,7 @@ class Fea(FeaBase.FeaBase):
           elif self.linearSolver == "LGMRES":
             M = sps.dia_matrix((1./K.diagonal(),0), shape=K.shape)
             norm = np.linalg.norm(rhs)
-            res = linalg.lgmres(K, rhs/norm, x0 = self.u[self.free, 0]/norm , M = M  )
+            res = linalg.lgmres(K, rhs/norm, x0 = self.u[self.free, 0]/norm , M = M , tol = self.tol )
             self.u[self.free, 0] = res[0]*norm
           elif self.linearSolver == "AMG":# pragma: no cover
             try:
