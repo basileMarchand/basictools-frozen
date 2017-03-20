@@ -10,10 +10,10 @@ import scipy.sparse.linalg as linalg
 import scipy.linalg as denselinalg
 import  scipy.sparse as sps
 
-from OTTools.FE.FeaBase import FeaBase as FeaBase
+from BasicTools.FE.FeaBase import FeaBase as FeaBase
 
-import OTTools.FE.ElementBuildier  as ElementBuildier
-from OTTools.Helpers.BaseOutputObject import BaseOutputObject
+import BasicTools.FE.ElementBuildier  as ElementBuildier
+from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 class BundaryCondition(BaseOutputObject):
     def __init__(self,dim=3, size= 1):
         super(BundaryCondition,self).__init__()
@@ -301,10 +301,10 @@ def deleterowcol(A, delrow, delcol, fixedValues ):
 
 def CheckIntegrityold():
 
-    import OTTools.IO.GmshReader as GR
-    import OTTools.TestData as test
-    import OTTools.IO.XdmfWriter  as XdmfWriter
-    from OTTools.Helpers.Tests import TestTempDir
+    import BasicTools.IO.GmshReader as GR
+    import BasicTools.TestData as test
+    import BasicTools.IO.XdmfWriter  as XdmfWriter
+    from BasicTools.Helpers.Tests import TestTempDir
     import time
 
     myMesh = GR.ReadGmsh( test.GetTestDataPath() + 'mesh1.msh')
@@ -489,10 +489,10 @@ def CheckIntegrityold():
 
 def CheckIntegrityDep2D():
 
-    import OTTools.FE.ConstantRectilinearMesh as CRM
-    import OTTools.IO.XdmfWriter  as XdmfWriter
+    import BasicTools.FE.ConstantRectilinearMesh as CRM
+    import BasicTools.IO.XdmfWriter  as XdmfWriter
     import time
-    from OTTools.Helpers.Tests import TestTempDir
+    from BasicTools.Helpers.Tests import TestTempDir
 
     print('----------------------- 2D dep ------------------------------------------------------')
     myMesh = CRM.ConstantRectilinearMesh(2)

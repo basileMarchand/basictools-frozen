@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 
-from OTTools.FE.UnstructuredMesh import UnstructuredMesh
-import OTTools.FE.ElementNames as ElementNames
-import OTTools.Helpers.BaseOutputObject as BaseOutputObject
+from BasicTools.FE.UnstructuredMesh import UnstructuredMesh
+import BasicTools.FE.ElementNames as ElementNames
+import BasicTools.Helpers.BaseOutputObject as BaseOutputObject
 
 
 def CreateMeshOfTriangles(points,tris):
@@ -816,7 +816,7 @@ def CheckIntegrity_CreateMeshOfTriangles():
     return "OK"
 
 def CheckIntegrity_CreateMeshFromConstantRectilinearMesh():
-    from OTTools.FE.ConstantRectilinearMesh import ConstantRectilinearMesh
+    from BasicTools.FE.ConstantRectilinearMesh import ConstantRectilinearMesh
 
     myMesh = ConstantRectilinearMesh()
     myMesh.SetDimensions([3,3]);
@@ -843,7 +843,7 @@ def CheckIntegrity_QuadToLin():
     tag.AddToTag(1)
     tag.AddToTag(2)
     tag.AddToTag(3)
-    import OTTools.FE.ElementNames as ElementNames
+    import BasicTools.FE.ElementNames as ElementNames
 
     elements = myMesh.GetElementsOfType(ElementNames.Tetrahedron_10)
     elements.AddNewElement([0,1,2,3,4,5,6,7,8,9],0)

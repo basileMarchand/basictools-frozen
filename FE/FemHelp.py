@@ -2,7 +2,7 @@
 
 import math
 import numpy as np
-import OTTools.FE.ElementNames as ElementsNames
+import BasicTools.FE.ElementNames as ElementsNames
 
 
 def Integral(E,Bop,elem,ndofs,pos=None):
@@ -57,9 +57,9 @@ def Integral(E,Bop,elem,ndofs,pos=None):
         return res
 
 def CheckIntegrity():
-    from OTTools.FE.Hexa8Cuboid import Hexa8Cuboid
-    from OTTools.FE.Quad4Rectangle import  Quad4Rectangle
-    from OTTools.FE.Tri3 import  Tri3
+    from BasicTools.FE.Hexa8Cuboid import Hexa8Cuboid
+    from BasicTools.FE.Quad4Rectangle import  Quad4Rectangle
+    from BasicTools.FE.Tri3 import  Tri3
 
     Hexa8Cuboid().GetIsotropDispK(1.,0.3);
     Quad4Rectangle().GetIsotropDispK(1.,0.3);

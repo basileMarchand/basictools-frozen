@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from OTTools.Helpers.BaseOutputObject import BaseOutputObject
+from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 
 class FElement(BaseOutputObject):
     def __init__(self):

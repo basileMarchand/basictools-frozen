@@ -2,10 +2,10 @@
 
 # -*- coding: utf-8 -*-
 
-from OTTools.FE.MeshBase import Tag as Tag
-from OTTools.IO.WriterBase import WriterBase as WriterBase
+from BasicTools.FE.MeshBase import Tag as Tag
+from BasicTools.IO.WriterBase import WriterBase as WriterBase
 import numpy as np
-import OTTools.FE.ElementNames as EN
+import BasicTools.FE.ElementNames as EN
 import struct
 
 mmgName = {}
@@ -344,12 +344,12 @@ class MeshWriter(WriterBase):
     def CloseSolutionFileBinary(self):
         self.filePointer.write(struct.pack('i', 54)) #dimension
         #self.filePointer.write(struct.pack('i', 00)) #dimension
-        self._isOpen = False
-        self.filePointer.close()
+        #self._isOpen = False
+        #self.filePointer.close()
 
     def WriteASCII(self,meshObject,SolsAtVertices=None, solutionOnOwnFile= False, nodalRefNumber = None,elemRefNumber=None):
 
-        #self.filePointer.write("# This file has been writen by the python routine MmgWriter of the OTTools package\n")
+        #self.filePointer.write("# This file has been writen by the python routine MmgWriter of the BasicTools package\n")
         #self.filePointer.write("# For any question about this routine, please contact SAFRAN TECH Pole M&S Team OT\n")
 
         self.filePointer.write("MeshVersionFormatted 2 \n")
@@ -379,8 +379,8 @@ class MeshWriter(WriterBase):
 #        celtags = meshObject.GetNamesOfCellTags()
 
         if meshObject.IsConstantRectilinear():
-            import OTTools.FE.ElementNames
-            elements = [ OTTools.FE.ElementNames.Hexaedron_8 ]
+            import BasicTools.FE.ElementNames
+            elements = [ BasicTools.FE.ElementNames.Hexaedron_8 ]
         else:
             elements = meshObject.elements.keys()
 #        tagcounter = 2
@@ -425,7 +425,7 @@ class MeshWriter(WriterBase):
             self.Close();
             self.filePointer = open(".".join(self.fileName.split(".")[0:-1])+".sol" , 'w',0)
             self._isOpen = True
-            self.filePointer.write("# This file has been writen by the python routine MmgWriter of the OTTools package\n")
+            self.filePointer.write("# This file has been writen by the python routine MmgWriter of the BasicTools package\n")
             self.filePointer.write("# For any question about this routine, please contact SAFRAN TECH Pole M&S Team OT\n")
 
             self.filePointer.write("MeshVersionFormatted\n2 \n")
@@ -463,9 +463,9 @@ class MeshWriter(WriterBase):
         self.filePointer.write("End\n")
 
 def CheckIntegrity():
-    import OTTools.FE.UnstructuredMesh as UM
+    import BasicTools.FE.UnstructuredMesh as UM
 
-    from OTTools.Helpers.Tests import TestTempDir
+    from BasicTools.Helpers.Tests import TestTempDir
 
     tempdir = TestTempDir.GetTempPath()
 

@@ -3,8 +3,8 @@
 import scipy.sparse as sps
 import scipy.sparse.linalg as spslin
 import numpy as np
-from OTTools.Helpers.BaseOutputObject import BaseOutputObject as BOO
-from OTTools.Helpers.TextFormatHelper import TFormat as TF
+from BasicTools.Helpers.BaseOutputObject import BaseOutputObject as BOO
+from BasicTools.Helpers.TextFormatHelper import TFormat as TF
 
 # you must set SetAlgo before setting the Op
 

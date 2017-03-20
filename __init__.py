@@ -8,5 +8,5 @@ if __name__ == '__main__':# pragma: no cover
     print(" Safran All Right Reserved. 2016")
     print("")
 
-    import OTTools.Helpers.Tests
-    OTTools.Helpers.Tests.TestAll(extraToolsBoxs= ["OTTools"])
+    import BasicTools.Helpers.Tests
+    BasicTools.Helpers.Tests.TestAll(extraToolsBoxs= ["BasicTools"])

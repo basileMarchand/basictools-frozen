@@ -6,11 +6,11 @@ Created on Wed Jun 15 10:58:44 2016
 """
 
 import numpy as np
-from OTTools.FE.FElement import FElement
-from OTTools.FE.FemHelp import Integral
-import OTTools.FE.MaterialHelp as MH
+from BasicTools.FE.FElement import FElement
+from BasicTools.FE.FemHelp import Integral
+import BasicTools.FE.MaterialHelp as MH
 import numpy.linalg as linalg
-import OTTools.FE.ElementNames as ElementsNames
+import BasicTools.FE.ElementNames as ElementsNames
 
 class Tri3(FElement):
     planeStress = True

@@ -29,7 +29,7 @@ class GramSchmidt(object):
         return
 
     def Check(self):
-        import OTTools.Helpers.TextFormatHelper as TFH
+        import BasicTools.Helpers.TextFormatHelper as TFH
         matCheck = np.zeros((self.nbVec,self.nbVec), dtype = float)
         for i in xrange(self.nbVec):
             for j in xrange(self.nbVec):

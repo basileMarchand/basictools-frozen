@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
-import OTTools.FE.ElementNames as EN
+import BasicTools.FE.ElementNames as EN
 
 #  for ABAQUS input file
 
@@ -16,7 +16,7 @@ InpNumber['S3'] = EN.Triangle_3
 
 def ReadInp(fileName=None,string=None):
     from cStringIO import StringIO
-    import OTTools.FE.UnstructuredMesh as UM
+    import BasicTools.FE.UnstructuredMesh as UM
 
     if fileName is not None:
         f = open(fileName, 'r')
@@ -112,7 +112,7 @@ def CheckIntegrity():
 
     res = ReadInp(string=data)
 
-    from OTTools.Helpers.Tests import TestTempDir
+    from BasicTools.Helpers.Tests import TestTempDir
     tempdir = TestTempDir.GetTempPath()
     f =open(tempdir+"test.inp","w")
     f.write(data)

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-from OTTools.IO.WriterBase import WriterBase as WriterBase
-import OTTools.FE.ElementNames as EN
+from BasicTools.IO.WriterBase import WriterBase as WriterBase
+import BasicTools.FE.ElementNames as EN
 import numpy as np
 
 def WriteMeshToStl(filename,mesh, normals= None):
@@ -75,8 +75,8 @@ def CheckIntegrity():
             endloop
           endfacet
         endsolid"""
-    from OTTools.IO.StlReader import ReadStl as ReadStl
-    from OTTools.Helpers.Tests import TestTempDir
+    from BasicTools.IO.StlReader import ReadStl as ReadStl
+    from BasicTools.Helpers.Tests import TestTempDir
 
     res,normals = ReadStl(string=data)
     tempdir = TestTempDir.GetTempPath()

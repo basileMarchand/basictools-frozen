@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import OTTools.FE.UnstructuredMesh  as UM
+import BasicTools.FE.UnstructuredMesh  as UM
 import numpy as np
 
 
@@ -16,7 +16,7 @@ def ReadResult(nbNodes, fileName=None, string=None):
     temperature = np.empty((nbNodes,0),dtype=np.double)
 
     string = StringIO(string)
-    
+
     for line in string:
        l = line.strip('\n').lstrip().rstrip()
        if len(l) == 0: continue
@@ -38,19 +38,19 @@ def ReadResult(nbNodes, fileName=None, string=None):
                newTemp[index] = float(s[0])
                line = string.readline()
                l = line.strip('\n').lstrip().rstrip()
-               if len(l) == 0: continue     
+               if len(l) == 0: continue
                if l.find("-1") > -1:
                    break
            temperature = np.hstack((temperature, newTemp))
            continue
-        
+
     return timeSteps, temperature
 
 
 
 def CheckIntegrity():
 
-    __teststring = """
+    __teststring = u"""
     -1
     55
 TEMPERATURE
@@ -94,6 +94,6 @@ ProCAST RESULTS, ESI
     nbNodes = 4
     timeSteps, temperature = ReadResult(nbNodes, string=__teststring)
     return 'ok'
-    
+
 if __name__ == '__main__':
-    print(CheckIntegrity())# pragma: no cover   
+    print(CheckIntegrity())# pragma: no cover

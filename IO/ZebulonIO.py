@@ -236,9 +236,9 @@ def WriteInp(data,output= None):
         output.write('****return\n')
 
 def CheckIntegrity():
-    import OTTools.IO.ZebulonIO as ZIO
-    import OTTools.Helpers.Tests as T
-    import OTTools.TestData as T2
+    import BasicTools.IO.ZebulonIO as ZIO
+    import BasicTools.Helpers.Tests as T
+    import BasicTools.TestData as T2
     dataPath = T2.GetTestDataPath()
     ZIO.ReadMat(dataPath+'Zmatrix')
     ZIO.ReadMat(dataPath+'Zmatrix', True)

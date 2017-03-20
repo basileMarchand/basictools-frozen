@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 
-from OTTools.Helpers.TextFormatHelper import TFormat
-from OTTools.IO.WriterBase import WriterBase as WriterBase
+from BasicTools.Helpers.TextFormatHelper import TFormat
+from BasicTools.IO.WriterBase import WriterBase as WriterBase
 
 import numpy as np
 import os
-import OTTools.FE.ElementNames as EN
+import BasicTools.FE.ElementNames as EN
 
 def ArrayToString(data):
     return " ".join(str(x) for x in data)
@@ -620,7 +620,7 @@ class XdmfWriter(WriterBase):
 
 def WriteTest(tempdir,Temporal, Binary):
 
-    from OTTools.FE.ConstantRectilinearMesh import ConstantRectilinearMesh
+    from BasicTools.FE.ConstantRectilinearMesh import ConstantRectilinearMesh
 
     myMesh = ConstantRectilinearMesh()
     myMesh.SetDimensions([2,3,4]);
@@ -643,10 +643,10 @@ def WriteTest(tempdir,Temporal, Binary):
     writer.Close()
 
 def CheckIntegrity():
-    from OTTools.Helpers.Tests import TestTempDir
-    from OTTools.FE.ConstantRectilinearMesh import ConstantRectilinearMesh
-    import OTTools.FE.UnstructuredMesh as UM
-    from OTTools.FE.UnstructuredMeshTools import CreateMeshOfTriangles
+    from BasicTools.Helpers.Tests import TestTempDir
+    from BasicTools.FE.ConstantRectilinearMesh import ConstantRectilinearMesh
+    import BasicTools.FE.UnstructuredMesh as UM
+    from BasicTools.FE.UnstructuredMeshTools import CreateMeshOfTriangles
 
     tempdir = TestTempDir.GetTempPath()
 
@@ -755,7 +755,7 @@ def CheckIntegrity():
     writer.Close()
 
 
-    from OTTools.IO.XdmfReader import XdmfReader  as XR
+    from BasicTools.IO.XdmfReader import XdmfReader  as XR
     f = XR(filename = tempdir+'testdirect.xdmf' )
     f.lazy = False;
     f.Read();
@@ -767,7 +767,7 @@ def CheckIntegrity():
     #os.system('cmd /C C:\Users\D584808\Apps\ParaView-5.0.1-Qt4-OpenGL2-Windows-64bit\\bin\paraview.exe ' + 'testdirect.xdmf')
 
     print("Structured Mesh in 3D")
-    import OTTools.FE.StructuredMesh as SM
+    import BasicTools.FE.StructuredMesh as SM
 
     SM3D = SM.StructuredMesh();
 
@@ -778,7 +778,7 @@ def CheckIntegrity():
                                                                        CellFieldsNames = [ "TestV"] );
     print(tempdir)
 
-    from OTTools.IO.XdmfReader import XdmfReader  as XR
+    from BasicTools.IO.XdmfReader import XdmfReader  as XR
     f = XR(filename = tempdir+'StructuredMesh.xdmf' )
     f.lazy = False;
     f.Read();
@@ -791,7 +791,7 @@ def CheckIntegrity():
 if __name__ == '__main__':
     print(CheckIntegrity()) # pragma: no cover
 
-    #import OTTools.IO.AscReader as AR
+    #import BasicTools.IO.AscReader as AR
     #m =  AR.ReadAsc(fileName='C:\\Users\\D584808\\Documents\\Projects\\Python\\Topotools\\SUPPORT_VERIN_DATA1.ASC')
     #WriteMeshToXdmf('FromASCReader.xdmf',m ,Binary= False)
 

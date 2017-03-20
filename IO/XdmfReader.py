@@ -6,8 +6,8 @@ Created on Fri Mar 11 09:47:58 2016
 """
 
 
-from OTTools.Helpers.TextFormatHelper import TFormat
-from OTTools.IO.XdmfTools import FieldNotFound
+from BasicTools.Helpers.TextFormatHelper import TFormat
+from BasicTools.IO.XdmfTools import FieldNotFound
 import numpy as np
 
 
@@ -575,7 +575,7 @@ def GetTensorRepOfField(domain,fieldname):
     Get The tensor representation of a field in a xdmf domain, for the moment
     works for Cannonic and Train Tensor formats
     """
-    import OTTools.T.Formats as st
+    import BasicTools.T.Formats as st
     # we check the nature of the field (info in the parent domain)
     fieldtype = 'CP'
     for info in domain.informations:
@@ -736,7 +736,7 @@ def CheckIntegrity():
 
 
 def Example1():
-    import OTTools.TestData as test
+    import BasicTools.TestData as test
     # Create a Reader
     reader = XdmfReader(filename = test.GetTestDataPath() + "Unstructured.xmf")
     # Do the reading (only the xml part, to read all the data set lazy to False)
@@ -769,7 +769,7 @@ def Example1():
 
 
 def Example2():
-    import OTTools.TestData as test
+    import BasicTools.TestData as test
 
     reader = XdmfReader(filename = test.GetTestDataPath() + "TensorTestData.xmf")
 

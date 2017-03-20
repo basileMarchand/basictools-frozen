@@ -2,7 +2,7 @@
 
 # -*- coding: utf-8 -*-
 
-from OTTools.FE.MeshBase import MeshBase
+from BasicTools.FE.MeshBase import MeshBase
 import numpy as np
 
 class StructuredMesh(MeshBase):

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-import OTTools.FE.UnstructuredMesh  as UM
+import BasicTools.FE.UnstructuredMesh  as UM
 import numpy as np
-import OTTools.FE.ElementNames as EN
+import BasicTools.FE.ElementNames as EN
 
 
 gmshNumber = {}
@@ -146,7 +146,7 @@ this is a comment
     print(res.GetElementsOfType('bar2').connectivity)
 
 
-    from OTTools.Helpers.Tests import TestTempDir
+    from BasicTools.Helpers.Tests import TestTempDir
     newFileName = TestTempDir().GetTempPath()+"mshFile"
     open(newFileName,'w').write(__teststring)
     res = ReadGmsh(fileName=newFileName)

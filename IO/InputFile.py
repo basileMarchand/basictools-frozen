@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from OTTools.Helpers.BaseOutputObject import BaseOutputObject
+from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 
 class InputFile(BaseOutputObject):
     def __init__(self):
@@ -24,7 +24,7 @@ def CheckIntegrity():
 
     data = """ this is an input file """
 
-    from OTTools.Helpers.Tests import TestTempDir
+    from BasicTools.Helpers.Tests import TestTempDir
     tempdir = TestTempDir.GetTempPath()
     f =open(tempdir+"test_input_data","w")
     f.write(data)

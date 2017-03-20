@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-from OTTools.FE.MeshBase import Tag as Tag
-from OTTools.IO.WriterBase import WriterBase as WriterBase
+from BasicTools.FE.MeshBase import Tag as Tag
+from BasicTools.IO.WriterBase import WriterBase as WriterBase
 import numpy as np
-import OTTools.FE.ElementNames as EN
+import BasicTools.FE.ElementNames as EN
 
 GeofName = {}
 GeofSetName= {}
@@ -50,7 +50,7 @@ class GeofWriter(WriterBase):
 
     def Write(self,meshObject,useOriginalId=False,lowerDimElementsAsSets=False):
 
-        self.filePointer.write("% This file has been writen by the python routine GeofWriter of the OTTools package\n")
+        self.filePointer.write("% This file has been writen by the python routine GeofWriter of the BasicTools package\n")
         self.filePointer.write("% For any question about this routine, please contact SAFRAN TECH Pole M&S Team OT\n")
 
         self.filePointer.write("***geometry\n");
@@ -200,9 +200,9 @@ class GeofWriter(WriterBase):
         self.filePointer.write("****return \n")
 
 def CheckIntegrity():
-    import OTTools.FE.UnstructuredMesh as UM
+    import BasicTools.FE.UnstructuredMesh as UM
 
-    from OTTools.Helpers.Tests import TestTempDir
+    from BasicTools.Helpers.Tests import TestTempDir
 
     tempdir = TestTempDir.GetTempPath()
     print(tempdir)

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
-import OTTools.FE.ElementNames as EN
+import BasicTools.FE.ElementNames as EN
 
 GeofNumber = {}
 
@@ -18,7 +18,7 @@ GeofNumber['t3']   = EN.Triangle_3
 
 def ReadGeof(fileName=None,string=None):
     from cStringIO import StringIO
-    import OTTools.FE.UnstructuredMesh as UM
+    import BasicTools.FE.UnstructuredMesh as UM
 
     if fileName is not None:
         f = open(fileName, 'r')
@@ -146,7 +146,7 @@ def CheckIntegrity():
 
     res = ReadGeof(string=data)
 
-    from OTTools.Helpers.Tests import TestTempDir
+    from BasicTools.Helpers.Tests import TestTempDir
     newFileName = TestTempDir().GetTempPath()+"GeofFile"
     open(newFileName,'w').write(data)
     res = ReadGeof(fileName=newFileName)

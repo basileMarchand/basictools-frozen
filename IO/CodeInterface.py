@@ -1,7 +1,7 @@
 # -*-coding:Latin-1 -*
 import subprocess
 import os
-from OTTools.Helpers.BaseOutputObject import BaseOutputObject
+from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 
 
 class Interface(BaseOutputObject):
@@ -113,9 +113,9 @@ class Interface(BaseOutputObject):
 
 
 def CheckIntegrity():
-    import OTTools.IO.CodeInterface as CI
-    import OTTools.Helpers.Tests as T
-    import OTTools.TestData as T2
+    import BasicTools.IO.CodeInterface as CI
+    import BasicTools.Helpers.Tests as T
+    import BasicTools.TestData as T2
     dataPath = T2.GetTestDataPath()
 
     interface = CI.Interface(dataPath)

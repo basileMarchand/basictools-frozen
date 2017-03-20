@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-from OTTools.FE.MeshBase import MeshBase
-from OTTools.FE.Hexa8Cuboid import Hexa8Cuboid
-from OTTools.FE.Quad4Rectangle import Quad4Rectangle
+from BasicTools.FE.MeshBase import MeshBase
+from BasicTools.FE.Hexa8Cuboid import Hexa8Cuboid
+from BasicTools.FE.Quad4Rectangle import Quad4Rectangle
 
 import numpy as np
 from scipy.sparse import coo_matrix
@@ -301,12 +301,12 @@ class ConstantRectilinearMesh(MeshBase):
             self.connectivity = np.empty((self.GetNumberOfElements(),2**self.GetDimensionality() ), dtype=np.int)
             for i in xrange(self.GetNumberOfElements()):
                 self.connectivity[i,:] = self.GetConnectivityForElement(i)
-        from OTTools.FE.UnstructuredMesh import ElementsContainer as ElementsContainer
-        import OTTools.FE.ElementNames
+        from BasicTools.FE.UnstructuredMesh import ElementsContainer as ElementsContainer
+        import BasicTools.FE.ElementNames
         self.elements = {}
-        self.elements[OTTools.FE.ElementNames.Hexaedron_8 ] = ElementsContainer(OTTools.FE.ElementNames.Hexaedron_8)
-        self.elements[OTTools.FE.ElementNames.Hexaedron_8 ].connectivity = self.connectivity
-        self.elements[OTTools.FE.ElementNames.Hexaedron_8 ].tags =  self.elemTags
+        self.elements[BasicTools.FE.ElementNames.Hexaedron_8 ] = ElementsContainer(BasicTools.FE.ElementNames.Hexaedron_8)
+        self.elements[BasicTools.FE.ElementNames.Hexaedron_8 ].connectivity = self.connectivity
+        self.elements[BasicTools.FE.ElementNames.Hexaedron_8 ].tags =  self.elemTags
         return self.connectivity
 
 

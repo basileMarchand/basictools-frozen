@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
-from OTTools.FE.MaterialHelp import *
-from OTTools.FE.FElement import FElement
-from OTTools.FE.FemHelp import Integral
-import OTTools.FE.ElementNames as ElementsNames
+from BasicTools.FE.MaterialHelp import *
+from BasicTools.FE.FElement import FElement
+from BasicTools.FE.FemHelp import Integral
+import BasicTools.FE.ElementNames as ElementsNames
 
 
 class Hexa8Cuboid(FElement):

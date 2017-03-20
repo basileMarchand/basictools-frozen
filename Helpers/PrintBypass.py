@@ -84,7 +84,7 @@ class PrintBypass():
 def CheckIntegrity():
     #carefull, this class is used during the test.
     #do not use this class inside a CheckIntegrity
-    from OTTools.Helpers.Tests import TestTempDir
+    from BasicTools.Helpers.Tests import TestTempDir
     fname = TestTempDir.GetTempPath() + "sink"
     with PrintBypass() as f:
         print("print Before ToSink")

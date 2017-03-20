@@ -46,7 +46,7 @@ def LoadData(filename):
 def CheckIntegrity():
     """ AutoTest routine """
 
-    from  OTTools.Helpers.Tests import TestTempDir
+    from  BasicTools.Helpers.Tests import TestTempDir
     # create a temp file 
     tempdir = TestTempDir.GetTempPath()
     try :

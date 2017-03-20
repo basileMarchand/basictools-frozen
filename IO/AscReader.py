@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
-import OTTools.FE.UnstructuredMesh as UM
-import OTTools.FE.ElementNames as EN
-from OTTools.Helpers.BaseOutputObject import BaseOutputObject
+import BasicTools.FE.UnstructuredMesh as UM
+import BasicTools.FE.ElementNames as EN
+from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 
 AscNumber = {}
 
@@ -173,7 +173,7 @@ garbage
         raise
 
     #check from file
-    from OTTools.Helpers.Tests import TestTempDir
+    from BasicTools.Helpers.Tests import TestTempDir
     newFileName = TestTempDir().GetTempPath()+"AscFile"
     open(newFileName,'w').write(__checkintegritydata)
     res = ReadAsc(fileName = newFileName)

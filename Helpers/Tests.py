@@ -16,7 +16,7 @@ class TestTempDir(object):
             return cls.path
         import tempfile
         import os
-        cls.path = tempfile.mkdtemp(prefix="OTTools_Test_Directory_",suffix="_safe_to_delete") + os.sep
+        cls.path = tempfile.mkdtemp(prefix="BasicTools_Test_Directory_",suffix="_safe_to_delete") + os.sep
         return TestTempDir.path
 
     #  we cant test this funciotn, because the temp path will be delete
@@ -41,7 +41,7 @@ class TestTempDir(object):
 
 def __RunAndCheck(lis,bp,stopAtFirstError):# pragma: no cover
 
-    from OTTools.Helpers.TextFormatHelper import TFormat
+    from BasicTools.Helpers.TextFormatHelper import TFormat
     import sys
     import time
 
@@ -141,7 +141,7 @@ def TestAll(modulestotreat=['ALL'], fulloutput=False, stopAtFirstError= False, c
        cov.start()
 
     # calls to print, ie import module1
-    from OTTools.Helpers.PrintBypass import PrintBypass
+    from BasicTools.Helpers.PrintBypass import PrintBypass
 
     print("Runnig Tests : ")
     print("--- Begin Test ---")
@@ -199,7 +199,7 @@ def CheckIntegrity():
 if __name__ == '__main__':# pragma: no cover
     import sys, getopt
     if len(sys.argv) == 1:
-        TestAll(modulestotreat=['ALL'],extraToolsBoxs= ["OTTools"], fulloutput=False,coverage=False)# pragma: no cover
+        TestAll(modulestotreat=['ALL'],extraToolsBoxs= ["BasicTools"], fulloutput=False,coverage=False)# pragma: no cover
     else:
       try:
           opts, args = getopt.getopt(sys.argv[1:],"hcfse:m:")
@@ -245,7 +245,7 @@ if __name__ == '__main__':# pragma: no cover
          modulestotreat.append("ALL")
 
       if len(extraToolsBoxs) == 0:
-         extraToolsBoxs.append("OTTools")
+         extraToolsBoxs.append("BasicTools")
 
 
       TestAll(  modulestotreat=modulestotreat,

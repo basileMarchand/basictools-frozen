@@ -3,9 +3,9 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
-import OTTools.FE.UnstructuredMesh as UM
-from OTTools.IO.ReaderBase import ReaderBase
-import OTTools.FE.ElementNames as ElementNames
+import BasicTools.FE.UnstructuredMesh as UM
+from BasicTools.IO.ReaderBase import ReaderBase
+import BasicTools.FE.ElementNames as ElementNames
 
 
 class FemReader(ReaderBase):
@@ -136,13 +136,13 @@ def ReadFem(fileName=None,string=None):
 def CheckIntegrity(GUI = False):
 
 
-    from OTTools.Helpers.Tests import TestTempDir
+    from BasicTools.Helpers.Tests import TestTempDir
     newFileName = "/home/fbordeu-weld/PythonTools/cas_application_ASL/cas_application_ASL.fem"
 
     res = ReadFem(fileName = newFileName)
     print(res.nodes)
     print(res)
-    from OTTools.IO.XdmfWriter import WriteMeshToXdmf
+    from BasicTools.IO.XdmfWriter import WriteMeshToXdmf
     WriteMeshToXdmf(TestTempDir().GetTempPath()+"FemReaderTest.xdmf",res)
     print(TestTempDir().GetTempPath())
 

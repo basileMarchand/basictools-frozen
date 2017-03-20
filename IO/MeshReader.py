@@ -4,9 +4,9 @@
 import struct
 import numpy as np
 
-import OTTools.FE.UnstructuredMesh  as UM
-import OTTools.FE.ElementNames as EN
-from OTTools.IO.ReaderBase import ReaderBase
+import BasicTools.FE.UnstructuredMesh  as UM
+import BasicTools.FE.ElementNames as EN
+from BasicTools.IO.ReaderBase import ReaderBase
 # for ascii files
 meditName = {}
 meditName['Edges'] = EN.Bar_2
@@ -600,7 +600,7 @@ class MeshReader(ReaderBase):
 def CheckIntegrity():
 
 
-    __teststring = """
+    __teststring = u"""
 MeshVersionFormatted
 2
 
@@ -619,7 +619,7 @@ End
 """
 
 
-    __teststringField="""
+    __teststringField=u"""
 MeshVersionFormatted 2
 
 Dimension 3
@@ -639,7 +639,7 @@ End
     res = ReadMesh(string=__teststring)
     print(res)
 
-    from OTTools.Helpers.Tests import TestTempDir
+    from BasicTools.Helpers.Tests import TestTempDir
     newFileName = TestTempDir().GetTempPath()+"mshFile.mesh"
     open(newFileName,'w').write(__teststring)
     res = ReadMesh(fileName=newFileName)
@@ -649,7 +649,7 @@ End
     resfield = ReadMesh(fileName=newFileName)
 
 
-    from OTTools.IO.MeshWriter import WriteMesh as WriteMesh
+    from BasicTools.IO.MeshWriter import WriteMesh as WriteMesh
 
     newFileName = TestTempDir().GetTempPath()+"mshFile.meshb"
     WriteMesh(newFileName, res,binary=True)
@@ -660,7 +660,7 @@ End
 
     sol = MeshReader().ReadExtraField(TestTempDir().GetTempPath()+"mshFile.sol")
     print(sol)
-    from OTTools.IO.MeshWriter import MeshWriter as MeshWriter
+    from BasicTools.IO.MeshWriter import MeshWriter as MeshWriter
     mw = MeshWriter()
     mw.SetBinary(True)
     mw.SetFileName(TestTempDir().GetTempPath()+"mshFile.solb")
@@ -673,6 +673,6 @@ End
     return 'ok'
 
 if __name__ == '__main__':# pragma: no cover
-    from OTTools.Helpers.BaseOutputObject import BaseOutputObject
+    from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
     BaseOutputObject.SetGlobalDebugMode(True)
     print(CheckIntegrity())# pragma: no cover

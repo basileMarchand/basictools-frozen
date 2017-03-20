@@ -8,10 +8,10 @@ Created on Wed Jun 15 10:58:44 2016
 # -*- coding: utf-8 -*-
 
 import numpy as np
-from OTTools.FE.FElement import FElement
-from OTTools.FE.FemHelp import Integral
-import OTTools.FE.MaterialHelp as MH
-import OTTools.FE.ElementNames as ElementsNames
+from BasicTools.FE.FElement import FElement
+from BasicTools.FE.FemHelp import Integral
+import BasicTools.FE.MaterialHelp as MH
+import BasicTools.FE.ElementNames as ElementsNames
 
 
 class Quad4Rectangle(FElement):

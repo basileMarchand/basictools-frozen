@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-from OTTools.Helpers.BaseOutputObject import BaseOutputObject
-from OTTools.Helpers.TextFormatHelper import TFormat as TFormat
+from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
+from BasicTools.Helpers.TextFormatHelper import TFormat as TFormat
 
 class WriterBase(BaseOutputObject):
     def __init__(self, fileName = None):

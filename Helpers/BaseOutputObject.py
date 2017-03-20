@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from OTTools.Helpers.TextFormatHelper import TFormat
+from BasicTools.Helpers.TextFormatHelper import TFormat
 
 """ Base object to Help input and output """
 

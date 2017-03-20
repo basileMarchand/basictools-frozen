@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-import OTTools.FE.ElementNames as EN
+import BasicTools.FE.ElementNames as EN
 import numpy as np
 
 def ReadStl(fileName=None,string=None):
     from cStringIO import StringIO
-    import OTTools.FE.UnstructuredMesh as UM
+    import BasicTools.FE.UnstructuredMesh as UM
 
     #from collections import OrderedDict as OD
 
@@ -110,7 +110,7 @@ def CheckIntegrity():
     if res.GetNumberOfNodes() != 12: raise Exception()
     if res.GetNumberOfElements() != 4: raise Exception()
 
-    from OTTools.Helpers.Tests import TestTempDir
+    from BasicTools.Helpers.Tests import TestTempDir
     tempdir = TestTempDir.GetTempPath()
     f =open(tempdir+"test_input_stl_data.stl","w")
     f.write(data)

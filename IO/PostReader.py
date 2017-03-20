@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from OTTools.IO.ReaderBase import ReaderBase
+from BasicTools.IO.ReaderBase import ReaderBase
 import re
 import numpy as np
 
@@ -49,7 +49,7 @@ class PostReader(ReaderBase):
         return res
 
 def CheckIntegrity():
-    string = """
+    string = u"""
 # Volume
 1.000000000000000e+00 2.536237549886229e+05
 
@@ -67,6 +67,6 @@ def CheckIntegrity():
 
 
 if __name__ == '__main__':
-    from OTTools.Helpers.BaseOutputObject import BaseOutputObject# pragma: no cover
+    from BasicTools.Helpers.BaseOutputObject import BaseOutputObject# pragma: no cover
     BaseOutputObject.SetGlobalDebugMode(True)# pragma: no cover
     print(CheckIntegrity())# pragma: no cover

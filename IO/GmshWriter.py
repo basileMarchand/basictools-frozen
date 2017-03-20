@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-from OTTools.FE.MeshBase import Tag as Tag
-from OTTools.IO.WriterBase import WriterBase as WriterBase
+from BasicTools.FE.MeshBase import Tag as Tag
+from BasicTools.IO.WriterBase import WriterBase as WriterBase
 import numpy as np
-import OTTools.FE.ElementNames as EN
+import BasicTools.FE.ElementNames as EN
 
 gmshName = {}
 gmshName[EN.Bar_2]         = '1'
@@ -90,9 +90,9 @@ class GmshWriter(WriterBase):
         self.filePointer.write("$EndElements\n")
 
 def CheckIntegrity():
-    import OTTools.FE.UnstructuredMesh as UM
+    import BasicTools.FE.UnstructuredMesh as UM
 
-    from OTTools.Helpers.Tests import TestTempDir
+    from BasicTools.Helpers.Tests import TestTempDir
 
     tempdir = TestTempDir.GetTempPath()
 

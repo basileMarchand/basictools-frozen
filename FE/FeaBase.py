@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 
-from OTTools.Helpers.BaseOutputObject import BaseOutputObject
+from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 
 class FeaBase(BaseOutputObject):
      def __init__(self,dim=3, size= 1):

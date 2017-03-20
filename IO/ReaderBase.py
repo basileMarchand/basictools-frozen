@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 import os
 
-from OTTools.Helpers.BaseOutputObject import BaseOutputObject
-#from OTTools.Helpers.TextFormatHelper import TFormat as TFormat
+from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
+#from BasicTools.Helpers.TextFormatHelper import TFormat as TFormat
 
 
 class ReaderBase(BaseOutputObject):

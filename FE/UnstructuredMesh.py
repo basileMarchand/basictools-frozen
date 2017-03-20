@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 
-from OTTools.FE.MeshBase import MeshBase
-from OTTools.FE.MeshBase import Tag
-from OTTools.FE.MeshBase import Tags
-import OTTools.FE.ElementNames as ElementNames
-from OTTools.Helpers.BaseOutputObject import BaseOutputObject
+from BasicTools.FE.MeshBase import MeshBase
+from BasicTools.FE.MeshBase import Tag
+from BasicTools.FE.MeshBase import Tags
+import BasicTools.FE.ElementNames as ElementNames
+from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 
 
 class ElementsContainer(BaseOutputObject):
@@ -201,8 +201,8 @@ class UnstructuredMesh(MeshBase):
         return res
 
 def CheckIntegrity():
-    from OTTools.FE.UnstructuredMeshTools import CreateMeshOfTriangles
-    from OTTools.FE.UnstructuredMeshTools import CreateMeshFromConstantRectilinearMesh
+    from BasicTools.FE.UnstructuredMeshTools import CreateMeshOfTriangles
+    from BasicTools.FE.UnstructuredMeshTools import CreateMeshFromConstantRectilinearMesh
 
     res = CreateMeshOfTriangles([[0,0,0],[1,2,3]], [[0,2,3]])
 

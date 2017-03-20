@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
-from OTTools.IO.ReaderBase import ReaderBase
-import OTTools.FE.ElementNames as EN
-import OTTools.FE.UnstructuredMesh  as UM
+from BasicTools.IO.ReaderBase import ReaderBase
+import BasicTools.FE.ElementNames as EN
+import BasicTools.FE.UnstructuredMesh  as UM
 
 
 def ReadGCode(fileName=None,string=None ):
@@ -90,7 +90,7 @@ class GReader(ReaderBase):
         self.output = res
 
 def CheckIntegrity():
-    from OTTools.TestData import GetTestDataPath
+    from BasicTools.TestData import GetTestDataPath
 
     res = ReadGCode(fileName=GetTestDataPath()+ "GCodeTest.gcode" )
 

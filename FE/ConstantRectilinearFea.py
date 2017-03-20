@@ -8,11 +8,11 @@ import scipy.sparse.linalg as linalg
 import scipy.linalg as denselinalg
 
 import  scipy.sparse as sps
-from OTTools.FE.Hexa8Cuboid import Hexa8Cuboid
-from OTTools.FE.Quad4Rectangle import  Quad4Rectangle
+from BasicTools.FE.Hexa8Cuboid import Hexa8Cuboid
+from BasicTools.FE.Quad4Rectangle import  Quad4Rectangle
 
-import OTTools.FE.FeaBase as FeaBase
-from OTTools.Helpers.BaseOutputObject import BaseOutputObject
+import BasicTools.FE.FeaBase as FeaBase
+from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 
 class BundaryCondition(BaseOutputObject):
     def __init__(self,dim=3, size= 1):
@@ -372,11 +372,11 @@ def node_averaged_element_field(element_field,support):
 def CheckIntegrityThermal3D():
     print('----------------------------  Thermal3D -------------------------------------------------')
 
-    from OTTools.FE.Hexa8Cuboid import Hexa8Cuboid
-    import OTTools.FE.ConstantRectilinearMesh as CRM
-    import OTTools.IO.XdmfWriter  as XdmfWriter
+    from BasicTools.FE.Hexa8Cuboid import Hexa8Cuboid
+    import BasicTools.FE.ConstantRectilinearMesh as CRM
+    import BasicTools.IO.XdmfWriter  as XdmfWriter
     import time
-    from OTTools.Helpers.Tests import TestTempDir
+    from BasicTools.Helpers.Tests import TestTempDir
 
     myMesh = CRM.ConstantRectilinearMesh()
     nx = 11; ny = 12; nz = 13;
@@ -463,10 +463,10 @@ def CheckIntegrityThermal3D():
 def CheckIntegrityDep3D():
 
     import time
-    import OTTools.FE.ConstantRectilinearMesh as CRM
-    import OTTools.IO.XdmfWriter  as XdmfWriter
+    import BasicTools.FE.ConstantRectilinearMesh as CRM
+    import BasicTools.IO.XdmfWriter  as XdmfWriter
 
-    from OTTools.Helpers.Tests import TestTempDir
+    from BasicTools.Helpers.Tests import TestTempDir
 
     print('------------------------------- Dep3D ----------------------------------------------')
 
@@ -524,11 +524,11 @@ def CheckIntegrityDep3D():
         raise   # pragma: no cover
 
 def CheckIntegrityThermal2D():
-    import OTTools.FE.ConstantRectilinearMesh as CRM
-    from OTTools.FE.Quad4Rectangle import Quad4Rectangle
-    import OTTools.IO.XdmfWriter  as XdmfWriter
+    import BasicTools.FE.ConstantRectilinearMesh as CRM
+    from BasicTools.FE.Quad4Rectangle import Quad4Rectangle
+    import BasicTools.IO.XdmfWriter  as XdmfWriter
     import time
-    from OTTools.Helpers.Tests import TestTempDir
+    from BasicTools.Helpers.Tests import TestTempDir
 
     print('----------------------------  Thermal2D -------------------------------------------------')
 
@@ -609,10 +609,10 @@ def CheckIntegrityThermal2D():
 
 def CheckIntegrityDep2D():
 
-    import OTTools.FE.ConstantRectilinearMesh as CRM
-    import OTTools.IO.XdmfWriter  as XdmfWriter
+    import BasicTools.FE.ConstantRectilinearMesh as CRM
+    import BasicTools.IO.XdmfWriter  as XdmfWriter
     import time
-    from OTTools.Helpers.Tests import TestTempDir
+    from BasicTools.Helpers.Tests import TestTempDir
 
     print('----------------------- 2D dep ------------------------------------------------------')
     myMesh = CRM.ConstantRectilinearMesh(2)
