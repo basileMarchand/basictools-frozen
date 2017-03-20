@@ -8,7 +8,7 @@ Created on Fri Mar 11 09:47:58 2016
 
 from OTTools.Helpers.TextFormatHelper import TFormat
 from OTTools.IO.XdmfTools import FieldNotFound
-
+import numpy as np
 
 
 class Xdmfbase(object):
@@ -104,6 +104,7 @@ class XdmfGrid(Xdmfbase):
 
     def ReadAttributes(self,attrs):
         self.Name = self.ReadAttribute(attrs,'Name')
+        self.GridType = self.ReadAttribute(attrs,'CollectionType',default="Uniform")
 
     def HasField(self,name):
         for a in self.attributes:
@@ -259,9 +260,21 @@ class XdmfTopology(Xdmfbase):
 
     def ReadAttributes(self,attrs):
         import numpy as np
-        self.Dimensions = np.array(self.ReadAttribute(attrs,'Dimensions').split(), dtype='int')[::-1]
 
-        self.Type = self.ReadAttribute(attrs,'Type')
+        self.Type = self.ReadAttribute(attrs,'Type', default=-1)
+        if self.Type is -1:
+            self.Type = self.ReadAttribute(attrs,'TopologyType')
+
+        if self.Type != "Mixed":
+            self.Dimensions = np.array(self.ReadAttribute(attrs,'Dimensions').split(), dtype='int')[::-1]
+
+    def GetConnectivity(self):
+
+        if self.Type != "3DCoRectMesh":
+            return self.dataitems[0].GetData()
+        else:
+            raise Exception# pragma: no cover
+
 
     def GetDimensions(self):
             return self.Dimensions
@@ -292,6 +305,12 @@ class XdmfGeometry(Xdmfbase):
         if self.Type == "ORIGIN_DXDYDZ":
             #self.Read()
             return self.dataitems[1].GetData()[::-1]
+        else:
+            raise Exception# pragma: no cover
+
+    def GetNodes(self):
+        if self.Type == "XYZ":
+            return self.dataitems[0].GetData()
         else:
             raise Exception# pragma: no cover
 
@@ -326,6 +345,21 @@ class XdmfAttribute(Xdmfbase):
         TFormat.DI();
         return res
 
+class XdmfTime(Xdmfbase):
+    """  XdmfTime class: to store the data over the grids """
+
+    def __init__(self):
+        self.Value = None;
+
+    def ReadAttributes(self,attrs):
+        self.Value = np.array(self.ReadAttribute(attrs,'Value').split(), dtype=np.float)
+
+    def __str__(self):
+        res = TFormat.GetIndent() + 'XdmfTime'
+        TFormat.II()
+        res +=TFormat.GetIndent() + 'Value : '+ str(self.Value) +  '\n'
+        TFormat.DI();
+        return res
 
 class XdmfDataItem(Xdmfbase):
     """ XdmfDataItem class : class to manage the reading of the data Heavy and light """
@@ -506,6 +540,10 @@ class XdmfReader(xml.sax.ContentHandler):
             res = XdmfAttribute()
             res.ReadAttributes(attrs)
             father.attributes.append(res)
+        elif name == "Time":
+            res = XdmfTime()
+            res.ReadAttributes(attrs)
+
         else:
             raise Exception("Unkown tag :  '"+ name +"' Sorry!") # pragma: no cover
 
@@ -751,3 +789,10 @@ def Example2():
 
 if __name__ == '__main__':
     CheckIntegrity() # pragma: no cover
+    a = XdmfReader("/data/fbordeu/conforme/Bar.xmf")
+    a.Read()
+    grid = a.xdmf.GetDomain(0).GetGrid(-1)
+    #print(grid.GridType)
+    print(grid.geometry.GetNodes()[0,:])
+    print(grid.topology.GetConnectivity())
+

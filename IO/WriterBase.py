@@ -55,6 +55,7 @@ class WriterBase(BaseOutputObject):
             self._isOpen = False
         else :
             self.PrintVerbose(TFormat.InRed("File Not Open"))
+            raise
 
 def CheckIntegrity():
 
