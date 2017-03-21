@@ -39,7 +39,7 @@ class TestTempDir(object):
         import os
         cls.path = os.path.abspath(path+os.sep) + os.sep
 
-def __RunAndCheck(lis,bp,stopAtFirstError):# pragma: no cover
+def __RunAndCheck(lis,bp,stopAtFirstError,dryrun):# pragma: no cover
 
     from BasicTools.Helpers.TextFormatHelper import TFormat
     import sys
@@ -47,7 +47,7 @@ def __RunAndCheck(lis,bp,stopAtFirstError):# pragma: no cover
 
     res = {}
     for name in lis:
-        bp.Print(TFormat.InBlue(TFormat.Center( "Running Test " +name ,width=60 ) ))
+        bp.Print(TFormat.InBlue(TFormat.Center( "Running Test " +name ,width=80 ) ))
         if lis[name] is None:
             bp.Print(TFormat().InRed(TFormat().GetIndent() + 'Sub Module "' + name + '" does not have the CheckIntegrity function'))
             continue
@@ -56,7 +56,10 @@ def __RunAndCheck(lis,bp,stopAtFirstError):# pragma: no cover
             start_time = time.time()
             stop_time = time.time()
             #print(lis[name])
-            r = lis[name]()
+            if dryrun:
+                r = "Dry Run "
+            else:
+                r = lis[name]()
             sys.stdout.flush()
             sys.stderr.flush()
             stop_time = time.time()
@@ -80,7 +83,7 @@ def __RunAndCheck(lis,bp,stopAtFirstError):# pragma: no cover
         if r.lower() == 'ok':
             bp.Print( "OK " +name + " : %.3f seconds " %  (stop_time -start_time ))
         else:
-            bp.Print(TFormat.InRed( "NOT OK !!!! " + name )  )
+            bp.Print(TFormat.InRed( str(r) + " !!!! " + name )  )
 
     return res
 
@@ -118,7 +121,7 @@ def __tryImport(noduleName,stopAtFirstError):# pragma: no cover
     return tocheck
 
 
-def TestAll(modulestotreat=['ALL'], fulloutput=False, stopAtFirstError= False, coverage= False, extraToolsBoxs= None) :# pragma: no cover
+def TestAll(modulestotreat=['ALL'], fulloutput=False, stopAtFirstError= False, coverage= False, extraToolsBoxs= None,dryrun=False) :# pragma: no cover
 
     print("")
     print("modulestotreat   : ",end="")
@@ -131,6 +134,8 @@ def TestAll(modulestotreat=['ALL'], fulloutput=False, stopAtFirstError= False, c
     print(coverage)
     print("extraToolsBoxs: ",end="")
     print(extraToolsBoxs)
+    print("dryrun: ",end="")
+    print(dryrun)
 
     cov = None
     if coverage :
@@ -166,7 +171,7 @@ def TestAll(modulestotreat=['ALL'], fulloutput=False, stopAtFirstError= False, c
             #bp.Print(str(filtered))
             tocheck = filtered
 
-        __RunAndCheck(tocheck,bp,stopAtFirstError);
+        __RunAndCheck(tocheck,bp,stopAtFirstError,dryrun);
 
         #bp.Restore()
         #now the restore is done automaticaly
@@ -202,7 +207,7 @@ if __name__ == '__main__':# pragma: no cover
         TestAll(modulestotreat=['ALL'],extraToolsBoxs= ["BasicTools"], fulloutput=False,coverage=False)# pragma: no cover
     else:
       try:
-          opts, args = getopt.getopt(sys.argv[1:],"hcfse:m:")
+          opts, args = getopt.getopt(sys.argv[1:],"hcfsde:m:")
       except getopt.GetoptError:
           print( 'python  Tests.py -c -f -e <extraModules> -m <moduleFilter>')
           print( 'options :')
@@ -211,6 +216,7 @@ if __name__ == '__main__':# pragma: no cover
           print( '       -s    Stop at first error')
           print( '       -e    To test extra Modules (-e can be repeated)')
           print( '       -m    To filter the output by this string (-m can be repeated)')
+          print( '       -d    Dry run do not execute only show what will be executed')
           sys.exit(2)
 
       coverage = False
@@ -218,6 +224,8 @@ if __name__ == '__main__':# pragma: no cover
       stopAtFirstError = False
       extraToolsBoxs = []
       modulestotreat=[]
+      dryrun = False
+
 
 
       for opt, arg in opts:
@@ -229,6 +237,7 @@ if __name__ == '__main__':# pragma: no cover
              print( '       -s    Stop at first error')
              print( '       -e    To test extra Modules (-e can be repeated)')
              print( '       -m    To filter the output by this string (-m can be repeated)')
+             print( '       -d    Dry run do not execute only show what will be executed')
              sys.exit()
          elif opt in ("-c"):
             coverage = True
@@ -236,6 +245,8 @@ if __name__ == '__main__':# pragma: no cover
             fulloutput = True
          elif opt in ("-s"):
             stopAtFirstError = True
+         elif opt in ("-d"):
+            dryrun = True
          elif opt in ("-e"):
             extraToolsBoxs.append(arg)
          elif opt in ("-m"):
@@ -252,7 +263,8 @@ if __name__ == '__main__':# pragma: no cover
                 coverage=coverage,
                 fulloutput=fulloutput,
                 stopAtFirstError= stopAtFirstError,
-                extraToolsBoxs=extraToolsBoxs )
+                extraToolsBoxs=extraToolsBoxs,
+                dryrun= dryrun )
 
 
 
