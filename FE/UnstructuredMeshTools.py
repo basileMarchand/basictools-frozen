@@ -173,6 +173,113 @@ def QuadToLin(inputmesh, divideQuadElements=True,lineariseMiddlePoints=False):
                     quadConn = quadElement.connectivity[i,:];
                     lineelements.connectivity[initNbElem+i,:] = quadConn[[0,1,2]];
 
+        elif elementName == ElementNames.Quadrangle_8:
+
+            lineelements = res.GetElementsOfType(ElementNames.Quadrangle_4)
+            initNbElem = lineelements.GetNumberOfElements();
+            if divideQuadElements:
+                nbOfNewElements = 1
+                lineelements.Reserve(initNbElem+quadElement.GetNumberOfElements()*1)
+                lineelements.cpt = initNbElem+quadElement.GetNumberOfElements()*1
+                for i in xrange(quadElement.GetNumberOfElements()):
+                    quadConn = quadElement.connectivity[i,:];
+                    lineelements.connectivity[initNbElem+i*1+0,:] = quadConn[[0,1,2,3]];
+                    #if lineariseMiddlePoints :
+                    #    res.nodes[quadConn[4],:] = (res.nodes[quadConn[0],:] + res.nodes[quadConn[1],:] )/2
+                    #    res.nodes[quadConn[5],:] = (res.nodes[quadConn[1],:] + res.nodes[quadConn[2],:] )/2
+                    #    res.nodes[quadConn[6],:] = (res.nodes[quadConn[2],:] + res.nodes[quadConn[3],:] )/2
+                    #    res.nodes[quadConn[7],:] = (res.nodes[quadConn[3],:] + res.nodes[quadConn[0],:] )/2
+            else:
+                nbOfNewElements = 1
+                lineelements.Reserve(initNbElem+quadElement.GetNumberOfElements())
+                lineelements.cpt = initNbElem+quadElement.GetNumberOfElements()
+                for i in xrange(quadElement.GetNumberOfElements()):
+                    quadConn = quadElement.connectivity[i,:];
+                    lineelements.connectivity[initNbElem+i,:] = quadConn[[0,1,2,3]];
+
+        elif elementName == ElementNames.Hexaedron_20:
+
+            lineelements = res.GetElementsOfType(ElementNames.Hexaedron_8)
+            initNbElem = lineelements.GetNumberOfElements();
+            if divideQuadElements:
+                nbOfNewElements = 1
+                lineelements.Reserve(initNbElem+quadElement.GetNumberOfElements()*1)
+                lineelements.cpt = initNbElem+quadElement.GetNumberOfElements()*1
+                for i in xrange(quadElement.GetNumberOfElements()):
+                    quadConn = quadElement.connectivity[i,:];
+                    lineelements.connectivity[initNbElem+i*1+0,:] = quadConn[[0,1,2,3,4,5,6,7]];
+                    if lineariseMiddlePoints :
+                        res.nodes[quadConn[8],:]  = (res.nodes[quadConn[0],:] + res.nodes[quadConn[1],:] )/2
+                        res.nodes[quadConn[9],:]  = (res.nodes[quadConn[1],:] + res.nodes[quadConn[2],:] )/2
+                        res.nodes[quadConn[10],:] = (res.nodes[quadConn[2],:] + res.nodes[quadConn[3],:] )/2
+                        res.nodes[quadConn[11],:] = (res.nodes[quadConn[3],:] + res.nodes[quadConn[0],:] )/2
+                        res.nodes[quadConn[12],:] = (res.nodes[quadConn[4],:] + res.nodes[quadConn[5],:] )/2
+                        res.nodes[quadConn[13],:] = (res.nodes[quadConn[5],:] + res.nodes[quadConn[6],:] )/2
+                        res.nodes[quadConn[14],:] = (res.nodes[quadConn[6],:] + res.nodes[quadConn[7],:] )/2
+                        res.nodes[quadConn[15],:] = (res.nodes[quadConn[7],:] + res.nodes[quadConn[4],:] )/2
+                        res.nodes[quadConn[16],:] = (res.nodes[quadConn[0],:] + res.nodes[quadConn[4],:] )/2
+                        res.nodes[quadConn[17],:] = (res.nodes[quadConn[1],:] + res.nodes[quadConn[5],:] )/2
+                        res.nodes[quadConn[18],:] = (res.nodes[quadConn[2],:] + res.nodes[quadConn[6],:] )/2
+                        res.nodes[quadConn[19],:] = (res.nodes[quadConn[3],:] + res.nodes[quadConn[7],:] )/2
+            else:
+                nbOfNewElements = 1
+                lineelements.Reserve(initNbElem+quadElement.GetNumberOfElements())
+                lineelements.cpt = initNbElem+quadElement.GetNumberOfElements()
+                for i in xrange(quadElement.GetNumberOfElements()):
+                    quadConn = quadElement.connectivity[i,:];
+                    lineelements.connectivity[initNbElem+i,:] = quadConn[[0,1,2,3,4,5,6,7]];
+
+
+        elif elementName == ElementNames.Hexaedron_27:
+
+            lineelements = res.GetElementsOfType(ElementNames.Hexaedron_8)
+            initNbElem = lineelements.GetNumberOfElements();
+            if divideQuadElements:
+                nbOfNewElements = 8
+                lineelements.Reserve(initNbElem+quadElement.GetNumberOfElements()*8)
+                lineelements.cpt = initNbElem+quadElement.GetNumberOfElements()*8
+                for i in xrange(quadElement.GetNumberOfElements()):
+                    quadConn = quadElement.connectivity[i,:];
+                    lineelements.connectivity[initNbElem+i*8+0,:] = quadConn[[0,8,24,11,16,22,26,20]];
+                    lineelements.connectivity[initNbElem+i*8+1,:] = quadConn[[8,0,9,24,22,17,21,26]];
+                    lineelements.connectivity[initNbElem+i*8+2,:] = quadConn[[11,24,10,3,20,26,23,19]];
+                    lineelements.connectivity[initNbElem+i*8+3,:] = quadConn[[24,9,2,10,26,21,18,23]];
+                    lineelements.connectivity[initNbElem+i*8+4,:] = quadConn[[16,22,26,20,4,12,25,15]];
+                    lineelements.connectivity[initNbElem+i*8+5,:] = quadConn[[22,17,21,26,12,5,13,25]];
+                    lineelements.connectivity[initNbElem+i*8+6,:] = quadConn[[20,26,23,19,15,25,14,7]];
+                    lineelements.connectivity[initNbElem+i*8+7,:] = quadConn[[26,21,18,23,25,13,6,14]];
+
+                    if lineariseMiddlePoints :
+                        res.nodes[quadConn[8],:]  = (res.nodes[quadConn[0],:] + res.nodes[quadConn[1],:] )/2
+                        res.nodes[quadConn[9],:]  = (res.nodes[quadConn[1],:] + res.nodes[quadConn[2],:] )/2
+                        res.nodes[quadConn[10],:] = (res.nodes[quadConn[2],:] + res.nodes[quadConn[3],:] )/2
+                        res.nodes[quadConn[11],:] = (res.nodes[quadConn[3],:] + res.nodes[quadConn[0],:] )/2
+                        res.nodes[quadConn[12],:] = (res.nodes[quadConn[4],:] + res.nodes[quadConn[5],:] )/2
+                        res.nodes[quadConn[13],:] = (res.nodes[quadConn[5],:] + res.nodes[quadConn[6],:] )/2
+                        res.nodes[quadConn[14],:] = (res.nodes[quadConn[6],:] + res.nodes[quadConn[7],:] )/2
+                        res.nodes[quadConn[15],:] = (res.nodes[quadConn[7],:] + res.nodes[quadConn[4],:] )/2
+                        res.nodes[quadConn[16],:] = (res.nodes[quadConn[0],:] + res.nodes[quadConn[4],:] )/2
+                        res.nodes[quadConn[17],:] = (res.nodes[quadConn[1],:] + res.nodes[quadConn[5],:] )/2
+                        res.nodes[quadConn[18],:] = (res.nodes[quadConn[2],:] + res.nodes[quadConn[6],:] )/2
+                        res.nodes[quadConn[19],:] = (res.nodes[quadConn[3],:] + res.nodes[quadConn[7],:] )/2
+                        res.nodes[quadConn[20],:] = (res.nodes[quadConn[3],:] + res.nodes[quadConn[4],:] )/2
+                        res.nodes[quadConn[21],:] = (res.nodes[quadConn[1],:] + res.nodes[quadConn[6],:] )/2
+                        res.nodes[quadConn[22],:] = (res.nodes[quadConn[0],:] + res.nodes[quadConn[5],:] )/2
+                        res.nodes[quadConn[23],:] = (res.nodes[quadConn[2],:] + res.nodes[quadConn[7],:] )/2
+                        res.nodes[quadConn[24],:] = (res.nodes[quadConn[0],:] + res.nodes[quadConn[2],:] )/2
+                        res.nodes[quadConn[25],:] = (res.nodes[quadConn[4],:] + res.nodes[quadConn[6],:] )/2
+                        res.nodes[quadConn[26],:] = (res.nodes[quadConn[0],:] + res.nodes[quadConn[6],:] )/2
+
+
+            else:
+                nbOfNewElements = 1
+                lineelements.Reserve(initNbElem+quadElement.GetNumberOfElements())
+                lineelements.cpt = initNbElem+quadElement.GetNumberOfElements()
+                for i in xrange(quadElement.GetNumberOfElements()):
+                    quadConn = quadElement.connectivity[i,:];
+                    lineelements.connectivity[initNbElem+i,:] = quadConn[[0,1,2,3,4,5,6,7]];
+
+
         elif elementName == ElementNames.Bar_3:
 
             lineelements = res.GetElementsOfType(ElementNames.Bar_2)
@@ -454,7 +561,6 @@ def ExtractElementByTags(inmesh,tagsToKeep, allNodes=False,dimensionalityFilter=
 
 
        toKeep = np.zeros(elems.GetNumberOfElements(), dtype=np.bool)
-
        # check elements tags
        for tagToKeep in tagsToKeep:
            if elems.tags.has_key(tagToKeep):
@@ -522,6 +628,39 @@ def VolumeOfTetrahedrons(inmesh):
 
     return res*(1./6.)
 
+def VolumeOfHexaedrons(inmesh):
+
+    elems =inmesh.GetElementsOfType(ElementNames.Hexaedron_8)
+    conn = elems.connectivity
+
+    def VolumeInternal(a,b,c,d):
+        e = np.cross(b-d,c-d)
+        f = (a-d)
+        res = np.empty(elems.GetNumberOfElements(),dtype=np.float)
+        for n in xrange(elems.GetNumberOfElements()):
+            res[n] = np.abs( np.dot(f[n,:],e[n,:])  )
+        return res*(1./6.)
+
+    res = np.zeros(elems.GetNumberOfElements(),dtype=np.float)
+
+    p0 = inmesh.nodes[conn[:,0],:]
+    p1 = inmesh.nodes[conn[:,1],:]
+    p2 = inmesh.nodes[conn[:,2],:]
+    p3 = inmesh.nodes[conn[:,3],:]
+    p4 = inmesh.nodes[conn[:,4],:]
+    p5 = inmesh.nodes[conn[:,5],:]
+    p6 = inmesh.nodes[conn[:,6],:]
+    p7 = inmesh.nodes[conn[:,7],:]
+
+    res += VolumeInternal(p0,p6,p5,p1)
+    res += VolumeInternal(p0,p6,p1,p2)
+    res += VolumeInternal(p0,p6,p2,p3)
+    res += VolumeInternal(p0,p6,p3,p7)
+    res += VolumeInternal(p0,p6,p7,p4)
+    res += VolumeInternal(p0,p6,p4,p5)
+
+    return res
+
 
 def GetVolume(inmesh) :
 
@@ -529,10 +668,12 @@ def GetVolume(inmesh) :
     for name,elems in inmesh.elements.iteritems():
         if ElementNames.dimension[name] != 3:
             continue# pragma: no cover
-        if name == ElementNames.Tetrahedron_4:
+        elif name == ElementNames.Tetrahedron_4:
             vol += np.sum(VolumeOfTetrahedrons(inmesh))
+        elif name == ElementNames.Hexaedron_8:
+            vol += np.sum(VolumeOfHexaedrons(inmesh))
         else:
-            raise Exception('code me please...')# pragma: no cover
+            raise Exception('Not implemented for elements of type "'+str(name)+'" code me please...')# pragma: no cover
     return vol
 
 
@@ -613,6 +754,7 @@ def AddTagPerBody(inmesh):
 
             tagName = "Body_"+str(bodyCpt)
             tag = inmesh.GetNodalTag(tagName)
+            tag.AddToTag(initialPoint)
             bodyCpt += 1
             pointsInThisBody = 1
 
@@ -902,6 +1044,16 @@ def CheckIntegrity_GetVolume():
     vol = GetVolume(mesh)
     if vol != (1./6.):
         raise Exception('Error en the calculation of the volumen')# pragma: no cover
+
+    from BasicTools.FE.ConstantRectilinearMesh import ConstantRectilinearMesh
+    myMesh = ConstantRectilinearMesh()
+    myMesh.SetDimensions([3,3,3]);
+    myMesh.SetSpacing([0.5, 0.5,0.5]);
+    print(myMesh)
+    vol  = GetVolume(CreateMeshFromConstantRectilinearMesh(myMesh))
+    if abs(vol-1.) > 1e-8 :
+        raise Exception('Error en the calculation of the volumen')# pragma: no cover
+
     return "ok"
 
 def CheckIntegrity_MirrorMesh():
