@@ -84,7 +84,7 @@ class UnstructuredMesh(MeshBase):
         self.elements = {}
         self.boundingMin = [0,0,0];
         self.boundingMax = [0,0,0];
-    
+
     def GetNumberOfNodes(self):
         return self.nodes.shape[0]
 
@@ -118,7 +118,7 @@ class UnstructuredMesh(MeshBase):
 
     def AddElementToTagUsingOriginalId(self,oid,tagname):
         for ntype, data in self.elements.iteritems():
-            w = np.where(data.originalIds == oid)
+            w = np.where(data.originalIds[:data.cpt] == oid)
             if len(w[0]) > 0 :
                 data.tags.CreateTag(tagname,False).AddToTag(w[0])
                 break
