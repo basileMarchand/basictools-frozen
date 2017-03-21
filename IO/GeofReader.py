@@ -14,6 +14,7 @@ GeofNumber["c2d3"] = EN.Triangle_3
 GeofNumber['c3d4'] = EN.Tetrahedron_4
 GeofNumber['c3d20'] = EN.Hexaedron_20
 GeofNumber['t3']   = EN.Triangle_3
+GeofNumber['q8']   = EN.Quadrangle_8
 
 
 def ReadGeof(fileName=None,string=None):
@@ -72,12 +73,48 @@ def ReadGeof(fileName=None,string=None):
           conn = [filetointernalid[x] for x in  map(int,s[2:]) ]
           elements = res.GetElementsOfType(nametype)
           oid = int(s[0])
+          if nametype == EN.Quadrangle_8:
+              conn =  [conn[x] for x in [0, 2, 4, 6, 1, 3, 5, 7]]
           if nametype == EN.Hexaedron_20:
               conn =  [conn[x] for x in [0,2,4,6,12,14,16,18,1,3,5,7,13,15,17,19,8,9,10,11]]
           elements.AddNewElement(conn,oid)
           l = string.readline().strip('\n').lstrip().rstrip()
         continue
 
+      if l.find("**nset")>-1:
+        nsetname = l.split()[1]
+        print( "nset {}".format(nsetname) )
+
+        tag = res.GetNodalTag(nsetname)
+
+        l = string.readline().strip('\n').lstrip().rstrip()
+        while(True):
+          if len(l) == 0: l = string.readline().strip('\n').lstrip().rstrip(); continue
+          if l.find("**") > -1:
+               break
+          s = l.split()
+          for oid in s:
+              tag.AddToTag(filetointernalid[int(oid)])
+          l = string.readline().strip('\n').lstrip().rstrip()
+
+        continue
+
+      if l.find("**elset")>-1:
+        elsetname = l.split()[1]
+        print( "elset {}".format(elsetname) )
+
+
+        l = string.readline().strip('\n').lstrip().rstrip()
+        while(True):
+          if len(l) == 0: l = string.readline().strip('\n').lstrip().rstrip(); continue
+          if l.find("**") > -1:
+               break
+          s = l.split()
+          for oid in s:
+              res.AddElementToTagUsingOriginalId(int(oid),elsetname)
+          l = string.readline().strip('\n').lstrip().rstrip()
+
+        continue
 
       if l.find("**faset")>-1:
         fasetName = l[8:]
@@ -90,9 +127,11 @@ def ReadGeof(fileName=None,string=None):
           s = l.split()
           nametype = GeofNumber[s[0]]
           conn = [filetointernalid[x] for x in  map(int,s[1:])]
+          if nametype == EN.Quadrangle_8:
+              conn =  [conn[x] for x in [0, 2, 4, 6, 1, 3, 5, 7]]
           elements = res.GetElementsOfType(nametype)
           localId = elements.AddNewElement(conn,-1)
-          elements.GetTag(fasetName).AddToTag(localId)
+          elements.GetTag(fasetName).AddToTag(localId-1)
           l = string.readline().strip('\n').lstrip().rstrip()
         continue
 
@@ -116,6 +155,8 @@ def ReadGeof(fileName=None,string=None):
       print("line starting with <<"+l[:20]+">> not considered in the reader")
       l = string.readline().strip('\n').lstrip().rstrip()
       continue
+
+    res.PrepareForOutput()
 
     return res
 

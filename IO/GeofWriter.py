@@ -20,13 +20,19 @@ GeofSetName[EN.Bar_3] = "quad"
 GeofName[EN.Triangle_3] = "c2d3"
 GeofSetName[EN.Triangle_3] = "t3"
 
+
 GeofName[EN.Triangle_6] = "c2d6"
 GeofSetName[EN.Triangle_6] = "t6"
+GeofSetName[EN.Quadrangle_4] = "q4"
+
+GeofName[EN.Quadrangle_8] = "c3d8"
+GeofSetName[EN.Quadrangle_8] = "q8"
 #3d
 GeofName[EN.Tetrahedron_4] = "c3d4"
 GeofName[EN.Tetrahedron_10] = "c3d10"
 GeofName[EN.Quadrangle_4] = "c2d4"
 GeofName[EN.Hexaedron_8] = "c3d8"
+GeofName[EN.Hexaedron_20] = "c3d20"
 
 GeofName[EN.Wedge_6] = "c3d6"
 
@@ -197,7 +203,7 @@ class GeofWriter(WriterBase):
                     self.filePointer.write("\n")
 
 
-        self.filePointer.write("****return \n")
+        self.filePointer.write("***return \n")
 
 def CheckIntegrity():
     import BasicTools.FE.UnstructuredMesh as UM
