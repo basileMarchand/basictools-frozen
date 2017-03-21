@@ -61,38 +61,49 @@ linear[Tetrahedron_4] = True
 Pyramid_5  = 'pyr5'
 numberOfNodes[Pyramid_5] = 5;
 dimension[Pyramid_5] = 3
+linear[Pyramid_5] = True
 
 Wedge_6 = 'wed6'
 numberOfNodes[Wedge_6] = 6;
 dimension[Wedge_6] = 3
+linear[Wedge_6] = True
 
 Hexaedron_8 = 'hex8'
 numberOfNodes[Hexaedron_8] = 8;
 dimension[Hexaedron_8] = 3
+linear[Hexaedron_8] = True
 
 #quadratic
 Tetrahedron_10 = 'tet10'
 numberOfNodes[Tetrahedron_10] = 10;
 dimension[Tetrahedron_10] = 3
+linear[Tetrahedron_10] = False
 
 Pyramid_13  = 'pyr13'
 numberOfNodes[Pyramid_13] = 13;
 dimension[Pyramid_13] = 3
+linear[Pyramid_13] = False
 
 Wedge_15 = 'hex15'
 numberOfNodes[Wedge_15] = 15;
 dimension[Wedge_15] = 3
+linear[Wedge_15] = False
 
 Wedge_18 = 'hex18'
 numberOfNodes[Wedge_18] = 18;
 dimension[Wedge_18] = 3
+linear[Wedge_18] = False
+
 
 Hexaedron_20 = 'hex20'
 numberOfNodes[Hexaedron_20] = 20;
 dimension[Hexaedron_20] = 3
+linear[Hexaedron_20] = False
 
-
-
+Hexaedron_27 = 'hex27'
+numberOfNodes[Hexaedron_27] = 27;
+dimension[Hexaedron_27] = 3
+linear[Hexaedron_27] = False
 
 
 
