@@ -370,7 +370,7 @@ class MeshWriter(WriterBase):
                if nodalRefNumber is None:
                    self.filePointer.write(" 0 \n")
                else:
-                   self.filePointer.write(" {} \n".format(nodalRefNumber[n]) )
+                   self.filePointer.write(" {} \n".format(int(nodalRefNumber[n])) )
 
         self.filePointer.write("\n" )
 
