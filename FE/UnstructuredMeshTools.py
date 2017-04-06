@@ -782,17 +782,28 @@ def AddTagPerBody(inmesh):
 
 def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
 
+
+    # From www.vtk;org/wp-content/updloads/2015/04/file-formats.pdf
+
     vtknumbers = {}
+
+    vtknumbers[ElementNames.Point_1] = 1
+
     vtknumbers[ElementNames.Bar_2] = 3
 
     vtknumbers[ElementNames.Triangle_3] = 5
     vtknumbers[ElementNames.Quadrangle_4] = 9
+    vtknumbers[ElementNames.Tetrahedron_4] = 10
+
     vtknumbers[ElementNames.Hexaedron_8] = 12
-    vtknumbers[ElementNames.Hexaedron_20] = 25
+    vtknumbers[ElementNames.Wedge_6] = 13
+    vtknumbers[ElementNames.Pyramid_5] = 14
+
     vtknumbers[ElementNames.Bar_3] = 21
     vtknumbers[ElementNames.Triangle_6] = 22
-    vtknumbers[ElementNames.Tetrahedron_4] = 10
+    vtknumbers[ElementNames.Quadrangle_8] = 23
     vtknumbers[ElementNames.Tetrahedron_10] = 24
+    vtknumbers[ElementNames.Hexaedron_20] = 25
 
     try:
         from paraview.vtk import vtkPolyData as vtkPolyData
@@ -936,7 +947,53 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
 
     return output
 
+def VtkToMesh(vtkmesh, meshobject=None, TagsAsFields=False):
+
+    if meshobject is None:
+        out = UnstructuredMesh()
+    else:
+
+        out = meshobject
+
+    from vtk.util import numpy_support
+    data = vtkmesh.GetPoints().GetData()
+    out.nodes = numpy_support.vtk_to_numpy(data)
+
+    nc = vtkmesh.GetNumberOfCells()
+
+    vtknumbers = {}
+    vtknumbers[3 ] = ElementNames.Bar_2
+    vtknumbers[5 ] = ElementNames.Triangle_3
+    vtknumbers[9 ] = ElementNames.Quadrangle_4
+    vtknumbers[12] = ElementNames.Hexaedron_8
+    vtknumbers[25] = ElementNames.Hexaedron_20
+    vtknumbers[21] = ElementNames.Bar_3
+    vtknumbers[22] = ElementNames.Triangle_6
+    vtknumbers[10] = ElementNames.Tetrahedron_4
+    vtknumbers[24] = ElementNames.Tetrahedron_10
+
+    for i in xrange(nc):
+        cell= vtkmesh.GetCell(i)
+        ct = cell.GetCellType()
+        et = vtknumbers[ct]
+        np = cell.GetNumberOfPoints()
+        out.GetElementsOfType(et).AddNewElement([cell.GetPointId(j) for j in xrange(np)] ,i)
+    return out
+
+
 ###############################################################################
+def CheckIntegrity_VtkToMesh():
+    res = CreateMeshOfTriangles([[0,0,0],[1,0,0],[0,1,0],[0,0,1] ], [[0,1,2],[0,2,3]])
+    res.nodeFields = {"x": res.nodes[:,0], "Pos":res.nodes}
+    res.nodesTags.CreateTag("FirstPoint").AddToTag(0)
+    res.elemFields = {"firstPoint": res.GetElementsOfType(ElementNames.Triangle_3).connectivity[:,0], "conn": res.GetElementsOfType(ElementNames.Triangle_3).connectivity }
+    res.GetElementsOfType(ElementNames.Triangle_3).tags.CreateTag("FirstTriangle").AddToTag(0)
+    sol = MeshToVtk(res,TagsAsFields= True)
+
+    print(res)
+    print(VtkToMesh(sol))
+    return 'ok'
+
 def CheckIntegrity_MeshToVtk():
     res = CreateMeshOfTriangles([[0,0,0],[1,0,0],[0,1,0],[0,0,1] ], [[0,1,2],[0,2,3]])
     res.nodeFields = {"x": res.nodes[:,0], "Pos":res.nodes}
@@ -1140,6 +1197,7 @@ def CheckIntegrity_GetDualGraph():
 
 
 def CheckIntegrity():
+    
     CheckIntegrity_ExtractElementsByMask()
     CheckIntegrity_GetVolume()
     CheckIntegrity_CreateMeshOfTriangles()
@@ -1152,6 +1210,7 @@ def CheckIntegrity():
     CheckIntegrity_CleanEmptyTags()
     CheckIntegrity_AddTagPerBody()
     CheckIntegrity_MeshToVtk()
+    CheckIntegrity_VtkToMesh()
     CheckIntegrity_GetDualGraph()
     return "ok"
 
