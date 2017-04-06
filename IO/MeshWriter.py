@@ -9,6 +9,7 @@ import BasicTools.FE.ElementNames as EN
 import struct
 
 mmgName = {}
+mmgName[EN.Point_1] = 'Vertices'
 mmgName[EN.Bar_2]         = 'Edges'
 mmgName[EN.Triangle_3]    = 'Triangles'
 mmgName[EN.Quadrangle_4]  = 'Quadrilaterals'
@@ -21,6 +22,7 @@ mmgName[EN.Hexaedron_8]   = 'Hexahedra'
 
 # for binary files
 meshNumber = {}
+meshNumber[EN.Point_1] = 4
 meshNumber[EN.Bar_2] = 5
 
 meshNumber[EN.Triangle_3] = 6
