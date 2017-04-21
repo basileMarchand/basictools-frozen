@@ -94,10 +94,10 @@ class Interface(BaseOutputObject):
 
 
     def SetWorkingDirectory(self,Dir):
-        self.workingDirectory = Dir;
+        self.workingDirectory = os.path.dirname(Dir);
 
     def SetProcessDirectory(self,Dir):
-        self.processDirectory = Dir;
+        self.processDirectory = os.path.dirname(Dir);
 
     def SetCodeCommand(self,ccommand):          # Code command
         self.codeCommand = ccommand
