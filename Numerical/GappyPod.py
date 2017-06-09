@@ -38,7 +38,7 @@ def deim(basis):
 
         sampled_basis = np.empty((basis_rank, basis_rank - 1), dtype=np.double)
 
-    for k in xrange(1, basis_rank):
+    for k in range(1, basis_rank):
         added_basis_slice = sampled_basis[:, k - 1]
         np.copyto(added_basis_slice, basis[:, sample_entries[k - 1]], casting='no')
 
@@ -685,7 +685,7 @@ def fake_q_deim(basis):
     sample_entries = np.empty(basis_rank, dtype=np.int_)
     sampled_basis = np.empty((basis_rank, basis_rank), dtype=basis.dtype)
 
-    for k in xrange(0, basis_rank):
+    for k in range(0, basis_rank):
         if k > 0:
             phi, __1, __2 = \
                 la.svd(sampled_basis[:, :k], full_matrices=True, compute_uv=True)
@@ -698,3 +698,11 @@ def fake_q_deim(basis):
         np.copyto(sampled_basis[:, k], basis[:, sample_entries[k]], casting='no')
 
     return sample_entries
+
+
+def CheckIntegrity():
+    return "ok"
+
+
+if __name__ == '__main__':
+    print(CheckIntegrity())# pragma: no cover

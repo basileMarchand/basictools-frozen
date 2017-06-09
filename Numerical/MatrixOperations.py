@@ -22,17 +22,17 @@ def reshape(a, shape):
 
     b = scsp.coo_matrix((c.data, (new_row, new_col)), shape=shape)
     return b
-        
+
 
 def CheckIntegrity():
     a = scsp.coo_matrix([[1, 2, 0], [0, 0, 3], [4, 0, 5], [0, 0, 2]])
     return 'ok'
-        
-        
-if __name__ == '__main__':
-    print(CheckIntegrity())# pragma: no cover   
 
-    
-    
-    
-    
+
+if __name__ == '__main__':
+    print(CheckIntegrity())# pragma: no cover
+
+
+
+
+
