@@ -37,17 +37,32 @@ class WriterBase(BaseOutputObject):
 
         ## we use unbuffered so we can repaire broken files easily
         try :
-            if self._isBinary == True :
+            if self._isBinary  :
                 mode = "wb"
             else:
+                # in python 3 the binary mode must be used to use the numpy.savetxt
                 mode = "w"
-            self.filePointer = open(self.fileName, mode,0)
+
+            # unbuffered text I/O are not allowed in python 3
+            # bug http://bugs.python.org/issue17404
+            #import io
+            #import sys
+            #binstdout = io.open(self.fileName, 'wb', 0)
+            #self.filePointer = io.TextIOWrapper(binstdout, encoding=sys.stdout.encoding)
+            #
+            self.filePointer = open(self.fileName, mode)
 
         except:# pragma: no cover
             print(TFormat.InRed("Error File Not Open"))# pragma: no cover
             raise
 
         self._isOpen = True
+
+    def writeText(self,text):
+        if self._isBinary:
+            self.filePointer.write(text.encode('utf8'))
+        else:
+            self.filePointer.write(text)
 
     def Close(self):
         if self._isOpen:

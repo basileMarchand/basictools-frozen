@@ -18,15 +18,14 @@ GeofNumber['q8']   = EN.Quadrangle_8
 
 
 def ReadGeof(fileName=None,string=None):
-    from cStringIO import StringIO
+    from io import StringIO
     import BasicTools.FE.UnstructuredMesh as UM
 
     if fileName is not None:
-        f = open(fileName, 'r')
-        string = f.read()
-        f.close()
-
-    string = StringIO(string)
+        string = open(fileName, 'r')
+    elif string is not None:
+        from io import StringIO
+        string = StringIO(string)
 
     res = UM.UnstructuredMesh()
     filetointernalid = {}
@@ -53,7 +52,7 @@ def ReadGeof(fileName=None,string=None):
                 oid = int(s[0])
                 filetointernalid[oid] = cpt
                 res.originalIDNodes[cpt] = int(s[0])
-                res.nodes[cpt,:] = map(float,s[1:])
+                res.nodes[cpt,:] = list(map(float,s[1:]))
                 cpt += 1
                 l = string.readline().strip('\n').lstrip().rstrip()
             continue
@@ -163,7 +162,7 @@ def ReadGeof(fileName=None,string=None):
 
 
 def CheckIntegrity():
-    data = """
+    data = u"""
     ***geometry
     **node
     4 3

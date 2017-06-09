@@ -57,6 +57,7 @@ class GeofWriter(WriterBase):
     def Write(self,meshObject,useOriginalId=False,lowerDimElementsAsSets=False):
 
         self.filePointer.write("% This file has been writen by the python routine GeofWriter of the BasicTools package\n")
+
         self.filePointer.write("% For any question about this routine, please contact SAFRAN TECH Pole M&S Team OT\n")
 
         self.filePointer.write("***geometry\n");
@@ -66,17 +67,21 @@ class GeofWriter(WriterBase):
         #
         posn = meshObject.GetPosOfNodes()
         if useOriginalId:
-           for n in xrange(numberofpoints):
+           for n in range(numberofpoints):
                self.filePointer.write("{} ".format(int(meshObject.originalIDNodes[n])))
-               np.savetxt(self.filePointer, posn[np.newaxis,n,:] )
+               #np.savetxt(self.filePointer, posn[n,:] )
+               posn[n,:].tofile(self.filePointer, sep=" ")
+               self.filePointer.write("\n")
         else:
-           for n in xrange(numberofpoints):
+           for n in range(numberofpoints):
                self.filePointer.write("{} ".format(n+1) )
-               np.savetxt(self.filePointer, posn[np.newaxis,n,:] )
+               #np.savetxt(self.filePointer, posn[np.newaxis,n,:] )
+               posn[np.newaxis,n,:].tofile(self.filePointer, sep=" ")
+               self.filePointer.write("\n")
         #
         nbElements = 0
         maxDimensionalityOfelements = 0
-        for ntype,elems in meshObject.elements.iteritems():
+        for ntype,elems in meshObject.elements.items():
             maxDimensionalityOfelements = max(EN.dimension[ntype],maxDimensionalityOfelements)
             if EN.dimension[ntype] == maxDimensionalityOfelements or  False==lowerDimElementsAsSets :
                 nbElements += elems.GetNumberOfElements()
@@ -87,13 +92,13 @@ class GeofWriter(WriterBase):
 
 
         cpt =0;
-        for ntype, data in meshObject.elements.iteritems():
+        for ntype, data in meshObject.elements.items():
             elemtype = GeofName[ntype]
             if EN.dimension[ntype] != maxDimensionalityOfelements and lowerDimElementsAsSets:
                 continue
             #npe = data.GetNumberOfNodesPerElement()
             #if elemtype!="c2d3":
-            for i in xrange(data.GetNumberOfElements() ):
+            for i in range(data.GetNumberOfElements() ):
                 if useOriginalId:
                     self.filePointer.write("{} {} ".format(data.originalIds[i],elemtype) )
                     self.filePointer.write(" ".join([str(int(meshObject.originalIDNodes[x])) for x in data.connectivity[i,:].ravel()]))
@@ -123,9 +128,9 @@ class GeofWriter(WriterBase):
 
                 idInTag = 0
                 flag = False
-                for ntype,elems in meshObject.elements.iteritems():
+                for ntype,elems in meshObject.elements.items():
                     if EN.dimension[ntype] == maxDimensionalityOfelements:
-                        if elems.tags.has_key(tagname):
+                        if tagname in elems.tags:
                             flag =  True
                             idInTag += elems.tags[tagname].cpt
                 self.PrintVerbose("Tag " + str(tagname) + " has "+ str(idInTag) + " elements")
@@ -136,10 +141,10 @@ class GeofWriter(WriterBase):
                 self.filePointer.write("  **elset {} \n".format(tagname))
                 cpt =0
 
-                for ntype,elems in meshObject.elements.iteritems():
+                for ntype,elems in meshObject.elements.items():
                     if EN.dimension[ntype] != maxDimensionalityOfelements:
                         continue
-                    if elems.tags.has_key(tagname):
+                    if tagname in elems.tags:
                         tag = elems.tags[tagname]
                         if tag.cpt :
                             self.filePointer.write(" ".join([str(x+1+cpt) for x in tag.GetIds()]))
@@ -159,16 +164,16 @@ class GeofWriter(WriterBase):
 
         # Dotsets, lisets, facets
         if lowerDimElementsAsSets:
-            for dimToTreat in xrange(maxDimensionalityOfelements):
+            for dimToTreat in range(maxDimensionalityOfelements):
 
                 celtags = meshObject.GetNamesOfElemTags()
                 for tagname in celtags:
 
                     idInTag = 0
                     flag = False
-                    for ntype,elems in meshObject.elements.iteritems():
+                    for ntype,elems in meshObject.elements.items():
                         if EN.dimension[ntype] == dimToTreat:
-                            if elems.tags.has_key(tagname):
+                            if tagname in elems.tags:
                                 flag =  True
                                 idInTag += elems.tags[tagname].cpt
                     self.PrintVerbose("Set  " + str(tagname) + " has "+ str(idInTag) + " elements")
@@ -185,16 +190,16 @@ class GeofWriter(WriterBase):
                         self.filePointer.write("  **faset {} \n".format(tagname))
 
 
-                    for ntype,elems in meshObject.elements.iteritems():
+                    for ntype,elems in meshObject.elements.items():
                         if EN.dimension[ntype] != dimToTreat:
                             continue
-                        if elems.tags.has_key(tagname):
+                        if tagname in elems.tags:
                             tag = elems.tags[tagname]
 
                             name = GeofSetName[ntype];
 
                             ids = tag.GetIds()
-                            for e in xrange(len(tag)):
+                            for e in range(len(tag)):
                                 self.filePointer.write(" {} ".format(name))
                                 self.filePointer.write(" ".join([str(x+1) for x in elems.connectivity[ids[e],:] ]))
                                 self.filePointer.write(" \n")

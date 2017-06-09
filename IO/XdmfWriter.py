@@ -196,6 +196,9 @@ class XdmfWriter(WriterBase):
 
     def Open(self, filename = None):
 
+        # we dont use the open from WriterBase because the set binary is used
+        # for the .bin file and not for the .xdmf file
+
         if self.isOpen() :
             print(TFormat.InRed("The file is already open !!!!!"))
             return
@@ -207,13 +210,16 @@ class XdmfWriter(WriterBase):
 
         ## we use unbuffered so we can repaire broken files easily
         try :
-            self.filePointer = open(self.fileName, 'w',0)
+            # in python 3 we cant use unbuffered  text I/O (bug???)
+            #self.filePointer = open(self.fileName, 'w',0)
+
+            self.filePointer = open(self.fileName, 'w')
         except: # pragma: no cover
             print(TFormat.InRed("Error File Not Open"))
             raise
 
-        #print("File : '" + self.fileName + "' is open.")
         self._isOpen = True
+
         self.filePointer.write('<?xml version="1.0" encoding="utf-8"?>\n')
         self.filePointer.write('<Xdmf xmlns:xi="http://www.w3.org/2001/XInclude" Version="2.92">\n')
         self.filePointer.write('<Domain>\n')
@@ -293,7 +299,7 @@ class XdmfWriter(WriterBase):
             if len(baseMeshObject.elements) > 1:
                 self.filePointer.write('    <Topology TopologyType="Mixed" NumberOfElements="{}">\n'.format(baseMeshObject.GetNumberOfElements()))
                 ntotalentries = 0
-                for ntype, data in baseMeshObject.elements.iteritems():
+                for ntype, data in baseMeshObject.elements.items():
                     ntotalentries += data.GetNumberOfElements()*(data.GetNumberOfNodesPerElement()+1)
                     if data.elementType == 'bar2' or data.elementType == 'point1':
                         ntotalentries += data.GetNumberOfElements()
@@ -302,12 +308,12 @@ class XdmfWriter(WriterBase):
 
                 dataarray = np.empty((ntotalentries,),dtype=np.int)
                 cpt =0;
-                for ntype, data in baseMeshObject.elements.iteritems():
+                for ntype, data in baseMeshObject.elements.items():
                    self.PrintVerbose("printing elements of type : {}".format(data.elementType) )
                    self.PrintDebug("printing {}  elements".format(data.GetNumberOfElements()) )
                    self.PrintDebug("with  {}  nodes per element ".format(data.GetNumberOfNodesPerElement()) )
                    elemtype = XdmfNumber[ntype]
-                   for i in xrange(data.GetNumberOfElements() ):
+                   for i in range(data.GetNumberOfElements() ):
                        dataarray[cpt] = elemtype
                        cpt += 1;
                        if elemtype == 0x2 :
@@ -317,27 +323,25 @@ class XdmfWriter(WriterBase):
                            dataarray[cpt] = 1
                            cpt += 1;
 
-                       for j in xrange(data.GetNumberOfNodesPerElement()):
+                       for j in range(data.GetNumberOfNodesPerElement()):
                            dataarray[cpt] = data.connectivity[i,j]
                            cpt += 1;
                 self.PrintDebug("Number Of Entries {}".format(ntotalentries))
                 self.PrintDebug("counter {}".format(cpt))
 
                 self.__WriteDataItem(dataarray)
+            elif len(baseMeshObject.elements):
+                elements = list(baseMeshObject.elements.keys())[0]
+                elementType = XdmfName[elements]
+                self.filePointer.write('    <Topology TopologyType="{}" NumberOfElements="{}" '.format(elementType,baseMeshObject.GetNumberOfElements()))
+                if XdmfNumber[elements] == 0x2:
+                    self.filePointer.write('NodesPerElement="2"  ')
+                if XdmfNumber[elements] == 0x1:
+                    self.filePointer.write('NodesPerElement="1"  ')
+                self.filePointer.write(' >\n')
+                self.__WriteDataItem(baseMeshObject.elements[elements].connectivity.ravel())
             else:
-                #
-                if len(baseMeshObject.elements.keys()):
-                    elementType = XdmfName[baseMeshObject.elements.keys()[0]]
-                    self.filePointer.write('    <Topology TopologyType="{}" NumberOfElements="{}" '.format(elementType,baseMeshObject.GetNumberOfElements()))
-                    if XdmfNumber[baseMeshObject.elements.keys()[0]] == 0x2:
-                        self.filePointer.write('NodesPerElement="2"  ')
-                    if XdmfNumber[baseMeshObject.elements.keys()[0]] == 0x1:
-                        self.filePointer.write('NodesPerElement="1"  ')
-                    self.filePointer.write(' >\n')
-
-                    self.__WriteDataItem(baseMeshObject.elements[baseMeshObject.elements.keys()[0]].connectivity.ravel())
-                else:
-                    self.filePointer.write('    <Topology TopologyType="mixed" NumberOfElements="0"  >\n')
+                self.filePointer.write('    <Topology TopologyType="mixed" NumberOfElements="0"  >\n')
 
             self.filePointer.write('    </Topology> \n')
 
@@ -627,9 +631,9 @@ def WriteTest(tempdir,Temporal, Binary):
     myMesh.SetSpacing([0.1, 0.1, 0.1]);
     myMesh.SetOrigin([-2.5,-1.2,-1.5]);
 
-    dataT = np.array(range(24),dtype=np.float32)
+    dataT = np.arange(24,dtype=np.float32)
     dataT.shape = (2,3,4)
-    dataDep = np.array(range(24*3))+0.3
+    dataDep = np.arange(24*3)+0.3
 
     dataDep.shape = (2,3,4,3)
 
@@ -638,7 +642,7 @@ def WriteTest(tempdir,Temporal, Binary):
     writer.SetBinary(Binary)
     writer.Open()
     print(writer)
-    writer.Write(myMesh,PointFields=[dataT, dataDep], PointFieldsNames=["Temp","Dep"],CellFields=[np.array(range(6))],CellFieldsNames=['S'], Time=0);
+    writer.Write(myMesh,PointFields=[dataT, dataDep], PointFieldsNames=["Temp","Dep"],CellFields=[np.arange(6)],CellFieldsNames=['S'], Time=0);
     writer.Write(myMesh,GridFields=[0, 1], GridFieldsNames=['K','P'], TimeStep = 1);
     writer.Close()
 

@@ -62,7 +62,7 @@ class ReaderBase(BaseOutputObject):
             string = self.filePointer.readline()
 
             string = string.rstrip('\r\n')
-            string = string.replace(u'\ufeff', '')
+            string = string.replace('\ufeff', '')
             if len(string) == 0 :
                 continue
             if self.commentChar is None:

@@ -14,14 +14,12 @@ AscNumber['1002'] = EN.Bar_2
 
 def ReadAsc(fileName=None,string=None):
     import shlex
-    from cStringIO import StringIO
 
     if fileName is not None:
-        f = open(fileName, 'r')
-        string = f.read()
-        f.close()
-
-    string = StringIO(string)
+        string = open(fileName, 'r')
+    elif string is not None:
+        from io import StringIO
+        string = StringIO(string)
 
     res = UM.UnstructuredMesh()
 
@@ -29,7 +27,11 @@ def ReadAsc(fileName=None,string=None):
     #filetointernalidElem =  {}
     BaseOutputObject().Print("Reading file : {} ".format(fileName))
 
-    for line in string:
+    while True:
+        line = string.readline()
+        if not line:
+            break
+
         l = line.strip('\n').lstrip().rstrip()
         if len(l) == 0: continue
 
@@ -53,7 +55,7 @@ def ReadAsc(fileName=None,string=None):
                 oid = int(s[0])
                 filetointernalid[oid] = cpt
                 res.originalIDNodes[cpt] = int(s[0])
-                res.nodes[cpt,:] = map(float,s[6:])
+                res.nodes[cpt,:] = list(map(float,s[6:]))
                 cpt +=1
             continue
 
@@ -93,7 +95,7 @@ def ReadAsc(fileName=None,string=None):
 
                 elements.AddNewElement(conn,oid)
                 cpt +=1
-            for etype, data in res.elements.iteritems():
+            for etype, data in res.elements.items():
                 data.tighten()
             continue
 
@@ -146,7 +148,7 @@ def ReadAsc(fileName=None,string=None):
 
 def CheckIntegrity():
 
-    __checkintegritydata = """
+    __checkintegritydata = u"""
 BEGIN_NODES 6 3
 1 0 0 0 0 0 295.673175860532 28.0704731415872 346.109138100075
 2 0 0 0 0 0 295.105225 28.260575 345.628395

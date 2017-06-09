@@ -105,7 +105,7 @@ class MeshReader(ReaderBase):
                 #print ("l"),
                 #print (l)
                 fieldSizes = [ int(x) for x in l.split()[1:] ]
-                for i in xrange(len(fieldSizes)):
+                for i in range(len(fieldSizes)):
                     if fieldSizes[i] == 2 :
                        fieldSizes[i] = self.dim
                     elif fieldSizes[i] == 3 :
@@ -122,7 +122,7 @@ class MeshReader(ReaderBase):
                 data = np.fromfile(f,dtype=float,count=int(ncoomp*nbentries),sep=" ")
                 data.shape = (nbentries,ncoomp)
                 cpt = 0
-                for i in xrange(nbfields):
+                for i in range(nbfields):
                     datares.append(data[:,cpt:cpt+fieldSizes[i]])
                     cpt += fieldSizes[i]
                 return datares
@@ -132,7 +132,7 @@ class MeshReader(ReaderBase):
                 if l.find(fieldName)>-1 and len(l) == len(fieldName):
                     #print("reading SolAtVertices")
                     data = ReadFieldsASCII(f)
-                    for i in xrange(len(data)) :
+                    for i in range(len(data)) :
                         res[fieldName+str(i)]  =  data[i]
                     found = True
                     break
@@ -162,11 +162,11 @@ class MeshReader(ReaderBase):
       fieldSizes = np.empty(nbfields, dtype=np.int)
       #self.PrintDebug("nbfields" + str(nbfields))
       res = []
-      for i in xrange(nbfields):
+      for i in range(nbfields):
           data = f.read(4)
           fieldSizes[i] = struct.unpack("i", data)[0]
 
-      for i in xrange(nbfields):
+      for i in range(nbfields):
           dataformat = ('f' if dataSize==4 else "d"    )
 
           if fieldSizes[i] == 2 :
@@ -181,8 +181,8 @@ class MeshReader(ReaderBase):
           data = struct.unpack(dataformat*(nbNodes*fieldSizes[i]), data)
           #print(data)
           cpt =0
-          for n in xrange(nbNodes):
-              for j in xrange(fieldSizes[i]):
+          for n in range(nbNodes):
+              for j in range(fieldSizes[i]):
                   field[n,j] = data[cpt]
                   cpt += 1
 
@@ -244,19 +244,19 @@ class MeshReader(ReaderBase):
           #SolAtVertices
           if key == 62:
               data = self._readExtraFieldBinary(f,dataSize)
-              for i in xrange(len(data)) :
+              for i in range(len(data)) :
                   res["SolAtVertices"+str(i)]  =  data[i]
               continue
           #SolAtTriangles
           if key == 64:
               data = self._readExtraFieldBinary(f,dataSize)
-              for i in xrange(len(data)) :
+              for i in range(len(data)) :
                   res["SolAtTriangles"+str(i)]  =  data[i]
               continue
           #SolAtTetrahedra
           if key == 66:
               data = self._readExtraFieldBinary(f,dataSize)
-              for i in xrange(len(data)) :
+              for i in range(len(data)) :
                   res["SolAtTetrahedra"+str(i)]  =  data[i]
               continue
 
@@ -376,7 +376,7 @@ class MeshReader(ReaderBase):
 
 
           # all kind of elements
-          if meditNumber.has_key(key):
+          if key in meditNumber:
               elements = res.GetElementsOfType(meditNumber[key])
               self.PrintVerbose("Reading elements of type " + elements.elementType )
               nbNodes = elements.GetNumberOfNodesPerElement()
@@ -470,7 +470,7 @@ class MeshReader(ReaderBase):
       if self.refsAsAField:
          elemRefs = np.resize(elemRefs,globalElementCounter )
          cpt =0
-         for name,val in res.elements.iteritems():
+         for name,val in res.elements.items():
              elemRefs[cpt:cpt+val.GetNumberOfElements()] = elemRefsDic[name]
              cpt += val.GetNumberOfElements()
          self.elementsFields['refs'] = elemRefs
@@ -546,7 +546,7 @@ class MeshReader(ReaderBase):
                     if len(l) == 0: continue
                     s = l.split()
 
-                    res.nodes[cpt,:] = map(float,s[0:dimension])
+                    res.nodes[cpt,:] = list(map(float,s[0:dimension]))
                     res.originalIDNodes[int(cpt)] = int(cpt)
 
                     ref = s[dimension]
@@ -559,7 +559,7 @@ class MeshReader(ReaderBase):
                 continue
 
 
-            if meditName.has_key(l):
+            if l in meditName:
                 elements = res.GetElementsOfType(meditName[l])
                 nbNodes = elements.GetNumberOfNodesPerElement()
                 line = self.filePointer.readline()

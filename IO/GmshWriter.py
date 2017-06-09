@@ -45,13 +45,17 @@ class GmshWriter(WriterBase):
         #
         posn = meshObject.GetPosOfNodes()
         if useOriginalId:
-           for n in xrange(numberofpoints):
+           for n in range(numberofpoints):
                self.filePointer.write("{} ".format(int(meshObject.originalIDNodes[n])))
-               np.savetxt(self.filePointer, posn[np.newaxis,n,:] )
+               #np.savetxt(self.filePointer, posn[np.newaxis,n,:] )
+               posn[np.newaxis,n,:].tofile(self.filePointer, sep=" ")
+               self.filePointer.write("\n")
         else:
-           for n in xrange(numberofpoints):
+           for n in range(numberofpoints):
                self.filePointer.write("{} ".format(n+1) )
-               np.savetxt(self.filePointer, posn[np.newaxis,n,:] )
+               #np.savetxt(self.filePointer, posn[np.newaxis,n,:] )
+               posn[np.newaxis,n,:].tofile(self.filePointer, sep=" ")
+               self.filePointer.write("\n")
         self.filePointer.write("$EndNodes\n");
         self.filePointer.write("$Elements\n");
         self.filePointer.write("{}\n".format(meshObject.GetNumberOfElements()))
@@ -61,7 +65,7 @@ class GmshWriter(WriterBase):
         #meshObject.PrepareForOutput();
 
         celltags = meshObject.GetNamesOfElemTags()
-        elements = meshObject.elements.keys()
+        elements = meshObject.elements
         tagcounter = 2
         #for tagname in celtags:
         for elementContainer in elements:
@@ -69,15 +73,14 @@ class GmshWriter(WriterBase):
             #try:
             data = meshObject.elements[elementContainer]
             if useOriginalId:
-                 for i in xrange(data.GetNumberOfElements() ):
-                    print(str(i)+ " coucou")
+                 for i in range(data.GetNumberOfElements() ):
                     self.filePointer.write("{}{} {} {} {} ".format(data.originalIds[i],elemtype,2,1,1) )
                     self.filePointer.write(" ".join([str(meshObject.originalIDNodes[x]) for x in data.connectivity[i,:].ravel()]))
                     cpt += 1
                     self.filePointer.write("\n")
             else:
                 #for connectivity in meshObject.elements[elementContainer].connectivity[meshObject.elements[elementContainer].tags[tagname].id-1]:
-                for i in xrange(data.GetNumberOfElements() ):
+                for i in range(data.GetNumberOfElements() ):
                   connectivity = data.connectivity[i,:]
                   self.filePointer.write("{} {} {} {} {} ".format(cpt,elemtype,2,tagcounter,tagcounter) )
                   self.filePointer.write(" ".join([str(x+1) for x in connectivity]))

@@ -24,7 +24,7 @@ def SaveData(filename,  *argv,**kwargs):
 
        Save variables into the disk, you can use unamed or named variables (keyword)
     """
-    with open(filename,'w') as pickle_file:
+    with open(filename,'wb') as pickle_file:
         pickler = __pickle.Pickler(pickle_file)
         pickler.dump([argv, kwargs])
         return 0
@@ -37,7 +37,7 @@ def LoadData(filename):
        return an instance of IOHelper if ok
        return None if not ok
     """
-    with open(filename,'r') as pickle_file:
+    with open(filename,'rb') as pickle_file:
         unpickler = __pickle.Unpickler(pickle_file)
         data = unpickler.load()
         return  IOHelper(data)

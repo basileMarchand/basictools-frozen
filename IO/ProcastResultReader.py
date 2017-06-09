@@ -5,17 +5,16 @@ import numpy as np
 
 
 def ReadResult(nbNodes, fileName=None, string=None):
-    from io import StringIO
+
 
     if fileName is not None:
-      f = open(fileName, 'r')
-      string = f.read()
-      f.close()
+       string = open(fileName, 'r')
+    elif string is not None:
+       from io import StringIO
+       string = StringIO(string)
 
     timeSteps   = []
     temperature = np.empty((nbNodes,0),dtype=np.double)
-
-    string = StringIO(string)
 
     for line in string:
        l = line.strip('\n').lstrip().rstrip()

@@ -125,16 +125,14 @@ def WriteVec(data, fileName):
 
 
 def ReadInp(fileName=None,string=None):
-    from cStringIO import StringIO
     from collections import OrderedDict as OD
 
 
     if fileName is not None:
-        f = open(fileName, 'r')
-        string = f.read()
-        f.close()
-
-    string = StringIO(string)
+        string = open(fileName, 'r')
+    elif string is not None:
+        from io import StringIO
+        string = StringIO(string)
 
 
     res = OD();
@@ -166,14 +164,14 @@ def ReadInp(fileName=None,string=None):
 
         #print(cobj)
 
-        for sublevel in xrange(4,0,-1):
+        for sublevel in range(4,0,-1):
           if l.find("*"*(sublevel))>-1 :
             #print(sublevel),
             #print(cobj)
             l = l[sublevel:]
             data = l.split()
             #print(data)
-            if not cobj.has_key("*"*(sublevel)):
+            if "*"*(sublevel) not in cobj:
                 cobj["*"*(sublevel)] = OD()
             pobj.append(cobj["*"*(sublevel)])
             cobj = pobj[-1]
@@ -191,7 +189,7 @@ def ReadInp(fileName=None,string=None):
         else :
              #print(l)
             # Treat the cdata (no stating start)
-            if not cobj.has_key("CDATA"):
+            if "CDATA" not in cobj:
                 cobj["CDATA"] = []
             cobj["CDATA"].append(l)
 
@@ -203,35 +201,35 @@ def WriteInp(data,output= None):
     if output is None:
         output = sys.stdout
 
-    for key4, value4 in data.iteritems():
+    for key4, value4 in data.items():
         output.write("****" + key4),
         output.write(" ".join(value4["header"])+"\n")
-        for i in xrange(0,4):
+        for i in range(0,4):
           #print(i)
           #print(value4)
-          if value4.has_key('*'*i):
-            for key3, value3 in value4['*'*i].iteritems():
+          if '*'*i in value4:
+            for key3, value3 in value4['*'*i].items():
               output.write("   "+ "*"*i + key3+" ")
               output.write(" ".join(value3["header"])+"\n")
 
-              if value3.has_key("CDATA"):
+              if "CDATA" in value3:
                  #print(" ".join(value3["CDATA"]))
                  output.write(" \n".join(map(str,value3["CDATA"]))+"\n")
 
-              for j in xrange(2,0,-1):
-                 if value3.has_key('*'*j):
-                   for key2, value2 in value3['*'*j].iteritems():
+              for j in range(2,0,-1):
+                 if '*'*j in value3:
+                   for key2, value2 in value3['*'*j].items():
                       output.write("      "+"*"*j + key2+" ")
                       output.write(" ".join(map(str,value2["header"]))+"\n")
-                      if value2.has_key("CDATA"):
+                      if "CDATA" in value2:
                           #print(" ".join(value3["CDATA"]))
                           output.write(" \n".join(map(str,value2["CDATA"]))+"\n")
-                      for k in xrange(1,0,-1):
-                          if value2.has_key('*'*k):
-                             for key1, value1 in value2['*'*k].iteritems():
+                      for k in range(1,0,-1):
+                          if '*'*k in value2:
+                             for key1, value1 in value2['*'*k].items():
                                  output.write("         "+"*"*k + key1+" ")
                                  output.write(" ".join(map(str,value1["header"]))+"\n")
-                                 if value1.has_key("CDATA"):
+                                 if "CDATA" in value1:
                                      output.write(" \n".join(map(str,value1["CDATA"]))+"\n")
         output.write('****return\n')
 

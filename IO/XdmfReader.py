@@ -16,7 +16,7 @@ class Xdmfbase(object):
 
     def ReadAttribute(self,attrs,name,default=None):
         """" Helper to read attributes"""
-        if attrs.has_key(name):
+        if name in attrs:
             return attrs.get(name)
         else:
             if( default==None) :
@@ -381,7 +381,7 @@ class XdmfDataItem(Xdmfbase):
             self.Type = self.ReadAttribute(attrs,'DataType')
         except:
             self.Type = self.ReadAttribute(attrs,'NumberType')
-        if(self.Type.lower() == 'float' and attrs.has_key('Precision')):
+        if(self.Type.lower() == 'float' and 'Precision' in attrs):
             self.Precision = int(self.ReadAttribute(attrs,'Precision'))
         self.Format = self.ReadAttribute(attrs,'Format')
         self.Seek = int(self.ReadAttribute(attrs,'Seek',0))
@@ -516,7 +516,7 @@ class XdmfReader(xml.sax.ContentHandler):
             res = XdmfGrid()
             res.ReadAttributes(attrs)
             # for the moment we use a flat representation (no GridType collection)
-            if attrs.has_key("GridType") and attrs.get("GridType").lower() == "collection" :
+            if "GridType" in attrs and attrs.get("GridType").lower() == "collection" :
                 res = father
             else :
                 father.grids.append(res)
@@ -666,7 +666,7 @@ def CheckIntegrity():
 
 
     names = grid.GetFieldsNames()
-    if(names[0] != u'RTData'): raise Exception();
+    if(names[0] != 'RTData'): raise Exception();
 
     grid.HasField(names[0])
     grid.HasField('toto')

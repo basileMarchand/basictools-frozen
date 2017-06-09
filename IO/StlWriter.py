@@ -26,7 +26,7 @@ class StlWriter(WriterBase):
         elements = meshObject.GetElementsOfType(EN.Triangle_3)
 
         self.filePointer.write("solid {}\n".format(Name))
-        for i in xrange(elements.GetNumberOfElements()):
+        for i in range(elements.GetNumberOfElements()):
             if normals is not None:
                 self.filePointer.write(" facet normal {}\n".format(" ".join(map(str,normals[i,:])) ))
             else:
@@ -37,7 +37,7 @@ class StlWriter(WriterBase):
                 normal = normal/np.linalg.norm(normal)
                 self.filePointer.write(" facet normal {}\n".format(" ".join(map(str,normal)) ))
             self.filePointer.write("  outer loop\n")
-            for p in xrange(3):
+            for p in range(3):
                 self.filePointer.write("   vertex {}\n".format(" ".join(map(str,meshObject.nodes[elements.connectivity[i,p],:] ))))
             self.filePointer.write("  endloop\n")
             self.filePointer.write(" endfacet\n")
@@ -45,7 +45,7 @@ class StlWriter(WriterBase):
 
 
 def CheckIntegrity():
-    data = """   solid cube_corner
+    data = u"""   solid cube_corner
           facet normal 0.0 -1.0 0.0
             outer loop
               vertex 0.0 0.0 0.0

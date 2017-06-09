@@ -72,7 +72,7 @@ class MeshWriter(WriterBase):
 
         #key MeshVersionFormatted
         self.filePointer.write(struct.pack('i', 1))
-        self.filePointer.write(struct.pack('i', self.dataSize/4))
+        self.filePointer.write(struct.pack('i', self.dataSize//4))
 
         #key Dimension (3)
         self.filePointer.write(struct.pack('i', 3))
@@ -92,7 +92,7 @@ class MeshWriter(WriterBase):
 
         dataformat = ('f' if self.dataSize == 4 else 'd')
         posn = meshObject.GetPosOfNodes()
-        for n in xrange(numberofpoints):
+        for n in range(numberofpoints):
              #self.filePointer.write(struct.pack(dataformat,  posn[n,:]))# end of information
              posn[n,:].astype(self.dataType).tofile(self.filePointer, sep='')
 
@@ -107,7 +107,7 @@ class MeshWriter(WriterBase):
         self.PrintDebug("calculate position at end " + str(endOfInformation))
 
         globalOffset =0
-        for elementContainer in meshObject.elements.keys():
+        for elementContainer in meshObject.elements:
             self.PrintDebug("Output of " + str(elementContainer ))
             elemtype = meshNumber[elementContainer]
             data = meshObject.elements[elementContainer]
@@ -127,7 +127,7 @@ class MeshWriter(WriterBase):
             self.filePointer.write(struct.pack('i', nbelements))# GetNumberOfElements
 
             dataformat = "i"*nbNodes
-            for i in xrange(nbelements):
+            for i in range(nbelements):
                 (data.connectivity[i,:]+1).astype(np.int32).tofile(self.filePointer, format=dataformat,sep='')
                 if elemRefNumber is None :
                     self.filePointer.write(struct.pack("i", 0 ))#
@@ -140,7 +140,7 @@ class MeshWriter(WriterBase):
             self.PrintDebug("calculate position at end " + str(endOfInformation))
 
         bars = meshObject.GetElementsOfType(EN.Bar_2)
-        if bars.tags.has_key("Ridges"):
+        if "Ridges" in bars.tags:
             self.PrintDebug("output Ridges " )
 
             tag = bars.tags["Ridges"]
@@ -219,7 +219,7 @@ class MeshWriter(WriterBase):
         self.filePointer.write("\n\n")
 
 
-        for i in xrange(nbentries):
+        for i in range(nbentries):
             for sol in Sols:
                 if len(sol.shape)== 1:
                     sol[i].tofile(self.filePointer, sep=' ' )
@@ -265,7 +265,7 @@ class MeshWriter(WriterBase):
 
         #key MeshVersionFormatted
         self.filePointer.write(struct.pack('i', 1))
-        self.filePointer.write(struct.pack('i', self.dataSize/4))
+        self.filePointer.write(struct.pack('i', self.dataSize//4))
         #
         #key Dimension (3)
         self.filePointer.write(struct.pack('i', 3))
@@ -333,7 +333,7 @@ class MeshWriter(WriterBase):
                 ## vectors
                 self.filePointer.write(struct.pack('i',2))#
 
-        for i in xrange(NumberOfEntries):
+        for i in range(NumberOfEntries):
             for sol in Sols:
                 if len(sol.shape)== 1:
                     sol = sol[:,np.newaxis]
@@ -367,8 +367,9 @@ class MeshWriter(WriterBase):
         #print(self.fileName)
         #print("------------------")
         #print(posn[0,:])
-        for n in xrange(numberofpoints):
-               np.savetxt(self.filePointer, posn[np.newaxis,n,:] ,newline="" )
+        for n in range(numberofpoints):
+               #np.savetxt(self.filePointer, posn[np.newaxis,n,:] ,newline="" )
+               posn[np.newaxis,n,:] .tofile(self.filePointer, sep=" ")
                if nodalRefNumber is None:
                    self.filePointer.write(" 0 \n")
                else:
@@ -384,7 +385,7 @@ class MeshWriter(WriterBase):
             import BasicTools.FE.ElementNames
             elements = [ BasicTools.FE.ElementNames.Hexaedron_8 ]
         else:
-            elements = meshObject.elements.keys()
+            elements = meshObject.elements
 #        tagcounter = 2
 #        #for tagname in celtags:
         globalOffset = 0
@@ -403,10 +404,11 @@ class MeshWriter(WriterBase):
                 nelem = data.GetNumberOfElements()
 
             self.filePointer.write("{}\n".format(nelem) )
-            for i in xrange(nelem):
+            for i in range(nelem):
                     connectivity = (data.connectivity[i,:]+1).astype(int)
 
-                    np.savetxt(self.filePointer, connectivity,fmt="%d", newline=" ", delimiter=" " )
+                    #np.savetxt(self.filePointer, connectivity,fmt="%d", newline=" ", delimiter=" " )
+                    connectivity.tofile(self.filePointer, sep=" ")
 
                     if elemRefNumber is None :
                         self.filePointer.write(" 0\n")#

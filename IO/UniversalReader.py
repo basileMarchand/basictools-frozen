@@ -55,11 +55,11 @@ def ReadMesh(filename,out=None):# pragma: no cover
         reader.Read()
         mesh = reader.output
         fields = reader.ReadExtraField(filename);
-        mesh.nodeFields = {k:v for k,v in fields.iteritems() if k.find("SolAtVertices") != -1  }
-        if fields.has_key('SolAtTetrahedra0'):
+        mesh.nodeFields = {k:v for k,v in fields.items() if k.find("SolAtVertices") != -1  }
+        if 'SolAtTetrahedra0' in fields:
 
             if mesh.GetElementsOfType(ElementNames.Tetrahedron_4).GetNumberOfElements() == mesh.GetNumberOfElements():
-                mesh.elemFields = {k:v for k,v in fields.iteritems() if k.find("SolAtTetrahedra") != -1  }
+                mesh.elemFields = {k:v for k,v in fields.items() if k.find("SolAtTetrahedra") != -1  }
         return mesh
 
     else:

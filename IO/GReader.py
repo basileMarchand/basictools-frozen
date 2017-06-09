@@ -80,8 +80,8 @@ class GReader(ReaderBase):
         res.originalIDNodes = np.arange(res.GetNumberOfNodes())
         elems = res.GetElementsOfType(EN.Bar_2)
         elems.Allocate(res.GetNumberOfNodes()-1)
-        elems.connectivity[:,0] = xrange(res.GetNumberOfNodes()-1)
-        elems.connectivity[:,1] = xrange(1,res.GetNumberOfNodes())
+        elems.connectivity[:,0] = range(res.GetNumberOfNodes()-1)
+        elems.connectivity[:,1] = range(1,res.GetNumberOfNodes())
         res.elemFields = {}
         G = np.array(thicknes)
 

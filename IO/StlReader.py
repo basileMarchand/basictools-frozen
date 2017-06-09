@@ -3,17 +3,15 @@ import BasicTools.FE.ElementNames as EN
 import numpy as np
 
 def ReadStl(fileName=None,string=None):
-    from cStringIO import StringIO
     import BasicTools.FE.UnstructuredMesh as UM
 
     #from collections import OrderedDict as OD
 
     if fileName is not None:
-        f = open(fileName, 'r')
-        string = f.read()
-        f.close()
-
-    string = StringIO(string)
+        string = open(fileName, 'r')
+    elif string is not None:
+        from io import StringIO
+        string = StringIO(string)
 
     resUM = UM.UnstructuredMesh()
 
@@ -23,7 +21,11 @@ def ReadStl(fileName=None,string=None):
     p = []
     normals = np.empty((0,3), dtype=float)
     nodesbuffer = []
-    for line in string:
+    while True:
+        line = string.readline()
+        if not line:
+            break
+
         l = line.strip('\n').lstrip().rstrip()
         if l.find("facet")>-1 :
             if l.find("normal")>-1 :
@@ -47,7 +49,7 @@ def ReadStl(fileName=None,string=None):
     resUM.nodes = np.array(nodesbuffer)
     del nodesbuffer
     elements = resUM.GetElementsOfType(EN.Triangle_3)
-    elements.connectivity = np.array(xrange(resUM.GetNumberOfNodes()),dtype=np.int)
+    elements.connectivity = np.array(range(resUM.GetNumberOfNodes()),dtype=np.int)
     elements.connectivity.shape = (resUM.GetNumberOfNodes()/3,3)
     #elements.connectivity = elements.connectivity.T
     elements.originalIds = np.arange(resUM.GetNumberOfNodes()/3,dtype=np.int )
@@ -73,7 +75,7 @@ def LoadSTLWithVTK(filenameSTL):
 
 
 def CheckIntegrity():
-    data = """   solid cube_corner
+    data = u"""   solid cube_corner
           facet normal 0.0 -1.0 0.0
             outer loop
               vertex 0.0 0.0 0.0

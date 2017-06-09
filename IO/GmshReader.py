@@ -17,14 +17,11 @@ gmshNumber['15'] = EN.Point_1
 
 def ReadGmsh(fileName=None,string=None,out=None):
 
-    from cStringIO import StringIO
-
     if fileName is not None:
-        f = open(fileName, 'r')
-        string = f.read()
-        f.close()
-
-    string = StringIO(string)
+        string = open(fileName, 'r')
+    elif string is not None:
+        from io import StringIO
+        string = StringIO(string)
 
     if out is None:
         res = UM.UnstructuredMesh()
@@ -33,7 +30,11 @@ def ReadGmsh(fileName=None,string=None,out=None):
 
     filetointernalid = {}
     #filetointernalidElem =  {}
-    for line in string:
+
+    while(True):
+        line = string.readline()
+        if not line: break
+
         l = line.strip('\n').lstrip().rstrip()
         if len(l) == 0: continue
 
@@ -67,7 +68,7 @@ def ReadGmsh(fileName=None,string=None,out=None):
                 oid = int(s[0])
                 filetointernalid[oid] = int(cpt)
                 res.originalIDNodes[int(cpt)] = int(s[0])
-                res.nodes[cpt,:] = map(float,s[1:])
+                res.nodes[cpt,:] = list(map(float,s[1:]))
                 cpt +=1
             continue
 
@@ -120,7 +121,7 @@ def ReadGmsh(fileName=None,string=None,out=None):
 
 def CheckIntegrity():
 
-    __teststring = """
+    __teststring = u"""
 $MeshFormat
 2.2 0 8
 $EndMeshFormat

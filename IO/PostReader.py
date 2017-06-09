@@ -42,7 +42,7 @@ class PostReader(ReaderBase):
                     data = np.vstack((data,np.fromstring(l,sep=" ") ))
 
                 #print(data)
-                for i in xrange(len(names)):
+                for i in range(len(names)):
                     res[names[i]] = data[:,i]
             else:
                 self.Print("dont know how t treat " + str(l))# pragma: no cover
