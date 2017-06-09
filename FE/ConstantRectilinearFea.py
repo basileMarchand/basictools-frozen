@@ -121,7 +121,6 @@ class Fea(FeaBase.FeaBase):
         self.PrintDebug("Building Connectivity matrix")
         self.edofMat = np.zeros((support.GetNumberOfElements(), self.nodesPerElement*dofpernode), dtype=np.int_)
         self.PrintDebug("Building Connectivity matrix 2")
-        self.PrintDebug(dofpernode)
         for i in  range(support.GetNumberOfElements()):
             coon = support.GetConnectivityForElement(i)
             self.edofMat[i, :] = np.array([(coon*dofpernode+y) for y in range(dofpernode)]).ravel('F')

@@ -8,7 +8,7 @@ import pickle as __pickle
 
 class IOHelper:
     """helper Class that represent the data from a file  """
-    
+
     def __init__(self,data):
         self.unamed = data[0]
         self.named = data[1]
@@ -18,9 +18,9 @@ class IOHelper:
         res  = " named : "  + str(self.named)  + "\n"
         res += " unamed : " + str(self.unamed) + "\n"
         return res
-    
+
 def SaveData(filename,  *argv,**kwargs):
-    """Save the variables into the disk and return 0 if all ok 
+    """Save the variables into the disk and return 0 if all ok
 
        Save variables into the disk, you can use unamed or named variables (keyword)
     """
@@ -29,11 +29,11 @@ def SaveData(filename,  *argv,**kwargs):
         pickler.dump([argv, kwargs])
         return 0
     return 1 # pragma: no cover
-        
+
 def LoadData(filename):
-    """Load data from disk using pickle format 
-    
-       Load data saved with the 'saveData' from file 
+    """Load data from disk using pickle format
+
+       Load data saved with the 'saveData' from file
        return an instance of IOHelper if ok
        return None if not ok
     """
@@ -47,10 +47,10 @@ def CheckIntegrity():
     """ AutoTest routine """
 
     from  BasicTools.Helpers.Tests import TestTempDir
-    # create a temp file 
+    # create a temp file
     tempdir = TestTempDir.GetTempPath()
     try :
-        # Save data 
+        # Save data
         SaveData(tempdir + "testFile.data","two", 3, (3,5),toto=10)
         # load data
         b = LoadData(tempdir + "testFile.data")
@@ -66,10 +66,10 @@ def CheckIntegrity():
     except:# pragma: no cover
         # delete temp directory
         raise
-            
+
 if __name__ == '__main__':
     #import time
     #stime = time.time()
-    CheckIntegrity() # pragma: no cover 
-    
-    #print(time.time()-stime) 
+    print(CheckIntegrity()) # pragma: no cover
+
+    #print(time.time()-stime)

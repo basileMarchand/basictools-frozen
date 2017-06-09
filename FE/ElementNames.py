@@ -4,6 +4,7 @@ numberOfNodes = {}
 mirrorPermutation = {}
 dimension = {}
 linear = {}
+faces = {}
 
 #0d
 Point_1  = 'point1'
@@ -57,6 +58,11 @@ numberOfNodes[Tetrahedron_4] = 4;
 mirrorPermutation[Tetrahedron_4] = [0,2,1,3]
 dimension[Tetrahedron_4] = 3
 linear[Tetrahedron_4] = True
+faces[Tetrahedron_4] = [(Triangle_3,[0, 2, 1]),
+                        (Triangle_3,[0, 1, 3]),
+                        (Triangle_3,[1, 2, 3]),
+                        (Triangle_3,[2, 0, 3]),
+     ]
 
 Pyramid_5  = 'pyr5'
 numberOfNodes[Pyramid_5] = 5;
