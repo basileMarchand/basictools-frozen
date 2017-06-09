@@ -64,7 +64,7 @@ def CreateMeshFromConstantRectilinearMesh(CRM, ofTetras= False,out=None):
         p2=  np.array([3,0,1,2,7,4,5,6])
         p3=  np.array([2,3,0,1,6,7,4,5])
 
-        for elem in xrange(CRM.GetNumberOfElements()):
+        for elem in range(CRM.GetNumberOfElements()):
 
             index = CRM.GetMultiIndexOfElement(elem)
             idx = index[0]%2+ 2*(index[1]%2)+4*(index[2]%2)
@@ -111,7 +111,7 @@ def QuadToLin(inputmesh, divideQuadElements=True,lineariseMiddlePoints=False):
     import copy
     res.nodesTags = copy.deepcopy(inputmesh.nodesTags)
 
-    for elementName in inputmesh.elements.keys():
+    for elementName in inputmesh.elements:
         quadElement = inputmesh.elements[elementName]
         if elementName == ElementNames.Tetrahedron_10:
 
@@ -121,7 +121,7 @@ def QuadToLin(inputmesh, divideQuadElements=True,lineariseMiddlePoints=False):
                 nbOfNewElements = 8
                 lineelements.Reserve(initNbElem+quadElement.GetNumberOfElements()*8)
                 lineelements.cpt = initNbElem+quadElement.GetNumberOfElements()*8
-                for i in xrange(quadElement.GetNumberOfElements()):
+                for i in range(quadElement.GetNumberOfElements()):
                     quadConn = quadElement.connectivity[i,:];
                     lineelements.connectivity[initNbElem+i*8+0,:] = quadConn[[0,4,6,7]];
                     lineelements.connectivity[initNbElem+i*8+1,:] = quadConn[[1,5,4,8]];
@@ -142,7 +142,7 @@ def QuadToLin(inputmesh, divideQuadElements=True,lineariseMiddlePoints=False):
                 nbOfNewElements = 1
                 lineelements.Reserve(initNbElem+quadElement.GetNumberOfElements()*1)
                 lineelements.cpt = initNbElem+quadElement.GetNumberOfElements()*1
-                for i in xrange(quadElement.GetNumberOfElements()):
+                for i in range(quadElement.GetNumberOfElements()):
                     quadConn = quadElement.connectivity[i,:];
                     lineelements.connectivity[initNbElem+i,:] = quadConn[[0,1,2,3]];
 
@@ -155,7 +155,7 @@ def QuadToLin(inputmesh, divideQuadElements=True,lineariseMiddlePoints=False):
                 nbOfNewElements = 4
                 lineelements.Reserve(initNbElem+quadElement.GetNumberOfElements()*4)
                 lineelements.cpt = initNbElem+quadElement.GetNumberOfElements()*4
-                for i in xrange(quadElement.GetNumberOfElements()):
+                for i in range(quadElement.GetNumberOfElements()):
                     quadConn = quadElement.connectivity[i,:];
                     lineelements.connectivity[initNbElem+i*4+0,:] = quadConn[[0,3,5]];
                     lineelements.connectivity[initNbElem+i*4+1,:] = quadConn[[1,4,3]];
@@ -169,7 +169,7 @@ def QuadToLin(inputmesh, divideQuadElements=True,lineariseMiddlePoints=False):
                 nbOfNewElements = 1
                 lineelements.Reserve(initNbElem+quadElement.GetNumberOfElements())
                 lineelements.cpt = initNbElem+quadElement.GetNumberOfElements()
-                for i in xrange(quadElement.GetNumberOfElements()):
+                for i in range(quadElement.GetNumberOfElements()):
                     quadConn = quadElement.connectivity[i,:];
                     lineelements.connectivity[initNbElem+i,:] = quadConn[[0,1,2]];
 
@@ -181,7 +181,7 @@ def QuadToLin(inputmesh, divideQuadElements=True,lineariseMiddlePoints=False):
                 nbOfNewElements = 1
                 lineelements.Reserve(initNbElem+quadElement.GetNumberOfElements()*1)
                 lineelements.cpt = initNbElem+quadElement.GetNumberOfElements()*1
-                for i in xrange(quadElement.GetNumberOfElements()):
+                for i in range(quadElement.GetNumberOfElements()):
                     quadConn = quadElement.connectivity[i,:];
                     lineelements.connectivity[initNbElem+i*1+0,:] = quadConn[[0,1,2,3]];
                     #if lineariseMiddlePoints :
@@ -193,7 +193,7 @@ def QuadToLin(inputmesh, divideQuadElements=True,lineariseMiddlePoints=False):
                 nbOfNewElements = 1
                 lineelements.Reserve(initNbElem+quadElement.GetNumberOfElements())
                 lineelements.cpt = initNbElem+quadElement.GetNumberOfElements()
-                for i in xrange(quadElement.GetNumberOfElements()):
+                for i in range(quadElement.GetNumberOfElements()):
                     quadConn = quadElement.connectivity[i,:];
                     lineelements.connectivity[initNbElem+i,:] = quadConn[[0,1,2,3]];
 
@@ -205,7 +205,7 @@ def QuadToLin(inputmesh, divideQuadElements=True,lineariseMiddlePoints=False):
                 nbOfNewElements = 1
                 lineelements.Reserve(initNbElem+quadElement.GetNumberOfElements()*1)
                 lineelements.cpt = initNbElem+quadElement.GetNumberOfElements()*1
-                for i in xrange(quadElement.GetNumberOfElements()):
+                for i in range(quadElement.GetNumberOfElements()):
                     quadConn = quadElement.connectivity[i,:];
                     lineelements.connectivity[initNbElem+i*1+0,:] = quadConn[[0,1,2,3,4,5,6,7]];
                     if lineariseMiddlePoints :
@@ -225,7 +225,7 @@ def QuadToLin(inputmesh, divideQuadElements=True,lineariseMiddlePoints=False):
                 nbOfNewElements = 1
                 lineelements.Reserve(initNbElem+quadElement.GetNumberOfElements())
                 lineelements.cpt = initNbElem+quadElement.GetNumberOfElements()
-                for i in xrange(quadElement.GetNumberOfElements()):
+                for i in range(quadElement.GetNumberOfElements()):
                     quadConn = quadElement.connectivity[i,:];
                     lineelements.connectivity[initNbElem+i,:] = quadConn[[0,1,2,3,4,5,6,7]];
 
@@ -238,7 +238,7 @@ def QuadToLin(inputmesh, divideQuadElements=True,lineariseMiddlePoints=False):
                 nbOfNewElements = 8
                 lineelements.Reserve(initNbElem+quadElement.GetNumberOfElements()*8)
                 lineelements.cpt = initNbElem+quadElement.GetNumberOfElements()*8
-                for i in xrange(quadElement.GetNumberOfElements()):
+                for i in range(quadElement.GetNumberOfElements()):
                     quadConn = quadElement.connectivity[i,:];
                     lineelements.connectivity[initNbElem+i*8+0,:] = quadConn[[0,8,24,11,16,22,26,20]];
                     lineelements.connectivity[initNbElem+i*8+1,:] = quadConn[[8,0,9,24,22,17,21,26]];
@@ -275,7 +275,7 @@ def QuadToLin(inputmesh, divideQuadElements=True,lineariseMiddlePoints=False):
                 nbOfNewElements = 1
                 lineelements.Reserve(initNbElem+quadElement.GetNumberOfElements())
                 lineelements.cpt = initNbElem+quadElement.GetNumberOfElements()
-                for i in xrange(quadElement.GetNumberOfElements()):
+                for i in range(quadElement.GetNumberOfElements()):
                     quadConn = quadElement.connectivity[i,:];
                     lineelements.connectivity[initNbElem+i,:] = quadConn[[0,1,2,3,4,5,6,7]];
 
@@ -288,7 +288,7 @@ def QuadToLin(inputmesh, divideQuadElements=True,lineariseMiddlePoints=False):
                 nbOfNewElements = 2
                 lineelements.Reserve(initNbElem+quadElement.GetNumberOfElements()*2)
                 lineelements.cpt = initNbElem+quadElement.GetNumberOfElements()*2
-                for i in xrange(quadElement.GetNumberOfElements()):
+                for i in range(quadElement.GetNumberOfElements()):
                     quadConn = quadElement.connectivity[i,:];
                     lineelements.connectivity[initNbElem+i*2+0,:] = quadConn[[0,2]];
                     lineelements.connectivity[initNbElem+i*2+1,:] = quadConn[[2,1]];
@@ -298,7 +298,7 @@ def QuadToLin(inputmesh, divideQuadElements=True,lineariseMiddlePoints=False):
                 nbOfNewElements = 1
                 lineelements.Reserve(initNbElem+quadElement.GetNumberOfElements())
                 lineelements.cpt = initNbElem+quadElement.GetNumberOfElements()
-                for i in xrange(quadElement.GetNumberOfElements()):
+                for i in range(quadElement.GetNumberOfElements()):
                     quadConn = quadElement.connectivity[i,:];
                     lineelements.connectivity[initNbElem+i,:] = quadConn[[0,1]];
         elif ElementNames.linear[elementName] :
@@ -316,8 +316,8 @@ def QuadToLin(inputmesh, divideQuadElements=True,lineariseMiddlePoints=False):
         for originaltag in quadElement.tags :
             destinationtag = lineelements.GetTag(originaltag.name)
             ids = originaltag.GetIds()
-            for i in xrange(originaltag.cpt):
-                for t in xrange(nbOfNewElements):
+            for i in range(originaltag.cpt):
+                for t in range(nbOfNewElements):
                     destinationtag.AddToTag(initNbElem+ids[i]*nbOfNewElements+t)
 
             destinationtag.Tighten()
@@ -348,9 +348,9 @@ def CleanDoubleNodes(res, tol = None, nodesToTestMask= None):
 
     if nodesToTestMask is None:
         cpt =0
-        for i in xrange(nbnodes):
+        for i in range(nbnodes):
             posi = res.nodes[i,:]
-            for j in xrange(i):
+            for j in range(i):
                 #dist =np.linalg.norm(res.nodes[i,:]-res.nodes[j,:])
                 dist = dist2(posi,res.nodes[j,:] )
                 if dist < tol and toKeep[j]:
@@ -362,7 +362,7 @@ def CleanDoubleNodes(res, tol = None, nodesToTestMask= None):
                 toKeep[i] = True;
     else:
         cpt =0
-        for i in xrange(nbnodes):
+        for i in range(nbnodes):
             if not nodesToTestMask[i]:
                   newindex[i] = cpt
                   cpt += 1
@@ -371,7 +371,7 @@ def CleanDoubleNodes(res, tol = None, nodesToTestMask= None):
 
             posi = res.nodes[i,:]
 
-            for j in xrange(i):
+            for j in range(i):
                 if not nodesToTestMask[j]:
                     continue
                 #dist =np.linalg.norm(res.nodes[i,:]-res.nodes[j,:])
@@ -391,7 +391,7 @@ def CleanDoubleNodes(res, tol = None, nodesToTestMask= None):
 
     res.nodes = res.nodes[toKeep,:]
 
-    for elementName in res.elements.keys():
+    for elementName in res.elements:
         elements = res.elements[elementName]
         elements.connectivity = newindex[elements.connectivity]
 
@@ -400,14 +400,14 @@ def CleanDoubleNodes(res, tol = None, nodesToTestMask= None):
 def CleanLonelyNodes(res):
 
     usedNodes = np.zeros(res.GetNumberOfNodes(),dtype=np.bool )
-    for elementName in res.elements.keys():
+    for elementName in res.elements:
         elements = res.elements[elementName]
         usedNodes[elements.connectivity.ravel()] = True;
 
     cpt = 0 ;
     NewIndex =  np.zeros(res.GetNumberOfNodes(),dtype=np.int )-1
     originalIDNodes = np.zeros(res.GetNumberOfNodes(),dtype=np.int)
-    for n in xrange(res.GetNumberOfNodes()):
+    for n in range(res.GetNumberOfNodes()):
         if usedNodes[n]:
             NewIndex[n] = cpt
             originalIDNodes[cpt] = n
@@ -422,7 +422,7 @@ def CleanLonelyNodes(res):
         tag.SetIds(NewIndex[np.extract(usedNodes[tag.GetIds()],tag.GetIds() )])
 
     #renumbering the connectivity matrix
-    for elementName in res.elements.keys():
+    for elementName in res.elements:
         elements = res.elements[elementName]
         elements.connectivity = NewIndex[elements.connectivity]
 
@@ -470,7 +470,7 @@ def MirrorMesh(inmesh,x=None,y=None,z=None) :
         increaseTags(outmesh.nodesTags,cpt)
         cpt = cpt*2
 
-    for name,vals in inmesh.elements.iteritems():
+    for name,vals in inmesh.elements.items():
         nbelements = vals.GetNumberOfElements()
         outelements = outmesh.GetElementsOfType(name)
         outelements.Reserve(nbelements*(2**d))
@@ -512,7 +512,7 @@ def ExtractElementsByMask(inelems, _mask):
     if _mask.dtype == np.bool:
 
         nbels =0;
-        for i in xrange(inelems.GetNumberOfElements()):
+        for i in range(inelems.GetNumberOfElements()):
            newIndex[i] = nbels
            nbels += 1 if _mask[i] else 0
         mask = _mask
@@ -549,26 +549,26 @@ def ExtractElementByTags(inmesh,tagsToKeep, allNodes=False,dimensionalityFilter=
 
 
     nodalMask = np.zeros(inmesh.GetNumberOfNodes(),dtype = np.bool)
-    for name,elems in inmesh.elements.iteritems():
+    for name,elems in inmesh.elements.items():
 
        #if dimensionalityFilter is not None:
        #    if dimensionalityFilter !=  ElementNames.dimension[name]:
        #        continue
 
-       if (np.any([x in elems.tags.keys() for x in tagsToKeep] ) == False) and (dimensionalityFilter is None) :
-           if np.any([x in inmesh.nodesTags.keys() for x in tagsToKeep]) == False:
+       if (np.any([x in elems.tags for x in tagsToKeep] ) == False) and (dimensionalityFilter is None) :
+           if np.any([x in inmesh.nodesTags for x in tagsToKeep]) == False:
                continue# pragma: no cover
 
 
        toKeep = np.zeros(elems.GetNumberOfElements(), dtype=np.bool)
        # check elements tags
        for tagToKeep in tagsToKeep:
-           if elems.tags.has_key(tagToKeep):
+           if tagToKeep in elems.tags:
                toKeep[elems.tags[tagToKeep].GetIds()] = True
 
        # check for nodes tags
        for tagToKeep in tagsToKeep:
-           if inmesh.nodesTags.has_key(tagToKeep):
+           if tagToKeep in inmesh.nodesTags:
              nodalMask.fill(False)
              tag = inmesh.GetNodalTag(tagToKeep)
              nodalMask[tag.GetIds()] = True
@@ -587,7 +587,7 @@ def ExtractElementByTags(inmesh,tagsToKeep, allNodes=False,dimensionalityFilter=
 
        newIndex = np.empty(elems.GetNumberOfElements(), dtype=np.int )
        cpt =0;
-       for i in xrange(elems.GetNumberOfElements()):
+       for i in range(elems.GetNumberOfElements()):
            newIndex[i] = cpt
            cpt += 1 if toKeep[i] else 0
 
@@ -623,7 +623,7 @@ def VolumeOfTetrahedrons(inmesh):
     e = np.cross(b-d,c-d)
     f = (a-d)
     res = np.empty(elems.GetNumberOfElements(),dtype=np.float)
-    for n in xrange(elems.GetNumberOfElements()):
+    for n in range(elems.GetNumberOfElements()):
         res[n] = np.abs( np.dot(f[n,:],e[n,:])  )
 
     return res*(1./6.)
@@ -637,7 +637,7 @@ def VolumeOfHexaedrons(inmesh):
         e = np.cross(b-d,c-d)
         f = (a-d)
         res = np.empty(elems.GetNumberOfElements(),dtype=np.float)
-        for n in xrange(elems.GetNumberOfElements()):
+        for n in range(elems.GetNumberOfElements()):
             res[n] = np.abs( np.dot(f[n,:],e[n,:])  )
         return res*(1./6.)
 
@@ -665,7 +665,7 @@ def VolumeOfHexaedrons(inmesh):
 def GetVolume(inmesh) :
 
     vol = 0;
-    for name,elems in inmesh.elements.iteritems():
+    for name,elems in inmesh.elements.items():
         if ElementNames.dimension[name] != 3:
             continue# pragma: no cover
         elif name == ElementNames.Tetrahedron_4:
@@ -678,7 +678,7 @@ def GetVolume(inmesh) :
 
 
 def CleanEmptyTags(inmesh):
-    for name,elems in inmesh.elements.iteritems():
+    for name,elems in inmesh.elements.items():
         elems.tags.RemoveEmptyTags()
     inmesh.nodesTags.RemoveEmptyTags()
 
@@ -688,13 +688,13 @@ def GetDualGraph(inmesh, maxNumConnections=100):
     dualGraph = np.zeros((inmesh.GetNumberOfNodes(),maxNumConnections), dtype=int )-1
     usedPoints = np.zeros(inmesh.GetNumberOfNodes(), dtype=int );
 
-    for name,elems in inmesh.elements.iteritems():
+    for name,elems in inmesh.elements.items():
         size = elems.GetNumberOfNodesPerElement()
-        for i in xrange(elems.GetNumberOfElements()):
+        for i in range(elems.GetNumberOfElements()):
             coon = elems.connectivity[i,:]
-            for j in xrange(size):
+            for j in range(size):
                 myIndex = coon[j]
-                for k in xrange(size):
+                for k in range(size):
                     if k == j:
                         continue
                     dualGraph[myIndex,usedPoints[myIndex]] =  coon[k]
@@ -710,7 +710,7 @@ def GetDualGraph(inmesh, maxNumConnections=100):
 
     maxsize = 0
     # we finish now we try to compact the structure
-    for i in xrange(inmesh.GetNumberOfNodes()):
+    for i in range(inmesh.GetNumberOfNodes()):
         c = np.unique(dualGraph[i,0:usedPoints[i]])
         dualGraph[i,0:len(c)] = c
         usedPoints[i] = len(c)
@@ -824,7 +824,7 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
 
 
         usePoly = True
-        for  elementsname,elementContainer in mesh.elements.iteritems():
+        for  elementsname,elementContainer in mesh.elements.items():
             if ElementNames.dimension[elementsname] == 3:
                 usePoly = False
                 break
@@ -843,19 +843,19 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
     pts = vtkPoints()
     pts.Allocate(mesh.GetNumberOfNodes())
     if mesh.nodes.shape[1] == 3 :
-        for p in xrange(mesh.GetNumberOfNodes()):
+        for p in range(mesh.GetNumberOfNodes()):
             point = mesh.nodes[p,:]
             pts.InsertNextPoint(point[0],point[1],point[2])
     else:
         #2DCase
-        for p in xrange(mesh.GetNumberOfNodes()):
+        for p in range(mesh.GetNumberOfNodes()):
             point = mesh.nodes[p,:]
             pts.InsertNextPoint(point[0],point[1],0.0)
 
     output.SetPoints(pts)
 
     if hasattr(mesh,"nodeFields"):
-        for name,data in mesh.nodeFields.iteritems():
+        for name,data in mesh.nodeFields.items():
             #VTK_data = numpy_support.numpy_to_vtk(num_array=np.swapaxes(phi,0,2).ravel(), deep=True, array_type=vtk.VTK_FLOAT)
             #VTK_data.SetName(name)
 
@@ -869,14 +869,14 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
 
             if len(data.shape) > 1:
               cpt = 0
-              for i in xrange(mesh.GetNumberOfNodes()):
-                 for j in xrange(data.shape[1]):
+              for i in range(mesh.GetNumberOfNodes()):
+                 for j in range(data.shape[1]):
                     pd.SetValue(cpt, data[i,j])
                     cpt +=1
               output.GetPointData().AddArray(pd)
             else:
               cpt = 0
-              for i in xrange(mesh.GetNumberOfNodes()):
+              for i in range(mesh.GetNumberOfNodes()):
                     pd.SetValue(cpt, data[i])
                     cpt +=1
               output.GetPointData().AddArray(pd)
@@ -894,18 +894,18 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
             output.GetPointData().AddArray(pd)
 
 
-    for elementsname,elementContainer in mesh.elements.iteritems():
+    for elementsname,elementContainer in mesh.elements.items():
         pointIds = vtkIdList()
         npe = elementContainer.GetNumberOfNodesPerElement()
         pointIds.SetNumberOfIds(npe)
         vtknumber = vtknumbers[elementsname]
-        for e in xrange(elementContainer.GetNumberOfElements()):
-            for i in xrange(npe):
+        for e in range(elementContainer.GetNumberOfElements()):
+            for i in range(npe):
                 pointIds.SetId(i,elementContainer.connectivity[e,i])
             output.InsertNextCell(vtknumber, pointIds)
 
     if hasattr(mesh,"elemFields"):
-        for name,data in mesh.elemFields.iteritems():
+        for name,data in mesh.elemFields.items():
 
             pd = vtkFloatArray()
             pd.SetName(name)
@@ -919,13 +919,13 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
 
             if len(data.shape) > 1:
               cpt = 0
-              for i in xrange(mesh.GetNumberOfElements()):
-                 for j in xrange(data.shape[1]):
+              for i in range(mesh.GetNumberOfElements()):
+                 for j in range(data.shape[1]):
                     pd.SetValue(cpt, data[i,j])
                     cpt +=1
             else:
               cpt = 0
-              for i in xrange(mesh.GetNumberOfElements()):
+              for i in range(mesh.GetNumberOfElements()):
                     pd.SetValue(cpt, data[i])
                     cpt +=1
 
@@ -972,12 +972,12 @@ def VtkToMesh(vtkmesh, meshobject=None, TagsAsFields=False):
     vtknumbers[10] = ElementNames.Tetrahedron_4
     vtknumbers[24] = ElementNames.Tetrahedron_10
 
-    for i in xrange(nc):
+    for i in range(nc):
         cell= vtkmesh.GetCell(i)
         ct = cell.GetCellType()
         et = vtknumbers[ct]
         np = cell.GetNumberOfPoints()
-        out.GetElementsOfType(et).AddNewElement([cell.GetPointId(j) for j in xrange(np)] ,i)
+        out.GetElementsOfType(et).AddNewElement([cell.GetPointId(j) for j in range(np)] ,i)
     return out
 
 
@@ -1197,7 +1197,7 @@ def CheckIntegrity_GetDualGraph():
 
 
 def CheckIntegrity():
-    
+
     CheckIntegrity_ExtractElementsByMask()
     CheckIntegrity_GetVolume()
     CheckIntegrity_CreateMeshOfTriangles()

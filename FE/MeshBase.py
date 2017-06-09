@@ -25,7 +25,7 @@ class Tag():
             self._id = np.resize(self._id, (self.cpt,))
 
     def SetIds(self, ids):
-        self._id = ids
+        self._id = np.array(ids,dtype=np.int)
         self.cpt = len(ids)
 
     def SetId(self, pos, ids):
@@ -50,7 +50,7 @@ class Tags(BaseOutputObject):
         self.storage = []
 
     def AddTag(self,item):
-        if self.has_key(item.name):
+        if item.name in self:
             raise Exception("Cant add the tag two times!!")# pragma: no cover
 
         self.storage.append(item)
@@ -58,14 +58,14 @@ class Tags(BaseOutputObject):
 
     def DeleteTags(self,tagNames):
         for name in tagNames:
-            for i in xrange(len(self.storage)):
+            for i in range(len(self.storage)):
                 if self.storage[i].name == name:
                     self.storage.pop(i)
                     break
 
     def CreateTag(self,name, errorIfAlreadyCreated=True):
 
-        if self.has_key(name):
+        if name in self:
             if errorIfAlreadyCreated :
                 raise Exception("Tag name '"+name+"' already exist")# pragma: no cover
             else:
@@ -74,14 +74,14 @@ class Tags(BaseOutputObject):
             return self.AddTag(Tag(name))
 
     def RenameTag(self,name,newName,noError= False):
-        if self.has_key(name):
+        if name in self:
             self[name].name = newName
         else:
             if noError: return
             raise Exception("Tag '" + str(name) + "' does not exist")# pragma: no cover
 
     def RemoveEmptyTags(self):
-        for tagname in  self.keys():
+        for tagname in  list(self.keys()):
             tag = self[tagname]
             if tag.cpt == 0:
                 self.storage.remove(tag)
@@ -91,7 +91,7 @@ class Tags(BaseOutputObject):
     def keys(self):
         return [ x.name for x in self.storage ]
 
-    def has_key(self, k):
+    def __contains__(self, k):
         for item in self.storage:
             if item.name == k:
                 return True
@@ -112,7 +112,7 @@ class Tags(BaseOutputObject):
 
     def __str__(self):
         res = ''
-        res  = str(self.keys())
+        res  = str(list(self.keys()))
         return res
 
 class MeshBase(BaseOutputObject):
@@ -124,7 +124,7 @@ class MeshBase(BaseOutputObject):
         self.elemFields = {}
 
     def GetNodalTag(self, tagName):
-        if not self.nodesTags.has_key(tagName):
+        if tagName not in self.nodesTags:
            res = Tag(tagName)
            self.nodesTags.AddTag(res)
            return res
@@ -149,6 +149,8 @@ def CheckIntegrity():
     tag.SetId(0,0)
     tag.AddToTag(1)
     len(tag)
+    print(obj.nodesTags)
+    print('toto' in obj.nodesTags)
     obj.nodesTags.RenameTag('toto','newtoto')
     obj.nodesTags.RenameTag('toto','newtoto', noError= True)
 

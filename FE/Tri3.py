@@ -24,7 +24,7 @@ class Tri3(FElement):
 
     def GetDetJack(self,qcoor, pos=None):
         if pos is None:
-            raise(Exception('Need position to calculate gradient'))# pragma: no cover
+            raise Exception# pragma: no cover
 
         dx = float(self.delta[0]);   dy = float(self.delta[1]);
         return dx*dy/4.;
@@ -40,7 +40,7 @@ class Tri3(FElement):
     def compute_gradient(self, qcoor, pos=None):
         #[B det_jac]=
        if pos is  None:
-            raise(Exception('Need position to calculate gradient'))# pragma: no cover
+            raise Exception# pragma: no cover
 
        dN_xi = np.array([-1, 1, 0])
        dN_eta = np.array([-1, 0, 1])

@@ -66,13 +66,13 @@ class StructuredMesh(MeshBase):
         index = int(index)
         if self.GetDimensionality() == 3:
             planesize = self.__dimensions[1] *self.__dimensions[2]
-            nx = index / planesize
+            nx = index // planesize
             resyz = index - nx*(planesize)
-            ny = resyz /self.__dimensions[2]
+            ny = resyz //self.__dimensions[2]
             nz =  resyz - ny*self.__dimensions[2]
             return np.array([nx,ny,nz],dtype= np.int_)
         else:
-            nx = index / self.__dimensions[1]
+            nx = index // self.__dimensions[1]
             ny = index - nx*(self.__dimensions[1])
             return np.array([nx,ny],dtype= np.int_)
 
@@ -88,14 +88,14 @@ class StructuredMesh(MeshBase):
         index = int(index)
         if self.GetDimensionality() == 3:
             planesize = (self.__dimensions[1]-1) *(self.__dimensions[2]-1)
-            nx = index / planesize
+            nx = index // planesize
             resyz = index - nx*(planesize)
-            ny = resyz /(self.__dimensions[2]-1)
+            ny = resyz //(self.__dimensions[2]-1)
             nz =  resyz - ny*(self.__dimensions[2]-1)
             return np.array([nx,ny,nz])
         else:
             planesize = (self.__dimensions[1]-1)
-            nx = index / planesize
+            nx = index // planesize
             ny = index - nx*(planesize)
             return np.array([nx,ny])
 
@@ -181,4 +181,4 @@ def CheckIntegrity():
     return "OK"
 
 if __name__ == '__main__':
-    CheckIntegrity() # pragma: no cover
+    print(CheckIntegrity()) # pragma: no cover

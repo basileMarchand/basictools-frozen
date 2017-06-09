@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import division
+
 import numpy as np
 
 from scipy.sparse import coo_matrix
@@ -35,7 +35,8 @@ class BundaryCondition(BaseOutputObject):
         self.reserve(self.cpt)
 
     def eliminate_double(self):
-
+        if len(self.nodes) == 0:
+            return
         m = np.amax(self.nodes, axis=0)
         fcpt = np.zeros(m+1,dtype=np.int);
 
@@ -120,9 +121,11 @@ class Fea(FeaBase.FeaBase):
         self.PrintDebug("Building Connectivity matrix")
         self.edofMat = np.zeros((support.GetNumberOfElements(), self.nodesPerElement*dofpernode), dtype=np.int_)
         self.PrintDebug("Building Connectivity matrix 2")
-        for i in  xrange(support.GetNumberOfElements()):
+        self.PrintDebug(dofpernode)
+        for i in  range(support.GetNumberOfElements()):
             coon = support.GetConnectivityForElement(i)
-            self.edofMat[i, :] = np.array([(coon*dofpernode+y) for y in xrange(dofpernode)]).ravel('F')
+            self.edofMat[i, :] = np.array([(coon*dofpernode+y) for y in range(dofpernode)]).ravel('F')
+
         self.PrintDebug("Building Connectivity matrix Done")
 
         self.iK = None
@@ -215,12 +218,10 @@ class Fea(FeaBase.FeaBase):
             bool_Eeff = Eeff>self.minthreshold
             nEeff = Eeff[bool_Eeff]
             sK = ((self.KE.flatten()[np.newaxis]).T * nEeff.ravel()).flatten(order='F')
-
             one = np.ones((self.nodesPerElement*self.dofpernode, 1), dtype=np.int_)
             local_iK = np.kron(self.edofMat[bool_Eeff,:],one).flatten()
             one.shape = (1,self.nodesPerElement*self.dofpernode)
             local_jK = np.kron(self.edofMat[bool_Eeff,:], one).flatten()
-
             K = coo_matrix((sK, (local_iK, local_jK)), shape=(self.ndof, self.ndof)).tocsr()#(self.dofpernode,self.dofpernode))
 
         zerosdof = np.where(K.diagonal()== 0 )[0]
@@ -383,7 +384,7 @@ def CheckIntegrityThermal3D():
 
 
     myMesh.SetDimensions([nx,ny,nz]);
-    myMesh.SetSpacing([0.1, 0.1, 10/(nz-1)]);
+    myMesh.SetSpacing([0.1, 0.1, 10./(nz-1)]);
     myMesh.SetOrigin([0, 0, 0]);
     print(myMesh)
 
@@ -391,17 +392,17 @@ def CheckIntegrityThermal3D():
     #dirichlet at plane z =0
     dirichlet_bcs = BundaryCondition()
 
-    for x in xrange(nx):
-        for y in xrange(ny):
+    for x in range(nx):
+        for y in range(ny):
             for z in [0]:
                 dirichlet_bcs.append([x,y,z],0 , 0 )
 
 
     # Homogenous body flux
     neumann_bcs = BundaryCondition()
-    for x in xrange(nx):
-        for y in xrange(ny):
-            for z in xrange(nz):
+    for x in range(nx):
+        for y in range(ny):
+            for z in range(nz):
                 neumann_bcs.append([x,y,z],0 , 1 )
 
     neumann_bcs.append([0,0,0],0 , 1 )
@@ -659,13 +660,8 @@ def CheckIntegrityDep2D():
     myProblem.BuildMassMatrix();
     myProblem.BuildMassMatrix(densities);
 
-    fixed = np.zeros((myProblem.ndof, 1), dtype=np.double)
-
-    for i in myProblem.fixed:
-        fixed[i] =  1;
-
     XdmfWriter.WriteMeshToXdmf(TestTempDir.GetTempPath() +'TestDep2D.xmf',myMesh,
-                    [myProblem.u, myProblem.f, myProblem.nodal_elastic_energy(), fixed ],
+                    [myProblem.u, myProblem.f, myProblem.nodal_elastic_energy(), myProblem.fixed.astype(int) ],
                     [densities, myProblem.element_elastic_energy() ] ,
                     [],
                     PointFieldsNames= ['Dep','F','NEnergie', 'ufixed'],

@@ -10,6 +10,7 @@ from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 
 class ElementsContainer(BaseOutputObject):
     def __init__(self,elementType):
+        super(ElementsContainer,self).__init__()
         self.elementType = elementType
         self.connectivity = np.empty((0,0),dtype=np.int)
         self.globaloffset   = 0
@@ -93,19 +94,19 @@ class UnstructuredMesh(MeshBase):
 
     def GetNumberOfElements(self):
         n = 0
-        for type, data in self.elements.iteritems():
+        for type, data in self.elements.items():
             n += data.GetNumberOfElements()
         return n
 
     def ComputeGlobalOffset(self):
         cpt = 0
-        for type, data in self.elements.iteritems():
+        for type, data in self.elements.items():
             data.globaloffset = cpt
             n = data.GetNumberOfElements()
             cpt = cpt + n
 
     def GetElementsOfType(self,typename):
-        if self.elements.has_key(typename):
+        if typename in self.elements:
             return self.elements[typename]
         else:
             els = ElementsContainer(typename)
@@ -117,7 +118,7 @@ class UnstructuredMesh(MeshBase):
         self.boundingMax = np.amax(self.nodes, axis=0);
 
     def AddElementToTagUsingOriginalId(self,oid,tagname):
-        for ntype, data in self.elements.iteritems():
+        for ntype, data in self.elements.items():
             w = np.where(data.originalIds[:data.cpt] == oid)
             if len(w[0]) > 0 :
                 data.tags.CreateTag(tagname,False).AddToTag(w[0])
@@ -128,13 +129,13 @@ class UnstructuredMesh(MeshBase):
 
     # you must compute the globaloffset first to make this function work
     def AddElementToTag(self,elemNumber,tagname):
-        for ntype, data in self.elements.iteritems():
+        for ntype, data in self.elements.items():
             if data.AddElementToTag(elemNumber,tagname):
                 return
         raise Exception("No element found") #pragma: no cover
 
     def DeleteElemTags(self, tagNames):
-        for ntype, data in self.elements.iteritems():
+        for ntype, data in self.elements.items():
             data.tags.DeleteTags(tagNames)
 
 
@@ -146,7 +147,7 @@ class UnstructuredMesh(MeshBase):
 
     def GetNamesOfElemTags(self):
         res = set()
-        for ntype, data in self.elements.iteritems():
+        for ntype, data in self.elements.items():
             for tag in data.tags:
                 res.add(tag.name)
 
@@ -165,8 +166,8 @@ class UnstructuredMesh(MeshBase):
         ne = self.GetNumberOfElements()
         res = np.zeros((ne,),dtype=np.int)
         cpt =0
-        for ntype, elem in self.elements.iteritems():
-            if elem.tags.has_key(tagname):
+        for ntype, elem in self.elements.items():
+            if tagname in elem.tags:
 
                 tag = elem.tags[tagname].GetIds()
                 if useOriginalId:
@@ -178,7 +179,7 @@ class UnstructuredMesh(MeshBase):
 
     def PrepareForOutput(self):
        self.ComputeGlobalOffset()
-       for ntype, data in self.elements.iteritems():
+       for ntype, data in self.elements.items():
              data.tighten()
              for tag in data.tags:
                    tag.Tighten()
@@ -187,8 +188,8 @@ class UnstructuredMesh(MeshBase):
 
     def GenerateManufacturedOriginalIDs(self):
        counter = 0
-       for key, value in self.elements.iteritems():
-         for i in xrange(value.GetNumberOfElements()):
+       for key, value in self.elements.items():
+         for i in range(value.GetNumberOfElements()):
            value.originalIds[i] = counter
            counter += 1
 
@@ -228,7 +229,7 @@ def CheckIntegrity():
 
     res.nodesTags.CreateTag('toto')
     print(res.GetNodalTag('toto'))
-    print(res.GetNodalTag('toto2') )
+    print(res.GetNodalTag('toto2'))
 
     res.AddElementToTagUsingOriginalId(1,"bars")
 

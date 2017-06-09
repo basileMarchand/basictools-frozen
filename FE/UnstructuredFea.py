@@ -2,7 +2,7 @@
 
 
 
-from __future__ import division
+
 import numpy as np
 
 from scipy.sparse import coo_matrix
@@ -164,13 +164,13 @@ class Fea(FeaBase):
         pos = self.support.GetPosOfNodes()
 
         if tag is None:
-            for ntype, elem in self.support.elements.iteritems():
+            for ntype, elem in self.support.elements.items():
                nelems +=elem.GetNumberOfElements()
                nvalues += elem.GetNumberOfNodesPerElement()*self.dofpernode
 
         else:
-           for ntype, elem in self.support.elements.iteritems():
-              if elem.tags.has_key(tag):
+           for ntype, elem in self.support.elements.items():
+              if tag in elem.tags:
                   nelems += elem.GetNumberOfElements()
                   nvalues += elem.GetNumberOfElements()*((elem.GetNumberOfNodesPerElement()*self.dofpernode)**2 )
 
@@ -183,8 +183,8 @@ class Fea(FeaBase):
            jK = np.empty((nvalues,))
 
            cpt = 0
-           for ntype, elem in self.support.elements.iteritems():
-               if elem.tags.has_key(tag):
+           for ntype, elem in self.support.elements.items():
+               if tag in elem.tags:
                  t = elem.GetTag(tag)
                  E = ElementBuildier.GetElementFromName(ntype)
                  conectivities = elem.connectivity[t.id,:]
@@ -192,10 +192,10 @@ class Fea(FeaBase):
                  nodesPerElement = elem.GetNumberOfNodesPerElement()
                  local_nvals = (nodesPerElement*self.dofpernode)**2
                  self.Print("Building matrix for elements of type : " + ntype)
-                 for i in xrange(nelemintag):
+                 for i in range(nelemintag):
                      coon = conectivities[i,:]
                      coords = pos[coon,:]
-                     edofMat= np.array([(coon*self.dofpernode+y) for y in xrange(self.dofpernode)]).ravel('F')
+                     edofMat= np.array([(coon*self.dofpernode+y) for y in range(self.dofpernode)]).ravel('F')
                      local_iK = np.kron(edofMat, np.ones((nodesPerElement*self.dofpernode, 1), dtype=np.int_)).ravel()
                      local_jK = np.kron(edofMat, np.ones((1,nodesPerElement*self.dofpernode), dtype=np.int_)).ravel()
                      iK[cpt:cpt+local_nvals] = local_iK
@@ -557,7 +557,7 @@ def CheckIntegrityDep2D():
 
     #print(max(myProblem.u))
     import os
-    os.system('cmd /C C:\Users\D584808\Apps\ParaView-5.0.1-Qt4-OpenGL2-Windows-64bit\\bin\paraview.exe ' + TestTempDir.GetTempPath() +'TestDep2D.xmf')
+    os.system('cmd /C C:\\Users\D584808\Apps\ParaView-5.0.1-Qt4-OpenGL2-Windows-64bit\\bin\paraview.exe ' + TestTempDir.GetTempPath() +'TestDep2D.xmf')
 
 
     return 'ok'
