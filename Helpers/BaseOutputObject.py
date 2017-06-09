@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 
+#for python 2.6+ compatibility
+from __future__ import print_function
+
+
 from BasicTools.Helpers.TextFormatHelper import TFormat
 
 """ Base object to Help input and output """
@@ -110,7 +114,7 @@ class BaseOutputObject(object):
             #print(" [" + str(memory()) + "]"),
             res += (str(mess))
             res += "\n"
-            print(res),
+            print((res), end='')
             return
         elif level <= BaseOutputObject.__verboseLevel :
             print(mess)
@@ -147,7 +151,7 @@ def CheckIntegrity():
     myObj.PrintVerbose([3+2,8])
     myObj.PrintDebug([3+3,8])
 
-    myObj.Print(range(4))
+    myObj.Print(list(range(4)))
 
     var = 4
     myObj.Print(var)
