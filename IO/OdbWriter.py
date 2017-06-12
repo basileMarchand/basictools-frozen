@@ -13,7 +13,7 @@ OdbName = {}
 OdbName[EN.Tetrahedron_4] = 'C3D4'
 OdbName[EN.Triangle_3] = 'S3'
 OdbName[EN.Bar_2] = 'CONN3D2'
-
+Abaqusexec = "/home/software/abaqus/Commands/abq6136"
 
 def WriteMaterial(odb, material):
     import abaqusConstants as AC
@@ -55,9 +55,9 @@ def WriteOdb(filename,mesh, __insubprocess= False):
 
         interface.SetWorkingDirectory(TestTempDir.GetTempPath())
         interface.processDirectory = TestTempDir.GetTempPath()
-        absfilename   = os.path.dirname(os.path.abspath(filename))
+        absfilename   = os.path.abspath(filename)
 
-        port = 12349
+        port = 12335
         interface.tpl = """
 from BasicTools.IO.Wormhole import WormholeServer
 WormholeServer(""" +str(port) +""",dry=False)
@@ -70,7 +70,7 @@ WormholeServer(""" +str(port) +""",dry=False)
 
         #interface.SetCodeCommand('"C:\\Program Files (x86)\\Notepad++\\notepad++.exe"')
         proc = interface.SingleRunComputation(0)
-        interface.SetCodeCommand("abaqus python")
+        interface.SetCodeCommand(Abaqusexec + " python")
         import sys
         proc = interface.SingleRunComputation(0)
         import time
@@ -79,7 +79,9 @@ WormholeServer(""" +str(port) +""",dry=False)
 
         client = WormholeClient()
         client.Connect(port)
-        client.SendData("filename",filename)
+        client.SendData("filename",absfilename)
+        print("Writing file :")
+        print(absfilename)
         client.SendData("mesh",mesh)
         client.RemoteExec("from BasicTools.IO.OdbWriter import WriteOdb")
         client.RemoteExec("WriteOdb(filename,mesh)")
@@ -109,7 +111,7 @@ WormholeServer(""" +str(port) +""",dry=False)
 #
 #
 ##Creating the 3D solid part
-    pPart = pOdb.Part(name='beamTaylor',embeddedSpace = THREE_D,type= DEFORMABLE_BODY)
+    pPart = pOdb.Part(name='beamTaylor',embeddedSpace = AC.THREE_D,type= AC.DEFORMABLE_BODY)
     nodeLabels = list(range(mesh.GetNumberOfNodes()))
     pPart.addNodes(labels = nodeLabels,coordinates = mesh.GetPosOfNodes())
 
@@ -172,15 +174,15 @@ WormholeServer(""" +str(port) +""",dry=False)
 ##Creating section for odb
 #
 ##Creating the analysis step
-    pStep = pOdb.Step(name='StaticAnalysis',description='Analysis type - 101',domain=TIME,timePeriod = 1.0)
+    pStep = pOdb.Step(name='StaticAnalysis',description='Analysis type - 101',domain=AC.TIME,timePeriod = 1.0)
     pFrame0 = pStep.Frame(incrementNumber=0,frameValue=0.0000)
-    pDisp0 = pFrame0.FieldOutput(name='U',description='Displace ment',type=VECTOR,componentLabels=('1','2','3'))
+    pDisp0 = pFrame0.FieldOutput(name='U',description='Displace ment',type=AC.VECTOR,componentLabels=('1','2','3'))
 
     dispValues = np.hstack((np.array(nodeLabels)[:,np.newaxis],)*3).ravel().astype(float)
     dispValues.shape = (len(nodeLabels),3)
     dispValues /= len(nodeLabels)*10
 
-    pDisp0.addData(position = NODAL,instance = pAssembly,labels = nodeLabels,data=dispValues)
+    pDisp0.addData(position = AC.NODAL,instance = pAssembly,labels = nodeLabels,data=dispValues)
 
 
 
