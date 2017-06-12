@@ -7,6 +7,7 @@ __all__ = [
 'Tests',
 'TextFormatHelper',
 'ParserHelper'
+'which.py'
  ]
 
 """Helpers classes and functions
