@@ -66,10 +66,13 @@ def ReadGmsh(fileName=None,string=None,out=None):
                 #print(s)
                 #print(res.originalIDNodes)
                 oid = int(s[0])
-                filetointernalid[oid] = int(cpt)
-                res.originalIDNodes[int(cpt)] = int(s[0])
+                if cpt == nbNodes :
+                    raise(Exception("More points than the number of point in the header (fix your file!!!)"))
+                filetointernalid[oid] = cpt
+                res.originalIDNodes[cpt] = int(s[0])
                 res.nodes[cpt,:] = list(map(float,s[1:]))
                 cpt +=1
+
             continue
 
         if l.find("$Elements")>-1 :
