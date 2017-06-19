@@ -76,7 +76,7 @@ class GReader(ReaderBase):
 
             print("ignoring line " + str(l) )
         self.EndReading()
-        res.nodes = np.reshape(nodes,newshape=(len(nodes)/3, 3))
+        res.nodes = np.reshape(np.asarray(nodes,dtype=np.float),newshape=(len(nodes)//3, 3))
         res.originalIDNodes = np.arange(res.GetNumberOfNodes())
         elems = res.GetElementsOfType(EN.Bar_2)
         elems.Allocate(res.GetNumberOfNodes()-1)
