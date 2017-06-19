@@ -50,7 +50,7 @@ def ReadStl(fileName=None,string=None):
     del nodesbuffer
     elements = resUM.GetElementsOfType(EN.Triangle_3)
     elements.connectivity = np.array(range(resUM.GetNumberOfNodes()),dtype=np.int)
-    elements.connectivity.shape = (resUM.GetNumberOfNodes()/3,3)
+    elements.connectivity.shape = (resUM.GetNumberOfNodes()//3,3)
     #elements.connectivity = elements.connectivity.T
     elements.originalIds = np.arange(resUM.GetNumberOfNodes()/3,dtype=np.int )
     elements.cpt = elements.connectivity.shape[0]
