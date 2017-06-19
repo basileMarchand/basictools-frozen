@@ -11,3 +11,6 @@ def ReadJson(file=None,text=None):
         return json.loads(text)
 
   return None
+
+def CheckIntegrity():
+    return "OK"
