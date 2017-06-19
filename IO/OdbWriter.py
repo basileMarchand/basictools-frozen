@@ -42,7 +42,7 @@ def WriteOdb(filename,mesh, __insubprocess= False):
             return
         # it was not possible to load the libraries, we tried to launch a
         # writing service
-        import CodeInterface as CodeInterface
+        import BasicTools.IO.CodeInterface as CodeInterface
         import os
         from BasicTools.IO.Wormhole import WormholeClient
 
