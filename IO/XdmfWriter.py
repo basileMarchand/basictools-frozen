@@ -143,6 +143,10 @@ class XdmfWriter(WriterBase):
         self.__binarycpt = 0;
         self.__binfilecounter = 0
         self.__keepXmlFileInSaneState = True;
+
+        #set to off is you what to put the time at the end of the temporal grid
+        #keep this option True to be compatible with the XMDF3 reader of Paraview
+        self.__printTimeInsideEachGrid = True
         self.SetFileName(fileName)
 
 
@@ -496,6 +500,8 @@ class XdmfWriter(WriterBase):
              self.Step(dt)
 
          self.filePointer.write('    <Grid Name="Grid_'+str(len(self.timeSteps))+'">\n')
+         if self.__isTemporalOutput and self.__printTimeInsideEachGrid :
+             self.filePointer.write('    <Time Value="'+str(self.currentTime)+'" /> \n')
 
          self.__WriteGeoAndTopo(baseMeshObject)
 
@@ -555,7 +561,7 @@ class XdmfWriter(WriterBase):
     def __WriteTime(self):
         """ this function is called by the WriteTail, this function must NOT change
          the state of the instance, also no writting to binary neither hdf5 files """
-        if self.isOpen():
+        if self.isOpen() and self.__printTimeInsideEachGrid == False:
             #self.filePointer.write('<Time TimeType="List">\n')
             #self.__WriteDataItem(self.timeSteps)
             #self.filePointer.write('</Time>\n')
