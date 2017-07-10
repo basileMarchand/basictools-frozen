@@ -39,7 +39,12 @@ class GReader(ReaderBase):
             if l[0] == ";": continue
             l = l.split(';')[0]
             st = l.split()
-            if st[0] == "G0" or st[0] == "G1":
+
+            if st[0][0] == "N":
+                st.pop(0)
+
+
+            if st[0][0:2] == "G0" or st[0] == "G1" or st[0][0] == "X" or st[0][0] == "Y"or st[0][0] == "Z":
                 thi = 0
                 for s in st:
                     if s[0] == "X":
