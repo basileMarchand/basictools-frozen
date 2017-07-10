@@ -33,43 +33,43 @@ class BundaryCondition(BaseOutputObject):
     def tighten(self):
         self.reserve(self.cpt)
 
-    def eliminate_double(self):
+    def eliminate_double(self, overwrite=True):
+        #for the moment this is a O(n**2) algo
+        #I have to change to a O(n)
+
         if len(self.nodes) == 0:
             return
-        m = np.amax(self.nodes, axis=0)
-        fcpt = np.zeros(m+1,dtype=np.int);
+        m = np.amax(self.nodes,axis=0)+1
+        print(m)
+
+        pointers = [None]*(np.prod(m)*3)
+        m[1:] *= m[0]
+        m *= 3
+        cachesize = np.insert(np.delete(m,len(m)-1),0,3)
 
         i = 0 ;
-        self.PrintDebug(self.cpt)
-        fac = 100./self.cpt
-        c = 0
         while (i < self.cpt):
-          if i*fac >c:
-              self.Print2(round(i*fac))
-              c +=1
 
           node = self.nodes[i]
-          if fcpt[node[0],node[1],node[2]] == 0:
-              fcpt[node[0],node[1],node[2]] += 1
-              i += 1
-              continue
-          fcpt[node[0],node[1],node[2]] += 1
+          pp = sum(node*cachesize) + self.dofs[i]
 
-          dofs = self.dofs[i]
-          #val = self.vals[i]
-          j = 0
-          while(j < i-1 and i < self.cpt ):
-             xyz =self.nodes[j]
-             if ( xyz[0] == node[0] and xyz[1] == node[1] and xyz[2] == node[2]  and self.dofs[j] == dofs   ):
-                 #(self.nodes[j] == node).all()
-                 self.nodes[j] = self.nodes[self.cpt-1]
-                 self.dofs[j] = self.dofs[self.cpt-1]
-                 self.vals[j] = self.vals[self.cpt-1]
-                 self.cpt -=1
-                 continue
-             j +=1
+          if pointers[pp] is None:
+             pointers[pp] = i
+             i +=1
+          else:
+             p = pointers[pp]
 
-          i +=1
+             # we copy the value of the last encountered val
+             if overwrite :
+                 self.vals[p] = self.vals[i]
+
+             #then we move the last value to the current place
+             self.nodes[i] = self.nodes[self.cpt-1]
+             self.dofs[i] = self.dofs[self.cpt-1]
+             self.vals[i] = self.vals[self.cpt-1]
+             self.cpt -= 1
+
+
         self.tighten()
 
     def append(self, nodes, dof,val):
@@ -79,6 +79,16 @@ class BundaryCondition(BaseOutputObject):
         self.dofs[self.cpt] = dof
         self.vals[self.cpt] = val
         self.cpt += 1
+
+    def __str__(self):
+       res = ""
+       i = 0
+       while (i < self.cpt):
+           res += str(self.nodes[i])+ " "
+           res += str(self.dofs[i]) + " "
+           res += str(self.vals[i])+ " \n"
+           i +=1
+       return res
 
 class Fea(FeaBase.FeaBase):
 
@@ -525,7 +535,8 @@ def CheckIntegrityDep3D():
     print(max(myProblem.u))
 
     if abs(max(myProblem.u)-1.00215295) > 1e-5:
-        raise   # pragma: no cover
+        print(TestTempDir.GetTempPath())
+        raise   Exception("The value must be 1.00215295")# pragma: no cover
 
 def CheckIntegrityThermal2D():
     import BasicTools.FE.ConstantRectilinearMesh as CRM
