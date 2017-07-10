@@ -11,3 +11,10 @@ def ReadJson(file=None,text=None):
         return json.loads(text)
 
   return None
+
+def CheckIntegrity():
+
+    return "ok"
+
+if __name__ == '__main__':
+    print(CheckIntegrity())# pragma: no cover
