@@ -456,8 +456,7 @@ class XdmfWriter(WriterBase):
            raise Exception                                                                                    # pragma: no cover
 
        self.filePointer.write('    <Attribute Center="'+center+'" Name="'+name+'" Type="'+attype+'">\n')#
-
-
+       #self.PrintDebug("Writing field '"+name +"' at '"+center+ "' of type " + attype )
        self.__WriteDataItem(data.ravel(),shape)
 
        self.filePointer.write('    </Attribute>\n')
@@ -592,8 +591,7 @@ class XdmfWriter(WriterBase):
                 typename = 'Char'
                 s = data.dtype.itemsize
             else:
-                print('Output Not implemented for data of type ')              # pragma: no cover
-                print(type(data[0]))                                           # pragma: no cover
+                print('Output Not implemented for data of type ' + str(type(data[0])))              # pragma: no cover
                 raise                                                          # pragma: no cover
 
             dimension = ArrayToString(shape)
