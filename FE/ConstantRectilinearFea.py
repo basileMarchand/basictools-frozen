@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-
 import numpy as np
 
 from scipy.sparse import coo_matrix
@@ -137,6 +136,7 @@ class Fea(FeaBase.FeaBase):
         self.fixed = np.zeros(self.ndof, dtype=np.bool)
         if dirichlet_bcs is not None :
             dirichlet_bcs.tighten()
+            dirichlet_bcs.eliminate_double()
             indexs = support.GetMonoIndexOfNode(dirichlet_bcs.nodes)
             indexs *= dofpernode
             indexs += dirichlet_bcs.dofs
@@ -233,7 +233,7 @@ class Fea(FeaBase.FeaBase):
         self.PrintDebug(" Delete fixed Dofs")
         [K, rhsfixed] = FeaBase.deleterowcol(K, self.fixed, self.fixed, self.fixedValues)
 
-        self.PrintDebug(" Start solver")
+        self.PrintDebug(" Start solver (" + str(self.linearSolver) + ")")
         rhs = self.f[self.free, 0]-rhsfixed[self.free, 0]
 
         self.u = np.zeros((self.ndof, 1), dtype=np.double)
@@ -248,8 +248,14 @@ class Fea(FeaBase.FeaBase):
             M = sps.dia_matrix((1./K.diagonal(),0), shape=K.shape)
             # normalization of the rhs term ( to treat correctly the tol of CG) (Please read the documentaion of numpy.linalg.cg)
             norm = np.linalg.norm(rhs)
-            res = linalg.cg(K, rhs/norm, x0 = self.u[self.free, 0]/norm , M = M, tol = self.tol)
+            #def PrintRes(x):
+            #   self.PrintDebug(np.linalg.norm(K.dot(x)-rhs/norm))
+            #    , callback=PrintRes
+            res = linalg.cg(K.tocsc(copy=False), rhs/norm, x0 = self.u[self.free, 0]/norm , M = M, tol = self.tol )
+            if res[1] > 0:
+                raise
             self.u[self.free, 0] = res[0]*norm
+
           elif self.linearSolver == "LGMRES":
             M = sps.dia_matrix((1./K.diagonal(),0), shape=K.shape)
             norm = np.linalg.norm(rhs)
@@ -277,7 +283,6 @@ class Fea(FeaBase.FeaBase):
         u_reshaped.shape = (self.support.GetNumberOfElements(), self.nodesPerElement*self.dofpernode)
         Ku_reshaped = np.dot(u_reshaped, self.KE)
         np.einsum('ij,ij->i', Ku_reshaped, u_reshaped, out=self.eed)
-
         self.PrintDebug('Post Process Done')
 
     def GenerateIJs(self):
@@ -294,14 +299,13 @@ class Fea(FeaBase.FeaBase):
     def element_elastic_energy(self, Eeff= None, OnlyOnInterface = False):
 
         if Eeff is None:
-            Eeff = np.ones(self.support.GetNumberOfElements())
+            return self.eed
+        else:
+            nEeff = np.copy(Eeff)
+            bool_Eeff = Eeff<self.minthreshold
+            nEeff[bool_Eeff] = 0.0
+            return nEeff*self.eed
 
-        bool_Eeff = Eeff<self.minthreshold
-        nEeff = Eeff.copy()
-        nEeff[bool_Eeff] = 0.0
-        nEeff *= self.eed
-
-        return nEeff.ravel()
 
     def nodal_elastic_energy(self, Eeff=None, OnlyOnInterface = False):
 
