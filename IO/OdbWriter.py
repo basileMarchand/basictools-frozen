@@ -31,7 +31,7 @@ def WriteSection(odb, section):
     material = 'MATERIAL',
     thickness = 1.0)
 
-def WriteOdb(filename,mesh, __insubprocess= False):
+def WriteOdb(filename,mesh, __insubprocess= False,abaqusEXE ="abaqus"):
 
     try :
         import abaqusConstants as AC
@@ -69,8 +69,10 @@ WormholeServer(""" +str(port) +""",dry=False)
 
 
         #interface.SetCodeCommand('"C:\\Program Files (x86)\\Notepad++\\notepad++.exe"')
-        proc = interface.SingleRunComputation(0)
-        interface.SetCodeCommand("abaqus python")
+        from BasicTools.Helpers.which import which
+        if which(abaqusEXE) is None:
+            raise Exception("Abaqus not available in your platform")
+        interface.SetCodeCommand(abaqusEXE + " python")
         import sys
         proc = interface.SingleRunComputation(0)
         import time
