@@ -50,7 +50,8 @@ class Interface(BaseOutputObject):
             raise
 
         inpFilename = self.inputFilename + str(idProc) + self.inputFileExtension
-        with open(self.processDirectory + inpFilename, 'w') as inpFile:
+
+        with open(self.processDirectory + os.sep +inpFilename, 'w') as inpFile:
             inpFile.write(inpString)
 
     def SingleRunComputation(self, idProc,stdout = None):# pragma: no cover
@@ -80,7 +81,7 @@ class Interface(BaseOutputObject):
 
         # Commande execution
         self.lastCommandExecuted = cmd;
-        out = subprocess.check_output(cmd, cwd=self.processDirectory, shell=True ).decode("utf-8")
+        out = subprocess.check_output(cmd, cwd=self.processDirectory, shell=True ).decode("utf-8","ignore")
 
         return out
 
@@ -95,9 +96,13 @@ class Interface(BaseOutputObject):
 
     def SetWorkingDirectory(self,Dir):
         self.workingDirectory = os.path.dirname(Dir);
+        if len(self.workingDirectory) and self.workingDirectory[-1] != os.sep:
+            self.workingDirectory += os.sep
 
     def SetProcessDirectory(self,Dir):
         self.processDirectory = os.path.dirname(Dir);
+        if len(self.processDirectory) and self.processDirectory[-1] != os.sep:
+            self.processDirectory += os.sep
 
     def SetCodeCommand(self,ccommand):          # Code command
         self.codeCommand = ccommand
@@ -139,7 +144,8 @@ def CheckIntegrity():
     interface.parameters['coefficient']   = '8.*(430.+40.*atan(0.01*(temperature-500.)))*(1.5-0.5*exp(-200./((temperature-1200.)*(temperature-1200.))));'
 
     interface.SetProcessDirectory(T.TestTempDir.GetTempPath())
-    interface.SetCodeCommand("ls -l ")
+
+    interface.SetCodeCommand("dir ")
     #interface.SetTemplateFile('template.tpl')
     interface.ReadTemplateFile('template.tpl')
     interface.WriteFile(1)
