@@ -61,7 +61,7 @@ class ConstantRectilinearMesh(MeshBase):
 
     def GetElementTrasfertMatrix(self, destination):
 
-        nps = 10
+        nps = 3
         nps3 = nps**self.GetDimensionality()
         oldToNewVals = np.zeros((destination.GetNumberOfNodes(),nps3))
         oldToNewIK = np.zeros((destination.GetNumberOfNodes(),nps3), dtype=np.int_)
