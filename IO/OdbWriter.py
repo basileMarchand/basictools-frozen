@@ -63,7 +63,6 @@ def WriteOdb(filename,mesh,PointFields=None,CellFields=None,PointFieldsNames=Non
 #    if GridFieldsNames is None:
 #        GridFieldsNames  = [];
 
-
     try :
         import abaqusConstants as AC
         import odbAccess

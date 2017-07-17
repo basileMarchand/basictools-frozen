@@ -1,0 +1,103 @@
+****calcul
+ ***mesh
+  **file {meshfile}
+
+ ***linear_solver mumps
+
+ ***resolution newton
+  **sequence  1
+   *time      1.
+   *increment 1
+   *iteration  10
+   *ratio  automatic 1.e3
+   *algorithm p1p2p3
+
+
+ ***bc
+  **impose_nodal_dof
+x0 U1 0.
+x0 U2 0.
+x0 U3 0.
+
+   **impose_nodal_dof_density
+x1 U1 1. tabunit
+
+ ***table
+  **name tabunit
+   *time  0.    1.0
+   *value 0.    1.0
+
+ ***material
+   *this_file 1
+
+ ***output
+  **value_at_integration
+#  **output_first
+  **save_parameter
+
+
+
+# ***parameter
+#  **ascii_file idx
+#   *node
+#   *rec_size 1360
+#   #    0. uniform 270.
+#   #1. uniform 120.
+#   0. file ./phit 0 2
+#   1. file ./phit 0 2
+
+
+# ***parameter
+#  **file idx
+#   *node
+#   #*rec_size 1360
+#    0. file ./phi.data 0
+#    1. file ./phi.data 0
+
+
+****return
+
+***behavior gen_evp
+  **elasticity isotropic
+     young 1.
+     poisson 0.3
+#  **coefficient
+#     masvol 8.1e-9
+***return
+
+****post_processing
+
+***local_post_processing
+  **file node
+  **process function
+    *output ener
+    *expression sig11*eto11+ sig12*eto12 + sig31*eto31 + sig12*eto12+ sig22*eto22 + sig23*eto23 + sig31*eto31+ sig23*eto23 + sig33*eto33;
+
+***local_post_processing
+ **file integ
+ **elset ALL_ELEMENT
+  **process function
+    *output enerinteg
+    *expression sig11*eto11+ sig12*eto12 + sig31*eto31 + sig12*eto12+ sig22*eto22 + sig23*eto23 + sig31*eto31+ sig23*eto23 + sig33*eto33;
+
+***global_post_processing
+ **file integ
+ **elset ALL_ELEMENT
+ **process volume
+
+
+***global_post_processing
+ **file node
+ **nset ALL_NODE
+ **process average
+  *list_var ener
+
+***global_post_processing
+ **file integ
+ **elset ALL_ELEMENT
+ **process average
+  *list_var enerinteg
+
+
+****return
+
