@@ -146,7 +146,6 @@ def CheckIntegrity():
     interface.SetProcessDirectory(T.TestTempDir.GetTempPath())
 
     interface.SetCodeCommand("dir ")
-    #interface.SetTemplateFile('template.tpl')
     interface.ReadTemplateFile('template.tpl')
     interface.WriteFile(1)
     import sys
