@@ -116,12 +116,12 @@ class Fea(FeaBase.FeaBase):
             self.ME    = MOperator
         else:
             if support.GetDimensionality() == 3:
-                myElem = Hexa8Cuboid()
+                self.myElem = Hexa8Cuboid()
             else:
-               myElem = Quad4Rectangle()
-            myElem.delta = support.GetSpacing()
-            self.KE = myElem.GetIsotropDispK(1.,0.3);
-            self.ME = myElem.GetIsotropDispM(1.);
+               self.myElem = Quad4Rectangle()
+            self.myElem.delta = support.GetSpacing()
+            self.KE = self.myElem.GetIsotropDispK(1.,0.3);
+            self.ME = self.myElem.GetIsotropDispM(1.);
 
         # dofs:
         self.ndof = dofpernode * support.GetNumberOfNodes()
@@ -690,6 +690,9 @@ def CheckIntegrity():
     print(CheckIntegrityDep3D())
     print(CheckIntegrityThermal2D())
     print(CheckIntegrityDep2D())
+
+    from BasicTools.Helpers.Tests import TestTempDir
+    print(TestTempDir.GetTempPath())
     return "ok"
 
 if __name__ == '__main__':
