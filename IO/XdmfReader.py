@@ -161,7 +161,7 @@ class XdmfGrid(Xdmfbase):
         for a in self.attributes:
             if a.Name == name :
                 data = a.dataitems[0].GetData();
-                print(data.shape)
+                #print(data.shape)
                 if self.geometry.Type == "ORIGIN_DXDYDZ":
                     if a.Type == "Vector":
                         return data.transpose(2,1,0,3)
@@ -282,8 +282,8 @@ class XdmfTopology(Xdmfbase):
         if self.Type is -1:
             self.Type = self.ReadAttribute(attrs,'TopologyType')
 
-        if self.Type != "Mixed":
-            self.Dimensions = np.array(self.ReadAttribute(attrs,'Dimensions').split(), dtype='int')[::-1]
+#        if self.Type != "Mixed":
+        self.Dimensions = np.array(self.ReadAttribute(attrs,'Dimensions').split(), dtype='int')[::-1]
 
     def GetConnectivity(self):
 
@@ -739,9 +739,9 @@ def CheckIntegrity():
     #Test domain part***********************
 
     grid  = domain.GetGrid(0)
-    print(grid.GetFieldsOfType("Node"))
-    print("--")
-    print(grid.GetFieldsOfType("Cell"))
+    #print(grid.GetFieldsOfType("Node"))
+    #print("--")
+    #print(grid.GetFieldsOfType("Cell"))
     grid.geometry.GetOrigin()
     grid.geometry.GetSpacing()
     ##################################
@@ -805,11 +805,4 @@ def Example2():
     #print(TT)
 
 if __name__ == '__main__':
-    CheckIntegrity() # pragma: no cover
-    a = XdmfReader("/data/fbordeu/conforme/Bar.xmf")
-    a.Read()
-    grid = a.xdmf.GetDomain(0).GetGrid(-1)
-    #print(grid.GridType)
-    print(grid.geometry.GetNodes()[0,:])
-    print(grid.topology.GetConnectivity())
-
+   print(CheckIntegrity()) # pragma: no cover

@@ -736,7 +736,6 @@ def CheckIntegrity():
     import BasicTools.FE.UnstructuredMesh as UM
     from BasicTools.FE.UnstructuredMeshTools import CreateMeshOfTriangles
 
-    TestTempDir.SetTempPath("/tmp/BasicTools_Test_Directory_jMnw6z_safe_to_delete/")
     tempdir = TestTempDir.GetTempPath()
 
     res = CreateMeshOfTriangles([[0.,0.,0],[1.,2.,3],[1, 3, 2]], np.array([[0,1,2]]))
