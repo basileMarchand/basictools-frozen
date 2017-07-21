@@ -104,7 +104,8 @@ def CheckIntegrity():
               vertex 0.0 0.0 1.0
             endloop
           endfacet
-        endsolid"""
+        endsolid
+"""
 
 
     res,_ = ReadStl(string=data)
