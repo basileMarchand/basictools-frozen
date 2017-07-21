@@ -102,6 +102,16 @@ class XdmfGrid(Xdmfbase):
         self.attributes = []
         self.Name ='';
 
+    def GetSupport(self):
+        if self.geometry.Type == "ORIGIN_DXDYDZ":
+            from BasicTools.FE.ConstantRectilinearMesh import ConstantRectilinearMesh
+            res = ConstantRectilinearMesh()
+            res.SetOrigin(self.geometry.GetOrigin())
+            res.SetSpacing(self.geometry.GetSpacing())
+            res.SetDimensions(self.topology.GetDimensions())
+            return res
+
+
     def ReadAttributes(self,attrs):
         self.Name = self.ReadAttribute(attrs,'Name')
         self.GridType = self.ReadAttribute(attrs,'CollectionType',default="Uniform")
@@ -150,7 +160,14 @@ class XdmfGrid(Xdmfbase):
     def GetFieldData(self,name):
         for a in self.attributes:
             if a.Name == name :
-                return a.dataitems[0].GetData();
+                data = a.dataitems[0].GetData();
+                print(data.shape)
+                if self.geometry.Type == "ORIGIN_DXDYDZ":
+                    if a.Type == "Vector":
+                        return data.transpose(2,1,0,3)
+                    else:
+                        return data.transpose(2,1,0)
+                return data
         raise FieldNotFound(name)
 
     def GetFieldTermsAsColMatrix(self,fieldname, offset = 0):
@@ -277,7 +294,7 @@ class XdmfTopology(Xdmfbase):
 
 
     def GetDimensions(self):
-            return self.Dimensions
+            return self.Dimensions[::-1]
 
 class XdmfGeometry(Xdmfbase):
     """XdmfGeometry class:  stores the point positions """

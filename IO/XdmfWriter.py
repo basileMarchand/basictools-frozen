@@ -148,7 +148,10 @@ class XdmfWriter(WriterBase):
         #keep this option True to be compatible with the XMDF3 reader of Paraview
         self.__printTimeInsideEachGrid = True
         self.SetFileName(fileName)
+        self.appendMode = False
 
+    def SetAppendMode(self,mode = True):
+        self.appendMode = mode
 
     def __str__(self):
         res  = 'XdmfWriter : \n'
@@ -216,8 +219,44 @@ class XdmfWriter(WriterBase):
         try :
             # in python 3 we cant use unbuffered  text I/O (bug???)
             #self.filePointer = open(self.fileName, 'w',0)
+            if self.appendMode:
+                self.filePointer = open(self.fileName, 'r+')
+                self.filePointer.seek(-100,2)
 
-            self.filePointer = open(self.fileName, 'w')
+                lines = self.filePointer.readlines()
+                #print("lines")
+                for line in lines:
+                    #print(line)
+                    if line.find("<!--Temporal") != -1:
+                         #pos (for seek)
+                         l = line.find('pos="')
+                         r = line.find('" ',l+1)
+                         pos = int(line[l+5:r])
+
+
+                         #__binfilecounter
+                         l = line.find('ter="')
+                         r = line.find('" ',l+1)
+                         binfilecounter = int(line[l+5:r])
+
+                         self.NewBinaryFilename()
+                         self.__binaryFilePointer = open (self.__binFileName, "wb")
+                         self.__binarycpt = 0
+
+                         #time
+                         l = line.find('ime="')
+                         r = line.find('" ',l+1)
+                         currentTime = float(line[l+5:r])
+
+                         self.filePointer.seek(pos)
+                         self._isOpen = True
+                         self.__binfilecounter = binfilecounter
+                         self.currentTime = currentTime
+                         return
+                raise(Exception("Unable Open file in append mode "))
+            else:
+                self.filePointer = open(self.fileName, 'w')
+
         except: # pragma: no cover
             print(TFormat.InRed("Error File Not Open"))
             raise
@@ -248,9 +287,10 @@ class XdmfWriter(WriterBase):
     def WriteTail(self):
         if self.isOpen():
             filepos = self.filePointer.tell()
+
             if self.__isTemporalOutput:
                 self.__WriteTime()
-                self.filePointer.write('    </Grid>\n')
+                self.filePointer.write('    </Grid><!--Temporal pos="'+str(filepos)+'" __binfilecounter="'+str(self.__binfilecounter)+'" time="'+str(self.currentTime)+'" -->\n')
             self.filePointer.write('  </Domain>\n')
             self.filePointer.write('</Xdmf>\n')
             # we put the pointer just before the tail so we can continue writting
@@ -383,6 +423,14 @@ class XdmfWriter(WriterBase):
                else:
                    data = data.T
 
+
+           if baseMeshObject.IsConstantRectilinear():
+             shape = np.array(shape)
+             if center == "Node":
+                  shape = shape.T
+             elif center == "Cell":
+                  shape = shape.T
+
        elif data.size == ndata*3:
 
            attype = "Vector"
@@ -415,6 +463,13 @@ class XdmfWriter(WriterBase):
                #    data = data.transpose(1,0,2)
 
 
+           if baseMeshObject.IsConstantRectilinear():
+             shape = np.array(shape)
+             if center == "Node":
+                  shape = shape[[2,1,0,3]]
+             elif center == "Cell":
+                  shape = shape[[2,1,0,3]]
+
        elif data.size == ndata*2:
            if baseMeshObject.IsConstantRectilinear() :
              if center == "Node":
@@ -431,8 +486,7 @@ class XdmfWriter(WriterBase):
                  shape = tuple(shape) + (2,)
 
 
-           print(data.shape)
-           print(shape)
+
            if len(data.shape) <= 2:
                data.shape = shape
 
@@ -454,9 +508,10 @@ class XdmfWriter(WriterBase):
            print(TFormat.InRed("But support has size : " + str(ndata) ))  # pragma: no cover
 
            raise Exception                                                                                    # pragma: no cover
-
+       #print(data.shape)
+       #print(shape)
        self.filePointer.write('    <Attribute Center="'+center+'" Name="'+name+'" Type="'+attype+'">\n')#
-       #self.PrintDebug("Writing field '"+name +"' at '"+center+ "' of type " + attype )
+       self.PrintDebug("Writing field '"+name +"' at '"+center+ "' of type " + attype )
        self.__WriteDataItem(data.ravel(),shape)
 
        self.filePointer.write('    </Attribute>\n')
@@ -650,16 +705,44 @@ def WriteTest(tempdir,Temporal, Binary):
     writer.Write(myMesh,GridFields=[0, 1], GridFieldsNames=['K','P'], TimeStep = 1);
     writer.Close()
 
+def WriteTestAppend(tempdir,Temporal, Binary):
+
+    from BasicTools.FE.ConstantRectilinearMesh import ConstantRectilinearMesh
+
+    myMesh = ConstantRectilinearMesh()
+    myMesh.SetDimensions([2,3,4]);
+    myMesh.SetSpacing([0.1, 0.1, 0.1]);
+    myMesh.SetOrigin([-2.5,-1.2,-1.5]);
+
+    dataT = np.arange(24,dtype=np.float32)
+    dataT.shape = (2,3,4)
+    dataDep = np.arange(24*3)+0.3
+
+    dataDep.shape = (2,3,4,3)
+
+    writer = XdmfWriter(tempdir + 'TestOutput_Bin_'+str(Binary)+'_Temp_'+str(Temporal)+'.xmf')
+    writer.SetAppendMode(True)
+    writer.SetTemporal(Temporal)
+    writer.SetBinary(Binary)
+    writer.Open()
+    print(writer)
+    writer.Write(myMesh,PointFields=[dataT, dataDep], PointFieldsNames=["Temp","Dep"],CellFields=[np.arange(6)],CellFieldsNames=['S']);
+    writer.Write(myMesh,GridFields=[0, 1], GridFieldsNames=['K','P'], TimeStep = 1);
+    writer.Close()
+
 def CheckIntegrity():
     from BasicTools.Helpers.Tests import TestTempDir
     from BasicTools.FE.ConstantRectilinearMesh import ConstantRectilinearMesh
     import BasicTools.FE.UnstructuredMesh as UM
     from BasicTools.FE.UnstructuredMeshTools import CreateMeshOfTriangles
 
+    TestTempDir.SetTempPath("/tmp/BasicTools_Test_Directory_jMnw6z_safe_to_delete/")
     tempdir = TestTempDir.GetTempPath()
 
     res = CreateMeshOfTriangles([[0.,0.,0],[1.,2.,3],[1, 3, 2]], np.array([[0,1,2]]))
     print(res)
+    res.SetGlobalDebugMode()
+
     WriteMeshToXdmf(tempdir+"TestUnstructured.xdmf", res, PointFields = [np.array([1.,2,3])], CellFields =[ np.array([1])] ,GridFields= [[0],  np.array([1,2,3]).astype(np.int64) ],
                                                                     PointFieldsNames = ["PS"],
                                                                     CellFieldsNames = ["CS"],
@@ -701,6 +784,9 @@ def CheckIntegrity():
     WriteTest(tempdir,False, True)
     WriteTest(tempdir,True, False)
     WriteTest(tempdir,True, True)
+    WriteTestAppend(tempdir,True, True)
+
+
 
     WriteMeshToXdmf(tempdir+'testdirect.xdmf',ConstantRectilinearMesh() )
 
@@ -763,6 +849,7 @@ def CheckIntegrity():
     writer.Close()
 
 
+
     from BasicTools.IO.XdmfReader import XdmfReader  as XR
     f = XR(filename = tempdir+'testdirect.xdmf' )
     f.lazy = False;
@@ -784,7 +871,6 @@ def CheckIntegrity():
                                                                        PointFieldsNames = ["Test"],
                                                                        CellFields= [ np.arange(SM3D.GetNumberOfElements()*3)],
                                                                        CellFieldsNames = [ "TestV"] );
-    print(tempdir)
 
     from BasicTools.IO.XdmfReader import XdmfReader  as XR
     f = XR(filename = tempdir+'StructuredMesh.xdmf' )
