@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
+"""Geof file writer (Zset mesh files)
 
-from BasicTools.FE.MeshBase import Tag as Tag
-from BasicTools.IO.WriterBase import WriterBase as WriterBase
+"""
 import numpy as np
+__author__ = "Felipe Bordeu"
+
+from BasicTools.IO.WriterBase import WriterBase as WriterBase
 import BasicTools.FE.ElementNames as EN
 
 GeofName = {}

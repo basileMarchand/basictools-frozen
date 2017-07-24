@@ -1,12 +1,9 @@
 # -*- coding: utf-8 -*-
-from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
-from BasicTools.Helpers.TextFormatHelper import TFormat as TFormat
-
 import pickle as pickle
-#import cPickle as pickle
-
 import socket
 
+__author__ = "Felipe Bordeu"
+from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 
 """Backport of importlib.import_module from 3.x."""
 # While not critical (and in no way guaranteed!), it would be nice to keep this

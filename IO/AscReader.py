@@ -1,6 +1,11 @@
 # -*- coding: utf-8 -*-
+""" ASC file reader
+"""
 
 import numpy as np
+
+__author__ = "Felipe Bordeu"
+
 import BasicTools.FE.UnstructuredMesh as UM
 import BasicTools.FE.ElementNames as EN
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject

@@ -554,9 +554,6 @@ def CheckIntegrityDep2D():
                     GridFieldsNames=[])
 
     #print(max(myProblem.u))
-    import os
-    os.system('cmd /C C:\\Users\D584808\Apps\ParaView-5.0.1-Qt4-OpenGL2-Windows-64bit\\bin\paraview.exe ' + TestTempDir.GetTempPath() +'TestDep2D.xmf')
-
 
     return 'ok'
     #if abs(max(myProblem.u)-1.0128810548) > 1e-5:

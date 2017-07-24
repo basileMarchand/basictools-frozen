@@ -1,8 +1,12 @@
-# -*-coding:Latin-1 -*
+# -*- coding: utf-8 -*-
+""" Class to help the execution of an external program
+"""
+
 import subprocess
 import os
-from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
+__author__ = "Felipe Bordeu, Fabien Casenave"
 
+from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 
 class Interface(BaseOutputObject):
 

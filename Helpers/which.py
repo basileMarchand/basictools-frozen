@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
-# From https://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
+"""Class to check if a executable is in the current path
 
+insperated from:
+    https://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
+"""
+__author__ = "Felipe Bordeu"
 
 def which(program):
     import os

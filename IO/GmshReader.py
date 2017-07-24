@@ -1,6 +1,11 @@
 # -*- coding: utf-8 -*-
-import BasicTools.FE.UnstructuredMesh  as UM
+""" Gmsh file reader (gmesh mesh files)
+
+"""
 import numpy as np
+__author__ = "Felipe Bordeu"
+
+import BasicTools.FE.UnstructuredMesh  as UM
 import BasicTools.FE.ElementNames as EN
 
 

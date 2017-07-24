@@ -1,6 +1,11 @@
 # -*- coding: utf-8 -*-
+""" Gcode file reader
+
+"""
 
 import numpy as np
+
+__author__ = "Felipe Bordeu"
 from BasicTools.IO.ReaderBase import ReaderBase
 import BasicTools.FE.ElementNames as EN
 import BasicTools.FE.UnstructuredMesh  as UM
@@ -81,6 +86,7 @@ class GReader(ReaderBase):
 
             print("ignoring line " + str(l) )
         self.EndReading()
+
         res.nodes = np.reshape(nodes,newshape=(len(nodes)/3, 3))
         res.originalIDNodes = np.arange(res.GetNumberOfNodes())
         elems = res.GetElementsOfType(EN.Bar_2)

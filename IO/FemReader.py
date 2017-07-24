@@ -1,6 +1,11 @@
 # -*- coding: utf-8 -*-
+""" Fem file reader
+
+"""
 
 import numpy as np
+
+__author__ = "Felipe Bordeu"
 import BasicTools.FE.UnstructuredMesh as UM
 from BasicTools.IO.ReaderBase import ReaderBase
 import BasicTools.FE.ElementNames as ElementNames
@@ -96,6 +101,7 @@ class FemReader(ReaderBase):
                     print("string '" + str(line) + "' not treated")
                     break
                 break
+            if line[0:6] == 'ENDATA' : break
             print("string '" + str(line) + "' not treated")
             break
 
@@ -135,9 +141,25 @@ def CheckIntegrity(GUI = False):
 
 
     from BasicTools.Helpers.Tests import TestTempDir
-    newFileName = "/home/fbordeu-weld/PythonTools/cas_application_ASL/cas_application_ASL.fem"
 
-    res = ReadFem(fileName = newFileName)
+    testData=u"""
+BEGIN BULK
+
+GRID      162969        53.00389234.456633.29904
+GRID      156839        50.53256233.782536.31633
+GRID      156554        50.67131231.871634.13537
+GRID      146810        54.21149233.586335.82001
+CTETRA    581279       2  162969  156839  156554  146810
+SPC            1  162969  1234560.0
+FORCE          2  156839       01.0     2949.8  -5792.120.0
+ENDDATA
+"""
+
+
+    FR = FemReader()
+    FR.SetStringToRead(testData)
+    res = FR.Read()[0]
+
     print(res.nodes)
     print(res)
     from BasicTools.IO.XdmfWriter import WriteMeshToXdmf
@@ -146,8 +168,7 @@ def CheckIntegrity(GUI = False):
 
     if GUI:
         import os
-        os.system('vglrun /home/software/paraview/binv5.2.0/bin/paraview  ' + TestTempDir().GetTempPath()+"FemReaderTest.xdmf")
-
+        os.system('vglrun paraview ' + TestTempDir().GetTempPath()+"FemReaderTest.xdmf")
     return 'ok'
 
 if __name__ == '__main__':

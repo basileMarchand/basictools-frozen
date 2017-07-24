@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
-
-# -*- coding: utf-8 -*-
 import struct
 import numpy as np
 
+__author__ = "Felipe Bordeu"
 import BasicTools.FE.UnstructuredMesh  as UM
 import BasicTools.FE.ElementNames as EN
 from BasicTools.IO.ReaderBase import ReaderBase
+
 # for ascii files
 meditName = {}
 meditName['Edges'] = EN.Bar_2

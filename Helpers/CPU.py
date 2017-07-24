@@ -1,8 +1,9 @@
-
-
-
+# -*- coding: utf-8 -*-
+__author__ = "Felipe Bordeu"
 
 class CPU():
+    """ Class to help doning the multithreading without using to many cpus
+    """
     cpudispo = 20
 
     def __init__(self, nbCPUNeeded=-1, WithError=True):

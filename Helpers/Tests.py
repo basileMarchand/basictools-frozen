@@ -1,15 +1,20 @@
 # -*- coding: utf-8 -*-
+"""Testing infrastructure for BasicTools extra modules
+
+"""
 
 #for python 2.6+ compatibility
 from __future__ import print_function
+__author__ = "Felipe Bordeu"
 
 import traceback
 
-"""
-Function to generate and destroy a temporary directory
-"""
+from BasicTools.Helpers.which import which
 
 class TestTempDir():
+    """Class to generate and to destroy a temporary directory
+
+    """
     path = None
 
     @classmethod
@@ -35,6 +40,9 @@ class TestTempDir():
         import os
         if os.name == "nt":
             subprocess.Popen('explorer "' + cls.GetTempPath() +'"')
+        elif which("nautilus"):
+            print(cls.GetTempPath())
+            subprocess.Popen(['nautilus',  cls.GetTempPath() ])
 
     @classmethod
     def SetTempPath(cls,path):# pragma: no cover
@@ -185,7 +193,6 @@ def TestAll(modulestotreat=['ALL'], fulloutput=False, stopAtFirstError= False, c
 
         # create a temp file
         tempdir = TestTempDir.GetTempPath()
-        # tempdir = 'c:/users/d584808/appdata/local/temp/tmp4ipmul/'
         ss = [ ("*"+k.split(".")[-1]+"*") for k in tocheck ]
         cov.html_report(directory = tempdir, include=ss )
         import webbrowser

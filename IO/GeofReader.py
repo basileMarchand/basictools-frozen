@@ -1,6 +1,11 @@
 # -*- coding: utf-8 -*-
+""" Geof file reader (Zset mesh file)
 
+"""
 import numpy as np
+
+__author__ = "Felipe Bordeu"
+
 import BasicTools.FE.ElementNames as EN
 
 GeofNumber = {}

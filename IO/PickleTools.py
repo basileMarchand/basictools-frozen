@@ -1,10 +1,7 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Jan 05 17:32:18 2016
-
-@author: Felipe Bordeu
-"""
 import pickle as __pickle
+
+__author__ = "Felipe Bordeu"
 
 class IOHelper:
     """helper Class that represent the data from a file  """

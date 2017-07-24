@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 import os
 
+__author__ = "Felipe Bordeu"
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
-#from BasicTools.Helpers.TextFormatHelper import TFormat as TFormat
-
 
 class ReaderBase(BaseOutputObject):
 
@@ -33,14 +32,10 @@ class ReaderBase(BaseOutputObject):
                 import codecs
                 self.filePointer = codecs.open(self.fileName, self.readFormat, 'utf-8')
 
-
-
-
     def EndReading(self):
         self.filePointer.close()
 
     def SetFileName(self,fileName):
-
 
         self.fileName = fileName;
         if fileName is None :
@@ -61,8 +56,8 @@ class ReaderBase(BaseOutputObject):
         while(True):
             string = self.filePointer.readline()
 
-            string = string.rstrip('\r\n')
-            string = string.replace('\ufeff', '')
+            string = string.rstrip(u'\r\n')
+            string = string.replace(u'\ufeff', '')
             if len(string) == 0 :
                 continue
             if self.commentChar is None:

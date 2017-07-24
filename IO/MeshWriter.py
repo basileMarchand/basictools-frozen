@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 
-# -*- coding: utf-8 -*-
+import struct
+import numpy as np
+__author__ = "Felipe Bordeu"
 
 from BasicTools.FE.MeshBase import Tag as Tag
 from BasicTools.IO.WriterBase import WriterBase as WriterBase
-import numpy as np
 import BasicTools.FE.ElementNames as EN
-import struct
 
 mmgName = {}
 mmgName[EN.Point_1] = 'Vertices'
@@ -18,7 +18,6 @@ mmgName[EN.Hexaedron_8]   = 'Hexahedra'
 #mmgName[EN.Wedge_6]       = ''
 #mmgName[EN.Pyramid_5]     = ''
 #mmgName[EN.Point_1]   = ''
-
 
 # for binary files
 meshNumber = {}

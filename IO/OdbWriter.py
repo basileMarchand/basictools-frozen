@@ -4,8 +4,7 @@
 from __future__ import print_function
 
 import numpy as np
-
-
+__author__ = "Felipe Bordeu"
 
 import BasicTools.FE.ElementNames as EN
 

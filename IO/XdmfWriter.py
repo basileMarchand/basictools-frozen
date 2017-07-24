@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-
-from BasicTools.Helpers.TextFormatHelper import TFormat
-from BasicTools.IO.WriterBase import WriterBase as WriterBase
-
 import numpy as np
 import os
+
+__author__ = "Felipe Bordeu"
+from BasicTools.Helpers.TextFormatHelper import TFormat
+from BasicTools.IO.WriterBase import WriterBase as WriterBase
 import BasicTools.FE.ElementNames as EN
 
 def ArrayToString(data):
@@ -857,9 +857,6 @@ def CheckIntegrity():
     f.xdmf.GetDomain(0).GetGrid(0).GetFieldsOfType("Cell")
     print(f.xdmf.GetDomain(0).GetGrid(0).attributes )
 
-    #print('testdirect.xdmf')
-    #os.system('cmd /C C:\Users\D584808\Apps\ParaView-5.0.1-Qt4-OpenGL2-Windows-64bit\\bin\paraview.exe ' + 'testdirect.xdmf')
-
     print("Structured Mesh in 3D")
     import BasicTools.FE.StructuredMesh as SM
 
@@ -884,10 +881,3 @@ def CheckIntegrity():
 if __name__ == '__main__':
     print(CheckIntegrity()) # pragma: no cover
 
-    #import BasicTools.IO.AscReader as AR
-    #m =  AR.ReadAsc(fileName='C:\\Users\\D584808\\Documents\\Projects\\Python\\Topotools\\SUPPORT_VERIN_DATA1.ASC')
-    #WriteMeshToXdmf('FromASCReader.xdmf',m ,Binary= False)
-
-    #m.ComputeBoundingBox()
-    #print(m.boundingMin)
-    #print(m.boundingMax)

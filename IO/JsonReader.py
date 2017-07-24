@@ -1,10 +1,10 @@
 import json
 
 
-def ReadJson(file=None,text=None):
+def ReadJson(fileName=None,text=None):
 
-  if file is not None:
-    with open(file) as data_file:
+  if fileName is not None:
+    with open(fileName) as data_file:
         return json.load(data_file)
 
   if text is not None:

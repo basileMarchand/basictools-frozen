@@ -1,9 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# -*- coding: utf-8 -*-
-
-import BasicTools.FE.ElementNames as ElementNames
-
+__author__ = "Felipe Bordeu"
 
 def WriteMesh(filename,out,binary=False):# pragma: no cover
     extention = filename.split(".")[-1].lower()

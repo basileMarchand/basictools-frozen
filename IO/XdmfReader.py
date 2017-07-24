@@ -1,14 +1,9 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Fri Mar 11 09:47:58 2016
+import numpy as np
 
-@author: d584808
-"""
-
-
+__author__ = "Felipe Bordeu"
 from BasicTools.Helpers.TextFormatHelper import TFormat
 from BasicTools.IO.XdmfTools import FieldNotFound
-import numpy as np
 
 
 class Xdmfbase(object):

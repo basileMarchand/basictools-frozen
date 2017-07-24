@@ -4,6 +4,7 @@ __all__ = [
 
 'AscReader',
 'CodeInterface',
+'FemReader',
 'GeofReader',
 'GeofWriter',
 'GmshReader',
@@ -29,3 +30,4 @@ __all__ = [
 'ZebulonIO'
 ]
 
+__author__ = "Felipe Bordeu"

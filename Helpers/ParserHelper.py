@@ -1,4 +1,8 @@
-  # -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
+""" Functions to parse text into different types
+"""
+__author__ = "Felipe Bordeu"
+
 import numpy as np
 
 def Read(string, inout):

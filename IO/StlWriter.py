@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
+import numpy as np
+__author__ = "Felipe Bordeu"
+
 from BasicTools.IO.WriterBase import WriterBase as WriterBase
 import BasicTools.FE.ElementNames as EN
-import numpy as np
+
 
 def WriteMeshToStl(filename,mesh, normals= None):
     OW = StlWriter()

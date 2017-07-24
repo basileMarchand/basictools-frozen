@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 
+__author__ = "Felipe Bordeu"
 import BasicTools.FE.ElementNames as ElementNames
-
-
 
 
 def ReadMesh(filename,out=None):# pragma: no cover
@@ -27,13 +26,10 @@ def ReadMesh(filename,out=None):# pragma: no cover
         return MeshReader.ReadMesh(fileName=filename)
     elif extention ==  "gcode":
         import BasicTools.IO.GReader as GReader
-
         return GReader.ReadGCode(fileName=filename)
     elif extention ==  "fem":
         import BasicTools.IO.FemReader as FemReader
-
         return FemReader.ReadFem(fileName=filename)
-
     elif extention ==  "solb" or extention ==  "sol":
         import BasicTools.IO.MeshReader as MeshReader
         if extention[-1] == "b":
