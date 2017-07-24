@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
+__author__ = "Felipe Bordeu"
+
+import numpy as np
+from scipy.sparse import coo_matrix
 
 from BasicTools.FE.MeshBase import MeshBase
 from BasicTools.FE.Hexa8Cuboid import Hexa8Cuboid
 from BasicTools.FE.Quad4Rectangle import Quad4Rectangle
-
-import numpy as np
-from scipy.sparse import coo_matrix
 
 class ConstantRectilinearMesh(MeshBase):
 

@@ -1,9 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Jul 12 10:52:41 2016
-
-@author: d584808
-"""
+__author__ = "Felipe Bordeu"
 
 import BasicTools.FE.ElementNames as ElementsNames
 from BasicTools.FE.Tri3 import Tri3 as Tri3

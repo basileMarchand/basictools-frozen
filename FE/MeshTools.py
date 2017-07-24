@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
+__author__ = "Felipe Bordeu"
 
 import numpy as np
+
 import BasicTools.FE.UnstructuredMeshTools as UMT
 import BasicTools.FE.ConstantRectilinearMesh as CRM
 

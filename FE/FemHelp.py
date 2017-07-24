@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
+__author__ = "Felipe Bordeu"
 
 import math
 import numpy as np
 import BasicTools.FE.ElementNames as ElementsNames
-
 
 def Integral(E,Bop,elem,ndofs,pos=None):
 

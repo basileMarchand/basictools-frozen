@@ -1,15 +1,17 @@
 # -*- coding: utf-8 -*-
+""" Class to treat Constants Rectilinear Finit Element Problems
+
+"""
+__author__ = "Felipe Bordeu"
 
 import numpy as np
-
 from scipy.sparse import coo_matrix
 import scipy.sparse.linalg as linalg
 import scipy.linalg as denselinalg
-
 import  scipy.sparse as sps
+
 from BasicTools.FE.Hexa8Cuboid import Hexa8Cuboid
 from BasicTools.FE.Quad4Rectangle import  Quad4Rectangle
-
 import BasicTools.FE.FeaBase as FeaBase
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 
@@ -34,8 +36,6 @@ class BundaryCondition(BaseOutputObject):
         self.reserve(self.cpt)
 
     def eliminate_double(self, overwrite=True):
-        #for the moment this is a O(n**2) algo
-        #I have to change to a O(n)
 
         if len(self.nodes) == 0:
             return

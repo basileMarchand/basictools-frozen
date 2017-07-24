@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
+__author__ = "Felipe Bordeu"
 
 import numpy as np
+
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 
 class Tag():

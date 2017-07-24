@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
+__author__ = "Felipe Bordeu"
 
-# -*- coding: utf-8 -*-
+import numpy as np
 
 from BasicTools.FE.MeshBase import MeshBase
-import numpy as np
 
 class StructuredMesh(MeshBase):
 

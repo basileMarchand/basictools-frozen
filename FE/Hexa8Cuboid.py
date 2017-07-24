@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
+__author__ = "Felipe Bordeu"
 
 import numpy as np
+
 import BasicTools.FE.MaterialHelp as MH
 from BasicTools.FE.FElement import FElement
 from BasicTools.FE.FemHelp import Integral
 import BasicTools.FE.ElementNames as ElementsNames
-
 
 class Hexa8Cuboid(FElement):
     def __init__(self):

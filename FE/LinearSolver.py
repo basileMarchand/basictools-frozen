@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
+__author__ = "Felipe Bordeu"
 
+import numpy as np
 import scipy.sparse as sps
 import scipy.sparse.linalg as spslin
-import numpy as np
+
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject as BOO
 from BasicTools.Helpers.TextFormatHelper import TFormat as TF
 

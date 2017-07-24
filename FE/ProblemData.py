@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
+__author__ = "Felipe Bordeu"
 
 import numpy as np
 
-
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
-
-
 
 class Loading():
   def __init__(self):
@@ -84,13 +82,10 @@ class Material(BaseOutputObject):
         return res
 
 
-
-
 class Section():
     def __init__(self):
         self.material= None
         self.elemtag = None
-
 
 class Orientation(BaseOutputObject):
     def __init__(self):

@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
-
-
-
+__author__ = "Felipe Bordeu"
 
 import numpy as np
 
@@ -11,9 +9,9 @@ import scipy.linalg as denselinalg
 import  scipy.sparse as sps
 
 from BasicTools.FE.FeaBase import FeaBase as FeaBase
-
 import BasicTools.FE.ElementBuildier  as ElementBuildier
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
+
 class BundaryCondition(BaseOutputObject):
     def __init__(self,dim=3, size= 1):
         super(BundaryCondition,self).__init__()
