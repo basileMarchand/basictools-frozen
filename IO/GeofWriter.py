@@ -102,12 +102,15 @@ class GeofWriter(WriterBase):
             #npe = data.GetNumberOfNodesPerElement()
             #if elemtype!="c2d3":
             for i in range(data.GetNumberOfElements() ):
+                conn = data.connectivity[i,:].ravel()
+                if elemtype == "c3d20":
+                  conn = [conn[x] for x in [0,8,1,9,2,10,3,11,16,17,18,19,4,12,5,13,6,14,7,15]]
                 if useOriginalId:
                     self.filePointer.write("{} {} ".format(data.originalIds[i],elemtype) )
-                    self.filePointer.write(" ".join([str(int(meshObject.originalIDNodes[x])) for x in data.connectivity[i,:].ravel()]))
+                    self.filePointer.write(" ".join([str(int(meshObject.originalIDNodes[x])) for x in conn]))
                 else:
                     self.filePointer.write("{} {} ".format(cpt+1,elemtype) )
-                    self.filePointer.write(" ".join([str(x+1) for x in data.connectivity[i,:].ravel()]))
+                    self.filePointer.write(" ".join([str(x+1) for x in conn]))
                 cpt += 1;
                 self.filePointer.write("\n")
 
@@ -118,7 +121,7 @@ class GeofWriter(WriterBase):
             self.filePointer.write("  **nset {} \n".format(tag.name))
             data = np.zeros((meshObject.GetNumberOfNodes(),1),dtype=np.int)
             if useOriginalId:
-                self.filePointer.write(" ".join([str(meshObject.originalIDNodes[x]) for x in tag.GetIds()]))
+                self.filePointer.write(" ".join([str(int(meshObject.originalIDNodes[x])) for x in tag.GetIds()]))
             else:
                 self.filePointer.write(" ".join([str(x+1) for x in tag.GetIds()]))
             self.filePointer.write("\n")
