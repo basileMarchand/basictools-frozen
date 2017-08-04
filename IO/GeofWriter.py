@@ -206,8 +206,11 @@ class GeofWriter(WriterBase):
 
                             ids = tag.GetIds()
                             for e in range(len(tag)):
+                                conn = elems.connectivity[ids[e],:]
+                                if name == "q8":
+                                    conn = [conn[x] for x in [0, 4, 1, 5, 2, 6, 3, 7]]
                                 self.filePointer.write(" {} ".format(name))
-                                self.filePointer.write(" ".join([str(x+1) for x in elems.connectivity[ids[e],:] ]))
+                                self.filePointer.write(" ".join([str(x+1) for x in conn ]))
                                 self.filePointer.write(" \n")
 
 
