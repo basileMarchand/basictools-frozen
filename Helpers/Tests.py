@@ -45,9 +45,11 @@ class TestTempDir():
             subprocess.Popen(['nautilus',  cls.GetTempPath() ])
 
     @classmethod
-    def SetTempPath(cls,path):# pragma: no cover
+    def SetTempPath(cls,path,create=True):# pragma: no cover
         import os
         cls.path = os.path.abspath(path+os.sep) + os.sep
+        if create and not os.path.exists(cls.path):
+            os.makedirs(cls.path)
 
 def __RunAndCheck(lis,bp,stopAtFirstError,dryrun):# pragma: no cover
 
