@@ -1,10 +1,17 @@
 # -*- coding: utf-8 -*-
 __author__ = "Felipe Bordeu"
 
+import os
+
+def GetNumberOfAvailableCpus():
+   SLURM_JOB_CPU_PER_NODE = os.environ.get('SLURM_JOB_CPU_PER_NODE')
+   if SLURM_JOB_CPU_PER_NODE is None:
+       return 1
+
 class CPU():
     """ Class to help doning the multithreading without using to many cpus
     """
-    cpudispo = 20
+    cpudispo = GetNumberOfAvailableCpus()
 
     def __init__(self, nbCPUNeeded=-1, WithError=True):
         self.nbCPUNeeded = nbCPUNeeded
@@ -50,14 +57,16 @@ def CheckIntegrity():
         print("CPU dispo " + str( CPU.cpudispo))
         with CPU() as cpu2:
             print("cpu2 ask max Allocated  " + str( cpu2.nbCPUAllocated))
-            print("CPU dispo " + str( CPU.cpudispo))
+            print("CPU2 dispo " + str( CPU.cpudispo))
 
             with CPU(7,False) as cpu3:
                 print("cpu3 ask 7 Allocated  " + str( cpu3.nbCPUAllocated))
-                print("CPU dispo " + str( CPU.cpudispo))
+                print("CPU3 dispo " + str( CPU.cpudispo))
                 CPU()
-    except:
-        pass
+    except Exception as e:
+         print(e)
+
+   #     pass
     print("CPU dispo " + str( CPU.cpudispo))
 
     return "ok"
