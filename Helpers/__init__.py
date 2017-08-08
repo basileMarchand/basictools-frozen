@@ -11,7 +11,7 @@ __all__ = [
 'PrintBypass',
 'Tests',
 'TextFormatHelper',
-'which.py'
+'which'
  ]
 
 
