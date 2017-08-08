@@ -16,6 +16,7 @@ __all__ = [
 'MeshReader',
 'MeshWriter',
 'OdbWriter',
+'PathControler',
 'PickleTools',
 'PostReader',
 'ProcastResultReader',
