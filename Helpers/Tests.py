@@ -14,6 +14,15 @@ from BasicTools.Helpers.which import which
 class TestTempDir():
     """Class to generate and to destroy a temporary directory
 
+             python  Tests.py -c -f -s -e <extraModules> -m <moduleFilter>
+             options :
+                    -c    To activate coverage and generate a html report
+                    -f    Full output for all the test
+                    -s    Stop at first error
+                    -e    To test extra Modules (-e can be repeated)
+                    -m    To filter the output by this string (-m can be repeated)
+                    -d    Dry run do not execute only show what will be executed
+
     """
     path = None
 
