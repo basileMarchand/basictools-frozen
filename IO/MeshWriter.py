@@ -139,11 +139,20 @@ class MeshWriter(WriterBase):
             self.PrintDebug("calculate position at end " + str(endOfInformation))
 
         bars = meshObject.GetElementsOfType(EN.Bar_2)
-        if "Ridges" in bars.tags:
-            self.PrintDebug("output Ridges " )
 
-            tag = bars.tags["Ridges"]
-            ids = tag.GetIds()
+        if "Ridges" in bars.tags  :
+
+            self.PrintDebug("output Ridges" )
+            ids = np.empty(0,dtype=int)
+            if "Ridges" in bars.tags :
+                tag = bars.tags["Ridges"]
+
+                ids = np.concatenate((ids,tag.GetIds()))
+
+            #if "Meca" in bars.tags :
+            #    tag = bars.tags["Meca"]
+            #    ids = np.concatenate((ids,tag.GetIds()))
+
             nbids = len(ids)
             if nbids:
                 self.filePointer.write(struct.pack('i', 14 ))
@@ -154,6 +163,27 @@ class MeshWriter(WriterBase):
                 (ids+1).astype(np.int32).tofile(self.filePointer, format=dataformat,sep='')
                 self.PrintDebug("position at end " + str(self.filePointer.tell()))
                 self.PrintDebug("calculate position at end " + str(endOfInformation))
+
+        if "Meca" in bars.tags :
+
+            self.PrintDebug("output Mecas" )
+            ids = np.empty(0,dtype=int)
+
+            if "Meca" in bars.tags :
+                tag = bars.tags["Meca"]
+                ids = np.concatenate((ids,tag.GetIds()))
+
+            nbids = len(ids)
+            if nbids:
+                self.filePointer.write(struct.pack('i', 16 ))
+                currentposition = self.filePointer.tell()
+                endOfInformation = currentposition+ (2+nbids)*4
+                self.filePointer.write(struct.pack('i', endOfInformation ))# end of information
+                self.filePointer.write(struct.pack('i', nbids))# GetNumberOfElements
+                (ids+1).astype(np.int32).tofile(self.filePointer, format=dataformat,sep='')
+                self.PrintDebug("position at end " + str(self.filePointer.tell()))
+                self.PrintDebug("calculate position at end " + str(endOfInformation))
+
 
 
 
