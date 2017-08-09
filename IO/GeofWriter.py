@@ -10,6 +10,11 @@ import BasicTools.FE.ElementNames as EN
 
 GeofName = {}
 GeofSetName= {}
+
+
+from BasicTools.IO.GeofReader import PermutationZSetToBasicTools
+PermutationBasicToolsToZSet = {key:np.argsort(value) for key, value in PermutationZSetToBasicTools.iteritems() }
+
 #0d
 GeofName[EN.Point_1] = "l2d1"
 
@@ -30,9 +35,11 @@ GeofSetName[EN.Quadrangle_4] = "q4"
 
 GeofName[EN.Quadrangle_8] = "c3d8"
 GeofSetName[EN.Quadrangle_8] = "q8"
+
 #3d
 GeofName[EN.Tetrahedron_4] = "c3d4"
 GeofName[EN.Tetrahedron_10] = "c3d10"
+
 GeofName[EN.Quadrangle_4] = "c2d4"
 GeofName[EN.Hexaedron_8] = "c3d8"
 GeofName[EN.Hexaedron_20] = "c3d20"
@@ -58,6 +65,8 @@ class GeofWriter(WriterBase):
         self.fileName = fileName;
 
     def Write(self,meshObject,useOriginalId=False,lowerDimElementsAsSets=False):
+
+        meshObject.PrepareForOutput()
 
         self.filePointer.write("% This file has been writen by the python routine GeofWriter of the BasicTools package\n")
 
@@ -86,7 +95,9 @@ class GeofWriter(WriterBase):
         maxDimensionalityOfelements = 0
         for ntype,elems in meshObject.elements.items():
             maxDimensionalityOfelements = max(EN.dimension[ntype],maxDimensionalityOfelements)
-            if EN.dimension[ntype] == maxDimensionalityOfelements or  False==lowerDimElementsAsSets :
+
+        for ntype,elems in meshObject.elements.items():
+            if EN.dimension[ntype] == maxDimensionalityOfelements or  False == lowerDimElementsAsSets :
                 nbElements += elems.GetNumberOfElements()
 
 
@@ -103,8 +114,9 @@ class GeofWriter(WriterBase):
             #if elemtype!="c2d3":
             for i in range(data.GetNumberOfElements() ):
                 conn = data.connectivity[i,:].ravel()
-                if elemtype == "c3d20":
-                  conn = [conn[x] for x in [0,8,1,9,2,10,3,11,16,17,18,19,4,12,5,13,6,14,7,15]]
+
+                if elemtype in PermutationBasicToolsToZSet:
+                  conn = [conn[x] for x in PermutationBasicToolsToZSet[elemtype]]
                 if useOriginalId:
                     self.filePointer.write("{} {} ".format(data.originalIds[i],elemtype) )
                     self.filePointer.write(" ".join([str(int(meshObject.originalIDNodes[x])) for x in conn]))
@@ -207,8 +219,8 @@ class GeofWriter(WriterBase):
                             ids = tag.GetIds()
                             for e in range(len(tag)):
                                 conn = elems.connectivity[ids[e],:]
-                                if name == "q8":
-                                    conn = [conn[x] for x in [0, 4, 1, 5, 2, 6, 3, 7]]
+                                if name in PermutationBasicToolsToZSet:
+                                    conn = [conn[x] for x in PermutationBasicToolsToZSet[name]]
                                 self.filePointer.write(" {} ".format(name))
                                 self.filePointer.write(" ".join([str(x+1) for x in conn ]))
                                 self.filePointer.write(" \n")

@@ -9,18 +9,31 @@ __author__ = "Felipe Bordeu"
 import BasicTools.FE.ElementNames as EN
 
 GeofNumber = {}
+PermutationZSetToBasicTools = {}
 
 GeofNumber['l2d1']   = EN.Point_1
 GeofNumber['l2d2']   = EN.Bar_2
 GeofNumber['quad4'] = EN.Quadrangle_4
 GeofNumber['c2d4'] = EN.Quadrangle_4
 GeofNumber["c2d3"] = EN.Triangle_3
+GeofNumber["c2d6"] = EN.Triangle_6
+PermutationZSetToBasicTools["c3d6"] = [0, 2, 4, 1, 3, 5]
+
 
 GeofNumber['c3d4'] = EN.Tetrahedron_4
 GeofNumber['c3d10'] = EN.Tetrahedron_10
+PermutationZSetToBasicTools["c3d10"] = [2, 0, 1, 9, 5, 3, 4, 8, 6, 7]
 GeofNumber['c3d20'] = EN.Hexaedron_20
+PermutationZSetToBasicTools["c3d20"] = [0,2,4,6,12,14,16,18,1,3,5,7,13,15,17,19,8,9,10,11]
+
 GeofNumber['t3']   = EN.Triangle_3
+
+GeofNumber['t6']   = EN.Triangle_6
+PermutationZSetToBasicTools["t6"] = PermutationZSetToBasicTools["c3d6"]
 GeofNumber['q8']   = EN.Quadrangle_8
+PermutationZSetToBasicTools["q8"] = [0, 2, 4, 6, 1, 3, 5, 7]
+
+PermutationZSetToBasicTools["c3d15"] = [0, 2, 4, 9, 11, 13, 1, 3, 5, 10, 12, 14, 6, 7, 8]
 
 
 def ReadGeof(fileName=None,string=None):
@@ -87,17 +100,8 @@ def ReadGeof(fileName=None,string=None):
           conn = [filetointernalid[x] for x in  map(int,s[2:]) ]
           elements = res.GetElementsOfType(nametype)
           oid = int(s[0])
-          if nametype == EN.Triangle_6:
-              conn =  [conn[x] for x in [0, 2, 4, 1, 3, 5]]
-          elif nametype == EN.Quadrangle_8:
-              conn =  [conn[x] for x in [0, 2, 4, 6, 1, 3, 5, 7]]
-          elif nametype == EN.Hexaedron_20:
-              conn =  [conn[x] for x in [0,2,4,6,12,14,16,18,1,3,5,7,13,15,17,19,8,9,10,11]]
-          elif nametype == EN.Tetrahedron_10:
-              conn =  [conn[x] for x in [2, 0, 1, 9, 5, 3, 4, 8, 6, 7]]
-          elif nametype == EN.Wedge_15:
-              conn =  [conn[x] for x in [0, 2, 4, 9, 11, 13, 1, 3, 5, 10, 12, 14, 6, 7, 8]]
-
+          if s[1] in PermutationZSetToBasicTools:
+              conn =  [conn[x] for x in PermutationZSetToBasicTools[s[1]] ]
           elements.AddNewElement(conn,oid)
           l = string.readline().strip('\n').lstrip().rstrip()
         continue
@@ -158,11 +162,8 @@ def ReadGeof(fileName=None,string=None):
           nametype = GeofNumber[s[0]]
           conn = [filetointernalid[x] for x in  map(int,s[1:])]
 
-          if nametype == EN.Triangle_6:
-              conn =  [conn[x] for x in [0, 2, 4, 1, 3, 5]]
-          elif nametype == EN.Quadrangle_8:
-              conn =  [conn[x] for x in [0, 2, 4, 6, 1, 3, 5, 7]]
-
+          if s[0] in PermutationZSetToBasicTools:
+              conn =  [conn[x] for x in PermutationZSetToBasicTools[s[0]] ]
 
           elements = res.GetElementsOfType(nametype)
           localId = elements.AddNewElement(conn,-1)
