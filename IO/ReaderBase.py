@@ -55,9 +55,13 @@ class ReaderBase(BaseOutputObject):
     def ReadCleanLine(self):
         while(True):
             string = self.filePointer.readline()
+            #end of file
+            if string == "" :
+                return None
 
             string = string.rstrip(u'\r\n')
-            string = string.replace(u'\ufeff', '')
+            string = string.replace(u'\ufeff', '').lstrip().rstrip()
+            #empty line
             if len(string) == 0 :
                 continue
             if self.commentChar is None:
