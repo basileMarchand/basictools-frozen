@@ -8,7 +8,7 @@ def WriteMesh(filename,out,binary=False):# pragma: no cover
 
     if extention ==  "geof":
         from BasicTools.IO.GeofWriter import WriteMeshToGeof
-        return WriteMeshToGeof(filename,out)
+        return WriteMeshToGeof(filename,out,lowerDimElementsAsSets=True)
     elif extention ==  "gmsh":
         from  BasicTools.IO.GmshWriter import WriteMeshToGmsh
         return WriteMeshToGmsh(filename,out)
