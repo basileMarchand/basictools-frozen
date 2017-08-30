@@ -11,6 +11,14 @@ import traceback
 
 from BasicTools.Helpers.which import which
 
+def WriteTempFile(filename,content=None,mode="w" ):
+    pfile = TestTempDir.GetTempPath() + filename
+    with open(pfile, mode) as f:
+        if content is not None:
+            f.write( content)
+        return pfile
+    raise(Exception("Unable ot create file :" + pfile))
+
 class TestTempDir():
     """Class to generate and to destroy a temporary directory
 
