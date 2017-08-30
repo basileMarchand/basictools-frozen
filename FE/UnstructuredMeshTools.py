@@ -963,6 +963,7 @@ def VtkToMesh(vtkmesh, meshobject=None, TagsAsFields=False):
 
     vtknumbers = {}
     vtknumbers[3 ] = ElementNames.Bar_2
+    vtknumbers[4 ] = ElementNames.Bar_2
     vtknumbers[5 ] = ElementNames.Triangle_3
     vtknumbers[9 ] = ElementNames.Quadrangle_4
     vtknumbers[12] = ElementNames.Hexaedron_8
@@ -977,11 +978,106 @@ def VtkToMesh(vtkmesh, meshobject=None, TagsAsFields=False):
         ct = cell.GetCellType()
         et = vtknumbers[ct]
         np = cell.GetNumberOfPoints()
-        out.GetElementsOfType(et).AddNewElement([cell.GetPointId(j) for j in range(np)] ,i)
+        #polyline case
+        # we have tu be careful because we potentialy change the number of
+        # elements in the mesh if we have polylines
+        if ct ==4:
+            for i in range(np-1):
+                out.GetElementsOfType(et).AddNewElement([cell.GetPointId(i),cell.GetPointId(i+1) ] ,i)
+        else:
+            out.GetElementsOfType(et).AddNewElement([cell.GetPointId(j) for j in range(np)] ,i)
     return out
+
+def DeleteInternalFaces(mesh):
+    elems2D = {}
+    elemsMask = {}
+    usedPointsBy2DElements = []
+    mesh.PrepareForOutput()
+    #generate a list of all the 2D elements and a empty mask
+    for name,data in mesh.elements.items():
+        if ElementNames.dimension[name] == 2:
+            conn = np.sort(data.connectivity,axis=1)
+
+            ind = np.lexsort((conn[:,1],conn[:,0], conn[:,2]))
+            #print data.connectivity
+            #print ind
+            elems2D[name] = conn[ind,:]
+            #print elems2D[name]
+            elemsMask[name] = np.zeros(data.GetNumberOfElements())
+            usedPointsBy2DElements = np.unique(np.hstack( (data.connectivity.ravel(),usedPointsBy2DElements) )  )
+            #print elemsMask[name]
+            #print usedPointsBy2DElements
+
+    #print(usedPointsBy2DElements)
+    elems3D = {}
+    # generate a potential list of 3D elements touched by the 2D elements
+    for name,data in mesh.elements.items():
+        if ElementNames.dimension[name] == 3:
+            elems3D[name] = data
+            elemsMask[name] =  np.sum(np.in1d(data.connectivity,usedPointsBy2DElements).reshape(data.connectivity.shape),axis=1) >=3
+            #np.zeros(data.GetNumberOfElements())
+            #print(elemsMask[name])
+
+
+    for name3D,data3D in mesh.elements.items():
+        if ElementNames.dimension[name3D] == 3:
+            for facedata in ElementNames.faces[name3D]:
+                mask = elemsMask[facedata[0]]
+                conn = facedata[1]
+                #print(conn)
+                usedElements = data3D.connectivity[elemsMask[name3D],:]
+                faces = np.sort(usedElements[:,conn],axis=1)
+
+                ind = np.lexsort((faces [:,1],faces [:,0], faces [:,2]))
+                faces  = faces [ind]
+                #print(faces)
+                dt  = [ ('col'+str(x),np.int) for x in xrange(faces.shape[1]) ]
+
+                assert faces.flags['C_CONTIGUOUS']
+                faces3D = faces.ravel().view(dt)
+                #print(faces3D)
+
+                assert elems2D[facedata[0]].flags['C_CONTIGUOUS']
+                faces2D = elems2D[facedata[0]].ravel().view(dt)
+                #print(elems2D[facedata[0]])
+                #print(faces2D)
+
+                mask += np.in1d(faces2D,faces3D)
+
+
+    # keep only the faces with one or zero volumes attached
+    newElements = {}
+    for name,data in mesh.elements.items():
+        if ElementNames.dimension[name] == 2:
+            mask = elemsMask[name] <=1
+            newElements[name] = ExtractElementsByMask(data,mask)
+
+    for name,data in newElements.items():
+        mesh.elements[name] = data
+    mesh.PrepareForOutput()
+
 
 
 ###############################################################################
+def CheckIntegrity_DeleteInternalFaces():
+
+    points = [[0,0,0],[1,0,0],[0,1,0],[0,0,1],[1,1,1] ]
+    tets = [[0,1,2,3],[3,0,2,4]]
+    mesh = CreateMeshOf(points,tets,ElementNames.Tetrahedron_4)
+    ## add 2 tris
+    tris = mesh.GetElementsOfType(ElementNames.Triangle_3)
+    tris.AddNewElement([0,1,2],0)
+    tris.AddNewElement([3,0,2],1)
+    tris.AddNewElement([3,0,2],2)
+    #print(mesh)
+
+    DeleteInternalFaces(mesh)
+    print(mesh)
+    return "ok"
+
+
+
+
 def CheckIntegrity_VtkToMesh():
     res = CreateMeshOfTriangles([[0,0,0],[1,0,0],[0,1,0],[0,0,1] ], [[0,1,2],[0,2,3]])
     res.nodeFields = {"x": res.nodes[:,0], "Pos":res.nodes}
@@ -1198,6 +1294,8 @@ def CheckIntegrity_GetDualGraph():
 
 def CheckIntegrity():
 
+
+    CheckIntegrity_DeleteInternalFaces()
     CheckIntegrity_ExtractElementsByMask()
     CheckIntegrity_GetVolume()
     CheckIntegrity_CreateMeshOfTriangles()
