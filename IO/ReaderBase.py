@@ -61,7 +61,7 @@ class ReaderBase(BaseOutputObject):
             if len(string) == 0 :
                 continue
             if self.commentChar is None:
-                break
+                break# pragma: no cover
             else :
                 if string[0] != self.commentChar:
                     break

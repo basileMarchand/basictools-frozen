@@ -72,7 +72,7 @@ def ReadGmsh(fileName=None,string=None,out=None):
                 #print(res.originalIDNodes)
                 oid = int(s[0])
                 if cpt == nbNodes :
-                    raise(Exception("More points than the number of point in the header (fix your file!!!)"))
+                    raise(Exception("More points than the number of point in the header (fix your file!!!)")) # pragma: no cover
                 filetointernalid[oid] = cpt
                 res.originalIDNodes[cpt] = int(s[0])
                 res.nodes[cpt,:] = list(map(float,s[1:]))

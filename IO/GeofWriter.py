@@ -240,8 +240,15 @@ def CheckIntegrity():
     print(tempdir)
 
     mymesh = UM.UnstructuredMesh()
-    mymesh.nodes = np.array([[0.00000000001,0,0],[1,0,0],[0,1,0],[1,1,0]],dtype=np.float)
-    mymesh.originalIDNodes = np.array([1, 3, 4, 5],dtype=np.int)
+    mymesh.nodes = np.array([[0.00000000001,0,0],
+                             [1,0,0],
+                             [0,1,0],
+                             [1,1,0],
+                             [0.5,0,0.1],
+                             [0,0.5,0.1],
+                             [0.5,0.5,0.1],
+    ],dtype=np.float)
+    mymesh.originalIDNodes = np.array([1, 3, 4, 5, 6, 7, 8],dtype=np.int)
 
     mymesh.nodesTags.CreateTag("coucou").AddToTag(0)
 
@@ -258,6 +265,10 @@ def CheckIntegrity():
     bars.AddNewElement([0,1],0)
     bars.AddNewElement([1,3],1)
     bars.tags.CreateTag("firstBar").AddToTag(0)
+
+    bars3 = mymesh.GetElementsOfType(EN.Triangle_6)
+    bars3.AddNewElement([0,1,2,4,6,5],0)
+    bars3.tags.CreateTag("Tri6").AddToTag(0)
 
     #point = mymesh.GetElementsOfType(EN.Point_1)
     #point.AddNewElement([0],0)
