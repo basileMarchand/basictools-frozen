@@ -979,7 +979,7 @@ def VtkToMesh(vtkmesh, meshobject=None, TagsAsFields=False):
         et = vtknumbers[ct]
         np = cell.GetNumberOfPoints()
         #polyline case
-        # we have tu be careful because we potentialy change the number of
+        # we have to be careful because we potentialy change the number of
         # elements in the mesh if we have polylines
         if ct ==4:
             for i in range(np-1):
