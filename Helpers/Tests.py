@@ -41,6 +41,7 @@ class TestTempDir():
         import tempfile
         import os
         cls.path = tempfile.mkdtemp(prefix="BasicTools_Test_Directory_",suffix="_safe_to_delete") + os.sep
+        cls.__saveTempPath()
         return TestTempDir.path
 
     #  we cant test this funciotn, because the temp path will be delete
@@ -67,6 +68,19 @@ class TestTempDir():
         cls.path = os.path.abspath(path+os.sep) + os.sep
         if create and not os.path.exists(cls.path):
             os.makedirs(cls.path)
+        cls.__saveTempPath()
+
+    #very useful in conbination of a alias
+    #alias cdtmp='source ~/.BasicToolsTempPath'
+    @classmethod
+    def __saveTempPath(cls):
+        from os.path import expanduser
+        home = expanduser("~")
+        import os
+        with open(home + os.sep+".BasicToolsTempPath","w") as f:
+            f.write("cd " + TestTempDir.path + "\n")
+            import stat
+            os.chmod(home + os.sep+".BasicToolsTempPath", stat.S_IWUSR | stat.S_IRUSR |stat.S_IXUSR)
 
 def __RunAndCheck(lis,bp,stopAtFirstError,dryrun):# pragma: no cover
 
