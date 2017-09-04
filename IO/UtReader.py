@@ -81,9 +81,12 @@ class UtReader(ReaderBase):
         self.EndReading()
 
         from BasicTools.IO.GeofReader import GeofReader
-        GR = GeofReader()
-        GR.SetFileName(self.filePath +self.meshfile )
-        self.meshMetadata = GR.ReadMetaData()
+        if self.meshfile[-5:] == ".geof":
+            GR = GeofReader()
+            GR.SetFileName(self.filePath +self.meshfile )
+            self.meshMetadata = GR.ReadMetaData()
+        else:
+            self.Print("Unable to obtain metadata from meshfile, please set metadata manually")
 
     def Read(self,fieldname=None,time=None):
         self.ReadMetaData()
@@ -103,10 +106,8 @@ class UtReader(ReaderBase):
 
         basename = ".".join(self.fileName.split(".")[0:-1])
         #find the field to read
-        ok = False
         idx = None
         res = None
-
 
         nbUsednodes = self.meshMetadata['nbNodes']
         nbNodes = self.meshMetadata['nbNodes']
