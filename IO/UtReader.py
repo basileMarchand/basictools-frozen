@@ -8,6 +8,7 @@ def ReadUt(fileName=None,fieldname=None,time=None,string=None):
     reader = UtReader()
     reader.SetFileName(fileName)
     reader.SetStringToRead(string)
+    reader.atIntegrationPoints = False
     return reader.Read(fieldname=fieldname, time=time )
 
 class UtReader(ReaderBase):

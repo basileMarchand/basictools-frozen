@@ -16,6 +16,7 @@ GeofNumber['l2d1']   = EN.Point_1
 GeofNumber['l2d2']   = EN.Bar_2
 GeofNumber['quad']   = EN.Bar_3
 
+GeofNumber['q4'] = EN.Quadrangle_4
 GeofNumber['quad4'] = EN.Quadrangle_4
 GeofNumber['c2d4'] = EN.Quadrangle_4
 GeofNumber["c2d3"] = EN.Triangle_3
@@ -25,6 +26,8 @@ PermutationZSetToBasicTools["c3d6"] = [0, 2, 4, 1, 3, 5]
 
 
 GeofNumber['c3d4'] = EN.Tetrahedron_4
+GeofNumber['c3d8'] = EN.Hexaedron_8
+
 GeofNumber['c3d10'] = EN.Tetrahedron_10
 PermutationZSetToBasicTools["c3d10"] = [2, 0, 1, 9, 5, 3, 4, 8, 6, 7]
 GeofNumber['c3d20'] = EN.Hexaedron_20
