@@ -16,6 +16,7 @@ class ReaderBase(BaseOutputObject):
         self.output = None
         self.string = None
         self.commentChar = None
+        self.filePointer = None
 
     def StartReading(self):
 
@@ -42,7 +43,7 @@ class ReaderBase(BaseOutputObject):
             self.__path = None;
             self.string = None;
         else:
-            self.filePath = os.path.abspath(os.path.dirname(fileName));
+            self.filePath = os.path.abspath(os.path.dirname(fileName))+os.sep;
             self.string = None
 
 
