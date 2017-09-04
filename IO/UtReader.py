@@ -139,11 +139,16 @@ class UtReader(ReaderBase):
 
 
         self.PrintVerbose("Opening file : " + str(ffn) )
-        with open(ffn+postfix,"rb") as datafile:
-            self.PrintDebug("Offset : " + str(offset*4))
-            self.PrintDebug("count : " + str(count))
-            datafile.seek(offset*4)
-            res = np.fromfile(datafile ,count=count, dtype=np.float32).byteswap()
+        res = None
+        try:
+            with open(ffn+postfix,"rb") as datafile:
+                self.PrintDebug("Offset : " + str(offset*4))
+                self.PrintDebug("count : " + str(count))
+                datafile.seek(offset*4)
+                res = np.fromfile(datafile ,count=count, dtype=np.float32).byteswap()
+        except:
+            print("Error Reading field : " + str(fieldname) + " (not read)")
+
         return res
 
     def __str__(self):
