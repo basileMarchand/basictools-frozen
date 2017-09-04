@@ -856,6 +856,8 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
 
     if hasattr(mesh,"nodeFields"):
         for name,data in mesh.nodeFields.items():
+            if data is None:
+                continue
             #VTK_data = numpy_support.numpy_to_vtk(num_array=np.swapaxes(phi,0,2).ravel(), deep=True, array_type=vtk.VTK_FLOAT)
             #VTK_data.SetName(name)
 
@@ -906,6 +908,8 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
 
     if hasattr(mesh,"elemFields"):
         for name,data in mesh.elemFields.items():
+            if data is None:
+                continue
 
             pd = vtkFloatArray()
             pd.SetName(name)
