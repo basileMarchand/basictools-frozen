@@ -2,7 +2,9 @@
 """printProgressBar
 
 """
-__author__ = "Felipe Bordeu"
+from __future__ import print_function
+
+__author__ = "stackoverflow"
 
 def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '¦'):
     """
@@ -20,8 +22,10 @@ def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, 
     filledLength = int(length * iteration // total)
     bar = fill * filledLength + '-' * (length - filledLength)
     print('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix), end = '\r')
+    import sys
+    sys.stdout.flush()
     # Print New Line on Complete
-    if iteration == total: 
+    if iteration == total:
         print()
 
 
@@ -44,3 +48,4 @@ def CheckIntegrity():
 
 if __name__ == '__main__':
     CheckIntegrity() # pragma: no cover
+
