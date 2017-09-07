@@ -44,6 +44,8 @@ class Interface(BaseOutputObject):
         self.codeCommand = 'Zrun'
         self.lastCommandExecuted = None
 
+        self.withFilename = True
+
     def WriteFile(self, idProc):
 
         # Write code input file
@@ -57,13 +59,21 @@ class Interface(BaseOutputObject):
 
         with open(self.processDirectory + os.sep +inpFilename, 'w') as inpFile:
             inpFile.write(inpString)
+    def GenerateCommandToRun(self,idProc=0):
+        # Command to execute
+        cmd = self.codeCommand
+
+        if self.withFilename:
+            inpFilename = self.inputFilename + str(idProc) + self.inputFileExtension
+            cmd += ' ' + inpFilename
+
+        cmd = cmd.format(**self.parameters)
+        return cmd
 
     def SingleRunComputation(self, idProc,stdout = None):# pragma: no cover
 
-        inpFilename = self.inputFilename + str(idProc) + self.inputFileExtension
 
-        # Command to execute
-        cmd = 'cd ' + self.processDirectory + ' && ' + self.codeCommand + ' ' + inpFilename
+        cmd = self.GenerateCommandToRun(idProc)
 
         if stdout is None:
             out = open(os.devnull, 'w')
@@ -72,19 +82,17 @@ class Interface(BaseOutputObject):
 
         # Commande execution
         self.lastCommandExecuted = cmd;
-        proc = subprocess.Popen(cmd , stdout=out, shell=True)
+        proc = subprocess.Popen(cmd, cwd=self.processDirectory , stdout=out, shell=True)
 
         return proc
 
-    def SingleRunComputationAndReturnOutput(self, idProc):# pragma: no cover
+    def SingleRunComputationAndReturnOutput(self, idProc=0):# pragma: no cover
 
-        inpFilename = self.inputFilename + str(idProc) + self.inputFileExtension
-
-        # Command to execute
-        cmd = self.codeCommand + ' ' + inpFilename
+        cmd = self.GenerateCommandToRun(idProc)
 
         # Commande execution
         self.lastCommandExecuted = cmd;
+        print(cmd)
         out = subprocess.check_output(cmd, cwd=self.processDirectory, shell=True ).decode("utf-8","ignore")
 
         return out
@@ -119,15 +127,21 @@ class Interface(BaseOutputObject):
             self.SetTemplateFile(filename)
         self.tpl = open(self.workingDirectory + os.sep + self.tplFilename).read()
 
+    def CopyFile(self,filetocopy):
+        import shutil
+
+        shutil.copy(self.workingDirectory + os.sep + filetocopy,
+                   self.processDirectory + os.sep +filetocopy.split('/') [-1])
 
 
 def CheckIntegrity():
-    import BasicTools.IO.CodeInterface as CI
-    import BasicTools.Helpers.Tests as T
-    import BasicTools.TestData as T2
-    dataPath = T2.GetTestDataPath()
 
-    interface = CI.Interface(dataPath)
+
+
+    import BasicTools.Helpers.Tests as T
+    import BasicTools.TestData as BasicToolsTestData
+
+    interface = Interface(BasicToolsTestData.GetTestDataPath())
 
     interface.parameters['calcul']        = 'thermal_transient'
     interface.parameters['Ti']            = 1000.0
@@ -154,8 +168,14 @@ def CheckIntegrity():
     interface.WriteFile(1)
     import sys
     interface.SingleRunComputation(1,sys.stdout).wait()
+    print("lastCommandExecuted: " + str(interface.lastCommandExecuted))
+
+    interface.SetCodeCommand("dir {filter}")
+    interface.parameters['filter']        = '*.inp'
+    interface.withFilename = False
 
     print("output is :" + str(interface.SingleRunComputationAndReturnOutput(1).encode("ascii","ignore") ))
+    print("lastCommandExecuted: " + str(interface.lastCommandExecuted))
     return 'ok'
 
 

@@ -14,6 +14,30 @@ def ReadJson(fileName=None,text=None):
 
 def CheckIntegrity():
 
+    text = u"""{"menu": {
+  "id": "file",
+  "value": "File",
+  "popup": {
+    "menuitem": [
+      {"value": "New", "onclick": "CreateNewDoc()"},
+      {"value": "Open", "onclick": "OpenDoc()"},
+      {"value": "Close", "onclick": "CloseDoc()"}
+    ]
+  }
+}}
+"""
+    print(ReadJson(text=text))
+    from BasicTools.Helpers.Tests import WriteTempFile
+    filename = WriteTempFile(filename="test.jso",content=text)
+
+    if filename is not None:
+        print(ReadJson(fileName=filename))
+    else:
+        return "not OK"# pragma: no cover
+
+    if ReadJson() is not None:
+        return "not OK"# pragma: no cover
+
     return "ok"
 
 if __name__ == '__main__':

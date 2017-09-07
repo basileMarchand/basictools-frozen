@@ -16,6 +16,7 @@ class ReaderBase(BaseOutputObject):
         self.output = None
         self.string = None
         self.commentChar = None
+        self.filePointer = None
 
     def StartReading(self):
 
@@ -42,7 +43,7 @@ class ReaderBase(BaseOutputObject):
             self.__path = None;
             self.string = None;
         else:
-            self.filePath = os.path.abspath(os.path.dirname(fileName));
+            self.filePath = os.path.abspath(os.path.dirname(fileName))+os.sep;
             self.string = None
 
 
@@ -55,13 +56,17 @@ class ReaderBase(BaseOutputObject):
     def ReadCleanLine(self):
         while(True):
             string = self.filePointer.readline()
+            #end of file
+            if string == "" :
+                return None
 
             string = string.rstrip(u'\r\n')
-            string = string.replace(u'\ufeff', '')
+            string = string.replace(u'\ufeff', '').lstrip().rstrip()
+            #empty line
             if len(string) == 0 :
                 continue
             if self.commentChar is None:
-                break
+                break# pragma: no cover
             else :
                 if string[0] != self.commentChar:
                     break

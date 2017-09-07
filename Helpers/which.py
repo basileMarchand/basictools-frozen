@@ -23,3 +23,8 @@ def which(program):
                 return exe_file
 
     return None
+
+def CheckIntegrity():
+    return "ok"
+
+
