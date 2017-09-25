@@ -42,6 +42,7 @@ class Interface(BaseOutputObject):
 
         # Code command
         self.codeCommand = 'Zrun'
+        self.options = []
         self.lastCommandExecuted = None
 
         self.withFilename = True
@@ -59,15 +60,25 @@ class Interface(BaseOutputObject):
 
         with open(self.processDirectory + os.sep +inpFilename, 'w') as inpFile:
             inpFile.write(inpString)
+
+    def SetOptions(self, opts):
+        self.options = opts
+
     def GenerateCommandToRun(self,idProc=0):
         # Command to execute
-        cmd = self.codeCommand
+        cmd = []
+        cmd.append(self.codeCommand)
 
         if self.withFilename:
             inpFilename = self.inputFilename + str(idProc) + self.inputFileExtension
-            cmd += ' ' + inpFilename
+            cmd.append(inpFilename)
 
-        cmd = cmd.format(**self.parameters)
+        for opt in self.options:
+            cmd.append(opt)
+
+        for i in xrange(len(cmd)):
+           cmd[i] = cmd[i].format(**self.parameters)
+        print(cmd)
         return cmd
 
     def SingleRunComputation(self, idProc,stdout = None):# pragma: no cover
