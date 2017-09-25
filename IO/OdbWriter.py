@@ -43,7 +43,6 @@ def WriteSection(odb, section):
 
 def WriteOdb(filename,mesh,PointFields=None,CellFields=None,PointFieldsNames=None,CellFieldsNames=None,  __insubprocess= False, abaqusExec="abaqus"):
 
-
     if PointFields is None:
         PointFields = [];
 
@@ -137,8 +136,8 @@ WormholeServer(""" +str(port) +""",dry=False)
     WriteMaterial(pOdb,None)
     WriteSection(pOdb,None)
 
-
     ##Creating the 3D solid part
+
     pPart = pOdb.Part(name='beamTaylor',embeddedSpace = AC.THREE_D,type= AC.DEFORMABLE_BODY)
     nodeLabels = list(range(1,1+mesh.GetNumberOfNodes()))
     pPart.addNodes(labels = nodeLabels,coordinates = mesh.GetPosOfNodes())
@@ -165,9 +164,9 @@ WormholeServer(""" +str(port) +""",dry=False)
         print(elemtype)
         print(ntype)
 
+
         pPart.addElements(labels = dd , connectivity=(data.connectivity+1).astype(np.int32) , type = elemtype, elementSetName=ntype)
 
-#
 
     for name in mesh.GetNamesOfElemTags():
         ids = mesh.GetElementsInTag(name)+1

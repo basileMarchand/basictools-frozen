@@ -341,7 +341,7 @@ class XdmfWriter(WriterBase):
 
             self.filePointer.write('    </Geometry>\n')
             if len(baseMeshObject.elements) > 1:
-                self.filePointer.write('    <Topology TopologyType="Mixed" NumberOfElements="{}">\n'.format(baseMeshObject.GetNumberOfElements()))
+                self.filePointer.write('    <Topology TopologyType="Mixed" NumberOfElements="{0}">\n'.format(baseMeshObject.GetNumberOfElements()))
                 ntotalentries = 0
                 for ntype, data in baseMeshObject.elements.items():
                     ntotalentries += data.GetNumberOfElements()*(data.GetNumberOfNodesPerElement()+1)

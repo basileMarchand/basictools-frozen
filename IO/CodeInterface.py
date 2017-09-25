@@ -44,6 +44,8 @@ class Interface(BaseOutputObject):
         self.codeCommand = 'Zrun'
         self.options = []
         self.lastCommandExecuted = None
+        self.openExternalWindows = True
+        self.keepExternalWindows = True
 
         self.withFilename = True
 
@@ -58,7 +60,8 @@ class Interface(BaseOutputObject):
 
         inpFilename = self.inputFilename + str(idProc) + self.inputFileExtension
 
-        with open(self.processDirectory + os.sep +inpFilename, 'w') as inpFile:
+        with open(self.processDirectory + os.sep + inpFilename, 'w') as inpFile:
+
             inpFile.write(inpString)
 
     def SetOptions(self, opts):
@@ -81,7 +84,7 @@ class Interface(BaseOutputObject):
         print(cmd)
         return cmd
 
-    def SingleRunComputation(self, idProc,stdout = None):# pragma: no cover
+    def SingleRunComputation(self, idProc,stdout = None):
 
 
         cmd = self.GenerateCommandToRun(idProc)
@@ -92,12 +95,23 @@ class Interface(BaseOutputObject):
             out = stdout
 
         # Commande execution
-        self.lastCommandExecuted = cmd;
-        proc = subprocess.Popen(cmd, cwd=self.processDirectory , stdout=out, shell=True)
+
+        if self.openExternalWindows:
+            if self.keepExternalWindows:
+                self.lastCommandExecuted = "/usr/bin/xterm -e '"+ cmd + ";bash'"
+            else:
+                self.lastCommandExecuted = "/usr/bin/xterm -e '"+ cmd + "'"
+        else:
+            self.lastCommandExecuted = cmd;
+
+        proc = subprocess.Popen(cmd , cwd=self.processDirectory , stdout=out, shell=True)
 
         return proc
 
-    def SingleRunComputationAndReturnOutput(self, idProc=0):# pragma: no cover
+    def SingleRunComputationAndReturnOutput(self, idProc=0):
+
+        return proc
+
 
         cmd = self.GenerateCommandToRun(idProc)
 
@@ -171,12 +185,14 @@ def CheckIntegrity():
 
     interface.parameters['conductivity']  = '280.+100.*atan(0.01*(1100-temperature));'
     interface.parameters['coefficient']   = '8.*(430.+40.*atan(0.01*(temperature-500.)))*(1.5-0.5*exp(-200./((temperature-1200.)*(temperature-1200.))));'
+    import sys
 
     interface.SetProcessDirectory(T.TestTempDir.GetTempPath())
 
     interface.SetCodeCommand("dir ")
     interface.ReadTemplateFile('template.tpl')
     interface.WriteFile(1)
+
     import sys
     interface.SingleRunComputation(1,sys.stdout).wait()
     print("lastCommandExecuted: " + str(interface.lastCommandExecuted))
@@ -184,6 +200,7 @@ def CheckIntegrity():
     interface.SetCodeCommand("dir {filter}")
     interface.parameters['filter']        = '*.inp'
     interface.withFilename = False
+
 
     print("output is :" + str(interface.SingleRunComputationAndReturnOutput(1).encode("ascii","ignore") ))
     print("lastCommandExecuted: " + str(interface.lastCommandExecuted))

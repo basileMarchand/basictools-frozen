@@ -25,6 +25,7 @@ def which(program):
     return None
 
 def CheckIntegrity():
-    return "ok"
+    return "OK"
 
-
+if __name__ == '__main__':
+    print((CheckIntegrity()))# pragma: no cover

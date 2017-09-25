@@ -40,8 +40,6 @@ class BaseTensor(object):
                     index.append(slice(part[n],int(part[n]+math.copysign(1,part[n])), int(math.copysign(1,part[n])) ) )
                 else:
                     index.append(slice(None))
-            #print("index  : ")
-            #print(index)
             c.array = c.array[index];
         return res
 
@@ -328,7 +326,7 @@ def CheckIntegrity():
 
     spt.cores[1].array = np.ndarray((2,3))
 
-    spt.Restriction({'X1':0})
+    spt.Restriction({'X1':int(0)})
     spt.Reduction()
 
 

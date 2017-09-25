@@ -5,15 +5,15 @@ import numpy as np
 
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 
-class Loading():
+class Loading(object):
   def __init__(self):
     self.on = None
 
-class BoundaryConditions():
+class BoundaryConditions(object):
   def __init__(self):
     self.on = None
 
-class StudyCase():
+class StudyCase(object):
     def __init__(self):
         self.type = None
 
@@ -42,6 +42,18 @@ class ProblemData(BaseOutputObject):
             res +=  self.materials[m].__str__()
         return res
 
+class Property(object):
+    def __init__(self):
+        self.type = None
+        self.subtype = None
+        self.params = []
+    def __str__(self):
+        res = ""
+        res += str(self.type) + " :: " + str(self.subtype) + "\n"
+        res += str(self.params)
+        return res
+
+
 class Material(BaseOutputObject):
 
     #type: ELASTIC
@@ -52,24 +64,15 @@ class Material(BaseOutputObject):
     #subtype : NONE
     #params (0.1,)
 
-    class Property():
-        def __init__(self):
-            self.type = None
-            self.subtype = None
-            self.params = []
-        def __str__(self):
-            res = ""
-            res += str(self.type) + " :: " + str(self.subtype) + "\n"
-            res += str(self.params)
-            return res
+
 
     def __init__(self):
         super(Material,self).__init__()
-        self;name = "None"
+        self.name = "None"
         self.props = []
 
     def AddProperty(self,intype,insubtype,params):
-        data = Material.Property()
+        data = Property()
         data.type = intype
         data.subtype= insubtype
         data.params = params
