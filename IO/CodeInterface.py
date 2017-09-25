@@ -39,6 +39,8 @@ class Interface(BaseOutputObject):
         # Code command
         self.codeCommand = 'Zrun'
         self.lastCommandExecuted = None
+        self.openExternalWindows = True
+        self.keepExternalWindows = True
 
     def WriteFile(self, idProc):
 
@@ -50,10 +52,10 @@ class Interface(BaseOutputObject):
             raise
 
         inpFilename = self.inputFilename + str(idProc) + self.inputFileExtension
-        with open(self.processDirectory + inpFilename, 'w') as inpFile:
+        with open(self.processDirectory + os.sep + inpFilename, 'w') as inpFile:
             inpFile.write(inpString)
 
-    def SingleRunComputation(self, idProc,stdout = None):# pragma: no cover
+    def SingleRunComputation(self, idProc,stdout = None):
 
         inpFilename = self.inputFilename + str(idProc) + self.inputFileExtension
 
@@ -66,12 +68,20 @@ class Interface(BaseOutputObject):
             out = stdout
 
         # Commande execution
-        self.lastCommandExecuted = cmd;
+
+        if self.openExternalWindows:
+            if self.keepExternalWindows:
+                self.lastCommandExecuted = "/usr/bin/xterm -e '"+ cmd + ";bash'"
+            else:
+                self.lastCommandExecuted = "/usr/bin/xterm -e '"+ cmd + "'"
+        else:
+            self.lastCommandExecuted = cmd;
+
         proc = subprocess.Popen(cmd , stdout=out, shell=True)
 
         return proc
 
-    def SingleRunComputationAndReturnOutput(self, idProc):# pragma: no cover
+    def SingleRunComputationAndReturnOutput(self, idProc):
 
         inpFilename = self.inputFilename + str(idProc) + self.inputFileExtension
 
@@ -137,14 +147,23 @@ def CheckIntegrity():
 
     interface.parameters['conductivity']  = '280.+100.*atan(0.01*(1100-temperature));'
     interface.parameters['coefficient']   = '8.*(430.+40.*atan(0.01*(temperature-500.)))*(1.5-0.5*exp(-200./((temperature-1200.)*(temperature-1200.))));'
+    import sys
 
     interface.SetProcessDirectory(T.TestTempDir.GetTempPath())
+    interface.SetCodeCommand("pwd ")
+
+    # the sys.stdout does not work any more in IPython
+    # sys.stdout is not a file (no fileno() )
+
+    interface.SingleRunComputation(1).wait()
+    print(interface.lastCommandExecuted)
     interface.SetCodeCommand("ls -l ")
     #interface.SetTemplateFile('template.tpl')
     interface.ReadTemplateFile('template.tpl')
     interface.WriteFile(1)
-    import sys
-    interface.SingleRunComputation(1,sys.stdout).wait()
+
+    #,sys.stdout
+    interface.SingleRunComputation(1).wait()
 
     print("output is :" + str(interface.SingleRunComputationAndReturnOutput(1).encode("ascii","ignore") ))
     return 'ok'
