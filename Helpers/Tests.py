@@ -5,6 +5,9 @@ from __future__ import print_function
 
 import traceback
 
+import time
+
+
 """
 Function to generate and destroy a temporary directory
 """
@@ -45,7 +48,6 @@ def __RunAndCheck(lis,bp,stopAtFirstError,dryrun):# pragma: no cover
 
     from BasicTools.Helpers.TextFormatHelper import TFormat
     import sys
-    import time
 
     res = {}
     for name in lis:
@@ -151,6 +153,7 @@ def TestAll(modulestotreat=['ALL'], fulloutput=False, stopAtFirstError= False, c
     from BasicTools.Helpers.PrintBypass import PrintBypass
 
     print("Runnig Tests : ")
+    start_time = time.time()
     print("--- Begin Test ---")
 
     tocheck = {}
@@ -195,6 +198,8 @@ def TestAll(modulestotreat=['ALL'], fulloutput=False, stopAtFirstError= False, c
         print(cov.report(show_missing=False))
         webbrowser.open(tempdir+"index.html")
 
+    stop_time = time.time()
+    bp.Print( "Total Time : %.3f seconds " %  (stop_time -start_time ))
 
     print("--- End Test ---")
 
