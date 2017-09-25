@@ -34,6 +34,8 @@ def CreateMeshFromConstantRectilinearMesh(CRM, ofTetras= False,out=None):
     else:
         res = out # pragma: no cover
 
+    res.CopyProperties(CRM)
+
     res.nodes = CRM.GetPosOfNodes();
     res.originalIDNodes = np.arange(0,res.GetNumberOfNodes(),dtype=np.int);
 
@@ -106,6 +108,8 @@ def CreateMeshFromConstantRectilinearMesh(CRM, ofTetras= False,out=None):
 def QuadToLin(inputmesh, divideQuadElements=True,lineariseMiddlePoints=False):
 
     res = type(inputmesh)()
+    res.CopyProperties(inputmesh)
+
     res.nodes = inputmesh.GetPosOfNodes();
     res.originalIDNodes = np.arange(0,res.GetNumberOfNodes(),dtype=np.int);
     import copy
@@ -386,10 +390,12 @@ def CleanDoubleNodes(res, tol = None, nodesToTestMask= None):
                 toKeep[i] = True;
 
 
-
-
-
     res.nodes = res.nodes[toKeep,:]
+    res.originalIDNodes = np.where(toKeep)[0]
+
+    for tag in res.nodesTags :
+        tag.SetIds(np.unique(newindex[tag.GetIds()]) )
+
 
     for elementName in res.elements:
         elements = res.elements[elementName]
@@ -415,7 +421,8 @@ def CleanLonelyNodes(res):
 
     #filter the nodes
     res.nodes = res.nodes[usedNodes ,:]
-    res.originalIDNodes = originalIDNodes[0:cpt]
+    res.originalIDNodes = np.where(usedNodes)[0]
+    #res.originalIDNodes = originalIDNodes[0:cpt]
 
     #node tags
     for tag in res.nodesTags :
@@ -430,6 +437,8 @@ def MirrorMesh(inmesh,x=None,y=None,z=None) :
     nbpoints = inmesh.GetNumberOfNodes()
 
     outmesh = type(inmesh)()
+    outmesh.CopyProperties(inmesh)
+
     d = 0
     if x is not None:
         d += 1
@@ -527,7 +536,7 @@ def ExtractElementsByMask(inelems, _mask):
 
     outelems.Allocate(nbels)
     outelems.connectivity = inelems.connectivity[mask,:]
-
+    outelems.originalIds = np.where(mask)[0]
 
     for tag in inelems.tags  :
        temp = np.extract(mask[tag.GetIds()],tag.GetIds())
@@ -539,6 +548,7 @@ def ExtractElementsByMask(inelems, _mask):
 def ExtractElementByTags(inmesh,tagsToKeep, allNodes=False,dimensionalityFilter= None):
 
     outmesh = type(inmesh)()
+    outmesh.CopyProperties(inmesh)
 
     outmesh.nodes = np.copy(inmesh.nodes)
     outmesh.originalIDNodes = np.copy(inmesh.originalIDNodes)
@@ -1061,8 +1071,123 @@ def DeleteInternalFaces(mesh):
     mesh.PrepareForOutput()
 
 
+def ExtractElementsByImplicitZone(inmesh,op,allNodes=True,cellCenter=False):
+
+    mask = op(inmesh.nodes) <= 0.
+
+    outmesh = type(inmesh)()
+    outmesh.CopyProperties(inmesh)
+
+    outmesh.nodes = np.copy(inmesh.nodes)
+
+    # keep only the faces with one or zero volumes attached
+    for name,data in inmesh.elements.items():
+        print(name)
+        if allNodes:
+            ElemMask = np.sum(mask[data.connectivity],axis=1) == data.GetNumberOfNodesPerElement()
+        else:
+            ElemMask = np.sum(mask[data.connectivity],axis=1) >= 1
+        outmesh.elements[name] = ExtractElementsByMask(data,ElemMask)
+
+    CleanLonelyNodes(outmesh)
+    return outmesh
+
+def AddSkin(mesh):
+
+    dualGraph,usedPoints = GetDualGraph(mesh)
+
+    md = mesh.GetDimensionality()
+
+    #we use the original id to count the number of time the faces is used
+    surf = {}
+    for name,data in mesh.elements.items():
+        if ElementNames.dimension[name] < md:
+            continue
+        print("working on {}".format(name))
+        faces = ElementNames.faces[name]
+        #print(faces)
+        ne = data.GetNumberOfElements()
+        for faceType,localFaceConnectivity in faces:
+            globalFaceConnectivity = data.connectivity[:,localFaceConnectivity]
+            if not faceType in surf:
+                surf[faceType] = {}
+            surf2 = surf[faceType]
+            key = np.array([ne**x for x in range(ElementNames.numberOfNodes[faceType]) ])
+            for i in xrange(ne):
+                cc = globalFaceConnectivity[i,:]
+                lc = np.sort(cc)
+
+                ehash = np.sum(lc*key)
+                if ehash in surf2:
+                    surf2[ehash][0] +=1
+
+                else:
+                    surf2[ehash] = [1,cc]
+                #print(lc),
+                #print(ehash),
+                #print(surf2[ehash])
+            #print(surf2)
+
+
+    for name in surf:
+        data = mesh.GetElementsOfType(name)
+        surf2 = surf[name]
+        for hashh,data2 in surf2.items():
+            if data2[0] == 1:
+                #print(data2)
+                data.AddNewElement(data2[1],-1)
+
+
+
+    return mesh
+
 
 ###############################################################################
+def CheckIntegrity_AddSkin():
+    from BasicTools.FE.ConstantRectilinearMesh import ConstantRectilinearMesh
+
+    myMesh = ConstantRectilinearMesh(dim=3)
+    myMesh.SetDimensions([2,3,4]);
+    myMesh.SetOrigin([-1.0,-1.0,-1.0]);
+    myMesh.SetSpacing([2., 2.,2]/myMesh.GetDimensions());
+    print(myMesh)
+    res2 = CreateMeshFromConstantRectilinearMesh(myMesh,ofTetras=True)
+    print(res2)
+
+    res = AddSkin(res2)
+    print(res)
+
+def CheckIntegrity_ExtractElementsByImplicitZone():
+    from BasicTools.FE.ConstantRectilinearMesh import ConstantRectilinearMesh
+
+    myMesh = ConstantRectilinearMesh(dim=3)
+    myMesh.SetDimensions([20,30,40]);
+    myMesh.SetOrigin([-1.0,-1.0,-1.0]);
+    myMesh.SetSpacing([2., 2.,2]/myMesh.GetDimensions());
+    print(myMesh)
+    res2 = CreateMeshFromConstantRectilinearMesh(myMesh,ofTetras=False)
+    print(res2)
+
+    class OPSphere(object):
+        def __init__(self):
+            self.center = np.array([0.0,0.0,0.0],dtype=np.float)
+            self.radius = 0.5
+        def __call__(self,pos):
+            res = np.sqrt(np.sum((pos-self.center)**2,axis=1))-self.radius
+            return res
+
+    myOp = OPSphere()
+
+    res = ExtractElementsByImplicitZone(res2,myOp)
+    print(res)
+
+    from BasicTools.IO.XdmfWriter import WriteMeshToXdmf
+    from BasicTools.Helpers.Tests import TestTempDir
+    tempdir = TestTempDir.GetTempPath()
+    WriteMeshToXdmf(tempdir+"Test_ExtractElementsByImplicitZone.xdmf",res,PointFields=[res.originalIDNodes],PointFieldsNames=["originalIDNodes"] )
+    print(tempdir)
+    return "OK"
+
 def CheckIntegrity_DeleteInternalFaces():
 
     points = [[0,0,0],[1,0,0],[0,1,0],[0,0,1],[1,1,1] ]
@@ -1282,11 +1407,13 @@ def CheckIntegrity_ExtractElementsByMask():
 
     #tri = ExtractElementsByMask(res.GetElementsOfType(ElementNames.Triangle_3),np.array([False,True]))
     #print(tri.connectivity)
+    print(res.GetElementsOfType(ElementNames.Triangle_3).connectivity)
 
     tri = ExtractElementsByMask(res.GetElementsOfType(ElementNames.Triangle_3),np.array([0],dtype=np.int))
     tri = ExtractElementsByMask(res.GetElementsOfType(ElementNames.Triangle_3),np.array([0,1],dtype=np.bool))
 
     print(tri.connectivity)
+    print(tri.originalIds)
     return "ok"
 
 def CheckIntegrity_GetDualGraph():
@@ -1297,8 +1424,8 @@ def CheckIntegrity_GetDualGraph():
 
 
 def CheckIntegrity():
-
-
+    CheckIntegrity_AddSkin()
+    CheckIntegrity_ExtractElementsByImplicitZone()
     CheckIntegrity_DeleteInternalFaces()
     CheckIntegrity_ExtractElementsByMask()
     CheckIntegrity_GetVolume()
