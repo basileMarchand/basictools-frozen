@@ -58,18 +58,22 @@ class WormholeBase(BaseOutputObject):
 
     def _internalReciveData(self):
           sizestream = ""
-          while (len(sizestream) < 8):
+          while (len(sizestream) < 64):
               sizestream += self.otherSide.recv(1).decode()
           #print(sizestream)
           size = int(sizestream)
-          #print(size)
+          if self.socket is not None:
+              print("s : " + str(size))
+          else:
+              print("c : " + str(size))
+
           datastream = self.otherSide.recv(size)
           data = pickle.loads(datastream)
           return data
 
     def _internalSendData(self,data):
         streamdata = pickle.dumps(data,self.proto)
-        data = str(len(streamdata)).zfill(8)
+        data = str(len(streamdata)).zfill(64)
         self.otherSide.send( data.encode())
         self.otherSide.send(streamdata)
 
@@ -219,6 +223,7 @@ class WormholeClient(WormholeBase):
 
     def SendData(self,key,data):
 
+        print("(c) sending " + str(key) + " :: " + str(data))
         self.otherSide.send(b"s")
         self._internalSendData(key)
         self._internalSendData(data)
