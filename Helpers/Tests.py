@@ -9,6 +9,20 @@ __author__ = "Felipe Bordeu"
 
 import traceback
 
+import time
+
+"""
+python  Tests.py -c -f -s -e <extraModules> -m <moduleFilter>
+options :
+    -c    To activate coverage and generate a html report
+    -f    Full output for all the test
+    -s    Stop at first error
+    -e    To test extra Modules (-e can be repeated)
+    -m    To filter the output by this string (-m can be repeated)
+    -d    Dry run do not execute only show what will be executed
+
+"""
+
 from BasicTools.Helpers.which import which
 
 def WriteTempFile(filename,content=None,mode="w" ):
@@ -19,19 +33,10 @@ def WriteTempFile(filename,content=None,mode="w" ):
         return pfile
     raise(Exception("Unable ot create file :" + pfile))
 
-class TestTempDir():
+class TestTempDir(object):
     """Class to generate and to destroy a temporary directory
-
-             python  Tests.py -c -f -s -e <extraModules> -m <moduleFilter>
-             options :
-                    -c    To activate coverage and generate a html report
-                    -f    Full output for all the test
-                    -s    Stop at first error
-                    -e    To test extra Modules (-e can be repeated)
-                    -m    To filter the output by this string (-m can be repeated)
-                    -d    Dry run do not execute only show what will be executed
-
     """
+
     path = None
 
     @classmethod
@@ -86,7 +91,6 @@ def __RunAndCheck(lis,bp,stopAtFirstError,dryrun):# pragma: no cover
 
     from BasicTools.Helpers.TextFormatHelper import TFormat
     import sys
-    import time
 
     res = {}
     for name in lis:
@@ -192,6 +196,7 @@ def TestAll(modulestotreat=['ALL'], fulloutput=False, stopAtFirstError= False, c
     from BasicTools.Helpers.PrintBypass import PrintBypass
 
     print("Runnig Tests : ")
+    start_time = time.time()
     print("--- Begin Test ---")
 
     tocheck = {}
@@ -235,6 +240,8 @@ def TestAll(modulestotreat=['ALL'], fulloutput=False, stopAtFirstError= False, c
         print(cov.report(show_missing=False))
         webbrowser.open(tempdir+"index.html")
 
+    stop_time = time.time()
+    bp.Print( "Total Time : %.3f seconds " %  (stop_time -start_time ))
 
     print("--- End Test ---")
 

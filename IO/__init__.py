@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 __all__ = [
-
 'AscReader',
 'CodeInterface',
 'FemReader',
@@ -26,6 +25,7 @@ __all__ = [
 'UniversalReader',
 'UtReader',
 'WriterBase',
+'Wormhole',
 'XdmfReader',
 'XdmfTools',
 'XdmfWriter',

@@ -5,7 +5,7 @@ import numpy as np
 
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 
-class Tag():
+class Tag(object):
     def __init__(self,tagname):
         self.name = tagname
         self._id = np.empty(0,dtype=np.int)

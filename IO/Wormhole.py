@@ -47,9 +47,6 @@ def import_module(name, package=None):
     return sys.modules[name]
 ####################################
 
-
-
-
 class WormholeBase(BaseOutputObject):
     def __init__(self,port = None):
         super(WormholeBase,self).__init__()
@@ -58,18 +55,23 @@ class WormholeBase(BaseOutputObject):
 
     def _internalReciveData(self):
           sizestream = ""
-          while (len(sizestream) < 8):
-              sizestream += self.otherSide.recv(1)
+          while (len(sizestream) < 64):
+              sizestream += self.otherSide.recv(1).decode()
           #print(sizestream)
           size = int(sizestream)
-          #print(size)
+          if self.socket is not None:
+              print("s : " + str(size))
+          else:
+              print("c : " + str(size))
+
           datastream = self.otherSide.recv(size)
           data = pickle.loads(datastream)
           return data
 
     def _internalSendData(self,data):
-        streamdata = pickle.dumps(data)
-        self.otherSide.send( str(len(streamdata)).zfill(8)  )
+        streamdata = pickle.dumps(data,self.proto)
+        data = str(len(streamdata)).zfill(64)
+        self.otherSide.send( data.encode())
         self.otherSide.send(streamdata)
 
 
@@ -94,6 +96,11 @@ class WormholeServer(WormholeBase):
         self.MainLoop()
         self.socket.close()
 
+    def ProtocolNegotiation(self):
+        ClientHighestProtocol = int(self.otherSide.recv(1).decode())
+        self.proto = min(pickle.HIGHEST_PROTOCOL, ClientHighestProtocol)
+        print("(s) Using Protocol " + str(self.proto))
+        self.otherSide.send(str(self.proto).encode() )
 
 
     def MainLoop(self):
@@ -101,16 +108,28 @@ class WormholeServer(WormholeBase):
 
         self.socket.listen(0)
         self.otherSide, address = self.socket.accept()
-        print "{0} connected".format( address )
+        print("(s) {0} connected".format( address ))
+
+
+
+
+
         while(True):
-            action = self.otherSide.recv(1)
-            if action == "s":
+            rdata = self.otherSide.recv(1)
+            if len(rdata) == 0 :
+                continue
+            action = rdata.decode()
+
+            self.PrintDebug(action)
+            if action == "p":
+                self.ProtocolNegotiation()
+            elif action == "s":
                 #print("receiving data")
                 key = self._internalReciveData()
                 value = self._internalReciveData()
                 #print(key + " = value")
                 if self.drymode:
-                    print(str(key) +" = " + str(value))
+                    print("(s)" + str(key) +" = " + str(value))
                 else:
                     self.globals[key] = value
                 #print(self.globals)
@@ -124,10 +143,11 @@ class WormholeServer(WormholeBase):
 #                print(self.globals)
             elif action == "c":
                 expression = self._internalReciveData()
+                print(expression)
                 if self.drymode:
-                    print("Exec: " + expression )
+                    print("(s) Exec: " + expression )
                 else:
-                    exec expression in self.globals
+                    exec(str(expression), self.globals)
 
                 #print(self.globals)
 #            elif action == "i":
@@ -153,17 +173,17 @@ class WormholeServer(WormholeBase):
 #
 
             elif action == "r":
-                print("Sending data back")
+
+                print("(s) Sending data back : "+ str(key))
 
                 if self.drymode:
-                    print("Sending back: = " + str(key))
                     self._internalSendData(None)
                 else:
                     key = self._internalReciveData()
                     self._internalSendData(self.globals[key])
 
             elif action  == "x":
-                print("exit")
+                print("(s) exit")
                 self.otherSide.close()
                 return
             else:
@@ -174,6 +194,7 @@ class WormholeServer(WormholeBase):
 class WormholeClient(WormholeBase):
     def __init__(self):
        super(WormholeClient,self).__init__()
+       self.proto = 2
 
     def Connect(self,port=None, host=None):
         if port is None:
@@ -183,14 +204,24 @@ class WormholeClient(WormholeBase):
             host = "localhost"
 
         self.otherSide = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        print("connecting to "),
+        print("(c) connecting to "),
         print((host, port))
         self.otherSide.connect((host, port))
-        print "Connection on {0}".format(port)
+        print("(c) Connection on {0}".format(port))
+        self.ProtocolNegotiation()
+        print("(c) Using protocol " + str(self.proto) )
+
+    def ProtocolNegotiation(self):
+        #request protocol negotiation
+        self.otherSide.send(b"p")
+        self.otherSide.send(str(pickle.HIGHEST_PROTOCOL)[0].encode() )
+        self.proto = int(self.otherSide.recv(1).decode())
+
 
     def SendData(self,key,data):
 
-        self.otherSide.send("s")
+        print("(c) sending " + str(key) + " :: " + str(data))
+        self.otherSide.send(b"s")
         self._internalSendData(key)
         self._internalSendData(data)
 
@@ -200,12 +231,12 @@ class WormholeClient(WormholeBase):
     #    self._internalSendData(expression)
 
     def RemoteExec(self,expression):
-        self.otherSide.send("c")
+        self.otherSide.send(b"c")
         self._internalSendData(expression)
 
 
     def RetrieveData(self,variable):
-        self.otherSide.send("r")
+        self.otherSide.send(b"r")
         self._internalSendData(variable)
         return self._internalReciveData()
 
@@ -216,31 +247,69 @@ class WormholeClient(WormholeBase):
     #    print(self._internalReciveData())
 
     def Exit(self):
-        self.otherSide.send("x")
+        self.otherSide.send(b"x")
         self.otherSide.close()
 
 
-if __name__ == '__main__':
-    import sys
+def CheckIntegrity():
 
-    if len(sys.argv) > 1 and  sys.argv[1]  == "-s":
-        print("Server Side")
-        WormholeServer(12345)
-    else:
-        print("Client Side")
-        client = WormholeClient()
-        client.Connect(12345)
-        client.SendData("Hola",5)
-        client.RemoteExec("Hola += 3")
-        newhola = client.RetrieveData("Hola")
-        #client.ImportModule("BasicTools.IO.XdmfWriter","XdmfWriter")
-        client.RemoteExec("from BasicTools.IO import XdmfWriter")
-        client.RemoteExec("from BasicTools.IO.XdmfWriter import WriteMeshToXdmf")
-        client.SendData("p",[5, 10, 4])
-        #client.RemoteEval("v","XdmfWriter.ArrayToString(p)")
-        client.RemoteExec("v =  XdmfWriter.ArrayToString(p)")
-        client.RemoteExec("a =2 ")
-        v = client.RetrieveData("v")
-        print("v " + str(v))
-        client.Exit()
+
+   testport = 12349
+
+   import threading
+   try:
+
+     def runServer():
+         print("(s) Starting Server Side")
+         WormholeServer(testport,dry=False)
+     TT = threading.Thread(target=runServer )
+     TT.start()
+
+
+     client = WormholeClient()
+     client.Connect(testport)
+     client.SendData("Hola",5)
+     client.RemoteExec("Hola += 3")
+     newhola = client.RetrieveData("Hola")
+     client.Exit()
+
+     if newhola == 8:
+         return 'ok'
+   except:
+     TT.join(0)
+     return "Not OK"
+
+
+
+if __name__ == '__main__':
+  import sys
+  testport = 12348
+
+
+  if len(sys.argv) > 1 and  sys.argv[1]  == "-s":
+     print("Server Side")
+     WormholeServer(testport,dry=False)
+  else:
+    #
+    print("Client Side")
+    client = WormholeClient()
+    client.Connect(testport)
+    client.SendData("Hola",5)
+    client.RemoteExec("Hola += 3")
+    newhola = client.RetrieveData("Hola")
+    #client.ImportModule("BasicTools.IO.XdmfWriter","XdmfWriter")
+    client.RemoteExec("from BasicTools.IO import XdmfWriter")
+    client.RemoteExec("from BasicTools.IO.XdmfWriter import WriteMeshToXdmf")
+    import numpy as np
+    client.SendData("p",np.array([5, 10, 4]))
+    #client.RemoteEval("v","XdmfWriter.ArrayToString(p)")
+    client.RemoteExec("v =  XdmfWriter.ArrayToString(p)")
+    client.RemoteExec("a =2 ")
+    v = client.RetrieveData("v")
+    print(type(v))
+    print("v " + str(v))
+    p = client.RetrieveData("p")
+    print(type(p))
+    print("p " + str(p))
+    client.Exit()
 
