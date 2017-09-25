@@ -19,3 +19,9 @@ def which(program):
                 return exe_file
 
     return None
+
+def CheckIntegrity():
+    return "OK"
+
+if __name__ == '__main__':
+    print((CheckIntegrity()))# pragma: no cover
