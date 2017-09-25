@@ -200,6 +200,10 @@ class TFormat(object):
         # isatty is not always implemented, #6223.
         is_a_tty = hasattr(sys.stdout, 'isatty') and sys.stdout.isatty()
 
+        #hack for spyder in IPython
+        if TFormat.InIPython():
+            return True
+
         #hack for spyder
         if 'SPYDER_SHELL_ID' in os.environ:
             return True
@@ -271,7 +275,7 @@ def CheckIntegrity():
     print(TFormat.WithUnderline()+ 'WithUnderline '  +TFormat.InRed()+"Red/WithUnderline"  + TFormat.WithItalic() )
     print("you must clean the format at the end " + TFormat.CleanFormat() + " Good")
 
-    TFormat.InIPython()
+    print(TFormat.InIPython())
     return 'ok'
 
 if __name__ == '__main__':
