@@ -3,6 +3,7 @@
 __all__ = [
 'AscReader',
 'CodeInterface',
+'FemReader',
 'GeofReader',
 'GeofWriter',
 'GmshReader',
@@ -14,6 +15,7 @@ __all__ = [
 'MeshReader',
 'MeshWriter',
 'OdbWriter',
+'PathControler',
 'PickleTools',
 'PostReader',
 'ProcastResultReader',
@@ -21,6 +23,7 @@ __all__ = [
 'StlReader',
 'StlWriter',
 'UniversalReader',
+'UtReader',
 'WriterBase',
 'Wormhole',
 'XdmfReader',
@@ -29,3 +32,4 @@ __all__ = [
 'ZebulonIO'
 ]
 
+__author__ = "Felipe Bordeu"

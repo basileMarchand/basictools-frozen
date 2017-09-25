@@ -1,19 +1,19 @@
 # -*- coding: utf-8 -*-
-
-
-__all__ = [
-'BaseOutputObject',
-'PrintBypass',
-'Tests',
-'TextFormatHelper',
-'ParserHelper',
-'which'
- ]
-
 """Helpers classes and functions
 
    Please read the help for each individual module.
 """
+
+__all__ = [
+'BaseOutputObject',
+'CPU',
+'ParserHelper',
+'PrintBypass',
+'Tests',
+'TextFormatHelper',
+'which'
+ ]
+
 
 
 

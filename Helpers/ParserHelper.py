@@ -1,4 +1,8 @@
-  # -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
+""" Functions to parse text into different types
+"""
+__author__ = "Felipe Bordeu"
+
 import numpy as np
 
 def Read(string, inout):
@@ -62,30 +66,40 @@ def ReadBool(string):
 def ReadBools(string):
     return ReadVector(string,bool)
 
-def TestFunction(func,string):
+
+def ReadProperties(data,props,obj):
+    for prop in props:
+        if prop in data:
+           obj.__dict__[prop] = Read(data[prop],obj.__dict__[prop])
+
+
+def TestFunction(func,string,correctVal):
     val = func(string)
     print( str(string) + " : " +str(val))
 
+    if type(val) != type(correctVal) or np.any(val != correctVal):
+        raise
+
 def CheckIntegrity():
 
-    TestFunction(ReadBool,"true")
-    TestFunction(ReadBool,True)
-    TestFunction(ReadBool,"false")
-    TestFunction(ReadBool,"0")
-    TestFunction(ReadBool,"1")
-    TestFunction(ReadBool,"1.1")
-    TestFunction(ReadBool," no")
-    TestFunction(ReadBool,"YES ")
+    TestFunction(ReadBool,"true",True)
+    TestFunction(ReadBool,True,True)
+    TestFunction(ReadBool,"false",False)
+    TestFunction(ReadBool,"0",False)
+    TestFunction(ReadBool,"1",True)
+    TestFunction(ReadBool,"1.1",True)
+    TestFunction(ReadBool," no",False)
+    TestFunction(ReadBool,"YES ",True)
 
-    TestFunction(ReadBools,"YES no 2 1 0 True FALSe ")
+    TestFunction(ReadBools,"YES no 2 1 0 True FALSe ", np.array([True,False,True,True,False,True,False]))
 
-    TestFunction(ReadInt,"24" )
-    TestFunction(ReadInt,24.0 )
-    TestFunction(ReadInts,"1 2 3 ")
+    TestFunction(ReadInt,"24",int(24) )
+    TestFunction(ReadInt,24.0 ,int(24))
+    TestFunction(ReadInts,"1 2 3 ", np.array([1,2,3]))
 
-    TestFunction(ReadFloat,"3.14159" )
-    TestFunction(ReadFloat,3.14159 )
-    TestFunction(ReadFloats,"1 2 3 ")
+    TestFunction(ReadFloat,"3.14159", 3.14159 )
+    TestFunction(ReadFloat,3.14159, 3.14159 )
+    TestFunction(ReadFloats,"1 2 3 ", np.array([1,2,3],dtype=float))
 
     # this call must fail
     try:

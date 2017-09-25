@@ -1,8 +1,12 @@
-# -*-coding:Latin-1 -*
+# -*- coding: utf-8 -*-
+""" Class to help the execution of an external program
+"""
+
 import subprocess
 import os
-from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
+__author__ = "Felipe Bordeu, Fabien Casenave"
 
+from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 
 class Interface(BaseOutputObject):
 
@@ -42,6 +46,8 @@ class Interface(BaseOutputObject):
         self.openExternalWindows = True
         self.keepExternalWindows = True
 
+        self.withFilename = True
+
     def WriteFile(self, idProc):
 
         # Write code input file
@@ -52,15 +58,25 @@ class Interface(BaseOutputObject):
             raise
 
         inpFilename = self.inputFilename + str(idProc) + self.inputFileExtension
+
         with open(self.processDirectory + os.sep + inpFilename, 'w') as inpFile:
+
             inpFile.write(inpString)
+    def GenerateCommandToRun(self,idProc=0):
+        # Command to execute
+        cmd = self.codeCommand
+
+        if self.withFilename:
+            inpFilename = self.inputFilename + str(idProc) + self.inputFileExtension
+            cmd += ' ' + inpFilename
+
+        cmd = cmd.format(**self.parameters)
+        return cmd
 
     def SingleRunComputation(self, idProc,stdout = None):
 
-        inpFilename = self.inputFilename + str(idProc) + self.inputFileExtension
 
-        # Command to execute
-        cmd = 'cd ' + self.processDirectory + ' && ' + self.codeCommand + ' ' + inpFilename
+        cmd = self.GenerateCommandToRun(idProc)
 
         if stdout is None:
             out = open(os.devnull, 'w')
@@ -77,20 +93,21 @@ class Interface(BaseOutputObject):
         else:
             self.lastCommandExecuted = cmd;
 
-        proc = subprocess.Popen(cmd , stdout=out, shell=True)
+        proc = subprocess.Popen(cmd , cwd=self.processDirectory , stdout=out, shell=True)
 
         return proc
 
-    def SingleRunComputationAndReturnOutput(self, idProc):
+    def SingleRunComputationAndReturnOutput(self, idProc=0):
 
-        inpFilename = self.inputFilename + str(idProc) + self.inputFileExtension
+        return proc
 
-        # Command to execute
-        cmd = self.codeCommand + ' ' + inpFilename
+
+        cmd = self.GenerateCommandToRun(idProc)
 
         # Commande execution
         self.lastCommandExecuted = cmd;
-        out = subprocess.check_output(cmd, cwd=self.processDirectory, shell=True ).decode("utf-8")
+        print(cmd)
+        out = subprocess.check_output(cmd, cwd=self.processDirectory, shell=True ).decode("utf-8","ignore")
 
         return out
 
@@ -105,9 +122,13 @@ class Interface(BaseOutputObject):
 
     def SetWorkingDirectory(self,Dir):
         self.workingDirectory = os.path.dirname(Dir);
+        if len(self.workingDirectory) and self.workingDirectory[-1] != os.sep:
+            self.workingDirectory += os.sep
 
     def SetProcessDirectory(self,Dir):
         self.processDirectory = os.path.dirname(Dir);
+        if len(self.processDirectory) and self.processDirectory[-1] != os.sep:
+            self.processDirectory += os.sep
 
     def SetCodeCommand(self,ccommand):          # Code command
         self.codeCommand = ccommand
@@ -120,15 +141,21 @@ class Interface(BaseOutputObject):
             self.SetTemplateFile(filename)
         self.tpl = open(self.workingDirectory + os.sep + self.tplFilename).read()
 
+    def CopyFile(self,filetocopy):
+        import shutil
+
+        shutil.copy(self.workingDirectory + os.sep + filetocopy,
+                   self.processDirectory + os.sep +filetocopy.split('/') [-1])
 
 
 def CheckIntegrity():
-    import BasicTools.IO.CodeInterface as CI
-    import BasicTools.Helpers.Tests as T
-    import BasicTools.TestData as T2
-    dataPath = T2.GetTestDataPath()
 
-    interface = CI.Interface(dataPath)
+
+
+    import BasicTools.Helpers.Tests as T
+    import BasicTools.TestData as BasicToolsTestData
+
+    interface = Interface(BasicToolsTestData.GetTestDataPath())
 
     interface.parameters['calcul']        = 'thermal_transient'
     interface.parameters['Ti']            = 1000.0
@@ -150,22 +177,22 @@ def CheckIntegrity():
     import sys
 
     interface.SetProcessDirectory(T.TestTempDir.GetTempPath())
-    interface.SetCodeCommand("pwd ")
 
-    # the sys.stdout does not work any more in IPython
-    # sys.stdout is not a file (no fileno() )
-
-    interface.SingleRunComputation(1).wait()
-    print(interface.lastCommandExecuted)
-    interface.SetCodeCommand("ls -l ")
-    #interface.SetTemplateFile('template.tpl')
+    interface.SetCodeCommand("dir ")
     interface.ReadTemplateFile('template.tpl')
     interface.WriteFile(1)
 
-    #,sys.stdout
-    interface.SingleRunComputation(1).wait()
+    import sys
+    interface.SingleRunComputation(1,sys.stdout).wait()
+    print("lastCommandExecuted: " + str(interface.lastCommandExecuted))
+
+    interface.SetCodeCommand("dir {filter}")
+    interface.parameters['filter']        = '*.inp'
+    interface.withFilename = False
+
 
     print("output is :" + str(interface.SingleRunComputationAndReturnOutput(1).encode("ascii","ignore") ))
+    print("lastCommandExecuted: " + str(interface.lastCommandExecuted))
     return 'ok'
 
 

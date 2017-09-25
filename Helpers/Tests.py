@@ -1,18 +1,42 @@
 # -*- coding: utf-8 -*-
+"""Testing infrastructure for BasicTools extra modules
+
+"""
 
 #for python 2.6+ compatibility
 from __future__ import print_function
+__author__ = "Felipe Bordeu"
 
 import traceback
 
 import time
 
+"""
+python  Tests.py -c -f -s -e <extraModules> -m <moduleFilter>
+options :
+    -c    To activate coverage and generate a html report
+    -f    Full output for all the test
+    -s    Stop at first error
+    -e    To test extra Modules (-e can be repeated)
+    -m    To filter the output by this string (-m can be repeated)
+    -d    Dry run do not execute only show what will be executed
 
 """
-Function to generate and destroy a temporary directory
-"""
+
+from BasicTools.Helpers.which import which
+
+def WriteTempFile(filename,content=None,mode="w" ):
+    pfile = TestTempDir.GetTempPath() + filename
+    with open(pfile, mode) as f:
+        if content is not None:
+            f.write( content)
+        return pfile
+    raise(Exception("Unable ot create file :" + pfile))
 
 class TestTempDir(object):
+    """Class to generate and to destroy a temporary directory
+    """
+
     path = None
 
     @classmethod
@@ -22,6 +46,7 @@ class TestTempDir(object):
         import tempfile
         import os
         cls.path = tempfile.mkdtemp(prefix="BasicTools_Test_Directory_",suffix="_safe_to_delete") + os.sep
+        cls.__saveTempPath()
         return TestTempDir.path
 
     #  we cant test this funciotn, because the temp path will be delete
@@ -38,11 +63,29 @@ class TestTempDir(object):
         import os
         if os.name == "nt":
             subprocess.Popen('explorer "' + cls.GetTempPath() +'"')
+        elif which("nautilus"):
+            print(cls.GetTempPath())
+            subprocess.Popen(['nautilus',  cls.GetTempPath() ])
 
     @classmethod
-    def SetTempPath(cls,path):# pragma: no cover
+    def SetTempPath(cls,path,create=True):# pragma: no cover
         import os
         cls.path = os.path.abspath(path+os.sep) + os.sep
+        if create and not os.path.exists(cls.path):
+            os.makedirs(cls.path)
+        cls.__saveTempPath()
+
+    #very useful in conbination of a alias
+    #alias cdtmp='source ~/.BasicToolsTempPath'
+    @classmethod
+    def __saveTempPath(cls):
+        from os.path import expanduser
+        home = expanduser("~")
+        import os
+        with open(home + os.sep+".BasicToolsTempPath","w") as f:
+            f.write("cd " + TestTempDir.path + "\n")
+            import stat
+            os.chmod(home + os.sep+".BasicToolsTempPath", stat.S_IWUSR | stat.S_IRUSR |stat.S_IXUSR)
 
 def __RunAndCheck(lis,bp,stopAtFirstError,dryrun):# pragma: no cover
 
@@ -188,7 +231,6 @@ def TestAll(modulestotreat=['ALL'], fulloutput=False, stopAtFirstError= False, c
 
         # create a temp file
         tempdir = TestTempDir.GetTempPath()
-        # tempdir = 'c:/users/d584808/appdata/local/temp/tmp4ipmul/'
         ss = [ ("*"+k.split(".")[-1]+"*") for k in tocheck ]
         cov.html_report(directory = tempdir, include=ss )
         import webbrowser

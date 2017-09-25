@@ -1,14 +1,14 @@
 ;Generated with Cura_SteamEngine 15.01
 ;-- START GCODE --
-M800        ; Custom GCODE to fire start print procedure
+N0 M800        ; Custom GCODE to fire start print procedure
 ;-- end of START GCODE --
 ;Layer count: 304
 ;LAYER:-2
 ;RAFT
-G0 F12000 X73.207 Y65.785 Z0.300
+N1 G0 F12000 X73.207 Y65.785 Z0.300
 ;TYPE:SUPPORT
 G92 E0.0
-G1 F2040 X77.530 Y63.624 E0.42196
+N2 G1 F2040 X77.530 Y63.624 E0.42196
 G1 X78.609 Y62.546 E0.55513
 G1 X82.008 Y62.346 E0.85240
 G1 X82.546 Y61.809 E0.91877

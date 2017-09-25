@@ -1,16 +1,17 @@
 # -*- coding: utf-8 -*-
+""" Base object to Help output
 
+"""
 #for python 2.6+ compatibility
 from __future__ import print_function
 
-
-from BasicTools.Helpers.TextFormatHelper import TFormat
-
-""" Base object to Help input and output """
+__author__ = "Felipe Bordeu"
 
 import time
 _startTime = time.time()
 useDifferentialTime = True
+
+from BasicTools.Helpers.TextFormatHelper import TFormat
 
 def SetUseDifferentialTime(val):
     global useDifferentialTime

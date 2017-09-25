@@ -1,0 +1,93 @@
+# -*- coding: utf-8 -*-
+
+from os import path
+import os
+from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
+from BasicTools.Helpers.Tests import TestTempDir
+
+
+class PathControler(BaseOutputObject):
+    currentDirectory = os.getcwd()+os.sep
+    workingDirectory = os.getcwd()+os.sep
+
+    def __init__(self):
+        super(PathControler,self).__init__()
+
+    @staticmethod
+    def SetCurrentDirectory(folder):
+        PathControler.currentDirectory = path.abspath(path.expanduser(folder))+os.sep
+
+    @staticmethod
+    def SetCurrentDirectoryUsingFile(folder):
+        PathControler.currentDirectory = path.dirname(path.abspath(path.expanduser(folder)))+os.sep
+
+    @staticmethod
+    def SetWorkingDirectory(folder):
+        PathControler.workingDirectory = path.abspath(path.expanduser(folder))+os.sep
+
+    @staticmethod
+    def SetWorkingDirectoryUsingFile(file):
+        PathControler.workingDirectory = path.abspath(path.dirname(path.expanduser(file)) )+os.sep
+
+
+    @staticmethod
+    def GetCurrentDirectory():
+        return PathControler.currentDirectory
+
+    @staticmethod
+    def GetWorkingDirectory():
+        return PathControler.workingDirectory
+
+
+    @staticmethod
+    def GetFullFilenameCurrentDirectory(filename):
+        if os.path.isabs(filename):
+            return filename
+        else:
+            return path.abspath(PathControler.currentDirectory +filename)
+
+
+    @staticmethod
+    def GetFullFilenameOnWorkingDirectory(filename):
+        if os.path.isabs(filename):
+            return filename
+        else:
+            return path.abspath(PathControler.workingDirectory +filename)
+
+    @staticmethod
+    def GetFullFilenameOnTempDirectory(filename):
+        if os.path.isabs(filename):
+            return filename
+        else:
+            return path.abspath(TestTempDir().GetTempPath() + filename)
+
+def CheckIntegrity():
+    print("C: " +PathControler.currentDirectory)
+    print("W: " +PathControler.workingDirectory)
+
+    print("C: " + PathControler.GetFullFilenameCurrentDirectory("tata"))
+    print("W: " +PathControler.GetFullFilenameOnWorkingDirectory("tete"))
+    print("T: " +PathControler.GetFullFilenameOnTempDirectory("titi"))
+    print("*************")
+
+    PathControler.SetCurrentDirectory("~")
+    PathControler.SetWorkingDirectory("/tmp")
+
+    print("C: " +PathControler.GetFullFilenameCurrentDirectory("tata"))
+    print("W: " +PathControler.GetFullFilenameOnWorkingDirectory("tete"))
+    print("T: " +PathControler.GetFullFilenameOnTempDirectory("titi"))
+    print("*************")
+    PathControler.SetCurrentDirectory("..")
+    PathControler.SetWorkingDirectory("/tmp/")
+    print("C: " +PathControler.GetFullFilenameCurrentDirectory("tata"))
+    print("W: " +PathControler.GetFullFilenameOnWorkingDirectory("../tete"))
+    print("T: " +PathControler.GetFullFilenameOnTempDirectory("../../titi"))
+
+
+    print(PathControler.GetCurrentDirectory())
+    print(PathControler.GetWorkingDirectory())
+
+
+    return("ok")
+if __name__ == '__main__':
+   print(CheckIntegrity())# pragma: no cover

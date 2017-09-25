@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
+
+__author__ = "Felipe Bordeu"
 from BasicTools.Helpers.TextFormatHelper import TFormat
 # name comp is reserved for the u_comp = [u_1 u_2 u_3] = [u v w]
 
@@ -35,7 +37,7 @@ class BaseTensor(object):
 
                 if list(part.keys()).count(n) :
                     #c.array = c.array.slice()
-                    index.append(slice(part[n],int(part[n]+math.copysign(1,part[n])),int( math.copysign(1,part[n]) ) ))
+                    index.append(slice(part[n],int(part[n]+math.copysign(1,part[n])), int(math.copysign(1,part[n])) ) )
                 else:
                     index.append(slice(None))
             c.array = c.array[index];

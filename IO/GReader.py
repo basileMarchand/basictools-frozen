@@ -1,6 +1,11 @@
 # -*- coding: utf-8 -*-
+""" Gcode file reader
+
+"""
 
 import numpy as np
+
+__author__ = "Felipe Bordeu"
 from BasicTools.IO.ReaderBase import ReaderBase
 import BasicTools.FE.ElementNames as EN
 import BasicTools.FE.UnstructuredMesh  as UM
@@ -39,7 +44,12 @@ class GReader(ReaderBase):
             if l[0] == ";": continue
             l = l.split(';')[0]
             st = l.split()
-            if st[0] == "G0" or st[0] == "G1":
+
+            if st[0][0] == "N":
+                st.pop(0)
+
+
+            if st[0][0:2] == "G0" or st[0] == "G1" or st[0][0] == "X" or st[0][0] == "Y"or st[0][0] == "Z":
                 thi = 0
                 for s in st:
                     if s[0] == "X":
@@ -76,7 +86,9 @@ class GReader(ReaderBase):
 
             print("ignoring line " + str(l) )
         self.EndReading()
+
         res.nodes = np.reshape(np.asarray(nodes,dtype=np.float),newshape=(len(nodes)//3, 3))
+
         res.originalIDNodes = np.arange(res.GetNumberOfNodes())
         elems = res.GetElementsOfType(EN.Bar_2)
         elems.Allocate(res.GetNumberOfNodes()-1)

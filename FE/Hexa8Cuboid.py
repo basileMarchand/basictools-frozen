@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
+__author__ = "Felipe Bordeu"
 
 import numpy as np
-from BasicTools.FE.MaterialHelp import *
+
+import BasicTools.FE.MaterialHelp as MH
 from BasicTools.FE.FElement import FElement
 from BasicTools.FE.FemHelp import Integral
 import BasicTools.FE.ElementNames as ElementsNames
-
 
 class Hexa8Cuboid(FElement):
     def __init__(self):
@@ -42,11 +43,11 @@ class Hexa8Cuboid(FElement):
     def IsoDispB(self,qcoor,pos):
         [Nfx, Nfy, Nfz] = self.ShapeFuncDer(qcoor)
         B = np.array([[Nfx[0], 0     , 0     , Nfx[1], 0     , 0     , Nfx[2], 0     , 0     , Nfx[3], 0     , 0     , Nfx[4], 0     , 0     , Nfx[5], 0     , 0     , Nfx[6], 0     , 0     , Nfx[7], 0     , 0     ],
-                   [0     , Nfy[0], 0     , 0     , Nfy[1], 0     , 0     , Nfy[2], 0     , 0     , Nfy[3], 0     , 0     , Nfy[4], 0     , 0     , Nfy[5], 0     , 0     , Nfy[6], 0     , 0     , Nfy[7], 0     ],
-                   [0     , 0     , Nfz[0], 0     , 0     , Nfz[1], 0     , 0     , Nfz[2], 0     , 0     , Nfz[3], 0     , 0     , Nfz[4], 0     , 0     , Nfz[5], 0     , 0     , Nfz[6], 0     , 0     , Nfz[7]],
-                   [Nfy[0], Nfx[0], 0     , Nfy[1], Nfx[1], 0     , Nfy[2], Nfx[2], 0     , Nfy[3], Nfx[3], 0     , Nfy[4], Nfx[4], 0     , Nfy[5], Nfx[5], 0     , Nfy[6], Nfx[6], 0     , Nfy[7], Nfx[7], 0     ],
-                   [0     , Nfz[0], Nfy[0], 0     , Nfz[1], Nfy[1], 0     , Nfz[2], Nfy[2], 0     , Nfz[3], Nfy[3], 0     , Nfz[4], Nfy[4], 0     , Nfz[5], Nfy[5], 0     , Nfz[6], Nfy[6], 0     , Nfz[7], Nfy[7]],
-                   [Nfz[0], 0     , Nfx[0], Nfz[1], 0     , Nfx[1], Nfz[2], 0     , Nfx[2], Nfz[3], 0     , Nfx[3], Nfz[4], 0     , Nfx[4], Nfz[5], 0     , Nfx[5], Nfz[6], 0     , Nfx[6], Nfz[7], 0     , Nfx[7]]]);
+                      [0     , Nfy[0], 0     , 0     , Nfy[1], 0     , 0     , Nfy[2], 0     , 0     , Nfy[3], 0     , 0     , Nfy[4], 0     , 0     , Nfy[5], 0     , 0     , Nfy[6], 0     , 0     , Nfy[7], 0     ],
+                      [0     , 0     , Nfz[0], 0     , 0     , Nfz[1], 0     , 0     , Nfz[2], 0     , 0     , Nfz[3], 0     , 0     , Nfz[4], 0     , 0     , Nfz[5], 0     , 0     , Nfz[6], 0     , 0     , Nfz[7]],
+                      [Nfy[0], Nfx[0], 0     , Nfy[1], Nfx[1], 0     , Nfy[2], Nfx[2], 0     , Nfy[3], Nfx[3], 0     , Nfy[4], Nfx[4], 0     , Nfy[5], Nfx[5], 0     , Nfy[6], Nfx[6], 0     , Nfy[7], Nfx[7], 0     ],
+                      [0     , Nfz[0], Nfy[0], 0     , Nfz[1], Nfy[1], 0     , Nfz[2], Nfy[2], 0     , Nfz[3], Nfy[3], 0     , Nfz[4], Nfy[4], 0     , Nfz[5], Nfy[5], 0     , Nfz[6], Nfy[6], 0     , Nfz[7], Nfy[7]],
+                      [Nfz[0], 0     , Nfx[0], Nfz[1], 0     , Nfx[1], Nfz[2], 0     , Nfx[2], Nfz[3], 0     , Nfx[3], Nfz[4], 0     , Nfx[4], Nfz[5], 0     , Nfx[5], Nfz[6], 0     , Nfx[6], Nfz[7], 0     , Nfx[7]]]);
         return B, self.GetDetJack(qcoor)
 
     def IsoLaplaceB(self,qcoor,pos):
@@ -74,11 +75,11 @@ class Hexa8Cuboid(FElement):
 
     def GetIsotropLaplaceK(self,k):
         #IsoHexaCubeKLaplace(k,delta):
-        K = LaplaceOrtho(k,k,k)
+        K = MH.LaplaceOrtho(k,k,k)
         return Integral(K,self.IsoLaplaceB,self,self.nnodes)
 
     def GetOrthoLaplaceK(self,k):
-        K = LaplaceOrtho(k[0],k[1],k[2])
+        K = MH.LaplaceOrtho(k[0],k[1],k[2])
         return Integral(K,self.IsoLaplaceB,self,self.nnodes)
 
 
@@ -90,7 +91,7 @@ class Hexa8Cuboid(FElement):
 
     def GetIsotropDispK(self,E,nu):
         #IsoHexaCubeK
-        k = HookeIso(E,nu)
+        k = MH.HookeIso(E,nu)
         return Integral(k,self.IsoDispB,self,self.nnodes*3)
 
     def GetIsotropDispM(self,rho):

@@ -1,8 +1,13 @@
 # -*- coding: utf-8 -*-
+""" Gmsh  ile Writer (gmesh mesh files)
+
+"""
+import numpy as np
+__author__ = "Felipe Bordeu"
+
 
 from BasicTools.FE.MeshBase import Tag as Tag
 from BasicTools.IO.WriterBase import WriterBase as WriterBase
-import numpy as np
 import BasicTools.FE.ElementNames as EN
 
 gmshName = {}

@@ -1,12 +1,20 @@
 # -*- coding: utf-8 -*-
+"""Geof file writer (Zset mesh files)
 
-from BasicTools.FE.MeshBase import Tag as Tag
-from BasicTools.IO.WriterBase import WriterBase as WriterBase
+"""
 import numpy as np
+__author__ = "Felipe Bordeu"
+
+from BasicTools.IO.WriterBase import WriterBase as WriterBase
 import BasicTools.FE.ElementNames as EN
 
 GeofName = {}
 GeofSetName= {}
+
+
+from BasicTools.IO.GeofReader import PermutationZSetToBasicTools
+PermutationBasicToolsToZSet = {key:np.argsort(value) for key, value in PermutationZSetToBasicTools.iteritems() }
+
 #0d
 GeofName[EN.Point_1] = "l2d1"
 
@@ -27,9 +35,11 @@ GeofSetName[EN.Quadrangle_4] = "q4"
 
 GeofName[EN.Quadrangle_8] = "c3d8"
 GeofSetName[EN.Quadrangle_8] = "q8"
+
 #3d
 GeofName[EN.Tetrahedron_4] = "c3d4"
 GeofName[EN.Tetrahedron_10] = "c3d10"
+
 GeofName[EN.Quadrangle_4] = "c2d4"
 GeofName[EN.Hexaedron_8] = "c3d8"
 GeofName[EN.Hexaedron_20] = "c3d20"
@@ -55,6 +65,8 @@ class GeofWriter(WriterBase):
         self.fileName = fileName;
 
     def Write(self,meshObject,useOriginalId=False,lowerDimElementsAsSets=False):
+
+        meshObject.PrepareForOutput()
 
         self.filePointer.write("% This file has been writen by the python routine GeofWriter of the BasicTools package\n")
 
@@ -83,7 +95,9 @@ class GeofWriter(WriterBase):
         maxDimensionalityOfelements = 0
         for ntype,elems in meshObject.elements.items():
             maxDimensionalityOfelements = max(EN.dimension[ntype],maxDimensionalityOfelements)
-            if EN.dimension[ntype] == maxDimensionalityOfelements or  False==lowerDimElementsAsSets :
+
+        for ntype,elems in meshObject.elements.items():
+            if EN.dimension[ntype] == maxDimensionalityOfelements or  False == lowerDimElementsAsSets :
                 nbElements += elems.GetNumberOfElements()
 
 
@@ -99,12 +113,16 @@ class GeofWriter(WriterBase):
             #npe = data.GetNumberOfNodesPerElement()
             #if elemtype!="c2d3":
             for i in range(data.GetNumberOfElements() ):
+                conn = data.connectivity[i,:].ravel()
+
+                if elemtype in PermutationBasicToolsToZSet:
+                  conn = [conn[x] for x in PermutationBasicToolsToZSet[elemtype]]
                 if useOriginalId:
                     self.filePointer.write("{} {} ".format(data.originalIds[i],elemtype) )
-                    self.filePointer.write(" ".join([str(int(meshObject.originalIDNodes[x])) for x in data.connectivity[i,:].ravel()]))
+                    self.filePointer.write(" ".join([str(int(meshObject.originalIDNodes[x])) for x in conn]))
                 else:
                     self.filePointer.write("{} {} ".format(cpt+1,elemtype) )
-                    self.filePointer.write(" ".join([str(x+1) for x in data.connectivity[i,:].ravel()]))
+                    self.filePointer.write(" ".join([str(x+1) for x in conn]))
                 cpt += 1;
                 self.filePointer.write("\n")
 
@@ -115,7 +133,7 @@ class GeofWriter(WriterBase):
             self.filePointer.write("  **nset {} \n".format(tag.name))
             data = np.zeros((meshObject.GetNumberOfNodes(),1),dtype=np.int)
             if useOriginalId:
-                self.filePointer.write(" ".join([str(meshObject.originalIDNodes[x]) for x in tag.GetIds()]))
+                self.filePointer.write(" ".join([str(int(meshObject.originalIDNodes[x])) for x in tag.GetIds()]))
             else:
                 self.filePointer.write(" ".join([str(x+1) for x in tag.GetIds()]))
             self.filePointer.write("\n")
@@ -200,8 +218,11 @@ class GeofWriter(WriterBase):
 
                             ids = tag.GetIds()
                             for e in range(len(tag)):
+                                conn = elems.connectivity[ids[e],:]
+                                if name in PermutationBasicToolsToZSet:
+                                    conn = [conn[x] for x in PermutationBasicToolsToZSet[name]]
                                 self.filePointer.write(" {} ".format(name))
-                                self.filePointer.write(" ".join([str(x+1) for x in elems.connectivity[ids[e],:] ]))
+                                self.filePointer.write(" ".join([str(x+1) for x in conn ]))
                                 self.filePointer.write(" \n")
 
 
@@ -219,8 +240,15 @@ def CheckIntegrity():
     print(tempdir)
 
     mymesh = UM.UnstructuredMesh()
-    mymesh.nodes = np.array([[0.00000000001,0,0],[1,0,0],[0,1,0],[1,1,0]],dtype=np.float)
-    mymesh.originalIDNodes = np.array([1, 3, 4, 5],dtype=np.int)
+    mymesh.nodes = np.array([[0.00000000001,0,0],
+                             [1,0,0],
+                             [0,1,0],
+                             [1,1,0],
+                             [0.5,0,0.1],
+                             [0,0.5,0.1],
+                             [0.5,0.5,0.1],
+    ],dtype=np.float)
+    mymesh.originalIDNodes = np.array([1, 3, 4, 5, 6, 7, 8],dtype=np.int)
 
     mymesh.nodesTags.CreateTag("coucou").AddToTag(0)
 
@@ -237,6 +265,10 @@ def CheckIntegrity():
     bars.AddNewElement([0,1],0)
     bars.AddNewElement([1,3],1)
     bars.tags.CreateTag("firstBar").AddToTag(0)
+
+    bars3 = mymesh.GetElementsOfType(EN.Triangle_6)
+    bars3.AddNewElement([0,1,2,4,6,5],0)
+    bars3.tags.CreateTag("Tri6").AddToTag(0)
 
     #point = mymesh.GetElementsOfType(EN.Point_1)
     #point.AddNewElement([0],0)

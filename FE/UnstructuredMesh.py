@@ -22,6 +22,17 @@ class ElementsContainer(BaseOutputObject):
         return self.cpt
         #return self.connectivity.shape[0]
 
+    def Merge(self,other):
+        other.tighten()
+
+        self.Reserve(self.cpt+other.cpt)
+        self.connectivity[self.cpt:,:] =other.connectivity
+
+        for tag in other.tags:
+            self.GetTag(tag.name).AddToTag(tag.GetIds() + self.cpt)
+
+        self.cpt += other.cpt
+
     def AddNewElement(self,conn,originalid):
         if self.cpt >= self.connectivity.shape[0]:
             self.Reserve(2*self.cpt+1)

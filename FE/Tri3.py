@@ -1,15 +1,12 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Wed Jun 15 10:58:44 2016
-
-@author: d584808
-"""
+__author__ = "Felipe Bordeu"
 
 import numpy as np
+import numpy.linalg as linalg
+
 from BasicTools.FE.FElement import FElement
 from BasicTools.FE.FemHelp import Integral
 import BasicTools.FE.MaterialHelp as MH
-import numpy.linalg as linalg
 import BasicTools.FE.ElementNames as ElementsNames
 
 class Tri3(FElement):

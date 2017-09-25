@@ -1,13 +1,16 @@
 # -*- coding: utf-8 -*-
+""" Send all the print statements to a file or to the sink os ...
 
+Also the output can be duplicated to a file
+"""
 #for python 2.6+ compatibility
 from __future__ import print_function
 
+__author__ = "Felipe Bordeu"
+
+
 import sys
 import os
-"""
-Send all the print statements to a file or to the sink os ...
-"""
 
 
 def eprint(*args, **kwargs):

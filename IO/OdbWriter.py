@@ -4,8 +4,7 @@
 from __future__ import print_function
 
 import numpy as np
-
-
+__author__ = "Felipe Bordeu"
 
 import BasicTools.FE.ElementNames as EN
 
@@ -14,30 +13,35 @@ OdbName[EN.Tetrahedron_4] = 'C3D4'
 OdbName[EN.Triangle_3] = 'S3'
 #OdbName[EN.Triangle_3] = 'S3R'
 OdbName[EN.Bar_2] = 'CONN3D2'
-Abaqusexec = "/home/software/abaqus/Commands/abq6136"
 
 def WriteMaterial(odb, material):
     import abaqusConstants as AC
 
-    if material is none:
+    if material is None:
         #Creating material for odb
         pMat = odb.Material(name='Elastic Material')
         pMat.Elastic(type=AC.ISOTROPIC,
-            temperatureDependency=OFF, dependencies=0,
-            noCompression=OFF, noTension=OFF,
-            moduli=LONG_TERM, table=((12000,0.3),))
+            temperatureDependency=AC.OFF, dependencies=0,
+            noCompression=AC.OFF, noTension=AC.OFF,
+            moduli=AC.LONG_TERM, table=((12000,0.3),))
+    else:
+        raise
     print("print Material")
 
 def WriteSection(odb, section):
 
     ##Creating section for odb
-    #sectionName = 'Homogeneous Solid Section'
-    mySection = odb.HomogeneousSolidSection( name = 'defaultSec',
-    material = 'MATERIAL',
-    thickness = 1.0)
+    if  section is None:
+         sectionName = 'Homogeneous Solid Section'
+         mySection = odb.HomogeneousSolidSection( name = sectionName,
+         material = 'Elastic Material',
+         thickness = 1.0)
+         pCat = odb.SectionCategory(name='odbSection',description = 'Section for odb')
 
-def WriteOdb(filename,mesh,PointFields=None,CellFields=None,PointFieldsNames=None,CellFieldsNames=None,  __insubprocess= False):
+    else:
+        raise
 
+def WriteOdb(filename,mesh,PointFields=None,CellFields=None,PointFieldsNames=None,CellFieldsNames=None,  __insubprocess= False, abaqusExec="abaqus"):
 
     if PointFields is None:
         PointFields = [];
@@ -56,7 +60,6 @@ def WriteOdb(filename,mesh,PointFields=None,CellFields=None,PointFieldsNames=Non
 
 #    if GridFieldsNames is None:
 #        GridFieldsNames  = [];
-
 
     try :
         import abaqusConstants as AC
@@ -94,8 +97,12 @@ WormholeServer(""" +str(port) +""",dry=False)
 
 
         #interface.SetCodeCommand('"C:\\Program Files (x86)\\Notepad++\\notepad++.exe"')
-        proc = interface.SingleRunComputation(0)
-        interface.SetCodeCommand(Abaqusexec + " python")
+        from BasicTools.Helpers.which import which
+        if which(abaqusExec) is None:
+            raise Exception("Abaqus not available in your system")
+        interface.SetCodeCommand(abaqusExec)
+        interface.SetOptions(" python")
+
         import sys
         proc = interface.SingleRunComputation(0)
         import time
@@ -129,17 +136,8 @@ WormholeServer(""" +str(port) +""",dry=False)
     WriteMaterial(pOdb,None)
     WriteSection(pOdb,None)
 
+    ##Creating the 3D solid part
 
-#Creating section for odb
-    pCat = pOdb.SectionCategory(name='odbSection',description = 'Section for odb')
-#
-## Associate the output database with the viewport.
-##pView.setValues(displayedObject=pOdb)
-#
-##session.ScratchOdb(odb=pOdb)
-#
-#
-##Creating the 3D solid part
     pPart = pOdb.Part(name='beamTaylor',embeddedSpace = AC.THREE_D,type= AC.DEFORMABLE_BODY)
     nodeLabels = list(range(1,1+mesh.GetNumberOfNodes()))
     pPart.addNodes(labels = nodeLabels,coordinates = mesh.GetPosOfNodes())
@@ -152,7 +150,7 @@ WormholeServer(""" +str(port) +""",dry=False)
         #print(tag.GetIds().astype(np.int32))
         #print(pPart.nodes[tag.GetIds().astype(np.int32)])
         #print("----")
-        pPartNodes= pPart.NodeSetFromNodeLabels(tag.name,tag.GetIds().astype(np.int32))
+        pPartNodes= pPart.NodeSetFromNodeLabels(tag.name,(tag.GetIds()+1).astype(np.int32))
 #
 
     cpt =0;
@@ -166,17 +164,22 @@ WormholeServer(""" +str(port) +""",dry=False)
         print(elemtype)
         print(ntype)
 
-        pPart.addElements(labels = dd , connectivity=data.connectivity.astype(np.int32) , type = elemtype, elementSetName=ntype)
 
-#
+        pPart.addElements(labels = dd , connectivity=(data.connectivity+1).astype(np.int32) , type = elemtype, elementSetName=ntype)
+
 
     for name in mesh.GetNamesOfElemTags():
-        ids = mesh.GetElementsInTag(name)
+        ids = mesh.GetElementsInTag(name)+1
         elementSet = pPart.ElementSetFromElementLabels(    name=name,elementLabels=ids.astype(np.int32))
 
 
 ##Creating the instance for the solid part
     pAssembly = pOdb.rootAssembly.Instance(name = 'Principal',object = pPart)
+    #pOdb.update()
+    #pOdb.save()
+    #pOdb.close()
+    #return
+
 #
 ##Creating section for odb
 #
@@ -252,7 +255,6 @@ def CheckIntegrity():
     tag = mymesh.nodesTags.CreateTag("coucou")
     tag.AddToTag(0)
     tag.AddToTag(1)
-
 
     tet = mymesh.GetElementsOfType(EN.Tetrahedron_4)
     tet.AddNewElement([0,1,2,3],0)

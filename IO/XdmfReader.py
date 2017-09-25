@@ -1,14 +1,9 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Fri Mar 11 09:47:58 2016
+import numpy as np
 
-@author: d584808
-"""
-
-
+__author__ = "Felipe Bordeu"
 from BasicTools.Helpers.TextFormatHelper import TFormat
 from BasicTools.IO.XdmfTools import FieldNotFound
-import numpy as np
 
 
 class Xdmfbase(object):
@@ -102,6 +97,16 @@ class XdmfGrid(Xdmfbase):
         self.attributes = []
         self.Name ='';
 
+    def GetSupport(self):
+        if self.geometry.Type == "ORIGIN_DXDYDZ":
+            from BasicTools.FE.ConstantRectilinearMesh import ConstantRectilinearMesh
+            res = ConstantRectilinearMesh()
+            res.SetOrigin(self.geometry.GetOrigin())
+            res.SetSpacing(self.geometry.GetSpacing())
+            res.SetDimensions(self.topology.GetDimensions())
+            return res
+
+
     def ReadAttributes(self,attrs):
         self.Name = self.ReadAttribute(attrs,'Name')
         self.GridType = self.ReadAttribute(attrs,'CollectionType',default="Uniform")
@@ -150,7 +155,14 @@ class XdmfGrid(Xdmfbase):
     def GetFieldData(self,name):
         for a in self.attributes:
             if a.Name == name :
-                return a.dataitems[0].GetData();
+                data = a.dataitems[0].GetData();
+                #print(data.shape)
+                if self.geometry.Type == "ORIGIN_DXDYDZ":
+                    if a.Type == "Vector":
+                        return data.transpose(2,1,0,3)
+                    else:
+                        return data.transpose(2,1,0)
+                return data
         raise FieldNotFound(name)
 
     def GetFieldTermsAsColMatrix(self,fieldname, offset = 0):
@@ -265,8 +277,8 @@ class XdmfTopology(Xdmfbase):
         if self.Type is -1:
             self.Type = self.ReadAttribute(attrs,'TopologyType')
 
-        if self.Type != "Mixed":
-            self.Dimensions = np.array(self.ReadAttribute(attrs,'Dimensions').split(), dtype='int')[::-1]
+#        if self.Type != "Mixed":
+        self.Dimensions = np.array(self.ReadAttribute(attrs,'Dimensions').split(), dtype='int')[::-1]
 
     def GetConnectivity(self):
 
@@ -277,7 +289,7 @@ class XdmfTopology(Xdmfbase):
 
 
     def GetDimensions(self):
-            return self.Dimensions
+            return self.Dimensions[::-1]
 
 class XdmfGeometry(Xdmfbase):
     """XdmfGeometry class:  stores the point positions """
@@ -722,9 +734,9 @@ def CheckIntegrity():
     #Test domain part***********************
 
     grid  = domain.GetGrid(0)
-    print(grid.GetFieldsOfType("Node"))
-    print("--")
-    print(grid.GetFieldsOfType("Cell"))
+    #print(grid.GetFieldsOfType("Node"))
+    #print("--")
+    #print(grid.GetFieldsOfType("Cell"))
     grid.geometry.GetOrigin()
     grid.geometry.GetSpacing()
     ##################################
@@ -788,11 +800,4 @@ def Example2():
     #print(TT)
 
 if __name__ == '__main__':
-    CheckIntegrity() # pragma: no cover
-    a = XdmfReader("/data/fbordeu/conforme/Bar.xmf")
-    a.Read()
-    grid = a.xdmf.GetDomain(0).GetGrid(-1)
-    #print(grid.GridType)
-    print(grid.geometry.GetNodes()[0,:])
-    print(grid.topology.GetConnectivity())
-
+   print(CheckIntegrity()) # pragma: no cover

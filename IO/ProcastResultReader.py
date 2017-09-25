@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
-import BasicTools.FE.UnstructuredMesh  as UM
+
 import numpy as np
 
-
+__author__ = "Felipe Bordeu"
+import BasicTools.FE.UnstructuredMesh  as UM
 
 def ReadResult(nbNodes, fileName=None, string=None):
 
@@ -16,7 +17,12 @@ def ReadResult(nbNodes, fileName=None, string=None):
     timeSteps   = []
     temperature = np.empty((nbNodes,0),dtype=np.double)
 
-    for line in string:
+
+    while (True) :
+       line = string.readline()
+       if line == "":
+          break
+    #for line in string:
        l = line.strip('\n').lstrip().rstrip()
        if len(l) == 0: continue
 
@@ -92,6 +98,15 @@ ProCAST RESULTS, ESI
 """
     nbNodes = 4
     timeSteps, temperature = ReadResult(nbNodes, string=__teststring)
+    print(timeSteps)
+    print(temperature)
+
+    from BasicTools.Helpers.Tests import WriteTempFile
+    filename = WriteTempFile(filename="procastResultTest",content=__teststring)
+    timeSteps, temperature = ReadResult(nbNodes, fileName=filename)
+
+
+
     return 'ok'
 
 if __name__ == '__main__':

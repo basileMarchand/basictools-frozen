@@ -17,6 +17,7 @@ __all__ = [
 'Tri3',
 #'UnstructuredFea',
 'UnstructuredMesh',
+'MeshTools',
 'UnstructuredMeshTools'
 ]
 

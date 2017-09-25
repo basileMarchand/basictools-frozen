@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 
-# -*- coding: utf-8 -*-
+import struct
+import numpy as np
+__author__ = "Felipe Bordeu"
 
 from BasicTools.FE.MeshBase import Tag as Tag
 from BasicTools.IO.WriterBase import WriterBase as WriterBase
-import numpy as np
 import BasicTools.FE.ElementNames as EN
-import struct
 
 mmgName = {}
 mmgName[EN.Point_1] = 'Vertices'
@@ -18,7 +18,6 @@ mmgName[EN.Hexaedron_8]   = 'Hexahedra'
 #mmgName[EN.Wedge_6]       = ''
 #mmgName[EN.Pyramid_5]     = ''
 #mmgName[EN.Point_1]   = ''
-
 
 # for binary files
 meshNumber = {}
@@ -140,11 +139,20 @@ class MeshWriter(WriterBase):
             self.PrintDebug("calculate position at end " + str(endOfInformation))
 
         bars = meshObject.GetElementsOfType(EN.Bar_2)
-        if "Ridges" in bars.tags:
-            self.PrintDebug("output Ridges " )
 
-            tag = bars.tags["Ridges"]
-            ids = tag.GetIds()
+        if "Ridges" in bars.tags  :
+
+            self.PrintDebug("output Ridges" )
+            ids = np.empty(0,dtype=int)
+            if "Ridges" in bars.tags :
+                tag = bars.tags["Ridges"]
+
+                ids = np.concatenate((ids,tag.GetIds()))
+
+            #if "Meca" in bars.tags :
+            #    tag = bars.tags["Meca"]
+            #    ids = np.concatenate((ids,tag.GetIds()))
+
             nbids = len(ids)
             if nbids:
                 self.filePointer.write(struct.pack('i', 14 ))
@@ -155,6 +163,27 @@ class MeshWriter(WriterBase):
                 (ids+1).astype(np.int32).tofile(self.filePointer, format=dataformat,sep='')
                 self.PrintDebug("position at end " + str(self.filePointer.tell()))
                 self.PrintDebug("calculate position at end " + str(endOfInformation))
+
+        if "Meca" in bars.tags :
+
+            self.PrintDebug("output Mecas" )
+            ids = np.empty(0,dtype=int)
+
+            if "Meca" in bars.tags :
+                tag = bars.tags["Meca"]
+                ids = np.concatenate((ids,tag.GetIds()))
+
+            nbids = len(ids)
+            if nbids:
+                self.filePointer.write(struct.pack('i', 16 ))
+                currentposition = self.filePointer.tell()
+                endOfInformation = currentposition+ (2+nbids)*4
+                self.filePointer.write(struct.pack('i', endOfInformation ))# end of information
+                self.filePointer.write(struct.pack('i', nbids))# GetNumberOfElements
+                (ids+1).astype(np.int32).tofile(self.filePointer, format=dataformat,sep='')
+                self.PrintDebug("position at end " + str(self.filePointer.tell()))
+                self.PrintDebug("calculate position at end " + str(endOfInformation))
+
 
 
 

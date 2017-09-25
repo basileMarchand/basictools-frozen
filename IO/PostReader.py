@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-
-from BasicTools.IO.ReaderBase import ReaderBase
 import re
 import numpy as np
+
+from BasicTools.IO.ReaderBase import ReaderBase
 
 class PostReader(ReaderBase):
     def __init__(self, fileName=None):

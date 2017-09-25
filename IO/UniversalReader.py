@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 
+__author__ = "Felipe Bordeu"
 import BasicTools.FE.ElementNames as ElementNames
-
-
 
 
 def ReadMesh(filename,out=None):# pragma: no cover
@@ -27,13 +26,10 @@ def ReadMesh(filename,out=None):# pragma: no cover
         return MeshReader.ReadMesh(fileName=filename)
     elif extention ==  "gcode":
         import BasicTools.IO.GReader as GReader
-
         return GReader.ReadGCode(fileName=filename)
     elif extention ==  "fem":
         import BasicTools.IO.FemReader as FemReader
-
         return FemReader.ReadFem(fileName=filename)
-
     elif extention ==  "solb" or extention ==  "sol":
         import BasicTools.IO.MeshReader as MeshReader
         if extention[-1] == "b":
@@ -61,7 +57,20 @@ def ReadMesh(filename,out=None):# pragma: no cover
             if mesh.GetElementsOfType(ElementNames.Tetrahedron_4).GetNumberOfElements() == mesh.GetNumberOfElements():
                 mesh.elemFields = {k:v for k,v in fields.items() if k.find("SolAtTetrahedra") != -1  }
         return mesh
+    elif extention ==  "ut" or extention ==  "utp":
+        from BasicTools.IO.UtReader import UtReader
+        reader = UtReader()
+        reader.SetFileName(fileName=filename)
+        reader.ReadMetaData()
+        import BasicTools.IO.GeofReader as GeofReader
+        mesh = GeofReader.ReadGeof(reader.meshfile)
 
+        #mesh.nodeFields = {}
+        nodesfields = reader.node
+        nodesfields.extend(reader.integ)
+        for nf in nodesfields:
+            mesh.nodeFields[nf] = reader.Read(fieldname=nf,time=-1)
+        return mesh
     else:
         raise Exception ("Unkown file extention : " + str(extention))
 

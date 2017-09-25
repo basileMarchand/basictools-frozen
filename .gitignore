@@ -43,6 +43,11 @@ Thumbs.db
 *.py~
 *.kate-swp
 *.kdev4*
+*.py.bak
+*.h~
+*.cpp~
+*.c~
+
 
 # Zebulon generated files #
 ###########################

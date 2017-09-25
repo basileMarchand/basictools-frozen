@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
+__author__ = "Felipe Bordeu"
+
+
 numberOfNodes = {}
+
 # permutation of index to make a valid element again after a mirror operation
 mirrorPermutation = {}
 dimension = {}

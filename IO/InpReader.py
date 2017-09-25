@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
+""" Inp file reader (Abaqus simulation file)
 
+"""
 import numpy as np
+
+__author__ = "Felipe Bordeu"
 import BasicTools.FE.ElementNames as EN
 import BasicTools.FE.ProblemData as ProblemData
 
-#  for ABAQUS input file
 
 InpNumber = {}
-
 InpNumber['C3D4'] = EN.Tetrahedron_4
 InpNumber['S3'] = EN.Triangle_3
 InpNumber['CONN3D2'] = EN.Bar_2

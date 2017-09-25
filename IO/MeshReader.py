@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
-
-# -*- coding: utf-8 -*-
 import struct
 import numpy as np
 
+__author__ = "Felipe Bordeu"
 import BasicTools.FE.UnstructuredMesh  as UM
 import BasicTools.FE.ElementNames as EN
 from BasicTools.IO.ReaderBase import ReaderBase
+
 # for ascii files
 meditName = {}
 meditName['Edges'] = EN.Bar_2
@@ -449,6 +449,17 @@ class MeshReader(ReaderBase):
               bars.tags.CreateTag("Ridges").SetIds(ids)
               continue
 
+          if key == 16:
+              endOfInformation = struct.unpack("i", f.read(4))[0]
+              nbentries = struct.unpack("i", f.read(4))[0]
+              #ids = np.fromfile(f,dtype=int,count=int(nbentries),sep="")
+              data = f.read(nbentries*4)
+              ids = np.array(struct.unpack("i"*nbentries,data),dtype=np.int)-1
+              #print(ids)
+              #raise
+              bars = res.GetElementsOfType(EN.Bar_2)
+              bars.tags.CreateTag("RequiredEdges").SetIds(ids)
+              continue
 
           if key == 62:
              endOfInformation = struct.unpack("i", data)[0]
@@ -530,7 +541,7 @@ class MeshReader(ReaderBase):
                 self.PrintVerbose('Dimension : '+ str(dimension))
                 continue
 
-            if l.find("Vertices")>-1 and len(l) == 8:
+            if len(l) > 7 and l.find("Vertices") == 0 :
                 line = self.filePointer.readline()
                 l = line.strip('\n').lstrip().rstrip()
 
@@ -574,11 +585,10 @@ class MeshReader(ReaderBase):
                     if len(l) == 0:
                         continue
 
-                    s = l.split()
-
+                    s = map(int,l.split())
                     elements.AddNewElement(s[0:nbNodes], cpt)
                     ref = s[nbNodes]
-                    elements.GetTag("ETag"+ref).AddToTag(cpt)
+                    elements.GetTag("ETag"+str(ref)).AddToTag(cpt)
 
                     cpt +=1
                     if nbElements == cpt:# pragma: no cover

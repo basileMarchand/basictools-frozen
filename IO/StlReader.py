@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
-import BasicTools.FE.ElementNames as EN
 import numpy as np
+
+__author__ = "Felipe Bordeu"
+import BasicTools.FE.ElementNames as EN
+
 
 def ReadStl(fileName=None,string=None):
     import BasicTools.FE.UnstructuredMesh as UM
@@ -104,7 +107,8 @@ def CheckIntegrity():
               vertex 0.0 0.0 1.0
             endloop
           endfacet
-        endsolid"""
+        endsolid
+"""
 
 
     res,_ = ReadStl(string=data)

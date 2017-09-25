@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
+__author__ = "Felipe Bordeu"
+
+import numpy as np
+from scipy.sparse import coo_matrix
 
 from BasicTools.FE.MeshBase import MeshBase
 from BasicTools.FE.Hexa8Cuboid import Hexa8Cuboid
 from BasicTools.FE.Quad4Rectangle import Quad4Rectangle
-
-import numpy as np
-from scipy.sparse import coo_matrix
 
 class ConstantRectilinearMesh(MeshBase):
 
@@ -61,7 +62,7 @@ class ConstantRectilinearMesh(MeshBase):
 
     def GetElementTrasfertMatrix(self, destination):
 
-        nps = 10
+        nps = 3
         nps3 = nps**self.GetDimensionality()
         oldToNewVals = np.zeros((destination.GetNumberOfNodes(),nps3))
         oldToNewIK = np.zeros((destination.GetNumberOfNodes(),nps3), dtype=np.int_)
@@ -100,9 +101,8 @@ class ConstantRectilinearMesh(MeshBase):
 
     def SetDimensions(self,data):
         self.__dimensions = np.array(data,int);
-        print(data)
-        print(self.__dimensions )
         self.nodes = None
+        self.connectivity = None
 
     def GetDimensions(self):
         return self.__dimensions ;
@@ -203,6 +203,9 @@ class ConstantRectilinearMesh(MeshBase):
             return indexs[0]*planesize+indexs[1]
 
     def GetPosOfNode(self,index):
+        if self.nodes is not None:
+            return self.nodes[index,:]
+
         if self.GetDimensionality() == 3 :
             [nx,ny,nz] = self.GetMultiIndexOfNode(index)
             return np.multiply([nx,ny,nz],self.__spacing)+self.__origin
@@ -212,29 +215,103 @@ class ConstantRectilinearMesh(MeshBase):
 
     def GetPosOfNodes(self):
 
-        x = np.arange(self.__dimensions[0])*self.__spacing[0]+self.__origin[0]
-        y = np.arange(self.__dimensions[1])*self.__spacing[1]+self.__origin[1]
-        if self.GetDimensionality() == 2:
-          xv, yv = np.meshgrid(x, y,indexing='ij')
-          return np.array([xv.ravel(),yv.ravel()]).T
-
-        z = np.arange(self.__dimensions[2])*self.__spacing[2]+self.__origin[2]
-        xv, yv, zv = np.meshgrid(x, y,z,indexing='ij')
-
         if self.nodes is None:
+            x = np.arange(self.__dimensions[0])*self.__spacing[0]+self.__origin[0]
+            y = np.arange(self.__dimensions[1])*self.__spacing[1]+self.__origin[1]
+            if self.GetDimensionality() == 2:
+              xv, yv = np.meshgrid(x, y,indexing='ij')
+              return np.array([xv.ravel(),yv.ravel()]).T
+
+            z = np.arange(self.__dimensions[2])*self.__spacing[2]+self.__origin[2]
+            xv, yv, zv = np.meshgrid(x, y,z,indexing='ij')
+
             self.nodes = np.array([xv.ravel(),yv.ravel(),zv.ravel()]).T
 
         return self.nodes
 
-    def GetElementAtPos(self,pos):
+    def GetNodalIndicesOfBorder(self,border=0):
+
+        dim =  np.maximum(self.__dimensions-border*2,0)
+
+        if np.any(dim <= 1):
+            raise(Exception("Cube to small "))
+
+        def GetMonoIndexOfIndexTensorProduct2D(a,b):
+            x,y = np.meshgrid(a,b,indexing='ij')
+            faceindexs = (np.hstack((x.flatten()[:,np.newaxis],y.flatten()[:,np.newaxis])))
+
+            face = self.GetMonoIndexOfNode(faceindexs)
+            return face
+
+        def GetMonoIndexOfIndexTensorProduct3D(a,b,c):
+            x,y,z = np.meshgrid(a,b,c,indexing='ij')
+            faceindexs = (np.hstack((x.flatten()[:,np.newaxis],y.flatten()[:,np.newaxis],z.flatten()[:,np.newaxis])))
+            face = self.GetMonoIndexOfNode(faceindexs)
+            return face
+
+        d2 =  np.maximum(dim-2,0)
+        # first and last
+        f = border
+        l = np.maximum(self.__dimensions-border,f)
+        cpt = 0
+
+        if self.GetDimensionality() == 3:
+            #the faces, the edges, the corners
+            res = np.empty(dim[0]*dim[1]*2+
+                           dim[1]*d2[2]*2+
+                           d2[0]*d2[2]*2,dtype=np.int)
+
+
+            face = GetMonoIndexOfIndexTensorProduct3D(range(f,l[0]),range(f,l[1]),[f, l[2]-1])
+            res[cpt:cpt+face.size] = face
+
+            cpt += face.size
+            face = GetMonoIndexOfIndexTensorProduct3D([f, l[0]-1],range(f,l[1]),range(f+1,l[2]-1))
+            res[cpt:cpt+face.size] = face
+            cpt += face.size
+            face = GetMonoIndexOfIndexTensorProduct3D(range(f+1,l[0]-1),[f,l[1]-1],range(f+1,l[2]-1))
+            res[cpt:cpt+face.size] = face
+            cpt += face.size
+        else:
+                        #the faces, the edges, the corners
+            res = np.empty(dim[0]*2+
+                           d2[1]*2,dtype=np.int)
+
+
+            face = GetMonoIndexOfIndexTensorProduct2D(range(f,l[0]),[f, l[1]-1])
+            res[cpt:cpt+face.size] = face
+
+            cpt += face.size
+            face = GetMonoIndexOfIndexTensorProduct2D([f, l[0]-1],range(f+1,l[1]-1))
+            res[cpt:cpt+face.size] = face
+            cpt += face.size
+        return res
+
+    def GetClosetPointToPos(self,pos, MultiIndex=False):
+        pos = (pos-self.__origin)-self.__spacing/2.
+        pos /= self.__spacing
+        elemindex = pos.astype(int)
+        elemindex = np.minimum(elemindex, self.__dimensions-1)
+        elemindex = np.maximum(elemindex, 0)
+        if MultiIndex :
+            return elemindex
+
+        return self.GetMonoIndexOfNode(elemindex)
+
+
+    def GetElementAtPos(self,pos, MultiIndex=False):
         pos = pos-self.__origin
         pos /= self.__spacing
         elemindex = pos.astype(int)
         elemindex = np.minimum(elemindex, self.__dimensions-2)
-        elemindex = np.maximum(elemindex, 0.)
+        elemindex = np.maximum(elemindex, 0)
+        if MultiIndex :
+            return elemindex
+
         return self.GetMonoIndexOfElement(elemindex)
 
     def GetElementShapeFunctionsAtPos(self,el, pos):
+
         coon = self.GetConnectivityForElement(el)
         p0 = self.GetPosOfNode(coon[0])
         n0 = (pos-p0)*2./self.__spacing - 1.
@@ -309,6 +386,7 @@ class ConstantRectilinearMesh(MeshBase):
         self.elements[BasicTools.FE.ElementNames.Hexaedron_8 ] = ElementsContainer(BasicTools.FE.ElementNames.Hexaedron_8)
         self.elements[BasicTools.FE.ElementNames.Hexaedron_8 ].connectivity = self.connectivity
         self.elements[BasicTools.FE.ElementNames.Hexaedron_8 ].tags =  self.elemTags
+        self.elements[BasicTools.FE.ElementNames.Hexaedron_8 ].cpt = self.GetNumberOfElements()
         return self.connectivity
 
 
@@ -317,9 +395,6 @@ class ConstantRectilinearMesh(MeshBase):
         res  = "ConstantRectilinearMesh \n"
         res = res + "  Number of Nodes    : "+str(self.GetNumberOfNodes()) + "\n"
         res = res + "  Number of Elements : "+str(self.GetNumberOfElements()) + "\n"
-        print(type(self.__dimensions))
-        print(self.__dimensions.dtype)
-        print(self.__dimensions)
         res = res + "  dimensions         : "+str(self.__dimensions )         + "\n"
         res = res + "  origin             : "+str(self.__origin) + "\n"
         res = res + "  spacing            : "+str(self.__spacing) + "\n"
@@ -358,6 +433,13 @@ def CheckIntegrity():
     print((newmesh.GetDimensionality()))
     print((myMesh.GetValueAtPos(np.array([1,2,3,4,5,6,7,8]),[0.5,0.5,0.5])))
 
+
+    print(newmesh.GetDimensions())
+    res = (newmesh.GetNodalIndicesOfBorder(0))
+    print(res)
+    print(res.size)
+
+
     print("-----------------2D const rectilinear mesh------------------------")
     myMesh = ConstantRectilinearMesh()
     myMesh.SetDimensions([2,2]);
@@ -388,6 +470,12 @@ def CheckIntegrity():
     print((newmesh.GetDimensionality()))
     print((myMesh.GetValueAtPos(np.array([1,2,3,4]),[0.5,0.5])))
     print((myMesh.GetDefValueAtPos(np.array([1,2,3,4]),[0.5,0.5] )))
+
+
+    res = (newmesh.GetNodalIndicesOfBorder(0))
+    if np.any(np.sort(res) != [0, 1, 2, 3, 5, 6, 7, 8 ]):
+        return "Not Ok on 'GetNodalIndicesOfBorder(0)'"
+
     return "OK"
 
 if __name__ == '__main__':

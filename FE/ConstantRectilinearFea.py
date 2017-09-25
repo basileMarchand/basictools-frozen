@@ -1,16 +1,17 @@
 # -*- coding: utf-8 -*-
+""" Class to treat Constants Rectilinear Finit Element Problems
 
+"""
+__author__ = "Felipe Bordeu"
 
 import numpy as np
-
 from scipy.sparse import coo_matrix
 import scipy.sparse.linalg as linalg
 import scipy.linalg as denselinalg
-
 import  scipy.sparse as sps
+
 from BasicTools.FE.Hexa8Cuboid import Hexa8Cuboid
 from BasicTools.FE.Quad4Rectangle import  Quad4Rectangle
-
 import BasicTools.FE.FeaBase as FeaBase
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 
@@ -34,43 +35,41 @@ class BundaryCondition(BaseOutputObject):
     def tighten(self):
         self.reserve(self.cpt)
 
-    def eliminate_double(self):
+    def eliminate_double(self, overwrite=True):
+
         if len(self.nodes) == 0:
             return
-        m = np.amax(self.nodes, axis=0)
-        fcpt = np.zeros(m+1,dtype=np.int);
+        m = np.amax(self.nodes,axis=0)+1
+        print(m)
+
+        pointers = [None]*(np.prod(m)*3)
+        m[1:] *= m[0]
+        m *= 3
+        cachesize = np.insert(np.delete(m,len(m)-1),0,3)
 
         i = 0 ;
-        self.PrintDebug(self.cpt)
-        fac = 100./self.cpt
-        c = 0
         while (i < self.cpt):
-          if i*fac >c:
-              self.Print2(round(i*fac))
-              c +=1
 
           node = self.nodes[i]
-          if fcpt[node[0],node[1],node[2]] == 0:
-              fcpt[node[0],node[1],node[2]] += 1
-              i += 1
-              continue
-          fcpt[node[0],node[1],node[2]] += 1
+          pp = sum(node*cachesize) + self.dofs[i]
 
-          dofs = self.dofs[i]
-          #val = self.vals[i]
-          j = 0
-          while(j < i-1 and i < self.cpt ):
-             xyz =self.nodes[j]
-             if ( xyz[0] == node[0] and xyz[1] == node[1] and xyz[2] == node[2]  and self.dofs[j] == dofs   ):
-                 #(self.nodes[j] == node).all()
-                 self.nodes[j] = self.nodes[self.cpt-1]
-                 self.dofs[j] = self.dofs[self.cpt-1]
-                 self.vals[j] = self.vals[self.cpt-1]
-                 self.cpt -=1
-                 continue
-             j +=1
+          if pointers[pp] is None:
+             pointers[pp] = i
+             i +=1
+          else:
+             p = pointers[pp]
 
-          i +=1
+             # we copy the value of the last encountered val
+             if overwrite :
+                 self.vals[p] = self.vals[i]
+
+             #then we move the last value to the current place
+             self.nodes[i] = self.nodes[self.cpt-1]
+             self.dofs[i] = self.dofs[self.cpt-1]
+             self.vals[i] = self.vals[self.cpt-1]
+             self.cpt -= 1
+
+
         self.tighten()
 
     def append(self, nodes, dof,val):
@@ -80,6 +79,16 @@ class BundaryCondition(BaseOutputObject):
         self.dofs[self.cpt] = dof
         self.vals[self.cpt] = val
         self.cpt += 1
+
+    def __str__(self):
+       res = ""
+       i = 0
+       while (i < self.cpt):
+           res += str(self.nodes[i])+ " "
+           res += str(self.dofs[i]) + " "
+           res += str(self.vals[i])+ " \n"
+           i +=1
+       return res
 
 class Fea(FeaBase.FeaBase):
 
@@ -107,12 +116,12 @@ class Fea(FeaBase.FeaBase):
             self.ME    = MOperator
         else:
             if support.GetDimensionality() == 3:
-                myElem = Hexa8Cuboid()
+                self.myElem = Hexa8Cuboid()
             else:
-               myElem = Quad4Rectangle()
-            myElem.delta = support.GetSpacing()
-            self.KE = myElem.GetIsotropDispK(1.,0.3);
-            self.ME = myElem.GetIsotropDispM(1.);
+               self.myElem = Quad4Rectangle()
+            self.myElem.delta = support.GetSpacing()
+            self.KE = self.myElem.GetIsotropDispK(1.,0.3);
+            self.ME = self.myElem.GetIsotropDispM(1.);
 
         # dofs:
         self.ndof = dofpernode * support.GetNumberOfNodes()
@@ -137,6 +146,7 @@ class Fea(FeaBase.FeaBase):
         self.fixed = np.zeros(self.ndof, dtype=np.bool)
         if dirichlet_bcs is not None :
             dirichlet_bcs.tighten()
+            dirichlet_bcs.eliminate_double()
             indexs = support.GetMonoIndexOfNode(dirichlet_bcs.nodes)
             indexs *= dofpernode
             indexs += dirichlet_bcs.dofs
@@ -233,7 +243,7 @@ class Fea(FeaBase.FeaBase):
         self.PrintDebug(" Delete fixed Dofs")
         [K, rhsfixed] = FeaBase.deleterowcol(K, self.fixed, self.fixed, self.fixedValues)
 
-        self.PrintDebug(" Start solver")
+        self.PrintDebug(" Start solver (" + str(self.linearSolver) + ")")
         rhs = self.f[self.free, 0]-rhsfixed[self.free, 0]
 
         self.u = np.zeros((self.ndof, 1), dtype=np.double)
@@ -248,8 +258,14 @@ class Fea(FeaBase.FeaBase):
             M = sps.dia_matrix((1./K.diagonal(),0), shape=K.shape)
             # normalization of the rhs term ( to treat correctly the tol of CG) (Please read the documentaion of numpy.linalg.cg)
             norm = np.linalg.norm(rhs)
-            res = linalg.cg(K, rhs/norm, x0 = self.u[self.free, 0]/norm , M = M, tol = self.tol)
+            #def PrintRes(x):
+            #   self.PrintDebug(np.linalg.norm(K.dot(x)-rhs/norm))
+            #    , callback=PrintRes
+            res = linalg.cg(K.tocsc(copy=False), rhs/norm, x0 = self.u[self.free, 0]/norm , M = M, tol = self.tol )
+            if res[1] > 0:
+                raise
             self.u[self.free, 0] = res[0]*norm
+
           elif self.linearSolver == "LGMRES":
             M = sps.dia_matrix((1./K.diagonal(),0), shape=K.shape)
             norm = np.linalg.norm(rhs)
@@ -277,7 +293,6 @@ class Fea(FeaBase.FeaBase):
         u_reshaped.shape = (self.support.GetNumberOfElements(), self.nodesPerElement*self.dofpernode)
         Ku_reshaped = np.dot(u_reshaped, self.KE)
         np.einsum('ij,ij->i', Ku_reshaped, u_reshaped, out=self.eed)
-
         self.PrintDebug('Post Process Done')
 
     def GenerateIJs(self):
@@ -294,14 +309,13 @@ class Fea(FeaBase.FeaBase):
     def element_elastic_energy(self, Eeff= None, OnlyOnInterface = False):
 
         if Eeff is None:
-            Eeff = np.ones(self.support.GetNumberOfElements())
+            return self.eed
+        else:
+            nEeff = np.copy(Eeff)
+            bool_Eeff = Eeff<self.minthreshold
+            nEeff[bool_Eeff] = 0.0
+            return nEeff*self.eed
 
-        bool_Eeff = Eeff<self.minthreshold
-        nEeff = Eeff.copy()
-        nEeff[bool_Eeff] = 0.0
-        nEeff *= self.eed
-
-        return nEeff.ravel()
 
     def nodal_elastic_energy(self, Eeff=None, OnlyOnInterface = False):
 
@@ -521,7 +535,8 @@ def CheckIntegrityDep3D():
     print(max(myProblem.u))
 
     if abs(max(myProblem.u)-1.00215295) > 1e-5:
-        raise   # pragma: no cover
+        print(TestTempDir.GetTempPath())
+        raise   Exception("The value must be 1.00215295")# pragma: no cover
 
 def CheckIntegrityThermal2D():
     import BasicTools.FE.ConstantRectilinearMesh as CRM
@@ -675,6 +690,9 @@ def CheckIntegrity():
     print(CheckIntegrityDep3D())
     print(CheckIntegrityThermal2D())
     print(CheckIntegrityDep2D())
+
+    from BasicTools.Helpers.Tests import TestTempDir
+    print(TestTempDir.GetTempPath())
     return "ok"
 
 if __name__ == '__main__':

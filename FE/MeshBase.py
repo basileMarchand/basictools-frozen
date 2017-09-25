@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
+__author__ = "Felipe Bordeu"
 
 import numpy as np
+
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 
 class Tag(object):
@@ -11,11 +13,17 @@ class Tag(object):
 
 
     def AddToTag(self,tid):
-        if len(self._id) <= self.cpt:
-            self._id.resize(self.cpt*2+1)
+        if type(tid).__module__ == np.__name__:
+            self._id.resize(self.cpt+tid.size)
+            self._id[self.cpt:] = tid
 
-        self._id[self.cpt] = tid
-        self.cpt += 1
+            self.cpt += tid.size
+        else:
+            if len(self._id) <= self.cpt:
+                self._id.resize(self.cpt*2+1)
+
+            self._id[self.cpt] = tid
+            self.cpt += 1
 
     def __len__(self):
         return self.cpt

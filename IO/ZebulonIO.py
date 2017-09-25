@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
+""" Read Zebulon sparse matrices and vectors
+"""
 
-# Read Zebulon sparse matrices and vectors
 import numpy as np
 from scipy.sparse import csr_matrix
 from scipy.sparse import lil_matrix

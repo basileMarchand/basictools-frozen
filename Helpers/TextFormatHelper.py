@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
+"""Class to format output
 
-# Principal developper:
-#   Felipe Bordeu
+"""
+__author__ = "Felipe Bordeu"
 
 import sys
 import os
