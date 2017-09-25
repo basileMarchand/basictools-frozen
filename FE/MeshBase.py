@@ -130,6 +130,16 @@ class MeshBase(BaseOutputObject):
         self.nodesTags = Tags()
         self.nodeFields = {}
         self.elemFields = {}
+        """Metadata this is just a dictionary that can be used to tranport
+        information with the mesh, please use the class name as key of the
+        object using/setting the information
+        """
+        self.props = {}
+
+    def CopyProperties(self,other):
+        import copy
+        self.props = copy.deepcopy(self.props)
+
 
     def GetNodalTag(self, tagName):
         if tagName not in self.nodesTags:
