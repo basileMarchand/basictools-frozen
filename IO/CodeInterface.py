@@ -97,21 +97,29 @@ class Interface(BaseOutputObject):
         # Commande execution
 
         if self.openExternalWindows:
-            if self.keepExternalWindows:
-                self.lastCommandExecuted = "/usr/bin/xterm -e '"+ cmd + ";bash'"
+            import platform
+            if platform.system() == "Windows":
+
+                if self.keepExternalWindows:
+                   cmd.insert(0,"/K")
+                else:
+                   cmd.insert(0,"/C")
+                cmd.insert(0,"cmd")
+                cmd.insert(0,"/wait")
+                cmd.insert(0,"start")
             else:
-                self.lastCommandExecuted = "/usr/bin/xterm -e '"+ cmd + "'"
-        else:
-            self.lastCommandExecuted = cmd;
+                if self.keepExternalWindows:
+                    self.lastCommandExecuted = "/usr/bin/xterm -e '"+ cmd + ";bash'"
+                else:
+                    self.lastCommandExecuted = "/usr/bin/xterm -e '"+ cmd + "'"
+
+        self.lastCommandExecuted = " ".join(cmd)
 
         proc = subprocess.Popen(cmd , cwd=self.processDirectory , stdout=out, shell=True)
 
         return proc
 
     def SingleRunComputationAndReturnOutput(self, idProc=0):
-
-        return proc
-
 
         cmd = self.GenerateCommandToRun(idProc)
 
@@ -197,7 +205,9 @@ def CheckIntegrity():
     interface.SingleRunComputation(1,sys.stdout).wait()
     print("lastCommandExecuted: " + str(interface.lastCommandExecuted))
 
-    interface.SetCodeCommand("dir {filter}")
+
+    interface.SetCodeCommand("dir")
+    interface.SetOptions(["{filter}"])
     interface.parameters['filter']        = '*.inp'
     interface.withFilename = False
 
