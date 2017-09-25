@@ -646,8 +646,7 @@ class XdmfWriter(WriterBase):
                 typename = 'Char'
                 s = data.dtype.itemsize
             else:
-                print('Output Not implemented for data of type ' + str(type(data[0])))              # pragma: no cover
-                raise                                                          # pragma: no cover
+                raise(Exception('Output Not implemented for data of type ' + str(type(data[0]))))                                                         # pragma: no cover
 
             dimension = ArrayToString(shape)
 
