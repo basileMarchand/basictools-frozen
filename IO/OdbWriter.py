@@ -99,10 +99,10 @@ WormholeServer(""" +str(port) +""",dry=False)
         #interface.SetCodeCommand('"C:\\Program Files (x86)\\Notepad++\\notepad++.exe"')
         from BasicTools.Helpers.which import which
         if which(abaqusExec) is None:
+            print(abaqusExec)
             raise Exception("Abaqus not available in your system")
         interface.SetCodeCommand(abaqusExec)
-        interface.SetOptions(" python")
-
+        interface.SetOptions(["python"])
         import sys
         proc = interface.SingleRunComputation(0)
         import time

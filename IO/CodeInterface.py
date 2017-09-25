@@ -42,6 +42,7 @@ class Interface(BaseOutputObject):
 
         # Code command
         self.codeCommand = 'Zrun'
+        self.options = []
         self.lastCommandExecuted = None
         self.openExternalWindows = True
         self.keepExternalWindows = True
@@ -62,15 +63,25 @@ class Interface(BaseOutputObject):
         with open(self.processDirectory + os.sep + inpFilename, 'w') as inpFile:
 
             inpFile.write(inpString)
+
+    def SetOptions(self, opts):
+        self.options = opts
+
     def GenerateCommandToRun(self,idProc=0):
         # Command to execute
-        cmd = self.codeCommand
+        cmd = []
+        cmd.append(self.codeCommand)
 
         if self.withFilename:
             inpFilename = self.inputFilename + str(idProc) + self.inputFileExtension
-            cmd += ' ' + inpFilename
+            cmd.append(inpFilename)
 
-        cmd = cmd.format(**self.parameters)
+        for opt in self.options:
+            cmd.append(opt)
+
+        for i in xrange(len(cmd)):
+           cmd[i] = cmd[i].format(**self.parameters)
+        print(cmd)
         return cmd
 
     def SingleRunComputation(self, idProc,stdout = None):
@@ -86,21 +97,29 @@ class Interface(BaseOutputObject):
         # Commande execution
 
         if self.openExternalWindows:
-            if self.keepExternalWindows:
-                self.lastCommandExecuted = "/usr/bin/xterm -e '"+ cmd + ";bash'"
+            import platform
+            if platform.system() == "Windows":
+
+                if self.keepExternalWindows:
+                   cmd.insert(0,"/K")
+                else:
+                   cmd.insert(0,"/C")
+                cmd.insert(0,"cmd")
+                cmd.insert(0,"/wait")
+                cmd.insert(0,"start")
             else:
-                self.lastCommandExecuted = "/usr/bin/xterm -e '"+ cmd + "'"
-        else:
-            self.lastCommandExecuted = cmd;
+                if self.keepExternalWindows:
+                    self.lastCommandExecuted = "/usr/bin/xterm -e '"+ cmd + ";bash'"
+                else:
+                    self.lastCommandExecuted = "/usr/bin/xterm -e '"+ cmd + "'"
+
+        self.lastCommandExecuted = " ".join(cmd)
 
         proc = subprocess.Popen(cmd , cwd=self.processDirectory , stdout=out, shell=True)
 
         return proc
 
     def SingleRunComputationAndReturnOutput(self, idProc=0):
-
-        return proc
-
 
         cmd = self.GenerateCommandToRun(idProc)
 
@@ -186,7 +205,9 @@ def CheckIntegrity():
     interface.SingleRunComputation(1,sys.stdout).wait()
     print("lastCommandExecuted: " + str(interface.lastCommandExecuted))
 
-    interface.SetCodeCommand("dir {filter}")
+
+    interface.SetCodeCommand("dir")
+    interface.SetOptions(["{filter}"])
     interface.parameters['filter']        = '*.inp'
     interface.withFilename = False
 
