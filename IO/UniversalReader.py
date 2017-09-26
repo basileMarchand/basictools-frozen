@@ -5,59 +5,64 @@ import BasicTools.FE.ElementNames as ElementNames
 
 
 def ReadMesh(filename,out=None):# pragma: no cover
-    extention = filename.split(".")[-1].lower()
-    if extention ==  "asc":
+    import os.path
+
+    dirname = os.path.dirname(filename)
+    basename,extention = os.path.splitext(os.path.basename(filename))
+
+    if extention ==  ".asc":
         import BasicTools.IO.AscReader as AscReader
         return AscReader.ReadAsc(filename)
-    elif extention ==  "geof":
+    elif extention ==  ".geof":
         import BasicTools.IO.GeofReader as GeofReader
         return GeofReader.ReadGeof(filename)
-    elif extention ==  "msh":
+    elif extention ==  ".msh":
         import BasicTools.IO.GmshReader as GmshReader
         return GmshReader.ReadGmsh(filename,out=out)
-    elif extention ==  "inp":
+    elif extention ==  ".inp":
         import BasicTools.IO.InpReader as ImpReader
         return ImpReader.ReadInp(filename)
-    elif extention ==  "mesh":
+    elif extention ==  ".mesh":
         import BasicTools.IO.MeshReader as ReadMesh
         return ReadMesh.ReadMesh(fileName=filename)
-    elif extention ==  "meshb":
+    elif extention ==  ".meshb":
         import BasicTools.IO.MeshReader as MeshReader
         return MeshReader.ReadMesh(fileName=filename)
-    elif extention ==  "gcode":
+    elif extention ==  ".gcode":
         import BasicTools.IO.GReader as GReader
         return GReader.ReadGCode(fileName=filename)
-    elif extention ==  "fem":
+    elif extention ==  ".fem":
         import BasicTools.IO.FemReader as FemReader
         return FemReader.ReadFem(fileName=filename)
-    elif extention ==  "solb" or extention ==  "sol":
+    elif extention ==  ".solb" or extention ==  ".sol":
         import BasicTools.IO.MeshReader as MeshReader
+
         if extention[-1] == "b":
-            f = filename.split(".")[0] + ".meshb"
+            f = os.path.join(dirname,basename+".meshb")
         else:
-            f = filename.split(".")[0] + ".mesh"
+            f = os.path.join(dirname,basename+".mesh")
 
         # we check if the file exist, if not we try the other type
-        import os.path
         if not os.path.isfile(f):
             if extention[-1] == "b":
-                f = filename.split(".")[0] + ".mesh"
+                f = os.path.join(dirname,basename+".mesh")
             else:
-                f = filename.split(".")[0] + ".meshb"
+                f = os.path.join(dirname,basename+".meshb")
 
-
+        if not os.path.isfile(f):
+            raise Exception("unable to find a mesh file")
         reader = MeshReader.MeshReader()
         reader.SetFileName(fileName=f)
         reader.Read()
         mesh = reader.output
-        fields = reader.ReadExtraField(filename);
+        fields = reader.ReadExtraFields(filename);
         mesh.nodeFields = {k:v for k,v in fields.items() if k.find("SolAtVertices") != -1  }
         if 'SolAtTetrahedra0' in fields:
 
             if mesh.GetElementsOfType(ElementNames.Tetrahedron_4).GetNumberOfElements() == mesh.GetNumberOfElements():
                 mesh.elemFields = {k:v for k,v in fields.items() if k.find("SolAtTetrahedra") != -1  }
         return mesh
-    elif extention ==  "ut" or extention ==  "utp":
+    elif extention ==  ".ut" or extention ==  ".utp":
         from BasicTools.IO.UtReader import UtReader
         reader = UtReader()
         reader.SetFileName(fileName=filename)
