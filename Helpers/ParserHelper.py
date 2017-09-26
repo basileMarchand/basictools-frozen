@@ -22,9 +22,14 @@ def ReadScalar(string,dtype):
 
 def ReadVector(string,dtype):
 
-    tmp = string.lstrip().rstrip()
+    if isinstance(string,list) or  isinstance(string,np.ndarray):
+        return np.array([ ReadScalar(x,dtype) for x in string] ,dtype=dtype )
+    else:
+        tmp = string.lstrip().rstrip()
+        return np.array([ ReadScalar(x,dtype) for x in tmp.split()] ,dtype=dtype )
 
-    return np.array([ ReadScalar(x,dtype) for x in tmp.split()] ,dtype=dtype )
+def ReadStrings(string):
+    return ReadVector(string,str)
 
 def ReadFloat(string):
     return ReadScalar(string,float)
@@ -100,6 +105,8 @@ def CheckIntegrity():
     TestFunction(ReadFloat,"3.14159", 3.14159 )
     TestFunction(ReadFloat,3.14159, 3.14159 )
     TestFunction(ReadFloats,"1 2 3 ", np.array([1,2,3],dtype=float))
+
+    TestFunction(ReadStrings,"Hola Chao", np.array(["Hola","Chao"],dtype=str))
 
     # this call must fail
     try:
