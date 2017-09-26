@@ -44,8 +44,8 @@ class Interface(BaseOutputObject):
         self.codeCommand = 'Zrun'
         self.options = []
         self.lastCommandExecuted = None
-        self.openExternalWindows = True
-        self.keepExternalWindows = True
+        self.openExternalWindows = False
+        self.keepExternalWindows = False
 
         self.withFilename = True
 
@@ -114,6 +114,7 @@ class Interface(BaseOutputObject):
                 cmd.insert(0,"/usr/bin/xterm")
 
         self.lastCommandExecuted = cmd
+        print(cmd)
         proc = subprocess.Popen(cmd , cwd=self.processDirectory , stdout=out, shell=False)
 
         return proc
@@ -197,11 +198,12 @@ def CheckIntegrity(GUI=False):
 
     interface.SetProcessDirectory(T.TestTempDir.GetTempPath())
 
-    interface.SetCodeCommand("dir ")
+    interface.SetCodeCommand("dir")
     interface.ReadTemplateFile('template.tpl')
     interface.WriteFile(1)
 
-    import sys
+    interface.openExternalWindows = True
+    interface.keepExternalWindows = True
     interface.SingleRunComputation(1,sys.stdout).wait()
     print("lastCommandExecuted: " + str(interface.lastCommandExecuted))
 
