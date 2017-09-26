@@ -22,11 +22,16 @@ class ElementsContainer(BaseOutputObject):
         return self.cpt
         #return self.connectivity.shape[0]
 
-    def Merge(self,other):
+    def Merge(self,other,offset=None):
         other.tighten()
 
         self.Reserve(self.cpt+other.cpt)
-        self.connectivity[self.cpt:,:] =other.connectivity
+
+        if offset is None:
+            offset = 0
+
+        self.connectivity[self.cpt:,:] = other.connectivity+offset
+        self.originalIds[self.cpt:] = -1*np.arange(other.cpt)
 
         for tag in other.tags:
             self.GetTag(tag.name).AddToTag(tag.GetIds() + self.cpt)
@@ -76,6 +81,33 @@ class ElementsContainer(BaseOutputObject):
             return 1
         else:
             return 0
+
+    def DeleteElementsById(self,ids):
+        mask = np.ones(self.GetNumberOfElements(),dtype=np.bool)
+        mask[ids] = False
+        from BasicTools.FE.UnstructuredMeshTools import ExtractElementsByMask
+        return  ExtractElementsByMask(self,mask)
+
+        self.connectivity = self.connectivity[mask,:]
+
+        numberOfNewElements = self.connectivity.shape[0]
+        self.cpt = numberOfNewElements ;
+        self.originalIds = np.empty((numberOfNewElements ,),dtype=np.int)
+        cpt = 0
+        for i in range(len(mask)):
+            if mask[i]:
+              self.originalIds[cpt] = i
+              cpt += 0
+
+        #CleanTags
+        for tag in self.tags  :
+            temp = np.extract(mask[tag.GetIds()],tag.GetIds())
+            newid = newIndex[temp]
+            outelems.tags.CreateTag(tag.name).SetIds(newid)
+
+        self.tags = Tags()
+
+
 
     def __str__(self):
         res  = "ElementsContainer \n"
@@ -207,7 +239,11 @@ class UnstructuredMesh(MeshBase):
     def __str__(self):
         res  = "UnstructuredMesh \n"
         res += "  Number Of Nodes    : {}\n".format(self.GetNumberOfNodes())
-        res += "  Number Of Elements : {}\n".format(self.GetNumberOfElements())
+        res += "  Number Of Elements : {}".format(self.GetNumberOfElements())
+        for name,data in self.elements.items():
+            if data.GetNumberOfElements():
+                res += " ({}:{})".format(name,data.GetNumberOfElements())
+        res += "\n"
         res += "  Node Tags          : " + str(self.nodesTags) + "\n"
         res += "  Cell Tags          : " + str([x for x in self.GetNamesOfElemTags()])+ "\n"
         return res
