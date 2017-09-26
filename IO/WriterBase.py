@@ -14,8 +14,8 @@ class WriterBase(BaseOutputObject):
 
     def SetBinary(self, val = True):
         if self._isOpen :
-            print(TFormat.InRed("SetBinary before opening"))
-            raise Exception
+            print(TFormat.InRed("Please SetBinary before opening"))
+            raise Exception("Please SetBinary before opening")
         self._isBinary = val
 
     def isBinary(self):
