@@ -21,9 +21,12 @@ def WriteMaterial(odb, material):
         #Creating material for odb
         pMat = odb.Material(name='Elastic Material')
         pMat.Elastic(type=AC.ISOTROPIC,
-            temperatureDependency=AC.OFF, dependencies=0,
-            noCompression=AC.OFF, noTension=AC.OFF,
-            moduli=AC.LONG_TERM, table=((12000,0.3),))
+            temperatureDependency=AC.OFF,
+            dependencies=0,
+            noCompression=AC.OFF,
+            noTension=AC.OFF,
+            moduli=AC.LONG_TERM,
+            table=((12000,0.3),))
     else:
         raise
     print("print Material")
@@ -100,7 +103,7 @@ WormholeServer(""" +str(port) +""",dry=False)
         from BasicTools.Helpers.which import which
         if which(abaqusExec) is None:
             print(abaqusExec)
-            raise Exception("Abaqus not available in your system")
+            raise RuntimeError("Abaqus not available in your system")
         interface.SetCodeCommand(abaqusExec)
         interface.SetOptions(["python"])
         import sys
@@ -280,7 +283,13 @@ def CheckIntegrity():
     #mymesh.AddElementToTagUsingOriginalId(5,"Tag3")
 
     tempdir = "./"
-    WriteOdb(tempdir+"Test_OdbWriter.odb",mymesh)
+    try:
+       WriteOdb(tempdir+"Test_OdbWriter.odb",mymesh)
+    except RuntimeError as e:
+       #raise
+       import sys
+       raise UserWarning, e.message,sys.exc_info()[2]
+
 
     return "ok"
 
