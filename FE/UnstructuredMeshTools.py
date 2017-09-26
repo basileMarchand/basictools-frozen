@@ -537,6 +537,7 @@ def ExtractElementsByMask(inelems, _mask):
     outelems.Allocate(nbels)
     outelems.connectivity = inelems.connectivity[mask,:]
     outelems.originalIds = np.where(mask)[0]
+    outelems.originalOffset = inelems.globaloffset
 
     for tag in inelems.tags  :
        temp = np.extract(mask[tag.GetIds()],tag.GetIds())
