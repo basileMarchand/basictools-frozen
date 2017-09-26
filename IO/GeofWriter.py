@@ -70,7 +70,7 @@ class GeofWriter(WriterBase):
 
         self.filePointer.write("% This file has been writen by the python routine GeofWriter of the BasicTools package\n")
 
-        self.filePointer.write("% For any question about this routine, please contact SAFRAN TECH Pole M&S Team OT\n")
+        self.filePointer.write("% For any question about this routine, please contact SAFRAN TECH Pole M&S - CAM Team\n")
 
         self.filePointer.write("***geometry\n");
         self.filePointer.write("  **node\n");
