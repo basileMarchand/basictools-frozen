@@ -8,25 +8,11 @@ from BasicTools.FE.MeshBase import Tag as Tag
 from BasicTools.IO.WriterBase import WriterBase as WriterBase
 import BasicTools.FE.ElementNames as EN
 
-mmgName = {}
-mmgName[EN.Point_1] = 'Vertices'
-mmgName[EN.Bar_2]         = 'Edges'
-mmgName[EN.Triangle_3]    = 'Triangles'
-mmgName[EN.Quadrangle_4]  = 'Quadrilaterals'
-mmgName[EN.Tetrahedron_4] = 'Tetrahedra'
-mmgName[EN.Hexaedron_8]   = 'Hexahedra'
-#mmgName[EN.Wedge_6]       = ''
-#mmgName[EN.Pyramid_5]     = ''
-#mmgName[EN.Point_1]   = ''
 
-# for binary files
-meshNumber = {}
-meshNumber[EN.Point_1] = 4
-meshNumber[EN.Bar_2] = 5
-
-meshNumber[EN.Triangle_3] = 6
-meshNumber[EN.Quadrangle_4] = 7
-meshNumber[EN.Tetrahedron_4] = 8
+from MeshTools import BinaryNumber
+from MeshTools import ASCIIName
+from MeshTools import ASCIITags
+from MeshTools import Corners
 
 
 def WriteMesh(filename,mesh,SolsAtVertices=None,solutionOnOwnFile= False, binary=True, nodalRefNumber= None,elemRefNumber=None):
@@ -65,6 +51,8 @@ class MeshWriter(WriterBase):
             return self.WriteBINARY(meshObject,SolsAtVertices=SolsAtVertices, solutionOnOwnFile=solutionOnOwnFile, nodalRefNumber=nodalRefNumber,elemRefNumber=elemRefNumber )
         else:
             return self.WriteASCII(meshObject,SolsAtVertices=SolsAtVertices, solutionOnOwnFile= solutionOnOwnFile, nodalRefNumber =nodalRefNumber,elemRefNumber=elemRefNumber )
+
+
 
     def WriteBINARY(self,meshObject,SolsAtVertices=None, solutionOnOwnFile= False, nodalRefNumber = None,elemRefNumber=None):
 
@@ -108,7 +96,7 @@ class MeshWriter(WriterBase):
         globalOffset =0
         for elementContainer in meshObject.elements:
             self.PrintDebug("Output of " + str(elementContainer ))
-            elemtype = meshNumber[elementContainer]
+            elemtype = BinaryNumber[elementContainer]
             data = meshObject.elements[elementContainer]
             nbelements = data.GetNumberOfElements()
             if nbelements == 0:
@@ -138,9 +126,10 @@ class MeshWriter(WriterBase):
             self.PrintDebug("position at end " + str(self.filePointer.tell()))
             self.PrintDebug("calculate position at end " + str(endOfInformation))
 
-        bars = meshObject.GetElementsOfType(EN.Bar_2)
 
-        if "Ridges" in bars.tags  :
+
+        bars = meshObject.GetElementsOfType(EN.Bar_2)
+        if "Ridges" in bars.tags  and len(bars.tags["Ridges"]):
 
             self.PrintDebug("output Ridges" )
             ids = np.empty(0,dtype=int)
@@ -163,6 +152,32 @@ class MeshWriter(WriterBase):
                 (ids+1).astype(np.int32).tofile(self.filePointer, format=dataformat,sep='')
                 self.PrintDebug("position at end " + str(self.filePointer.tell()))
                 self.PrintDebug("calculate position at end " + str(endOfInformation))
+
+        tris = meshObject.GetElementsOfType(EN.Triangle_3)
+        if "RequiredTriangles" in tris.tags  and len(tris.tags["RequiredTriangles"]):
+
+            self.PrintDebug("output RequiredTriangles" )
+            ids = np.empty(0,dtype=int)
+            if "RequiredTriangles" in tris.tags :
+                tag = tris.tags["RequiredTriangles"]
+
+                ids = np.concatenate((ids,tag.GetIds()))
+
+            #if "Meca" in bars.tags :
+            #    tag = bars.tags["Meca"]
+            #    ids = np.concatenate((ids,tag.GetIds()))
+
+            nbids = len(ids)
+            if nbids:
+                self.filePointer.write(struct.pack('i', 17 ))
+                currentposition = self.filePointer.tell()
+                endOfInformation = currentposition+ (2+nbids)*4
+                self.filePointer.write(struct.pack('i', endOfInformation ))# end of information
+                self.filePointer.write(struct.pack('i', nbids))# GetNumberOfElements
+                (ids+1).astype(np.int32).tofile(self.filePointer, format=dataformat,sep='')
+                self.PrintDebug("position at end " + str(self.filePointer.tell()))
+                self.PrintDebug("calculate position at end " + str(endOfInformation))
+
 
         if "Meca" in bars.tags :
 
@@ -189,7 +204,7 @@ class MeshWriter(WriterBase):
 
         if SolsAtVertices is not None:
             if solutionOnOwnFile :
-                self.filePointer.write(struct.pack('i', 54)) #dimension
+                #self.filePointer.write(struct.pack('i', 54)) #dimension
                 self.Close();
                 self.OpenSolutionFileBinary()
             self.WriteSolutionsFieldsBinary(meshObject,SolsAtVertices)
@@ -213,8 +228,7 @@ class MeshWriter(WriterBase):
             self._WriteSolutionsFieldsAsciiUsingKey(meshObject,"SolAtVertices",SolsAtVertices)
 
         if SolsAtTriangles is not None:
-            raise
-            self._WriteSolutionsFieldsAsciiUsingKey(meshObject,64,SolsAtTriangles)
+            self._WriteSolutionsFieldsAsciiUsingKey(meshObject,"SolAtTriangles",SolsAtTriangles)
 
         if SolsAtTetrahedra is not None:
             self._WriteSolutionsFieldsAsciiUsingKey(meshObject,"SolAtTetrahedra",SolsAtTetrahedra)
@@ -277,13 +291,13 @@ class MeshWriter(WriterBase):
         else:
             self.WriteSolutionsFieldsAscii(meshObject,SolsAtVertices=SolsAtVertices,SolsAtTriangles=SolsAtTriangles,SolsAtTetrahedra=SolsAtTetrahedra)
 
-    def CloseSolutionFile(self):
+    def Close(self):
 
         if self.isBinary():
             self.CloseSolutionFileBinary()
         else:
             self.CloseSolutionFileAscii()
-        self.Close()
+        WriterBase.Close(self)
 
     def OpenSolutionFileBinary(self,support):
 
@@ -322,6 +336,7 @@ class MeshWriter(WriterBase):
         nbfields = len(Sols)
         #          1       +    1             1 +  nfields + numberofpoints*nfields*dataSize
         # endOfInformation + numberofpoints + 1 + nfields +  +
+        self.PrintDebug(Sols[0].shape)
         self.PrintDebug(nbfields)
         self.PrintDebug(NumberOfEntries)
         self.PrintDebug([x.shape for x in Sols])
@@ -349,8 +364,6 @@ class MeshWriter(WriterBase):
         #print(nbfields)
 
         for sol in Sols:
-
-
             # we add a extra axis for scalar field stored in a vector (only one index)
             if len(sol.shape)== 1:
                 sol = sol[:,np.newaxis]
@@ -381,8 +394,8 @@ class MeshWriter(WriterBase):
     def WriteASCII(self,meshObject,SolsAtVertices=None, solutionOnOwnFile= False, nodalRefNumber = None,elemRefNumber=None):
 
         #self.filePointer.write("# This file has been writen by the python routine MmgWriter of the BasicTools package\n")
-        #self.filePointer.write("# For any question about this routine, please contact SAFRAN TECH Pole M&S Team OT\n")
-
+        #self.filePointer.write("# For any question about this routine, please contact SAFRAN TECH Pole M&S - CAM Team\n")
+        meshObject.ComputeGlobalOffset()
         self.filePointer.write("MeshVersionFormatted 2 \n")
         #
         self.filePointer.write("Dimension " + str(meshObject.GetDimensionality()) + "\n\n")
@@ -418,9 +431,8 @@ class MeshWriter(WriterBase):
 #        tagcounter = 2
 #        #for tagname in celtags:
         globalOffset = 0
-        for elementContainer in elements:
-            elemtype = mmgName[elementContainer]
-            self.filePointer.write("{} \n".format(elemtype) )
+        for name, elementContainer in elements.items():
+            elemtype = ASCIIName[name]
 
             if meshObject.IsConstantRectilinear():
                 #hack to make the constantrectilinear api as the unstructured #TODO clean me
@@ -429,9 +441,11 @@ class MeshWriter(WriterBase):
                 data.connectivity = meshObject.GenerateFullConnectivity()
                 nelem = meshObject.GetNumberOfElements()
             else:
-                data = meshObject.elements[elementContainer]
+                data = elementContainer
                 nelem = data.GetNumberOfElements()
-
+            if nelem == 0:
+                continue
+            self.filePointer.write("{} \n".format(elemtype) )
             self.filePointer.write("{}\n".format(nelem) )
             for i in range(nelem):
                     connectivity = (data.connectivity[i,:]+1).astype(int)
@@ -442,7 +456,8 @@ class MeshWriter(WriterBase):
                     if elemRefNumber is None :
                         self.filePointer.write(" 0\n")#
                     else:
-                        self.filePointer.write(struct.pack("i", elemRefNumber[globalOffset+i] ))#
+                        self.filePointer.write(" " + str(elemRefNumber[globalOffset+i]) + "\n")#
+                        #self.filePointer.write(struct.pack("i", elemRefNumber[globalOffset+i] ))#
 
 
             globalOffset += data.GetNumberOfElements()
@@ -453,8 +468,30 @@ class MeshWriter(WriterBase):
 #            #  continue
 #          #tagcounter += 1
 
+        if "Corners" in meshObject.nodesTags:
+            tag = meshObject.nodesTags['Corners']
+            if len(tag):
+                self.filePointer.write("Corners\n");
+                self.filePointer.write("{} \n\n".format(len(tag)) )
+                #self.filePointer.write("{} \n".format(tag.GetIds()+1 ) )
+                (tag.GetIds()+1).tofile(self.filePointer, sep=" ")
+                self.filePointer.write("\n" )
+
+        for TagNameInFile,(ElementType,TagName) in ASCIITags.items():
+            elements = meshObject.GetElementsOfType(ElementType)
+            if TagName in elements.tags:
+                tag = elements.tags[TagName ]
+                if len(tag):
+                    self.filePointer.write(str(TagNameInFile)+"\n");
+                    self.filePointer.write("{} \n\n".format(len(tag)) )
+                    #self.filePointer.write("{} \n".format(tag.GetIds()+1 ) )
+                    (tag.GetIds()+1).tofile(self.filePointer, sep=" ")
+                    self.filePointer.write("\n" )
+
+        self.filePointer.write("\n")
+
         if solutionOnOwnFile :
-            self.filePointer.write("End\n")
+            #self.filePointer.write("End\n")
             self.Close();
             self.filePointer = open(".".join(self.fileName.split(".")[0:-1])+".sol" , 'w',0)
             self._isOpen = True
@@ -493,39 +530,52 @@ class MeshWriter(WriterBase):
 #                self.filePointer.write("\n ")
 
 
-        self.filePointer.write("End\n")
+        #self.filePointer.write("End\n")
 
 def CheckIntegrity():
     import BasicTools.FE.UnstructuredMesh as UM
 
     from BasicTools.Helpers.Tests import TestTempDir
+    TestTempDir().SetTempPath("/tmp/BasicTools_Test_Directory_QUaZuy_safe_to_delete")
 
     tempdir = TestTempDir.GetTempPath()
 
     mymesh = UM.UnstructuredMesh()
-    mymesh.nodes = np.array([[0.00000000001,0,0],[1,0,0],[0,1,0],[1,1,0]],dtype=np.float)
-    mymesh.originalIDNodes = np.array([1, 3, 4, 5],dtype=np.int)
+    mymesh.nodes = np.array([[0.00000000001,0,0],[1,0,0],[0,1,0],[1,1,0],[0,0,1]],dtype=np.float)
+    mymesh.originalIDNodes = np.array([1, 3, 4, 5,6],dtype=np.int)
 
     mymesh.nodesTags.CreateTag("coucou").AddToTag(0)
+    mymesh.nodesTags.CreateTag(Corners).AddToTag(0)
 
-    tris = mymesh.GetElementsOfType('tri3')
+    tets = mymesh.GetElementsOfType(EN.Tetrahedron_4)
+    tets.AddNewElement([0,1,2,4],0)
+
+    tris = mymesh.GetElementsOfType(EN.Triangle_3)
     tris.AddNewElement([0,1,2],0)
     tris.AddNewElement([2,1,3],3)
     tris.originalIds = np.array([3, 5],dtype=np.int)
 
+    tris.tags.CreateTag("RequiredTriangles").AddToTag(0)
+
+    bars = mymesh.GetElementsOfType(EN.Bar_2)
+    bars.AddNewElement([0,1],0)
+    bars.tags.CreateTag("Ridges").AddToTag(0)
+
 
     OW = MeshWriter()
+    OW.SetBinary(False)
     OW.SetGlobalDebugMode(True)
+    OW.Open(tempdir+"Test_MmgWriter_ASCII.mesh")
     print(OW)
-    OW.Open(tempdir+"Test_MmgWriter.mesh")
     OW.Write(mymesh)
     OW.Close()
 
-    OW.SetBinary(True)
-    OW.Open(tempdir+"Test_MmgWriter.mesh")
-    OW.Write(mymesh)
-    OW.Close()
-
+    OWB = MeshWriter()
+    OWB.SetBinary(True)
+    OWB.Open(tempdir+"Test_MmgWriter_BIN.meshb")
+    print(OWB)
+    OWB.Write(mymesh)
+    OWB.Close()
 
 
     print(mymesh)
