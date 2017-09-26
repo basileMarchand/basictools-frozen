@@ -371,7 +371,7 @@ class GeofReader(ReaderBase):
       if l.find("**element")>-1:
         l  = self.ReadCleanLine()
         nbElements = int(l.split()[0])
-        print( "nbElements {}".format(nbElements) )
+        self.PrintVerbose( "nbElements {}".format(nbElements) )
         while(True):
           l  = self.ReadCleanLine()
           if l.find("**") > -1:
