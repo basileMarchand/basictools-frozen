@@ -5,7 +5,14 @@
 from __future__ import print_function
 
 __author__ = "stackoverflow"
+"""
+you can filter the output to "reinterpret" the control chars using :
 
+    col -b  < log  > log2
+
+    where log is the original logfile
+
+"""
 def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '¦'):
     """
     Call in a loop to create terminal progress bar
