@@ -72,12 +72,13 @@ class Interface(BaseOutputObject):
         cmd = []
         cmd.append(self.codeCommand)
 
+        for opt in self.options:
+            cmd.append(opt)
+
         if self.withFilename:
             inpFilename = self.inputFilename + str(idProc) + self.inputFileExtension
             cmd.append(inpFilename)
 
-        for opt in self.options:
-            cmd.append(opt)
 
         for i in xrange(len(cmd)):
            cmd[i] = cmd[i].format(**self.parameters)
@@ -99,7 +100,6 @@ class Interface(BaseOutputObject):
         if self.openExternalWindows:
             import platform
             if platform.system() == "Windows":
-
                 if self.keepExternalWindows:
                    cmd.insert(0,"/K")
                 else:
@@ -109,13 +109,12 @@ class Interface(BaseOutputObject):
                 cmd.insert(0,"start")
             else:
                 if self.keepExternalWindows:
-                    self.lastCommandExecuted = "/usr/bin/xterm -e '"+ cmd + ";bash'"
-                else:
-                    self.lastCommandExecuted = "/usr/bin/xterm -e '"+ cmd + "'"
+                    cmd = [ " ".join(cmd)+" ; bash " ]
+                cmd.insert(0,"-e")
+                cmd.insert(0,"/usr/bin/xterm")
 
-        self.lastCommandExecuted = " ".join(cmd)
-
-        proc = subprocess.Popen(cmd , cwd=self.processDirectory , stdout=out, shell=True)
+        self.lastCommandExecuted = cmd
+        proc = subprocess.Popen(cmd , cwd=self.processDirectory , stdout=out, shell=False)
 
         return proc
 
