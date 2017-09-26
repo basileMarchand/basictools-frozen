@@ -115,10 +115,18 @@ def __RunAndCheck(lis,bp,stopAtFirstError,dryrun):# pragma: no cover
                 bp.Print(TFormat.InRed( TFormat().GetIndent() + "Please add a correct return statement in the CheckIntegrity of the module" + name))
                 #raise Exception()
                 r = 'Not OK'
-        except :
+        except UserWarning as e :
             sys.stdout.flush()
             sys.stderr.flush()
-            bp.Print( "Unexpected error:" + str(sys.exc_info()[0]) )
+            bp.Print( "Unexpected Warning:" + str(sys.exc_info()[0]) )
+            res[name] = "error"
+            traceback.print_exc(file=bp.stdout_)
+
+            r = 'Not OK'
+        except:
+            sys.stdout.flush()
+            sys.stderr.flush()
+            bp.Print( "Unexpected Error:" + str(sys.exc_info()[0]) )
             res[name] = "error"
             traceback.print_exc(file=bp.stdout_)
 
@@ -126,6 +134,7 @@ def __RunAndCheck(lis,bp,stopAtFirstError,dryrun):# pragma: no cover
             if stopAtFirstError :
                 bp.Restore()
                 raise
+
 
         if r.lower() == 'ok':
             bp.Print( "OK " +name + " : %.3f seconds " %  (stop_time -start_time ))

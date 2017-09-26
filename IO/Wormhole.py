@@ -65,6 +65,11 @@ class WormholeBase(BaseOutputObject):
               print("c : " + str(size))
 
           datastream = self.otherSide.recv(size)
+          ldata = len(datastream )
+          while ldata < size:
+              datastream += self.otherSide.recv(size-ldata)
+              ldata = len(datastream )
+
           data = pickle.loads(datastream)
           return data
 

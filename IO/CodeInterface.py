@@ -166,7 +166,7 @@ class Interface(BaseOutputObject):
                    self.processDirectory + os.sep +filetocopy.split('/') [-1])
 
 
-def CheckIntegrity():
+def CheckIntegrity(GUI=False):
 
 
 
@@ -175,6 +175,7 @@ def CheckIntegrity():
 
     interface = Interface(BasicToolsTestData.GetTestDataPath())
 
+    interface.keepExternalWindows = GUI
     interface.parameters['calcul']        = 'thermal_transient'
     interface.parameters['Ti']            = 1000.0
     interface.parameters['mesh']          = 'Cube_3D.geof'
@@ -217,6 +218,6 @@ def CheckIntegrity():
 
 
 if __name__ == '__main__':
-    print(CheckIntegrity())# pragma: no cover
+    print(CheckIntegrity(True))# pragma: no cover
 
 
