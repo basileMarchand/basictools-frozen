@@ -20,7 +20,7 @@ class LinearProblem(BOO):
         self.tol = 1.e-6
 
     def SetOp(self, op):
-        self.PrintDebug('In SetOp')
+        self.PrintVerbose('In SetOp')
         self.op = op
         if self.type == "Direct":
             self.PrintDebug('Starting Factorisaton')
@@ -28,10 +28,13 @@ class LinearProblem(BOO):
         elif self.type == "CG":
             self.solver = None
             pass
+        elif self.type == "lstsq":
+            self.solver = None
+            pass
         self.PrintDebug('In SetOp Done')
 
     def SetAlgo(self, algoType):
-        if algoType == "Direct" or algoType == "CG":
+        if algoType in  ["Direct" ,"CG", "lstsq"] :
             self.type = algoType
         else:
             self.Print(TF.InRed("Error : ") + "Type not allowed ("+algoType+")"  ) #pragma: no cover
@@ -56,9 +59,10 @@ class LinearProblem(BOO):
                 self.Print(TF.InYellowBackGround(TF.InRed("Convergence to tolerance not achieved"))) #pragma: no cover
             if res[1] < 0 :
                 self.Print(TF.InYellowBackGround(TF.InRed("Illegal input or breakdown"))) #pragma: no cover
+        elif self.type == "lstsq":
+            self.u = np.linalg.lstsq(self.op, rhs)[0]
 
-        if self.InDebugMode():
-            self.Print("Done Linear solver")
+        self.PrintDebug("Done Linear solver")
             #norm_rhs = np.linalg.norm(rhs)
             #norm = np.linalg.norm(self.op.dot(self.u)-rhs)/norm_rhs
             #self.Print(TF.InYellowBackGround(TF.InRed("norm(error)/norm(rhs) : " + str(norm) )))
