@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 import os
+import struct
+
+import numpy as np
 
 __author__ = "Felipe Bordeu"
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
@@ -17,6 +20,7 @@ class ReaderBase(BaseOutputObject):
         self.string = None
         self.commentChar = None
         self.filePointer = None
+        self.lineCounter = 0
 
     def StartReading(self):
 
@@ -30,8 +34,14 @@ class ReaderBase(BaseOutputObject):
             if self.readFormat.find('b') > -1 :
                 self.filePointer =  open(self.fileName, self.readFormat)
             else:
-                import codecs
-                self.filePointer = codecs.open(self.fileName, self.readFormat, 'utf-8')
+                #I have some problems reading with numpy fromfile if the file is
+                #open with the codecs.open
+                #import codecs
+                #self.filePointer = codecs.open(self.fileName, self.readFormat, 'utf-8')
+                self.filePointer =  open(self.fileName, self.readFormat)
+
+
+        self.lineCounter = 0
 
     def EndReading(self):
         self.filePointer.close()
@@ -53,11 +63,18 @@ class ReaderBase(BaseOutputObject):
         if string is not None:
             self.fileName = None
 
-    def ReadCleanLine(self):
+    def ReadCleanLine(self,withError=False):
         while(True):
             string = self.filePointer.readline()
+            self.lineCounter +=1
             #end of file
             if string == "" :
+                if withError :
+                    if self.fileName is None:
+                        raise("Problem reading string : at line " +str(self.lineCounter))
+                    else:
+                        raise("Problem reading file :" +str(self.fileName) + "at line" +str(self.lineCounter) )
+
                 return None
 
             string = string.rstrip(u'\r\n')
@@ -71,6 +88,39 @@ class ReaderBase(BaseOutputObject):
                 if string[0] != self.commentChar:
                     break
         return string
+
+##binary interface
+    def rawread(self,cpt,withError=False):
+
+        res = self.filePointer.read(cpt)
+        if withError and len(res) == 0:
+           raise(Exception("Problem reading file :" +str(self.fileName) + " EOF"))
+        else:
+           return res
+
+    def readInt32(self):
+       rawdata = self.rawread(4,withError=True)
+       data = struct.unpack("i", rawdata)[0]
+       return data
+
+    def readData(self,cpt,datatype):
+        return  np.fromfile(self.filePointer,dtype=datatype,count=cpt,sep="")
+
+    def reshapeData(self,data,finalShape=None):
+        if finalShape is None:
+            return data
+        else:
+            data.shape = finalShape
+            return data
+
+    def readFloats32(self,cpt,finalShape=None):
+        return self.reshapeData(self.readData(cpt,np.float32), finalShape)
+
+    def readFloats64(self,cpt,finalShape=None):
+        return self.reshapeData(self.readData(cpt,np.float64), finalShape)
+
+    def seek(self,cpt):
+        self.filePointer.seek(cpt)
 
 def CheckIntegrity():
 
