@@ -14,9 +14,11 @@ class ElementsContainer(BaseOutputObject):
         self.elementType = elementType
         self.connectivity = np.empty((0,0),dtype=np.int)
         self.globaloffset   = 0
-        self.originalIds = np.empty((0,),dtype=np.int)
         self.tags = Tags()
         self.cpt = 0;
+
+        self.originalIds = np.empty((0,),dtype=np.int)
+        self.originalOffset = 0
 
     def GetNumberOfElements(self):
         return self.cpt
@@ -84,6 +86,37 @@ class ElementsContainer(BaseOutputObject):
         res += "  Tags          : " + str([x.name for x in self.tags]) + "\n"
         return res
 
+class AllElements(object):
+    def __init__(self):
+        super(AllElements,self).__init__()
+        self.storage = {}
+
+    ## to make all the key always in order
+    ## the number of different types of elements is reduced so, I don't think
+    ## this is gonna add alot of overhead to the library
+    def keys(self):
+        return sorted(self.storage.keys())
+
+    def __iter__(self):
+        return iter(self.keys())
+
+    def items(self):
+        return  sorted(self.storage.iteritems())
+
+    #send basis functions calls to the storage dictionary
+    def __setitem__(self, key, value):
+            self.storage[key] = value
+
+    def __len__(self):
+        return len(self.storage)
+
+    def __contains__(self, k):
+        return k in self.storage
+
+    def __getitem__(self,key):
+        return self.storage[key]
+
+
 class UnstructuredMesh(MeshBase):
 
     def IsUnstructured(self):
@@ -93,7 +126,7 @@ class UnstructuredMesh(MeshBase):
         super(UnstructuredMesh,self).__init__()
         self.nodes = np.empty((0,3),dtype=np.double)
         self.originalIDNodes = np.empty((0,),dtype=np.int)
-        self.elements = {}
+        self.elements = AllElements();
         self.boundingMin = [0,0,0];
         self.boundingMax = [0,0,0];
 
@@ -172,6 +205,14 @@ class UnstructuredMesh(MeshBase):
 #                res[elem.globaloffset+elem.tags[tagname].id] = 1;
 #        return res
 
+    def GetElementsOriginalIDs(self):
+        res = np.empty(self.GetNumberOfElements(),dtype=np.int)
+        cpt = 0
+        for ntype, data in self.elements.items():
+            res[0:data.GetNumberOfElements()] = data.originalIds+data.originalOffset
+            cpt += data.GetNumberOfElements()
+        return res
+
     def GetElementsInTag(self,tagname,useOriginalId=False) :
         self.ComputeGlobalOffset();
         ne = self.GetNumberOfElements()
@@ -195,14 +236,12 @@ class UnstructuredMesh(MeshBase):
              for tag in data.tags:
                    tag.Tighten()
 
-
-
     def GenerateManufacturedOriginalIDs(self):
        counter = 0
        for key, value in self.elements.items():
-         for i in range(value.GetNumberOfElements()):
-           value.originalIds[i] = counter
-           counter += 1
+           value.originalIds = np.arange(counter,counter+value.GetNumberOfElements())
+           counter += value.GetNumberOfElements()
+
 
     def __str__(self):
         res  = "UnstructuredMesh \n"
@@ -216,7 +255,7 @@ def CheckIntegrity():
     from BasicTools.FE.UnstructuredMeshTools import CreateMeshOfTriangles
     from BasicTools.FE.UnstructuredMeshTools import CreateMeshFromConstantRectilinearMesh
 
-    res = CreateMeshOfTriangles([[0,0,0],[1,2,3]], [[0,2,3]])
+    res = CreateMeshOfTriangles([[0,0,0],[1,2,3],[0,1,0]], [[0,1,2]])
 
     elements = res.GetElementsOfType(ElementNames.Triangle_3)
 
