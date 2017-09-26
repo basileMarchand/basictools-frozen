@@ -125,8 +125,8 @@ class Interface(BaseOutputObject):
 
         # Commande execution
         self.lastCommandExecuted = cmd;
-        print(cmd)
-        out = subprocess.check_output(cmd, cwd=self.processDirectory, shell=True ).decode("utf-8","ignore")
+        self.PrintVerbose(cmd)
+        out = subprocess.check_output(cmd, cwd=self.processDirectory, shell=False ).decode("utf-8","ignore")
 
         return out
 
