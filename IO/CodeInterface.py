@@ -125,6 +125,7 @@ class Interface(BaseOutputObject):
 
         # Commande execution
         self.lastCommandExecuted = cmd;
+        self.PrintVerbose(self.processDirectory)
         self.PrintVerbose(cmd)
         out = subprocess.check_output(cmd, cwd=self.processDirectory, shell=False ).decode("utf-8","ignore")
 
@@ -175,7 +176,7 @@ def CheckIntegrity(GUI=False):
     import BasicTools.TestData as BasicToolsTestData
 
     interface = Interface(BasicToolsTestData.GetTestDataPath())
-
+    interface.SetGlobalDebugMode(True)
     interface.keepExternalWindows = GUI
     interface.parameters['calcul']        = 'thermal_transient'
     interface.parameters['Ti']            = 1000.0
@@ -202,15 +203,15 @@ def CheckIntegrity(GUI=False):
     interface.ReadTemplateFile('template.tpl')
     interface.WriteFile(1)
 
-    interface.openExternalWindows = True
-    interface.keepExternalWindows = True
+    interface.openExternalWindows = GUI
+    interface.keepExternalWindows = GUI
     interface.SingleRunComputation(1,sys.stdout).wait()
     print("lastCommandExecuted: " + str(interface.lastCommandExecuted))
 
 
     interface.SetCodeCommand("dir")
     interface.SetOptions(["{filter}"])
-    interface.parameters['filter']        = '*.inp'
+    interface.parameters['filter']        = 'calcul1.inp'
     interface.withFilename = False
 
 
