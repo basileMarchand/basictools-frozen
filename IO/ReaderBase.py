@@ -65,7 +65,7 @@ class ReaderBase(BaseOutputObject):
 
     def ReadCleanLine(self,withError=False):
         while(True):
-            string = self.filePointer.readline()
+            string = self.filePointer.readline().decode("utf-8", "replace")
             self.lineCounter +=1
             #end of file
             if string == "" :
@@ -77,8 +77,8 @@ class ReaderBase(BaseOutputObject):
 
                 return None
 
-            string = string.rstrip(u'\r\n')
-            string = string.replace(u'\ufeff', '').lstrip().rstrip()
+            string = string.replace(u'\ufeff', '')
+            string = string.lstrip().rstrip().rstrip(u'\r\n')
             #empty line
             if len(string) == 0 :
                 continue
