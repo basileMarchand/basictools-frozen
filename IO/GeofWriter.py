@@ -49,22 +49,26 @@ GeofName[EN.Wedge_6] = "c3d6"
 def WriteMeshToGeof(filename,mesh, useOriginalId=False,lowerDimElementsAsSets=False):
     OW = GeofWriter()
     OW.Open(filename)
-    OW.Write(mesh,useOriginalId = useOriginalId,lowerDimElementsAsSets=lowerDimElementsAsSets)
+    OW.SetWriteLowerDimElementsAsSets(lowerDimElementsAsSets)
+    OW.Write(mesh,useOriginalId = useOriginalId)
     OW.Close()
 
 class GeofWriter(WriterBase):
     def __init__(self):
         super(GeofWriter,self).__init__()
+        self.lowerDimElementsAsSets= False
 
     def __str__(self):
         res  = 'GeofWriter : \n'
         res += '   FileName : '+ str(self.fileName) +'\n'
         return res
 
-    def SetFileName(self,fileName):
-        self.fileName = fileName;
+    def SetWriteLowerDimElementsAsSets(self,val):
+        if val is not None:
+            self.lowerDimElementsAsSets= bool(val)
 
-    def Write(self,meshObject,useOriginalId=False,lowerDimElementsAsSets=False):
+    def Write(self,meshObject,useOriginalId=False,lowerDimElementsAsSets=None):
+        self.SetWriteLowerDimElementsAsSets(lowerDimElementsAsSets)
 
         meshObject.PrepareForOutput()
 
@@ -97,7 +101,7 @@ class GeofWriter(WriterBase):
             maxDimensionalityOfelements = max(EN.dimension[ntype],maxDimensionalityOfelements)
 
         for ntype,elems in meshObject.elements.items():
-            if EN.dimension[ntype] == maxDimensionalityOfelements or  False == lowerDimElementsAsSets :
+            if EN.dimension[ntype] == maxDimensionalityOfelements or  False == self.lowerDimElementsAsSets :
                 nbElements += elems.GetNumberOfElements()
 
 
@@ -108,7 +112,7 @@ class GeofWriter(WriterBase):
         cpt =0;
         for ntype, data in meshObject.elements.items():
             elemtype = GeofName[ntype]
-            if EN.dimension[ntype] != maxDimensionalityOfelements and lowerDimElementsAsSets:
+            if EN.dimension[ntype] != maxDimensionalityOfelements and self.lowerDimElementsAsSets:
                 continue
             #npe = data.GetNumberOfNodesPerElement()
             #if elemtype!="c2d3":
@@ -140,7 +144,7 @@ class GeofWriter(WriterBase):
 
         meshObject.PrepareForOutput();
 
-        if lowerDimElementsAsSets :
+        if self.lowerDimElementsAsSets :
             celtags = meshObject.GetNamesOfElemTags()
             for tagname in celtags:
 
@@ -181,7 +185,7 @@ class GeofWriter(WriterBase):
                 self.filePointer.write("\n")
 
         # Dotsets, lisets, facets
-        if lowerDimElementsAsSets:
+        if self.lowerDimElementsAsSets:
             for dimToTreat in range(maxDimensionalityOfelements):
 
                 celtags = meshObject.GetNamesOfElemTags()
