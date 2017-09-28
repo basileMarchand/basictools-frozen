@@ -36,6 +36,10 @@ numberOfNodes[Triangle_3] = 3;
 mirrorPermutation[Triangle_3] = [0,2,1]
 dimension[Triangle_3] = 2
 linear[Triangle_3] = True
+faces[Triangle_3] = [(Bar_2,[0, 1]),
+                        (Bar_2,[1, 2]),
+                        (Bar_2,[2, 0]),
+     ]
 
 Quadrangle_4  = 'quad4'
 numberOfNodes[Quadrangle_4] = 4;
