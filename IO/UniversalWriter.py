@@ -2,20 +2,45 @@
 
 __author__ = "Felipe Bordeu"
 
+externalWriters = {}
+
+def WriterFactory(nameOrFilename,ops={"default":"xmf"}):
+
+    import os.path
+    dirname = os.path.dirname(nameOrFilename)
+    basename,extention = os.path.splitext(os.path.basename(nameOrFilename))
+
+    res = None
+    if extention == ".geof" or nameOrFilename == "geof":
+        from BasicTools.IO.GeofWriter import GeofWriter
+        res = GeofWriter()
+        res.SetWriteLowerDimElementsAsSets(True)
+    elif extention ==  ".gmsh" or nameOrFilename == "gmsh":
+        from  BasicTools.IO.GmshWriter import GmshWriter
+        res = GmshWriter()
+    elif extention ==  ".mesh" or nameOrFilename == "mesh":
+        from BasicTools.IO.MeshWriter import MeshWriter
+        res = MeshWriter()
+    elif extention ==  ".xmf" or extention ==  ".xdmf" or nameOrFilename == "xmf":
+        from BasicTools.IO.XdmfWriter import  XdmfWriter
+        res = XdmfWriter()
+    else:
+        if extention in externalWriters:
+            res = externalWriters[extention]()
+        else:
+            return WriterFactory(ops["default"])
+
+    res.SetFileName(nameOrFilename)
+    return res
+
+
 def WriteMesh(filename,out,binary=False):# pragma: no cover
-    extention = filename.split(".")[-1].lower()
 
-
-    if extention ==  "geof":
-        from BasicTools.IO.GeofWriter import WriteMeshToGeof
-        return WriteMeshToGeof(filename,out,lowerDimElementsAsSets=True)
-    elif extention ==  "gmsh":
-        from  BasicTools.IO.GmshWriter import WriteMeshToGmsh
-        return WriteMeshToGmsh(filename,out)
-    elif extention ==  "mesh":
-        import BasicTools.IO.MeshWriter as WriteMesh
-        return WriteMesh(filename,out=out,binary=binary)
-
+    writer = WriterFactory(filename)
+    writer.SetBinary(binary)
+    writer.Open()
+    writer.write(out)
+    writer.Close()
 
 ## to use this function add this lines to the
 ## programmmable filter in paraview, and change the output type to UnstructuredGrid
@@ -32,6 +57,20 @@ def PopulateMeshFromVtkAndWriteMesh(filename, vtkobject):# pragma: no cover
     WriteMesh(filename,mesh)
 
 def CheckIntegrity():
+    print(WriterFactory("toto.geof"))
+    print(WriterFactory("toto.gmsh"))
+    print(WriterFactory("toto.mesh"))
+    print(WriterFactory("toto.xdmf"))
+    print(WriterFactory("toto"))
+    #normally this class must have the same API as
+    #
+    from BasicTools.IO.WriterBase import WriterBase as WriterBase
+
+    class MyCustomWriter(WriterBase):
+        pass
+
+    externalWriters[".myExtention"] = MyCustomWriter
+    print(WriterFactory("toto.myExtention"))
 
     return "ok"
 
