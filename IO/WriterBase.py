@@ -11,6 +11,37 @@ class WriterBase(BaseOutputObject):
         self.SetFileName(fileName)
         self._isOpen = False
         self._isBinary = False
+        self.canHandleTemporal = False
+        self.__isTemporalOutput = False
+
+        self.canHandleAppend = False
+        self._inAppendMode = False
+
+    def SetAppendMode(self,mode = True):
+        if self.isOpen() :
+            print(TFormat.InRed("SetAppendMode before opening"))
+            raise Exception("SetAppendMode before opening")
+
+        if self.canHandleAppend is False:
+            print(TFormat.InRed("This type of writer"+str(type(self))+ " cant handle appendMode" ))
+            raise(Exception("This type of writer"+str(type(self))+ " cant handle appendMode" ))
+        self.appendMode = mode
+
+    def InAppendMode(self):
+        return self._inAppendMode
+
+    def SetTemporal(self, val = True):
+
+        if self.isOpen() :
+            print(TFormat.InRed("SetTemporal before opening"))
+            raise Exception("SetTemporal before opening")
+        if self.canHandleTemporal is False:
+            print(TFormat.InRed("This type of writer"+str(type(self))+ " cant handle Temporal Data" ))
+            raise(Exception("This type of writer"+str(type(self))+ " cant handle Temporal Data" ))
+        self.__isTemporalOutput = bool(val)
+
+    def IsTemporalOutput(self):
+        return self.__isTemporalOutput
 
     def SetBinary(self, val = True):
         if self._isOpen :
@@ -32,7 +63,6 @@ class WriterBase(BaseOutputObject):
         if self._isOpen :# pragma: no cover
             print(TFormat.InRed("The file is already open !!!!!"))
             raise Exception
-
 
         if filename is not None:
             self.SetFileName(filename)

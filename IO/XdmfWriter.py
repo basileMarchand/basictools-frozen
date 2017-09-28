@@ -128,15 +128,16 @@ def WriteMeshToXdmf(filename, baseMeshObject, PointFields = None, CellFields = N
 class XdmfWriter(WriterBase):
     def __init__(self, fileName = None):
         super(XdmfWriter,self).__init__()
+        self.canHandleTemporal = True
+        self.canHandleAppend = True
 
         self.fileName = None;
         self.timeSteps = [];
         self.currentTime = 0;
-        self.__XmlSizeLimit = 10
+        self.__XmlSizeLimit = 0
         self.automaticOpen = False;
 
         self.SetBinary(False)
-        self.__isTemporalOutput = False
         self.__binFileName = None;
         self.__filePointer = None;
         #self.__isOpen = False;
@@ -147,11 +148,14 @@ class XdmfWriter(WriterBase):
         #set to off is you what to put the time at the end of the temporal grid
         #keep this option True to be compatible with the XMDF3 reader of Paraview
         self.__printTimeInsideEachGrid = True
-        self.SetFileName(fileName)
-        self.appendMode = False
 
-    def SetAppendMode(self,mode = True):
-        self.appendMode = mode
+
+
+        self.SetFileName(fileName)
+
+
+
+
 
     def __str__(self):
         res  = 'XdmfWriter : \n'
@@ -159,7 +163,7 @@ class XdmfWriter(WriterBase):
         if self.isBinary():
            res += '   Binary output Active \n'
            res += '   Binary FileName : '+ self.__binFileName +'\n'
-        if self.__isTemporalOutput:
+        if self.IsTemporalOutput():
            res += '   Temporal output Active \n'
            res += '   TimeSteps : '+ str(self.timeSteps) + '\n'
         if self.isOpen():
@@ -191,12 +195,6 @@ class XdmfWriter(WriterBase):
         self.currentTime += dt;
         self.timeSteps.append(self.currentTime);
 
-    def SetTemporal(self, val = True):
-        if self.isOpen() :
-            print(TFormat.InRed("SetTemporal before opening"))
-            raise Exception
-        self.__isTemporalOutput = val
-
 
     def SetXmlSizeLimit(self,val):
         self.__XmlSizeLimit= val
@@ -219,7 +217,7 @@ class XdmfWriter(WriterBase):
         try :
             # in python 3 we cant use unbuffered  text I/O (bug???)
             #self.filePointer = open(self.fileName, 'w',0)
-            if self.appendMode:
+            if self.InAppendMode():
                 self.filePointer = open(self.fileName, 'r+')
                 self.filePointer.seek(-100,2)
 
@@ -267,7 +265,7 @@ class XdmfWriter(WriterBase):
         self.filePointer.write('<Xdmf xmlns:xi="http://www.w3.org/2001/XInclude" Version="2.92">\n')
         self.filePointer.write('<Domain>\n')
 
-        if self.__isTemporalOutput:
+        if self.IsTemporalOutput():
             self.filePointer.write('<Grid Name="Grid_T" GridType="Collection" CollectionType="Temporal"  >\n')
         #clean the binary file  =
         if self.isBinary():
@@ -288,7 +286,7 @@ class XdmfWriter(WriterBase):
         if self.isOpen():
             filepos = self.filePointer.tell()
 
-            if self.__isTemporalOutput:
+            if self.IsTemporalOutput():
                 self.__WriteTime()
                 self.filePointer.write('    </Grid><!--Temporal pos="'+str(filepos)+'" __binfilecounter="'+str(self.__binfilecounter)+'" time="'+str(self.currentTime)+'" -->\n')
             self.filePointer.write('  </Domain>\n')
@@ -550,11 +548,11 @@ class XdmfWriter(WriterBase):
          elif TimeStep is not None:
              dt = TimeStep
 
-         if self.__isTemporalOutput:
+         if self.IsTemporalOutput():
              self.Step(dt)
 
          self.filePointer.write('    <Grid Name="Grid_'+str(len(self.timeSteps))+'">\n')
-         if self.__isTemporalOutput and self.__printTimeInsideEachGrid :
+         if self.IsTemporalOutput() and self.__printTimeInsideEachGrid :
              self.filePointer.write('    <Time Value="'+str(self.currentTime)+'" /> \n')
 
          self.__WriteGeoAndTopo(baseMeshObject)
