@@ -5,20 +5,24 @@ __author__ = "Felipe Bordeu"
 
 import numpy as np
 
-def Read(string, inout):
+def Read(inputData, inout):
     if type(inout).__module__ == np.__name__:
-        return ReadVector(string, inout.dtype)
+        return ReadVector(inputData, inout.dtype.type)
     else:
-        return ReadScalar(string, type(inout) )
+        if inout is None:
+            return inputData
+        else:
+            return ReadScalar(inputData, type(inout) )
 
-def ReadScalar(string,dtype):
-    if dtype is bool:
-        return ReadBool(string)
+def ReadScalar(inputData,inputtype):
 
-    if type(string) is str:
-        return dtype(string.lstrip().rstrip())
+    if inputtype is bool:
+        return ReadBool(inputData)
+
+    if type(inputData) is str:
+        return inputtype(inputData.lstrip().rstrip())
     else:
-        return dtype(string)
+        return inputtype(inputData)
 
 def ReadVector(string,dtype):
 
@@ -72,10 +76,27 @@ def ReadBools(string):
     return ReadVector(string,bool)
 
 
-def ReadProperties(data,props,obj):
-    for prop in props:
+def ReadProperties(data, props ,obj,typeConversion=True):
+    if props is None:
+        props = getattr( obj, "_parseProps", None)
+    if props is None:
+        return
+    try:
+      for prop in props:
         if prop in data:
-           obj.__dict__[prop] = Read(data[prop],obj.__dict__[prop])
+           theSetter = getattr( obj, "Set"+prop[0].upper()+ str(prop[1:]), None)
+           if theSetter is None:
+              #print(obj.__dict__)
+              if typeConversion:
+                  obj.__dict__[prop] = Read(data[prop],obj.__dict__[prop])
+              else:
+                  obj.__dict__[prop] = data[prop]
+           else:
+              theSetter(data[prop])
+    except KeyError as e:
+        print(" object of type " +str(type(obj)) + " does not have atribute {0}: ".format( str(e) ))
+        raise
+
 
 
 def TestFunction(func,string,correctVal):
