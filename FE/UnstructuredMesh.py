@@ -168,10 +168,15 @@ class UnstructuredMesh(MeshBase):
     def GetDimensionality(self):
         return self.nodes.shape[1]
 
-    def GetNumberOfElements(self):
+    def GetNumberOfElements(self,dim = None):
         n = 0
-        for type, data in self.elements.items():
-            n += data.GetNumberOfElements()
+        for elemname, data in self.elements.items():
+            if dim == None:
+                n += data.GetNumberOfElements()
+            else:
+                if ElementNames.dimension[elemname] == dim:
+                    n += data.GetNumberOfElements()
+
         return n
 
     def ComputeGlobalOffset(self):
@@ -182,12 +187,9 @@ class UnstructuredMesh(MeshBase):
             cpt = cpt + n
 
     def GetElementsOfType(self,typename):
-        if typename in self.elements:
-            return self.elements[typename]
-        else:
-            els = ElementsContainer(typename)
-            self.elements[typename] = els
-            return els
+        if not typename in self.elements:
+            self.elements[typename] = ElementsContainer(typename)
+        return self.elements[typename]
 
     def ComputeBoundingBox(self):
         self.boundingMin = np.amin(self.nodes, axis=0);
@@ -285,6 +287,10 @@ class UnstructuredMesh(MeshBase):
         res += "\n"
         res += "  Node Tags          : " + str(self.nodesTags) + "\n"
         res += "  Cell Tags          : " + str([x for x in self.GetNamesOfElemTags()])+ "\n"
+        if len(self.nodeFields.keys()):
+            res += "  nodeFields         : " + str(self.nodeFields.keys()) + "\n"
+        if len(self.elemFields.keys()):
+            res += "  elemFields         : " + str(self.elemFields.keys()) + "\n"
         return res
 
 def CheckIntegrity():
