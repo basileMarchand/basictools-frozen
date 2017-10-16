@@ -96,13 +96,12 @@ class MeshWriter(WriterBase):
         globalOffset =0
         for elementContainer in meshObject.elements:
             self.PrintDebug("Output of " + str(elementContainer ))
-            elemtype = BinaryNumber[elementContainer]
             data = meshObject.elements[elementContainer]
             nbelements = data.GetNumberOfElements()
             if nbelements == 0:
                 self.Print("Empty elemnt container (skipping) + " + elementContainer)
                 continue
-
+            elemtype = BinaryNumber[elementContainer]
 
 
             self.filePointer.write(struct.pack('i', elemtype ))
