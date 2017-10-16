@@ -40,7 +40,7 @@ class BundaryCondition(BaseOutputObject):
         if len(self.nodes) == 0:
             return
         m = np.amax(self.nodes,axis=0)+1
-        print(m)
+        #print(m)
 
         pointers = [None]*(np.prod(m)*3)
         m[1:] *= m[0]
@@ -92,24 +92,24 @@ class BundaryCondition(BaseOutputObject):
 
 class Fea(FeaBase.FeaBase):
 
-    def __init__(self, support, dofpernode = 1, dirichlet_bcs = None, neumann_bcs= None, KOperator= None, MOperator= None,  neumann_nodal= None):
+    def __init__(self):
         super(Fea,self).__init__()
+        self.linearSolver = "CG"
+        self.writer = None
+        self.minthreshold = 0.9e-3
+        self.tol = 1.e-6
+
+    def BuildProblem(self,support, dofpernode = 1, dirichlet_bcs = None, neumann_bcs= None, KOperator= None, MOperator= None,  neumann_nodal= None):
 
         if support.IsConstantRectilinear() == False :
             raise Exception("Must be a ConstantRectilinear mesh type ") #pragma: no cover
 
-        self.linearSolver = "CG"
         self.outer_v = []
 
         self.support = support ;
 
         self.dofpernode = dofpernode
         self.nodesPerElement = 2**self.support.GetDimensionality()
-
-        self.writer = None
-
-        self.minthreshold = 0.9e-3
-        self.tol = 1.e-6
 
         if KOperator is not None:
             self.KE    = KOperator
@@ -426,7 +426,8 @@ def CheckIntegrityThermal3D():
     myElement = Hexa8Cuboid()
     myElement.delta =  myMesh.GetSpacing()
 
-    myProblem = Fea(myMesh, dofpernode = 1,
+    myProblem = Fea()
+    myProblem.BuildProblem(myMesh, dofpernode = 1,
         KOperator = myElement.GetIsotropLaplaceK(1.),
         MOperator = myElement.GetIsotropLaplaceM(1.),
         dirichlet_bcs = dirichlet_bcs,
@@ -512,7 +513,8 @@ def CheckIntegrityDep3D():
 
     starttime = time.time()
 
-    myProblem = Fea(myMesh, dofpernode = 3,
+    myProblem = Fea()
+    myProblem.BuildProblem(myMesh, dofpernode = 3,
         dirichlet_bcs = dirichlet_bcs,
         neumann_bcs = neumann_bcs,
         neumann_nodal = neumann_nodal)
@@ -572,7 +574,8 @@ def CheckIntegrityThermal2D():
     myElement = Quad4Rectangle()
     myElement.delta =  myMesh.GetSpacing()
 
-    myProblem = Fea(myMesh, dofpernode = 1,
+    myProblem = Fea()
+    myProblem.BuildProblem(myMesh, dofpernode = 1,
         KOperator = myElement.GetIsotropLaplaceK(1.),
         MOperator = myElement.GetIsotropLaplaceM(1.),
         dirichlet_bcs = dirichlet_bcs,
@@ -656,7 +659,8 @@ def CheckIntegrityDep2D():
 
     starttime = time.time()
 
-    myProblem = Fea(myMesh, dofpernode = 2,
+    myProblem = Fea()
+    myProblem.BuildProblem(myMesh, dofpernode = 2,
         dirichlet_bcs = dirichlet_bcs,
         neumann_bcs = neumann_bcs,
         neumann_nodal = neumann_nodal)
