@@ -121,7 +121,7 @@ def __RunAndCheck(lis,bp,stopAtFirstError,dryrun):# pragma: no cover
             sys.stderr.flush()
             stop_time = time.time()
             res[name] = r
-            if not isinstance(r,str):
+            if not isinstance(r,str) and not isinstance(r,unicode):
                 bp.Print(TFormat.InRed( TFormat().GetIndent() + "Please add a correct return statement in the CheckIntegrity of the module" + name))
                 #raise Exception()
                 r = 'Not OK'
