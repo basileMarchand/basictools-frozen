@@ -922,6 +922,9 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
             if data is None:
                 continue
 
+            if np.size(data) != mesh.GetNumberOfElements() and np.size(data) != 3*mesh.GetNumberOfElements():
+                print("field ("+str(name)+")is not consistent : it has " + str(np.size(data)) +"values and the mesh has " +str(mesh.GetNumberOfElements())+ " elements" )
+                continue
             pd = vtkFloatArray()
             pd.SetName(name)
 
@@ -1093,9 +1096,9 @@ def ExtractElementsByImplicitZone(inmesh,op,allNodes=True,cellCenter=False):
     CleanLonelyNodes(outmesh)
     return outmesh
 
-def AddSkin(mesh):
+def ComputeSkin(mesh):
 
-    dualGraph,usedPoints = GetDualGraph(mesh)
+    #dualGraph,usedPoints = GetDualGraph(mesh)
 
     md = mesh.GetDimensionality()
 
@@ -1121,6 +1124,7 @@ def AddSkin(mesh):
                 ehash = np.sum(lc*key)
                 if ehash in surf2:
                     surf2[ehash][0] +=1
+                    del surf2[ehash]
 
                 else:
                     surf2[ehash] = [1,cc]
@@ -1129,22 +1133,94 @@ def AddSkin(mesh):
                 #print(surf2[ehash])
             #print(surf2)
 
+    res = type(mesh)()
 
+    res.nodes = mesh.nodes
     for name in surf:
-        data = mesh.GetElementsOfType(name)
+        data = res.GetElementsOfType(name)
         surf2 = surf[name]
         for hashh,data2 in surf2.items():
             if data2[0] == 1:
-                #print(data2)
                 data.AddNewElement(data2[1],-1)
+        data.tags.CreateTag("ExteriorSurf").SetIds(np.arange(data.GetNumberOfElements()))
+
+    return res
+
+
+def ComputeFeatures(inputmesh,FeatureAngle=90):
+
+    skinmesh = ComputeSkin(inputmesh)
+
+    md = skinmesh.GetDimensionality()
+    nex = skinmesh.GetNumberOfElements()
+
+    #we use the original id to count the number of time the faces is used
+    surf = {}
+    for name,data in skinmesh.elements.items():
+        if ElementNames.dimension[name] != md-1:
+            continue
 
 
 
-    return mesh
+        print("working on {}".format(name))
+        faces = ElementNames.faces[name]
+        numberOfNodes = ElementNames.numberOfNodes[name]
+        #print(faces)
+        ne = data.GetNumberOfElements()
+        for faceType,localFaceConnectivity in faces:
+            globalFaceConnectivity = data.connectivity[:,localFaceConnectivity]
+            if not faceType in surf:
+                surf[faceType] = {}
+            surf2 = surf[faceType]
+            key = np.array([nex**x for x in range(ElementNames.numberOfNodes[faceType]) ])
+            for i in xrange(ne):
+                baricentre = np.sum(skinmesh.nodes[data.connectivity[i,:] ,:],axis=0)/numberOfNodes
+                cc = globalFaceConnectivity[i,:]
+                lc = np.sort(cc)
 
+                ehash = np.sum(lc*key)
+
+                edgeVector = skinmesh.nodes[lc[0],:] - skinmesh.nodes[lc[1],:]
+                planeVector = baricentre - skinmesh.nodes[lc[1],:]
+                normal = np.cross(edgeVector, planeVector)
+                normal /= np.linalg.norm(normal)
+
+                if ehash in surf2:
+                    surf2[ehash][0] +=1
+                    normal1 = surf2[ehash][1]
+                    cross = np.cross(normal, normal1)
+                    angle = np.arcsin(np.linalg.norm(cross))
+                    surf2[ehash][2] = 180*angle/np.pi
+                else:
+                    #[number of of used, normal of the first insertion,angle,   connectivity
+                    surf2[ehash] = [1,normal,None,cc]
+                #print(lc),
+                #print(ehash),
+                #print(surf2[ehash])
+            #print(surf2)
+
+
+    edgemesh = type(inputmesh)()
+    edgemesh.nodes = inputmesh.nodes
+
+    for name in surf:
+        data = edgemesh.GetElementsOfType(name)
+        surf2 = surf[name]
+        for hashh,data2 in surf2.items():
+            if data2[0] == 1 or data2[0] > 2:
+                #print(data2)
+                data.AddNewElement(data2[3],-1)
+            elif data2[0] == 2 and data2[2]  >= FeatureAngle:
+                data.AddNewElement(data2[3],-1)
+
+    for eltype in [ElementNames.Bar_2, ElementNames.Bar_3]:
+        bars = edgemesh.GetElementsOfType(eltype)
+        bars.tags.CreateTag("Ridges").SetIds(np.arange(bars.GetNumberOfElements()))
+
+    return (edgemesh,skinmesh)
 
 ###############################################################################
-def CheckIntegrity_AddSkin():
+def CheckIntegrity_ComputeFeatures(GUI =False):
     from BasicTools.FE.ConstantRectilinearMesh import ConstantRectilinearMesh
 
     myMesh = ConstantRectilinearMesh(dim=3)
@@ -1155,10 +1231,42 @@ def CheckIntegrity_AddSkin():
     res2 = CreateMeshFromConstantRectilinearMesh(myMesh,ofTetras=True)
     print(res2)
 
-    res = AddSkin(res2)
-    print(res)
 
-def CheckIntegrity_ExtractElementsByImplicitZone():
+    edges,skin = ComputeFeatures(res2,FeatureAngle=80)
+    if GUI :
+        from BasicTools.Actions.OpenInParaview import OpenInParaView
+        OpenInParaView(edges,filename="edges.xmf")
+        OpenInParaView(skin,filename="skin.xmf")
+
+        for name,data in edges.elements.items():
+              res2.GetElementsOfType(name).Merge(data)
+
+        OpenInParaView(res2,filename="all+edges.xmf")
+        print(res2)
+
+    print(edges)
+
+
+def CheckIntegrity_AddSkin(GUI=False):
+    from BasicTools.FE.ConstantRectilinearMesh import ConstantRectilinearMesh
+
+    myMesh = ConstantRectilinearMesh(dim=3)
+    myMesh.SetDimensions([2,3,4]);
+    myMesh.SetOrigin([-1.0,-1.0,-1.0]);
+    myMesh.SetSpacing([2., 2.,2]/myMesh.GetDimensions());
+    print(myMesh)
+    res2 = CreateMeshFromConstantRectilinearMesh(myMesh,ofTetras=True)
+    print(res2)
+
+    skin = ComputeSkin(res2)
+    if GUI :
+        from BasicTools.Actions.OpenInParaview import OpenInParaView
+
+        OpenInParaView(skin,filename="skin.xmf")
+
+    print(skin)
+
+def CheckIntegrity_ExtractElementsByImplicitZone(GUI=False):
     from BasicTools.FE.ConstantRectilinearMesh import ConstantRectilinearMesh
 
     myMesh = ConstantRectilinearMesh(dim=3)
@@ -1189,7 +1297,7 @@ def CheckIntegrity_ExtractElementsByImplicitZone():
     print(tempdir)
     return "OK"
 
-def CheckIntegrity_DeleteInternalFaces():
+def CheckIntegrity_DeleteInternalFaces(GUI=False):
 
     points = [[0,0,0],[1,0,0],[0,1,0],[0,0,1],[1,1,1] ]
     tets = [[0,1,2,3],[3,0,2,4]]
@@ -1208,7 +1316,7 @@ def CheckIntegrity_DeleteInternalFaces():
 
 
 
-def CheckIntegrity_VtkToMesh():
+def CheckIntegrity_VtkToMesh(GUI=False):
     res = CreateMeshOfTriangles([[0,0,0],[1,0,0],[0,1,0],[0,0,1] ], [[0,1,2],[0,2,3]])
     res.nodeFields = {"x": res.nodes[:,0], "Pos":res.nodes}
     res.nodesTags.CreateTag("FirstPoint").AddToTag(0)
@@ -1220,7 +1328,7 @@ def CheckIntegrity_VtkToMesh():
     print(VtkToMesh(sol))
     return 'ok'
 
-def CheckIntegrity_MeshToVtk():
+def CheckIntegrity_MeshToVtk(GUI=False):
     res = CreateMeshOfTriangles([[0,0,0],[1,0,0],[0,1,0],[0,0,1] ], [[0,1,2],[0,2,3]])
     res.nodeFields = {"x": res.nodes[:,0], "Pos":res.nodes}
     res.nodesTags.CreateTag("FirstPoint").AddToTag(0)
@@ -1235,12 +1343,12 @@ def CheckIntegrity_MeshToVtk():
     return "OK"
 
 
-def CheckIntegrity_CreateMeshOfTriangles():
+def CheckIntegrity_CreateMeshOfTriangles(GUI=False):
     res = CreateMeshOfTriangles([[0,0,0],[1,0,0],[0,1,0],[0,0,1] ], [[0,1,2],[0,2,3]])
     print(res)
     return "OK"
 
-def CheckIntegrity_CreateMeshFromConstantRectilinearMesh():
+def CheckIntegrity_CreateMeshFromConstantRectilinearMesh(GUI=False):
     from BasicTools.FE.ConstantRectilinearMesh import ConstantRectilinearMesh
 
     myMesh = ConstantRectilinearMesh()
@@ -1260,7 +1368,7 @@ def CheckIntegrity_CreateMeshFromConstantRectilinearMesh():
 
     return "OK"
 
-def CheckIntegrity_QuadToLin():
+def CheckIntegrity_QuadToLin(GUI=False):
     myMesh = UnstructuredMesh()
     myMesh.nodes = np.array([[0,0,0],[1,0,0],[0,1,0],[0,0,1],[0.5,0,0],[0.5,0.5,0],[0,0.5,0],[0,0,0.5],[0.5,0,0.5],[0,0.5,0.5]] ,dtype=np.float)
     tag = myMesh.GetNodalTag("linPoints")
@@ -1290,7 +1398,7 @@ def CheckIntegrity_QuadToLin():
     print(QuadToLin(myMesh,divideQuadElements=True,lineariseMiddlePoints=True))
     return "ok"
 
-def CheckIntegrity_CleanDoubleNodes():
+def CheckIntegrity_CleanDoubleNodes(GUI=False):
     points = [[0,0,0],[1,0,0],[0,1,0],[0,0,1],[0,0,0] ]
     tets = [[0,1,2,3],]
     mesh = CreateMeshOf(points,tets,ElementNames.Tetrahedron_4)
@@ -1310,7 +1418,7 @@ def CheckIntegrity_CleanDoubleNodes():
 
     return "ok"
 
-def CheckIntegrity_CleanLonelyNodes():
+def CheckIntegrity_CleanLonelyNodes(GUI=False):
     points = [[0,0,0],[1,0,0],[0,1,0],[0,0,1],[1,1,1] ]
     tets = [[0,1,2,3],]
     mesh = CreateMeshOf(points,tets,ElementNames.Tetrahedron_4)
@@ -1320,7 +1428,7 @@ def CheckIntegrity_CleanLonelyNodes():
         raise# pragma: no cover
     return "ok"
 
-def CheckIntegrity_GetVolume():
+def CheckIntegrity_GetVolume(GUI=False):
     points = [[0,0,0],[1,0,0],[0,1,0],[0,0,1] ]
     tets = [[0,1,2,3],]
     mesh = CreateMeshOf(points,tets,ElementNames.Tetrahedron_4)
@@ -1339,7 +1447,7 @@ def CheckIntegrity_GetVolume():
 
     return "ok"
 
-def CheckIntegrity_MirrorMesh():
+def CheckIntegrity_MirrorMesh(GUI=False):
     points = [[0,0,0],[1,0,0],[0,1,0],[0,0,1] ]
     tets = [[0,1,2,3],]
     mesh = CreateMeshOf(points,tets,ElementNames.Tetrahedron_4)
@@ -1354,7 +1462,7 @@ def CheckIntegrity_MirrorMesh():
         raise# pragma: no cover
     return "ok"
 
-def CheckIntegrity_ExtractElementByTags():
+def CheckIntegrity_ExtractElementByTags(GUI=False):
     res = CreateMeshOfTriangles([[0,0,0],[1,0,0],[0,1,0],[0,0,1] ], [[0,1,2],[0,2,3]])
     res.AddElementToTagUsingOriginalId(0,"first")
     res.AddElementToTagUsingOriginalId(1,"second")
@@ -1373,7 +1481,7 @@ def CheckIntegrity_ExtractElementByTags():
         raise# pragma: no cover
 
 
-def CheckIntegrity_CleanEmptyTags():
+def CheckIntegrity_CleanEmptyTags(GUI=False):
     res = CreateMeshOfTriangles([[0,0,0],[1,0,0],[0,1,0],[0,0,1] ], [[0,1,2],[0,2,3]])
     res.GetNodalTag("Point0").AddToTag(0)
     res.GetNodalTag("EmptyTagN")
@@ -1389,7 +1497,7 @@ def CheckIntegrity_CleanEmptyTags():
         raise# pragma: no cover
     return "ok"
 
-def CheckIntegrity_AddTagPerBody():
+def CheckIntegrity_AddTagPerBody(GUI=False):
     res = CreateMeshOfTriangles([[0,0,0],[1,0,0],[0,1,0],[0,0,1] ], [[0,1,2],[0,2,3]])
     resII = MirrorMesh(res,x=0,y=0,z=0)
     print( resII.nodes)
@@ -1402,7 +1510,7 @@ def CheckIntegrity_AddTagPerBody():
 
     return "ok"
 
-def CheckIntegrity_ExtractElementsByMask():
+def CheckIntegrity_ExtractElementsByMask(GUI=False):
     res = CreateMeshOfTriangles([[0,0,0],[1,0,0],[0,1,0],[0,0,1] ], [[0,1,2],[0,2,3]])
     res.GetElementsOfType(ElementNames.Triangle_3).tags.CreateTag("tri1").AddToTag(0)
 
@@ -1417,33 +1525,35 @@ def CheckIntegrity_ExtractElementsByMask():
     print(tri.originalIds)
     return "ok"
 
-def CheckIntegrity_GetDualGraph():
+def CheckIntegrity_GetDualGraph(GUI=False):
     res = CreateMeshOfTriangles([[0,0,0],[1,0,0],[0,1,0],[0,0,1] ], [[0,1,2],[0,2,3]])
     dg, nused = GetDualGraph(res)
 
     return "ok"
 
 
-def CheckIntegrity():
-    CheckIntegrity_AddSkin()
-    CheckIntegrity_ExtractElementsByImplicitZone()
-    CheckIntegrity_DeleteInternalFaces()
-    CheckIntegrity_ExtractElementsByMask()
-    CheckIntegrity_GetVolume()
-    CheckIntegrity_CreateMeshOfTriangles()
-    CheckIntegrity_CreateMeshFromConstantRectilinearMesh()
-    CheckIntegrity_QuadToLin()
-    CheckIntegrity_CleanDoubleNodes()
-    CheckIntegrity_CleanLonelyNodes()
-    CheckIntegrity_MirrorMesh()
-    CheckIntegrity_ExtractElementByTags()
-    CheckIntegrity_CleanEmptyTags()
-    CheckIntegrity_AddTagPerBody()
-    CheckIntegrity_MeshToVtk()
-    CheckIntegrity_VtkToMesh()
-    CheckIntegrity_GetDualGraph()
+def CheckIntegrity(GUI=False):
+
+    CheckIntegrity_ComputeFeatures(GUI)
+    CheckIntegrity_AddSkin(GUI)
+    CheckIntegrity_ExtractElementsByImplicitZone(GUI)
+    CheckIntegrity_DeleteInternalFaces(GUI)
+    CheckIntegrity_ExtractElementsByMask(GUI)
+    CheckIntegrity_GetVolume(GUI)
+    CheckIntegrity_CreateMeshOfTriangles(GUI)
+    CheckIntegrity_CreateMeshFromConstantRectilinearMesh(GUI)
+    CheckIntegrity_QuadToLin(GUI)
+    CheckIntegrity_CleanDoubleNodes(GUI)
+    CheckIntegrity_CleanLonelyNodes(GUI)
+    CheckIntegrity_MirrorMesh(GUI)
+    CheckIntegrity_ExtractElementByTags(GUI)
+    CheckIntegrity_CleanEmptyTags(GUI)
+    CheckIntegrity_AddTagPerBody(GUI)
+    CheckIntegrity_MeshToVtk(GUI)
+    CheckIntegrity_VtkToMesh(GUI)
+    CheckIntegrity_GetDualGraph(GUI)
     return "ok"
 
 
 if __name__ == '__main__':
-    print(CheckIntegrity())# pragma: no cover
+    print(CheckIntegrity(True))# pragma: no cover
