@@ -11,7 +11,8 @@ import traceback
 
 import time
 
-"""
+
+Test_Help_String = """
 python  Tests.py -c -f -s -e <extraModules> -m <moduleFilter>
 options :
     -c    To activate coverage and generate a html report
@@ -19,11 +20,20 @@ options :
     -s    Stop at first error
     -e    To test extra Modules (-e can be repeated)
     -m    To filter the output by this string (-m can be repeated)
-    -d    Dry run do not execute only show what will be executed
-
+    -d    Dry run do not execute anything, only show what will be executed
 """
 
 from BasicTools.Helpers.which import which
+
+
+def GetUniqueTempFile(suffix="",prefix='tmp'):
+    #solution from
+    # https://stackoverflow.com/questions/2961509/python-how-to-create-a-unique-file-name
+
+    import tempfile
+    (fd, filename) = tempfile.mkstemp(suffix=suffix, prefix=prefix,dir=TestTempDir.GetTempPath())
+    return (fd,filename)
+
 
 def WriteTempFile(filename,content=None,mode="w" ):
     pfile = TestTempDir.GetTempPath() + filename
@@ -241,7 +251,7 @@ def TestAll(modulestotreat=['ALL'], fulloutput=False, stopAtFirstError= False, c
         # create a temp file
         tempdir = TestTempDir.GetTempPath()
         ss = [ ("*"+k.split(".")[-1]+"*") for k in tocheck ]
-        cov.html_report(directory = tempdir, include=ss )
+        cov.html_report(directory = tempdir, include=ss  ,title="Coverage report of "+ " and ".join(extraToolsBoxs) )
         import webbrowser
         import os
         print('Coverage Report in ')
@@ -266,15 +276,9 @@ if __name__ == '__main__':# pragma: no cover
     else:
       try:
           opts, args = getopt.getopt(sys.argv[1:],"hcfsde:m:")
-      except getopt.GetoptError:
-          print( 'python  Tests.py -c -f -e <extraModules> -m <moduleFilter>')
-          print( 'options :')
-          print( '       -c    To activate coverage and generate a html report')
-          print( '       -f    Full output for all the test')
-          print( '       -s    Stop at first error')
-          print( '       -e    To test extra Modules (-e can be repeated)')
-          print( '       -m    To filter the output by this string (-m can be repeated)')
-          print( '       -d    Dry run do not execute only show what will be executed')
+      except getopt.GetoptError as e:
+          print(e)
+          print(Test_Help_String)
           sys.exit(2)
 
       coverage = False
@@ -288,14 +292,7 @@ if __name__ == '__main__':# pragma: no cover
 
       for opt, arg in opts:
          if opt == '-h':
-             print( 'python  Tests.py -c -f -s -e <extraModules> -m <moduleFilter>')
-             print( 'options :')
-             print( '       -c    To activate coverage and generate a html report')
-             print( '       -f    Full output for all the test')
-             print( '       -s    Stop at first error')
-             print( '       -e    To test extra Modules (-e can be repeated)')
-             print( '       -m    To filter the output by this string (-m can be repeated)')
-             print( '       -d    Dry run do not execute only show what will be executed')
+             print(Test_Help_String)
              sys.exit()
          elif opt in ("-c"):
             coverage = True
