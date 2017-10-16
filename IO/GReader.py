@@ -101,6 +101,9 @@ class GReader(ReaderBase):
         res.elemFields['OnOff'] = G
         self.output = res
 
+from BasicTools.IO.UniversalReader import RegisterClass
+RegisterClass(".gcode",GReader)
+
 def CheckIntegrity():
     from BasicTools.TestData import GetTestDataPath
 

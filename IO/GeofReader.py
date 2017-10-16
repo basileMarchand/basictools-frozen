@@ -456,6 +456,8 @@ class GeofReader(ReaderBase):
     self.output = res
     return res
 
+from BasicTools.IO.UniversalReader import RegisterClass
+RegisterClass(".geof",GeofReader)
 
 
 def CheckIntegrity():
