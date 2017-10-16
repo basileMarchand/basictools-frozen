@@ -36,47 +36,12 @@ def ReadMesh(filename,out=None):# pragma: no cover
         return FemReader.ReadFem(fileName=filename)
     elif extention ==  ".solb" or extention ==  ".sol":
         import BasicTools.IO.MeshReader as MeshReader
-
-        if extention[-1] == "b":
-            f = os.path.join(dirname,basename+".meshb")
-        else:
-            f = os.path.join(dirname,basename+".mesh")
-
-        # we check if the file exist, if not we try the other type
-        if not os.path.isfile(f):
-            if extention[-1] == "b":
-                f = os.path.join(dirname,basename+".mesh")
-            else:
-                f = os.path.join(dirname,basename+".meshb")
-
-        if not os.path.isfile(f):
-            raise Exception("unable to find a mesh file")
-        reader = MeshReader.MeshReader()
-        reader.SetFileName(fileName=f)
-        reader.Read()
-        mesh = reader.output
-        fields = reader.ReadExtraFields(filename);
-        mesh.nodeFields = {k:v for k,v in fields.items() if k.find("SolAtVertices") != -1  }
-        if 'SolAtTetrahedra0' in fields:
-
-            if mesh.GetElementsOfType(ElementNames.Tetrahedron_4).GetNumberOfElements() == mesh.GetNumberOfElements():
-                mesh.elemFields = {k:v for k,v in fields.items() if k.find("SolAtTetrahedra") != -1  }
-        return mesh
+        return MeshReader.ReadSol(fileName=filename)
     elif extention ==  ".ut" or extention ==  ".utp":
-        from BasicTools.IO.UtReader import UtReader
-        reader = UtReader()
-        reader.SetFileName(fileName=filename)
-        reader.ReadMetaData()
-        import BasicTools.IO.GeofReader as GeofReader
-        mesh = GeofReader.ReadGeof(reader.meshfile)
-
-        #mesh.nodeFields = {}
-        nodesfields = reader.node
-        nodesfields.extend(reader.integ)
-        for nf in nodesfields:
-            mesh.nodeFields[nf] = reader.Read(fieldname=nf,time=-1)
-        return mesh
+        from BasicTools.IO.UtReader import ReadMeshAndUt
+        return ReadMeshAndUt(fileName=filename)
     else:
+        Create(extention)
         raise Exception ("Unkown file extention : " + str(extention))
 
 
@@ -93,6 +58,28 @@ def ReadMeshAndPopulateVtkObject(filename, vtkobject= None,TagsAsFields=False):#
     mesh = ReadMesh(filename)
     from BasicTools.FE.UnstructuredMeshTools import MeshToVtk
     return MeshToVtk(mesh, vtkobject,TagsAsFields=TagsAsFields)
+
+
+
+from BasicTools.Helpers.Factory import Factory
+
+def RegisterClass(name, classtype, constructor=None, withError = True):
+    return ReaderFactory.RegisterClass(name,classtype, constructor=constructor, withError = withError )
+
+def Create(name,ops=None):
+   return ReaderFactory.Create(name,ops)
+
+class ReaderFactory(Factory):
+    _Catalog = {}
+    def __init__(self):
+        super(ReaderFactory,self).__init__()
+
+def InitAllReaders():
+
+    import BasicTools.IO.GeofReader
+    import BasicTools.IO.GReader
+    import BasicTools.IO.MeshReader
+
 
 def CheckIntegrity():
 
