@@ -29,7 +29,6 @@ class PathControler(BaseOutputObject):
     def SetWorkingDirectoryUsingFile(file):
         PathControler.workingDirectory = path.abspath(path.dirname(path.expanduser(file)) )+os.sep
 
-
     @staticmethod
     def GetCurrentDirectory():
         return PathControler.currentDirectory
@@ -46,6 +45,13 @@ class PathControler(BaseOutputObject):
         else:
             return path.abspath(PathControler.currentDirectory +filename)
 
+
+    @staticmethod
+    def GetFullPathnameOnWorkingDirectory(pathname):
+        if os.path.isabs(pathname):
+            return pathname
+        else:
+            return path.abspath(PathControler.workingDirectory +pathname)+os.sep
 
     @staticmethod
     def GetFullFilenameOnWorkingDirectory(filename):
