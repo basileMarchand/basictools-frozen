@@ -23,12 +23,16 @@ numberOfNodes[Bar_2] = 2;
 mirrorPermutation[Bar_2] = [1,0]
 dimension[Bar_2] = 1
 linear[Bar_2] = True
+faces[Bar_2] = [(Point_1,[0]), (Point_1,[1])]
+
 #quadratic
 Bar_3 = 'bar3'
 numberOfNodes[Bar_3] = 3;
 mirrorPermutation[Bar_3] = [1,0,2]
 dimension[Bar_3] = 1
 linear[Bar_3] = False
+faces[Bar_3] = [(Point_1,[0]), (Point_1,[1])]
+
 #2d
 #linear
 Triangle_3 = 'tri3'
@@ -45,20 +49,42 @@ Quadrangle_4  = 'quad4'
 numberOfNodes[Quadrangle_4] = 4;
 dimension[Quadrangle_4] = 2
 linear[Quadrangle_4] = True
+faces[Quadrangle_4] = [(Bar_2,[0, 1]),
+                        (Bar_2,[1, 2]),
+                        (Bar_2,[2, 3]),
+                        (Bar_2,[3, 0]),
+     ]
 
 #quadratic
 Triangle_6 = 'tri6'
 numberOfNodes[Triangle_6] = 6;
 dimension[Triangle_6] = 2
 linear[Triangle_6] = True
+faces[Triangle_6] = [(Bar_3,[0, 1,3]),
+                        (Bar_3,[1, 2,4]),
+                        (Bar_3,[2, 0,5]),
+     ]
 
 
 Quadrangle_8  = 'quad8'
 numberOfNodes[Quadrangle_8] = 8;
 dimension[Quadrangle_8] = 2
+faces[Quadrangle_8] = [(Bar_3,[0, 1,4]),
+                       (Bar_3,[1, 2,5]),
+                       (Bar_3,[2, 3,6]),
+                       (Bar_3,[3, 0,7]),
+     ]
+
+
+
 Quadrangle_9  = 'quad9'
 numberOfNodes[Quadrangle_9] = 9;
 dimension[Quadrangle_9] = 2
+faces[Quadrangle_9] = [(Bar_3,[0, 1,4]),
+                       (Bar_3,[1, 2,5]),
+                       (Bar_3,[2, 3,6]),
+                       (Bar_3,[3, 0,7]),
+     ]
 #3d
 #linear
 Tetrahedron_4 = 'tet4'
@@ -66,16 +92,22 @@ numberOfNodes[Tetrahedron_4] = 4;
 mirrorPermutation[Tetrahedron_4] = [0,2,1,3]
 dimension[Tetrahedron_4] = 3
 linear[Tetrahedron_4] = True
-faces[Tetrahedron_4] = [(Triangle_3,[0, 2, 1]),
-                        (Triangle_3,[0, 1, 3]),
-                        (Triangle_3,[1, 2, 3]),
-                        (Triangle_3,[2, 0, 3]),
+faces[Tetrahedron_4] = [(Quadrangle_4,[0, 1, 2,3]),
+                        (Triangle_3,[0, 1, 4]),
+                        (Triangle_3,[1, 2, 4]),
+                        (Triangle_3,[2, 3, 4]),
+                        (Triangle_3,[3, 0, 4]),
      ]
 
 Pyramid_5  = 'pyr5'
 numberOfNodes[Pyramid_5] = 5;
 dimension[Pyramid_5] = 3
 linear[Pyramid_5] = True
+faces[Tetrahedron_4] = [(Triangle_3,[0, 2, 1]),
+                        (Triangle_3,[0, 1, 3]),
+                        (Triangle_3,[1, 2, 3]),
+                        (Triangle_3,[2, 0, 3]),
+     ]
 
 Wedge_6 = 'wed6'
 numberOfNodes[Wedge_6] = 6;
