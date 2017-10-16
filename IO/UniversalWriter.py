@@ -28,7 +28,7 @@ def WriterFactory(nameOrFilename,ops={"default":"xmf"}):
         if extention in externalWriters:
             res = externalWriters[extention]()
         else:
-            return WriterFactory(ops["default"])
+            res = WriterFactory(ops["default"])
 
     res.SetFileName(nameOrFilename)
     return res
