@@ -39,6 +39,8 @@ class FemReader(ReaderBase):
         filetointernalid = {}
         cpt =0
 
+        elements = res.GetElementsOfType(ElementNames.Tetrahedron_4)
+        elements.Reserve(1000000)
         while(True):
             line = self.ReadCleanLine()
             if line is None:
