@@ -21,6 +21,40 @@ def ReadMesh(fileName=None,string=None,ReadRefsAsField=False ):
     reader.Read()
     return reader.output
 
+def ReadSol(fileName, out=None):
+
+    import os.path
+
+    dirname = os.path.dirname(fileName)
+    basename,extention = os.path.splitext(os.path.basename(fileName))
+
+    if extention[-1] == "b":
+        f = os.path.join(dirname,basename+".meshb")
+    else:
+        f = os.path.join(dirname,basename+".mesh")
+
+
+# we check if the file exist, if not we try the other type
+    if not os.path.isfile(f):
+        if extention[-1] == "b":
+            f = os.path.join(dirname,basename+".mesh")
+        else:
+            f = os.path.join(dirname,basename+".meshb")
+
+    if not os.path.isfile(f):
+        raise Exception("unable to find a mesh file")
+    reader = MeshReader.MeshReader()
+    reader.SetFileName(fileName=f)
+    reader.Read()
+    mesh = reader.output
+    fields = reader.ReadExtraFields(fileName);
+    mesh.nodeFields = {k:v for k,v in fields.items() if k.find("SolAtVertices") != -1  }
+    if 'SolAtTetrahedra0' in fields:
+
+        if mesh.GetElementsOfType(EN.Tetrahedron_4).GetNumberOfElements() == mesh.GetNumberOfElements():
+            mesh.elemFields = {k:v for k,v in fields.items() if k.find("SolAtTetrahedra") != -1  }
+    return mesh
+
 
 class MeshReader(ReaderBase):
     def __init__(self):
@@ -546,7 +580,9 @@ class MeshReader(ReaderBase):
 #        myFile.EndReading()
 #        return res
 
-
+from BasicTools.IO.UniversalReader import RegisterClass
+RegisterClass(".mesh",MeshReader)
+RegisterClass(".meshb",MeshReader)
 
 def CheckIntegrity():
 
