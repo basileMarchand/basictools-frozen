@@ -4,12 +4,27 @@ import numpy as np
 from BasicTools.IO.ReaderBase import ReaderBase
 
 
-def ReadUt(fileName=None,fieldname=None,time=None,string=None):
+def ReadUt(fileName=None,fieldname=None,time=None,string=None,atIntegrationPoints=False):
     reader = UtReader()
     reader.SetFileName(fileName)
     reader.SetStringToRead(string)
-    reader.atIntegrationPoints = False
+    reader.atIntegrationPoints = atIntegrationPoints
+    reader.ReadMetaData()
     return reader.Read(fieldname=fieldname, time=time )
+
+def ReadMeshAndUt(fileName):
+        reader = UtReader()
+        reader.SetFileName(fileName=fileName)
+        reader.ReadMetaData()
+        import BasicTools.IO.GeofReader as GeofReader
+        mesh = GeofReader.ReadGeof(reader.meshfile)
+
+        #mesh.nodeFields = {}
+        nodesfields = reader.node
+        nodesfields.extend(reader.integ)
+        for nf in nodesfields:
+            mesh.nodeFields[nf] = reader.Read(fieldname=nf,time=-1)
+        return mesh
 
 class UtReader(ReaderBase):
     def __init__(self):
@@ -24,6 +39,7 @@ class UtReader(ReaderBase):
         self.fieldNameToRead =None
         self.timeToRead = -1
         self.atIntegrationPoints = False
+        self.meshMetadata = None
 
     def Reset(self):
         self.meshfile = None
@@ -41,6 +57,7 @@ class UtReader(ReaderBase):
             self.timeToRead = time
 
     def ReadMetaData(self):
+        if self.meshMetadata is not None : return self.meshMetadata
         self.StartReading()
 
         self.Reset()
@@ -99,7 +116,7 @@ class UtReader(ReaderBase):
         self.SetTimeToRead(time)
 
         # find the time
-        if self.timeToRead is -1 or self.timeToRead is -1.:
+        if self.timeToRead == -1 :
             timeIndex = len(self.time)-1
         else:
             timeIndex = [data[4]for data in self.time].index(self.timeToRead)
@@ -116,26 +133,26 @@ class UtReader(ReaderBase):
 
         if self.atIntegrationPoints :
             try:
-                idx = self.integ.index(fieldname)
+                idx = self.integ.index(self.fieldNameToRead)
                 offset =  nbIntegrationPoints * len(self.integ)*timeIndex + idx*nbIntegrationPoints
                 count = nbIntegrationPoints
                 ffn = basename + ".integ"
             except:
-                raise(Exception("unable to find field " +str(fieldname) ))
+                raise(Exception("unable to find field " +str(self.fieldNameToRead) ))
         else:
             try:
-                idx = self.node.index(fieldname)
+                idx = self.node.index(self.fieldNameToRead)
                 offset = nbNodes * len(self.node)*timeIndex + idx*nbNodes
                 count = nbNodes
                 ffn = basename + ".node"
             except:
                 try:
-                    idx = self.integ.index(fieldname)
+                    idx = self.integ.index(self.fieldNameToRead)
                     offset = nbUsednodes * len(self.integ)*timeIndex + idx*nbUsednodes
                     count = nbUsednodes
                     ffn = basename + ".ctnod"
                 except:
-                    raise(Exception("unable to find field " +str(fieldname) ))
+                    raise(Exception("unable to find field " +str(self.fieldNameToRead) ))
 
 
         self.PrintVerbose("Opening file : " + str(ffn) )
@@ -147,7 +164,7 @@ class UtReader(ReaderBase):
                 datafile.seek(offset*4)
                 res = np.fromfile(datafile ,count=count, dtype=np.float32).byteswap()
         except:
-            print("Error Reading field : " + str(fieldname) + " (not read)")
+            print("Error Reading field : " + str(self.fieldNameToRead) + " (not read)")
 
         return res
 
