@@ -82,7 +82,6 @@ class Interface(BaseOutputObject):
 
         for i in xrange(len(cmd)):
            cmd[i] = cmd[i].format(**self.parameters)
-        print(cmd)
         return cmd
 
     def SingleRunComputation(self, idProc,stdout = None):
