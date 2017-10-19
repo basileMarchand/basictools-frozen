@@ -2,7 +2,7 @@
 
 from BasicTools.Helpers.Tests import TestTempDir
 
-
+paraviewExec= "paraview"
 def OpenInParaView( mesh,filename=None ):
 
     if filename is None:
@@ -24,7 +24,7 @@ def OpenInParaView( mesh,filename=None ):
     WriteMeshToXdmf(filename,mesh,PointFieldsNames=PointFieldsNames,PointFields=PointFields,CellFieldsNames=CellFieldsNames,CellFields=CellFields  )
 
     from subprocess import Popen
-    Popen(["paraview",filename])
+    Popen([paraviewExec,filename])
 
 def CheckIntegrity():
     pass
