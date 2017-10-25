@@ -195,6 +195,15 @@ class UnstructuredMesh(MeshBase):
         self.boundingMin = np.amin(self.nodes, axis=0);
         self.boundingMax = np.amax(self.nodes, axis=0);
 
+    def AddNodeToTagUsingOriginalId(self,oid,tagname):
+
+        w = np.where(self.originalIDNodes == oid)
+        if len(w[0]) > 0 :
+            self.GetNodalTag(tagname).AddToTag(w[0])
+        else:
+            raise Exception("No node with id " + str(oid)) #pragma: no cover
+
+
     def AddElementToTagUsingOriginalId(self,oid,tagname):
         for ntype, data in self.elements.items():
             w = np.where(data.originalIds[:data.cpt] == oid)
@@ -271,6 +280,7 @@ class UnstructuredMesh(MeshBase):
                    tag.Tighten()
 
     def GenerateManufacturedOriginalIDs(self):
+       self.originalIDNodes = np.arange(self.GetNumberOfNodes())
        counter = 0
        for key, value in self.elements.items():
            value.originalIds = np.arange(counter,counter+value.GetNumberOfElements())
