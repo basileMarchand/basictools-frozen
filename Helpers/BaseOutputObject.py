@@ -27,6 +27,8 @@ class BaseOutputObject(object):
             self.__classDebugMode = other.__classDebugMode
         else:
             self.__classDebugMode = False
+        #only for debuging
+        self.desc =""
 
     @classmethod
     def SetVerboseLevel(cls,level):
@@ -122,7 +124,12 @@ class BaseOutputObject(object):
 
         import sys
         sys.stdout.flush()
-
+    def  __str__(self):
+        res = str(type(self)) + "\n"
+        for prop in self.__dict__:
+            res += str(prop) + " : " + str(self.__dict__[prop])
+            res += "\n"
+        return res
 
 def CheckIntegrity():
 

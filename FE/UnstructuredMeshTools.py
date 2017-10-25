@@ -546,13 +546,35 @@ def ExtractElementsByMask(inelems, _mask):
 
     return outelems
 
+def ExtractElementByDimensionalityNoCopy(inmesh,dimensionalityFilter):
+    outmesh = type(inmesh)()
+    outmesh.CopyProperties(inmesh)
+
+    outmesh.nodes = inmesh.nodes
+    outmesh.originalIDNodes = inmesh.originalIDNodes
+    outmesh.nodesTags = inmesh.nodesTags
+
+    if dimensionalityFilter >0 :
+        for name,elems in inmesh.elements.items():
+            if ElementNames.dimension[name] != dimensionalityFilter:
+                continue
+            else:
+                outmesh.elements[name] = elems
+    else:
+        for name,elems in inmesh.elements.items():
+            if ElementNames.dimension[name] == -dimensionalityFilter:
+                continue
+            else:
+                outmesh.elements[name] = elems
+    return outmesh
+
 def ExtractElementByTags(inmesh,tagsToKeep, allNodes=False,dimensionalityFilter= None):
 
     outmesh = type(inmesh)()
     outmesh.CopyProperties(inmesh)
 
     outmesh.nodes = np.copy(inmesh.nodes)
-    outmesh.originalIDNodes = np.copy(inmesh.originalIDNodes)
+    outmesh.originalIDNodes = None
 
     import copy
     for tag in inmesh.nodesTags:
@@ -612,13 +634,9 @@ def ExtractElementByTags(inmesh,tagsToKeep, allNodes=False,dimensionalityFilter=
        outelem.connectivity = elems.connectivity[toKeep,:]
 
        for tag in elems.tags  :
-           #print(tag.id)
            temp = np.extract(toKeep[tag.GetIds()],tag.GetIds())
-           #print(temp)
            newid = newIndex[temp]
-           #print(newid)
            outelem.tags.CreateTag(tag.name,errorIfAlreadyCreated=False).SetIds(newid)
-
 
     CleanLonelyNodes(outmesh)
     return outmesh
@@ -1007,11 +1025,51 @@ def VtkToMesh(vtkmesh, meshobject=None, TagsAsFields=False):
     return out
 
 def DeleteInternalFaces(mesh):
+    skin = ComputeSkin(mesh)
+    datatochange = {}
+    for name,data in mesh.elements.items():
+        if ElementNames.dimension[name] != 2:
+            continue
+        ne = data.GetNumberOfElements()
+        mask = np.zeros(ne, dtype=np.bool)
+
+        data2 = skin.elements[name]
+        ne2 =data2.GetNumberOfElements()
+        surf2 = {}
+        key = np.array([ne**x for x in range(ElementNames.numberOfNodes[name]) ])
+
+        for i in xrange(ne2):
+            cc = data2.connectivity[i,:]
+            lc = np.sort(cc)
+            ehash = np.sum(lc*key)
+            surf2[ehash] = [1,cc]
+
+        for i in xrange(ne):
+            cc = data.connectivity[i,:]
+            lc = np.sort(cc)
+
+            ehash = np.sum(lc*key)
+            if ehash in surf2:
+                mask[i] = True
+
+        datatochange[name] = ExtractElementsByMask(data,mask)
+
+    for name, data in datatochange.items():
+        mesh.elements[name] = data
+
+    return mesh
+
+
+
+
+
+
+
     elems2D = {}
     elemsMask = {}
     usedPointsBy2DElements = []
     mesh.PrepareForOutput()
-    #generate a list of all the 2D elements and a empty mask
+    #generate a list of all the 2D elements and an empty mask
     for name,data in mesh.elements.items():
         if ElementNames.dimension[name] == 2:
             conn = np.sort(data.connectivity,axis=1)
@@ -1536,6 +1594,7 @@ def CheckIntegrity(GUI=False):
 
     CheckIntegrity_ComputeFeatures(GUI)
     CheckIntegrity_AddSkin(GUI)
+
     CheckIntegrity_ExtractElementsByImplicitZone(GUI)
     CheckIntegrity_DeleteInternalFaces(GUI)
     CheckIntegrity_ExtractElementsByMask(GUI)
