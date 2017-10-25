@@ -133,7 +133,6 @@ BinaryTypes = {}
 for types,number in BinaryNumber.items():
     BinaryTypes[number] = types
 
-#"GmfRequiredEdges": 16,
 #"GmfRequiredVertices": 15,
 #"GmfRequiredEdges": 16,
 #"GmfRequiredTriangles": 17,

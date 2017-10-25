@@ -13,6 +13,7 @@ from MeshTools import BinaryNumber
 from MeshTools import ASCIIName
 from MeshTools import ASCIITags
 from MeshTools import Corners
+import MeshTools as MT
 
 
 def WriteMesh(filename,mesh,SolsAtVertices=None,solutionOnOwnFile= False, binary=True, nodalRefNumber= None,elemRefNumber=None):
@@ -89,9 +90,23 @@ class MeshWriter(WriterBase):
                  self.filePointer.write(struct.pack("i", nodalRefNumber[n]))# refs
 
 
-
         self.PrintDebug("position at end " + str(self.filePointer.tell()))
         self.PrintDebug("calculate position at end " + str(endOfInformation))
+
+#"GmfRequiredVertices": 15,
+
+        if MT.RequiredVertices  in meshObject.nodesTags :
+            ids = meshObject.nodesTags[MT.RequiredVertices].GetIds()+1
+            nbids = len(ids)
+            if nbids:
+               self.filePointer.write(struct.pack('i', 15 ))
+               currentposition = self.filePointer.tell()
+               endOfInformation = currentposition+ (2+len(ids))*4
+               self.filePointer.write(struct.pack('i', endOfInformation ))# end of information
+               self.filePointer.write(struct.pack('i', nbids))# GetNumberOfElements
+               ids.astype(np.int32).tofile(self.filePointer, format=dataformat,sep='')
+               self.PrintDebug("position at end " + str(self.filePointer.tell()))
+               self.PrintDebug("calculate position at end " + str(endOfInformation))
 
         globalOffset =0
         for elementContainer in meshObject.elements:

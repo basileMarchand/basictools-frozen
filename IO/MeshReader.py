@@ -12,6 +12,7 @@ from MeshTools import BinaryTypes
 from MeshTools import BinaryKeywords as BKeys
 from MeshTools import BinaryTags
 from MeshTools import BinaryFields
+import MeshTools as MT
 
 def ReadMesh(fileName=None,string=None,ReadRefsAsField=False ):
     reader = MeshReader()
@@ -43,7 +44,7 @@ def ReadSol(fileName, out=None):
 
     if not os.path.isfile(f):
         raise Exception("unable to find a mesh file")
-    reader = MeshReader.MeshReader()
+    reader = MeshReader()
     reader.SetFileName(fileName=f)
     reader.Read()
     mesh = reader.output
@@ -244,7 +245,7 @@ class MeshReader(ReaderBase):
 
         #print(myFile.filePointer.closed)
 
-        print(myFile.filePointer)
+        #print(myFile.filePointer)
 
         data = np.fromfile(file=myFile.filePointer,dtype=float,count=int(ncoomp*nbentries),sep=" \n")
 
@@ -335,7 +336,7 @@ class MeshReader(ReaderBase):
                   cpt =0
                   while(cpt < len(refs)):
                       ref = refs[cpt][0]
-                      print(ref)
+                      #print(ref)
                       res.GetNodalTag("NTag"+str(ref)).AddToTag(cpt)
                       cpt +=1
               continue
@@ -380,6 +381,14 @@ class MeshReader(ReaderBase):
               self.PrintVerbose('Reading '+ str(nbElements) + " Elements Done ")
 
 
+              continue
+
+          if key == 15:
+              tagname = MT.RequiredVertices
+              self.PrintVerbose("Reading " + str(tagname) )
+              nbentries = self.readInt32()
+              ids = np.fromfile(self.filePointer,dtype=np.int32,count=nbentries, sep="")-1
+              res.nodesTags.CreateTag(tagname).SetIds(ids)
               continue
 
           if key in BinaryTags:
