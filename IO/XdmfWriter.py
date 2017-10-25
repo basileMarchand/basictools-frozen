@@ -130,6 +130,7 @@ class XdmfWriter(WriterBase):
         super(XdmfWriter,self).__init__()
         self.canHandleTemporal = True
         self.canHandleAppend = True
+        self.canHandleMultidomain = True
 
         self.fileName = None;
         self.timeSteps = [];
@@ -267,6 +268,8 @@ class XdmfWriter(WriterBase):
 
         if self.IsTemporalOutput():
             self.filePointer.write('<Grid Name="Grid_T" GridType="Collection" CollectionType="Temporal"  >\n')
+        if self.IsMultidomainOutput():
+            self.filePointer.write('<Grid Name="Grid_S" GridType="Collection" CollectionType="Spatial" >\n')
         #clean the binary file  =
         if self.isBinary():
             self.__binaryFilePointer = open (self.__binFileName, "wb")
@@ -285,6 +288,10 @@ class XdmfWriter(WriterBase):
     def WriteTail(self):
         if self.isOpen():
             filepos = self.filePointer.tell()
+
+            if self.IsMultidomainOutput() :
+                self.filePointer.write('</Grid> <!-- collection grid -->\n')
+
 
             if self.IsTemporalOutput():
                 self.__WriteTime()
@@ -514,8 +521,28 @@ class XdmfWriter(WriterBase):
 
        self.filePointer.write('    </Attribute>\n')
 
+    def MakeStep(self,Time=None,TimeStep=None):
 
-    def Write(self,baseMeshObject, PointFields = None, CellFields = None, GridFields= None, PointFieldsNames = None, CellFieldsNames= None, GridFieldsNames=None , Time= None, TimeStep = None ):
+        if self.IsMultidomainOutput():
+            self.filePointer.write('</Grid> <!-- collection grid -->\n')
+            self.filePointer.write('<Grid Name="Collection" GridType="Collection" CollectionType="Spatial" >\n')
+
+        dt = 1
+        if Time is not None:
+           dt = Time - self.currentTime
+        elif TimeStep is not None:
+           dt = TimeStep
+
+        if self.IsTemporalOutput():
+           self.Step(dt)
+
+        if self.IsTemporalOutput() and self.__printTimeInsideEachGrid and (self.IsMultidomainOutput() == False) :
+             self.filePointer.write('    <Time Value="'+str(self.currentTime)+'" /> \n')
+
+    def Write(self,baseMeshObject, PointFields = None, CellFields = None, GridFields= None, PointFieldsNames = None, CellFieldsNames= None, GridFieldsNames=None , Time= None, TimeStep = None,domainName=None ):
+
+         if (Time is not None or TimeStep is not None) and self.IsMultidomainOutput():
+             raise(Exception("set time using MakeStep, not the Write option") )
 
          if PointFields is None:
              PointFields = [];
@@ -542,17 +569,18 @@ class XdmfWriter(WriterBase):
                 print(TFormat.InRed("Please Open The writer First!!!"))
                 raise Exception
 
-         dt = 1
-         if Time is not None:
-             dt = Time - self.currentTime
-         elif TimeStep is not None:
-             dt = TimeStep
+         if not self.IsMultidomainOutput():
+             dt = 1
+             if Time is not None:
+                 dt = Time - self.currentTime
+             elif TimeStep is not None:
+                 dt = TimeStep
 
-         if self.IsTemporalOutput():
-             self.Step(dt)
+             if self.IsTemporalOutput():
+                 self.Step(dt)
 
          self.filePointer.write('    <Grid Name="Grid_'+str(len(self.timeSteps))+'">\n')
-         if self.IsTemporalOutput() and self.__printTimeInsideEachGrid :
+         if self.IsTemporalOutput() and self.__printTimeInsideEachGrid and (self.IsMultidomainOutput() == False) :
              self.filePointer.write('    <Time Value="'+str(self.currentTime)+'" /> \n')
 
          self.__WriteGeoAndTopo(baseMeshObject)
@@ -727,7 +755,7 @@ def WriteTestAppend(tempdir,Temporal, Binary):
     writer.Write(myMesh,GridFields=[0, 1], GridFieldsNames=['K','P'], TimeStep = 1);
     writer.Close()
 
-def CheckIntegrity():
+def CheckIntegrity(GUI=False):
     from BasicTools.Helpers.Tests import TestTempDir
     from BasicTools.FE.ConstantRectilinearMesh import ConstantRectilinearMesh
     import BasicTools.FE.UnstructuredMesh as UM
@@ -845,6 +873,50 @@ def CheckIntegrity():
     writer.Close()
 
 
+    CRM2D = ConstantRectilinearMesh(2);
+
+    writer = XdmfWriter()
+    writer.SetFileName(None)
+    writer.SetXmlSizeLimit(0)
+    writer.SetBinary(True)
+    writer.SetMultidomain()
+    writer.Open(filename=tempdir+'testdirectTwoDomains.xdmf');
+
+
+    writer.Write(CRM2D, PointFields = [ np.zeros((CRM2D.GetNumberOfNodes(),) ).astype(np.float32), np.zeros((CRM2D.GetNumberOfNodes(),) ).astype(np.int) ],
+                                                            PointFieldsNames = ["Test", "testint"],
+                                                            CellFields= [ np.arange(CRM2D.GetNumberOfElements()*2 ).astype(np.float64)],
+                                                            CellFieldsNames = [ "TestV"] );
+    CRM3D = ConstantRectilinearMesh(3)
+    writer.Write(CRM3D)
+
+    writer.Close()
+    if GUI :
+        from BasicTools.Actions.OpenInParaview import OpenInParaView
+        OpenInParaView(filename = tempdir+'testdirectTwoDomains.xdmf')
+
+
+    writer = XdmfWriter()
+    writer.SetFileName(None)
+    writer.SetXmlSizeLimit(0)
+    writer.SetBinary(True)
+    writer.SetMultidomain()
+    writer.SetTemporal()
+    writer.Open(filename=tempdir+'testdirectTwoDomainsTwoSteps.xdmf');
+    writer.Write(CRM2D)
+    writer.Write(CRM3D)
+    writer.MakeStep(Time=1.5)
+    writer.Write(CRM3D)
+    writer.Write(CRM2D)
+    writer.Close()
+
+    if GUI:
+        from BasicTools.Actions.OpenInParaview import OpenInParaView
+        OpenInParaView(filename = tempdir+'testdirectTwoDomainsTwoSteps.xdmf')
+
+
+
+
 
     from BasicTools.IO.XdmfReader import XdmfReader  as XR
     f = XR(filename = tempdir+'testdirect.xdmf' )
@@ -873,8 +945,9 @@ def CheckIntegrity():
     domain = f.xdmf.GetDomain(0)
     grid  = domain.GetGrid(0)
     grid.GetFieldsOfType("Cell")
+
     return 'ok'
 
 if __name__ == '__main__':
-    print(CheckIntegrity()) # pragma: no cover
+    print(CheckIntegrity(GUI=True)) # pragma: no cover
 

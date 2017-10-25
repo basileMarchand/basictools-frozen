@@ -12,7 +12,9 @@ class WriterBase(BaseOutputObject):
         self._isOpen = False
         self._isBinary = False
         self.canHandleTemporal = False
+        self.canHandleMultidomain = False
         self.__isTemporalOutput = False
+        self.__isMultidomainOutput = False
 
         self.canHandleAppend = False
         self._inAppendMode = False
@@ -42,6 +44,18 @@ class WriterBase(BaseOutputObject):
 
     def IsTemporalOutput(self):
         return self.__isTemporalOutput
+
+    def SetMultidomain(self,val = True):
+        if self.isOpen() :
+            print(TFormat.InRed("SetMultidomain before opening"))
+            raise Exception("SetMultidomain before opening")
+        if self.canHandleMultidomain is False:
+            print(TFormat.InRed("This type of writer"+str(type(self))+ " cant handle Mutli Domain Data" ))
+            raise(Exception("This type of writer"+str(type(self))+ " cant handle Mutli Domain Data" ))
+        self.__isMultidomainOutput = bool(val)
+
+    def IsMultidomainOutput(self):
+        return self.__isMultidomainOutput
 
     def SetBinary(self, val = True):
         if self._isOpen :
