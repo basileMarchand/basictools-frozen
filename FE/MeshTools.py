@@ -5,17 +5,23 @@ import numpy as np
 
 import BasicTools.FE.UnstructuredMeshTools as UMT
 import BasicTools.FE.ConstantRectilinearMesh as CRM
+import ElementNames as EN
 
-def GetElementsCenters(mesh):
+def GetElementsCenters(mesh, dim=None):
 
     if mesh.IsConstantRectilinear():
         mesh.GenerateFullConnectivity()
 
-    res = np.empty((mesh.GetNumberOfElements(),3) )
+    if dim is None:
+        res = np.empty((mesh.GetNumberOfElements(),3) )
+    else:
+        res = np.empty((mesh.GetNumberOfElements(dim),3) )
 
     cpt= 0
     pos = mesh.GetPosOfNodes()
     for elementName in mesh.elements:
+        if dim is not None and EN.dimension[elementName] != dim:
+            continue
         elements = mesh.elements[elementName]
         connectivity = elements.connectivity
         localRes = np.zeros((elements.GetNumberOfElements(),3) )
