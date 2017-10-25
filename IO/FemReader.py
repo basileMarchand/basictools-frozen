@@ -122,13 +122,15 @@ class FemReader(ReaderBase):
                       #res.AddElementToTagUsingOriginalId(oid,)
 
                       continue
+                    if key == 'ENDATA' : break
+                    if line is None: break
 
                     print("string '" + str(line) + "' not treated")
 
 
             if key == 'ENDATA' : break
-            print("string '" + str(line) + "' not treated")
             if line is None: break
+            print("string '" + str(line) + "' not treated")
             raise
 
         res.nodes = np.array([xs,ys,zs],dtype=np.float).T
