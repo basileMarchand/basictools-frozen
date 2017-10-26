@@ -889,7 +889,7 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
                 continue
             #VTK_data = numpy_support.numpy_to_vtk(num_array=np.swapaxes(phi,0,2).ravel(), deep=True, array_type=vtk.VTK_FLOAT)
             #VTK_data.SetName(name)
-            if np.size(data) != mesh.GetNumberOfNodes() and np.size(data) != 3*mesh.GetNumberOfNodes():
+            if np.size(data) != mesh.GetNumberOfNodes() and np.size(data) != 2*mesh.GetNumberOfNodes() and np.size(data) != 3*mesh.GetNumberOfNodes():
                 print("field ("+str(name)+") is not consistent : it has " + str(np.size(data)) +"values and the mesh has " +str(mesh.GetNumberOfNodes())+ " nodes" )
                 continue
 
