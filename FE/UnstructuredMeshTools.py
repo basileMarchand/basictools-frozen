@@ -1041,13 +1041,13 @@ def DeleteInternalFaces(mesh):
         surf2 = {}
         key = np.array([ne**x for x in range(ElementNames.numberOfNodes[name]) ])
 
-        for i in xrange(ne2):
+        for i in range(ne2):
             cc = data2.connectivity[i,:]
             lc = np.sort(cc)
             ehash = np.sum(lc*key)
             surf2[ehash] = [1,cc]
 
-        for i in xrange(ne):
+        for i in range(ne):
             cc = data.connectivity[i,:]
             lc = np.sort(cc)
 
@@ -1110,7 +1110,7 @@ def DeleteInternalFaces(mesh):
                 ind = np.lexsort((faces [:,1],faces [:,0], faces [:,2]))
                 faces  = faces [ind]
                 #print(faces)
-                dt  = [ ('col'+str(x),np.int) for x in xrange(faces.shape[1]) ]
+                dt  = [ ('col'+str(x),np.int) for x in range(faces.shape[1]) ]
 
                 assert faces.flags['C_CONTIGUOUS']
                 faces3D = faces.ravel().view(dt)
@@ -1178,7 +1178,7 @@ def ComputeSkin(mesh):
                 surf[faceType] = {}
             surf2 = surf[faceType]
             key = np.array([ne**x for x in range(ElementNames.numberOfNodes[faceType]) ])
-            for i in xrange(ne):
+            for i in range(ne):
                 cc = globalFaceConnectivity[i,:]
                 lc = np.sort(cc)
 
@@ -1234,7 +1234,7 @@ def ComputeFeatures(inputmesh,FeatureAngle=90):
                 surf[faceType] = {}
             surf2 = surf[faceType]
             key = np.array([nex**x for x in range(ElementNames.numberOfNodes[faceType]) ])
-            for i in xrange(ne):
+            for i in range(ne):
                 baricentre = np.sum(skinmesh.nodes[data.connectivity[i,:] ,:],axis=0)/numberOfNodes
                 cc = globalFaceConnectivity[i,:]
                 lc = np.sort(cc)

@@ -80,7 +80,7 @@ class Interface(BaseOutputObject):
             cmd.append(inpFilename)
 
 
-        for i in xrange(len(cmd)):
+        for i in range(len(cmd)):
            cmd[i] = cmd[i].format(**self.parameters)
         return cmd
 

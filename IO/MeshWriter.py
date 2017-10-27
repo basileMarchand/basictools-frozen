@@ -9,11 +9,9 @@ from BasicTools.IO.WriterBase import WriterBase as WriterBase
 import BasicTools.FE.ElementNames as EN
 
 
-from MeshTools import BinaryNumber
-from MeshTools import ASCIIName
-from MeshTools import ASCIITags
-from MeshTools import Corners
-import MeshTools as MT
+from BasicTools.IO.MeshTools import BinaryNumber,ASCIIName, ASCIITags
+from BasicTools.IO.MeshTools import Corners
+import BasicTools.IO.MeshTools as MT
 
 
 def WriteMesh(filename,mesh,SolsAtVertices=None,solutionOnOwnFile= False, binary=True, nodalRefNumber= None,elemRefNumber=None):

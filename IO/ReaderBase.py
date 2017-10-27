@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from future.utils import python_2_unicode_compatible
+
 import os
 import struct
 
@@ -65,7 +67,10 @@ class ReaderBase(BaseOutputObject):
 
     def ReadCleanLine(self,withError=False):
         while(True):
-            string = self.filePointer.readline().decode("utf-8", "replace")
+            string = self.filePointer.readline()
+            #.decode("utf-8", "replace")
+            # old code working only in python 2
+
             self.lineCounter +=1
             #end of file
             if string == "" :

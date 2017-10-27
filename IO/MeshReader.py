@@ -7,12 +7,12 @@ import BasicTools.FE.UnstructuredMesh  as UM
 import BasicTools.FE.ElementNames as EN
 from BasicTools.IO.ReaderBase import ReaderBase
 
-from MeshTools import ASCIITypes
-from MeshTools import BinaryTypes
-from MeshTools import BinaryKeywords as BKeys
-from MeshTools import BinaryTags
-from MeshTools import BinaryFields
-import MeshTools as MT
+from BasicTools.IO.MeshTools import ASCIITypes
+from BasicTools.IO.MeshTools import BinaryTypes
+from BasicTools.IO.MeshTools import BinaryKeywords as BKeys
+from BasicTools.IO.MeshTools import BinaryTags
+from BasicTools.IO.MeshTools import BinaryFields
+import BasicTools.IO.MeshTools as MT
 
 def ReadMesh(fileName=None,string=None,ReadRefsAsField=False ):
     reader = MeshReader()
@@ -179,7 +179,7 @@ class MeshReader(ReaderBase):
                     if len(l) == 0:
                         continue
 
-                    s = map(int,l.split())
+                    s = list(map(int,l.split()))
                     elements.AddNewElement(s[0:nbNodes], cpt)
                     ref = s[nbNodes]
                     elements.GetTag("ETag"+str(ref)).AddToTag(cpt)

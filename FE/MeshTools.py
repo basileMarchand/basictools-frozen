@@ -5,7 +5,7 @@ import numpy as np
 
 import BasicTools.FE.UnstructuredMeshTools as UMT
 import BasicTools.FE.ConstantRectilinearMesh as CRM
-import ElementNames as EN
+import BasicTools.FE.ElementNames as EN
 
 def GetElementsCenters(mesh, dim=None):
 

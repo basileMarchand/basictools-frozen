@@ -133,7 +133,7 @@ class AllElements(object):
         return iter(self.keys())
 
     def items(self):
-        return  sorted(self.storage.iteritems())
+        return  sorted(self.storage.items())
 
     #send basis functions calls to the storage dictionary
     def __setitem__(self, key, value):

@@ -13,7 +13,7 @@ GeofSetName= {}
 
 
 from BasicTools.IO.GeofReader import PermutationZSetToBasicTools
-PermutationBasicToolsToZSet = {key:np.argsort(value) for key, value in PermutationZSetToBasicTools.iteritems() }
+PermutationBasicToolsToZSet = {key:np.argsort(value) for key, value in PermutationZSetToBasicTools.items() }
 
 #0d
 GeofName[EN.Point_1] = "l2d1"
