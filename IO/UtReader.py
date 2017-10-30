@@ -106,20 +106,28 @@ class UtReader(ReaderBase):
         else:
             self.Print("Unable to obtain metadata from meshfile, please set metadata manually")
 
-    def Read(self,fieldname=None,time=None):
+    def Read(self,fieldname=None,time=None,timeIndex=None):
         self.ReadMetaData()
         postfix = ""
         if self.fileName[-1] == "p":
             postfix = "p"
 
         self.SetFieldNameToRead(fieldname)
-        self.SetTimeToRead(time)
 
-        # find the time
-        if self.timeToRead == -1 :
+        if time is None:
+          if timeIndex is None:
             timeIndex = len(self.time)-1
+          else:
+            timeIndex = timeIndex
         else:
+          self.SetTimeToRead(time)
+
+          # find the time
+          if self.timeToRead == -1 :
+            timeIndex = len(self.time)-1
+          else:
             timeIndex = [data[4]for data in self.time].index(self.timeToRead)
+
         self.PrintVerbose("Reading timeIndex : " + str(timeIndex) )
 
         basename = ".".join(self.fileName.split(".")[0:-1])

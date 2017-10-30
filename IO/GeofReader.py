@@ -300,7 +300,6 @@ class GeofReader(ReaderBase):
       elif l.find("**element")>-1:
         l  = self.ReadCleanLine()
         res['nbElements'] = int(l.split()[0])
-        nbIntegrationsPoints
         while(True):
           l  = self.ReadCleanLine()
           if l.find("**") > -1:
@@ -311,7 +310,6 @@ class GeofReader(ReaderBase):
       l = self.ReadCleanLine()
 
     res['nbIntegrationPoints'] = nbIP
-
     self.EndReading()
 
     return res
