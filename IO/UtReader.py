@@ -169,10 +169,8 @@ class UtReader(ReaderBase):
 
                         oldStep = (len(self.integ)-idx-1)*nip
 
-                    #
             except:
                 print("Error Reading field : " + str(self.fieldNameToRead) + " (not read)")
-
 
         else:
             try:
