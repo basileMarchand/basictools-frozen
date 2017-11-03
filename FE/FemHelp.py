@@ -5,6 +5,13 @@ import math
 import numpy as np
 import BasicTools.FE.ElementNames as ElementsNames
 
+IntegrationRules = {}
+
+
+IntegrationRules[ElementsNames.Triangle_3] = ( 1./6.*np.array([[1, 1] ,[4, 1],[ 1 ,4] ]) ,  1./6.*np.array([1 , 1 , 1]))
+
+
+
 def Integral(E,Bop,elem,ndofs,pos=None):
 
     # for the moment this is not a nice implementation
