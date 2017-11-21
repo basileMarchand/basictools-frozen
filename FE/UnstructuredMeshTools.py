@@ -28,6 +28,70 @@ def CreateMeshOf(points,connectivity,elemName = None,out=None):
     elements.cpt = elements.connectivity.shape[0]
     return res
 
+def CreateCube(dimensions=[2,2,2], origin=[-1.0,-1.0,-1.0], spacing=[1.,1.,1.], ofTetras=False):
+    from BasicTools.FE.ConstantRectilinearMesh import ConstantRectilinearMesh
+    from BasicTools.FE.UnstructuredMeshTools import CreateMeshFromConstantRectilinearMesh
+    from BasicTools.FE.UnstructuredMeshTools import ComputeSkin
+    import BasicTools.FE.ElementNames as EN
+
+    myMesh = ConstantRectilinearMesh(dim=3)
+    myMesh.SetDimensions(dimensions);
+    myMesh.SetOrigin(origin);
+    myMesh.SetSpacing(spacing);
+
+    # coorners
+    d = np.array(dimensions)-1
+    s = spacing
+    indexs = [[   0,   0,   0],
+              [d[0],   0,   0],
+              [   0,d[1],   0],
+              [d[0],d[1],   0],
+              [   0,   0,d[2]],
+              [d[0],   0,d[2]],
+              [   0,d[1],d[2]],
+              [d[0],d[1],d[2]]]
+    for n in indexs:
+        idx = myMesh.GetMonoIndexOfNode(n)
+        name = "x"  + ("0" if n[0]== 0 else "1" )
+        name += "y" + ("0" if n[1]== 0 else "1" )
+        name += "z" + ("0" if n[2]== 0 else "1" )
+        myMesh.nodesTags.CreateTag(name,False).SetIds([idx])
+
+
+    mesh = CreateMeshFromConstantRectilinearMesh(myMesh,ofTetras=ofTetras)
+    skin = ComputeSkin(mesh)
+    for name,data in skin.elements.items():
+        mesh.GetElementsOfType(name).Merge(data)
+
+
+    if ofTetras:
+        tets = mesh.GetElementsOfType(EN.Tetrahedron_4)
+        tets.GetTag("3D").SetIds(range(tets.GetNumberOfElements()))
+
+        skin = mesh.GetElementsOfType(EN.Tetrahedron_4)
+
+    else:
+        hexs = mesh.GetElementsOfType(EN.Hexaedron_8)
+        hexs.GetTag("3D").SetIds(range(hexs.GetNumberOfElements()))
+        skin = mesh.GetElementsOfType(EN.Quadrangle_4)
+    #face tags
+
+    x = mesh.GetPosOfNodes()[skin.connectivity,0]
+    y = mesh.GetPosOfNodes()[skin.connectivity,1]
+    z = mesh.GetPosOfNodes()[skin.connectivity,2]
+    tol = np.min(spacing)/10
+    skin.GetTag("X0").SetIds( np.where(np.sum(np.abs(x - origin[0]          )-tol,axis=1) == skin.GetNumberOfNodesPerElement())[0])
+    skin.GetTag("X1").SetIds( np.where(np.sum(np.abs(x - origin[0]+d[0]*s[0])-tol,axis=1) == skin.GetNumberOfNodesPerElement())[0])
+    skin.GetTag("Y0").SetIds( np.where(np.sum(np.abs(y - origin[1]          )-tol,axis=1) == skin.GetNumberOfNodesPerElement())[0])
+    skin.GetTag("Y1").SetIds( np.where(np.sum(np.abs(y - origin[1]+d[1]*s[1])-tol,axis=1) == skin.GetNumberOfNodesPerElement())[0])
+    skin.GetTag("Z0").SetIds( np.where(np.sum(np.abs(z - origin[2]          )-tol,axis=1) == skin.GetNumberOfNodesPerElement())[0])
+    skin.GetTag("Z1").SetIds( np.where(np.sum(np.abs(z - origin[2]+d[2]*s[2])-tol,axis=1) == skin.GetNumberOfNodesPerElement())[0])
+
+
+
+    return mesh
+
+
 def CreateMeshFromConstantRectilinearMesh(CRM, ofTetras= False,out=None):
     if out is None:
         res = UnstructuredMesh()
