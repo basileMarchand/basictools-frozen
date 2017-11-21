@@ -232,7 +232,7 @@ class MeshReader(ReaderBase):
         #print ("fieldSizes"),
         #print (fieldSizes)
         ncoomp = np.sum(fieldSizes)
-        print("nbfields " + str(fieldSizes))
+        #print("nbfields " + str(fieldSizes))
     #    self.PrintDebug("nbfields" + str(fieldSizes))
         #print("nbentries "+str(nbentries)+ " ")
         #print("ncoomp "+str(ncoomp)+ " ")
@@ -636,7 +636,6 @@ End
     print(res)
 
     from BasicTools.Helpers.Tests import TestTempDir
-    TestTempDir().SetTempPath("/tmp/BasicTools_Test_Directory_QUaZuy_safe_to_delete")
 
 
     newFileName = TestTempDir().GetTempPath()+"mshFile.mesh"
