@@ -5,7 +5,6 @@ import numpy as np
 
 import BasicTools.FE.MaterialHelp as MH
 from BasicTools.FE.FElement import FElement
-from BasicTools.FE.FemHelp import Integral
 import BasicTools.FE.ElementNames as ElementsNames
 
 class Hexa8Cuboid(FElement):
@@ -74,27 +73,32 @@ class Hexa8Cuboid(FElement):
 #-------------------------
 
     def GetIsotropLaplaceK(self,k):
+        from BasicTools.FE.FemHelp import Integral as Integral
         #IsoHexaCubeKLaplace(k,delta):
         K = MH.LaplaceOrtho(k,k,k)
         return Integral(K,self.IsoLaplaceB,self,self.nnodes)
 
     def GetOrthoLaplaceK(self,k):
+        from BasicTools.FE.FemHelp import Integral as Integral
         K = MH.LaplaceOrtho(k[0],k[1],k[2])
         return Integral(K,self.IsoLaplaceB,self,self.nnodes)
 
 
     def GetIsotropLaplaceM(self,rho):
+        from BasicTools.FE.FemHelp import Integral as Integral
         K = np.identity(1)*rho
         return Integral(K,self.IsoLaplaceM,self,self.nnodes)
 
 #-------------------------
 
     def GetIsotropDispK(self,E,nu):
+        from BasicTools.FE.FemHelp import Integral as Integral
         #IsoHexaCubeK
         k = MH.HookeIso(E,nu)
         return Integral(k,self.IsoDispB,self,self.nnodes*3)
 
     def GetIsotropDispM(self,rho):
+         from BasicTools.FE.FemHelp import Integral as Integral
          K = np.identity(3)*rho
          return Integral(K,self.IsoDispM,self,self.nnodes*3)
 

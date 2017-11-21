@@ -1,6 +1,34 @@
 # -*- coding: utf-8 -*-
 __author__ = "Felipe Bordeu"
 
+class GeoSupport(object):
+    def __init__(self,data):
+        super(GeoSupport,self).__init__()
+        self.name = data[0]
+        self.dimensionality = data[1]
+    def __rep__(self):
+        res = "GeoSuport( " + self.name + ")"
+        return res
+
+#GeoEntities = [
+#        GeoSupport(("point",1)),   #0
+#        GeoSupport(("bar"  ,1)),   #1
+#        GeoSupport(("tri"  ,2)),   #2
+#        GeoSupport(("quad" ,2)),   #3
+#        GeoSupport(("tet"  ,3)),   #4
+#        GeoSupport(("pyr"  ,3)),   #5
+#        GeoSupport(("wed"  ,3)),   #6
+#        GeoSupport(("hex"  ,3 ))]  #7
+
+
+GeoPoint = GeoSupport(("point",1))   #0
+GeoBar   = GeoSupport(("bar"  ,1))   #1
+GeoTri   = GeoSupport(("tri"  ,2))   #2
+GeoQuad  = GeoSupport(("quad" ,2))   #3
+GeoTet   = GeoSupport(("tet"  ,3))   #4
+GeoPyr   = GeoSupport(("pyr"  ,3))   #5
+GeoWed   = GeoSupport(("wed"  ,3))   #6
+GeoHex   = GeoSupport(("hex"  ,3 ))  #
 
 numberOfNodes = {}
 
@@ -9,9 +37,11 @@ mirrorPermutation = {}
 dimension = {}
 linear = {}
 faces = {}
+geoSupport = {}
 
 #0d
 Point_1  = 'point1'
+geoSupport[Point_1] = GeoPoint
 numberOfNodes[Point_1] = 1;
 mirrorPermutation[Point_1] = [0]
 dimension[Point_1] = 0
@@ -19,6 +49,7 @@ linear[Point_1] = True
 #1d
 #linear
 Bar_2 = 'bar2'
+geoSupport[Bar_2] = GeoBar
 numberOfNodes[Bar_2] = 2;
 mirrorPermutation[Bar_2] = [1,0]
 dimension[Bar_2] = 1
@@ -27,6 +58,7 @@ faces[Bar_2] = [(Point_1,[0]), (Point_1,[1])]
 
 #quadratic
 Bar_3 = 'bar3'
+geoSupport[Bar_3] = GeoBar
 numberOfNodes[Bar_3] = 3;
 mirrorPermutation[Bar_3] = [1,0,2]
 dimension[Bar_3] = 1
@@ -36,6 +68,7 @@ faces[Bar_3] = [(Point_1,[0]), (Point_1,[1])]
 #2d
 #linear
 Triangle_3 = 'tri3'
+geoSupport[Triangle_3] = GeoTri
 numberOfNodes[Triangle_3] = 3;
 mirrorPermutation[Triangle_3] = [0,2,1]
 dimension[Triangle_3] = 2
@@ -46,6 +79,7 @@ faces[Triangle_3] = [(Bar_2,[0, 1]),
      ]
 
 Quadrangle_4  = 'quad4'
+geoSupport[Quadrangle_4] = GeoQuad
 numberOfNodes[Quadrangle_4] = 4;
 dimension[Quadrangle_4] = 2
 linear[Quadrangle_4] = True
@@ -57,6 +91,7 @@ faces[Quadrangle_4] = [(Bar_2,[0, 1]),
 
 #quadratic
 Triangle_6 = 'tri6'
+geoSupport[Triangle_6] = GeoTri
 numberOfNodes[Triangle_6] = 6;
 dimension[Triangle_6] = 2
 linear[Triangle_6] = True
@@ -67,6 +102,7 @@ faces[Triangle_6] = [(Bar_3,[0, 1,3]),
 
 
 Quadrangle_8  = 'quad8'
+geoSupport[Quadrangle_8] = GeoQuad
 numberOfNodes[Quadrangle_8] = 8;
 dimension[Quadrangle_8] = 2
 faces[Quadrangle_8] = [(Bar_3,[0, 1,4]),
@@ -78,6 +114,7 @@ faces[Quadrangle_8] = [(Bar_3,[0, 1,4]),
 
 
 Quadrangle_9  = 'quad9'
+geoSupport[Quadrangle_9] = GeoQuad
 numberOfNodes[Quadrangle_9] = 9;
 dimension[Quadrangle_9] = 2
 faces[Quadrangle_9] = [(Bar_3,[0, 1,4]),
@@ -88,6 +125,7 @@ faces[Quadrangle_9] = [(Bar_3,[0, 1,4]),
 #3d
 #linear
 Tetrahedron_4 = 'tet4'
+geoSupport[Tetrahedron_4] = GeoTet
 numberOfNodes[Tetrahedron_4] = 4;
 mirrorPermutation[Tetrahedron_4] = [0,2,1,3]
 dimension[Tetrahedron_4] = 3
@@ -100,6 +138,7 @@ faces[Tetrahedron_4] = [(Quadrangle_4,[0, 1, 2,3]),
      ]
 
 Pyramid_5  = 'pyr5'
+geoSupport[Pyramid_5] = GeoPyr
 numberOfNodes[Pyramid_5] = 5;
 dimension[Pyramid_5] = 3
 linear[Pyramid_5] = True
@@ -110,43 +149,59 @@ faces[Tetrahedron_4] = [(Triangle_3,[0, 2, 1]),
      ]
 
 Wedge_6 = 'wed6'
+geoSupport[Wedge_6] = GeoWed
 numberOfNodes[Wedge_6] = 6;
 dimension[Wedge_6] = 3
 linear[Wedge_6] = True
 
 Hexaedron_8 = 'hex8'
+geoSupport[Hexaedron_8] = GeoHex
 numberOfNodes[Hexaedron_8] = 8;
 dimension[Hexaedron_8] = 3
 linear[Hexaedron_8] = True
+faces[Hexaedron_8] = [(Quadrangle_4,[0, 3, 2, 1]),
+                      (Quadrangle_4,[0, 1, 5, 4]),
+                      (Quadrangle_4,[1, 2, 6, 5]),
+                      (Quadrangle_4,[2, 3, 7, 6]),
+                      (Quadrangle_4,[3, 0, 4, 7]),
+                      (Quadrangle_4,[4, 5, 6, 7]),
+     ]
+
 
 #quadratic
 Tetrahedron_10 = 'tet10'
+geoSupport[Tetrahedron_10] = GeoTet
 numberOfNodes[Tetrahedron_10] = 10;
 dimension[Tetrahedron_10] = 3
 linear[Tetrahedron_10] = False
 
 Pyramid_13  = 'pyr13'
+geoSupport[Pyramid_13] = GeoPyr
 numberOfNodes[Pyramid_13] = 13;
 dimension[Pyramid_13] = 3
 linear[Pyramid_13] = False
 
-Wedge_15 = 'hex15'
+Wedge_15 = 'wed15'
+geoSupport[Wedge_15] = GeoWed
 numberOfNodes[Wedge_15] = 15;
 dimension[Wedge_15] = 3
 linear[Wedge_15] = False
 
-Wedge_18 = 'hex18'
+Wedge_18 = 'wed18'
+geoSupport[Wedge_18] = GeoWed
 numberOfNodes[Wedge_18] = 18;
 dimension[Wedge_18] = 3
 linear[Wedge_18] = False
 
 
 Hexaedron_20 = 'hex20'
+geoSupport[Hexaedron_20] = GeoHex
 numberOfNodes[Hexaedron_20] = 20;
 dimension[Hexaedron_20] = 3
 linear[Hexaedron_20] = False
 
 Hexaedron_27 = 'hex27'
+geoSupport[Hexaedron_27] = GeoHex
 numberOfNodes[Hexaedron_27] = 27;
 dimension[Hexaedron_27] = 3
 linear[Hexaedron_27] = False
