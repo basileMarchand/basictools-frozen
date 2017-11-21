@@ -8,7 +8,6 @@ from __future__ import print_function
 __author__ = "Felipe Bordeu"
 
 import traceback
-
 import time
 
 
@@ -21,6 +20,7 @@ options :
     -e    To test extra Modules (-e can be repeated)
     -m    To filter the output by this string (-m can be repeated)
     -d    Dry run do not execute anything, only show what will be executed
+    -p    Activate profiling
 """
 
 from BasicTools.Helpers.which import which
@@ -97,7 +97,7 @@ class TestTempDir(object):
             import stat
             os.chmod(home + os.sep+".BasicToolsTempPath", stat.S_IWUSR | stat.S_IRUSR |stat.S_IXUSR)
 
-def __RunAndCheck(lis,bp,stopAtFirstError,dryrun):# pragma: no cover
+def __RunAndCheck(lis,bp,stopAtFirstError,dryrun,profiling):# pragma: no cover
 
     from BasicTools.Helpers.TextFormatHelper import TFormat
     import sys
@@ -116,7 +116,24 @@ def __RunAndCheck(lis,bp,stopAtFirstError,dryrun):# pragma: no cover
             if dryrun:
                 r = "Dry Run "
             else:
-                r = lis[name]()
+
+                if profiling :
+                    import cProfile, pstats, StringIO
+                    pr = cProfile.Profile()
+                    pr.enable()
+                    r = lis[name]()
+                    pr.disable()
+                    s = StringIO.StringIO()
+                    sortby = 'cumulative'
+                    ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
+                    ps.print_stats()
+                    print(s.getvalue())
+#                    glob = {"lis":lis,"name":name}
+#                    loc = {}
+#                    cProfile.runctx("r = lis[name]()",glob,loc)
+#                    r = loc["r"]
+                else:
+                    r = lis[name]()
             sys.stdout.flush()
             sys.stderr.flush()
             stop_time = time.time()
@@ -188,7 +205,7 @@ def __tryImport(noduleName,stopAtFirstError):# pragma: no cover
     return tocheck
 
 
-def TestAll(modulestotreat=['ALL'], fulloutput=False, stopAtFirstError= False, coverage= False, extraToolsBoxs= None,dryrun=False) :# pragma: no cover
+def TestAll(modulestotreat=['ALL'], fulloutput=False, stopAtFirstError= False, coverage= False, extraToolsBoxs= None,dryrun=False,profiling=False) :# pragma: no cover
 
     print("")
     print("modulestotreat   : ",end="")
@@ -199,10 +216,13 @@ def TestAll(modulestotreat=['ALL'], fulloutput=False, stopAtFirstError= False, c
     print(stopAtFirstError)
     print("coverage         : ",end="")
     print(coverage)
+    print("profiling: ",end="")
+    print(profiling)
     print("extraToolsBoxs: ",end="")
     print(extraToolsBoxs)
     print("dryrun: ",end="")
     print(dryrun)
+
 
     cov = None
     if coverage :
@@ -239,7 +259,7 @@ def TestAll(modulestotreat=['ALL'], fulloutput=False, stopAtFirstError= False, c
             #bp.Print(str(filtered))
             tocheck = filtered
 
-        __RunAndCheck(tocheck,bp,stopAtFirstError,dryrun);
+        __RunAndCheck(tocheck,bp,stopAtFirstError,dryrun,profiling);
 
         #bp.Restore()
         #now the restore is done automaticaly
@@ -276,7 +296,7 @@ if __name__ == '__main__':# pragma: no cover
         TestAll(modulestotreat=['ALL'],extraToolsBoxs= ["BasicTools"], fulloutput=False,coverage=False)# pragma: no cover
     else:
       try:
-          opts, args = getopt.getopt(sys.argv[1:],"hcfsde:m:")
+          opts, args = getopt.getopt(sys.argv[1:],"hcfsdpe:m:")
       except getopt.GetoptError as e:
           print(e)
           print(Test_Help_String)
@@ -288,6 +308,7 @@ if __name__ == '__main__':# pragma: no cover
       extraToolsBoxs = []
       modulestotreat=[]
       dryrun = False
+      profiling = False
 
 
 
@@ -303,6 +324,8 @@ if __name__ == '__main__':# pragma: no cover
             stopAtFirstError = True
          elif opt in ("-d"):
             dryrun = True
+         elif opt in ("-p"):
+            profiling = True
          elif opt in ("-e"):
             extraToolsBoxs.append(arg)
          elif opt in ("-m"):
@@ -320,7 +343,8 @@ if __name__ == '__main__':# pragma: no cover
                 fulloutput=fulloutput,
                 stopAtFirstError= stopAtFirstError,
                 extraToolsBoxs=extraToolsBoxs,
-                dryrun= dryrun )
+                dryrun = dryrun,
+                profiling  =profiling)
 
 
 
