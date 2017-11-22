@@ -180,12 +180,19 @@ def PODSnapshot(a, epsilon):
 
 
 def CheckIntegrity():
+    import BasicTools.Numerical.test.test_pod as tests
+    test_functions = \
+            (t for n, t in tests.__dict__.items() if n.startswith("test"))
+    for f in test_functions:
+        f()
+
     a = np.random.rand(10,10)
     a = np.dot(a.T,a)
     PODSnapshot(a, 1.e-6)
     pod_basis(a, None, 1.e-6)
+
     return 'ok'
 
 
 if __name__ == '__main__':
-    print(CheckIntegrity())# pragma: no cover
+    print(CheckIntegrity()) # pragma: no cover
