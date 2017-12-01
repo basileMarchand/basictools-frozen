@@ -8,7 +8,6 @@ class FElement(BaseOutputObject):
     def __init__(self):
         super(FElement,self).__init__()
         self.nnodes = -1
-        self.dim = -1
         self.name = None
         self.dimensionality = -1
 

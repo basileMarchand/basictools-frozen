@@ -701,8 +701,13 @@ def fake_q_deim(basis):
 
 
 def CheckIntegrity():
+    import BasicTools.Numerical.test.test_gappy_pod as tests
+    test_functions = \
+            (t for n, t in tests.__dict__.items() if n.startswith("test"))
+    for f in test_functions:
+        f()
     return "ok"
 
 
 if __name__ == '__main__':
-    print(CheckIntegrity())# pragma: no cover
+    print(CheckIntegrity()) # pragma: no cover

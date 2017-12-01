@@ -54,7 +54,7 @@ BinaryKeywords ={
 "GmfRequiredVertices": 15,
 "GmfRequiredEdges": 16,
 "GmfRequiredTriangles": 17,
-"GmfRequiredQuadrilaterals": 17,
+"GmfRequiredQuadrilaterals": 18,
 "GmfTangentAtEdgeVertices": 19,
 "GmfNormalAtVertices": 20,
 "GmfNormalAtTriangleVertices": 21,

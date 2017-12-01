@@ -72,7 +72,12 @@ class Hexa8(FElement):
 
 
 def CheckIntegrity():
-
+    H = Hexa8()
+    H.SetGaussQuad222IntRule()
+    print(H.GetShapeFunc([0,0,0]))
+    print(H.GetShapeFunc([-1,-1,-1]))
+    print(H.ShapeFuncDerBaryCoord([0,0,0])[0])
+    print(H.ComputeNfder()[0][0])
     return 'OK'
 
 if __name__ == '__main__':

@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-from future.utils import python_2_unicode_compatible
-
 import os
 import struct
 
@@ -32,18 +30,27 @@ class ReaderBase(BaseOutputObject):
             else:
                 from io import StringIO
                 self.filePointer =  StringIO(self.string)
+                self.text_stream = self.filePointer
         else:
             if self.readFormat.find('b') > -1 :
                 self.filePointer =  open(self.fileName, self.readFormat)
+                self.text_stream = self.filePointer
             else:
                 #I have some problems reading with numpy fromfile if the file is
                 #open with the codecs.open
-                #import codecs
-                #self.filePointer = codecs.open(self.fileName, self.readFormat, 'utf-8')
+                #import sys
                 self.filePointer =  open(self.fileName, self.readFormat)
+                #import codecs
+                #if sys.version_info[0] == 2:
+                #    self.filePointer = codecs.open(self.fileName, self.readFormat, 'utf-8')
+
+
 
 
         self.lineCounter = 0
+
+    def GetFilePointer(self):
+         return self.filePointer
 
     def EndReading(self):
         self.filePointer.close()
@@ -67,8 +74,15 @@ class ReaderBase(BaseOutputObject):
 
     def ReadCleanLine(self,withError=False):
         while(True):
-            string = self.filePointer.readline()
-            #.decode("utf-8", "replace")
+            import sys
+            if sys.version_info[0] == 2:
+                string = self.filePointer.readline().decode("utf-8", "replace")
+            else:
+                string = self.filePointer.readline()
+            #print(string)
+            #import codecs
+            #string = codecs.getreader("utf-8")(self.filePointer).readline()
+            #
             # old code working only in python 2
 
             self.lineCounter +=1
@@ -78,7 +92,7 @@ class ReaderBase(BaseOutputObject):
                     if self.fileName is None:
                         raise("Problem reading string : at line " +str(self.lineCounter))
                     else:
-                        raise("Problem reading file :" +str(self.fileName) + "at line" +str(self.lineCounter) )
+                        raise(Exception("Problem reading file :" +str(self.fileName) + " at line" +str(self.lineCounter) ))
 
                 return None
 
