@@ -24,6 +24,7 @@ __all__ = [
 'StlWriter',
 'UniversalReader',
 'UtReader',
+'UtWriter',
 'WriterBase',
 'Wormhole',
 'XdmfReader',
