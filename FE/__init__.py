@@ -23,6 +23,8 @@ __all__ = [
 "Behaviours",
 "DofNumbering",
 "IntegrationsRules",
-"ZmatFemProblem"
+"ZmatFemProblem",
+"Integration",
+"WeakForm"
 ]
 
