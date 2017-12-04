@@ -3,7 +3,6 @@
 __all__ = [
 'ConstantRectilinearFea',
 'ConstantRectilinearMesh',
-'ElementBuildier',
 'ElementNames',
 'FeaBase',
 'FElement',
@@ -18,6 +17,6 @@ __all__ = [
 #'UnstructuredFea',
 'UnstructuredMesh',
 'MeshTools',
-'UnstructuredMeshTools'
+'UnstructuredMeshTools',
 ]
 
