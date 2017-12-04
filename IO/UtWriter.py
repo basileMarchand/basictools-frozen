@@ -21,27 +21,31 @@ class UtWriter(WriterBase):
         return res
 
     def SetName(self,name):
-        self.name = name;
+        self.name = name
 
     def SetFolder(self,folder):
-        self.folder = folder;
+        self.folder = folder
 
     def AttachMesh(self,mesh):
-        self.mesh = mesh;
+        self.mesh = mesh
 
-    def AttachData(self, data_node, data_ctnod, data_integ, data_node_names, data_integ_names):
-        #data_node and data_integ are lists of numpy arrays, see example below
-        self.data_node = data_node
-        self.data_node_names = data_node_names
-        self.data_ctnod = data_ctnod
-        self.data_integ = data_integ
-        self.data_integ_names = data_integ_names
+    def AttachData(self, data_node, data_ctnod = None, data_integ = None):
+        self.data_node        = data_node
+        self.data_ctnod       = data_ctnod
+        self.data_integ       = data_integ
+        self.data_node_names  = list(data_node.keys())
+        self.data_integ_names = list(data_integ.keys())
+        self.NnodeVar         = len(data_node)
+        self.NintVar          = len(data_integ)
+        self.Nnode            = data_node[self.data_node_names[0]].shape[0]
+        self.Nint             = data_integ[self.data_integ_names[0]].shape[0]
 
     def AttachSequence(self, cycle_number, sequence_number, increment, time):
         self.cycle_number = cycle_number
         self.sequence_number = sequence_number
         self.increment = increment
         self.time = time
+        self.Ntime = len(time)
 
     def WriteMesh(self):
         if self.mesh==None:
@@ -64,28 +68,56 @@ class UtWriter(WriterBase):
         if writeGeof==True:
           self.WriteMesh()
 
-        try:
-            self.data_node.astype(np.float32).byteswap().tofile(self.folder+self.name+".node")
-            __string += "**node "
-            for field in self.data_node_names:
-              __string += field+" "
-            __string += "\n"
-        except AttributeError:
-            print("non node data")
 
-        try:
-            self.data_ctnod.astype(np.float32).byteswap().tofile(self.folder+self.name+".ctnod")
-        except AttributeError:
-            print("non ctnod data")
+        if self.NnodeVar>0:
+          data_node = np.empty(self.NnodeVar*self.Nnode*self.Ntime)
+          for i in range(self.Ntime):
+            for k in range(self.NnodeVar):
+              data_node[self.NnodeVar*self.Nnode*i+k*self.Nnode:self.NnodeVar*self.Nnode*i+(k+1)*self.Nnode] = self.data_node[self.data_node_names[k]][:,i]
+          data_node.astype(np.float32).byteswap().tofile(self.folder+self.name+".node")
+          del data_node
+          __string += "**node "
+          for field in self.data_node_names:
+            __string += field+" "
+          __string += "\n"
 
-        try:
-            self.data_integ.astype(np.float32).byteswap().tofile(self.folder+self.name+".integ")
-            __string += "**integ "
-            for field in self.data_integ_names:
-              __string += field+" "
-            __string += "\n"
-        except AttributeError:
-            print("non integ data")
+
+        if self.NintVar>0:
+          data_ctnod = np.empty(self.NintVar*self.Nnode*self.Ntime)
+          for i in range(self.Ntime):
+            for k in range(self.NintVar):
+              data_ctnod[self.NintVar*self.Nnode*i+k*self.Nnode:self.NintVar*self.Nnode*i+(k+1)*self.Nnode] = self.data_ctnod[self.data_integ_names[k]][:,i]
+          data_ctnod.astype(np.float32).byteswap().tofile(self.folder+self.name+".ctnod")
+          del data_ctnod
+
+          from BasicTools.IO.GeofWriter import GeofName as GeofName
+          from BasicTools.IO.GeofReader import nbIntegrationsPoints as nbIntegrationsPoints
+          import BasicTools.FE.UnstructuredMeshTools as UnstructuredMeshTools
+          numberElements = []
+          nbPtIntPerElement = []
+          mesh3D = UnstructuredMeshTools.ExtractElementByDimensionalityNoCopy(self.mesh,3)
+          for name,data in mesh3D.elements.items():
+            numberElements.append(data.GetNumberOfElements())
+            nbPtIntPerElement.append(nbIntegrationsPoints[GeofName[name]])
+          nbTypeEl = len(numberElements)
+
+          data_integ = np.empty(self.NintVar*self.Nint*self.Ntime)
+          count0 = 0
+          for i in range(self.Ntime):
+            field = np.empty((self.NintVar,self.Nint))
+            for k in range(self.NintVar):
+              field[k,:] = self.data_integ[self.data_integ_names[k]][:,i]
+            for l in range(nbTypeEl):
+              for m in range(numberElements[l]):
+                for k in range(self.NintVar):
+                  data_integ[count0:count0+nbPtIntPerElement[l]] = field[k,nbPtIntPerElement[l]*m:nbPtIntPerElement[l]*m+nbPtIntPerElement[l]]
+                  count0 += nbPtIntPerElement[l]
+          data_integ.astype(np.float32).byteswap().tofile(self.folder+self.name+".integ")
+          del field; del data_integ  
+          __string += "**integ "
+          for field in self.data_integ_names:
+            __string += field+" "
+          __string += "\n"
 
         __string += "**element\n"
         for i in range(len(self.increment)):
@@ -124,49 +156,30 @@ def CheckIntegrity():
     NnodeVar = len(data_node_names)
     NintVar = len(data_integ_names)
 
-    data_node = np.empty(NnodeVar*Nnode*Ntime)
-    data_ctnod = np.empty(NintVar*Nnode*Ntime)
-    data_integ = np.empty(NintVar*Nint*Ntime)
+    import collections
+    data_node = collections.OrderedDict()
+    for dnn in data_node_names:
+      data_node[dnn] = np.empty((Nnode,Ntime))
+    data_ctnod = collections.OrderedDict()
+    data_integ = collections.OrderedDict()
+    for din in data_integ_names:
+      data_ctnod[din] = np.empty((Nnode,Ntime))
+      data_integ[din] = np.empty((Nint,Ntime))
 
-    # CONVENTIONS POUR CTNOD ET NODE
     reader.atIntegrationPoints = False
     for i in range(Ntime):
-      for k in range(NnodeVar):
-        data_node[NnodeVar*Nnode*i+k*Nnode:NnodeVar*Nnode*i+(k+1)*Nnode] = reader.Read(fieldname=data_node_names[k], timeIndex=i)
-      for k in range(NintVar):
-        data_ctnod[NintVar*Nnode*i+k*Nnode:NintVar*Nnode*i+(k+1)*Nnode] = reader.Read(fieldname=data_integ_names[k], timeIndex=i)
-
+      for dn in data_node:
+        data_node[dn][:,i] = reader.Read(fieldname=dn, timeIndex=i)
+      for dc in data_ctnod:
+        data_ctnod[dc][:,i] = reader.Read(fieldname=dc, timeIndex=i)
+    reader.atIntegrationPoints = True
+    for i in range(Ntime):
+      for di in data_integ:
+        data_integ[di][:,i] = reader.Read(fieldname=di, timeIndex=i)
 
     import BasicTools.IO.GeofReader as GR
-    import BasicTools.FE.UnstructuredMesh as UM
-    mymesh = GR.ReadGeof(fileName=BasicToolsTestData.GetTestDataPath() + "UtExample/cube.geof",out = UM.UnstructuredMesh())
-
-    import BasicTools.FE.UnstructuredMeshTools as UnstructuredMeshTools
-    from BasicTools.IO.GeofWriter import GeofName as GeofName
-    from BasicTools.IO.GeofReader import nbIntegrationsPoints as nbIntegrationsPoints
-    mymesh = UnstructuredMeshTools.ExtractElementByDimensionalityNoCopy(mymesh,3)
-    numberElements = []
-    nbPtIntPerElement = []
-    for name,data in mymesh.elements.items():
-      numberElements.append(data.GetNumberOfElements())
-      nbPtIntPerElement.append(nbIntegrationsPoints[GeofName[name]])
-    nbTypeEl = len(numberElements)
-
-
-
-    # CONVENTIONS POUR .INTEG
-    reader.atIntegrationPoints = True
-    count0 = 0
-    for i in range(Ntime):
-      field = []
-      for k in range(NintVar):
-        field.append(reader.Read(fieldname=data_integ_names[k], timeIndex=i))
-      for l in range(nbTypeEl):
-        for m in range(numberElements[l]):
-          for k in range(NintVar):
-            data_integ[count0:count0+nbPtIntPerElement[l]] = field[k][nbPtIntPerElement[l]*m:nbPtIntPerElement[l]*m+nbPtIntPerElement[l]]
-            count0 += nbPtIntPerElement[l]
-
+    mymesh = GR.ReadGeof(fileName=BasicToolsTestData.GetTestDataPath() + "UtExample/cube.geof")
+  
     ##################################
     # EXEMPLE SYNTAXE DU WRITER  
     import BasicTools.IO.UtWriter as UW
@@ -174,14 +187,14 @@ def CheckIntegrity():
     UtW.SetName("toto")
     UtW.SetFolder(tempdir)
     UtW.AttachMesh(mymesh)
-    UtW.AttachData(data_node, data_ctnod, data_integ, data_node_names, data_integ_names)
+    UtW.AttachData(data_node, data_ctnod, data_integ)
     UtW.AttachSequence(cycle_number, sequence_number, increment, time)
     UtW.Write(writeGeof=True)
     ##################################
     
-    print("UtW =",UtW)
+    print(UtW)
 
-    print("tempdir =", tempdir)
+    print("Temp directory =", tempdir)
 
     import filecmp
     print("node files equals  ?", filecmp.cmp(tempdir + "toto.node",  BasicToolsTestData.GetTestDataPath() + "UtExample/toto.node", shallow=False))
