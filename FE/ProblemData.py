@@ -7,7 +7,12 @@ from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 
 class Loading(object):
   def __init__(self):
-    self.on = None
+    self.cycle_number = None
+    self.sequence_number = None
+    self.increment = None
+    self.time = None
+    self.temperature = {}
+    self.pressure = {}
 
 class BoundaryConditions(object):
   def __init__(self):
@@ -17,23 +22,49 @@ class StudyCase(object):
     def __init__(self):
         self.type = None
 
-
-    def __ster__(self):
+    def __str__(self):
         res = ""
 #        res += str(self.name) + "\n"
         return res
 
+class Solution(object):
+  def __init__(self):
+    self.on = None
+
+
 class ProblemData(BaseOutputObject):
     def __init__(self):
        super(ProblemData,self).__init__()
+       self.name = ""
+       self.folder = ""
        self.heading = ""
        self.orientations = {}
        self.materials = {}
        self.studyCases = {}
+       self.solutions = {}
+       self.loadings = {}
+       self.mesh = None
+
+    def WriteUt(self):
+       import BasicTools.IO.UtWriter as UW
+       UtW = UW.UtWriter()
+       for l in self.loadings:
+         UtW.SetName(self.name)
+         UtW.SetFolder(self.folder)
+         UtW.AttachMesh(self.mesh)
+         UtW.AttachData(self.solutions[l].data_node, self.solutions[l].data_ctnod, self.solutions[l].data_integ, self.solutions[l].data_node_names, self.solutions[l].data_integ_names)
+         UtW.AttachSequence(cycle_number, sequence_number, increment, time)
+         UtW.Write(writeGeof=True)
 
     def __str__(self):
         res = ""
+        res = "Name : " + self.name + "\n"
+        res = "Folder : " + self.folder + "\n"
         res = "Heading : " + self.heading + "\n"
+        res = "Mesh : " + str(self.mesh) + "\n"
+        for l in self.loadings:
+            res += "Loading  '" + l + "' :\n"
+            res +=  self.loadings[l].__str__()
         for o in self.orientations:
             res += "Orientation  '" + o + "' :\n"
             res +=  self.orientations[o].__str__()
@@ -64,8 +95,6 @@ class Material(BaseOutputObject):
     #subtype : NONE
     #params (0.1,)
 
-
-
     def __init__(self):
         super(Material,self).__init__()
         self.name = "None"
@@ -89,6 +118,7 @@ class Section():
     def __init__(self):
         self.material= None
         self.elemtag = None
+
 
 class Orientation(BaseOutputObject):
     def __init__(self):
@@ -118,6 +148,7 @@ class Orientation(BaseOutputObject):
         res += "first : " + str(self.first) + "\n"
         res += "second : " + str(self.second) + "\n"
         return res
+
 
 def CheckIntegrity():
     res = ProblemData()
