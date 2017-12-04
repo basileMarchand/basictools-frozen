@@ -125,7 +125,9 @@ class ConstantRectilinearMesh(MeshBase):
     def GetNumberOfNodes(self):
         return np.prod(self.__dimensions)
 
-    def GetNumberOfElements(self):
+    def GetNumberOfElements(self,dim=None):
+        if dim is None:
+            dim = self.GetDimensionality()
         res = 1;
         if self.__dimensions[0] >= 1:
             res = res * (self.__dimensions[0]-1)
@@ -133,13 +135,18 @@ class ConstantRectilinearMesh(MeshBase):
         if self.__dimensions[1] >= 1:
             res = res * (self.__dimensions[1]-1)
 
-        if self.GetDimensionality() == 2:
-            return res
+        if self.GetDimensionality() == 2 :
+            if dim == 2:
+                return res
+            else:
+                return 0
 
         if self.__dimensions[2] >= 1:
-            res = res * (self.__dimensions[2]-1)
+            if dim == 3:
+                return  res * (self.__dimensions[2]-1)
+            else:
+                return 0
 
-        return res
 
     def GetDimensionality(self):
         return len(self.__dimensions)
