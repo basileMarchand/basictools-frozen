@@ -18,5 +18,11 @@ __all__ = [
 'UnstructuredMesh',
 'MeshTools',
 'UnstructuredMeshTools',
+"Spaces",
+"Fields",
+"Behaviours",
+"DofNumbering",
+"IntegrationsRules",
+"ZmatFemProblem"
 ]
 
