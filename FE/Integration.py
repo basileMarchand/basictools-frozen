@@ -59,7 +59,7 @@ def Integrate( mesh, wform, constants, fields, dofs,spaces,numbering, tag="3D",)
             domainToTreat = data
 
             if tag == "ALL":
-                idstotreat = xrange(data.GetNumberOfElements())
+                idstotreat = range(data.GetNumberOfElements())
             else:
                 idstotreat = data.tags[tag].GetIds()
                 #domainToTreat = ExtractElementsByMask(data,data.tags[tag].GetIds())
@@ -328,7 +328,7 @@ def CheckIntegrityKF(case, sdim,nmesh=1):
     from BasicTools.FE.UnstructuredMeshTools import CreateMeshOf
     import BasicTools.FE.ElementNames as EN
 
-    from MaterialHelp import HookeIso
+    from BasicTools.FE.MaterialHelp import HookeIso
 
 
     if case == 1:

@@ -295,7 +295,7 @@ def CheckIntegrity(GUI=False):
     pprint(u[0].diff(space[1]))
 
 
-    from MaterialHelp import HookeIso
+    from BasicTools.FE.MaterialHelp import HookeIso
     K = HookeIso(1,0.3)
     ener = ToVoigtEpsilon(Strain(u+u0)).T*K*ToVoigtEpsilon(Strain(ut))+ f.T*ut*alpha
     pprint(ener)

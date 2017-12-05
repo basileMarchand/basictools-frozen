@@ -53,7 +53,7 @@ class SymSpaceBase(SpaceBase):
 #            self.symdNdphi = self.symN.diff(self.phi)
 
         self.fct_N = [None]*self.GetNumberOfShapeFunctions()
-        self.fct_dNdxi = [[None]*self.GetDimensionality() for i in xrange(self.GetNumberOfShapeFunctions() ) ]
+        self.fct_dNdxi = [[None]*self.GetDimensionality() for i in range(self.GetNumberOfShapeFunctions() ) ]
 #        print self.fct_dNdxi
 #        if self.GetDimensionality() == 1:
 #            self.coords = [ self.xi]
