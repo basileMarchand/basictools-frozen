@@ -146,17 +146,19 @@ ddsddeNew = pyumat.umat(stress=stress,statev=statev,ddsdde=ddsdde,sse=sse,spd=sp
         f = open("materialtest.py","w")
         f.write(code)
         f.close()
-        try:
-            # hack for python2
-            from subprocess import getoutput as getstdout
-        except:
-            from subprocess import check_output as getstdout
 
         import sys
         print('Running zset to get info ')
-        out = getstdout([sys.executable, "materialtest.py"])
+        if sys.version_info[0] == 2:
+            # hack for python2
+            from subprocess import check_output
+            out = check_output([sys.executable, "materialtest.py"])
+        else:
+            import subprocess
+            out = subprocess.run([sys.executable, "materialtest.py"], stdout=subprocess.PIPE).stdout.decode("utf-8")
+
         print('Running zset to get info DONE')
-        outlines = out.split("\n")
+        outlines = out.split(u"\n")
 
 
         names = ['Flux', 'Grad','var_int','var_aux','Extra Zmat']
@@ -195,7 +197,7 @@ ddsddeNew = pyumat.umat(stress=stress,statev=statev,ddsdde=ddsdde,sse=sse,spd=sp
 
         def create(obj):
           from BasicTools.FE.Fields.IntegrationPointField import IntegrationPointField as IPF
-          for i in xrange(len(obj)):
+          for i in range(len(obj)):
             name = obj[i]
             obj[i] = IPF(name)
             obj[i].Allocate(self.mesh,LagrangeP1,tag=self.tag)
