@@ -129,18 +129,25 @@ def ElementsIntegral(nodes,domain,wform,vij,space,constants, extrafields,dofs,nu
             extraFieldsB = {}
 
             for name,field in extrafields.items():
-                 fvals,fsp,fnum = field
-                 if space[i].GetDimensionality() == 3:
-                     Nfder =  np.array([fsp.valdNdxi[ip].T, fsp.valdNdeta[ip].T, fsp.valdNdphi[ip].T])
-                 elif space[i].GetDimensionality() == 2:
-                     Nfder =  np.array([fsp.valdNdxi[ip].T, fsp.valdNdeta[ip].T])
-                 elif space[i].GetDimensionality() == 1:
-                     Nfder =  np.array([fsp.valdNdxi[ip].T, ])
-                 else:
-                     raise()
+                 #if term.normal:
+                 #    continue
+                 fvals, fsp,fnum = extrafields[name]
+
+#                 fvals = field.data
+#                 fsp = field.space
+#                 fnum = field.numbering
+                 Nfder = fsp.valdphidxi[ip]
+#                 if fsp.GetDimensionality() == 3:
+#                     Nfder =  np.array([fsp.valdNdxi[ip].T, fsp.valdNdeta[ip].T, fsp.valdNdphi[ip].T])
+#                 elif space[i].GetDimensionality() == 2:
+#                     Nfder =  np.array([fsp.valdNdxi[ip].T, fsp.valdNdeta[ip].T])
+#                 elif space[i].GetDimensionality() == 1:
+#                     Nfder =  np.array([fsp.valdNdxi[ip].T, ])
+#                 else:
+#                     raise()
                  Nf = fsp.valN[ip].T
                  extraFieldsN[name] =  Nf
-                 extraFieldsB[name] =  np.dot(Jinv,Nfder)
+                 extraFieldsB[name] =  Jinv(Nfder)
 
 
             for monom in wform.form:
@@ -193,13 +200,18 @@ def ElementsIntegral(nodes,domain,wform,vij,space,constants, extrafields,dofs,nu
 
 
                     if term.fieldName in extrafields :
-                        val, sp,fnumbering = extrafields[term.fieldName]
+                        fvals, fsp,fnum = extrafields[term.fieldName]
+                        #field = extrafields[term.fieldName]
+                        #fvals = field.data
+                        #fsp = field.space
+                        #fnum = field.numbering
+
                         if term.derDegree == 1:
                             func = extraFieldsB[term.fieldName][term.derCoordIndex]
                         else:
                             func = extraFieldsN[term.fieldName]
 
-                        vals = val[fnumbering[n,:]]
+                        vals = fvals[fnum[n,:]]
                         factor *= np.dot(func,vals)
 
                         continue
@@ -280,15 +292,20 @@ def CheckIntegrityNormalFlux(GUI=False):
 
     u = GetField("u",sdim)
     ut = GetTestField("u",sdim)
+    p = GetField("p",1)
 
     Normal = GetNormal(3)
 
-    wformflux = 1*Normal.T*ut
+    wformflux = p*Normal.T*ut
 
     print(numberings)
     print(wformflux)
-    constants = {}
-    fields  = {}
+    constants = {"alpha":1.0}
+    from BasicTools.FE.Fields.NodalField import NodalField as Field
+    pf = Field("p",mesh,space,numbering)
+    pf.Allocate(1)
+
+    fields  = {"p":pf}
     wf = SymWeakToNumWeak(wformflux)
     print(wf)
 
@@ -701,6 +718,7 @@ def CompureVolume(mesh):
 
     constants = {}
     fields  = {}
+    from BasicTools.FE.Fields.NodalField import NodalField as Field
     f = Field("f",mesh,LagrangeSpaceGeo,numbering)
     f.Allocate(1)
     fields["F"] = f
