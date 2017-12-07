@@ -12,7 +12,11 @@ from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
 from BasicTools.FE.DofNumbering import ComputeDofNumbering
 from BasicTools.FE.Fields.IntegrationPointField import  IntegrationPointField
 from BasicTools.FE.IntegrationsRules import LagrangeP1
-
+import sys
+if sys.version_info[0] == 2:
+    import pyumat
+else:
+    import py3umat as pyumat
 
 class UMatFemProblem(BaseOutputObject):
     cpt = 0
@@ -77,7 +81,12 @@ class UMatFemProblem(BaseOutputObject):
             raise(Exception("need a file or a string"))
 
         code="""
-import pyumat
+import sys
+if sys.version_info[0] == 2:
+    import pyumat
+else:
+    import py3umat as pyumat
+
 import numpy as np
 
 cmname = '"""+self.matfile+"""'
@@ -137,10 +146,19 @@ ddsddeNew = pyumat.umat(stress=stress,statev=statev,ddsdde=ddsdde,sse=sse,spd=sp
         f = open("materialtest.py","w")
         f.write(code)
         f.close()
-        from subprocess import check_output
-        out = check_output(["python", "materialtest.py"])
 
-        outlines = out.split("\n")
+        import sys
+        print('Running zset to get info ')
+        if sys.version_info[0] == 2:
+            # hack for python2
+            from subprocess import check_output
+            out = check_output([sys.executable, "materialtest.py"])
+        else:
+            import subprocess
+            out = subprocess.run([sys.executable, "materialtest.py"], stdout=subprocess.PIPE).stdout.decode("utf-8")
+
+        print('Running zset to get info DONE')
+        outlines = out.split(u"\n")
 
 
         names = ['Flux', 'Grad','var_int','var_aux','Extra Zmat']
@@ -179,7 +197,7 @@ ddsddeNew = pyumat.umat(stress=stress,statev=statev,ddsdde=ddsdde,sse=sse,spd=sp
 
         def create(obj):
           from BasicTools.FE.Fields.IntegrationPointField import IntegrationPointField as IPF
-          for i in xrange(len(obj)):
+          for i in range(len(obj)):
             name = obj[i]
             obj[i] = IPF(name)
             obj[i].Allocate(self.mesh,LagrangeP1,tag=self.tag)
@@ -218,7 +236,6 @@ ddsddeNew = pyumat.umat(stress=stress,statev=statev,ddsdde=ddsdde,sse=sse,spd=sp
         return np.unique(dofs)
 
     def CallUmatOnIntegrationPointI(self,elemtype,el,ip,updateInternals=True):
-        import pyumat as pyumat
 
         cmname = self.matfile
 
