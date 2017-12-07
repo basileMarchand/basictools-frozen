@@ -7,18 +7,15 @@ from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 
 class Loading(object):
   def __init__(self):
-    self.cycle_number = None
-    self.sequence_number = None
-    self.increment = None
-    self.time = None
+    self.time_sequence = None
     self.temperature = {}
     self.pressure = {}
 
   def __str__(self):
-    res  = "\n    cycle numbers       : " + str(self.cycle_number)
-    res += "\n    sequence numbers    : " + str(self.sequence_number)
-    res += "\n    increments sequence : " + str(self.increment)
-    res += "\n    time sequence       : " + str(self.time)
+    res  = "\n    cycle numbers       : " + str(self.time_sequence[:,1])
+    res += "\n    sequence numbers    : " + str(self.time_sequence[:,2])
+    res += "\n    increments sequence : " + str(self.time_sequence[:,3])
+    res += "\n    time sequence       : " + str(self.time_sequence[:,4])
     return res
 
 class BoundaryConditions(object):
@@ -36,16 +33,16 @@ class StudyCase(object):
 
 class Solution(object):
   def __init__(self):
-    self.data_node  = {}
-    self.data_ctnod = {}
-    self.data_integ = {}
+    import collections
+    self.data_node  = collections.OrderedDict()
+    self.data_ctnod = collections.OrderedDict()
+    self.data_integ = collections.OrderedDict()
 
 
 class ProblemData(BaseOutputObject):
     def __init__(self):
        super(ProblemData,self).__init__()
        self.name = ""
-       self.folder = ""
        self.heading = ""
        self.orientations = {}
        self.materials = {}
@@ -54,21 +51,29 @@ class ProblemData(BaseOutputObject):
        self.loadings = {}
        self.mesh = None
 
+    def AttachMesh(self, mesh):
+       self.mesh = mesh
 
-    def Write(self, loadingKey):
+    def AttachLoading(self, tag, loading):
+       loading.Ntime = loading.time_sequence.shape[0]
+       self.loadings[tag] = loading
+
+    def AttachSolution(self, tag, solution):
+       self.solutions[tag] = solution
+
+    def Write(self, loadingKey, name, folder):
        import BasicTools.IO.UtWriter as UW
        UtW = UW.UtWriter()
-       UtW.SetName(self.name)
-       UtW.SetFolder(self.folder)
+       UtW.SetName(name)
+       UtW.SetFolder(folder)
        UtW.AttachMesh(self.mesh)
        UtW.AttachData(self.solutions[loadingKey].data_node, self.solutions[loadingKey].data_ctnod, self.solutions[loadingKey].data_integ)
-       UtW.AttachSequence(self.loadings[loadingKey].cycle_number, self.loadings[loadingKey].sequence_number, self.loadings[loadingKey].increment, self.loadings[loadingKey].time)
+       UtW.AttachSequence(self.loadings[loadingKey].time_sequence)
        UtW.Write(writeGeof=True)
 
 
     def __str__(self):
         res = "  Name : " + self.name + "\n"
-        res += "  Folder : " + self.folder + "\n"
         res += "  Heading : " + self.heading + "\n"
         res += "  Mesh : " + str(self.mesh)
         for l in self.loadings:
@@ -172,13 +177,6 @@ def CheckIntegrity():
     tempdir = TestTempDir.GetTempPath()
     import BasicTools.TestData as BasicToolsTestData
 
-    loading = Loading()
-    loading.cycle_number = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3]
-    loading.sequence_number = [1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
-    loading.increment = [0, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-    loading.time = [0., 0.2, 0.4, 0.6, 0.8, 1., 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2., 2.2, 2.4, 2.6, 2.8, 3., 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 4., 4.2, 4.4, 4.6, 4.8, 5., 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8, 5.9, 6.]
-    res.loadings["Run1"] = loading
-
     import BasicTools.IO.UtReader as UR
     reader = UR.UtReader()
     reader.SetFileName(BasicToolsTestData.GetTestDataPath() + "UtExample/cube.ut")
@@ -188,59 +186,48 @@ def CheckIntegrity():
     Nnode = reader.Read(fieldname="U1", timeIndex=0).shape[0]
     reader.atIntegrationPoints = True
     Nint = reader.Read(fieldname="sig11", timeIndex=0).shape[0]
-    Ntime = len(loading.time)
 
-    data_node_names = ['U1', 'U2', 'U3']
-    data_integ_names = ['eto11', 'eto22', 'eto33', 'eto12', 'eto23', 'eto31', 'sig11', 'sig22', 'sig33', 'sig12', 'sig23', 'sig31']
+    Ntime = reader.time.shape[0]
+    NnodeVar = len(reader.node)
+    NintVar = len(reader.integ)
 
-    NnodeVar = len(data_node_names)
-    NintVar = len(data_integ_names)
-
-    import collections
-    data_node = collections.OrderedDict()
-    for dnn in data_node_names:
-      data_node[dnn] = np.empty((Nnode,Ntime))
-    data_ctnod = collections.OrderedDict()
-    data_integ = collections.OrderedDict()
-    for din in data_integ_names:
-      data_ctnod[din] = np.empty((Nnode,Ntime))
-      data_integ[din] = np.empty((Nint,Ntime))
-
-    reader.atIntegrationPoints = False
-    for i in range(Ntime):
-      for dn in data_node:
-        data_node[dn][:,i] = reader.Read(fieldname=dn, timeIndex=i)
-      for dc in data_ctnod:
-        data_ctnod[dc][:,i] = reader.Read(fieldname=dc, timeIndex=i)
-    reader.atIntegrationPoints = True
-    for i in range(Ntime):
-      for di in data_integ:
-        data_integ[di][:,i] = reader.Read(fieldname=di, timeIndex=i)
+    loading = Loading()
+    loading.time_sequence = reader.time
+    res.AttachLoading("Run1", loading)
 
     solution = Solution()
-    solution.data_node  = data_node
-    solution.data_ctnod = data_ctnod
-    solution.data_integ = data_integ
-    res.solutions["Run1"] = solution
+    for dnn in reader.node:
+      solution.data_node[dnn] = np.empty((Nnode,Ntime))
+    for din in reader.integ:
+      solution.data_ctnod[din] = np.empty((Nnode,Ntime))
+      solution.data_integ[din] = np.empty((Nint,Ntime))
+    reader.atIntegrationPoints = False
+    for i in range(Ntime):
+      for dn in solution.data_node:
+        solution.data_node[dn][:,i] = reader.Read(fieldname=dn, timeIndex=i)
+      for dc in solution.data_ctnod:
+        solution.data_ctnod[dc][:,i] = reader.Read(fieldname=dc, timeIndex=i)
+    reader.atIntegrationPoints = True
+    for i in range(Ntime):
+      for di in solution.data_integ:
+        solution.data_integ[di][:,i] = reader.Read(fieldname=di, timeIndex=i)
+    res.AttachSolution("Run1", solution)
 
     import BasicTools.IO.GeofReader as GR
     mymesh = GR.ReadGeof(fileName=BasicToolsTestData.GetTestDataPath() + "UtExample/cube.geof")
 
-    res.name   = "toto"
-    res.folder = tempdir
-    res.mesh   = mymesh
+    res.AttachMesh(mymesh)
   
     ##################################
     # Check WriteUt  
-    res.Write("Run1")
+    res.Write("Run1", "toto", tempdir)
     ##################################
 
     print("Temp directory =", tempdir)
     import filecmp
-    print("node files equals  ?", filecmp.cmp(tempdir + "toto.node",  BasicToolsTestData.GetTestDataPath() + "UtExample/toto.node", shallow=False))
-    print("ctnod files equals ?", filecmp.cmp(tempdir + "toto.ctnod", BasicToolsTestData.GetTestDataPath() + "UtExample/toto.ctnod", shallow=False))
-    print("integ files equals ?", filecmp.cmp(tempdir + "toto.integ", BasicToolsTestData.GetTestDataPath() + "UtExample/toto.integ", shallow=False))
-    print("ut files equals    ?", filecmp.cmp(tempdir + "toto.ut",    BasicToolsTestData.GetTestDataPath() + "UtExample/toto.ut", shallow=False))
+    print("node files equals  ?", filecmp.cmp(tempdir + "toto.node",  BasicToolsTestData.GetTestDataPath() + "UtExample/cube.node", shallow=False))
+    print("ctnod files equals ?", filecmp.cmp(tempdir + "toto.ctnod", BasicToolsTestData.GetTestDataPath() + "UtExample/cube.ctnod", shallow=False))
+    print("integ files equals ?", filecmp.cmp(tempdir + "toto.integ", BasicToolsTestData.GetTestDataPath() + "UtExample/cube.integ", shallow=False))
 
 
     print(res)

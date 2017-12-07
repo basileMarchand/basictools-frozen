@@ -14,6 +14,8 @@ class UtWriter(WriterBase):
     "This class can generate a .ut, .goef, .ctnod, .node, .integ to vizualise finite element computational results"
     def __init__(self):
         super(UtWriter,self).__init__()
+        self.canHandleTemporal = True
+        self.canHandleAppend = True
 
     def __str__(self):
         res  = 'UtWriter : \n'
@@ -38,14 +40,14 @@ class UtWriter(WriterBase):
         self.NnodeVar         = len(data_node)
         self.NintVar          = len(data_integ)
         self.Nnode            = data_node[self.data_node_names[0]].shape[0]
-        self.Nint             = data_integ[self.data_integ_names[0]].shape[0]
+        try:
+          self.Nint = data_integ[self.data_integ_names[0]].shape[0]
+        except IndexError:
+          self.Nint = None
 
-    def AttachSequence(self, cycle_number, sequence_number, increment, time):
-        self.cycle_number = cycle_number
-        self.sequence_number = sequence_number
-        self.increment = increment
-        self.time = time
-        self.Ntime = len(time)
+    def AttachSequence(self, time_sequence):
+        self.time_sequence = time_sequence
+        self.Ntime = time_sequence.shape[0]
 
     def WriteMesh(self):
         if self.mesh==None:
@@ -120,8 +122,8 @@ class UtWriter(WriterBase):
           __string += "\n"
 
         __string += "**element\n"
-        for i in range(len(self.increment)):
-            __string += str(i+1)+" "+str(self.cycle_number[i])+" "+str(self.sequence_number[i])+" "+str(self.increment[i])+" "+str(self.time[i])+"\n"
+        for i in range(self.Ntime):    
+            __string += str(int(self.time_sequence[i,0]))+" "+str(int(self.time_sequence[i,1]))+" "+str(int(self.time_sequence[i,2]))+" "+str(int(self.time_sequence[i,3]))+" "+str(self.time_sequence[i,4])+"\n"
 
         with open(self.folder+self.name+".ut", "w") as f:
           f.write(__string)
@@ -134,35 +136,29 @@ def CheckIntegrity():
     tempdir = TestTempDir.GetTempPath()
     import BasicTools.TestData as BasicToolsTestData
 
-    cycle_number = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3]
-    sequence_number = [1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
-    increment = [0, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-    time = [0., 0.2, 0.4, 0.6, 0.8, 1., 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2., 2.2, 2.4, 2.6, 2.8, 3., 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 4., 4.2, 4.4, 4.6, 4.8, 5., 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8, 5.9, 6.]
-
     import BasicTools.IO.UtReader as UR
     reader = UR.UtReader()
     reader.SetFileName(BasicToolsTestData.GetTestDataPath() + "UtExample/cube.ut")
     reader.ReadMetaData()
 
+    time_sequence = reader.time
+
     reader.atIntegrationPoints = False
     Nnode = reader.Read(fieldname="U1", timeIndex=0).shape[0]
     reader.atIntegrationPoints = True
     Nint = reader.Read(fieldname="sig11", timeIndex=0).shape[0]
-    Ntime = len(time)
 
-    data_node_names = ['U1', 'U2', 'U3']
-    data_integ_names = ['eto11', 'eto22', 'eto33', 'eto12', 'eto23', 'eto31', 'sig11', 'sig22', 'sig33', 'sig12', 'sig23', 'sig31']
-
-    NnodeVar = len(data_node_names)
-    NintVar = len(data_integ_names)
+    Ntime = reader.time.shape[0]
+    NnodeVar = len(reader.node)
+    NintVar = len(reader.integ)
 
     import collections
     data_node = collections.OrderedDict()
-    for dnn in data_node_names:
+    for dnn in reader.node:
       data_node[dnn] = np.empty((Nnode,Ntime))
     data_ctnod = collections.OrderedDict()
     data_integ = collections.OrderedDict()
-    for din in data_integ_names:
+    for din in reader.integ:
       data_ctnod[din] = np.empty((Nnode,Ntime))
       data_integ[din] = np.empty((Nint,Ntime))
 
@@ -188,7 +184,7 @@ def CheckIntegrity():
     UtW.SetFolder(tempdir)
     UtW.AttachMesh(mymesh)
     UtW.AttachData(data_node, data_ctnod, data_integ)
-    UtW.AttachSequence(cycle_number, sequence_number, increment, time)
+    UtW.AttachSequence(time_sequence)
     UtW.Write(writeGeof=True)
     ##################################
     
@@ -197,10 +193,9 @@ def CheckIntegrity():
     print("Temp directory =", tempdir)
 
     import filecmp
-    print("node files equals  ?", filecmp.cmp(tempdir + "toto.node",  BasicToolsTestData.GetTestDataPath() + "UtExample/toto.node", shallow=False))
-    print("ctnod files equals ?", filecmp.cmp(tempdir + "toto.ctnod", BasicToolsTestData.GetTestDataPath() + "UtExample/toto.ctnod", shallow=False))
-    print("integ files equals ?", filecmp.cmp(tempdir + "toto.integ", BasicToolsTestData.GetTestDataPath() + "UtExample/toto.integ", shallow=False))
-    print("ut files equals    ?", filecmp.cmp(tempdir + "toto.ut", BasicToolsTestData.GetTestDataPath() + "UtExample/toto.ut", shallow=False))
+    print("node files equals  ?", filecmp.cmp(tempdir + "toto.node",  BasicToolsTestData.GetTestDataPath() + "UtExample/cube.node", shallow=False))
+    print("ctnod files equals ?", filecmp.cmp(tempdir + "toto.ctnod", BasicToolsTestData.GetTestDataPath() + "UtExample/cube.ctnod", shallow=False))
+    print("integ files equals ?", filecmp.cmp(tempdir + "toto.integ", BasicToolsTestData.GetTestDataPath() + "UtExample/cube.integ", shallow=False))
 
     return "ok"
 
