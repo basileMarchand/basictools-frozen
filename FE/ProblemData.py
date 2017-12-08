@@ -32,12 +32,17 @@ class StudyCase(object):
         return res
 
 class Solution(object):
-  def __init__(self):
-    import collections
-    self.data_node  = collections.OrderedDict()
-    self.data_ctnod = collections.OrderedDict()
-    self.data_integ = collections.OrderedDict()
+    def __init__(self):
+      import collections
+      self.data_node  = collections.OrderedDict()
+      self.data_ctnod = collections.OrderedDict()
+      self.data_integ = collections.OrderedDict()
 
+    def __str__(self):
+      res = "\n    node  : "+str(list(self.data_node.keys()))
+      res = "\n    integ : "+str(list(self.data_integ.keys()))
+      return res
+    
 
 class ProblemData(BaseOutputObject):
     def __init__(self):
@@ -85,6 +90,9 @@ class ProblemData(BaseOutputObject):
         for m in self.materials:
             res += "\n  Material  '" + m + "' :"
             res +=  self.materials[m].__str__()
+        for s in self.solutions:
+            res += "\n  Solution  '" + s + "' :"
+            res +=  self.solutions[s].__str__()
         return res
 
 
