@@ -188,11 +188,11 @@ ddsddeNew = pyumat.umat(stress=stress,statev=statev,ddsdde=ddsdde,sse=sse,spd=sp
         parser("var_int", self.var_int)
         parser("var_aux", self.var_aux)
         parser("Extra Zmat", self.var_extra)
-        print(self.flux)
-        print(self.grad)
-        print(self.var_int)
-        print(self.var_aux)
-        print(self.var_extra)
+        print("Flux :\n",self.flux)
+        print("Grad :\n",self.grad)
+        print("var_int :\n",self.var_int)
+        print("var_aux :\n",self.var_aux)
+        print("Extra Zmat :\n",self.var_extra)
 
 
         def create(obj):
@@ -215,6 +215,7 @@ ddsddeNew = pyumat.umat(stress=stress,statev=statev,ddsdde=ddsdde,sse=sse,spd=sp
         create(self.var_int)
         create(self.var_aux)
         create(self.var_extra)
+        
 
     def GetDofsForElementTag(self,tagname,dof=None):
         nbdofs = self.mesh.GetNumberOfNodes()
