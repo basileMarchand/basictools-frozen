@@ -39,8 +39,8 @@ class Solution(object):
       self.data_integ = collections.OrderedDict()
 
     def __str__(self):
-      res = "\n    node  : "+str(list(self.data_node.keys()))
-      res = "\n    integ : "+str(list(self.data_integ.keys()))
+      res =  "\n    node  : "+str(list(self.data_node.keys()))
+      res += "\n    integ : "+str(list(self.data_integ.keys()))
       return res
     
 
