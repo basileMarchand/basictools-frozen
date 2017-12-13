@@ -56,7 +56,7 @@ class UtWriter(WriterBase):
         else:
           OW = GW.GeofWriter()
           OW.Open(self.folder+self.name+".geof")
-          OW.Write(self.mesh, useOriginalId=True)
+          OW.Write(self.mesh, useOriginalId=True, lowerDimElementsAsSets=True)
           OW.Close()
 
     def Write(self, writeGeof):
