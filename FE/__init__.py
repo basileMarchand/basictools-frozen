@@ -18,6 +18,7 @@ __all__ = [
 #'UnstructuredFea',
 'UnstructuredMesh',
 'MeshTools',
-'UnstructuredMeshTools'
+'UnstructuredMeshTools',
+'Octree'
 ]
 

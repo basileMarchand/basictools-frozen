@@ -5,7 +5,6 @@ from BasicTools.FE.UnstructuredMesh import UnstructuredMesh
 import BasicTools.FE.ElementNames as ElementNames
 import BasicTools.Helpers.BaseOutputObject as BaseOutputObject
 
-
 def CreateMeshOfTriangles(points,tris):
     return CreateMeshOf(points,tris,elemName = ElementNames.Triangle_3 )
 
@@ -402,32 +401,66 @@ def CleanDoubleNodes(res, tol = None, nodesToTestMask= None):
 
     BaseOutputObject.BaseOutputObject().PrintDebug("in CleanDoubleNodes")
 
+    res.ComputeBoundingBox()
     if tol is None:
-        res.ComputeBoundingBox()
         tol = np.linalg.norm(res.boundingMax - res.boundingMin)*1e-7
 
     nbnodes = res.GetNumberOfNodes()
     toKeep = np.zeros(nbnodes, dtype=np.bool )
     newindex = np.zeros(nbnodes, dtype=np.int )
-    tol = tol**2
+    tol2 = tol**2
     def dist2(array,value):
-        x = array-value
-        return x[0]**2 +x[1]**2+x[2]**2
+        d = array-value
+        return np.inner(d,d)
 
-    if nodesToTestMask is None:
-        cpt =0
+    if nodesToTestMask is None and tol == 0:
+        # optimized version for tol = 0.0
+        database = {}
+        cpt  = 0
         for i in range(nbnodes):
-            posi = res.nodes[i,:]
-            for j in range(i):
-                #dist =np.linalg.norm(res.nodes[i,:]-res.nodes[j,:])
-                dist = dist2(posi,res.nodes[j,:] )
-                if dist < tol and toKeep[j]:
-                    newindex[i] = newindex[j]
-                    break
+            point = tuple(res.nodes[i,:])
+            ni = database.get(point)
+            if ni is None:
+                database[point] = cpt
+                newindex[i] = cpt
+                cpt +=1
+                toKeep[i] = True;
             else:
+                newindex[i] = ni
+
+    elif nodesToTestMask is None :
+
+        from BasicTools.FE.Octree import Octree
+        cpt  = 0
+
+        Ma = res.boundingMax
+        Mi = res.boundingMin
+        diag2 = np.linalg.norm(res.boundingMax-res.boundingMin)**2
+        tree = Octree(Ma[0],Ma[1],Ma[2], Mi[0], Mi[1], Mi[2])
+
+        for i in xrange(nbnodes):
+            if float(i)/1000 == int(i/1000):
+                print(100.*i/nbnodes)
+            point = tuple(res.nodes[i,:])
+            entries = tree.find_within_range_cube(point, tol)
+
+            odist = diag2
+            if len(entries):
+                for entry in entries:
+                    dist = (point[0] - entry[0][0])**2   +(point[1] - entry[0][1])**2+(point[2] - entry[0][2])**2
+                    if dist < odist:
+                        odist = dist
+                        index = entry[1]
+
+            if odist <= tol2:
+                newindex[i] = index
+            else:
+                tree.add_item(cpt, point )
                 newindex[i] = cpt
                 cpt += 1
                 toKeep[i] = True;
+
+
     else:
         cpt =0
         for i in range(nbnodes):
@@ -445,7 +478,7 @@ def CleanDoubleNodes(res, tol = None, nodesToTestMask= None):
                 #dist =np.linalg.norm(res.nodes[i,:]-res.nodes[j,:])
                 if toKeep[j]:
                     dist = dist2(posi,res.nodes[j,:] )
-                    if dist < tol :
+                    if dist < tol2 :
                         newindex[i] = newindex[j]
                         break
             else:
@@ -1359,9 +1392,9 @@ def CheckIntegrity_ComputeFeatures(GUI =False):
 
     edges,skin = ComputeFeatures(res2,FeatureAngle=80)
     if GUI :
-        from BasicTools.Actions.OpenInParaview import OpenInParaView
-        OpenInParaView(edges,filename="edges.xmf")
-        OpenInParaView(skin,filename="skin.xmf")
+        from BasicTools.Actions.OpenInParaView import OpenInParaView
+        OpenInParaView(mesh=edges,filename="edges.xmf")
+        OpenInParaView(mesh=skin,filename="skin.xmf")
 
         for name,data in edges.elements.items():
               res2.GetElementsOfType(name).Merge(data)
@@ -1385,7 +1418,7 @@ def CheckIntegrity_AddSkin(GUI=False):
 
     skin = ComputeSkin(res2)
     if GUI :
-        from BasicTools.Actions.OpenInParaview import OpenInParaView
+        from BasicTools.Actions.OpenInParaView import OpenInParaView
 
         OpenInParaView(skin,filename="skin.xmf")
 
