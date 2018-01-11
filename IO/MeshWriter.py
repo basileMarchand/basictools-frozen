@@ -548,7 +548,6 @@ def CheckIntegrity():
     import BasicTools.FE.UnstructuredMesh as UM
 
     from BasicTools.Helpers.Tests import TestTempDir
-    TestTempDir().SetTempPath("/tmp/BasicTools_Test_Directory_QUaZuy_safe_to_delete")
 
     tempdir = TestTempDir.GetTempPath()
 
