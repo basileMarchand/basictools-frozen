@@ -3,7 +3,6 @@
 __all__ = [
 'ConstantRectilinearFea',
 'ConstantRectilinearMesh',
-'ElementBuildier',
 'ElementNames',
 'FeaBase',
 'FElement',
@@ -19,6 +18,14 @@ __all__ = [
 'UnstructuredMesh',
 'MeshTools',
 'UnstructuredMeshTools',
+"Spaces",
+"Fields",
+"Behaviours",
+"DofNumbering",
+"IntegrationsRules",
+"ZmatFemProblem",
+"Integration",
+"WeakForm",
 'Octree'
 ]
 

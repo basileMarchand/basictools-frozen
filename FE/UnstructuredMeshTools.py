@@ -79,12 +79,12 @@ def CreateCube(dimensions=[2,2,2], origin=[-1.0,-1.0,-1.0], spacing=[1.,1.,1.], 
     y = mesh.GetPosOfNodes()[skin.connectivity,1]
     z = mesh.GetPosOfNodes()[skin.connectivity,2]
     tol = np.min(spacing)/10
-    skin.GetTag("X0").SetIds( np.where(np.sum(np.abs(x - origin[0]          )-tol,axis=1) == skin.GetNumberOfNodesPerElement())[0])
-    skin.GetTag("X1").SetIds( np.where(np.sum(np.abs(x - origin[0]+d[0]*s[0])-tol,axis=1) == skin.GetNumberOfNodesPerElement())[0])
-    skin.GetTag("Y0").SetIds( np.where(np.sum(np.abs(y - origin[1]          )-tol,axis=1) == skin.GetNumberOfNodesPerElement())[0])
-    skin.GetTag("Y1").SetIds( np.where(np.sum(np.abs(y - origin[1]+d[1]*s[1])-tol,axis=1) == skin.GetNumberOfNodesPerElement())[0])
-    skin.GetTag("Z0").SetIds( np.where(np.sum(np.abs(z - origin[2]          )-tol,axis=1) == skin.GetNumberOfNodesPerElement())[0])
-    skin.GetTag("Z1").SetIds( np.where(np.sum(np.abs(z - origin[2]+d[2]*s[2])-tol,axis=1) == skin.GetNumberOfNodesPerElement())[0])
+    skin.GetTag("X0").SetIds( np.where(np.sum(np.abs(x - origin[0]          )<tol,axis=1) == skin.GetNumberOfNodesPerElement())[0])
+    skin.GetTag("X1").SetIds( np.where(np.sum(np.abs(x - (origin[0]+d[0]*s[0]))<tol,axis=1) == skin.GetNumberOfNodesPerElement())[0])
+    skin.GetTag("Y0").SetIds( np.where(np.sum(np.abs(y - origin[1]          )<tol,axis=1) == skin.GetNumberOfNodesPerElement())[0])
+    skin.GetTag("Y1").SetIds( np.where(np.sum(np.abs(y - (origin[1]+d[1]*s[1]))<tol,axis=1) == skin.GetNumberOfNodesPerElement())[0])
+    skin.GetTag("Z0").SetIds( np.where(np.sum(np.abs(z - origin[2]          )<tol,axis=1) == skin.GetNumberOfNodesPerElement())[0])
+    skin.GetTag("Z1").SetIds( np.where(np.sum(np.abs(z - (origin[2]+d[2]*s[2]))<tol,axis=1) == skin.GetNumberOfNodesPerElement())[0])
 
 
 
@@ -1254,11 +1254,13 @@ def ExtractElementsByImplicitZone(inmesh,op,allNodes=True,cellCenter=False):
     CleanLonelyNodes(outmesh)
     return outmesh
 
-def ComputeSkin(mesh):
+def ComputeSkin(mesh, md=None ):
 
     #dualGraph,usedPoints = GetDualGraph(mesh)
 
-    md = mesh.GetDimensionality()
+    if md is None:
+        md = mesh.GetDimensionality()
+
 
     #we use the original id to count the number of time the faces is used
     surf = {}
@@ -1305,9 +1307,12 @@ def ComputeSkin(mesh):
     return res
 
 
-def ComputeFeatures(inputmesh,FeatureAngle=90):
+def ComputeFeatures(inputmesh,FeatureAngle=90,skin=None):
 
-    skinmesh = ComputeSkin(inputmesh)
+    if skin is None:
+        skinmesh = ComputeSkin(inputmesh)
+    else:
+        skinmesh = skin
 
     md = skinmesh.GetDimensionality()
     nex = skinmesh.GetNumberOfElements()

@@ -16,10 +16,10 @@ def OpenInParaView( mesh=None,filename=None ):
 
     if mesh is not None:
         from BasicTools.IO.XdmfWriter import WriteMeshToXdmf
-        PointFieldsNames = mesh.nodeFields.keys()
-        PointFields =  mesh.nodeFields.values()
-        CellFieldsNames = mesh.elemFields.keys()
-        CellFields = mesh.elemFields.values()
+        PointFieldsNames = list(mesh.nodeFields.keys())
+        PointFields =  list(mesh.nodeFields.values())
+        CellFieldsNames = list(mesh.elemFields.keys())
+        CellFields = list(mesh.elemFields.values())
 
         WriteMeshToXdmf(filename,mesh,PointFieldsNames=PointFieldsNames,PointFields=PointFields,CellFieldsNames=CellFieldsNames,CellFields=CellFields  )
 

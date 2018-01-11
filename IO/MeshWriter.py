@@ -227,7 +227,10 @@ class MeshWriter(WriterBase):
 
     def OpenSolutionFileAscii(self,support):
 
-        self.filePointer = open(".".join(self.fileName.split(".")[0:-1])+".sol" , 'wb',0)
+        self.filePointer = open(".".join(self.fileName.split(".")[0:-1])+".sol" , 'w')
+        #self.filePointer = open(".".join(self.fileName.split(".")[0:-1])+".sol" , 'wb',0)
+        # python3 does not support zero buffered output in ascii mode
+        
         self._isOpen = True
 
         #key MeshVersionFormatted

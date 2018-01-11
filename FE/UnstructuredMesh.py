@@ -7,6 +7,7 @@ from BasicTools.FE.MeshBase import Tags
 import BasicTools.FE.ElementNames as ElementNames
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 
+AllElements = object()
 
 class ElementsContainer(BaseOutputObject):
     def __init__(self,elementType):

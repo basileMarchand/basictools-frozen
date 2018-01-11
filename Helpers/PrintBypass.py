@@ -31,6 +31,11 @@ class PrintBypass():
     def ToSink(self):
         sys.stdout = open(os.devnull,"w")
         sys.stderr = open(os.devnull,"w")
+        try :
+            from sympy import init_printing
+            init_printing(use_unicode=False)
+        except:
+            pass
 
     def ToDisk(self,filename, filenamecerr=None):
         sys.stdout = open(filename, 'w') # Something here that provides a write method.

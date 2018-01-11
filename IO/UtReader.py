@@ -96,6 +96,7 @@ class UtReader(ReaderBase):
             s = line.split()
 
             self.time.append( [b(a) for a,b in zip(s,[int, int, int, int, float] )])
+        self.time = np.array(self.time)
         self.EndReading()
 
         from BasicTools.IO.GeofReader import GeofReader
