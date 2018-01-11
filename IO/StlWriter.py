@@ -81,10 +81,10 @@ def CheckIntegrity():
     from BasicTools.IO.StlReader import ReadStl as ReadStl
     from BasicTools.Helpers.Tests import TestTempDir
 
-    res,normals = ReadStl(string=data)
+    res = ReadStl(string=data)
     tempdir = TestTempDir.GetTempPath()
     WriteMeshToStl(tempdir+"Test_StlWriter.stl",res)
-    WriteMeshToStl(tempdir+"Test_StlWriter_with_normals.stl",res, normals=normals)
+    WriteMeshToStl(tempdir+"Test_StlWriter_with_normals.stl",res, normals =res.elemFields["normals"])
 
     ow = StlWriter()
     print(ow)
