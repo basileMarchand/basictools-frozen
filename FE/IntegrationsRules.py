@@ -53,16 +53,27 @@ def TensorProductPoints(dim,npoints=2):
         for i in range(len(p)):
             for j in range(len(p)):
                 for k in range(len(p)):
-                    Pres.append([p[i], p[j],p[k] ])
+                    Pres.append([p[k], p[j],p[i] ])
                     Wres.append( w[i]*w[j]*w[k])
+
+        """a = np.sqrt(1./3.)
+        Pres = np.array([[-a,-a,-a],
+                                          [ a,-a,-a],
+                                          [-a, a,-a],
+                                          [ a, a,-a],
+                                          [-a,-a, a],
+                                          [ a,-a, a],
+                                          [-a, a, a],
+                                          [ a, a, a]]);
+        Wres = np.ones(8)/8.;"""
         return (np.array(Pres),Wres)
     else :
         raise
 
 
-LagrangeP1[EN.GeoBar] = TensorProductPoints(dim=1,npoints=2)
+LagrangeP1[EN.GeoBar]  = TensorProductPoints(dim=1,npoints=2)
 LagrangeP1[EN.GeoQuad] = TensorProductPoints(dim=2,npoints=2)
-LagrangeP1[EN.GeoHex] = TensorProductPoints(dim=3,npoints=2)
+LagrangeP1[EN.GeoHex]  = TensorProductPoints(dim=3,npoints=2)
 
 IntegrationRulesAlmanac["IsoGeo"] = LagrangeP1
 
