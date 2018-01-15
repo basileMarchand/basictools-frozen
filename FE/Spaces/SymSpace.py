@@ -147,8 +147,8 @@ class SymSpaceBase(SpaceBase):
     def Eval_FieldI(self,I,Xi,J,Jinv,der=-1):
 
         if der ==-1:
-            print (self.valN[I])
-            print (Xi)
+            #print (self.valN[I])
+            #print (Xi)
             res = np.dot(self.valN[I],Xi).T
         else:
             res = np.dot(Jinv(self.valdphidxi[I])[der,:],Xi)

@@ -5,14 +5,15 @@ from scipy.sparse import coo_matrix
 
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 from BasicTools.FE import FeaBase as FeaBase
-from BasicTools.FE.Fields.ConstantField import  ConstantField
+from BasicTools.FE.Fields.ConstantField import ConstantField
 from BasicTools.FE.Fields.NodalField import NodalField
 
 from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
 from BasicTools.FE.DofNumbering import ComputeDofNumbering
-from BasicTools.FE.Fields.IntegrationPointField import  IntegrationPointField
+from BasicTools.FE.Fields.IntegrationPointField import IntegrationPointField
 from BasicTools.FE.IntegrationsRules import LagrangeP1
 import sys
+
 if sys.version_info[0] == 2:
     import pyumat
 else:
@@ -30,7 +31,7 @@ class UMatFemProblem(BaseOutputObject):
         self.temp = ConstantField("temp",20)
         self.dtemp = ConstantField("dtemp",0)
 
-        self.dstrain = ConstantField("dstrain",0)
+        self.dstrain = None
 
         self.tag = "3D"
 
@@ -45,7 +46,7 @@ class UMatFemProblem(BaseOutputObject):
         numbering = ComputeDofNumbering(mesh,LagrangeSpaceGeo,fromConnectivity =True)
         self.numberings = [numbering]*dim
 
-        dstrain = [IntegrationPointField("strain"+i) for i in ["11", "22", "33", "12", "31", "23"]  ]
+        dstrain = [IntegrationPointField("dstrain"+i) for i in ["11", "22", "33", "12", "31", "23"]  ]
         for i in range(6):
             dstrain[i].Allocate(self.mesh,LagrangeP1,tag=self.tag)
         self.dstrain = dstrain
@@ -195,6 +196,9 @@ ddsddeNew = pyumat.umat(stress=stress,statev=statev,ddsdde=ddsdde,sse=sse,spd=sp
         print("Extra Zmat :\n",self.var_extra)
 
 
+
+    def AllocateMaterialData(self):
+
         def create(obj):
           from BasicTools.FE.Fields.IntegrationPointField import IntegrationPointField as IPF
           for i in range(len(obj)):
@@ -216,6 +220,7 @@ ddsddeNew = pyumat.umat(stress=stress,statev=statev,ddsdde=ddsdde,sse=sse,spd=sp
         create(self.var_aux)
         create(self.var_extra)
         
+
 
     def GetDofsForElementTag(self,tagname,dof=None):
         nbdofs = self.mesh.GetNumberOfNodes()
@@ -278,10 +283,10 @@ ddsddeNew = pyumat.umat(stress=stress,statev=statev,ddsdde=ddsdde,sse=sse,spd=sp
         drpldt = 0.
 
         stran = np.zeros(6)  # <-----
-        dstran = np.zeros(6)# <-----
+        dstran = np.zeros(6) # <-----
         temp = self.dstrain
         for i in range(6):
-            stran[i] = self.grad[i].GetValueAtIP(elemtype,el,ip)
+            stran[i]  = self.grad[i].GetValueAtIP(elemtype,el,ip)
             dstran[i] = temp[i].GetValueAtIP(elemtype,el,ip)
 
         r2 = 2
@@ -311,8 +316,8 @@ ddsddeNew = pyumat.umat(stress=stress,statev=statev,ddsdde=ddsdde,sse=sse,spd=sp
 
         #print(stran)
         ddsddeNew = pyumat.umat(stress=stress,statev=statev,ddsdde=ddsdde,sse=sse,spd=spd,scd=scd,rpl=rpl,ddsddt=ddsddt,drplde=drplde,drpldt=drpldt,stran=stran,dstran=dstran,time=timesim,dtime=dtime,
-                                temp=temperature,dtemp=dtemp,predef=predef,dpred=dpred,cmname=cmname,ndi=ndi,nshr=nshr,ntens=ntens,nstatv=nstatv,props=props,nprops=nprops,coords=coords,drot=drot,pnewdt=pnewdt,celent=celent,dfgrd0=dfgrd0,
-                dfgrd1=dfgrd1,noel=noel,npt=npt,kslay=kslay,kspt=kspt,kstep=kstep,kinc=kinc)
+        temp=temperature,dtemp=dtemp,predef=predef,dpred=dpred,cmname=cmname,ndi=ndi,nshr=nshr,ntens=ntens,nstatv=nstatv,props=props,nprops=nprops,coords=coords,drot=drot,pnewdt=pnewdt,celent=celent,dfgrd0=dfgrd0,
+        dfgrd1=dfgrd1,noel=noel,npt=npt,kslay=kslay,kspt=kspt,kstep=kstep,kinc=kinc)
 
 
         if updateInternals:
@@ -522,6 +527,8 @@ def CheckIntegrity(GUI=False)     :
     prob.SetMesh(mesh)
     print("init material")
     prob.SetMaterial(string=matstring)
+    prob.AllocateMaterialData()
+
 
 
     import BasicTools.FE.ElementNames as EN
@@ -558,8 +565,8 @@ def CheckIntegrity(GUI=False)     :
 
     prob.SolveUsing(k,f, fixedValues,freeMask)
 
-    print(stran)
-    print(stress)
+    print("stran  =", stran)
+    print("stress =", stress)
     if GUI :
         from BasicTools.Actions.OpenInParaView import OpenInParaView
         #F = f.view()
