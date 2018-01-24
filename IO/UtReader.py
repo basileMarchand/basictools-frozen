@@ -107,6 +107,11 @@ class UtReader(ReaderBase):
         else:
             self.Print("Unable to obtain metadata from meshfile, please set metadata manually")
 
+
+    def ReadBinaryFile(self,fileName):
+        return np.fromfile(fileName, dtype=np.float32).byteswap()
+
+
     def Read(self,fieldname=None,time=None,timeIndex=None):
         self.ReadMetaData()
         postfix = ""

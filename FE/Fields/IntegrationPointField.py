@@ -42,6 +42,9 @@ class IntegrationPointField(BaseOutputObject):
     def SetValueAtIP(self,name,el,ip,val):
         self.storage[name][el,ip] = val
 
+    def IncrementValueAtIP(self,name,el,ip,val):
+        self.storage[name][el,ip] += val
+
 def CheckIntegrity(GUI=False):
     from BasicTools.FE.IntegrationsRules import LagrangeP1
     from BasicTools.FE.UnstructuredMeshTools import CreateCube

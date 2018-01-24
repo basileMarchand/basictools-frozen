@@ -45,9 +45,12 @@ class UtWriter(WriterBase):
         except IndexError:
           self.Nint = None
 
-    def AttachSequence(self, time_sequence):
-        self.time_sequence = time_sequence
-        self.Ntime = time_sequence.shape[0]
+    def AttachDataFromProblemData(self, problemData, tag):
+        self.AttachData(problemData.solutions[tag].data_node, problemData.solutions[tag].data_ctnod, problemData.solutions[tag].data_integ)
+
+    def AttachSequence(self, timeSequence):
+        self.timeSequence = timeSequence
+        self.Ntime = timeSequence.shape[0]
 
     def WriteMesh(self):
         if self.mesh==None:
@@ -69,7 +72,6 @@ class UtWriter(WriterBase):
 
         if writeGeof==True:
           self.WriteMesh()
-
 
         if self.NnodeVar>0:
           data_node = np.empty(self.NnodeVar*self.Nnode*self.Ntime)
@@ -123,7 +125,7 @@ class UtWriter(WriterBase):
 
         __string += "**element\n"
         for i in range(self.Ntime):    
-            __string += str(int(self.time_sequence[i,0]))+" "+str(int(self.time_sequence[i,1]))+" "+str(int(self.time_sequence[i,2]))+" "+str(int(self.time_sequence[i,3]))+" "+str(self.time_sequence[i,4])+"\n"
+            __string += str(int(self.timeSequence[i,0]))+" "+str(int(self.timeSequence[i,1]))+" "+str(int(self.timeSequence[i,2]))+" "+str(int(self.timeSequence[i,3]))+" "+str(self.timeSequence[i,4])+"\n"
 
         with open(self.folder+self.name+".ut", "w") as f:
           f.write(__string)
@@ -141,7 +143,7 @@ def CheckIntegrity():
     reader.SetFileName(BasicToolsTestData.GetTestDataPath() + "UtExample/cube.ut")
     reader.ReadMetaData()
 
-    time_sequence = reader.time
+    timeSequence = reader.time
 
     reader.atIntegrationPoints = False
     Nnode = reader.Read(fieldname="U1", timeIndex=0).shape[0]
@@ -184,7 +186,7 @@ def CheckIntegrity():
     UtW.SetFolder(tempdir)
     UtW.AttachMesh(mymesh)
     UtW.AttachData(data_node, data_ctnod, data_integ)
-    UtW.AttachSequence(time_sequence)
+    UtW.AttachSequence(timeSequence)
     UtW.Write(writeGeof=True)
     ##################################
     

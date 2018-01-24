@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import numpy as np
+from BasicTools.Helpers.TextFormatHelper import TFormat
 
 
 class NodalField(object):
@@ -24,6 +25,14 @@ class NodalField(object):
         sp = self.space[elemtype]
         num = self.numbering[elemtype][el,:]
         return sp.Eval_FieldI(ip,self.data[num],None,None,der=-1)
+
+    def __str__(self):
+        TFormat.II()
+        res =  TFormat.InBlue("NodalField")+"\n"
+        if self.name is not None:
+          res += TFormat.GetIndent()
+          res += TFormat.InGreen("Name : ") + self.name
+        return res
 
 def CheckIntegrity():
     obj = NodalField("temp")

@@ -2,20 +2,25 @@
 __author__ = "Felipe Bordeu"
 
 import numpy as np
+from BasicTools.Helpers.TextFormatHelper import TFormat
 
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
+from BasicTools.FE.Fields.ConstantField import ConstantField
+from BasicTools.FE.Fields.NodalField import NodalField
+from BasicTools.FE.Fields.IntegrationPointField import IntegrationPointField
 
 class Loading(object):
   def __init__(self):
-    self.time_sequence = None
-    self.temperature = {}
-    self.pressure = {}
+    self.timeSequence = None
+    self.dataLoading = {}
 
   def __str__(self):
-    res  = "\n    cycle numbers       : " + str(self.time_sequence[:,1])
-    res += "\n    sequence numbers    : " + str(self.time_sequence[:,2])
-    res += "\n    increments sequence : " + str(self.time_sequence[:,3])
-    res += "\n    time sequence       : " + str(self.time_sequence[:,4])
+    res =  TFormat.GetIndent()+TFormat.InBlue('Loading :\n')
+    TFormat.II()
+    res += TFormat.GetIndent()+TFormat.InBlue("Parameters: ")
+    for l in self.__dict__:
+      res += TFormat.GetIndent()+TFormat.InRed(l.__str__()+"  ")
+    TFormat.DI()
     return res
 
 class BoundaryConditions(object):
@@ -60,7 +65,7 @@ class ProblemData(BaseOutputObject):
        self.mesh = mesh
 
     def AttachLoading(self, tag, loading):
-       loading.Ntime = loading.time_sequence.shape[0]
+       loading.Ntime = loading.timeSequence.shape[0]
        self.loadings[tag] = loading
 
     def AttachSolution(self, tag, solution):
@@ -72,13 +77,13 @@ class ProblemData(BaseOutputObject):
        UtW.SetName(name)
        UtW.SetFolder(folder)
        UtW.AttachMesh(self.mesh)
-       UtW.AttachData(self.solutions[loadingKey].data_node, self.solutions[loadingKey].data_ctnod, self.solutions[loadingKey].data_integ)
-       UtW.AttachSequence(self.loadings[loadingKey].time_sequence)
+       UtW.AttachDataFromProblemData(self, loadingKey)
+       UtW.AttachSequence(self.loadings[loadingKey].timeSequence)
        UtW.Write(writeGeof=True)
 
 
     def __str__(self):
-        res = "  Name : " + self.name + "\n"
+        res =  "  Name : " + self.name + "\n"
         res += "  Heading : " + self.heading + "\n"
         res += "  Mesh : " + str(self.mesh)
         for l in self.loadings:
@@ -167,7 +172,7 @@ class Orientation(BaseOutputObject):
         self.second /= np.linalg.norm(self.second)
     def __str__(self):
         res  = "\n    offset : " + str(self.offset)
-        res += "\n    first : " + str(self.first)
+        res += "\n    first  : " + str(self.first)
         res += "\n    second : " + str(self.second)
         return res
 
@@ -200,7 +205,7 @@ def CheckIntegrity():
     NintVar = len(reader.integ)
 
     loading = Loading()
-    loading.time_sequence = reader.time
+    loading.timeSequence = reader.time
     res.AttachLoading("Run1", loading)
 
     solution = Solution()
