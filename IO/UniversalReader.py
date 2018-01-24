@@ -40,6 +40,9 @@ def ReadMesh(filename,out=None):# pragma: no cover
     elif extention ==  ".ut" or extention ==  ".utp":
         from BasicTools.IO.UtReader import ReadMeshAndUt
         return ReadMeshAndUt(fileName=filename)
+    elif extention == ".stl":
+        from BasicTools.IO.StlReader import ReadStl
+        return ReadStl(fileName=filename)
     else:
         Create(extention)
         raise Exception ("Unkown file extention : " + str(extention))
@@ -79,7 +82,7 @@ def InitAllReaders():
     import BasicTools.IO.GeofReader
     import BasicTools.IO.GReader
     import BasicTools.IO.MeshReader
-
+    import BasicTools.IO.StlReader
 
 def CheckIntegrity():
 
