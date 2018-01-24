@@ -55,7 +55,7 @@ def ReadBool(string):
     if tmp == "false" or tmp == "no":
         return False
 
-    if tmp == "true" or tmp == "yes":
+    if tmp == "true" or tmp == "yes" or tmp=="on":
         return True
 
     try:
