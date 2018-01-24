@@ -68,9 +68,11 @@ class StlReader(ReaderBase):
         import BasicTools.FE.UnstructuredMesh as UM
 
         header = self.readData(80,np.int8)
-        header = ''.join([chr(item) for item in header])
-
-        print("HEADER : '" + header + "'")
+        try:
+           header = ''.join([(chr(item) if item < 128 else " ")  for item in header])
+           print("HEADER : '" + header + "'")
+        except:
+           pass
         nbTriangles = self.readInt32()
         print("reading  : " + str(nbTriangles) + " triangles")
 
