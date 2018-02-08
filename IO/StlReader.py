@@ -85,29 +85,10 @@ class StlReader(ReaderBase):
                        ('att', (np.int16)),
                        ])
 
-        data = np.fromfile(self.filePointer,dtype=dt,count=nbTriangles,sep="")
+        data = self.readData(nbTriangles,dt)
         normals = np.array(data["normal"])
         resUM.nodes = np.array(data["points"])
         resUM.nodes.shape = (nbTriangles*3,3)
-
-#        cpt = 0
-#        for i in range(nbTriangles):
-#            data = self.readFloats32(12)
-#            normals[i,:] = data[0:3]
-#            resUM.nodes[cpt,:] = data[3:6]
-#            cpt +=1
-#            resUM.nodes[cpt,:] = data[6:9]
-#            cpt +=1
-#            resUM.nodes[cpt,:] = data[9:12]
-#            cpt +=1
-#
-#            #normals[i,:] = self.readFloats32(3)
-#            #for j in range(3):
-#            #    resUM.nodes[cpt,:] = self.readFloats32(3)
-#            #    cpt += 1
-#            # trash the  Attribute byte count
-#            self.readData(1,np.int16)
-
 
         elements = resUM.GetElementsOfType(EN.Triangle_3)
         elements.connectivity = np.array(range(resUM.GetNumberOfNodes()),dtype=np.int)

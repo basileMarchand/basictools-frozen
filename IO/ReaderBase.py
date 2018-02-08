@@ -28,9 +28,14 @@ class ReaderBase(BaseOutputObject):
             if self.string is None:
                 raise ('Need a file or a string to read')
             else:
-                from io import StringIO
-                self.filePointer =  StringIO(self.string)
-                self.text_stream = self.filePointer
+                if self.readFormat.find('b') > -1 :
+                    from io import BytesIO
+                    self.filePointer =  BytesIO(str(self.string))
+                    self.text_stream = self.filePointer
+                else:
+                    import cStringIO
+                    self.filePointer =  cStringIO.StringIO(self.string)
+                    self.text_stream = self.filePointer
         else:
             if self.readFormat.find('b') > -1 :
                 self.filePointer =  open(self.fileName, self.readFormat)
@@ -119,11 +124,19 @@ class ReaderBase(BaseOutputObject):
 
     def readInt32(self):
        rawdata = self.rawread(4,withError=True)
+       print(rawdata)
+       print(len(rawdata))
+       print(type(rawdata))
        data = struct.unpack("i", rawdata)[0]
        return data
 
     def readData(self,cpt,datatype):
-        return  np.fromfile(self.filePointer,dtype=datatype,count=cpt,sep="")
+        try:
+            return  np.fromfile(self.filePointer,dtype=datatype,count=cpt,sep="")
+        except:
+            s = np.dtype(datatype).itemsize*cpt
+            data = self.filePointer.read(s)
+            return np.fromstring(data,dtype=datatype)
 
     def reshapeData(self,data,finalShape=None):
         if finalShape is None:
