@@ -500,7 +500,7 @@ def CleanDoubleNodes(res, tol = None, nodesToTestMask= None):
 
     BaseOutputObject.BaseOutputObject().PrintDebug("CleanDoubleNodes Done")
 
-def CleanLonelyNodes(res):
+def CleanLonelyNodes(res,out=None):
 
     usedNodes = np.zeros(res.GetNumberOfNodes(),dtype=np.bool )
     for elementName in res.elements:
@@ -516,19 +516,37 @@ def CleanLonelyNodes(res):
             originalIDNodes[cpt] = n
             cpt += 1
 
+
     #filter the nodes
-    res.nodes = res.nodes[usedNodes ,:]
-    res.originalIDNodes = np.where(usedNodes)[0]
-    #res.originalIDNodes = originalIDNodes[0:cpt]
 
-    #node tags
-    for tag in res.nodesTags :
-        tag.SetIds(NewIndex[np.extract(usedNodes[tag.GetIds()],tag.GetIds() )])
+    #inplace
+    if out is None:
+        res.nodes = res.nodes[usedNodes ,:]
+        res.originalIDNodes = np.where(usedNodes)[0]
+        #node tags
+        for tag in res.nodesTags :
+            tag.SetIds(NewIndex[np.extract(usedNodes[tag.GetIds()],tag.GetIds() )])
 
-    #renumbering the connectivity matrix
-    for elementName in res.elements:
-        elements = res.elements[elementName]
-        elements.connectivity = NewIndex[elements.connectivity]
+                #renumbering the connectivity matrix
+        for elementName in res.elements:
+            elements = res.elements[elementName]
+            elements.connectivity = NewIndex[elements.connectivity]
+
+    else:
+        out.nodes = res.nodes[usedNodes ,:]
+        out.originalIDNodes = np.where(usedNodes)[0]
+        #node tags
+        for tag in res.nodesTags :
+            outtag = out.nodesTags.CreateTag(tag.name)
+            outtag.SetIds(NewIndex[np.extract(usedNodes[tag.GetIds()],tag.GetIds() )])
+
+        import copy
+        for elementName in res.elements:
+            elements = res.elements[elementName]
+            outelements = out.GetElementsOfType(elementName)
+            outelements.connectivity = NewIndex[elements.connectivity]
+
+            outelements.tags = copy.deepcopy(elements.tags)
 
 def MirrorMesh(inmesh,x=None,y=None,z=None) :
     nbpoints = inmesh.GetNumberOfNodes()
