@@ -130,24 +130,23 @@ numberOfNodes[Tetrahedron_4] = 4;
 mirrorPermutation[Tetrahedron_4] = [0,2,1,3]
 dimension[Tetrahedron_4] = 3
 linear[Tetrahedron_4] = True
-faces[Tetrahedron_4] = [(Quadrangle_4,[0, 1, 2,3]),
-                        (Triangle_3,[0, 1, 4]),
-                        (Triangle_3,[1, 2, 4]),
-                        (Triangle_3,[2, 3, 4]),
-                        (Triangle_3,[3, 0, 4]),
-     ]
-
-Pyramid_5  = 'pyr5'
-geoSupport[Pyramid_5] = GeoPyr
-numberOfNodes[Pyramid_5] = 5;
-dimension[Pyramid_5] = 3
-linear[Pyramid_5] = True
 faces[Tetrahedron_4] = [(Triangle_3,[0, 2, 1]),
                         (Triangle_3,[0, 1, 3]),
                         (Triangle_3,[1, 2, 3]),
                         (Triangle_3,[2, 0, 3]),
      ]
 
+Pyramid_5  = 'pyr5'
+geoSupport[Pyramid_5] = GeoPyr
+numberOfNodes[Pyramid_5] = 5;
+dimension[Pyramid_5] = 3
+linear[Pyramid_5] = False
+faces[Pyramid_5] = [(Quadrangle_4,[0, 1, 2,3]),
+                        (Triangle_3,[0, 1, 4]),
+                        (Triangle_3,[1, 2, 4]),
+                        (Triangle_3,[2, 3, 4]),
+                        (Triangle_3,[3, 0, 4]),
+     ]
 Wedge_6 = 'wed6'
 geoSupport[Wedge_6] = GeoWed
 numberOfNodes[Wedge_6] = 6;
