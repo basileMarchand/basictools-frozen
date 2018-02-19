@@ -12,7 +12,6 @@ from BasicTools.FE.Fields.IntegrationPointField import IntegrationPointField
 class Loading(object):
   def __init__(self):
     self.timeSequence = None
-    self.dataLoading = {}
 
   def __str__(self):
     res =  TFormat.GetIndent()+TFormat.InBlue('Loading :\n')
