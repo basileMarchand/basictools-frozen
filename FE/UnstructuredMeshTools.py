@@ -987,7 +987,8 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
             #VTK_data = numpy_support.numpy_to_vtk(num_array=np.swapaxes(phi,0,2).ravel(), deep=True, array_type=vtk.VTK_FLOAT)
             #VTK_data.SetName(name)
             if np.size(data) != mesh.GetNumberOfNodes() and np.size(data) != 2*mesh.GetNumberOfNodes() and np.size(data) != 3*mesh.GetNumberOfNodes():
-                print("field ("+str(name)+") is not consistent : it has " + str(np.size(data)) +"values and the mesh has " +str(mesh.GetNumberOfNodes())+ " nodes" )
+                print("field ("+str(name)+") is not consistent : it has " + str(np.size(data)) +" values and the mesh has " +str(mesh.GetNumberOfNodes())+ " nodes" )
+                raise
                 continue
 
             pd = vtkFloatArray()
@@ -1041,7 +1042,7 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
                 continue
 
             if np.size(data) != mesh.GetNumberOfElements() and np.size(data) != 3*mesh.GetNumberOfElements():
-                print("field ("+str(name)+") is not consistent : it has " + str(np.size(data)) +"values and the mesh has " +str(mesh.GetNumberOfElements())+ " elements" )
+                print("field ("+str(name)+") is not consistent : it has " + str(np.size(data)) +" values and the mesh has " +str(mesh.GetNumberOfElements())+ " elements" )
                 continue
             pd = vtkFloatArray()
             pd.SetName(name)
@@ -1125,8 +1126,10 @@ def VtkToMesh(vtkmesh, meshobject=None, TagsAsFields=False):
     return out
 
 def DeleteInternalFaces(mesh):
+    OriginalNumberOfElements = mesh.GetNumberOfElements()
     skin = ComputeSkin(mesh)
     datatochange = {}
+
     for name,data in mesh.elements.items():
         if ElementNames.dimension[name] != 2:
             continue
@@ -1154,8 +1157,14 @@ def DeleteInternalFaces(mesh):
 
         datatochange[name] = ExtractElementsByMask(data,mask)
 
+
+
     for name, data in datatochange.items():
         mesh.elements[name] = data
+
+    if OriginalNumberOfElements != mesh.GetNumberOfElements():
+        print("Number Of Elements Changed: Droping elemFields")
+        mesh.elemFields = {}
 
     return mesh
 
@@ -1254,7 +1263,7 @@ def ExtractElementsByImplicitZone(inmesh,op,allNodes=True,cellCenter=False):
     CleanLonelyNodes(outmesh)
     return outmesh
 
-def ComputeSkin(mesh, md=None ):
+def ComputeSkin(mesh, md=None ,inplace=False):
 
     #dualGraph,usedPoints = GetDualGraph(mesh)
 
@@ -1293,9 +1302,12 @@ def ComputeSkin(mesh, md=None ):
                 #print(surf2[ehash])
             #print(surf2)
 
-    res = type(mesh)()
+    if inplace:
+        res = mesh
+    else:
+        res = type(mesh)()
+        res.nodes = mesh.nodes
 
-    res.nodes = mesh.nodes
     for name in surf:
         data = res.GetElementsOfType(name)
         surf2 = surf[name]
