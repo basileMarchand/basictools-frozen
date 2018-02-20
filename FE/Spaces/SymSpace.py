@@ -125,6 +125,16 @@ class SymSpaceBase(SpaceBase):
 
        if dim == s:
            Jdet = np.linalg.det(Jack)
+
+           if dim == 3:
+               def jinv(vec,jack=Jack):
+                   m1, m2, m3, m4, m5, m6, m7, m8, m9 = jack.flatten()
+                   determinant = m1*m5*m9 + m4*m8*m3 + m7*m2*m6 - m1*m6*m8 - m3*m5*m7 - m2*m4*m9
+                   return np.dot(np.array([[m5*m9-m6*m8, m3*m8-m2*m9, m2*m6-m3*m5],
+                       [m6*m7-m4*m9, m1*m9-m3*m7, m3*m4-m1*m6],
+                       [m4*m8-m5*m7, m2*m7-m1*m8, m1*m5-m2*m4]]),vec) /determinant
+               return Jack,Jdet,jinv
+
        elif dim == 0:
            Jdet = 1
        elif dim == 1:
