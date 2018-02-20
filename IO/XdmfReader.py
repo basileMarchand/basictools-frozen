@@ -278,7 +278,15 @@ class XdmfTopology(Xdmfbase):
             self.Type = self.ReadAttribute(attrs,'TopologyType')
 
 #        if self.Type != "Mixed":
-        self.Dimensions = np.array(self.ReadAttribute(attrs,'Dimensions').split(), dtype='int')[::-1]
+        try:
+             self.Dimensions = np.array(self.ReadAttribute(attrs,'Dimensions').split(), dtype='int')[::-1]
+        except :
+            pass
+#             d = self.dataitems[0].ReadAttribute(attrs,'Dimensions').split()
+#             print(d)
+#             self.Dimensions = np.array(d, dtype='int')[::-1]
+#             print(self.Dimensions)
+
 
     def GetConnectivity(self):
 
@@ -289,7 +297,10 @@ class XdmfTopology(Xdmfbase):
 
 
     def GetDimensions(self):
-            return self.Dimensions[::-1]
+        if self.Dimensions is None:
+            return self.dataitems[0].Dimensions
+
+        return self.Dimensions[::-1]
 
 class XdmfGeometry(Xdmfbase):
     """XdmfGeometry class:  stores the point positions """
@@ -384,6 +395,7 @@ class XdmfDataItem(Xdmfbase):
         self.Data = [];
         self.CDATA = '';
         self.Seek = 0;
+        self.Endian = "Native"
 
     def ReadAttributes(self,attrs, path):
         import numpy as __np
@@ -393,18 +405,22 @@ class XdmfDataItem(Xdmfbase):
             self.Type = self.ReadAttribute(attrs,'DataType')
         except:
             self.Type = self.ReadAttribute(attrs,'NumberType')
-        if(self.Type.lower() == 'float' and 'Precision' in attrs):
+        if((self.Type.lower() == 'float' or self.Type.lower() == 'int' )and 'Precision' in attrs):
             self.Precision = int(self.ReadAttribute(attrs,'Precision'))
         self.Format = self.ReadAttribute(attrs,'Format')
         self.Seek = int(self.ReadAttribute(attrs,'Seek',0))
+        self.Endian = self.ReadAttribute(attrs,'Endian',"Native")
 
     def __str__(self):
         res = TFormat.GetIndent() +'XdmfDataItem \n'
         TFormat.II();
         res += TFormat.GetIndent() + 'Type : '+ self.Type +  '\n'
         res += TFormat.GetIndent() + 'Dimensions : '+ str(self.Dimensions) +  '\n'
-        if(self.Type.lower() == 'float'):
+        if self.Type.lower() == 'float' :
             res += TFormat.GetIndent() + 'Precision : '+ str(self.Precision) +  '\n'
+        elif  self.Type.lower() == 'int' :
+            res += TFormat.GetIndent() + 'Precision : '+ str(self.Precision) +  '\n'
+
         res += TFormat.GetIndent() + 'Format : '+ str(self.Format) +  '\n'
         res += TFormat.GetIndent() + 'Data : \n  '+  TFormat.GetIndent()  +str(self.Data) +  '\n'
         res += TFormat.GetIndent() + 'CDATA : \n  '+  TFormat.GetIndent()  +str(self.CDATA) +  '\n'
@@ -449,15 +465,31 @@ class XdmfDataItem(Xdmfbase):
                 else:
                   numpytype = 'float_'
             elif(self.Type.lower() =='int'):
-                numpytype = 'int_'
+                if self.Precision == 4:
+                  numpytype = np.int32
+                elif self.Precision == 8 :
+                  numpytype = np.int64
+                else:
+                    raise Exception("Dont know how to treat this type of Precision: " + str(self.Precision) )
+
+
+
+
 
             binfilename  = str(self.CDATA).lstrip().rstrip()
             binfile = open (os.path.join(self.path, binfilename ), "rb")
             binfile.seek(self.Seek)
 
             self.Data = np.fromfile(binfile, dtype=numpytype, count=np.prod(self.Dimensions))
+            import sys
+            if self.Endian == "Native" :
+                pass
+            elif self.Endian == "Big" and sys.byteorder == "little":
+                self.Data.byteswap(inplace=True)
+            elif self.Endian == "Little" and sys.byteorder == "big":
+                self.Data.byteswap(inplace=True)
+
             self.Data.shape = self.Dimensions
-            #print(self.Data.shape)
             binfile.close()
             self.CDATA = '';
         else :
