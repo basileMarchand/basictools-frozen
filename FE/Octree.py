@@ -29,83 +29,8 @@ class node():
         self.negXposYnegZ = None
         self.negXnegYposZ = None
         self.negXnegYnegZ = None
-#
-#    parent = None
-#    value = None
-#
-#    #children
-#    posXposYposZ = None
-#    posXposYnegZ = None
-#    posXnegYposZ = None
-#    posXnegYnegZ = None
-#    negXposYposZ = None
-#    negXposYnegZ = None
-#    negXnegYposZ = None
-#    negXnegYnegZ = None
-#
-#    #array of children
-#    chidren = [posXposYposZ,posXposYnegZ,posXnegYposZ,posXnegYnegZ,negXposYposZ,negXposYnegZ,negXnegYposZ,negXnegYnegZ]
-#
-#    #position in space
-#    Xupperlimit = None
-#    Yupperlimit = None
-#    Zupperlimit = None
-#
-#    Xlowerlimit = None
-#    Ylowerlimit = None
-#    Zlowerlimit = None
-#    def get_array_of_children(self):
-#        """
-#        helper function to return array of children
-#        because there is some weird issue where just setting an
-#        array variable isn't cutting it
-#        """
-#        children = [self.posXposYposZ,self.posXposYnegZ,self.posXnegYposZ,self.posXposYnegZ,self.negXposYposZ,self.negXposYnegZ,self.negXnegYposZ,self.negXnegYnegZ ]
-#        return children
 
-#    def print_types(self):
-#        """
-#        helper function to printout types of children
-#        I know, terribly unpythonic of me, rabble rabble
-#        """
-#        print type(self.posXposYposZ)
-#        print type(self.posXposYnegZ)
-#        print type(self.posXnegYposZ)
-#        print type(self.posXnegYnegZ)
-#        print type(self.negXposYposZ)
-#        print type(self.negXposYnegZ)
-#        print type(self.negXnegYposZ)
-#        print type(self.negXnegYnegZ)
-#    def print_info(self):
-#        """
-#        helper function to dump node paramaters
-#        """
-#
-#        print "parent:\t {0}".format(self.parent)
-#        print "value:\t {0}".format(self.value)
-#
-#        #children
-#        print "posXposYposZ: \t {0}".format(self.posXposYposZ)
-#        print "posXposYnegz: \t {0}".format(self.posXposYnegZ)
-#        print "posXnegYposZ: \t {0}".format(self.posXnegYposZ)
-#        print "posXnegYnegZ: \t {0}".format(self.posXnegYnegZ)
-#        print "negXposYposZ: \t {0}".format(self.negXposYposZ)
-#        print "negXposYnegZ: \t {0}".format(self.negXposYnegZ)
-#        print "negXnegYposZ: \t {0}".format(self.negXnegYposZ)
-#        print "negXnegYnegZ: \t {0}".format(self.negXnegYnegZ)
-#
-#        #position in space
-#        print "Xupperlimit: \t {0}".format(self.Xupperlimit)
-#        print "Yupperlimit: \t {0}".format(self.Yupperlimit)
-#        print "Zupperlimit: \t {0}".format(self.Zupperlimit)
-#
-#        print "Xlowerlimit: \t {0}".format(self.Xlowerlimit)
-#        print "Ylowerlimit: \t {0}".format(self.Ylowerlimit)
-#        print "Zlowerlimit: \t {0}".format(self.Zlowerlimit)
-#
-#        print "Xcenter: \t {0}".format(self.Xcenter)
-#        print "Ycenter: \t {0}".format(self.Ycenter)
-#        print "Zcenter: \t {0}".format(self.Zcenter)
+        self.value = None
 
 
     def add(self, payload, coord, level):
