@@ -39,7 +39,7 @@ def WriteMesh(filename,out,binary=False):# pragma: no cover
     writer = WriterFactory(filename)
     writer.SetBinary(binary)
     writer.Open()
-    writer.write(out)
+    writer.Write(out)
     writer.Close()
 
 ## to use this function add this lines to the
