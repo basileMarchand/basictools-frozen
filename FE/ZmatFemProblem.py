@@ -165,16 +165,20 @@ ddsddeNew = pyumat.umat(stress=stress,statev=statev,ddsdde=ddsdde,sse=sse,spd=sp
         names = ['Flux', 'Grad','var_int','var_aux','Extra Zmat']
 
         def parser(fname, obj):
+            cont = 1
             line = 0
             while line < len(outlines):
                 if fname in outlines[line]:
                     line +=1
-                    while any(word in outlines[line].strip() for word in names) == False and len(outlines[line].strip())>0  and outlines[line][0] != "=" :
+                    while any(word in outlines[line].strip() for word in names) == False and len(outlines[line].strip())>0  and outlines[line][0] != "=":
                         if outlines[line][0] != " ":
                             break
                         fnames = outlines[line].strip().split()
-                        for fname in fnames:
-                            obj.append(fname.split("(")[0])
+                        for i in range(len(fnames)):
+                          if '--' in fnames[i]:
+                            cont = 0
+                          if cont == 1:
+                            obj.append(fnames[i].split("(")[0])
                         line +=1
                 else:
                     line +=1
