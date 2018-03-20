@@ -40,6 +40,8 @@ class UtReader(ReaderBase):
         self.timeToRead = -1
         self.atIntegrationPoints = False
         self.meshMetadata = None
+        self.cache = None
+        self.oldtimeindex = None
 
     def Reset(self):
         self.meshfile = None
@@ -134,6 +136,11 @@ class UtReader(ReaderBase):
           else:
             timeIndex = [data[4]for data in self.time].index(self.timeToRead)
 
+        if timeIndex != self.oldtimeindex:
+            self.cache = None
+            self.oldtimeindex = timeIndex
+
+
         self.PrintVerbose("Reading timeIndex : " + str(timeIndex) )
 
         basename = ".".join(self.fileName.split(".")[0:-1])
@@ -163,6 +170,17 @@ class UtReader(ReaderBase):
                 with open(ffn+postfix,"rb") as datafile:
                    datafile.seek(offset*4)
                    res = np.fromfile(datafile ,count=count, dtype=np.float32).byteswap()
+              elif np.min(IPPerElement) == np.max(IPPerElement)  :
+                  # the .intef file is homogenius
+                with open(ffn+postfix,"rb") as datafile:
+                    datafile.seek(offset*4)
+                    nip = IPPerElement[0]
+
+                    if self.cache is None:
+                        self.cache = np.fromfile(datafile ,count=nip*nbElements* len(self.integ), dtype=np.float32).byteswap()
+                        self.cache.shape = (nbElements,nip* len(self.integ))
+
+                    res = self.cache[:,idx*nip:(idx+1)*nip].flatten()
               else:
                 with open(ffn+postfix,"rb") as datafile:
                     self.PrintDebug("Offset : " + str(offset*4))
@@ -310,12 +328,14 @@ def CheckIntegrity():
         for f in ["sig11","sig22","sig33","sig12","sig23","sig31","eto11","eto22","eto33","eto12","eto23","eto31"]:
 
             data = reader.Read(fieldname=f,time=t)
-            #print(' '.join( [ str(int(x)) for x in data[0:30] ] ))
-            #print(' '.join( [ str(x) for x in ipdata[:,cpt,:].ravel()[0:30] ] ))
-            #print(len(data)),
-            #print(ipdata[:,cpt,:].size),
-            #print(ipdata.shape)
             if np.any (data != ipdata[:,cpt,:].ravel()+ t *1000000 ):
+                print(data)
+                print(' '.join( [ str(int(x)) for x in data[0:30] ] ))
+                print(' '.join( [ str(x) for x in ipdata[:,cpt,:].ravel()[0:30] ] ))
+                print(len(data)),
+                print(ipdata[:,cpt,:].size),
+                print(ipdata.shape)
+
                 raise(Exception("Error Reading field " + f ))
             offset += nbIP
             cpt +=1
@@ -330,4 +350,7 @@ def CheckIntegrity():
 if __name__ == '__main__':# pragma: no cover
     #from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
     #BaseOutputObject.SetGlobalDebugMode(True)
+    import time
+    a =  time.time()
     print(CheckIntegrity())# pragma: no cover
+    print(time.time() -a)
