@@ -112,7 +112,9 @@ class BaseOutputObject(object):
             # some cleaning
             if type(mess) is not str:
                 stack = inspect.stack()[stnumber]
-                res += (")".join("(".join(str(stack[4][0]).split("(")[1:]).split(")")[0:-1]) )
+                # we replace BaseOutputObject() to "" in case is present
+                st = str(stack[4][0]).replace("BaseOutputObject()","")
+                res += (")".join("(".join(st.split("(")[1:]).split(")")[0:-1]) )
                 res += (" -> ")
             #print(" [" + str(memory()) + "]"),
             res += (str(mess))
@@ -175,6 +177,11 @@ def CheckIntegrity():
 
     myObj2 = BaseOutputObject(myObj)
 
+    class TOTO():
+        tata = ["titi","tutu"]
+    toto = TOTO()
+
+    BaseOutputObject().PrintDebug(toto.tata)
     return "OK"
 
 if __name__ == '__main__':
