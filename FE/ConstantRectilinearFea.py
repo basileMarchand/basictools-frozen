@@ -261,6 +261,7 @@ class Fea(FeaBase.FeaBase):
             #def PrintRes(x):
             #   self.PrintDebug(np.linalg.norm(K.dot(x)-rhs/norm))
             #    , callback=PrintRes
+            self.PrintDebug("tol " + str(self.tol))
             res = linalg.cg(K.tocsc(copy=False), rhs/norm, x0 = self.u[self.free, 0]/norm , M = M, tol = self.tol )
             if res[1] > 0:
                 raise
