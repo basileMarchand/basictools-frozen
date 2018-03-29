@@ -4,6 +4,17 @@ import BasicTools.FE.ElementNames as EN
 from sympy.matrices import Matrix
 import numpy as np
 
+class Hexa_P0_Lagrange(SymSpaceBase):
+    def __init__(self):
+        super(Hexa_P0_Lagrange,self).__init__()
+        self.geoSupport = EN.GeoQuad
+
+
+        self.symN = Matrix([1])
+        self.posN = np.array([ [ 0.5, 0.5, 0.5] ])
+        self.dofAttachments = [("C",0,None)]
+        self.Create()
+
 class Hexa_P1_Lagrange(SymSpaceBase):
     def __init__(self):
         super(Hexa_P1_Lagrange,self).__init__()
@@ -32,6 +43,15 @@ class Hexa_P1_Lagrange(SymSpaceBase):
                                ("P",6,None),
                                ("P",7,None),
                                ]
+
+        self.posN = np.array([[ 0, 0, 0],
+                              [ 1, 0, 0],
+                              [ 1, 1, 0],
+                              [ 0, 1, 0],
+                              [ 0, 0, 1],
+                              [ 1, 0, 1],
+                              [ 1, 1, 1],
+                              [ 0, 1, 1]])
         self.Create()
 
 def CheckIntegrity():

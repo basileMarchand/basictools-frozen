@@ -10,6 +10,24 @@ class BarSpaceBase(SymSpaceBase):
         self.dimensionality = 1
         self.geoSupport = EN.GeoBar
 
+class Bar_P0_Global(BarSpaceBase):
+    def __init__(self):
+        super(Bar_P0_Global,self).__init__()
+        self.symN = Matrix([1])
+        self.posN = np.array([[None]])
+        self.dofAttachments = [("G",None,None)]
+        self.Create()
+
+class Bar_P0_Lagrange(BarSpaceBase):
+    def __init__(self):
+        super(Bar_P0_Lagrange,self).__init__()
+        self.symN = Matrix([1])
+
+        self.posN = np.array([[0.5]])
+        self.dofAttachments = [("C",0,None) ]
+        self.Create()
+
+
 class Bar_P1_Lagrange(BarSpaceBase):
     def __init__(self):
         super(Bar_P1_Lagrange,self).__init__()

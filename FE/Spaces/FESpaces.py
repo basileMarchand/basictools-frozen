@@ -14,6 +14,18 @@ LagrangeSpaceGeo[EN.Quadrangle_4] = QuadSpaces.Quad_P1_Lagrange()
 LagrangeSpaceGeo[EN.Hexaedron_8] = HexaSpaces.Hexa_P1_Lagrange()
 
 
+ConstantSpaceGlobal = {}
+ConstantSpaceGlobal[EN.Bar_2] = BarSpaces.Bar_P0_Global()
+ConstantSpaceGlobal[EN.Triangle_3] = TriSpaces.Tri_P0_Global()
+ConstantSpaceGlobal[EN.Tetrahedron_4] = TetSpaces.Tet_P0_Global()
+
+LagrangeSpaceP0 = {}
+LagrangeSpaceP0[EN.Bar_2] = BarSpaces.Bar_P0_Lagrange()
+LagrangeSpaceP0[EN.Triangle_3] = TriSpaces.Tri_P0_Lagrange()
+LagrangeSpaceP0[EN.Tetrahedron_4] = TetSpaces.Tet_P0_Lagrange()
+LagrangeSpaceP0[EN.Quadrangle_4] = QuadSpaces.Quad_P0_Lagrange()
+LagrangeSpaceP0[EN.Hexaedron_8] = HexaSpaces.Hexa_P0_Lagrange()
+
 LagrangeSpaceP1 = {}
 LagrangeSpaceP1[EN.Bar_2] = BarSpaces.Bar_P1_Lagrange()
 LagrangeSpaceP1[EN.Triangle_3] = TriSpaces.Tri_P1_Lagrange()
