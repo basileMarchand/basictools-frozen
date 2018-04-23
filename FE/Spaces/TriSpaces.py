@@ -11,6 +11,15 @@ class TriSpaceBase(SymSpaceBase):
         self.dimensionality = 2
         self.geoSupport = EN.GeoTri
 
+
+class Tri_P0_Global(TriSpaceBase):
+    def __init__(self):
+        super(Tri_P0_Global,self).__init__()
+        self.symN = Matrix([1])
+        self.posN = np.array([[None,None]])
+        self.dofAttachments = [("G",None,None)]
+        self.Create()
+
 class Tri_P0_Lagrange(TriSpaceBase):
     def __init__(self):
         super(Tri_P0_Lagrange,self).__init__()

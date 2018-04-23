@@ -29,14 +29,6 @@ def GetField(name,size,star=False,sdim=3,extraCoordinates=[]):
     else:
         for i in range(size):
             res.append(Function(name+"_"+str(i)+suffix)(*s))
-#        if sdim == 1:
-#            res.append(Function(name+str(i)+suffix)(space[0]))
-#        elif sdim == 2:
-#            res.append(Function(name+str(i)+suffix)(space[0],space[1]))
-#        else:
-#            res.append(Function(name+str(i)+suffix)(space[0],space[1],space[2]))
-            #res.append(Symbol(name+str(i)+suffix))#(space[0],space[1],space[2]))
-    #print(res)
     return (Matrix([res])).T
 
 def Divergence(arg,dim=3):
@@ -58,6 +50,9 @@ def Strain(arg ,sdim=3):
     return (G+G.T)/2
 
 def ToVoigtEpsilon(arg):
+    """ we use yamma for shear
+
+    """
     if arg.shape[0] ==3:
         return Matrix([arg[0,0],arg[1,1],arg[2,2],2*arg[1,2],2*arg[0,2],2*arg[0,1], ])
     if arg.shape[0] ==2:
@@ -84,16 +79,21 @@ def GetMecaElasticProblem(name="u",dim=3,K=None,planeStress=True):
     ener = ToVoigtEpsilon(Strain(u)).T*K*ToVoigtEpsilon(Strain(ut))
     return ener
 
+
+
 def GetMecaNormalPressure(flux="p",name="u", dim=3):
     ut = GetTestField("u",dim)
-    p = Symbol(flux)
-    #GetField(flux,1)
+    if isinstance(flux,str):
+        p = GetConstant(flux)
+    else:
+        p = float(flux)
 
     from BasicTools.FE.WeakForm import GetNormal
     Normal = GetNormal(dim)
 
     wflux = p*Normal.T*ut
     return wflux
+
 
 
 class Weakterm(object):
@@ -134,10 +134,6 @@ class WeakMonom(object):
         for p in self.prod:
             res += "*"
             res += str(p)
-#            if p.derDegree > 0 :
-#                res += "d" + p.fieldName + "/"  + "d"  + p.derCoordName
-#            else:
-#                res += p.fieldName
 
         return res
 
@@ -190,7 +186,7 @@ class WeakForm(object):
 
 def SymWeakMonomToNumWeakMono(exp):
     from  sympy.core.mul import Mul
-    from sympy.core.function import Derivative
+    from  sympy.core.power import Pow
 
     if exp.func == Mul:
         res = WeakMonom()
@@ -198,46 +194,24 @@ def SymWeakMonomToNumWeakMono(exp):
             if arg.is_Number:
                 res.prefactor = float(arg)
                 continue
-            if type(arg) == Derivative:
-                t = Weakterm()
-                t.derDegree = 1
-                t.fieldName = str(arg.args[0].func)
-                t.derCoordName = str(arg.args[1])
-                sn = [ str(c) for c in space]
-                t.derCoordIndex =  sn.index(t.derCoordName)
 
-                res.prod.append(t)
+            if isinstance(arg,Pow):
+                term = ConverTermToProd(arg.args[0])
+                if term is None:
+                    print(type(arg.args[0]))
+                    print(arg.args[0])
+                    raise( Exception("Unable to treat term " + str(arg.args[0]) ))
+                for i in range(arg.args[1]):
+                    res.prod.append(term)
                 continue
 
-            if isinstance(arg,Function):
-                t = Weakterm()
-                N = GetNormal(3)
-                #print(str(arg.func)+"* * * * * * ")
-                #print(arg.func)
-                #print (N)
-                #print ([arg == nc for nc in N])
-
-                if np.any([arg == nc for nc in N]):
-                    t.normal = True
-                    t.derDegree = int(str(arg.func).split("_")[1])
-                else:
-                    t.derDegree = 0
-
-                t.fieldName = str(arg.func)
-                res.prod.append(t)
-
+            term = ConverTermToProd(arg)
+            if not term is None:
+                res.prod.append(term)
                 continue
 
-            if isinstance(arg,Symbol):
-                t = Weakterm()
-                t.constant = True
-                t.derDegree = 0
-                t.fieldName = str(arg)
-                res.prod.append(t)
-                continue
-
-            #print(type(arg))
-            #print(arg)
+            print(type(arg))
+            print(arg)
 
             raise
         return res
@@ -246,6 +220,41 @@ def SymWeakMonomToNumWeakMono(exp):
         pprint(exp)
         raise ()
 
+def ConverTermToProd(arg):
+    if isinstance(arg,Symbol):
+        t = Weakterm()
+        t.constant = True
+        t.derDegree = 0
+        t.fieldName = str(arg)
+        return t
+
+    from sympy.core.function import Derivative
+    if type(arg) == Derivative:
+        t = Weakterm()
+        t.derDegree = 1
+        t.fieldName = str(arg.args[0].func)
+        t.derCoordName = str(arg.args[1])
+        sn = [ str(c) for c in space]
+        t.derCoordIndex =  sn.index(t.derCoordName)
+        return t
+
+    if isinstance(arg,Function):
+        t = Weakterm()
+        N = GetNormal(3)
+        #print(str(arg.func)+"* * * * * * ")
+        #print(arg.func)
+        #print (N)
+        #print ([arg == nc for nc in N])
+        if np.any([arg == nc for nc in N]):
+            t.normal = True
+            t.derDegree = int(str(arg.func).split("_")[1])
+        else:
+            t.derDegree = 0
+
+        t.fieldName = str(arg.func)
+        return t
+
+    raise
 
 def SymWeakToNumWeak(exp):
     from  sympy.core.add import Add

@@ -683,7 +683,7 @@ def ExtractElementByDimensionalityNoCopy(inmesh,dimensionalityFilter):
                 outmesh.elements[name] = elems
     return outmesh
 
-def ExtractElementByTags(inmesh,tagsToKeep, allNodes=False,dimensionalityFilter= None):
+def ExtractElementByTags(inmesh,tagsToKeep, allNodes=False,dimensionalityFilter= None, cleanLonelyNodes=True):
 
     outmesh = type(inmesh)()
     outmesh.CopyProperties(inmesh)
@@ -753,7 +753,8 @@ def ExtractElementByTags(inmesh,tagsToKeep, allNodes=False,dimensionalityFilter=
            newid = newIndex[temp]
            outelem.tags.CreateTag(tag.name,errorIfAlreadyCreated=False).SetIds(newid)
 
-    CleanLonelyNodes(outmesh)
+    if cleanLonelyNodes:
+        CleanLonelyNodes(outmesh)
     return outmesh
 
 def VolumeOfTetrahedrons(inmesh):
@@ -826,7 +827,7 @@ def CleanEmptyTags(inmesh):
         elems.tags.RemoveEmptyTags()
     inmesh.nodesTags.RemoveEmptyTags()
 
-def GetDualGraph(inmesh, maxNumConnections=100):
+def GetDualGraph(inmesh, maxNumConnections=200):
 
     # generation of the dual graph
     dualGraph = np.zeros((inmesh.GetNumberOfNodes(),maxNumConnections), dtype=int )-1
@@ -1143,6 +1144,25 @@ def VtkToMesh(vtkmesh, meshobject=None, TagsAsFields=False):
             out.GetElementsOfType(et).AddNewElement([cell.GetPointId(j) for j in range(np)] ,i)
     return out
 
+def DeleteElements(mesh,mask):
+    OriginalNumberOfElements = mesh.GetNumberOfElements()
+    datatochange = {}
+
+    mesh.ComputeGlobalOffset()
+
+    for name,data in mesh.elements.items():
+        offset = data.globaloffset
+        localmask = mask[offset:offset+data.GetNumberOfElements()]
+        datatochange[name] = ExtractElementsByMask(data, np.logical_not(localmask))
+
+    for name, data in datatochange.items():
+        mesh.elements[name] = data
+
+    if OriginalNumberOfElements != mesh.GetNumberOfElements():
+        print("Number Of Elements Changed: Droping elemFields")
+        mesh.elemFields = {}
+
+
 def DeleteInternalFaces(mesh):
     OriginalNumberOfElements = mesh.GetNumberOfElements()
     skin = ComputeSkin(mesh)
@@ -1294,9 +1314,7 @@ def ComputeSkin(mesh, md=None ,inplace=False):
     for name,data in mesh.elements.items():
         if ElementNames.dimension[name] < md:
             continue
-        print("working on {}".format(name))
         faces = ElementNames.faces[name]
-        #print(faces)
         ne = data.GetNumberOfElements()
         for faceType,localFaceConnectivity in faces:
             globalFaceConnectivity = data.connectivity[:,localFaceConnectivity]
@@ -1334,6 +1352,8 @@ def ComputeSkin(mesh, md=None ,inplace=False):
                 data.AddNewElement(data2[1],-1)
         data.tags.CreateTag("ExteriorSurf").SetIds(np.arange(data.GetNumberOfElements()))
 
+    res.PrepareForOutput()
+
     return res
 
 
@@ -1353,12 +1373,9 @@ def ComputeFeatures(inputmesh,FeatureAngle=90,skin=None):
         if ElementNames.dimension[name] != md-1:
             continue
 
-
-
-        print("working on {}".format(name))
         faces = ElementNames.faces[name]
         numberOfNodes = ElementNames.numberOfNodes[name]
-        #print(faces)
+
         ne = data.GetNumberOfElements()
         for faceType,localFaceConnectivity in faces:
             globalFaceConnectivity = data.connectivity[:,localFaceConnectivity]
@@ -1406,9 +1423,72 @@ def ComputeFeatures(inputmesh,FeatureAngle=90,skin=None):
             elif data2[0] == 2 and data2[2]  >= FeatureAngle:
                 data.AddNewElement(data2[3],-1)
 
+
     for eltype in [ElementNames.Bar_2, ElementNames.Bar_3]:
         bars = edgemesh.GetElementsOfType(eltype)
         bars.tags.CreateTag("Ridges").SetIds(np.arange(bars.GetNumberOfElements()))
+
+    skinmesh.PrepareForOutput()
+    edgemesh.PrepareForOutput()
+    """
+    Now we compute the corners
+
+    The corner are the points:
+        where 3 Ridges meet
+        touched by only one Ridge
+        the angle of 2 ridges is bigger than the FeatureAngle
+    """
+
+    extractedBars = edgemesh.GetElementsOfType(ElementNames.Bar_2)
+    extractedBars.tighten()
+
+    originalBars = inputmesh.GetElementsOfType(ElementNames.Bar_2)
+    originalBars.tighten()
+
+    #corners
+    mask = np.zeros((edgemesh.GetNumberOfNodes()), dtype=bool )
+
+    almanac = {}
+    for bars in [originalBars,extractedBars]:
+        # working form to do the operation (Please read the documentation)
+        # mask[bars.connectivity.ravel()] += 1
+
+        intmask = np.zeros((edgemesh.GetNumberOfNodes()), dtype=int )
+
+        np.add.at(intmask, bars.connectivity.ravel(),1)
+
+
+        mask[intmask > 2 ] = True
+        mask[intmask == 1 ] = True
+
+        for bar in range(bars.GetNumberOfElements()):
+            id0,id1 =  bars.connectivity[bar,:]
+            p0 = inputmesh.nodes[id0,:]
+            p1 = inputmesh.nodes[id1,:]
+            vec1 = (p1-p0)
+            vec1 /= np.linalg.norm(vec1)
+            for p,sign in zip([id0,id1],[1,-1]):
+                if mask[p]:
+                    #already in the mask no need to treat this point
+                    continue
+
+                if p in almanac:
+                    vec2 = almanac[p][1]
+                    angle = (180/np.pi)*np.arccos(np.dot(vec1, vec2*sign) )
+                    almanac[p][2] = angle
+                    almanac[p][0] +=1
+                    #print(angle)
+                else:
+                    almanac[p] = [1,vec1*sign,id0]
+                    #print(vec1)
+
+
+    for p,data in almanac.items():
+        if (180-data[2]) >= FeatureAngle:
+            mask[p] = True
+
+
+    edgemesh.nodesTags.CreateTag("Corners").AddToTag(np.where(mask)[0])
 
     return (edgemesh,skinmesh)
 
@@ -1727,9 +1807,8 @@ def CheckIntegrity_GetDualGraph(GUI=False):
 
 def CheckIntegrity(GUI=False):
 
-    CheckIntegrity_ComputeFeatures(GUI)
+    CheckIntegrity_ComputeFeatures(GUI=False)
     CheckIntegrity_AddSkin(GUI)
-
     CheckIntegrity_ExtractElementsByImplicitZone(GUI)
     CheckIntegrity_DeleteInternalFaces(GUI)
     CheckIntegrity_ExtractElementsByMask(GUI)

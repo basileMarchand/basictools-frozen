@@ -122,13 +122,13 @@ class FemReader(ReaderBase):
                       #res.AddElementToTagUsingOriginalId(oid,)
 
                       continue
-                    if key == 'ENDATA' : break
+                    if key == 'ENDDATA' : break
                     if line is None: break
 
                     print("string '" + str(line) + "' not treated")
 
 
-            if key == 'ENDATA' : break
+            if key == 'ENDDATA' : break
             if line is None: break
             print("string '" + str(line) + "' not treated")
             raise

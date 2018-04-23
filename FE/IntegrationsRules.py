@@ -104,6 +104,16 @@ LagrangeP2[EN.GeoTri] = (p,w)
 
 
 
+#Nodal Itegration for the evaluation of post quantities at nodes
+NodalEvaluation = {}
+import BasicTools.FE.Spaces.HexaSpaces as HS
+hexa = HS.Hexa_P1_Lagrange()
+NodalEvaluation[EN.GeoHex] = (hexa.posN , list(np.ones(hexa.posN.shape[0])) )
+import BasicTools.FE.Spaces.TetSpaces as TS
+tet = TS.Tet_P1_Lagrange()
+NodalEvaluation[EN.GeoTet] = (tet.posN , list(np.ones(tet.posN.shape[0])) )
+IntegrationRulesAlmanac["NodalEvalGeo"] = NodalEvaluation
+
 def CheckIntegrity(GUI=False):
     for rulename,rule  in IntegrationRulesAlmanac.items():
         print(rulename)

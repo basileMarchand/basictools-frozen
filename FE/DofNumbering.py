@@ -33,7 +33,8 @@ def ComputeDofNumbering(mesh,Space,dofs=None,tag=AllElements,sign=1,fromConnecti
         dofs["size"] = mesh.GetNumberOfNodes()
         dofs["dirichelet"] = -1
         dofs["almanac"] = {}
-        dofs["permutation"] = np.arange(mesh.GetNumberOfNodes())
+        dofs["doftopointLeft"] = slice(mesh.GetNumberOfNodes())
+        dofs["doftopointRight"] = dofs["doftopointLeft"]
         for name,data in mesh.elements.items():
             dofs[name] = data.connectivity
 
@@ -44,7 +45,7 @@ def ComputeDofNumbering(mesh,Space,dofs=None,tag=AllElements,sign=1,fromConnecti
         dofs["size"] = 0
         dofs["dirichelet"] = -1
         dofs["almanac"] = {}
-        dofs["permutation"] = None
+        dofs["Hash"] = Hash
         if sign == 1:
             cpt = 0
         else:
@@ -73,35 +74,53 @@ def ComputeDofNumbering(mesh,Space,dofs=None,tag=AllElements,sign=1,fromConnecti
         else:
             continue
 
-        print("working on " +name + " (" + str(len(fil)) + ") ")
-
         numberOfShapeFunctions = sp.GetNumberOfShapeFunctions()
         for i in fil:
             conn = data.connectivity[i,:]
             for j in range(numberOfShapeFunctions):
                 h = Hash(sp,j,conn,name,i)
+
                 if h in almanac:
                     d = almanac[h]
                 else:
-                    #if fromConnectivity:
-                    #    d = conn[j]
-                    #else:
-                    #    d = cpt
                     d = cpt
                     almanac[h] = d
                     cpt += 1*sign
                 dof[i,j] = d
 
         dofs[name] = dof
-    if sign ==1:
-        dofs["size"] = cpt
-        perm = np.empty(cpt,dtype=np.int)
 
+
+    if sign ==1:
+        #print("size : " + str(cpt) )
+        dofs["size"] = cpt
+        # two point to take into account:
+        #     the numbering can be applied only to  a subdomain
+        #     the space used can be bigger than the mesh (p2 for example)
+        # so we need a two side extractor in the form of
+        #
+        # PointSizeVector[doftopointLeft] = solution[doftopointRight]
+        #
+        # this way we can have a extractor on P2 or P3 solution into a P1 mesh
+        # the user is responsible to allocate and initialise (of zeros) the
+        # PointSizeVector of the right size
+        extractorLeftSide = np.empty(cpt,dtype=np.int)
+        extractorRightSide = np.empty(cpt,dtype=np.int)
+
+        tmpcpt = 0
+        # if k[0] is 'P' then k[1] is the node number
         for k,v in almanac.items():
             if k[0] == 'P':
-                perm[k[1]] = v
+                extractorLeftSide[tmpcpt] = k[1]
+                extractorRightSide[tmpcpt] = v
+                tmpcpt += 1
 
-        dofs["permutation"] =    perm
+        extractorLeftSide.resize(tmpcpt)
+        extractorRightSide.resize(tmpcpt)
+        dofs["doftopointLeft"] =   extractorLeftSide
+        dofs["doftopointRight"] =  extractorRightSide
+
+
     else:
         dofs["dirichelet"] = cpt
 
@@ -115,7 +134,6 @@ def NodesPermutation(mesh,per):
 
     mesh.nodes = nnodes
     for tag in mesh.nodesTags:
-        #tag = mesh.nodesTags[name]
         ids = tag.GetIds()
         nids = perII[ids]
         tag.SetIds(nids)

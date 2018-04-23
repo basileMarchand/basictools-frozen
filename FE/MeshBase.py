@@ -47,6 +47,9 @@ class Tag(object):
         self.Tighten()
         return self._id
 
+    def Merge(self,other):
+        self.SetIds(list(set().union(self.GetIds(),other.GetIds())))
+
     def __str__(self):
         res = ''
         res  = str(self.name) + " " + str(self.cpt) + " "

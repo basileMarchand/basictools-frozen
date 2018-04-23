@@ -436,11 +436,11 @@ def find_closest_three(x, y, z, tree):
     """
     #brief sanity checking
     if (x >= tree.Xmax or x <= tree.Xmin):
-        print("Fail, out of range")
+        print( "Fail, out of range")
     if (y >= tree.Ymax or y <= tree.Ymin):
-        print("Fail, out of range")
+        print( "Fail, out of range")
     if (z >= tree.Zmax or z <= tree.Zmin):
-        print("Fail, out of range")
+        print( "Fail, out of range")
 
     #find the node by coords
     for level in range(tree.maxiter):
@@ -452,31 +452,37 @@ def find_closest_three(x, y, z, tree):
 
 def CheckIntegrity():
 
-    print("Creating octree")
+    print( "Creating octree")
     tree = Octree(100,100,100, -100, -100, -100)
-    print("inserting node")
+    print( "inserting node")
     tree.add_item("derp1", (90.34251,10.1234,10.9876))
-    print("Great success")
-    print("inserting node")
+    print( "Great success")
+    print( "inserting node")
     tree.add_item("derp2", (10.34251,10.1234,10.9876))
-    print("Great success")
-    print("inserting node")
+    print( "Great success")
+    print( "inserting node")
     tree.add_item("derp3", (-10.34251,10.1234,10.9876))
-    print("Great success")
-    print("inserting node")
+    print( "Great success")
+    print( "inserting node")
     tree.add_item("derp4", (10.34251,-10.1234,10.9876))
-    print("Great success")
-    print("inserting node")
+    print( "Great success")
+    print( "inserting node")
     tree.add_item("derp5", (10.34251,10.1234,-10.9876))
-    print("Great success")
+    print( "Great success")
 
     #get some data
     entries = tree.find_within_range((0,0,0), 40, "cube")
+    cpt =0
     for i in entries:
-        print(i)
+      print(cpt),
+      print(i)
+      cpt += 1
 
-    if len(i) != 4:
+    print(len(i))
+    if len(entries) != 4:
         raise
+
+    return "ok"
 
 if __name__ == '__main__':
     print((CheckIntegrity()))# pragma: no cover

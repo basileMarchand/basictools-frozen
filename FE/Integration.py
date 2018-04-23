@@ -1,14 +1,16 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 
-import BasicTools.FE.ElementNames as EN
 from scipy.sparse import coo_matrix
+from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
+import BasicTools.FE.ElementNames as EN
 
 from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
 from BasicTools.FE.UnstructuredMeshTools import ExtractElementsByMask
+from BasicTools.FE.WeakForm import testcharacter
 
 
-def Integrate( mesh, wform, constants, fields, dofs,spaces,numbering, tag="3D",):
+def Integrate( mesh, wform, constants, fields, dofs,spaces,numbering, tag="3D",integrationRuleName=None,onlyEvaluation=False):
 
 
     #total number of dofs and offset calculation
@@ -50,8 +52,13 @@ def Integrate( mesh, wform, constants, fields, dofs,spaces,numbering, tag="3D",)
 
     #integration
 
-
     for name, data in mesh.elements.items():
+        if data.GetNumberOfElements() == 0:
+            continue
+        BaseOutputObject().PrintDebug("integration of element of type : " + name)
+        BaseOutputObject().PrintDebug("Number of Elements: " + str(data.GetNumberOfElements()))
+        BaseOutputObject().PrintDebug(data.tags)
+
         space = []
         for i in range(len(spaces) ):
             space.append(spaces[i][name])
@@ -62,6 +69,7 @@ def Integrate( mesh, wform, constants, fields, dofs,spaces,numbering, tag="3D",)
                 idstotreat = range(data.GetNumberOfElements())
             else:
                 idstotreat = data.tags[tag].GetIds()
+                BaseOutputObject().PrintDebug("Number of Elements in tag : " + str(len(idstotreat)))
                 #domainToTreat = ExtractElementsByMask(data,data.tags[tag].GetIds())
             #print(fields)
             extraField = {}
@@ -72,26 +80,37 @@ def Integrate( mesh, wform, constants, fields, dofs,spaces,numbering, tag="3D",)
 
             elnumbering = [b[name] for b in numbering]
 
-            F += ElementsIntegral(mesh.nodes, domainToTreat,wform,vij,space,constants, extraField,dofs,elnumbering,offset,LagrangeSpaceGeo[name],totaldofs,idstotreat)
+            F += ElementsIntegral(mesh.nodes, domainToTreat,wform,vij,space,constants, extraField,dofs,elnumbering,offset,LagrangeSpaceGeo[name],totaldofs,idstotreat,integrationRuleName=integrationRuleName,onlyEvaluation=onlyEvaluation)
 
     K = coo_matrix((vij[0][0:vij[3]], (vij[1][0:vij[3]],vij[2][0:vij[3]])), shape=(totaldofs, totaldofs)).tocsr()#(self.dofpernode,self.dofpernode))
 
     return K,F
 
-from BasicTools.FE.IntegrationsRules import LagrangeP1
-from BasicTools.FE.WeakForm import testcharacter
 
-def ElementsIntegral(nodes,domain,wform,vij,space,constants, extrafields,dofs,numbering,offset,geoSpace,totaldofs,idstotreat):
+def ElementsIntegral(nodes,domain,wform,vij,space,constants, extrafields,dofs,numbering,offset,geoSpace,totaldofs,idstotreat,integrationRuleName=None,onlyEvaluation=False):
 
-
+    #rhs
     F = np.zeros(totaldofs,dtype=np.float)
 
-    p,w =  LagrangeP1[EN.geoSupport[domain.elementType]]
+    #integration rule
+    if integrationRuleName is None:
+        from BasicTools.FE.IntegrationsRules import LagrangeP1
+        p,w =  LagrangeP1[EN.geoSupport[domain.elementType]]
+    else:
+        from BasicTools.FE.IntegrationsRules import IntegrationRulesAlmanac
+        BaseOutputObject().PrintDebug(integrationRuleName)
+        BaseOutputObject().PrintDebug(domain.elementType)
+        BaseOutputObject().PrintDebug(EN.geoSupport[domain.elementType].name)
+        p,w =  IntegrationRulesAlmanac[integrationRuleName][EN.geoSupport[domain.elementType]]
 
     numberOfFields = len(dofs)
     for i in range(numberOfFields) :
         space[i].SetIntegrationRule(p,w)
     geoSpace.SetIntegrationRule(p,w)
+
+    for eFName in extrafields :
+        extrafields[eFName][1].SetIntegrationRule(p,w)
+
 
     starsdofs = [ dof+testcharacter for dof in dofs ]
 
@@ -106,105 +125,108 @@ def ElementsIntegral(nodes,domain,wform,vij,space,constants, extrafields,dofs,nu
     #print(hasnormal )
 
 
+    ev = np.empty(100000,dtype=float)
+    ei = np.empty(100000,dtype=int)
+    ej = np.empty(100000,dtype=int)
+    NxNyNzI = [None] *numberOfFields
+    BxByBzI = [None] *numberOfFields
 
     for n in idstotreat:
-        ev = []
-        ei = []
-        ej = []
+        fillcpt =0
+
         xcoor = nodes[domain.connectivity[n],:]
 
         for ip in range(len(w)):
             Jack, Jdet, Jinv = geoSpace.GetJackAndDetI(ip,xcoor)
 
-            NxNyNzI = []
-            BxByBzI = []
+            #NxNyNzI = []
+            #BxByBzI = []
             for i in range(numberOfFields):
                  Nf = space[i].valN[ip]
-                 NxNyNzI.append(Nf )
+                 # NxNyNzI[i].append(Nf )
+                 NxNyNzI[i] = Nf
                  #print(space[i].valdphidxi[ip])
                  temp = Jinv(space[i].valdphidxi[ip])
-                 BxByBzI.append(temp)
+                 #BxByBzI.append(temp)
+                 BxByBzI[i] = temp
 
             extraFieldsN = {}
             extraFieldsB = {}
 
             for name,field in extrafields.items():
-                 #if term.normal:
-                 #    continue
                  fvals, fsp,fnum = extrafields[name]
-
-#                 fvals = field.data
-#                 fsp = field.space
-#                 fnum = field.numbering
                  Nfder = fsp.valdphidxi[ip]
-#                 if fsp.GetDimensionality() == 3:
-#                     Nfder =  np.array([fsp.valdNdxi[ip].T, fsp.valdNdeta[ip].T, fsp.valdNdphi[ip].T])
-#                 elif space[i].GetDimensionality() == 2:
-#                     Nfder =  np.array([fsp.valdNdxi[ip].T, fsp.valdNdeta[ip].T])
-#                 elif space[i].GetDimensionality() == 1:
-#                     Nfder =  np.array([fsp.valdNdxi[ip].T, ])
-#                 else:
-#                     raise()
                  Nf = fsp.valN[ip].T
                  extraFieldsN[name] =  Nf
                  extraFieldsB[name] =  Jinv(Nfder)
 
+            if hasnormal:
+                normal = geoSpace.GetNormal(Jack)
 
             for monom in wform.form:
-                factor = monom.prefactor
+
+
+                if onlyEvaluation :
+                    # For the evaluation we only add the constribution without doing the integration
+                    # the user is responsible of dividing by the mass matrix to get the correct values
+                    # also the user can use a discontinues field to generate element surface stress (for example)
+                    factor = monom.prefactor
+                else:
+                    # for the integration we multiply by the deteminant of the jac
+                    factor = monom.prefactor*Jdet
+
                 left = None
                 right = None
                 for term in monom.prod:
 
 
                     if term.normal :
-#                        print("A-------")
-#                        print(term.normal)
-#                        print(factor)
-                        normal = geoSpace.GetNormal(Jack)
-#                        print("normal")
-#                        print(normal)
+
                         factor *= normal[term.derDegree]
-#                        print(factor)
-#                        print("A-------")
                         continue
 
                     if term.constant :
                         factor *= constants[term.fieldName]
-#                        print("--------term.fieldName")
-#                        print(term.fieldName)
-#                        print(constants)
-#                        print("--------")
                         continue
 
 
                     if term.fieldName in dofs :
                         index = dofs.index(term.fieldName)
                         if term.derDegree == 1:
-                            right = np.array([BxByBzI[index][term.derCoordIndex],])
+                            #right = np.array([BxByBzI[index][term.derCoordIndex],])
+                            #print(right)
+                            #right = np.expand_dims(BxByBzI[index][term.derCoordIndex,:], axis=0)
+                            #print(right)
+                            right = BxByBzI[index][[term.derCoordIndex],:]
+                            #print(right)
+
+                            #raise
                         else:
                             right = np.array([NxNyNzI[index],])
+                            #print(right)
+                            #right = np.expand_dims(NxNyNzI[index],axis=1)
+                            #print(right)
+                            #raise
                         rightNumbering = numbering[index][n,:] + offset[index]
-
                         continue
 
                     if term.fieldName in starsdofs :
                         index = starsdofs.index(term.fieldName)
-
                         if term.derDegree == 1:
-                            left = np.array([BxByBzI[index][term.derCoordIndex],]).T
+                            #left = np.array([BxByBzI[index][term.derCoordIndex],]).T
+                            left = BxByBzI[index][[term.derCoordIndex]].T
                         else:
-                            left = np.array([NxNyNzI[index],]).T
+                            #left = np.array([NxNyNzI[index],]).T
+                            #print(left)
+                            left = np.expand_dims(NxNyNzI[index],axis=1)
+                            #print(left)
+                            #raise
                         leftNumbering = numbering[index][n,:] + offset[index]
                         continue
 
 
                     if term.fieldName in extrafields :
                         fvals, fsp,fnum = extrafields[term.fieldName]
-                        #field = extrafields[term.fieldName]
-                        #fvals = field.data
-                        #fsp = field.space
-                        #fnum = field.numbering
 
                         if term.derDegree == 1:
                             func = extraFieldsB[term.fieldName][term.derCoordIndex]
@@ -215,43 +237,60 @@ def ElementsIntegral(nodes,domain,wform,vij,space,constants, extrafields,dofs,nu
                         factor *= np.dot(func,vals)
 
                         continue
-
-#                    if term.pyUmat:
-#                        import pyumat
-
-
-
-
-#                    print(term)
                     raise
 
                 if factor == 0:
                     continue
 
                 if right is None:
-                    F[leftNumbering] += ((w[ip]*Jdet*factor)*left).ravel()
-#                    print("x----------------")
-#                    print(w[ip])
-#                    print("Jdet")
-#                    print(Jdet)
-#                    print(factor)
-#                    print(left)
-#                    print(((w[ip]*Jdet*factor)*left).ravel())
-#                    print("leftNumbering")
-#                    print(leftNumbering)
-#                    print("x----------------")
-#                    raise
+                    F[leftNumbering] += ((w[ip]*factor)*left).ravel()
+
 
                 else:
-                    vals = (w[ip]*Jdet*factor)*np.dot(left,right)
-                    ev.extend(vals.ravel())
-                    ones = np.ones( len(rightNumbering) ,dtype=int)
-                    for i in leftNumbering:
-                        ej.extend( i * ones)
-                        ei.extend(rightNumbering.ravel())
-        if len (ev):
 
-            data = coo_matrix((ev, (ei,ej)), shape=( totaldofs,totaldofs)).tocsr().tocoo()
+                    try:
+                        vals = (w[ip]*factor)*np.dot(left,right)
+                    except:
+                        print([str(t) for t in monom.prod])
+                        print(left)
+                        print(right)
+                        print(np.dot(left,right))
+                        print(w[ip]*factor)
+                        raise
+                    #ev.etend(vals.ravel())
+                    #ones = np.ones( len(rightNumbering) ,dtype=int)
+                    #for i in leftNumbering:
+                    #    ej.extend( i * ones)
+                    #    ei.extend(rightNumbering.ravel())
+
+                    l = vals.size
+                    ev[fillcpt:fillcpt+l] =  vals.ravel()
+                    #l2 = len(rightNumbering)
+                    #l2cpt = fillcpt
+                    #for i in leftNumbering:
+                    #    ej[l2cpt:l2cpt+l2] = i
+                    #    ei[l2cpt:l2cpt+l2] = rightNumbering
+                    #    l2cpt += l2
+
+                    #a,b = np.meshgrid(leftNumbering,rightNumbering)
+                    #print(leftNumbering.dtype)
+                    #print(type(leftNumbering))
+                    #print(rightNumbering.dtype)
+                    #print(type(rightNumbering))
+                    a = np.repeat(leftNumbering,len(rightNumbering))
+                    b = np.tile(rightNumbering,len(leftNumbering))
+                    ej[fillcpt:fillcpt+l] = b.ravel()
+                    ei[fillcpt:fillcpt+l] = a.ravel()
+                    fillcpt += l
+
+        #if len (ev):
+        if fillcpt:
+            data = coo_matrix((ev[:fillcpt], (ei[:fillcpt],ej[:fillcpt])), shape=( totaldofs,totaldofs))
+            #.tocsr().tocoo()
+            data.sum_duplicates()
+            #data =
+            #data = coo_matrix((ev, (ei,ej)), shape=( totaldofs,totaldofs)).tocsr().tocoo()
+
             start = vij[3]
             stop = start+len(data.data)
 
@@ -261,8 +300,6 @@ def ElementsIntegral(nodes,domain,wform,vij,space,constants, extrafields,dofs,nu
             vij[3] += len(data.data)
 
     return F
-
-
 
 def CheckIntegrityNormalFlux(GUI=False):
     from BasicTools.FE.UnstructuredMeshTools import CreateMeshOf
@@ -602,7 +639,7 @@ def CheckIntegrityKF(case, sdim,nmesh=1):
             p,w =  LagrangeP1[EN.geoSupport[name]]
             geoSpace.SetIntegrationRule(p,w)
             xcoor = mesh.nodes[domain.connectivity[0],:]
-            Jinv, Jdet = geoSpace.GetJackAndDetI(0,xcoor)
+            Jack, Jdet, Jinv = geoSpace.GetJackAndDetI(0,xcoor)
             Nfder =  np.array([geoSpace.valdNdxi[0].T, geoSpace.valdNdeta[0].T])
             BxByBz = np.dot(Jinv,Nfder)/Jdet
 

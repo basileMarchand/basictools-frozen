@@ -152,16 +152,22 @@ class XdmfGrid(Xdmfbase):
         return res ;
 
 
-    def GetFieldData(self,name):
+    def GetFieldData(self,name,noTranspose=False):
         for a in self.attributes:
             if a.Name == name :
                 data = a.dataitems[0].GetData();
                 #print(data.shape)
                 if self.geometry.Type == "ORIGIN_DXDYDZ":
                     if a.Type == "Vector":
-                        return data.transpose(2,1,0,3)
+                        if noTranspose:
+                            return data
+                        else:
+                            return data.transpose(2,1,0,3)
                     else:
-                        return data.transpose(2,1,0)
+                        if noTranspose:
+                            return data
+                        else:
+                            return data.transpose(2,1,0)
                 return data
         raise FieldNotFound(name)
 

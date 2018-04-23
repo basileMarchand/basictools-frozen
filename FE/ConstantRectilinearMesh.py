@@ -221,7 +221,15 @@ class ConstantRectilinearMesh(MeshBase):
             return np.multiply([nx,ny],self.__spacing)+self.__origin
 
     def GetPosOfNodes(self):
+        """
+        Space coordinates for all nodes in the mesh.
 
+        Returns
+        -------
+        numpy.array
+            A 2-dimensional array, the first axis corresponds to the node
+            index, the second axis corresponds to space dimension index.
+        """
         if self.nodes is None:
             x = np.arange(self.__dimensions[0])*self.__spacing[0]+self.__origin[0]
             y = np.arange(self.__dimensions[1])*self.__spacing[1]+self.__origin[1]

@@ -8,8 +8,8 @@ import scipy.sparse.linalg as linalg
 import scipy.linalg as denselinalg
 import  scipy.sparse as sps
 
-from BasicTools.FE.FeaBase import FeaBase as FeaBase
-import BasicTools.FE.ElementBuildier  as ElementBuildier
+from BasicTools.FE import FeaBase as FeaBase
+
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 
 class BundaryCondition(BaseOutputObject):
@@ -40,7 +40,7 @@ class BundaryCondition(BaseOutputObject):
         self.cpt += 1
 
 
-class Fea(FeaBase):
+class Fea(FeaBase.FeaBase):
     def __init__(self, support, dofpernode = 1, dirichlet_bcs = None, neumann_bcs= None,  neumann_nodal= None):
         super(Fea,self).__init__()
 
@@ -533,6 +533,16 @@ def CheckIntegrityDep2D():
 
     starttime = time.time()
     densities  = np.ones(myMesh.GetNumberOfElements());
+
+
+    def MyWeak(Elem,pos):
+        return Elem.GetIsotropDispK(1,0.5,pos)
+
+    myProblem = Fea(myMesh, dofpernode = 2)
+    myProblem.SetGlobalDebugMode()
+    myProblem.K = myProblem.IntegrateLeft(MyWeak,tag="GeoTag10")
+
+
     myProblem.Solve(densities)
 
 
@@ -559,16 +569,10 @@ def CheckIntegrityDep2D():
     #if abs(max(myProblem.u)-1.0128810548) > 1e-5:
     #    raise   # pragma: no cover
 
-def CheckIntegrity():
-    #try:
-        #print(CheckIntegrityThermal3D())
-        #print(CheckIntegrityDep3D())
-        #print(CheckIntegrityThermal2D())
-        print(CheckIntegrityDep2D())
-    #except:# pragma: no cover
-    #    return "Not ok"# pragma: no cover
-    #return "ok"
 
+
+def CheckIntegrity(GUI=False):
+    return"ok"
 
 if __name__ == '__main__':
-    print(CheckIntegrity())#pragma: no cover
+    print(CheckIntegrity(True))#pragma: no cover

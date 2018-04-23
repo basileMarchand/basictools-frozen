@@ -118,12 +118,18 @@ def __RunAndCheck(lis,bp,stopAtFirstError,dryrun,profiling):# pragma: no cover
             else:
 
                 if profiling :
-                    import cProfile, pstats, StringIO
+                    import cProfile, pstats
+                    #for python2
+                    try:
+                        from StringIO import StringIO
+                    except:
+                        #python3
+                        from io import StringIO
                     pr = cProfile.Profile()
                     pr.enable()
                     r = lis[name]()
                     pr.disable()
-                    s = StringIO.StringIO()
+                    s = StringIO()
                     sortby = 'cumulative'
                     ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
                     ps.print_stats()
@@ -138,10 +144,18 @@ def __RunAndCheck(lis,bp,stopAtFirstError,dryrun,profiling):# pragma: no cover
             sys.stderr.flush()
             stop_time = time.time()
             res[name] = r
-            if not isinstance(r,str) and not isinstance(r,unicode):
-                bp.Print(TFormat.InRed( TFormat().GetIndent() + "Please add a correct return statement in the CheckIntegrity of the module" + name))
-                #raise Exception()
-                r = 'Not OK'
+            #Python 2
+            if sys.version_info >= (3,0):
+                if not isinstance(r,str):
+                    bp.Print(TFormat.InRed( TFormat().GetIndent() + "Please add a correct return statement in the CheckIntegrity of the module" + name))
+                    #raise Exception()
+                    r = 'Not OK'
+            else:
+                if not (isinstance(r,str) or isinstance(r,unicode) ):
+                    bp.Print(TFormat.InRed( TFormat().GetIndent() + "Please add a correct return statement in the CheckIntegrity of the module" + name))
+                    #raise Exception()
+                    r = 'Not OK'
+
         except UserWarning as e :
             sys.stdout.flush()
             sys.stderr.flush()
@@ -186,7 +200,7 @@ def __tryImportRecursive(submod,tocheck,stopAtFirstError):
                  __tryImportRecursive(subsubmod,tocheck,stopAtFirstError)
              except:
                  print('Error Loading File : ' + subsubmod + '.py'  )
-                 print('-*-*-*-*-*-*> missing checkIntegrity??? <*-*-*-*-*-*--'  )
+                 print('-*-*-*-*-*-*> missing CheckIntegrity()??? <*-*-*-*-*-*--'  )
                  if(stopAtFirstError): raise
      except:
         tocheck[submod ] = None
@@ -216,7 +230,7 @@ def TestAll(modulestotreat=['ALL'], fulloutput=False, stopAtFirstError= False, c
     print(stopAtFirstError)
     print("coverage         : ",end="")
     print(coverage)
-    print("profiling: ",end="")
+    print("profiling        : ",end="")
     print(profiling)
     print("extraToolsBoxs: ",end="")
     print(extraToolsBoxs)

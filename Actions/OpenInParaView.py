@@ -27,4 +27,7 @@ def OpenInParaView( mesh=None,filename=None ):
     Popen([paraviewExec,filename])
 
 def CheckIntegrity():
+    from BasicTools.Actions.OpenInParaView import OpenInParaView
+    #OpenInParaView(mesh)
     pass
+

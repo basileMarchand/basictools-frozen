@@ -12,6 +12,15 @@ class TetSpaceBase(SymSpaceBase):
         self.geoSupport = EN.GeoTet #tri
 
 
+class Tet_P0_Global(TetSpaceBase):
+    def __init__(self):
+        super(Tet_P0_Global,self).__init__()
+        self.symN = Matrix([1])
+        self.posN = np.array([[None,None,None]])
+        self.dofAttachments = [("G",None,None)]
+        self.Create()
+
+
 class Tet_P0_Lagrange(TetSpaceBase):
     def __init__(self):
         super(Tet_P0_Lagrange,self).__init__()
