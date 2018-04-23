@@ -62,9 +62,12 @@ class UtWriter(WriterBase):
           OW.Write(self.mesh, useOriginalId=True, lowerDimElementsAsSets=True)
           OW.Close()
 
-    def Write(self, writeGeof):
+    def Write(self, writeGeof, geofName = None):
 
-        __string = u"**meshfile "+self.name+".geof\n"
+        if geofName == None:
+          __string = u"**meshfile "+self.name+".geof\n"
+        else:
+          __string = u"**meshfile "+geofName+"\n"
 
         if self.mesh==None:
           print("please attach a mesh to the UtWriter object to be able to write a mesh; script terminated")
