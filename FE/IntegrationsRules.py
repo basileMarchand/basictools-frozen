@@ -75,7 +75,33 @@ LagrangeP1[EN.GeoBar]  = TensorProductPoints(dim=1,npoints=2)
 LagrangeP1[EN.GeoQuad] = TensorProductPoints(dim=2,npoints=2)
 LagrangeP1[EN.GeoHex]  = TensorProductPoints(dim=3,npoints=2)
 
+
+
 IntegrationRulesAlmanac["IsoGeo"] = LagrangeP1
+
+LagrangeP2 = {}
+
+
+
+p = np.array([[0.1666666667,0.1666666667,0.1666666667], 
+[0.5,0.1666666667,0.1666666667], 
+[0.1666666667,0.5,0.1666666667], 
+[0.1666666667,0.1666666667,0.5], 
+[0.25,0.25,0.25]]);
+w = np.array([0.075 ,0.075 ,0.075 ,0.075 ,-0.1333333333]);
+LagrangeP2[EN.GeoTet] = (p,w)
+
+
+
+p = np.array([[0.4459484909,0.4459484909,0], 
+[0.1081030182,0.4459484909,0], 
+[0.4459484909,0.1081030182,0], 
+[0.09157621351,0.09157621351,0], 
+[0.816847573,0.09157621351,0], 
+[0.09157621351,0.816847573,0]])
+w = np.array([0.1116907948 ,0.1116907948 ,0.1116907948 ,0.05497587183 ,0.05497587183 ,0.05497587183])
+LagrangeP2[EN.GeoTri] = (p,w)
+
 
 
 def CheckIntegrity(GUI=False):

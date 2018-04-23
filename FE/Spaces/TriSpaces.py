@@ -65,16 +65,17 @@ class Tri_P2_Lagrange(TriSpaceBase):
         T = (1-xi-eta)
 
         self.symN = Matrix([T*(1-2*xi-2*eta),
-                            xi *(2*xi-1),
-                            eta*(2*eta-1),
                             4*xi*T,
+                            xi *(2*xi-1),
                             4*xi*eta,
+                            eta*(2*eta-1),
                             4*eta*T])
+
         self.posN = np.array([[0,0],
-                              [1,0],
-                              [0,1],
                               [0.5,0],
+                              [1,0],
                               [0.5,0.5],
+                              [0,1],
                               [0,0.5]])
 
         self.dofAttachments = [("P",0,None),
@@ -84,6 +85,7 @@ class Tri_P2_Lagrange(TriSpaceBase):
                                ("E",1,None),
                                ("E",2,None),
                                ]
+
         self.Create()
 
 def plot2DTriangle(Space):

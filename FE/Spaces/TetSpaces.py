@@ -38,6 +38,42 @@ class Tet_P1_Lagrange(TetSpaceBase):
                                ("P",3,None) ]
         self.Create()
 
+class Tet_P2_Lagrange(TetSpaceBase):
+    def __init__(self):
+        super(Tet_P2_Lagrange,self).__init__()
+        xi = self.xi
+        eta = self.eta
+        phi = self.phi
+
+        T = (1-xi-eta-phi)
+
+        self.symN = Matrix([T*(2*T-1),
+                            xi*(2*xi-1),
+                            eta*(2*eta-1),
+                            4*T*xi,
+                            4*xi*eta,
+                            4*eta*T,
+                            4*T*phi,
+                            4*xi*phi,
+                            4*eta*phi,
+                            phi*(2*phi-1)])
+
+        self.posN = np.array([[0,0,0],
+                              [1,0,0],
+                              [0,1,0],
+                              [0.5,0,0],
+                              [0.5,0.5,0],
+                              [0,0.5,0],
+                              [0,0,0.5],
+                              [0.5,0,0.5],
+                              [0,0.5,0.5],
+                              [0,0,1]])
+
+
+        """self.dofAttachments = []"""
+
+        self.Create()
+
 def CheckIntegrity():
     return "ok"
 
