@@ -56,28 +56,29 @@ class Tet_P2_Lagrange(TetSpaceBase):
 
         T = (1-xi-eta-phi)
 
-        self.symN = Matrix([T*(2*T-1),
+        self.symN = Matrix([eta*(2*eta-1),
+                            T*(2*T-1),
                             xi*(2*xi-1),
-                            eta*(2*eta-1),
+                            phi*(2*phi-1),
+                            4*eta*T,
                             4*T*xi,
                             4*xi*eta,
-                            4*eta*T,
-                            4*T*phi,
-                            4*xi*phi,
                             4*eta*phi,
-                            phi*(2*phi-1)])
+                            4*T*phi,
+                            4*xi*phi])
 
-        self.posN = np.array([[0,0,0],
+        self.posN = np.array([[0,1,0],
+                              [0,0,0],
                               [1,0,0],
-                              [0,1,0],
+                              [0,0,1],
+                              [0,0.5,0],
                               [0.5,0,0],
                               [0.5,0.5,0],
-                              [0,0.5,0],
-                              [0,0,0.5],
-                              [0.5,0,0.5],
                               [0,0.5,0.5],
-                              [0,0,1]])
+                              [0,0,0.5],
+                              [0.5,0,0.5]])
 
+        #PermutationZSetToBasicTools["c3d10"] = [2, 0, 1, 9, 5, 3, 4, 8, 6, 7]
 
         """self.dofAttachments = []"""
 
