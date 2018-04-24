@@ -26,18 +26,23 @@ PermutationZSetToBasicTools["c3d6"] = [0, 2, 4, 1, 3, 5]
 
 
 GeofNumber['c3d4'] = EN.Tetrahedron_4
+GeofNumber['c3d4r'] = EN.Tetrahedron_4
 GeofNumber['c3d6'] = EN.Wedge_6
 GeofNumber['c3d8'] = EN.Hexaedron_8
 
 GeofNumber['c3d10'] = EN.Tetrahedron_10
-PermutationZSetToBasicTools["c3d10"] = [2, 0, 1, 9, 5, 3, 4, 8, 6, 7]
+#PermutationZSetToBasicTools["c3d10"] = [2, 0, 1, 9, 5, 3, 4, 8, 6, 7]
+PermutationZSetToBasicTools["c3d10"] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
 GeofNumber['c3d20'] = EN.Hexaedron_20
 PermutationZSetToBasicTools["c3d20"] = [0,2,4,6,12,14,16,18,1,3,5,7,13,15,17,19,8,9,10,11]
 
 GeofNumber['t3']   = EN.Triangle_3
 
 GeofNumber['t6']   = EN.Triangle_6
-PermutationZSetToBasicTools["t6"] = PermutationZSetToBasicTools["c3d6"]
+#PermutationZSetToBasicTools["t6"] = PermutationZSetToBasicTools["c3d6"]
+PermutationZSetToBasicTools["t6"] = [0, 1, 2, 3, 4, 5]
+
 GeofNumber['q8']   = EN.Quadrangle_8
 PermutationZSetToBasicTools["q8"] = [0, 2, 4, 6, 1, 3, 5, 7]
 

@@ -347,12 +347,12 @@ class Octree():
                 list_list.append([])
 
 
-            Xedge_max = center[0] + size
-            Xedge_min = center[0] - size
-            Yedge_max = center[1] + size
-            Yedge_min = center[1] - size
-            Zedge_max = center[2] + size
-            Zedge_min = center[2] - size
+            Xedge_max = center[0] + size[0]
+            Xedge_min = center[0] - size[0]
+            Yedge_max = center[1] + size[1]
+            Yedge_min = center[1] - size[1]
+            Zedge_max = center[2] + size[2]
+            Zedge_min = center[2] - size[2]
 
             corner0 = (Xedge_max, Yedge_max, Zedge_max)
             corner1 = (Xedge_max, Yedge_max, Zedge_min)
@@ -485,5 +485,5 @@ def CheckIntegrity():
     return "ok"
 
 if __name__ == '__main__':
-    print(CheckIntegrity())# pragma: no cover
+    print((CheckIntegrity()))# pragma: no cover
 
