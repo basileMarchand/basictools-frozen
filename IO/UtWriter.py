@@ -4,10 +4,14 @@
 from __future__ import print_function
 
 import numpy as np
+import os
 __author__ = "Fabien Casenave"
 
 from BasicTools.IO.WriterBase import WriterBase as WriterBase
 import BasicTools.IO.GeofWriter as GW
+from BasicTools.IO.GeofWriter import GeofName as GeofName
+from BasicTools.IO.GeofReader import nbIntegrationsPoints as nbIntegrationsPoints
+import BasicTools.FE.UnstructuredMeshTools as UnstructuredMeshTools
 
 
 class UtWriter(WriterBase):
@@ -31,7 +35,7 @@ class UtWriter(WriterBase):
     def AttachMesh(self,mesh):
         self.mesh = mesh
 
-    def AttachData(self, data_node, data_ctnod = None, data_integ = None):
+    def AttachData(self, data_node, data_ctnod = None, data_integ = None, Nnode = None, Nint = None):
         self.data_node        = data_node
         self.data_ctnod       = data_ctnod
         self.data_integ       = data_integ
@@ -39,18 +43,25 @@ class UtWriter(WriterBase):
         self.data_integ_names = list(data_integ.keys())
         self.NnodeVar         = len(data_node)
         self.NintVar          = len(data_integ)
-        self.Nnode            = data_node[self.data_node_names[0]].shape[0]
-        try:
-          self.Nint = data_integ[self.data_integ_names[0]].shape[0]
-        except IndexError:
-          self.Nint = None
+        if Nnode is not None:
+          self.Nnode = Nnode
+        else:
+          self.Nnode            = data_node[self.data_node_names[0]].shape[0]
+        if Nint is not None:
+          self.Nint = Nint
+        else:
+          try:
+            self.Nint = data_integ[self.data_integ_names[0]].shape[0]
+          except IndexError:
+            True
 
-    def AttachDataFromProblemData(self, problemData, tag):
-        self.AttachData(problemData.solutions[tag].data_node, problemData.solutions[tag].data_ctnod, problemData.solutions[tag].data_integ)
+    def AttachDataFromProblemData(self, problemData, tag, Nnode = None, Nint = None):
+        self.AttachData(problemData.solutions[tag].data_node, problemData.solutions[tag].data_ctnod, problemData.solutions[tag].data_integ, Nnode = Nnode, Nint = Nint)
 
     def AttachSequence(self, timeSequence):
         self.timeSequence = timeSequence
         self.Ntime = timeSequence.shape[0]
+
 
     def WriteMesh(self):
         if self.mesh==None:
@@ -62,7 +73,8 @@ class UtWriter(WriterBase):
           OW.Write(self.mesh, useOriginalId=True, lowerDimElementsAsSets=True)
           OW.Close()
 
-    def Write(self, writeGeof, geofName = None):
+
+    def InitWrite(self, writeGeof, geofName = None):
 
         if geofName == None:
           __string = u"**meshfile "+self.name+".geof\n"
@@ -77,29 +89,92 @@ class UtWriter(WriterBase):
           self.WriteMesh()
 
         if self.NnodeVar>0:
-          data_node = np.empty(self.NnodeVar*self.Nnode*self.Ntime)
-          for i in range(self.Ntime):
-            for k in range(self.NnodeVar):
-              data_node[self.NnodeVar*self.Nnode*i+k*self.Nnode:self.NnodeVar*self.Nnode*i+(k+1)*self.Nnode] = self.data_node[self.data_node_names[k]][:,i]
-          data_node.astype(np.float32).byteswap().tofile(self.folder+self.name+".node")
-          del data_node
           __string += "**node "
           for field in self.data_node_names:
             __string += field+" "
           __string += "\n"
 
+        if self.NintVar>0:
+          __string += "**integ "
+          for field in self.data_integ_names:
+            __string += field+" "
+          __string += "\n"
+
+        __string += "**element\n"
+
+        with open(self.folder+self.name+".ut", "w") as f:
+          f.write(__string)
+        f.close()
+
+        os.system("rm -rf "+self.folder+self.name+".node "+self.folder+self.name+".ctnod "+self.folder+self.name+".integ")
+        
+        return open(self.folder+self.name+".node", "a"), open(self.folder+self.name+".ctnod", "a"), open(self.folder+self.name+".integ", "a")
+
+
+    def WriteTimeStep(self, nodeFile, ctnodFile, integFile, timeSequenceStep):
+
+        if self.NnodeVar>0:
+          data_node = np.empty(self.NnodeVar*self.Nnode)
+          for k in range(self.NnodeVar):
+            data_node[k*self.Nnode:(k+1)*self.Nnode] = self.data_node[self.data_node_names[k]]
+          data_node.astype(np.float32).byteswap().tofile(nodeFile)
+          del data_node
+
+        if self.NintVar>0:
+          data_ctnod = np.empty(self.NintVar*self.Nnode)
+          for k in range(self.NintVar):
+            data_ctnod[k*self.Nnode:(k+1)*self.Nnode] = self.data_ctnod[self.data_integ_names[k]]
+          data_ctnod.astype(np.float32).byteswap().tofile(ctnodFile)
+          del data_ctnod
+
+          numberElements = []
+          nbPtIntPerElement = []
+          mesh3D = UnstructuredMeshTools.ExtractElementByDimensionalityNoCopy(self.mesh,3)
+          for name,data in mesh3D.elements.items():
+            numberElements.append(data.GetNumberOfElements())
+            nbPtIntPerElement.append(nbIntegrationsPoints[GeofName[name]])
+          nbTypeEl = len(numberElements)
+
+          data_integ = np.empty(self.NintVar*self.Nint)
+          count0 = 0
+          field = np.empty((self.NintVar,self.Nint))
+          for k in range(self.NintVar):
+            field[k,:] = self.data_integ[self.data_integ_names[k]]
+          for l in range(nbTypeEl):
+            for m in range(numberElements[l]):
+              for k in range(self.NintVar):
+                data_integ[count0:count0+nbPtIntPerElement[l]] = field[k,nbPtIntPerElement[l]*m:nbPtIntPerElement[l]*m+nbPtIntPerElement[l]]
+                count0 += nbPtIntPerElement[l]
+          data_integ.astype(np.float32).byteswap().tofile(integFile)
+          del field; del data_integ  
+
+        __string = str(int(timeSequenceStep[0]))+" "+str(int(timeSequenceStep[1]))+" "+str(int(timeSequenceStep[2]))+" "+str(int(timeSequenceStep[3]))+" "+str(timeSequenceStep[4])+"\n"
+
+        with open(self.folder+self.name+".ut", "a") as f:
+          f.write(__string)
+        f.close()
+
+
+    def Write(self, writeGeof, geofName = None):
+        
+        nodeFile, ctnodFile, integFile = self.InitWrite(writeGeof, geofName)
+
+        if self.NnodeVar>0:
+          data_node = np.empty(self.NnodeVar*self.Nnode*self.Ntime)
+          for i in range(self.Ntime):
+            for k in range(self.NnodeVar):
+              data_node[self.NnodeVar*self.Nnode*i+k*self.Nnode:self.NnodeVar*self.Nnode*i+(k+1)*self.Nnode] = self.data_node[self.data_node_names[k]][:,i]
+          data_node.astype(np.float32).byteswap().tofile(nodeFile)
+          del data_node
 
         if self.NintVar>0:
           data_ctnod = np.empty(self.NintVar*self.Nnode*self.Ntime)
           for i in range(self.Ntime):
             for k in range(self.NintVar):
               data_ctnod[self.NintVar*self.Nnode*i+k*self.Nnode:self.NintVar*self.Nnode*i+(k+1)*self.Nnode] = self.data_ctnod[self.data_integ_names[k]][:,i]
-          data_ctnod.astype(np.float32).byteswap().tofile(self.folder+self.name+".ctnod")
+          data_ctnod.astype(np.float32).byteswap().tofile(ctnodFile)
           del data_ctnod
 
-          from BasicTools.IO.GeofWriter import GeofName as GeofName
-          from BasicTools.IO.GeofReader import nbIntegrationsPoints as nbIntegrationsPoints
-          import BasicTools.FE.UnstructuredMeshTools as UnstructuredMeshTools
           numberElements = []
           nbPtIntPerElement = []
           mesh3D = UnstructuredMeshTools.ExtractElementByDimensionalityNoCopy(self.mesh,3)
@@ -119,20 +194,20 @@ class UtWriter(WriterBase):
                 for k in range(self.NintVar):
                   data_integ[count0:count0+nbPtIntPerElement[l]] = field[k,nbPtIntPerElement[l]*m:nbPtIntPerElement[l]*m+nbPtIntPerElement[l]]
                   count0 += nbPtIntPerElement[l]
-          data_integ.astype(np.float32).byteswap().tofile(self.folder+self.name+".integ")
+          data_integ.astype(np.float32).byteswap().tofile(integFile)
           del field; del data_integ  
-          __string += "**integ "
-          for field in self.data_integ_names:
-            __string += field+" "
-          __string += "\n"
 
-        __string += "**element\n"
+        __string = ""
         for i in range(self.Ntime):    
             __string += str(int(self.timeSequence[i,0]))+" "+str(int(self.timeSequence[i,1]))+" "+str(int(self.timeSequence[i,2]))+" "+str(int(self.timeSequence[i,3]))+" "+str(self.timeSequence[i,4])+"\n"
 
-        with open(self.folder+self.name+".ut", "w") as f:
+        with open(self.folder+self.name+".ut", "a") as f:
           f.write(__string)
         f.close()
+
+        nodeFile.close()
+        ctnodFile.close()
+        integFile.close()
 
 
 def CheckIntegrity():

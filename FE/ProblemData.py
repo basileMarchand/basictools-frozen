@@ -70,15 +70,18 @@ class ProblemData(BaseOutputObject):
     def AttachSolution(self, tag, solution):
        self.solutions[tag] = solution
 
-    def Write(self, loadingKey, name, folder):
+    def InitWriter(self, loadingKey, name, folder, Nnode = None, Nint = None):
        import BasicTools.IO.UtWriter as UW
-       UtW = UW.UtWriter()
-       UtW.SetName(name)
-       UtW.SetFolder(folder)
-       UtW.AttachMesh(self.mesh)
-       UtW.AttachDataFromProblemData(self, loadingKey)
-       UtW.AttachSequence(self.loadings[loadingKey].timeSequence)
-       UtW.Write(writeGeof=True)
+       self.UtW = UW.UtWriter()
+       self.UtW.SetName(name)
+       self.UtW.SetFolder(folder)
+       self.UtW.AttachMesh(self.mesh)
+       self.UtW.AttachDataFromProblemData(self, loadingKey, Nnode = Nnode, Nint = Nint)
+       self.UtW.AttachSequence(self.loadings[loadingKey].timeSequence)
+
+    def Write(self, loadingKey, name, folder):
+       self.InitWriter(loadingKey, name, folder)
+       self.UtW.Write(writeGeof=True)
 
 
     def __str__(self):
