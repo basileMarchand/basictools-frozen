@@ -15,7 +15,7 @@ class Xdmfbase(object):
             return attrs.get(name)
         else:
             if( default==None) :
-                raise KeyError("Key :'" +name+"' not avilable (you can add a default value to bypass this error)")
+                raise KeyError("Key :'" +name+"' not available (you can add a default value to bypass this error)")
             else:
                 return default
 
@@ -321,7 +321,10 @@ class XdmfGeometry(Xdmfbase):
         return res
 
     def ReadAttributes(self,attrs):
-        self.Type = self.ReadAttribute(attrs,'Type')
+        if 'Type' in attrs:
+            self.Type = self.ReadAttribute(attrs,'Type')
+        else:
+            self.Type = self.ReadAttribute(attrs,'GeometryType')
 
     def GetOrigin(self):
         if self.Type == "ORIGIN_DXDYDZ":
@@ -407,10 +410,13 @@ class XdmfDataItem(Xdmfbase):
         import numpy as __np
         self.path = path
         self.Dimensions = __np.array(self.ReadAttribute(attrs,'Dimensions').split(), dtype='int')
-        try :
+        if 'DataType' in attrs:
             self.Type = self.ReadAttribute(attrs,'DataType')
-        except:
+        elif 'NumberType' in attrs:
             self.Type = self.ReadAttribute(attrs,'NumberType')
+        else:
+            self.Type = 'float'
+
         if((self.Type.lower() == 'float' or self.Type.lower() == 'int' )and 'Precision' in attrs):
             self.Precision = int(self.ReadAttribute(attrs,'Precision'))
         self.Format = self.ReadAttribute(attrs,'Format')
