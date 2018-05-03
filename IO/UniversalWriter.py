@@ -24,6 +24,13 @@ def WriterFactory(nameOrFilename,ops={"default":"xmf"}):
     elif extention ==  ".xmf" or extention ==  ".xdmf" or nameOrFilename == "xmf":
         from BasicTools.IO.XdmfWriter import  XdmfWriter
         res = XdmfWriter()
+
+    elif extention ==  ".ut" :
+
+        import BasicTools.IO.UtWriter as UW
+        res = UW.UtWriter()
+        import numpy as np
+        res.AttachSequence(np.array([[0,0,0,0,0]]))
     else:
         if extention in externalWriters:
             res = externalWriters[extention]()
@@ -34,12 +41,25 @@ def WriterFactory(nameOrFilename,ops={"default":"xmf"}):
     return res
 
 
-def WriteMesh(filename,out,binary=False):# pragma: no cover
+def WriteMesh(filename,outmesh,binary=False):# pragma: no cover
 
     writer = WriterFactory(filename)
     writer.SetBinary(binary)
     writer.Open()
-    writer.Write(out)
+
+    PointFields = None
+    PointFieldsNames = None
+    if hasattr(outmesh,"nodeFields"):
+        PointFieldsNames = outmesh.nodeFields.keys()
+        PointFields = outmesh.nodeFields.values()
+
+    CellFields = None
+    GridFieldsNames = None
+    if hasattr(outmesh,"elemFields"):
+        GridFieldsNames = outmesh.elemFields.keys()
+        CellFields = outmesh.elemFields.values()
+
+    writer.Write(baseMeshObject=outmesh,PointFieldsNames=PointFieldsNames,PointFields=PointFields,GridFieldsNames=GridFieldsNames,CellFields=CellFields )
     writer.Close()
 
 ## to use this function add this lines to the
@@ -54,6 +74,7 @@ def PopulateMeshFromVtkAndWriteMesh(filename, vtkobject):# pragma: no cover
 
     from BasicTools.FE.UnstructuredMeshTools import VtkToMesh
     mesh = VtkToMesh(vtkobject)
+
     WriteMesh(filename,mesh)
 
 def CheckIntegrity():
