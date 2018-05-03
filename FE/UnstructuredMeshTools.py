@@ -940,6 +940,7 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
     vtknumbers[ElementNames.Quadrangle_4] = 9
     vtknumbers[ElementNames.Tetrahedron_4] = 10
 
+    vtknumbers[ElementNames.Hexaedron_8] = 11
     vtknumbers[ElementNames.Hexaedron_8] = 12
     vtknumbers[ElementNames.Wedge_6] = 13
     vtknumbers[ElementNames.Pyramid_5] = 14
@@ -1115,6 +1116,9 @@ def VtkToMesh(vtkmesh, meshobject=None, TagsAsFields=False):
     data = vtkmesh.GetPoints().GetData()
     out.nodes = numpy_support.vtk_to_numpy(data)
 
+    import numpy as np
+
+    out.originalIDNodes = np.arange(out.GetNumberOfNodes())
     nc = vtkmesh.GetNumberOfCells()
 
     vtknumbers = {}
@@ -1122,6 +1126,7 @@ def VtkToMesh(vtkmesh, meshobject=None, TagsAsFields=False):
     vtknumbers[4 ] = ElementNames.Bar_2
     vtknumbers[5 ] = ElementNames.Triangle_3
     vtknumbers[9 ] = ElementNames.Quadrangle_4
+    vtknumbers[11] = ElementNames.Hexaedron_8   #voxel
     vtknumbers[12] = ElementNames.Hexaedron_8
     vtknumbers[25] = ElementNames.Hexaedron_20
     vtknumbers[21] = ElementNames.Bar_3
@@ -1129,19 +1134,56 @@ def VtkToMesh(vtkmesh, meshobject=None, TagsAsFields=False):
     vtknumbers[10] = ElementNames.Tetrahedron_4
     vtknumbers[24] = ElementNames.Tetrahedron_10
 
+
     for i in range(nc):
         cell= vtkmesh.GetCell(i)
         ct = cell.GetCellType()
         et = vtknumbers[ct]
-        np = cell.GetNumberOfPoints()
+        nps = cell.GetNumberOfPoints()
         #polyline case
         # we have to be careful because we potentialy change the number of
         # elements in the mesh if we have polylines
         if ct ==4:
-            for i in range(np-1):
-                out.GetElementsOfType(et).AddNewElement([cell.GetPointId(i),cell.GetPointId(i+1) ] ,i)
+            for j in range(nps-1):
+                out.GetElementsOfType(et).AddNewElement([cell.GetPointId(j),cell.GetPointId(j+1) ] ,i)
         else:
-            out.GetElementsOfType(et).AddNewElement([cell.GetPointId(j) for j in range(np)] ,i)
+            out.GetElementsOfType(et).AddNewElement([cell.GetPointId(j) for j in range(nps)] ,i)
+    out.PrepareForOutput()
+
+    if vtkmesh.GetPointData().GetNumberOfArrays():
+        for f in range(vtkmesh.GetPointData().GetNumberOfArrays()):
+            data =  vtkmesh.GetPointData().GetArray(f)
+            name = data.GetName()
+            nbcomponnents =  data.GetNumberOfComponents()
+            nbtuples  = data.GetNumberOfTuples()
+
+            field = np.empty((nbtuples,nbcomponnents),dtype=float)
+            cpt =0
+            for i in range(nbtuples):
+                 for j in range(nbcomponnents):
+                    field[i,j] = data.GetValue(cpt)
+                    cpt +=1
+            out.nodeFields[name] = field
+
+    EOIds = out.GetElementsOriginalIDs()
+    EOIds = np.argsort(EOIds)
+    if vtkmesh.GetCellData().GetNumberOfArrays():
+        for f in range(vtkmesh.GetCellData().GetNumberOfArrays()):
+            data =  vtkmesh.GetCellData().GetArray(f)
+            if data is None:
+                continue
+            name = data.GetName()
+            nbcomponnents =  data.GetNumberOfComponents()
+            nbtuples  = data.GetNumberOfTuples()
+
+            field = np.empty((nbtuples,nbcomponnents),dtype=float)
+            cpt =0
+            for i in range(nbtuples):
+                 for j in range(nbcomponnents):
+                    field[EOIds[i],j] = data.GetValue(cpt)
+                    cpt +=1
+            out.elemFields[name] = field
+
     return out
 
 def DeleteElements(mesh,mask):
@@ -1597,6 +1639,7 @@ def CheckIntegrity_VtkToMesh(GUI=False):
     res.GetElementsOfType(ElementNames.Triangle_3).tags.CreateTag("FirstTriangle").AddToTag(0)
     sol = MeshToVtk(res,TagsAsFields= True)
 
+    print("CheckIntegrity_VtkToMesh :")
     print(res)
     print(VtkToMesh(sol))
     return 'ok'
