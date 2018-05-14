@@ -346,13 +346,22 @@ class Octree():
             for level in range(self.maxiter):
                 list_list.append([])
 
-
-            Xedge_max = center[0] + size[0]
-            Xedge_min = center[0] - size[0]
-            Yedge_max = center[1] + size[1]
-            Yedge_min = center[1] - size[1]
-            Zedge_max = center[2] + size[2]
-            Zedge_min = center[2] - size[2]
+            if hasattr(size,"__iter__"):
+                print(size)
+                print(type(size))
+                Xedge_max = center[0] + size[0]
+                Xedge_min = center[0] - size[0]
+                Yedge_max = center[1] + size[1]
+                Yedge_min = center[1] - size[1]
+                Zedge_max = center[2] + size[2]
+                Zedge_min = center[2] - size[2]
+            else:
+                Xedge_max = center[0] + size
+                Xedge_min = center[0] - size
+                Yedge_max = center[1] + size
+                Yedge_min = center[1] - size
+                Zedge_max = center[2] + size
+                Zedge_min = center[2] - size
 
             corner0 = (Xedge_max, Yedge_max, Zedge_max)
             corner1 = (Xedge_max, Yedge_max, Zedge_min)
@@ -472,6 +481,7 @@ def CheckIntegrity():
 
     #get some data
     entries = tree.find_within_range((0,0,0), 40, "cube")
+    entries = tree.find_within_range((0,0,0), [40]*3, "cube")
     cpt =0
     for i in entries:
       print(cpt),
