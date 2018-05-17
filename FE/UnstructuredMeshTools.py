@@ -438,7 +438,7 @@ def CleanDoubleNodes(res, tol = None, nodesToTestMask= None):
         diag2 = np.linalg.norm(res.boundingMax-res.boundingMin)**2
         tree = Octree(Ma[0],Ma[1],Ma[2], Mi[0], Mi[1], Mi[2])
 
-        for i in xrange(nbnodes):
+        for i in range(nbnodes):
             if float(i)/1000 == int(i/1000):
                 print(100.*i/nbnodes)
             point = tuple(res.nodes[i,:])
