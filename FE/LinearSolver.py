@@ -31,10 +31,15 @@ class LinearProblem(BOO):
         elif self.type == "lstsq":
             self.solver = None
             pass
+        elif self.type == "cholesky":
+            from sksparse.cholmod import cholesky
+            self.solver = cholesky(op)
+
+
         self.PrintDebug('In SetOp Done')
 
     def SetAlgo(self, algoType):
-        if algoType in  ["Direct" ,"CG", "lstsq"] :
+        if algoType in  ["Direct" ,"CG", "lstsq","cholesky" ] :
             self.type = algoType
         else:
             self.Print(TF.InRed("Error : ") + "Type not allowed ("+algoType+")"  ) #pragma: no cover
@@ -61,6 +66,8 @@ class LinearProblem(BOO):
                 self.Print(TF.InYellowBackGround(TF.InRed("Illegal input or breakdown"))) #pragma: no cover
         elif self.type == "lstsq":
             self.u = np.linalg.lstsq(self.op, rhs)[0]
+        elif self.type == "cholesky":
+            self.u = self.solver(rhs)
 
         self.PrintDebug("Done Linear solver")
             #norm_rhs = np.linalg.norm(rhs)
@@ -92,6 +99,14 @@ def CheckIntegrity():
     sol = LS.Solve(np.array([[1],[2]]))
     if sol[0] != 2. : raise Exception()
     if sol[1] != 2. : raise Exception()
+
+    LS.SetAlgo("cholesky")
+
+    LS.SetOp(sps.csc_matrix(np.array([[0.5,0],[0,1]])))
+    sol = LS.Solve(np.array([[1],[2]]))
+    if sol[0] != 2. : raise Exception()
+    if sol[1] != 2. : raise Exception()
+
 
     return "OK"
 

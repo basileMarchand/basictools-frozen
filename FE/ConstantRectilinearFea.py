@@ -281,6 +281,9 @@ class Fea(FeaBase.FeaBase):
             ml = pyamg.ruge_stuben_solver(K)
             res = ml.solve(rhs,x0 = self.u[self.free, 0] , tol=1e-12,accel='cg')
             self.u[self.free, 0] = res
+          elif self.linearSolver == "cholesky":# pragma: no cover
+            from sksparse.cholmod import cholesky
+            self.u[self.free, 0] = cholesky(K)(self.f[self.free, 0]-rhsfixed[self.free, 0] )
           else :
             print("'"+self.linearSolver + "' is not a valid linear solver")#pragma: no cover
             print('Please set a type of linear solver')#pragma: no cover
