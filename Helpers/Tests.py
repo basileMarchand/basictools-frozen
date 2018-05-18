@@ -207,7 +207,7 @@ def __tryImportRecursive(submod,tocheck,stopAtFirstError):
         if(stopAtFirstError): raise
 
 
-def __tryImport(noduleName,stopAtFirstError):# pragma: no cover
+def __tryImport(noduleName,bp,stopAtFirstError):# pragma: no cover
 
     tocheck = {}
     try :
@@ -215,6 +215,12 @@ def __tryImport(noduleName,stopAtFirstError):# pragma: no cover
     except:
         print("Error loading module '" + noduleName +"'")
         print("This module will not be tested ")
+        
+        sys.stdout.flush()
+        sys.stderr.flush()
+        bp.Print( "Unexpected Error:" + str(sys.exc_info()[0]) )
+        traceback.print_exc(file=bp.stdout_)
+            
         if(stopAtFirstError): raise
     return tocheck
 
@@ -255,13 +261,13 @@ def TestAll(modulestotreat=['ALL'], fulloutput=False, stopAtFirstError= False, c
 
     tocheck = {}
 
-
-    if extraToolsBoxs is not None:
-        for tool in extraToolsBoxs:
-            tocheck.update(__tryImport(tool,stopAtFirstError))
-
-
     with PrintBypass() as bp:
+        if extraToolsBoxs is not None:
+            for tool in extraToolsBoxs:
+                tocheck.update(__tryImport(tool,bp,stopAtFirstError))
+
+
+   
         if not fulloutput:
             bp.ToSink()
             bp.Print("Sending all the output of the tests to sink")
