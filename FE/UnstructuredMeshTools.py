@@ -747,6 +747,7 @@ def ExtractElementByTags(inmesh,tagsToKeep, allNodes=False,dimensionalityFilter=
        nbTokeep = np.sum(toKeep)
        outelem.Allocate(nbTokeep)
        outelem.connectivity = elems.connectivity[toKeep,:]
+       outelem.originalIds = np.where(toKeep)[0]
 
        for tag in elems.tags  :
            temp = np.extract(toKeep[tag.GetIds()],tag.GetIds())
@@ -1534,7 +1535,51 @@ def ComputeFeatures(inputmesh,FeatureAngle=90,skin=None):
 
     return (edgemesh,skinmesh)
 
+def PointToCellData(mesh,pointfield):
+
+    if len(pointfield.shape) == 2:
+        ncols = pointfield.shape[1]
+    else:
+        ncols  = 1
+
+    res = np.zeros((mesh.GetNumberOfElements(),ncols),dtype=float)
+    print(res)
+    mesh.ComputeGlobalOffset()
+
+    cpt =0
+    for name,data in mesh.elements.items():
+
+        for i in range(ncols):
+            print(data.globaloffset)
+            print(data.globaloffset+data.GetNumberOfElements())
+            res[data.globaloffset:data.globaloffset+data.GetNumberOfElements(),i] = (np.sum(pointfield[data.connectivity,i],axis=1)/data.connectivity.shape[1]).flatten()
+
+    return res
 ###############################################################################
+def CheckIntegrity_PointToCellData(GUI = False):
+    myMesh = UnstructuredMesh()
+    myMesh.nodes = np.array([[0,0,0],[1,0,0],[2,0,0]] ,dtype=np.float)
+    tag = myMesh.GetNodalTag("linPoints")
+    tag.AddToTag(0)
+    tag.AddToTag(1)
+    tag.AddToTag(2)
+    import BasicTools.FE.ElementNames as ElementNames
+    elements = myMesh.GetElementsOfType(ElementNames.Bar_2)
+    elements.AddNewElement([0,1],3)
+    elements.AddNewElement([1,2],4)
+
+    myMesh.AddElementToTagUsingOriginalId(3,'LinElements')
+    myMesh.AddElementToTagUsingOriginalId(4,'LinElements')
+    myMesh.PrepareForOutput()
+    print(myMesh)
+    res = PointToCellData(myMesh,np.array([[-2,2,4]]).T)
+    ExactData = np.array([[0,3]], dtype=float).T
+    print (res - ExactData)
+    if (res - ExactData).any() :
+        raise("Error CheckIntegrity_PointToCellData")
+
+
+
 def CheckIntegrity_ComputeFeatures(GUI =False):
     from BasicTools.FE.ConstantRectilinearMesh import ConstantRectilinearMesh
 
@@ -1849,7 +1894,7 @@ def CheckIntegrity_GetDualGraph(GUI=False):
 
 
 def CheckIntegrity(GUI=False):
-
+    CheckIntegrity_PointToCellData(GUI)
     CheckIntegrity_ComputeFeatures(GUI=False)
     CheckIntegrity_AddSkin(GUI)
     CheckIntegrity_ExtractElementsByImplicitZone(GUI)
