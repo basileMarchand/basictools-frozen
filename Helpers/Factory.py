@@ -40,7 +40,7 @@ class Factory(BaseOutputObject):
 
     @classmethod
     def RegisterClass(cls, name, classtype, constructor=None, withError = True):
-        cls().PrintDebug(str(name) + " -> " +  str(classtype) )
+        #cls().PrintDebug(str(name) + " -> " +  str(classtype) )
         if name in cls._Catalog and withError:
            raise (Exception ("Class "+ str(name) +" already in the catalog") )
         cls._Catalog[name] = (classtype,constructor)
@@ -51,7 +51,7 @@ class Factory(BaseOutputObject):
         res = None
         if name in cls._Catalog:
            classType, classConstructor = cls._Catalog[name]
-           cls().PrintDebug(str(classType)+ " : " + str(ops) )
+           #cls().PrintDebug(str(classType)+ " : " + str(ops) )
            if classConstructor is None:
                try:
                    res = classType()
