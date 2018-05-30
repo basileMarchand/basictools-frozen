@@ -79,9 +79,9 @@ class ProblemData(BaseOutputObject):
        self.UtW.AttachDataFromProblemData(self, loadingKey, Nnode = Nnode, Nint = Nint)
        self.UtW.AttachSequence(self.loadings[loadingKey].timeSequence)
 
-    def Write(self, loadingKey, name, folder):
+    def Write(self, loadingKey, name, folder, skipCtnod = False):
        self.InitWriter(loadingKey, name, folder)
-       self.UtW.Write(writeGeof=True)
+       self.UtW.Write(writeGeof=True, skipCtnod = skipCtnod)
 
 
     def __str__(self):
