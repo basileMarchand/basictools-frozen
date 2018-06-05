@@ -35,7 +35,7 @@ class UtWriter(WriterBase):
     def AttachMesh(self,mesh):
         self.mesh = mesh
 
-    def AttachData(self, data_node, data_ctnod = None, data_integ = None, Nnode = None, Nint = None):
+    def AttachData(self, data_node, data_ctnod = {}, data_integ = {}, Nnode = None, Nint = None):
         self.data_node        = data_node
         self.data_ctnod       = data_ctnod
         self.data_integ       = data_integ
@@ -113,7 +113,10 @@ class UtWriter(WriterBase):
           ctnodFile = open(self.folder+self.name+".ctnod", "a")
         else:
           ctnodFile = None
-        integFile = open(self.folder+self.name+".integ", "a")
+        if self.NintVar > 0:
+          integFile = open(self.folder+self.name+".integ", "a")
+        else:
+          integFile = None
 
         return nodeFile, ctnodFile, integFile
 
@@ -167,7 +170,7 @@ class UtWriter(WriterBase):
         
         nodeFile, ctnodFile, integFile = self.InitWrite(writeGeof, geofName, skipCtnod)
 
-        if self.NnodeVar>0:
+        if self.NnodeVar > 0:
           data_node = np.empty(self.NnodeVar*self.Nnode*self.Ntime)
           for i in range(self.Ntime):
             for k in range(self.NnodeVar):
@@ -175,7 +178,7 @@ class UtWriter(WriterBase):
           data_node.astype(np.float32).byteswap().tofile(nodeFile)
           del data_node
 
-        if self.NintVar>0:
+        if self.NintVar > 0:
           if skipCtnod == False:
             data_ctnod = np.empty(self.NintVar*self.Nnode*self.Ntime)
             for i in range(self.Ntime):
@@ -217,7 +220,8 @@ class UtWriter(WriterBase):
         nodeFile.close()
         if skipCtnod == False:
           ctnodFile.close()
-        integFile.close()
+        if self.NintVar > 0:
+          integFile.close()
 
 
 def CheckIntegrity():
