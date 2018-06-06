@@ -114,6 +114,15 @@ tet = TS.Tet_P1_Lagrange()
 NodalEvaluation[EN.GeoTet] = (tet.posN , list(np.ones(tet.posN.shape[0])) )
 IntegrationRulesAlmanac["NodalEvalGeo"] = NodalEvaluation
 
+
+#Define dictionnary for LagrangeP1 and LangrangeP2, based on "linear" dictionnary from ElementNames
+linearLagrange = {}
+linearLagrange[True]  = LagrangeP1
+linearLagrange[False] = LagrangeP2
+
+def Lagrange(elementName):
+  return linearLagrange[EN.linear[elementName]][EN.geoSupport[elementName]]
+
 def CheckIntegrity(GUI=False):
     for rulename,rule  in IntegrationRulesAlmanac.items():
         print(rulename)
