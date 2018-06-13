@@ -22,6 +22,7 @@ class UtMerger(WriterBase):
     "This class can generate monolithic .ut, .goef, .ctnod, .node, .integ from files obtained from a parallel computation"
     def __init__(self):
         super(UtMerger,self).__init__()
+        self.timeSteps = "all"
 
     def __str__(self):
         res  = 'UtMerge : \n'
@@ -60,6 +61,9 @@ class UtMerger(WriterBase):
     def SetOutputFolder(self,outputFolder):
         self.outputFolder = outputFolder
 
+    def SetTimeSteps(self,iterator):
+        self.timeSteps = iterator
+
     def Merge(self):
       localDataInteg = []
       localDataNode = []
@@ -75,37 +79,43 @@ class UtMerger(WriterBase):
         else:
           sdString = "-"+str(sd)
 
-        localMesh = GR.ReadGeof(self.dataFolder + self.name + "-pmeshes/" + self.name + sdString + ".geof")
+        reader = UR.UtReader()
+        reader.SetFileName(self.dataFolder + self.name + sdString + ".ut")
+        reader.ReadMetaData()
+
+        if self.timeSteps is not "all":
+          reader.time = reader.time[self.timeSteps,:]
+          if len(reader.time.shape) == 1:
+            reader.time.shape = (1,reader.time.shape[0])
+
+        localMesh = GR.ReadGeof(fileName = self.dataFolder+reader.meshfile,readElset=False,readFaset=False,printNotRead=False)
+        
         Tag3D(localMesh)
         idstotreat = Return3DElements(localMesh)
 
         originalIDNodes = np.array(localMesh.originalIDNodes-1, dtype=int)
-
-        reader = UR.UtReader()
-        reader.SetFileName(self.dataFolder + self.name + sdString + ".ut")
-        reader.ReadMetaData()
 
         reader.atIntegrationPoints = True
         dataInteg = {}
         for din in reader.integ:
           dataInteg[din] = np.empty((reader.meshMetadata['nbIntegrationPoints'],reader.time.shape[0]))
           for timeStep in range(reader.time.shape[0]):
-            dataInteg[din][:,timeStep] = reader.Read(fieldname=din, timeIndex=timeStep)
+            dataInteg[din][:,timeStep] = reader.Read(fieldname=din, timeIndex=int(reader.time[timeStep,0])-1)
 
         reader.atIntegrationPoints = False
         dataNode = {}
         for din in reader.node:
           dataNode[din] = np.empty((reader.meshMetadata['nbNodes'],reader.time.shape[0]))
           for timeStep in range(reader.time.shape[0]):
-            dataNode[din][:,timeStep] = reader.Read(fieldname=din, timeIndex=timeStep)
+            dataNode[din][:,timeStep] = reader.Read(fieldname=din, timeIndex=int(reader.time[timeStep,0])-1)
 
         localDataInteg.append(dataInteg)
         localDataNode.append(dataNode)
         localIdstotreat.append(idstotreat)
         localoriginalIDNodes.append(originalIDNodes)
 
-
-      globalMesh = GR.ReadGeof(self.dataFolder + self.name + ".geof")
+      cutGeof = GeofFromCut(self.dataFolder, self.name)
+      globalMesh = GR.ReadGeof(fileName = cutGeof,readElset=False,readFaset=False,printNotRead=False)
       Tag3D(globalMesh)
       globalIdstotreat = Return3DElements(globalMesh)
       #globalMesh.originalIDNodes = np.array(globalMesh.originalIDNodes-1, dtype=int)
@@ -149,14 +159,25 @@ class UtMerger(WriterBase):
       data_node.astype(np.float32).byteswap().tofile(self.outputFolder + self.name + ".node")
 
       #write .ut
-      __string = "**meshfile "+str(self.name)+".geof\n"
+      __string = "**meshfile "+cutGeof+"\n"
       with open(self.dataFolder + self.name + "-001.ut", 'r') as inFile:
         next(inFile)
-        __string += inFile.read()
+        for i in range(3):
+          __string += inFile.readline()
       
       with open(self.outputFolder + self.name + ".ut", "w") as outFile:
         outFile.write(__string)
+        for timeStep in range(reader.time.shape[0]):
+          line = ""
+          for i in range(5):
+            line += str(reader.time[timeStep,i])+" "
+          line += "\n"
+          outFile.write(line)
 
+def GeofFromCut(dataFolder, cutName):
+  cutFile = open(dataFolder+cutName+".cut", 'r')
+  strings = cutFile.readlines()
+  return dataFolder+strings[1].split()[1]
 
 def Tag3D(mesh):
   for name, data in mesh.elements.items():

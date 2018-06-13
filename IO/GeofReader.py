@@ -273,11 +273,11 @@ nbIntegrationsPoints["xax6r"] = 3;
 nbIntegrationsPoints["xax8"] = 9;
 nbIntegrationsPoints["xax8r"] = 4;
 
-def ReadGeof(fileName=None,string=None,out=None):
+def ReadGeof(fileName=None,string=None,out=None,readElset=True,readFaset=True,printNotRead=True):
     reader = GeofReader()
     reader.SetFileName(fileName)
     reader.SetStringToRead(string)
-    reader.Read(fileName=fileName, string=string,out=out)
+    reader.Read(fileName=fileName, string=string,out=out,readElset=readElset,readFaset=readFaset,printNotRead=printNotRead)
     return reader.output
 
 class GeofReader(ReaderBase):
@@ -323,7 +323,7 @@ class GeofReader(ReaderBase):
     return res
 
 
-  def Read(self, fileName=None,string=None,out=None):
+  def Read(self, fileName=None,string=None,out=None,readElset=True,readFaset=True,printNotRead=True):
     import BasicTools.FE.UnstructuredMesh as UM
 
     if fileName is not None:
@@ -409,6 +409,7 @@ class GeofReader(ReaderBase):
               tag.AddToTag(filetointernalid[int(oid)])
         continue
 
+     
       if l.find("**elset")>-1:
         elsetname = l.split()[1]
         print( "elset {}".format(elsetname) )
@@ -416,14 +417,16 @@ class GeofReader(ReaderBase):
         while(True):
           l  = self.ReadCleanLine()
           if l.find("**") > -1:
-               break
-          s = l.split()
+             break
 
-          for soid in s:
+          if readElset==True:
+            s = l.split()
+            for soid in s:
               oid = int(soid)
               #res.AddElementToTagUsingOriginalId(int(oid),elsetname)
               oidToElementContainer[oid].tags.CreateTag(elsetname,False).AddToTag(oidToLocalElementNumber[oid])
-        continue
+          continue
+
 
       if l.find("**faset")>-1:
         fasetName = l[8:]
@@ -431,18 +434,20 @@ class GeofReader(ReaderBase):
         while(True):
           l  = self.ReadCleanLine()
           if l.find("**") > -1:
-               break
-          s = l.split()
-          nametype = GeofNumber[s[0]]
-          conn = [filetointernalid[x] for x in  map(int,s[1:])]
+            break
 
-          if s[0] in PermutationZSetToBasicTools:
+          if readFaset==True:
+            s = l.split()
+            nametype = GeofNumber[s[0]]
+            conn = [filetointernalid[x] for x in  map(int,s[1:])]
+
+            if s[0] in PermutationZSetToBasicTools:
               conn =  [conn[x] for x in PermutationZSetToBasicTools[s[0]] ]
 
-          elements = res.GetElementsOfType(nametype)
-          localId = elements.AddNewElement(conn,-1)
-          elements.GetTag(fasetName).AddToTag(localId-1)
-        continue
+            elements = res.GetElementsOfType(nametype)
+            localId = elements.AddNewElement(conn,-1)
+            elements.GetTag(fasetName).AddToTag(localId-1)
+          continue
 
       if l.find("***return")>-1:
         print("End file")
@@ -453,9 +458,10 @@ class GeofReader(ReaderBase):
         continue
 
       #case not treated
-      print("line starting with <<"+l[:20]+">> not considered in the reader")
-      l = self.ReadCleanLine()
-      continue
+      if printNotRead == True:
+        print("line starting with <<"+l[:20]+">> not considered in the reader")
+        l = self.ReadCleanLine()
+        continue
 
     self.EndReading()
     res.PrepareForOutput()
