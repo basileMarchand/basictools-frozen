@@ -171,7 +171,7 @@ class UtMerger(WriterBase):
           line = ""
           for i in range(4):
             line += str(int(reader.time[timeStep,i]))+" "
-          line += str(reader.time[timeStep,i])+"\n"
+          line += str(reader.time[timeStep,4])+"\n"
           outFile.write(line)
 
 def GeofFromCut(dataFolder, cutName):
