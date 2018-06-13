@@ -115,7 +115,7 @@ class UtMerger(WriterBase):
         localoriginalIDNodes.append(originalIDNodes)
 
       cutGeof = GeofFromCut(self.dataFolder, self.name)
-      globalMesh = GR.ReadGeof(fileName = cutGeof,readElset=False,readFaset=False,printNotRead=False)
+      globalMesh = GR.ReadGeof(fileName = self.dataFolder + cutGeof,readElset=False,readFaset=False,printNotRead=False)
       Tag3D(globalMesh)
       globalIdstotreat = Return3DElements(globalMesh)
       #globalMesh.originalIDNodes = np.array(globalMesh.originalIDNodes-1, dtype=int)
@@ -159,7 +159,7 @@ class UtMerger(WriterBase):
       data_node.astype(np.float32).byteswap().tofile(self.outputFolder + self.name + ".node")
 
       #write .ut
-      __string = "**meshfile "+cutGeof+"\n"
+      __string = "**meshfile " + os.path.relpath(self.dataFolder, self.outputFolder) + os.sep + cutGeof+"\n"
       with open(self.dataFolder + self.name + "-001.ut", 'r') as inFile:
         next(inFile)
         for i in range(3):
@@ -169,15 +169,15 @@ class UtMerger(WriterBase):
         outFile.write(__string)
         for timeStep in range(reader.time.shape[0]):
           line = ""
-          for i in range(5):
-            line += str(reader.time[timeStep,i])+" "
-          line += "\n"
+          for i in range(4):
+            line += str(int(reader.time[timeStep,i]))+" "
+          line += str(reader.time[timeStep,i])+"\n"
           outFile.write(line)
 
 def GeofFromCut(dataFolder, cutName):
   cutFile = open(dataFolder+cutName+".cut", 'r')
   strings = cutFile.readlines()
-  return dataFolder+strings[1].split()[1]
+  return strings[1].split()[1]
 
 def Tag3D(mesh):
   for name, data in mesh.elements.items():
@@ -217,7 +217,7 @@ def CheckIntegrity():
     import filecmp
     print(TFormat.InRed("node files equals  ? "+ str(filecmp.cmp(tempdir + "cube.node",  BasicToolsTestData.GetTestDataPath() + "UtParExample/cube.node", shallow=False))))
     print(TFormat.InRed("integ files equals ? "+ str(filecmp.cmp(tempdir + "cube.integ", BasicToolsTestData.GetTestDataPath() + "UtParExample/cube.integ", shallow=False))))
-
+    print(tempdir)
     return "ok"
 
 if __name__ == '__main__':
