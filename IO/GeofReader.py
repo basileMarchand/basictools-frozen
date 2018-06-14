@@ -409,45 +409,40 @@ class GeofReader(ReaderBase):
               tag.AddToTag(filetointernalid[int(oid)])
         continue
 
-     
       if l.find("**elset")>-1:
         elsetname = l.split()[1]
         print( "elset {}".format(elsetname) )
 
         while(True):
           l  = self.ReadCleanLine()
-          if l.find("**") > -1:
-             break
+          if l.find("**") > -1 or readElset == False:
+               break
+          s = l.split()
 
-          if readElset==True:
-            s = l.split()
-            for soid in s:
+          for soid in s:
               oid = int(soid)
               #res.AddElementToTagUsingOriginalId(int(oid),elsetname)
               oidToElementContainer[oid].tags.CreateTag(elsetname,False).AddToTag(oidToLocalElementNumber[oid])
-          continue
-
+        continue
 
       if l.find("**faset")>-1:
         fasetName = l[8:]
         print("Reading Group " + fasetName)
         while(True):
           l  = self.ReadCleanLine()
-          if l.find("**") > -1:
-            break
+          if l.find("**") > -1 or readFaset == False:
+               break
+          s = l.split()
+          nametype = GeofNumber[s[0]]
+          conn = [filetointernalid[x] for x in  map(int,s[1:])]
 
-          if readFaset==True:
-            s = l.split()
-            nametype = GeofNumber[s[0]]
-            conn = [filetointernalid[x] for x in  map(int,s[1:])]
-
-            if s[0] in PermutationZSetToBasicTools:
+          if s[0] in PermutationZSetToBasicTools:
               conn =  [conn[x] for x in PermutationZSetToBasicTools[s[0]] ]
 
-            elements = res.GetElementsOfType(nametype)
-            localId = elements.AddNewElement(conn,-1)
-            elements.GetTag(fasetName).AddToTag(localId-1)
-          continue
+          elements = res.GetElementsOfType(nametype)
+          localId = elements.AddNewElement(conn,-1)
+          elements.GetTag(fasetName).AddToTag(localId-1)
+        continue
 
       if l.find("***return")>-1:
         print("End file")
@@ -460,13 +455,14 @@ class GeofReader(ReaderBase):
       #case not treated
       if printNotRead == True:
         print("line starting with <<"+l[:20]+">> not considered in the reader")
-        l = self.ReadCleanLine()
-        continue
+      l = self.ReadCleanLine()
+      continue
 
     self.EndReading()
     res.PrepareForOutput()
     self.output = res
     return res
+
 
 from BasicTools.IO.UniversalReader import RegisterClass
 RegisterClass(".geof",GeofReader)
