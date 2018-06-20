@@ -5,6 +5,7 @@ import numpy as np
 
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 from BasicTools.FE.UnstructuredMesh import AllElements
+from BasicTools.FE.IntegrationsRules import Lagrange as Lagrange
 
 
 class IntegrationPointField(BaseOutputObject):
@@ -17,8 +18,9 @@ class IntegrationPointField(BaseOutputObject):
     def Allocate(self,mesh,integrationrule,tag=AllElements):
         for name,data in mesh.elements.items():
             import BasicTools.FE.ElementNames  as EN
-            geoEl = EN.geoSupport[name]
-            nbItegPoints = len(integrationrule[geoEl][1])
+            #geoEl = EN.geoSupport[name]
+            #nbItegPoints = len(integrationrule[geoEl][1])
+            nbItegPoints = len(Lagrange(name)[1])
             if tag == AllElements:
                 nbElements = data.GetNumberOfElements()
             else :
