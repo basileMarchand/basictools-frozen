@@ -25,7 +25,7 @@ class UtSplitter(WriterBase):
         self.timeSteps = "all"
 
     def __str__(self):
-        res  = 'UtSplitte : \n'
+        res  = 'UtSplit : \n'
         res += '   Name : '+str(self.name)+'\n'
         return res
 
@@ -36,7 +36,7 @@ class UtSplitter(WriterBase):
         self.dataFolder = folder
         from os import listdir
         from os.path import isfile, join
-        temp = [f.split(".") for f in listdir(self.dataFolder) if isfile(join(self.dataFolder, f))]
+        temp = [f.split(".") for f in listdir(self.dataFolder + self.name + "-pmeshes" + os.sep) if isfile(join(self.dataFolder + self.name + "-pmeshes" + os.sep, f))]
         temp2 = []
         count = 0
         for f in temp:
@@ -51,7 +51,7 @@ class UtSplitter(WriterBase):
           count += 1        
         subdomains = []
         for f in temp2:
-          if 'ut' in f and self.name in f:
+          if 'geof' in f and self.name in f:
             for fi in f:
               if type(fi) == int:
                 subdomains.append(fi)
@@ -99,6 +99,9 @@ class UtSplitter(WriterBase):
 
       nGpE = globalMesh.NGaussperEl
 
+
+      from BasicTools.Helpers.ProgressBar import printProgressBar
+      printProgressBar(0, self.nbsd, prefix = 'Progress:', suffix = 'Complete', length = 50)
 
       for sd in range(1,self.nbsd+1):
         sdString = sdTosdString(sd)
@@ -154,6 +157,9 @@ class UtSplitter(WriterBase):
             line += str(reader.time[timeStep,4])+"\n"
             outFile.write(line)
 
+        printProgressBar(sd, self.nbsd, prefix = 'Progress:', suffix = 'Complete', length = 50)
+
+
 
       #write .cut
       __string = "***decomposition\n" + "  **global_mesh " + os.path.relpath(self.dataFolder, self.outputFolder) + os.sep + self.name + ".geof\n" + "  **domains "+str(self.nbsd)+"\n"
@@ -198,7 +204,7 @@ def CheckIntegrity():
     import BasicTools.TestData as BasicToolsTestData
 
     ##################################
-    # EXEMPLE SYNTAXE DU MERGER
+    # EXEMPLE SYNTAXE DU SPLITTER
     import BasicTools.IO.Parallel.UtSplitter as US
     splitter = US.UtSplitter()
     splitter.SetName("cube")
