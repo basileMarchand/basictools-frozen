@@ -66,9 +66,7 @@ def CreateCube(dimensions=[2,2,2], origin=[-1.0,-1.0,-1.0], spacing=[1.,1.,1.], 
     if ofTetras:
         tets = mesh.GetElementsOfType(EN.Tetrahedron_4)
         tets.GetTag("3D").SetIds(range(tets.GetNumberOfElements()))
-
-        skin = mesh.GetElementsOfType(EN.Tetrahedron_4)
-
+        skin = mesh.GetElementsOfType(EN.Triangle_3)
     else:
         hexs = mesh.GetElementsOfType(EN.Hexaedron_8)
         hexs.GetTag("3D").SetIds(range(hexs.GetNumberOfElements()))
