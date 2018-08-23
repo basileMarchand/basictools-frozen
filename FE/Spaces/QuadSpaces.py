@@ -4,6 +4,17 @@ import BasicTools.FE.ElementNames as EN
 from sympy.matrices import Matrix
 import numpy as np
 
+class Quad_P0_Global(SymSpaceBase):
+    def __init__(self):
+        super(Quad_P0_Global,self).__init__()
+        self.geoSupport = EN.GeoQuad
+
+
+        self.symN = Matrix([1])
+        self.posN = np.array([ [ None,None] ])
+        self.dofAttachments = [("G",None,None)]
+        self.Create()
+
 class Quad_P0_Lagrange(SymSpaceBase):
     def __init__(self):
         super(Quad_P0_Lagrange,self).__init__()

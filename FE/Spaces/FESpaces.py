@@ -19,7 +19,10 @@ LagrangeSpaceGeo[EN.Hexaedron_8] = HexaSpaces.Hexa_P1_Lagrange()
 ConstantSpaceGlobal = {}
 ConstantSpaceGlobal[EN.Bar_2] = BarSpaces.Bar_P0_Global()
 ConstantSpaceGlobal[EN.Triangle_3] = TriSpaces.Tri_P0_Global()
+ConstantSpaceGlobal[EN.Quadrangle_4] = QuadSpaces.Quad_P0_Global()
 ConstantSpaceGlobal[EN.Tetrahedron_4] = TetSpaces.Tet_P0_Global()
+ConstantSpaceGlobal[EN.Hexaedron_8] = HexaSpaces.Hexa_P0_Global()
+
 
 LagrangeSpaceP0 = {}
 LagrangeSpaceP0[EN.Bar_2] = BarSpaces.Bar_P0_Lagrange()
