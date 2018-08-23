@@ -828,6 +828,26 @@ def CleanEmptyTags(inmesh):
         elems.tags.RemoveEmptyTags()
     inmesh.nodesTags.RemoveEmptyTags()
 
+def GetDualGraphNodeToElement(inmesh, maxNumConnections=200):
+    # generation of the dual graph
+    dualGraph = np.zeros((inmesh.GetNumberOfNodes(),maxNumConnections), dtype=int )-1
+    usedPoints = np.zeros(inmesh.GetNumberOfNodes(), dtype=int );
+
+    cpt =0
+
+    for name,elems in inmesh.elements.items():
+        for i in range(elems.GetNumberOfElements()):
+            coon = elems.connectivity[i,:]
+            for j in coon:
+                dualGraph[j,usedPoints[j]] =  cpt
+                usedPoints[j] += 1
+            cpt += 1
+
+    #we crop the output data
+    maxsize = np.max(np.sum(dualGraph>=0,axis=1))
+    dualGraph = dualGraph[:,0:maxsize]
+    return dualGraph,usedPoints
+
 def GetDualGraph(inmesh, maxNumConnections=200):
 
     # generation of the dual graph
@@ -1577,7 +1597,6 @@ def CheckIntegrity_PointToCellData(GUI = False):
     print (res - ExactData)
     if (res - ExactData).any() :
         raise("Error CheckIntegrity_PointToCellData")
-
 
 
 def CheckIntegrity_ComputeFeatures(GUI =False):

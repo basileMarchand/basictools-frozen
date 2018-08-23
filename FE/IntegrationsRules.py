@@ -10,8 +10,8 @@ IntegrationRulesAlmanac = {}
 
 
 LagrangeP1 = {}
-LagrangeP1[EN.GeoTri] = ( 1./6.*np.array([[1, 1] ,[4, 1],[ 1 ,4] ]),
-                                  1./6.*np.array([1 , 1 , 1]))
+LagrangeP1[EN.GeoTri] = ( 1./6.*np.array([[1., 1.] ,[4., 1.],[ 1. ,4.] ]),
+                                  1./6.*np.array([1. , 1. , 1]))
 
 #LagrangeP1[EN.GeoTri] = ( 1./3.*np.array([[1, 1]  ]),
 #                                        np.array([ 0.5 ]))
@@ -42,13 +42,13 @@ def TensorProductPoints(dim,npoints=2):
     Pres = []
     Wres = []
     if dim ==1:
-        return (np.array([p,]).T,w)
+        return (np.array([p,]).T,np.array(w))
     if dim == 2:
         for i in range(len(p)):
             for j in range(len(p)):
                     Pres.append([p[i], p[j]])
                     Wres.append( w[i]*w[j])
-        return (np.array(Pres),Wres)
+        return (np.array(Pres),np.array(Wres))
     elif dim ==3:
         for i in range(len(p)):
             for j in range(len(p)):
@@ -66,7 +66,7 @@ def TensorProductPoints(dim,npoints=2):
                                           [-a, a, a],
                                           [ a, a, a]]);
         Wres = np.ones(8)/8.;"""
-        return (np.array(Pres),Wres)
+        return (np.array(Pres),np.array(Wres))
     else :
         raise
 
@@ -83,35 +83,36 @@ LagrangeP2 = {}
 
 
 
-p = np.array([[0.1666666667,0.1666666667,0.1666666667], 
-[0.5,0.1666666667,0.1666666667], 
-[0.1666666667,0.5,0.1666666667], 
-[0.1666666667,0.1666666667,0.5], 
+p = np.array([[0.1666666667,0.1666666667,0.1666666667],
+[0.5,0.1666666667,0.1666666667],
+[0.1666666667,0.5,0.1666666667],
+[0.1666666667,0.1666666667,0.5],
 [0.25,0.25,0.25]]);
 w = np.array([0.075 ,0.075 ,0.075 ,0.075 ,-0.1333333333]);
 LagrangeP2[EN.GeoTet] = (p,w)
 
 
 
-p = np.array([[0.4459484909,0.4459484909,0], 
-[0.1081030182,0.4459484909,0], 
-[0.4459484909,0.1081030182,0], 
-[0.09157621351,0.09157621351,0], 
-[0.816847573,0.09157621351,0], 
+p = np.array([[0.4459484909,0.4459484909,0],
+[0.1081030182,0.4459484909,0],
+[0.4459484909,0.1081030182,0],
+[0.09157621351,0.09157621351,0],
+[0.816847573,0.09157621351,0],
 [0.09157621351,0.816847573,0]])
 w = np.array([0.1116907948 ,0.1116907948 ,0.1116907948 ,0.05497587183 ,0.05497587183 ,0.05497587183])
 LagrangeP2[EN.GeoTri] = (p,w)
 
+IntegrationRulesAlmanac["LagrangeP2"] = LagrangeP2
 
 
 #Nodal Itegration for the evaluation of post quantities at nodes
 NodalEvaluation = {}
 import BasicTools.FE.Spaces.HexaSpaces as HS
 hexa = HS.Hexa_P1_Lagrange()
-NodalEvaluation[EN.GeoHex] = (hexa.posN , list(np.ones(hexa.posN.shape[0])) )
+NodalEvaluation[EN.GeoHex] = (hexa.posN , np.ones(hexa.posN.shape[0]) )
 import BasicTools.FE.Spaces.TetSpaces as TS
 tet = TS.Tet_P1_Lagrange()
-NodalEvaluation[EN.GeoTet] = (tet.posN , list(np.ones(tet.posN.shape[0])) )
+NodalEvaluation[EN.GeoTet] = (tet.posN , np.ones(tet.posN.shape[0]) )
 IntegrationRulesAlmanac["NodalEvalGeo"] = NodalEvaluation
 
 def CheckIntegrity(GUI=False):

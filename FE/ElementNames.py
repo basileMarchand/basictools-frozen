@@ -9,6 +9,18 @@ class GeoSupport(object):
     def __rep__(self):
         res = "GeoSuport( " + self.name + ")"
         return res
+    def __str__(self):
+        return self.__rep__()
+
+    def __eq__(self, other):
+        """Overrides the default implementation"""
+        if isinstance(other, GeoSupport):
+            return self.name == other.name
+        return False
+
+    def __ne__(self, other):
+        """Overrides the default implementation (unnecessary in Python 3)"""
+        return not self.__eq__(other)
 
 #GeoEntities = [
 #        GeoSupport(("point",1)),   #0
