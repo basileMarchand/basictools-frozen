@@ -88,7 +88,8 @@ def WriteOdb(filename,mesh,PointFields=None,CellFields=None,PointFieldsNames=Non
         interface.processDirectory = TestTempDir.GetTempPath()
         absfilename   = os.path.abspath(filename)
 
-        port = 12346
+        from BasicTools.IO.Wormhole import GetAnFreePortNumber
+        port = GetAnFreePortNumber()
         interface.tpl = """
 from BasicTools.IO.Wormhole import WormholeServer
 WormholeServer(""" +str(port) +""",dry=False)
