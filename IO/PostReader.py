@@ -22,8 +22,15 @@ class PostReader(ReaderBase):
             if len(l) == 0:
                 continue
 
+            if "#volume integrate" in line :
+                continue
+
             if l[0] == "#":
-                s = l.split("<")
+                if "<" in l:
+                    s = l.split("<")
+                else:
+                    s = re.sub('#',' ',re.sub(' +',' ',l)).split()
+
                 if len(s) == 1:
                     l = "time"+ l
                     s = l.split("#")
@@ -38,7 +45,9 @@ class PostReader(ReaderBase):
                     l = line.strip('\n')
                     if len(l) == 0:
                         break
-                    #print(l)
+
+
+                    l= l.replace("VI","")
                     data = np.vstack((data,np.fromstring(l,sep=" ") ))
 
                 #print(data)
@@ -56,8 +65,13 @@ def CheckIntegrity():
 # time <ener>
 1.000000000000000e+00 -nan
 
-# time <enerinteg>
+# time <enerintegII>
 1.000000000000000e+00 1.054915810911460e-01
+
+#volume integrate
+# time enerinteg
+1.000000000000000e+00 VI 4.644104676325955e-02
+
 """
     theReader = PostReader()
     theReader.SetStringToRead(string)
