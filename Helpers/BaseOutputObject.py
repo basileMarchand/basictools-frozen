@@ -8,6 +8,7 @@ from __future__ import print_function
 __author__ = "Felipe Bordeu"
 
 import time
+from functools import wraps
 _startTime = time.time()
 useDifferentialTime = True
 
@@ -17,9 +18,48 @@ def SetUseDifferentialTime(val):
     global useDifferentialTime
     useDifferentialTime = val
 
+
+##https://stackoverflow.com/questions/3603502/prevent-creating-new-attributes-outside-init
+##https://hynek.me/articles/hasattr/
+sentinel = object()
+## for the moment if a class is frozen no heritage is possible ... working on a solution
+def froze_it(cls):
+    cls.__frozen = False
+
+    def frozensetattr(self, key, value):
+
+        y = getattr(self, key, sentinel)
+
+        if self.__frozen and y is sentinel:
+            raise(Exception("Class {} is frozen. Cannot set {} = {}"
+                  .format(cls.__name__, key, value)))
+        else:
+            object.__setattr__(self, key, value)
+
+    def init_decorator(func):
+        @wraps(func)
+        def wrapper(self, *args, **kwargs):
+            func(self, *args, **kwargs)
+            def UnFrozen():
+                self.__frozen = False
+
+            setattr(self, "UnFrozen", UnFrozen)
+            self.__frozen = True
+        return wrapper
+
+    cls.__setattr__ = frozensetattr
+    cls.__init__ = init_decorator(cls.__init__)
+
+    return cls
+
 class BaseOutputObject(object):
     __globalDebugMode = False
     __verboseLevel = 1
+    # constants
+    # please do not change this values
+    RETURN_SUCCESS = 0
+    RETURN_FAIL = 1
+    RETURN_FAIL_EXTERNAL_TOOL = 2
 
     def __init__(self, other = None):
         super(BaseOutputObject,self).__init__()
@@ -182,6 +222,42 @@ def CheckIntegrity():
     toto = TOTO()
 
     BaseOutputObject().PrintDebug(toto.tata)
+
+    @froze_it
+    class FrozenTest(BaseOutputObject):
+        def __init__(self):
+            self.a = 3
+
+    @froze_it
+    class FrozenSubClass(FrozenTest):
+        def __init__(self):
+            super(FrozenSubClass,self).__init__()
+            self.UnFrozen()
+            self.b = 50
+
+    obj = FrozenTest()
+    obj.a = 5
+    try:
+        obj.b = 7
+        return "Error frozing class"
+    except Exception as inst:
+        pass
+        print(inst)
+    obj.__frozen = False
+    obj.b = 7
+
+
+    obj = FrozenSubClass()
+    obj.b = 5
+    try:
+        obj.c = 7
+        return "Error frozing subclass"
+    except Exception as inst:
+        pass
+
+    obj.UnFrozen()
+    obj.c = 7
+
     return "OK"
 
 if __name__ == '__main__':
