@@ -18,6 +18,7 @@ class FeaBase(BaseOutputObject):
 
         # tuple (zone,dof,val)
         self.dirichletBC = []
+        self.rhsfixed = None
         self.sol = None
         self.solver = LinearProblem()
 
@@ -51,17 +52,27 @@ class FeaBase(BaseOutputObject):
             for i in range(dof):
                 offset += self.numbering["size"]
 
-            for name,data in self.mesh.elements.items():
-                if zone in data.tags:
-                    elids = data.tags[zone].GetIds()
-                    dofsids = np.unique(self.numbering[name][elids,:].ravel()) + offset
+            if zone in self.mesh.nodesTags:
+                 nids = self.mesh.nodesTags[zone].GetIds()
+                 dofsids = nids + offset
 
-                    self.dofs[dofsids] = False
-                    self.sol[dofsids] = val
+                 self.dofs[dofsids] = False
+                 self.sol[dofsids] = val
+            else :
+                for name,data in self.mesh.elements.items():
+                    if zone in data.tags:
+                        elids = data.tags[zone].GetIds()
+                        dofsids = np.unique(self.numbering[name][elids,:].ravel()) + offset
 
-        [cleanK, rhsfixed] = deleterowcol(K, np.logical_not(self.dofs), np.logical_not(self.dofs), self.sol)
+                        self.dofs[dofsids] = False
+                        self.sol[dofsids] = val
 
-        return cleanK, (rhs[self.dofs]-rhsfixed[self.dofs])
+        [cleanK, self.rhsfixed] = deleterowcol(K, np.logical_not(self.dofs), np.logical_not(self.dofs), self.sol)
+
+        return cleanK, self.ApplyBCF(rhs)
+
+    def ApplyBCF(self,rhs):
+        return rhs[self.dofs]-self.rhsfixed[self.dofs]
 
     def Reset(self):
         self.sol = None
@@ -81,6 +92,10 @@ class FeaBase(BaseOutputObject):
     def PushVectorToMesh(self,onNodes,field,name):
         F = field.view()
         if onNodes:
+            if self.mesh.GetNumberOfNodes() == F.size:
+                self.mesh.nodeFields[name] = np.zeros((self.mesh.GetNumberOfNodes()),dtype=float)
+                self.mesh.nodeFields[name][self.numbering["doftopointLeft"]] =  F[self.numbering["doftopointRight"]]
+                return
             if self.mesh.GetNumberOfNodes()*3 != F.size :
                 raise Exception("incompatible field")
             F.shape = (3,F.size/3)
@@ -136,7 +151,7 @@ def CheckIntegrity(GUI=False):
             K = np.array([[1, 2], [3, 4]]);
 
         A,rhs = deleterowcol(K, mask, mask, fv )
-        print("using Sparce : " + ("True" if sp else "False" ) )
+        print("using Sparse : " + ("True" if sp else "False" ) )
         print("Vals")
         print(A)
         print("--")
