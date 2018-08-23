@@ -133,7 +133,8 @@ class GeofWriter(WriterBase):
         self.filePointer.write(" ***group \n")
 
         for tag in meshObject.nodesTags:
-
+            if len(tag) == 0:
+                continue
             self.filePointer.write("  **nset {} \n".format(tag.name))
             data = np.zeros((meshObject.GetNumberOfNodes(),1),dtype=np.int)
             if useOriginalId:
