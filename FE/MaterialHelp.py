@@ -33,20 +33,20 @@ class HookeLaw() :
             return np.array([[E],])
         if dim == 2:
             if planeStress:
-              return ((float(E)/(1.-nu**2))*
-              np.array([[1 , nu, 0     ],
-                        [nu, 1 , 0     ],
-                        [0 , 0 , (1-nu)/2.]]));
+              return ((E/(1.-nu**2.))*
+              np.array([[1. , nu, 0     ],
+                        [nu, 1. , 0     ],
+                        [0 , 0 , (1.-nu)/2.]]));
             else:
-              return  ((float(E)/((1+nu)*(1-2*nu)))*
-              np.array([[1-nu, nu  , 0 ],
-                        [nu  , 1-nu, 0 ],
+              return  ((E/((1.+nu)*(1-2*nu)))*
+              np.array([[1.-nu, nu  , 0 ],
+                        [nu  , 1.-nu, 0 ],
                         [0   , 0   , 0.5-nu]]));
 
-        res= ((float(E)/((1+nu)*(1-2*nu)))*
-            np.array([[1-nu, nu  ,  nu  , 0      ,0      ,0 ],
-                      [nu  , 1-nu,  nu  , 0      ,0      ,0 ],
-                      [nu  , nu  ,  1-nu, 0      ,0      ,0 ],
+        res= ((E/((1.+nu)*(1.-2.*nu)))*
+            np.array([[1.-nu, nu  ,  nu  , 0      ,0      ,0 ],
+                      [nu  , 1.-nu,  nu  , 0      ,0      ,0 ],
+                      [nu  , nu  ,  1.-nu, 0      ,0      ,0 ],
                       [0   , 0   ,  0   , 0.5-nu ,0      ,0 ],
                       [0   , 0   ,  0   , 0      ,0.5-nu ,0 ],
                       [0   , 0   ,  0   , 0      ,0      ,0.5-nu]]));
@@ -68,7 +68,7 @@ class HookeLaw() :
 
         for key,data in opt.items():
             if key in parser:
-                self.data[parser[key]] = float(data)
+                self.data[parser[key]] = data
             else:
                 raise(Exception("dont know how to treat the key " + str(key) ) )
 
