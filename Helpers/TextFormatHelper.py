@@ -208,12 +208,16 @@ class TFormat(object):
         #hack for spyder
         if 'SPYDER_SHELL_ID' in os.environ:
             return True
+
         if hasattr(sys.stdout, 'color') :# pragma: no cover
             return sys.stdout.color
 
+        if os.environ.get("COLORTERM","False") == "truecolor":
+            return True
 
         if not supported_platform or not is_a_tty:# pragma: no cover
             return False
+
         return True# pragma: no cover
 
 
