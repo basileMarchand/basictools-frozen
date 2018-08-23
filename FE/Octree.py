@@ -32,6 +32,15 @@ class node():
 
         self.value = None
 
+    def _str_(self):
+        res = ""
+        if  self.posXposYposZ is None :
+            res += "(-)"
+        else :
+            res += self.posXposYposZ.__str__()
+
+        return res
+
 
     def add(self, payload, coord, level):
 
