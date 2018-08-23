@@ -32,6 +32,9 @@ def ReadVector(string,dtype):
         tmp = string.lstrip().rstrip()
         return np.array([ ReadScalar(x,dtype) for x in tmp.split()] ,dtype=dtype )
 
+def ReadString(string):
+    return str(string)
+
 def ReadStrings(string):
     return ReadVector(string,str)
 
