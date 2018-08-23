@@ -34,6 +34,25 @@ class NodalField(object):
           res += TFormat.InGreen("Name : ") + self.name
         return res
 
+    def GetPointRepresentation(self,fillvalue=0.):
+
+        if fillvalue==0.:
+            res = np.zeros(self.mesh.GetNumberOfNodes(),dtype=float)
+        else:
+            res = np.ones(self.mesh.GetNumberOfNodes(),dtype=float)*fillvalue
+
+        res[self.numbering["doftopointLeft"]] = self.data[self.numbering["doftopointRight"]]
+
+        return res
+
+    def SetDataFromPointRepresentation(self,userdata, fillvalue=0.):
+        if fillvalue==0.:
+           self.data = np.zeros(self.numbering["size"])
+        else:
+           self.data = np.ones(self.numbering["size"])*fillvalue
+
+        self.data[self.numbering["doftopointRight"]] = userdata[self.numbering["doftopointLeft"]]
+
 def CheckIntegrity():
     obj = NodalField("temp")
     return "ok"
