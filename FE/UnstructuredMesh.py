@@ -149,6 +149,9 @@ class AllElements(object):
     def __getitem__(self,key):
         return self.storage[key]
 
+    def __delitem__(self,key):
+        del self.storage[key]
+
 
 class UnstructuredMesh(MeshBase):
 
