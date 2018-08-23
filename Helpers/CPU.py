@@ -2,14 +2,22 @@
 __author__ = "Felipe Bordeu"
 
 import os
+import BasicTools.Helpers.ParserHelper as PH
 
 def GetNumberOfAvailableCpus():
    SLURM_JOB_CPU_PER_NODE = os.environ.get('SLURM_JOB_CPU_PER_NODE')
    if SLURM_JOB_CPU_PER_NODE is None:
-       return 1
+       import subprocess
+       import platform
+       try:
+           out = subprocess.check_output(["/usr/bin/squeue","-h","-t","r","-u",str(os.environ.get("USER")),"-w",platform.node(),"-o","'%C'"], shell=False ).decode("utf-8","ignore")
+           out = out.strip().strip("'")
+           return PH.ReadInt(out)
+       except:
+           return 1
 
 class CPU():
-    """ Class to help doning the multithreading without using to many cpus
+    """ Class to help doing the multithreading without using to many cpus
     """
     cpudispo = GetNumberOfAvailableCpus()
 
@@ -52,17 +60,16 @@ class CPU():
 
 def CheckIntegrity():
     try:
-       with CPU(8) as cpu:
-        print("cpu ask 8 Allocated  " + str( cpu.nbCPUAllocated))
+       with CPU(2) as cpu:
+        print("CPU ask 2 Allocated :" + str( cpu.nbCPUAllocated))
         print("CPU dispo " + str( CPU.cpudispo))
         with CPU() as cpu2:
-            print("cpu2 ask max Allocated  " + str( cpu2.nbCPUAllocated))
+            print("cpu2 ask max available, Allocated : " + str( cpu2.nbCPUAllocated))
             print("CPU2 dispo " + str( CPU.cpudispo))
 
             with CPU(7,False) as cpu3:
                 print("cpu3 ask 7 Allocated  " + str( cpu3.nbCPUAllocated))
                 print("CPU3 dispo " + str( CPU.cpudispo))
-                CPU()
     except Exception as e:
          print(e)
 
