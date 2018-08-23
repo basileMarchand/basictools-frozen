@@ -14,11 +14,11 @@ from BasicTools.IO.MeshTools import Corners
 import BasicTools.IO.MeshTools as MT
 
 
-def WriteMesh(filename,mesh,SolsAtVertices=None,solutionOnOwnFile= False, binary=True, nodalRefNumber= None,elemRefNumber=None):
+def WriteMesh(filename,mesh,PointFields=None,solutionOnOwnFile= False, binary=True, nodalRefNumber= None,elemRefNumber=None):
     OW = MeshWriter()
     OW.SetBinary(binary);
     OW.Open(filename)
-    OW.Write(mesh,SolsAtVertices = SolsAtVertices,solutionOnOwnFile=solutionOnOwnFile, nodalRefNumber=nodalRefNumber,elemRefNumber=elemRefNumber)
+    OW.Write(mesh,PointFields = PointFields,solutionOnOwnFile=solutionOnOwnFile, nodalRefNumber=nodalRefNumber,elemRefNumber=elemRefNumber)
     OW.Close()
 
 class MeshWriter(WriterBase):
@@ -45,15 +45,15 @@ class MeshWriter(WriterBase):
             self.dataType = np.float64
             self.dataSize = 8;
 
-    def Write(self,meshObject,SolsAtVertices=None, solutionOnOwnFile= False, nodalRefNumber= None, elemRefNumber=None):
+    def Write(self,meshObject,PointFields=None, solutionOnOwnFile= False, nodalRefNumber= None, elemRefNumber=None):
         if self.isBinary():
-            return self.WriteBINARY(meshObject,SolsAtVertices=SolsAtVertices, solutionOnOwnFile=solutionOnOwnFile, nodalRefNumber=nodalRefNumber,elemRefNumber=elemRefNumber )
+            return self.WriteBINARY(meshObject,PointFields=PointFields, solutionOnOwnFile=solutionOnOwnFile, nodalRefNumber=nodalRefNumber,elemRefNumber=elemRefNumber )
         else:
-            return self.WriteASCII(meshObject,SolsAtVertices=SolsAtVertices, solutionOnOwnFile= solutionOnOwnFile, nodalRefNumber =nodalRefNumber,elemRefNumber=elemRefNumber )
+            return self.WriteASCII(meshObject,PointFields=PointFields, solutionOnOwnFile= solutionOnOwnFile, nodalRefNumber =nodalRefNumber,elemRefNumber=elemRefNumber )
 
 
 
-    def WriteBINARY(self,meshObject,SolsAtVertices=None, solutionOnOwnFile= False, nodalRefNumber = None,elemRefNumber=None):
+    def WriteBINARY(self,meshObject,PointFields=None, solutionOnOwnFile= False, nodalRefNumber = None,elemRefNumber=None):
 
 
         #key MeshVersionFormatted
@@ -214,12 +214,12 @@ class MeshWriter(WriterBase):
 
 
 
-        if SolsAtVertices is not None:
+        if PointFields is not None:
             if solutionOnOwnFile :
                 #self.filePointer.write(struct.pack('i', 54)) #dimension
                 self.Close();
                 self.OpenSolutionFileBinary()
-            self.WriteSolutionsFieldsBinary(meshObject,SolsAtVertices)
+            self.WriteSolutionsFieldsBinary(meshObject,PointFields)
 
         #key End
         #self.filePointer.write(struct.pack('i', 54)) #dimension
@@ -230,7 +230,7 @@ class MeshWriter(WriterBase):
         self.filePointer = open(".".join(self.fileName.split(".")[0:-1])+".sol" , 'w')
         #self.filePointer = open(".".join(self.fileName.split(".")[0:-1])+".sol" , 'wb',0)
         # python3 does not support zero buffered output in ascii mode
-        
+
         self._isOpen = True
 
         #key MeshVersionFormatted
@@ -238,9 +238,9 @@ class MeshWriter(WriterBase):
         dimension = support.GetDimensionality()
         self.filePointer.write("Dimension {}\n\n".format(dimension))
 
-    def WriteSolutionsFieldsAscii(self,meshObject,SolsAtVertices=None,SolsAtTriangles=None,SolsAtTetrahedra=None):
-        if SolsAtVertices is not None:
-            self._WriteSolutionsFieldsAsciiUsingKey(meshObject,"SolAtVertices",SolsAtVertices)
+    def WriteSolutionsFieldsAscii(self,meshObject,PointFields=None,SolsAtTriangles=None,SolsAtTetrahedra=None):
+        if PointFields is not None:
+            self._WriteSolutionsFieldsAsciiUsingKey(meshObject,"SolAtVertices",PointFields)
 
         if SolsAtTriangles is not None:
             self._WriteSolutionsFieldsAsciiUsingKey(meshObject,"SolAtTriangles",SolsAtTriangles)
@@ -300,11 +300,11 @@ class MeshWriter(WriterBase):
         else:
             self.OpenSolutionFileAscii(support)
 
-    def WriteSolutionsFields(self,meshObject,SolsAtVertices=None,SolsAtTriangles=None,SolsAtTetrahedra=None):
+    def WriteSolutionsFields(self,meshObject,PointFields=None,SolsAtTriangles=None,SolsAtTetrahedra=None):
         if self.isBinary():
-            self.WriteSolutionsFieldsBinary(meshObject,SolsAtVertices=SolsAtVertices,SolsAtTriangles=SolsAtTriangles,SolsAtTetrahedra=SolsAtTetrahedra)
+            self.WriteSolutionsFieldsBinary(meshObject,PointFields=PointFields,SolsAtTriangles=SolsAtTriangles,SolsAtTetrahedra=SolsAtTetrahedra)
         else:
-            self.WriteSolutionsFieldsAscii(meshObject,SolsAtVertices=SolsAtVertices,SolsAtTriangles=SolsAtTriangles,SolsAtTetrahedra=SolsAtTetrahedra)
+            self.WriteSolutionsFieldsAscii(meshObject,PointFields=PointFields,SolsAtTriangles=SolsAtTriangles,SolsAtTetrahedra=SolsAtTetrahedra)
 
     def Close(self):
 
@@ -332,9 +332,9 @@ class MeshWriter(WriterBase):
         self.filePointer.write(struct.pack('i', dimension)) #dimension
 
 
-    def WriteSolutionsFieldsBinary(self,meshObject,SolsAtVertices=None,SolsAtTriangles=None,SolsAtTetrahedra=None):
-        if SolsAtVertices is not None:
-            self._WriteSolutionsFieldsBinaryUsingKey(meshObject,62,SolsAtVertices)
+    def WriteSolutionsFieldsBinary(self,meshObject,PointFields=None,SolsAtTriangles=None,SolsAtTetrahedra=None):
+        if PointFields is not None:
+            self._WriteSolutionsFieldsBinaryUsingKey(meshObject,62,PointFields)
 
         if SolsAtTriangles is not None:
             self._WriteSolutionsFieldsBinaryUsingKey(meshObject,64,SolsAtTriangles)
@@ -406,7 +406,7 @@ class MeshWriter(WriterBase):
         #self._isOpen = False
         #self.filePointer.close()
 
-    def WriteASCII(self,meshObject,SolsAtVertices=None, solutionOnOwnFile= False, nodalRefNumber = None,elemRefNumber=None):
+    def WriteASCII(self,meshObject,PointFields=None, solutionOnOwnFile= False, nodalRefNumber = None,elemRefNumber=None):
 
         #self.filePointer.write("# This file has been writen by the python routine MmgWriter of the BasicTools package\n")
         #self.filePointer.write("# For any question about this routine, please contact SAFRAN TECH Pole M&S - CAM Team\n")
@@ -447,6 +447,9 @@ class MeshWriter(WriterBase):
 #        #for tagname in celtags:
         globalOffset = 0
         for name, elementContainer in elements.items():
+            if elementContainer.GetNumberOfElements() == 0:
+                continue
+
             elemtype = ASCIIName[name]
 
             if meshObject.IsConstantRectilinear():
@@ -518,13 +521,13 @@ class MeshWriter(WriterBase):
             self.filePointer.write("Dimension\n" + str(meshObject.GetDimensionality()) + "\n\n")
 
 
-        if SolsAtVertices is not None:
-             self._WriteSolutionsFieldsAsciiUsingKey(meshObject,"SolAtVertices",SolsAtVertices)
+        if PointFields is not None:
+             self._WriteSolutionsFieldsAsciiUsingKey(meshObject,"SolAtVertices",PointFields)
 
 #            self.filePointer.write("SolAtVertices\n")
 #            self.filePointer.write("{} \n".format(numberofpoints) )
-#            self.filePointer.write("{} ".format(len(SolsAtVertices)) )
-#            for sol in SolsAtVertices:
+#            self.filePointer.write("{} ".format(len(PointFields)) )
+#            for sol in PointFields:
 #                # we add a extra axis for scalar field stored in a vector (only one index)
 #                if len(sol.shape)== 1:
 #                    sol = sol[:,np.newaxis]
@@ -538,7 +541,7 @@ class MeshWriter(WriterBase):
 #            self.filePointer.write("\n ")
 #
 #            for i in xrange(numberofpoints):
-#                for sol in SolsAtVertices:
+#                for sol in PointFields:
 #                    if len(sol.shape)== 1:
 #                        sol = sol[:,np.newaxis]
 #                    np.savetxt(self.filePointer, sol[i,:], newline=" ", delimiter=" " )
@@ -595,8 +598,8 @@ def CheckIntegrity():
     print(mymesh)
     sol = np.arange(mymesh.GetNumberOfNodes(),dtype=np.float)
    # sol.shape = (mymesh.GetNumberOfNodes(),1)
-    WriteMesh(tempdir+"Test_MmgWriter_II_Binary.mesh", mymesh ,SolsAtVertices=[sol ] )
-    WriteMesh(tempdir+"Test_MmgWriter_II_Ascii.mesh", mymesh ,SolsAtVertices=[sol ], binary=False )
+    WriteMesh(tempdir+"Test_MmgWriter_II_Binary.mesh", mymesh ,PointFields=[sol ] )
+    WriteMesh(tempdir+"Test_MmgWriter_II_Ascii.mesh", mymesh ,PointFields=[sol ], binary=False )
     #print(tempdir)
     #print(open(tempdir+"Test_GmshWriter_II.geof").read())
 

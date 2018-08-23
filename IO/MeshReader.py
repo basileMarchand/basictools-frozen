@@ -672,7 +672,7 @@ End
     mw.SetFileName(TestTempDir().GetTempPath()+"mshFile.solb")
     mw.OpenSolutionFile(res)
 
-    mw.WriteSolutionsFields(res,SolsAtVertices=[sol['SolAtVertices0']])
+    mw.WriteSolutionsFields(res,PointFields=[sol['SolAtVertices0']])
     mw.filePointer.write(struct.pack('i', 54))
     mw.Close()
 
