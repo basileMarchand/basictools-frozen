@@ -240,7 +240,10 @@ class ConstantRectilinearMesh(MeshBase):
             z = np.arange(self.__dimensions[2])*self.__spacing[2]+self.__origin[2]
             xv, yv, zv = np.meshgrid(x, y,z,indexing='ij')
 
-            self.nodes = np.array([xv.ravel(),yv.ravel(),zv.ravel()]).T
+            self.nodes = np.empty((self.GetNumberOfNodes(),3))
+            self.nodes[:,0] = xv.ravel()
+            self.nodes[:,1] = yv.ravel()
+            self.nodes[:,2] = zv.ravel()
 
         return self.nodes
 
