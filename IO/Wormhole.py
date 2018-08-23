@@ -59,10 +59,10 @@ class WormholeBase(BaseOutputObject):
               sizestream += self.otherSide.recv(1).decode()
           #print(sizestream)
           size = int(sizestream)
-          if self.socket is not None:
-              print("s : " + str(size))
-          else:
-              print("c : " + str(size))
+          #if self.socket is not None:
+          #    print("s : " + str(size))
+          #else:
+          #    print("c : " + str(size))
 
           datastream = self.otherSide.recv(size)
           ldata = len(datastream )
@@ -285,17 +285,18 @@ def CheckIntegrity():
      return "Not OK"
 
 
+def GetAnFreePortNumber():
+    import socket;
+    s=socket.socket();
+    s.bind(("", 0));
+    portNumber = s.getsockname()[1];
+    s.close()
+    return portNumber
+
 
 if __name__ == '__main__':
-  import sys
-  testport = 12348
 
-
-  if len(sys.argv) > 1 and  sys.argv[1]  == "-s":
-     print("Server Side")
-     WormholeServer(testport,dry=False)
-  else:
-    #
+  def RunClient(testport ):
     print("Client Side")
     client = WormholeClient()
     client.Connect(testport)
@@ -318,3 +319,24 @@ if __name__ == '__main__':
     print("p " + str(p))
     client.Exit()
 
+  testport = 12348
+  if len(sys.argv) > 1 and  sys.argv[1]  == "-s":
+     print("Server Side")
+     WormholeServer(testport,dry=False)
+  elif len(sys.argv) > 1 and  sys.argv[1]  == "-c":
+     RunClient(testport)
+  else:
+    testport = GetAnFreePortNumber()
+
+    import threading
+    t = threading.Thread(target=WormholeServer,name="WormHoleServer",args=(testport,))
+    t.daemon = True
+    t.start()
+    import time
+
+    time.sleep(0.1)
+
+    RunClient(testport)
+
+
+    t.join(5)
