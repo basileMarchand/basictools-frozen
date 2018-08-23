@@ -20,7 +20,7 @@ class LinearProblem(BOO):
         self.tol = 1.e-6
 
     def SetOp(self, op):
-        self.PrintVerbose('In SetOp')
+        self.PrintVerbose('In SetOp (type:' +str(self.type) + ')')
         self.op = op
         if self.type == "Direct":
             self.PrintDebug('Starting Factorisaton')
@@ -34,20 +34,35 @@ class LinearProblem(BOO):
         elif self.type == "cholesky":
             from sksparse.cholmod import cholesky
             self.solver = cholesky(op)
-
+        elif len(self.type) >= 5 and  self.type[0:5] == "Eigen":
+            import BasicTools.FE.EigenSolver as EigenSolver
+            self.solver = EigenSolver.EigenSolvers()
+            #print(self.type[5:])
+            if self.type[5:] =="CG":
+                self.solver.SetSolverType(1)
+            elif self.type[5:] =="LU":
+                self.solver.SetSolverType(2)
+            else:
+                raise(Exception("Solver not found"))
+            self.solver.SetOp(op)
+        else:
+            raise(Exception("Error"))
 
         self.PrintDebug('In SetOp Done')
 
     def SetAlgo(self, algoType):
-        if algoType in  ["Direct" ,"CG", "lstsq","cholesky" ] :
+        if algoType in  ["Direct" ,"CG", "lstsq","cholesky" ,"EigenCG","EigenLU"] :
             self.type = algoType
         else:
-            self.Print(TF.InRed("Error : ") + "Type not allowed ("+algoType+")"  ) #pragma: no cover
+            raise(Exception(TF.InRed("Error : ") + "Type not allowed ("+algoType+")"  ) )#pragma: no cover
 
     def Solve(self, rhs):
         self.PrintDebug('In LinearProblem Solve')
         if self.type == "Direct":
             self.u =  self.solver(rhs)
+        elif len(self.type) >= 5 and  self.type[0:5] == "Eigen":
+            #print("solve using eigen")
+            self.u = self.solver.Solve(rhs)
         elif self.type == "CG":
             diag = self.op.diagonal()
             diag[diag == 0] = 1.0
@@ -107,6 +122,25 @@ def CheckIntegrity():
     if sol[0] != 2. : raise Exception()
     if sol[1] != 2. : raise Exception()
 
+
+    b = np.array([1.,2.])
+    matrix = sps.csc_matrix(np.array([[0.5,0],[0,1.]]))
+
+    LS.SetAlgo("EigenLU")
+    LS.SetOp(matrix)
+    sol = LS.Solve(b)
+    #print("sol " +str(sol))
+    if sol[0] != 2. : raise Exception()
+    if sol[1] != 2. : raise Exception()
+
+    LS.SetAlgo("EigenCG")
+    LS.SetOp(matrix)
+    sol = LS.Solve(b)
+    #print("sol " +str(sol))
+    if sol[0] != 2. : raise Exception()
+    if sol[1] != 2. : raise Exception()
+#    if sol[0] != 2. : raise Exception()
+#    if sol[1] != 2. : raise Exception()
 
     return "OK"
 
