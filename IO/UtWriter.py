@@ -35,7 +35,7 @@ class UtWriter(WriterBase):
     def AttachMesh(self,mesh):
         self.mesh = mesh
 
-    def AttachData(self, data_node, data_ctnod = None, data_integ = None, Nnode = None, Nint = None):
+    def AttachData(self, data_node, data_ctnod = {}, data_integ = {}, Nnode = None, Nint = None):
         self.data_node        = data_node
         self.data_ctnod       = data_ctnod
         self.data_integ       = data_integ
@@ -64,7 +64,7 @@ class UtWriter(WriterBase):
 
 
     def WriteMesh(self):
-        if self.mesh==None:
+        if self.mesh == None:
           print("please attach a mesh to the UtWriter object to be able to write a mesh; script terminated")
           exit()
         else:
@@ -74,14 +74,14 @@ class UtWriter(WriterBase):
           OW.Close()
 
 
-    def InitWrite(self, writeGeof, geofName = None):
+    def InitWrite(self, writeGeof, geofName = None, skipCtnod = False):
 
         if geofName == None:
           __string = u"**meshfile "+self.name+".geof\n"
         else:
           __string = u"**meshfile "+geofName+"\n"
 
-        if self.mesh==None:
+        if self.mesh == None:
           print("please attach a mesh to the UtWriter object to be able to write a mesh; script terminated")
           exit()
 
@@ -107,11 +107,21 @@ class UtWriter(WriterBase):
         f.close()
 
         os.system("rm -rf "+self.folder+self.name+".node "+self.folder+self.name+".ctnod "+self.folder+self.name+".integ")
-        
-        return open(self.folder+self.name+".node", "a"), open(self.folder+self.name+".ctnod", "a"), open(self.folder+self.name+".integ", "a")
+
+        nodeFile = open(self.folder+self.name+".node", "a")
+        if skipCtnod == False:
+          ctnodFile = open(self.folder+self.name+".ctnod", "a")
+        else:
+          ctnodFile = None
+        if self.NintVar > 0:
+          integFile = open(self.folder+self.name+".integ", "a")
+        else:
+          integFile = None
+
+        return nodeFile, ctnodFile, integFile
 
 
-    def WriteTimeStep(self, nodeFile, ctnodFile, integFile, timeSequenceStep):
+    def WriteTimeStep(self, nodeFile, ctnodFile, integFile, timeSequenceStep, skipCtnod = False):
 
         if self.NnodeVar>0:
           data_node = np.empty(self.NnodeVar*self.Nnode)
@@ -121,11 +131,12 @@ class UtWriter(WriterBase):
           del data_node
 
         if self.NintVar>0:
-          data_ctnod = np.empty(self.NintVar*self.Nnode)
-          for k in range(self.NintVar):
-            data_ctnod[k*self.Nnode:(k+1)*self.Nnode] = self.data_ctnod[self.data_integ_names[k]]
-          data_ctnod.astype(np.float32).byteswap().tofile(ctnodFile)
-          del data_ctnod
+          if skipCtnod == False:
+            data_ctnod = np.empty(self.NintVar*self.Nnode)
+            for k in range(self.NintVar):
+              data_ctnod[k*self.Nnode:(k+1)*self.Nnode] = self.data_ctnod[self.data_integ_names[k]]
+            data_ctnod.astype(np.float32).byteswap().tofile(ctnodFile)
+            del data_ctnod
 
           numberElements = []
           nbPtIntPerElement = []
@@ -155,11 +166,11 @@ class UtWriter(WriterBase):
         f.close()
 
 
-    def Write(self, writeGeof, geofName = None):
+    def Write(self, writeGeof, geofName = None, skipCtnod = False):
         
-        nodeFile, ctnodFile, integFile = self.InitWrite(writeGeof, geofName)
+        nodeFile, ctnodFile, integFile = self.InitWrite(writeGeof, geofName, skipCtnod)
 
-        if self.NnodeVar>0:
+        if self.NnodeVar > 0:
           data_node = np.empty(self.NnodeVar*self.Nnode*self.Ntime)
           for i in range(self.Ntime):
             for k in range(self.NnodeVar):
@@ -167,13 +178,14 @@ class UtWriter(WriterBase):
           data_node.astype(np.float32).byteswap().tofile(nodeFile)
           del data_node
 
-        if self.NintVar>0:
-          data_ctnod = np.empty(self.NintVar*self.Nnode*self.Ntime)
-          for i in range(self.Ntime):
-            for k in range(self.NintVar):
-              data_ctnod[self.NintVar*self.Nnode*i+k*self.Nnode:self.NintVar*self.Nnode*i+(k+1)*self.Nnode] = self.data_ctnod[self.data_integ_names[k]][:,i]
-          data_ctnod.astype(np.float32).byteswap().tofile(ctnodFile)
-          del data_ctnod
+        if self.NintVar > 0:
+          if skipCtnod == False:
+            data_ctnod = np.empty(self.NintVar*self.Nnode*self.Ntime)
+            for i in range(self.Ntime):
+              for k in range(self.NintVar):
+                data_ctnod[self.NintVar*self.Nnode*i+k*self.Nnode:self.NintVar*self.Nnode*i+(k+1)*self.Nnode] = self.data_ctnod[self.data_integ_names[k]][:,i]
+            data_ctnod.astype(np.float32).byteswap().tofile(ctnodFile)
+            del data_ctnod
 
           numberElements = []
           nbPtIntPerElement = []
@@ -206,8 +218,10 @@ class UtWriter(WriterBase):
         f.close()
 
         nodeFile.close()
-        ctnodFile.close()
-        integFile.close()
+        if skipCtnod == False:
+          ctnodFile.close()
+        if self.NintVar > 0:
+          integFile.close()
 
 
 def CheckIntegrity():

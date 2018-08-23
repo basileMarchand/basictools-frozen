@@ -106,7 +106,7 @@ Triangle_6 = 'tri6'
 geoSupport[Triangle_6] = GeoTri
 numberOfNodes[Triangle_6] = 6;
 dimension[Triangle_6] = 2
-linear[Triangle_6] = True
+linear[Triangle_6] = False
 faces[Triangle_6] = [(Bar_3,[0, 1,3]),
                         (Bar_3,[1, 2,4]),
                         (Bar_3,[2, 0,5]),
@@ -117,6 +117,7 @@ Quadrangle_8  = 'quad8'
 geoSupport[Quadrangle_8] = GeoQuad
 numberOfNodes[Quadrangle_8] = 8;
 dimension[Quadrangle_8] = 2
+linear[Quadrangle_8] = False
 faces[Quadrangle_8] = [(Bar_3,[0, 1,4]),
                        (Bar_3,[1, 2,5]),
                        (Bar_3,[2, 3,6]),
@@ -129,6 +130,7 @@ Quadrangle_9  = 'quad9'
 geoSupport[Quadrangle_9] = GeoQuad
 numberOfNodes[Quadrangle_9] = 9;
 dimension[Quadrangle_9] = 2
+linear[Quadrangle_9] = False
 faces[Quadrangle_9] = [(Bar_3,[0, 1,4]),
                        (Bar_3,[1, 2,5]),
                        (Bar_3,[2, 3,6]),

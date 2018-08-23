@@ -273,11 +273,11 @@ nbIntegrationsPoints["xax6r"] = 3;
 nbIntegrationsPoints["xax8"] = 9;
 nbIntegrationsPoints["xax8r"] = 4;
 
-def ReadGeof(fileName=None,string=None,out=None):
+def ReadGeof(fileName=None,string=None,out=None,readElset=True,readFaset=True,printNotRead=True):
     reader = GeofReader()
     reader.SetFileName(fileName)
     reader.SetStringToRead(string)
-    reader.Read(fileName=fileName, string=string,out=out)
+    reader.Read(fileName=fileName, string=string,out=out,readElset=readElset,readFaset=readFaset,printNotRead=printNotRead)
     return reader.output
 
 class GeofReader(ReaderBase):
@@ -323,7 +323,7 @@ class GeofReader(ReaderBase):
     return res
 
 
-  def Read(self, fileName=None,string=None,out=None):
+  def Read(self, fileName=None,string=None,out=None,readElset=True,readFaset=True,printNotRead=True):
     import BasicTools.FE.UnstructuredMesh as UM
 
     if fileName is not None:
@@ -415,7 +415,7 @@ class GeofReader(ReaderBase):
 
         while(True):
           l  = self.ReadCleanLine()
-          if l.find("**") > -1:
+          if l.find("**") > -1 or readElset == False:
                break
           s = l.split()
 
@@ -430,7 +430,7 @@ class GeofReader(ReaderBase):
         print("Reading Group " + fasetName)
         while(True):
           l  = self.ReadCleanLine()
-          if l.find("**") > -1:
+          if l.find("**") > -1 or readFaset == False:
                break
           s = l.split()
           nametype = GeofNumber[s[0]]
@@ -453,7 +453,8 @@ class GeofReader(ReaderBase):
         continue
 
       #case not treated
-      print("line starting with <<"+l[:20]+">> not considered in the reader")
+      if printNotRead == True:
+        print("line starting with <<"+l[:20]+">> not considered in the reader")
       l = self.ReadCleanLine()
       continue
 
@@ -461,6 +462,7 @@ class GeofReader(ReaderBase):
     res.PrepareForOutput()
     self.output = res
     return res
+
 
 from BasicTools.IO.UniversalReader import RegisterClass
 RegisterClass(".geof",GeofReader)

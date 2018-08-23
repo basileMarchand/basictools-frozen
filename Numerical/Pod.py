@@ -155,7 +155,13 @@ def truncation_level(values, threshold):
     return np.searchsorted(values[::-1], threshold, side='right')
 
 
-def PODSnapshot(a, epsilon):
+def PODSnapshot(a, epsilon, nLinearSize = None):
+    
+    if nLinearSize is not None:#convert a vector into a lower triangular matrix
+      ac = np.copy(a)
+      a = np.zeros((nLinearSize,nLinearSize))
+      a[np.tril_indices(nLinearSize)] = ac
+
     eigenValues, eigenVectors = np.linalg.eigh(a,UPLO='L')
 
     idx = eigenValues.argsort()[::-1]
