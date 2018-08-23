@@ -8,14 +8,115 @@ from sympy import pprint
 space = Matrix([Symbol('x'),Symbol('y'), Symbol("z")])
 testcharacter = "'"
 
+UseCpp = False
+try:
+    from BasicTools.FE.WeakFormNumerical import PyWeakTerm as PyWeakTerm
+    from BasicTools.FE.WeakFormNumerical import PyWeakMonom as PyWeakMonom
+    from BasicTools.FE.WeakFormNumerical import PyWeakForm as PyWeakForm
+    UseCpp = True
+except:
+    UseCpp = False
+    print("Waring WeakFormNumerical (cpp) not avilable, using python variant")
+
+    class PyWeakForm(object):
+        def __init__(self):
+            super(PyWeakForm,self).__init__()
+            self.form = []
+        def AddTerm(self,monom):
+            self.form.append(monom)
+        def GetNumberOfTerms(self):
+            return len(self.form)
+        def GetMonom(self,i):
+            return self.form[i]
+        def GetRightPart(self,unknownvars):
+            res = PyWeakForm()
+            for p in self:
+                for uv in unknownvars:
+                    if p.hasVariable(uv):
+                        break
+                else:
+                    res.AddTerm(p)
+            return res
+
+        def  GetLeftPart(self,unknownvars):
+            res = PyWeakForm()
+            for p in self:
+                tocopy = False
+                for uv in unknownvars:
+                   if p.hasVariable(uv):
+                        tocopy =True
+                        break
+                if tocopy:
+                    res.AddTerm(p)
+            return res
+
+        def __str__(self):
+            res = ""
+            for i in range(self.GetNumberOfTerms()):
+                res +=str(self.GetMonom(i))   + "\n"
+            return res
+
+        def __iter__(self):
+            return iter(self.form)
+
+    class PyWeakMonom(object):
+        def __init__(self):
+            super(PyWeakMonom,self).__init__()
+            self.prefactor = 1
+            self.prod = []
+        def AddProd(self,term):
+            self.prod.append(term)
+
+        def GetNumberOfProds(self):
+            return len(self.prod)
+
+        def GetProd(self, n):
+            return self.prod[n]
+
+        def  hasVariable(self,var):
+            for m in self :
+                if m.fieldName == str(var):
+                    return True
+            return False
+
+
+        def __str__(self):
+            res = str(self.prefactor)
+            for i in range(self.GetNumberOfProds()):
+                res += "*"
+                res += str(self.GetProd(i))
+            return res
+
+        def __iter__(self):
+            return iter(self.prod)
+
+    class PyWeakTerm(object):
+        def __init__(self):
+            super(PyWeakTerm,self).__init__()
+            self.fieldName = ""
+            self.derCoordName = ""
+            self.derCoordIndex = 0
+            self.derDegree = -1
+            self.constant = False
+            self.normal = False
+        def __str__(self):
+            res = ""
+            if self.derDegree > 0 and self.normal == 0 :
+    #            #res += "d" + self.fieldName + "/"  + "d"  + str(self.derCoordName)
+                res += "Derivative("+str(self.fieldName)+"(x, y, z), "+str(self.derCoordName)+")"
+            else:
+                res += self.fieldName
+            return res
+
+
 def GetNormal(size):
     return GetField("Normal",size)
 
 def GetConstant(name):
     return Symbol(name)
 
-def GetTestField(name,size,extraCoordinates=[]):
-    return GetField(name,size,star=True,extraCoordinates=extraCoordinates)
+def GetTestField(name,size,sdim=3,extraCoordinates=[]):
+    return GetField(name,size,star=True,sdim=sdim,extraCoordinates=extraCoordinates)
 
 def GetField(name,size,star=False,sdim=3,extraCoordinates=[]):
     res = []
@@ -24,8 +125,12 @@ def GetField(name,size,star=False,sdim=3,extraCoordinates=[]):
         suffix = testcharacter
     s = space[0:sdim]
     s.extend(extraCoordinates)
+
     if size == 1:
-        res.append(Function(name+suffix)(*s))
+        if sdim == 0:
+            res.append(Function(name+suffix))
+        else:
+            res.append(Function(name+suffix)(*s))
     else:
         for i in range(size):
             res.append(Function(name+"_"+str(i)+suffix)(*s))
@@ -79,8 +184,6 @@ def GetMecaElasticProblem(name="u",dim=3,K=None,planeStress=True):
     ener = ToVoigtEpsilon(Strain(u)).T*K*ToVoigtEpsilon(Strain(ut))
     return ener
 
-
-
 def GetMecaNormalPressure(flux="p",name="u", dim=3):
     ut = GetTestField("u",dim)
     if isinstance(flux,str):
@@ -96,100 +199,13 @@ def GetMecaNormalPressure(flux="p",name="u", dim=3):
 
 
 
-class Weakterm(object):
-    def __init__(self):
-        self.fieldName = ""
-        self.derCoordName = ""
-        self.derCoordIndex = 0
-        self.derDegree = -1
-        self.constant = False
-        self.normal = False
-
-    def __str__(self):
-        res = ""
-        if self.derDegree > 0 :
-            #res += "d" + self.fieldName + "/"  + "d"  + str(self.derCoordName)
-            res += "Derivative("+self.fieldName+"(x, y, z), "+self.derCoordName+")"
-        else:
-            res += self.fieldName
-        return res
-
-class WeakMonom(object):
-    def __init__(self):
-        self.prefactor = 1
-        self.prod = []
-
-    def hasTestFunc(self):
-        for p in self.prod :
-            if p.fieldName[-1] == testcharacter:
-                return True
-
-    def hasVariable(self,var):
-        for p in self.prod :
-            if p.fieldName == str(var):
-                return True
-
-    def __str__(self):
-        res = str(self.prefactor)
-        for p in self.prod:
-            res += "*"
-            res += str(p)
-
-        return res
-
-class WeakForm(object):
-    def __init__(self):
-        self.OnTag = ""
-        self.form = []
-    def GetLeftPart(self,unknownvars):
-        import copy
-        res = WeakForm()
-        res.OnTag = self.OnTag
-        for p in self.form:
-            tocopy = False
-            for uv in unknownvars:
-                if p.hasVariable(uv):
-                    tocopy =True
-                    break
-            if tocopy:
-                res.form.append(copy.deepcopy(p))
-        return res
-    def GetRightPart(self,unknownvars):
-        import copy
-        res = WeakForm()
-        res.OnTag = self.OnTag
-        for p in self.form:
-            for uv in unknownvars:
-                if p.hasVariable(uv):
-                    break
-            else:
-                res.form.append(copy.deepcopy(p))
-        return res
-    def __str__(self):
-        res = "Weak Form:\n"
-        res += "  Nb Terms : " + str(len(self.form)) +"\n"
-        fields = set()
-        const = set()
-        coords = set()
-        for p in self.form:
-            for f in p.prod:
-                if f.constant  :
-                    const.add(f.fieldName)
-                    continue
-                fields.add(f.fieldName)
-                if f.derDegree > 0:
-                    coords.add(f.derCoordName)
-        res += "  Constants : " + " ".join(const) + "\n"
-        res += "  Fields : " + " ".join(fields) + "\n"
-        res += "  Coordinates used : " + " ".join(coords) + "\n"
-        return res
 
 def SymWeakMonomToNumWeakMono(exp):
     from  sympy.core.mul import Mul
     from  sympy.core.power import Pow
 
     if exp.func == Mul:
-        res = WeakMonom()
+        res = PyWeakMonom()
         for arg in exp.args:
             if arg.is_Number:
                 res.prefactor = float(arg)
@@ -202,12 +218,13 @@ def SymWeakMonomToNumWeakMono(exp):
                     print(arg.args[0])
                     raise( Exception("Unable to treat term " + str(arg.args[0]) ))
                 for i in range(arg.args[1]):
-                    res.prod.append(term)
+                    res.AddProd(term)
                 continue
 
             term = ConverTermToProd(arg)
-            if not term is None:
-                res.prod.append(term)
+            if term is not None:
+                #res.prod.append(term)
+                res.AddProd(term)
                 continue
 
             print(type(arg))
@@ -222,7 +239,7 @@ def SymWeakMonomToNumWeakMono(exp):
 
 def ConverTermToProd(arg):
     if isinstance(arg,Symbol):
-        t = Weakterm()
+        t = PyWeakTerm()
         t.constant = True
         t.derDegree = 0
         t.fieldName = str(arg)
@@ -230,16 +247,16 @@ def ConverTermToProd(arg):
 
     from sympy.core.function import Derivative
     if type(arg) == Derivative:
-        t = Weakterm()
+        t = PyWeakTerm()
         t.derDegree = 1
         t.fieldName = str(arg.args[0].func)
         t.derCoordName = str(arg.args[1])
         sn = [ str(c) for c in space]
-        t.derCoordIndex =  sn.index(t.derCoordName)
+        t.derCoordIndex_ =  sn.index(t.derCoordName)
         return t
 
     if isinstance(arg,Function):
-        t = Weakterm()
+        t = PyWeakTerm()
         N = GetNormal(3)
         #print(str(arg.func)+"* * * * * * ")
         #print(arg.func)
@@ -261,19 +278,29 @@ def SymWeakToNumWeak(exp):
     from  sympy.core.mul import Mul
 
     exp = exp.expand()
-    res = WeakForm()
+    res = PyWeakForm()
     try:
         if exp.shape[0] == 1 and exp.shape[1] == 1:
             exp = exp[0,0]
     except:
+
         pass
 
     if exp.func == Mul:
-        res.form.append(SymWeakMonomToNumWeakMono(exp))
+        #res.AddTermform.append(SymWeakMonomToNumWeakMono(exp))
+        res.AddTerm(SymWeakMonomToNumWeakMono(exp))
 
     elif exp.func == Add:
         for monom in exp.args:
-            res.form.append(SymWeakMonomToNumWeakMono(monom))
+            #res.form.append(SymWeakMonomToNumWeakMono(monom))
+            res.AddTerm(SymWeakMonomToNumWeakMono(monom))
+
+    else:
+        mono = PyWeakMonom()
+        mono.AddProd(ConverTermToProd(exp))
+        res.AddTerm(mono)
+        #raise(Exception("error treating formulation term"))
+
     return res
 
 
@@ -281,7 +308,6 @@ def SymWeakToNumWeak(exp):
 def CheckIntegrity(GUI=False):
     from sympy import pprint
     #init_session()
-
 
     print(space)
 
@@ -291,6 +317,10 @@ def CheckIntegrity(GUI=False):
     ut = GetTestField("u",3)
     f = GetField("f",3)
     alpha = Symbol("alpha")
+
+    globalconstant = GetField("g",1,sdim=0)
+    print(globalconstant )
+
 
     print(u)
     print(u.shape)
@@ -306,17 +336,32 @@ def CheckIntegrity(GUI=False):
 
     from BasicTools.FE.MaterialHelp import HookeIso
     K = HookeIso(1,0.3)
+    pprint(K)
+
     ener = ToVoigtEpsilon(Strain(u+u0)).T*K*ToVoigtEpsilon(Strain(ut))+ f.T*ut*alpha
     pprint(ener)
 
     wf = SymWeakToNumWeak(ener)
-    print([str(r) for r in wf.form])
+    print("coucou")
+    print([str(wf.GetMonom(i)) for i in range(wf.GetNumberOfTerms())])
+    print("coucouII")
 
-    rwf = wf.GetRightPart(["u0", "u1", "u2"])
-    print([str(r) for r in rwf.form])
+    unknames = ["u_0", "u_1", "u_2"]
 
-    lwf = wf.GetLeftPart(["u0", "u1", "u2"])
-    print([str(r) for r in lwf.form])
+    rwf = wf.GetRightPart(unknames )
+    print(rwf)
+
+
+    lwf = wf.GetLeftPart(unknames)
+    print(lwf)
+
+
+    pointdataT = GetTestField("pointdata",1)
+    J_prim = (1*pointdataT)[0]
+
+    print(J_prim)
+    numwform = SymWeakToNumWeak(J_prim)
+    print(numwform)
 
     return "OK"
 

@@ -6,300 +6,86 @@ from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 import BasicTools.FE.ElementNames as EN
 
 from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
-from BasicTools.FE.UnstructuredMeshTools import ExtractElementsByMask
-from BasicTools.FE.WeakForm import testcharacter
+from BasicTools.FE.Fields.NodalField import NodalField
 
+#UseCpp = False
+UseCpp = True
 
 def Integrate( mesh, wform, constants, fields, dofs,spaces,numbering, tag="3D",integrationRuleName=None,onlyEvaluation=False):
+    #conversion of the old api to the new one
+
+    UnkownFields = []
+    for i in range(len(dofs)):
+        field = NodalField()
+        field.numbering = numbering[i]
+        field.name = dofs[i]
+        field.data = None
+        field.mesh = mesh
+        field.space = spaces[i]
+        UnkownFields.append(field)
+
+    return IntegrateGeneral( mesh, wform, constants, list(fields.values()), unkownFields=UnkownFields,testFields=None, tag=tag,integrationRuleName=integrationRuleName,onlyEvaluation=onlyEvaluation)
 
 
-    #total number of dofs and offset calculation
-    offset = []
-    totaldofs = 0
-    for n in numbering:
-        offset.append(totaldofs)
-        totaldofs += n["size"]
+def IntegrateGeneral( mesh, wform, constants, fields, unkownFields,testFields=None, tag="3D",integrationRuleName=None,onlyEvaluation=False):
 
-    F = np.zeros(totaldofs,dtype=np.float)
-    #print(offset)
-    #Total number of ikv calculated
-    numberOfVIJ = 0
-    for name,data in mesh.elements.items():
-        if tag == "ALL":
-            numberOfUsedElements = data.GetNumberOfElements()
-            ss = 0
-            for space in spaces:
-                ss +=space[name].GetNumberOfShapeFunctions()
-            numberOfVIJ += numberOfUsedElements*(ss**2)
+    import time
+    st = time.time()
+    BaseOutputObject().PrintDebug("Integration ")
 
-        elif tag in data.tags:
-            numberOfUsedElements = len(data.tags[tag])
-            ss = 0
-            for space in spaces:
-                ss +=space[name].GetNumberOfShapeFunctions()
-            numberOfVIJ += numberOfUsedElements*(ss**2)
+    try:
+        from BasicTools.FE.WeakFormNumerical import PyWeakForm
+        typeCpp = (type(wform) == PyWeakForm)
+    except :
+        typeCpp = False
 
+    if UseCpp and typeCpp:
+        import BasicTools.FE.NativeIntegration as NI
+        integrator = NI.PyMonoElementsIntegralCpp()
+    else:
+        import BasicTools.FE.PythonIntegration as PI
+        integrator = PI.MonoElementsIntegral()
 
-    #print(totaldofs)
-    #print(numberOfVIJ)
-    #print(offset)
+    integrator.SetOnlyEvaluation(onlyEvaluation)
+    integrator.SetUnkownFields(unkownFields)
+    integrator.SetTestFields(testFields)
+    integrator.SetExtraFields(fields )
+    integrator.SetConstants(constants)
+    integrator.SetIntegrationRule(integrationRuleName)
+
+    numberOfVIJ = integrator.ComputeNumberOfVIJ(mesh,tag)
 
     vK = np.empty(numberOfVIJ,dtype=np.float)
-    iK = np.empty(numberOfVIJ,dtype=int)
-    jK = np.empty(numberOfVIJ,dtype=int)
+    iK = np.empty(numberOfVIJ,dtype=np.int)
+    jK = np.empty(numberOfVIJ,dtype=np.int)
 
-    vij = [vK,iK,jK,0]
+    F = np.zeros(integrator.GetTotalTestDofs(),dtype=np.float)
 
-    #integration
+    integrator.PrepareFastIntegration(mesh,wform,vK,iK,jK,0,F)
 
     for name, data in mesh.elements.items():
+
         if data.GetNumberOfElements() == 0:
             continue
-        BaseOutputObject().PrintDebug("integration of element of type : " + name)
-        BaseOutputObject().PrintDebug("Number of Elements: " + str(data.GetNumberOfElements()))
-        BaseOutputObject().PrintDebug(data.tags)
 
-        space = []
-        for i in range(len(spaces) ):
-            space.append(spaces[i][name])
-        if tag in data.tags or tag == "ALL":
-            domainToTreat = data
+        if tag in data.tags:
+            idstotreat = data.tags[tag].GetIds()
+            if len(idstotreat) == 0:
+                    continue
+        elif tag == "ALL":
+                idstotreat = np.arange(data.GetNumberOfElements(),dtype=int)
+        else:
+            continue
 
-            if tag == "ALL":
-                idstotreat = range(data.GetNumberOfElements())
-            else:
-                idstotreat = data.tags[tag].GetIds()
-                BaseOutputObject().PrintDebug("Number of Elements in tag : " + str(len(idstotreat)))
-                #domainToTreat = ExtractElementsByMask(data,data.tags[tag].GetIds())
-            #print(fields)
-            extraField = {}
-            for fname,f in fields.items():
-                #print("----------")
-                #print(f)
-                extraField[fname] = [f.data,f.space[name],f.numbering[name]]
+        integrator.ActivateElementType(data)
+        integrator.Integrate(wform,idstotreat)
 
-            elnumbering = [b[name] for b in numbering]
-
-            F += ElementsIntegral(mesh.nodes, domainToTreat,wform,vij,space,constants, extraField,dofs,elnumbering,offset,LagrangeSpaceGeo[name],totaldofs,idstotreat,integrationRuleName=integrationRuleName,onlyEvaluation=onlyEvaluation)
-
-    K = coo_matrix((vij[0][0:vij[3]], (vij[1][0:vij[3]],vij[2][0:vij[3]])), shape=(totaldofs, totaldofs)).tocsr()#(self.dofpernode,self.dofpernode))
-
+    numberOfUsedvij = integrator.GetNumberOfUsedIvij()
+    data = (vK[0:numberOfUsedvij], (iK[0:numberOfUsedvij],jK[0:numberOfUsedvij]))
+    K = coo_matrix(data, shape=(integrator.GetTotalTestDofs(), integrator.GetTotalUnkownDofs())) .tocsr()
+    BaseOutputObject().PrintDebug("Integration Done        " +str(time.time()-st))
     return K,F
 
-
-def ElementsIntegral(nodes,domain,wform,vij,space,constants, extrafields,dofs,numbering,offset,geoSpace,totaldofs,idstotreat,integrationRuleName=None,onlyEvaluation=False):
-
-    #rhs
-    F = np.zeros(totaldofs,dtype=np.float)
-
-    #integration rule
-    if integrationRuleName is None:
-        from BasicTools.FE.IntegrationsRules import LagrangeP1
-        p,w =  LagrangeP1[EN.geoSupport[domain.elementType]]
-    else:
-        from BasicTools.FE.IntegrationsRules import IntegrationRulesAlmanac
-        BaseOutputObject().PrintDebug(integrationRuleName)
-        BaseOutputObject().PrintDebug(domain.elementType)
-        BaseOutputObject().PrintDebug(EN.geoSupport[domain.elementType].name)
-        p,w =  IntegrationRulesAlmanac[integrationRuleName][EN.geoSupport[domain.elementType]]
-
-    numberOfFields = len(dofs)
-    for i in range(numberOfFields) :
-        space[i].SetIntegrationRule(p,w)
-    geoSpace.SetIntegrationRule(p,w)
-
-    for eFName in extrafields :
-        extrafields[eFName][1].SetIntegrationRule(p,w)
-
-
-    starsdofs = [ dof+testcharacter for dof in dofs ]
-
-    hasnormal = False
-    for monom in wform.form:
-        for term in monom.prod:
-            if "Normal" in term.fieldName:
-                hasnormal = True
-                break
-        if hasnormal == True:
-            break
-    #print(hasnormal )
-
-
-    ev = np.empty(100000,dtype=float)
-    ei = np.empty(100000,dtype=int)
-    ej = np.empty(100000,dtype=int)
-    NxNyNzI = [None] *numberOfFields
-    BxByBzI = [None] *numberOfFields
-
-    for n in idstotreat:
-        fillcpt =0
-
-        xcoor = nodes[domain.connectivity[n],:]
-
-        for ip in range(len(w)):
-            Jack, Jdet, Jinv = geoSpace.GetJackAndDetI(ip,xcoor)
-
-            #NxNyNzI = []
-            #BxByBzI = []
-            for i in range(numberOfFields):
-                 Nf = space[i].valN[ip]
-                 # NxNyNzI[i].append(Nf )
-                 NxNyNzI[i] = Nf
-                 #print(space[i].valdphidxi[ip])
-                 temp = Jinv(space[i].valdphidxi[ip])
-                 #BxByBzI.append(temp)
-                 BxByBzI[i] = temp
-
-            extraFieldsN = {}
-            extraFieldsB = {}
-
-            for name,field in extrafields.items():
-                 fvals, fsp,fnum = extrafields[name]
-                 Nfder = fsp.valdphidxi[ip]
-                 Nf = fsp.valN[ip].T
-                 extraFieldsN[name] =  Nf
-                 extraFieldsB[name] =  Jinv(Nfder)
-
-            if hasnormal:
-                normal = geoSpace.GetNormal(Jack)
-
-            for monom in wform.form:
-
-
-                if onlyEvaluation :
-                    # For the evaluation we only add the constribution without doing the integration
-                    # the user is responsible of dividing by the mass matrix to get the correct values
-                    # also the user can use a discontinues field to generate element surface stress (for example)
-                    factor = monom.prefactor
-                else:
-                    # for the integration we multiply by the deteminant of the jac
-                    factor = monom.prefactor*Jdet
-
-                left = None
-                right = None
-                for term in monom.prod:
-
-
-                    if term.normal :
-
-                        factor *= normal[term.derDegree]
-                        continue
-
-                    if term.constant :
-                        factor *= constants[term.fieldName]
-                        continue
-
-
-                    if term.fieldName in dofs :
-                        index = dofs.index(term.fieldName)
-                        if term.derDegree == 1:
-                            #right = np.array([BxByBzI[index][term.derCoordIndex],])
-                            #print(right)
-                            #right = np.expand_dims(BxByBzI[index][term.derCoordIndex,:], axis=0)
-                            #print(right)
-                            right = BxByBzI[index][[term.derCoordIndex],:]
-                            #print(right)
-
-                            #raise
-                        else:
-                            right = np.array([NxNyNzI[index],])
-                            #print(right)
-                            #right = np.expand_dims(NxNyNzI[index],axis=1)
-                            #print(right)
-                            #raise
-                        rightNumbering = numbering[index][n,:] + offset[index]
-                        continue
-
-                    if term.fieldName in starsdofs :
-                        index = starsdofs.index(term.fieldName)
-                        if term.derDegree == 1:
-                            #left = np.array([BxByBzI[index][term.derCoordIndex],]).T
-                            left = BxByBzI[index][[term.derCoordIndex]].T
-                        else:
-                            #left = np.array([NxNyNzI[index],]).T
-                            #print(left)
-                            left = np.expand_dims(NxNyNzI[index],axis=1)
-                            #print(left)
-                            #raise
-                        leftNumbering = numbering[index][n,:] + offset[index]
-                        continue
-
-
-                    if term.fieldName in extrafields :
-                        fvals, fsp,fnum = extrafields[term.fieldName]
-
-                        if term.derDegree == 1:
-                            func = extraFieldsB[term.fieldName][term.derCoordIndex]
-                        else:
-                            func = extraFieldsN[term.fieldName]
-
-                        vals = fvals[fnum[n,:]]
-                        factor *= np.dot(func,vals)
-
-                        continue
-                    raise
-
-                if factor == 0:
-                    continue
-
-                if right is None:
-                    F[leftNumbering] += ((w[ip]*factor)*left).ravel()
-
-
-                else:
-
-                    try:
-                        vals = (w[ip]*factor)*np.dot(left,right)
-                    except:
-                        print([str(t) for t in monom.prod])
-                        print(left)
-                        print(right)
-                        print(np.dot(left,right))
-                        print(w[ip]*factor)
-                        raise
-                    #ev.etend(vals.ravel())
-                    #ones = np.ones( len(rightNumbering) ,dtype=int)
-                    #for i in leftNumbering:
-                    #    ej.extend( i * ones)
-                    #    ei.extend(rightNumbering.ravel())
-
-                    l = vals.size
-                    ev[fillcpt:fillcpt+l] =  vals.ravel()
-                    #l2 = len(rightNumbering)
-                    #l2cpt = fillcpt
-                    #for i in leftNumbering:
-                    #    ej[l2cpt:l2cpt+l2] = i
-                    #    ei[l2cpt:l2cpt+l2] = rightNumbering
-                    #    l2cpt += l2
-
-                    #a,b = np.meshgrid(leftNumbering,rightNumbering)
-                    #print(leftNumbering.dtype)
-                    #print(type(leftNumbering))
-                    #print(rightNumbering.dtype)
-                    #print(type(rightNumbering))
-                    a = np.repeat(leftNumbering,len(rightNumbering))
-                    b = np.tile(rightNumbering,len(leftNumbering))
-                    ej[fillcpt:fillcpt+l] = b.ravel()
-                    ei[fillcpt:fillcpt+l] = a.ravel()
-                    fillcpt += l
-
-        #if len (ev):
-        if fillcpt:
-            data = coo_matrix((ev[:fillcpt], (ei[:fillcpt],ej[:fillcpt])), shape=( totaldofs,totaldofs))
-            #.tocsr().tocoo()
-            data.sum_duplicates()
-            #data =
-            #data = coo_matrix((ev, (ei,ej)), shape=( totaldofs,totaldofs)).tocsr().tocoo()
-
-            start = vij[3]
-            stop = start+len(data.data)
-
-            vij[0][start:stop] = data.data
-            vij[1][start:stop] = data.row
-            vij[2][start:stop] = data.col
-            vij[3] += len(data.data)
-
-    return F
 
 def CheckIntegrityNormalFlux(GUI=False):
     from BasicTools.FE.UnstructuredMeshTools import CreateMeshOf
@@ -364,6 +150,7 @@ def CheckIntegrityKF(case, sdim,nmesh=1):
     from BasicTools.FE.UnstructuredMeshTools import CreateMeshOfTriangles
     from BasicTools.FE.UnstructuredMeshTools import CreateMeshOf
     import BasicTools.FE.ElementNames as EN
+    from BasicTools.FE.IntegrationsRules import LagrangeP1
 
     from BasicTools.FE.MaterialHelp import HookeIso
 
@@ -427,12 +214,20 @@ def CheckIntegrityKF(case, sdim,nmesh=1):
                 K = np.matrix([[8,2,0],[2,8,0],[0,0,3]])*8
 
         elif sdim ==3:
+            if nmesh == 1:
                 points = [[0,0,0],[6,-8,5],[6,2,3],[0,5,2] ]
-                mesh = CreateMeshOf(EN.Quadrangle_4,points,[[0,1,2,3]])
+                mesh = CreateMeshOf(points,[[0,1,2,3]],EN.Quadrangle_4)
                 E = 3.0/2
                 nu = 0.25
                 K = HookeIso(E,nu,dim=sdim)
                 mesh.GetElementsOfType(EN.Quadrangle_4).tags.CreateTag("2D").SetIds(np.arange(mesh.GetElementsOfType(EN.Quadrangle_4).GetNumberOfElements() ) )
+            elif nmesh == 2:
+                points = [[3,0,0],[3,2,0],[0,0,1],[0,2,1] ]
+                #,[3,2,1][0,1,2]
+                mesh = CreateMeshOfTriangles(points,[[0,1,2],[3,2,1]])
+                E = 3.0/2
+                nu = 0.25
+                K = HookeIso(E,nu,dim=2)
         mesh.GetElementsOfType(EN.Triangle_3).tags.CreateTag("2D").SetIds(np.arange(mesh.GetElementsOfType(EN.Triangle_3).GetNumberOfElements() ) )
 
     elif case ==3:
@@ -496,6 +291,7 @@ def CheckIntegrityKF(case, sdim,nmesh=1):
     from BasicTools.FE.WeakForm import SymWeakToNumWeak
 
     from sympy import pprint
+    from sympy import Symbol
     #init_session()
 #    print(space)
 
@@ -515,6 +311,8 @@ def CheckIntegrityKF(case, sdim,nmesh=1):
 
 #    print(K)
 
+    #weak = 3.*ut[1]
+    #weak = 3*u[0].diff(Symbol("x"))* ut[1].diff(Symbol("x"))
     weak = ToVoigtEpsilon(Strain(u,sdim)).T*K*ToVoigtEpsilon(Strain(ut,sdim))
     #from sympy.matrices import Matrix
     #+ Matrix([alpha*ut[0]])#f.T*ut*alpha
@@ -528,7 +326,7 @@ def CheckIntegrityKF(case, sdim,nmesh=1):
 
 
     wf = SymWeakToNumWeak(weak)
-    print([str(r) for r in wf.form])
+    print(wf)
 
     rwf = wf.GetRightPart(dofs)
 #    print([str(r) for r in rwf.form])
@@ -554,8 +352,13 @@ def CheckIntegrityKF(case, sdim,nmesh=1):
 #    print(mesh)
     import time
     startt = time.time()
+    print("lwf")
+    print(lwf)
+    print(mesh)
     Kinteg,F = Integrate(mesh=mesh,wform=lwf, tag=(str(case)+"D"), constants=constants, fields=fields, dofs=dofs,spaces=spaces,numbering=numberings)
     stopt = time.time() - startt
+    print(F)
+
 #    print("!-!-!-!-!-!-!-!-!-!-!")
 
 
@@ -696,6 +499,7 @@ def CheckIntegrityKF(case, sdim,nmesh=1):
 
         KK = Kinteg.todense()[:,libtozsetnum][libtozsetnum,:]
         from scipy.io import mmread
+        print(KK)
         KValidation = mmread("/scratch/fcasenave/partage/For_Felipe/0_Zmatrix_1_0").todense()
         #np.set_printoptions(threshold=np.nan)
     else:
@@ -717,7 +521,7 @@ def CheckIntegrityKF(case, sdim,nmesh=1):
           print(KK-KValidation)
           print(numbering)
           raise
-
+    raise
     return "ok"
 
 
@@ -775,10 +579,12 @@ def CompureVolume(mesh):
 
 def CheckIntegrity(GUI=False):
     if CheckIntegrityNormalFlux(GUI).lower() != "ok":
-        raise
+        return "Not ok in the Normal Calculation"
 
+    print("Normal Calculation OK")
     problems = [#(3,3,1), # hexa in 3D
-                #(2,3,1), # triangles in 3D
+                #(2,3,1), # quad in 3D
+                #(2,3,2), # tri in 3D
                 (2,2,2), # triangles in 2D http://www.unm.edu/~bgreen/ME360/2D%20Triangular%20Elements.pdf
                 (2,2,1), # triangles in 2D
                 (1,3,1), # bar , espace 3D
@@ -803,4 +609,4 @@ def CheckIntegrity(GUI=False):
     return "ok"
 
 if __name__ == '__main__':
-    print(CheckIntegrity(True))# pragma: no cover
+    print(CheckIntegrity(False))# pragma: no cover
