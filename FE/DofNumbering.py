@@ -20,6 +20,11 @@ def Hash(space,j,lconn,name=None,i=None):
         edge = EN.Faces[name][n]
         T = edge[0]
         n = np.sort(lconn[edge[1]])
+    elif T == "G":
+        return (T,0,h)
+    else:
+        raise(Exception(" type of dof unknown : " + str(T) ) )
+
     T += ("_"+ str(i)) if space.classification.discontinuous else ""
     #print (T,n,h),
     return (T,n,h)
@@ -63,7 +68,7 @@ def ComputeDofNumbering(mesh,Space,dofs=None,tag=AllElements,sign=1,fromConnecti
         sp = Space[name]
 
         if not name in dofs:
-            dof = np.empty((data.GetNumberOfElements(),sp.GetNumberOfShapeFunctions()), dtype=int)
+            dof = np.empty((data.GetNumberOfElements(),sp.GetNumberOfShapeFunctions()), dtype=np.int_)
         else:
             dof = dofs[name]
 
@@ -172,6 +177,12 @@ def CheckIntegrity(GUI=False):
 
     import BasicTools.FE.ElementNames as EN
     print(res2.GetElementsOfType(EN.Quadrangle_4).tags["X1"].GetIds() )
+
+    from BasicTools.FE.Spaces.FESpaces import ConstantSpaceGlobal
+
+    t_numbering = ComputeDofNumbering(res2,ConstantSpaceGlobal)
+    print(t_numbering)
+
     return "OK"
 
 if __name__ == '__main__':
