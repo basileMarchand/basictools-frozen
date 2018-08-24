@@ -62,6 +62,7 @@ class MeshReader(ReaderBase):
         super(MeshReader,self).__init__()
         self.refsAsAField = False
         self.dim = 3
+        self.version = -1
 
     def SetReadRefsAsField(self, val):
         self.refsAsAField = bool(val)
@@ -264,8 +265,8 @@ class MeshReader(ReaderBase):
       dataSize = 4;
 
       if key == BKeys["GmfVersionFormatted"]:
-          udata = self.readInt32()
-          if udata == 2 :
+          self.version = self.readInt32()
+          if self.version >= 2 :
               dataType = np.float64
               dataSize = 8
               #print("data in double")
@@ -274,7 +275,11 @@ class MeshReader(ReaderBase):
 
       key = self.readInt32()
       if key == BKeys["GmfDimension"]:
-          endOfInformation = self.readInt32()
+          if self.version == 3:
+              endOfInformation = self.readInt64()
+          else:
+              endOfInformation = self.readInt32()
+
           dimension = self.readInt32()
           self.filePointer.seek(endOfInformation)
       else:
@@ -306,18 +311,18 @@ class MeshReader(ReaderBase):
           if key == BKeys["GmfEnd"]:
               break
 
-          endOfInformation = self.readInt32()
-
+          if self.version == 3:
+               endOfInformation = self.readInt64()
+          else:
+               endOfInformation = self.readInt3()
           #Vertices
           if key == BKeys["GmfVertices"]:
               nbNodes = self.readInt32()
 
+              self.PrintVerbose("Reading " + str(nbNodes) + " nodes ")
+
               res.nodes = np.empty((nbNodes,dimension),dtype=dataType)
               res.originalIDNodes= np.empty((nbNodes,),dtype=np.int)
-
-              self.PrintVerbose("Reading " + str(nbNodes) + " nodes ")
-              #dataformat = ('f' if dataSize==4 else "d"    )*dimension + "i"
-
 
               if dataSize == 4:
                  dt =  np.dtype([('pos', np.float32,(dimension,) ), ('ref', np.int32, (1,))])
