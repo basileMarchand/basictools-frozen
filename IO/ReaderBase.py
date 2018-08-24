@@ -141,6 +141,11 @@ class ReaderBase(BaseOutputObject):
        data = struct.unpack("i", rawdata)[0]
        return data
 
+    def readInt64(self):
+       rawdata = self.rawread(8,withError=True)
+       data = struct.unpack("q", rawdata)[0]
+       return data
+
     def readData(self,cpt,datatype):
         try:
             return  np.fromfile(self.filePointer,dtype=datatype,count=cpt,sep="")
