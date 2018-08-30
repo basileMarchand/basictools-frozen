@@ -314,7 +314,7 @@ class MeshReader(ReaderBase):
           if self.version == 3:
                endOfInformation = self.readInt64()
           else:
-               endOfInformation = self.readInt3()
+               endOfInformation = self.readInt32()
           #Vertices
           if key == BKeys["GmfVertices"]:
               nbNodes = self.readInt32()
