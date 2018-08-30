@@ -260,45 +260,7 @@ class MonoElementsIntegral(BOO):
                 term.internalType = -1
                 raise(Exception("Term " +str(term.fieldName) + " not found in the database " ))
 
-
-#      self.mesh = mesh
       self.SetPoints(mesh.nodes)
-
-      #self.internalfBiform = np.array((len(self.__ufs__),2,len(self.__tfs__),2),dtype=WeakForm)
-      #self.internalfLiform = np.array((len(self.__tfs__),2),dtype=WeakForm)
-
-#      cdef WeakMonom tt = WeakMonom()
-#      cdef int ud
-#      cdef int td
-#      for monom in wform.form:
-#        u = None
-#        ud = 0
-#        t = None
-#        td = 0
-#
-#        tt.prefactor = monom.prefactor
-#        for term in monom.prod:
-#            if term.internalType == 0:
-#                tt.prod.append(term)
-#            elif term.internalType == 1:
-#                tt.prod.append(term)
-#            elif term.internalType == 2:
-#                u = term.valuesIndex_
-#                ud = term.derDegree
-#            elif term.internalType == 3:
-#                t = term.valuesIndex_
-#                td = term.derDegree
-#            elif term.internalType == 4:
-#                tt.prod.append(term)
-#            else:
-#                raise
-#
-#        if u is None:
-#            print(self.internalfLiform.shape)
-#            self.internalfLiform[t,td].form.append(tt)
-#        else:
-#            self.internalfBiform[u,ud,t,td].form.append(tt)
-
 
   def SetPoints(self,nodes):
         """
@@ -315,10 +277,6 @@ class MonoElementsIntegral(BOO):
 
         return None
 
-
-  #@initializedcheck(False)
-  #@overflowcheck (False)
-
   def SetOnlyEvaluation(self,onlyEvaluation):
       self.onlyEvaluation = onlyEvaluation
 
@@ -328,12 +286,8 @@ class MonoElementsIntegral(BOO):
     for numbering in self.__usedNumbering__:
         self.localNumbering.append( numbering.get(domain.elementType,None) )
 
-    #print(domain.elementType)
-    #print(EN.geoSupport[domain.elementType])
-    #print([str(x) for x in self.integrationRule.keys()])
-    #print(self.integrationRule[EN.geoSupport[domain.elementType]])
+
     self.p, self.w = self.integrationRule[EN.geoSupport[domain.elementType]];
-    #NumberOfIntegrationPoints = len(w_np)
 
     self.geoSpace = LagrangeSpaceGeo[domain.elementType]
 
@@ -362,28 +316,6 @@ class MonoElementsIntegral(BOO):
         constantsNumerical[cpt] = self.__cfs__[x]
         cpt += 1
 
-    #cdef np.ndarray[DTYPEfloat_t, ndim=1]  F = np.zeros(self.totalTestDofs,dtype=DTYPEfloat)
-    #cdef DTYPEfloat_t [::1] F = F_np;
-
-#    #w_wp = np.zeros(0,dtype=np.float)
-#    p, w_np = self.integrationRule[EN.geoSupport[domain.elementType]];
-#    NumberOfIntegrationPoints = len(w_np)
-#    #print("w_np")
-#    #print(w_np)
-
-
-#    cdef DTYPEfloat_t [:] w = w_np;
-
-
-#    spaces = []
-#    cdef np.ndarray[DTYPEint_t, ndim=1] NumberOfShapeFunctionForEachSpace = np.zeros(len(self.__usedSpaces__),dtype=DTYPEint)
-#    cpt = 0
-#    for space in self.__usedSpaces__:
-#        spaces.append(space[domain.elementType])
-#        space[domain.elementType].SetIntegrationRule(p,w)
-#        NumberOfShapeFunctionForEachSpace[cpt] = space[domain.elementType].GetNumberOfShapeFunctions()
-#        cpt += 1
-
     NumberOfIntegrationPoints = len(self.w)
 
 
@@ -391,8 +323,6 @@ class MonoElementsIntegral(BOO):
     ei = np.empty(self.maxNumberOfElementVIJ*wform.GetNumberOfTerms()*NumberOfIntegrationPoints,dtype=np.int)
     ej = np.empty(self.maxNumberOfElementVIJ*wform.GetNumberOfTerms()*NumberOfIntegrationPoints,dtype=np.int)
 
-    #print("----")
-    #print(self.maxNumberOfElementVIJ*wform.GetNumberOfTerms())
     numberOfFields = len(self.__usedSpaces__)
 
     BxByBzI = [None] *numberOfFields
@@ -403,54 +333,32 @@ class MonoElementsIntegral(BOO):
 
     for n in idstotreat:
         fillcpt =0
-        #BaseOutputObject().PrintDebug("treating : " + str(n)  )
 
-        # the coordinates of the nodes
         xcoor = self.nodes[self.connectivity[n],:]
 
 
         for ip in range(NumberOfIntegrationPoints):
             """ we recover the jacobian matrix """
             Jack, Jdet, Jinv = self.geoSpace.GetJackAndDetI(ip,xcoor)
-            #Jack, Jdet, Jinv = GetJackAndDet(self.geoSpace.valdphidxi[ip],xcoor,self.geoSpace.GetDimensionality())
-#            print("geoSpace.valdphidxi["+str(ip)+"]")
-#            print(self.geoSpace.valdphidxi[ip]);
-#
-#            print("xcoor")
-#            print(xcoor)
-
+            #print("Jack")
+            #print(Jack)
+            #print("Jdet")
+            #print(Jdet)
+            #print("Jinv")
+            #print(Jinv(np.identity(Jack.shape[0])))
 
             for i in range(numberOfFields):
                  if self.localSpaces[i] is not None:
                      NxNyNzI[i] = self.localSpaces[i].valN[ip]
-#                     print("Jack")
-#                     print(Jack)
-#                     print("self.localSpaces[i].valdphidxi[ip]")
-#                     print(self.localSpaces[i].valdphidxi[ip])
-                     BxByBzI[i] = Jinv(self.localSpaces[i].valdphidxi[ip])
-#                     print("BxByBzI["+str(i)+"]")
-#                     print(BxByBzI[i])
-#                     print("error")
-#                     print(Jack.dot(BxByBzI[i]) )
-#                     print(Jack.dot(BxByBzI[i]) - self.localSpaces[i].valdphidxi[ip])
-#
 
-#                     print("--------------")
-#                     print("solution II")
-#                     md = Jack
-#                     yd = self.localSpaces[i].valdphidxi[ip]
-#                     import scipy.linalg as la
-#                     s = la.solve(md.T.dot(md),md.T.dot(yd) )
-#                     print(s)
+                     BxByBzI[i] = Jinv(self.localSpaces[i].valdphidxi[ip])
+
             if self.hasnormal:
                 normal = self.geoSpace.GetNormal(Jack)
 
             for monom in wform:
-#            for cptmono in range(NumberOfTerms):
-#                monom = wform.form[cptmono]
 
                 factor = monom.prefactor
-#                print(" factor(A) "+str(factor))
                 if self.onlyEvaluation :
                     # For the evaluation we only add the constribution without doing the integration
                     # the user is responsible of dividing by the mass matrix to get the correct values
@@ -459,20 +367,12 @@ class MonoElementsIntegral(BOO):
                 else:
                     # for the integration we multiply by the deteminant of the jac
                     factor *= Jdet
-#                    print("Jdet " + str(Jdet))
-#                    print("Jack " + str(Jack))
 
                 hasright = False
 
-#                print(" factor(B) "+str(factor))
-
                 for term in monom:
-#                for xterm in range( monom.prod.size()):
- #                   term = monom.prod[xterm]
-#                    print(" factor("+str(term.internalType)+") " +str( factor));
 
                     if term.internalType == 0 :
-#                        print("normal" + str(normal[term.derDegree]))
                         factor *= normal[term.derDegree]
                         continue
                     elif  term.internalType == 1 :
@@ -489,13 +389,11 @@ class MonoElementsIntegral(BOO):
                         continue
                     elif  term.internalType == 3 :
                         if term.derDegree == 1:
-                            #left = BxByBzI[term.spaceIndex_][[term.derCoordIndex_]].T
                             left = BxByBzI[term.spaceIndex_][term.derCoordIndex_]
                         else:
                             left = NxNyNzI[term.spaceIndex_]
                         leftNumbering = self.localNumbering[term.numberingIndex_][n,:] + self.testDofsOffset[term.valuesIndex_]
                         l1 = self.NumberOfShapeFunctionForEachSpace[term.spaceIndex_]
-                        #cdef int [:] leftNumbering = leftNumbering_np;
                         continue
                     elif  term.internalType == 4 :
 
@@ -505,138 +403,55 @@ class MonoElementsIntegral(BOO):
                             func = NxNyNzI[term.spaceIndex_]
                         centerNumbering = self.localNumbering[term.numberingIndex_][n,:]
                         vals = self.__usedValues__[term.valuesIndex_][centerNumbering]
-                        #print("centerNumbering");
-                        #print(centerNumbering);
-                        #print("vals");
-                        #print(vals);
-                        #print("func");
-                        #print(func);
-                        #s = 0.
-                        #for i in range(NumberOfShapeFunctionForEachSpace[term.spaceIndex_]):
-                        #    s += func[i]*vals[i]
-                        #factor *= s
                         factor *= np.dot(func,vals)
-                        #print("factor");
-                        #print(factor);
-                        #if factor:
-                        #   raise(Exception("tata"))
 
                         continue
                     else :
-                        #print(term.internalType)
-                        #print(self.unkwowNames)
-                        #print(self.testNames)
-                        #print(self.extraFieldsNames)
-                        #print([str(f) for f in  monom.prod])
                         raise(Exception("Cant treat term " + str(term.fieldName)))
-                    #raise (Exception( "Error field '" + term.fieldName + "' not found in the available fields" ) )
 
                 if factor == 0:
                     continue
 
-                #print(factor)
 
                 factor *= self.w[ip]
 
-                #print(factor)
-                #l1 = leftNumbering.size
-                #print(monom)
 
                 if hasright:
-#                    print("right")
-#                    print(right)
-#                    print("rightNumbering")
-#                    print(rightNumbering)
-#                    print("leftNumbering")
-#                    print(leftNumbering)
-#                    print("left")
-#                    print(left)
-#                    #l2 = len(rightNumbering)
                     l = l1*l2
 
-                    #print("fillcpt")
-                    #print(fillcpt)
                     l2cpt = fillcpt
-                    #print(l1)
-                    #print(l2)
-                    #print(l2cpt)
                     for i in range(l1):
                         for j in range(l2) :
                             ev[l2cpt] =  left[i]*right[0,j]*factor
                             l2cpt +=1
-
-
-                    #print(left)
-                    #print(right)
-                    #vals = np.dot(left,right).ravel()
-                    #vals *= factor
-                    #raise
-
-
-                    #print(vals.ravel())
-                    #print(ev[fillcpt:fillcpt+l])
-                    #for i in range(l):
-                    #    ev[fillcpt+i] =  vals[i]
-                    #ev[fillcpt:fillcpt+l] =  vals.ravel()
-
-
-                    #ej[fillcpt:fillcpt+l] = np.tile(rightNumbering,len(leftNumbering))
 
                     l2cpt = fillcpt
                     for i in range(l1):
                         for j in range(l2) :
                           ej[l2cpt] = rightNumbering[j]
                           l2cpt += 1
-                    #for i in leftNumbering:
-                    #    ej[l2cpt:l2cpt+l2] = rightNumbering
-                    #    l2cpt += l2
+
                     l2cpt = fillcpt
                     for j in range(l2) :
                          for i in range(l1):
                               ei[l2cpt] = leftNumbering[j]
                               l2cpt += 1
-                    #ei[fillcpt:fillcpt+l] = np.repeat(leftNumbering,l2).ravel()
-#                    for i in range(l):
-#                        print("m({0},{1}) = {2}".format(ei[i+fillcpt],ej[i+fillcpt],ev[i+fillcpt] ))
                     fillcpt += l
                 else:
-                     #print("***")
-                    #print(w[ip])
-                    #print(factor)
-                    #print(left)
-                    #print((w[ip]*factor)*left)
-                    #print(F[leftNumbering])
-                    #vals = (factor*left).ravel()
                     for i in range(l1):
                       self.F[leftNumbering[i]] += left[i]*factor
 
-#                    print(leftNumbering)
-                    #print(left)
-                    #print(factor)
-                    #raise(Exception("tata"))
-                    #print(left*factor)
-                    #F[leftNumbering] += (factor*left).ravel()
 
-
-        #if len (ev):
         if fillcpt:
             data = coo_matrix((ev[:fillcpt], (ei[:fillcpt],ej[:fillcpt])), shape=( self.totalTestDofs,self.totalUnkownDofs))
-            #.tocsr().tocoo()
             data.sum_duplicates()
-            #data =
-            #data = coo_matrix((ev, (ei,ej)), shape=( totaldofs,totaldofs)).tocsr().tocoo()
-#            print(data)
             start = self.totalvijcpt
             stop = start+len(data.data)
 
             self.vK[start:stop] = data.data
             self.iK[start:stop] = data.row
             self.jK[start:stop] = data.col
-            #vij_v[start:stop] = data.data
-            #vij_i[start:stop] = data.row
-            #vij_j[start:stop] = data.col
             self.totalvijcpt += len(data.data)
-#        raise(Exception("toto"))
 
 
   def GetNumberOfUsedIvij(self):

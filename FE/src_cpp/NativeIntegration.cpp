@@ -78,29 +78,26 @@ void MonoElementsIntegralCpp::SetConnectivity( INT_TYPE* pd, const int& rows, co
 }
 //
 
-void GetJackAndDet(MapMatrixDDD& valdphidxi,
-                   MatrixDD3&  xcoor,
-                   int& Dimensionality,
-                   MatrixDDD&  Jack,
-                   double&    Jdet,
-                   MatrixDDD&  Jinv){
+template<typename T>
+MatrixDDD solve(T& Jinv,MapMatrixDDD &valdphidxi){
+   return Jinv.solve(valdphidxi);
+}
 
-    Jack = valdphidxi*xcoor;
+template<>
+MatrixDDD solve(MatrixDDD& Jinv,MapMatrixDDD &valdphidxi){
+   return Jinv*valdphidxi;
+}
 
-    if(Dimensionality == xcoor.cols()) {
-
-      Jinv.resize(Dimensionality,xcoor.cols());
-
-      if(Dimensionality == 3){
-        //Jdet = Jack.determinant();
-        MatrixDDD& m = Jack;
-        Jdet = m(0, 0) * (m(1, 1) * m(2, 2) - m(2, 1) * m(1, 2)) -
+void inv33(MatrixDDD& m,MatrixDDD &minv,double& det ){
+        //std::cout << "m   ->   " << m<< std::endl;
+        det = m(0, 0) * (m(1, 1) * m(2, 2) - m(2, 1) * m(1, 2)) -
                m(0, 1) * (m(1, 0) * m(2, 2) - m(1, 2) * m(2, 0)) +
                m(0, 2) * (m(1, 0) * m(2, 1) - m(1, 1) * m(2, 0));
 
-        const double invdet = 1 / Jdet;
-
-        MatrixDDD& minv = Jinv; // inverse of matrix m
+        //std::cout << "det   ->   " << det  << std::endl;
+        const double invdet = 1 / det;
+        //std::cout << "invdet   ->   " << invdet  << std::endl;
+        //std::cout << "minv   ->   " << minv  << std::endl;
         minv(0, 0) = (m(1, 1) * m(2, 2) - m(2, 1) * m(1, 2)) * invdet;
         minv(0, 1) = (m(0, 2) * m(2, 1) - m(0, 1) * m(2, 2)) * invdet;
         minv(0, 2) = (m(0, 1) * m(1, 2) - m(0, 2) * m(1, 1)) * invdet;
@@ -110,64 +107,149 @@ void GetJackAndDet(MapMatrixDDD& valdphidxi,
         minv(2, 0) = (m(1, 0) * m(2, 1) - m(2, 0) * m(1, 1)) * invdet;
         minv(2, 1) = (m(2, 0) * m(0, 1) - m(0, 0) * m(2, 1)) * invdet;
         minv(2, 2) = (m(0, 0) * m(1, 1) - m(1, 0) * m(0, 1)) * invdet;
-        return;
-      } if(Dimensionality == 2) {
-        //MatrixDDD& m = Jack;
-        Jdet = Jack(0, 0) * Jack(1, 1) - Jack(1, 0) * Jack(0, 1);
-        const double invdet = 1 /Jdet;
 
-        Jinv(0,0) =  Jack(1,1)* invdet;
-        Jinv(0,1) = -Jack(1,0)* invdet;
-        Jinv(1,0) = -Jack(0,1)* invdet;
-        Jinv(1,1) =  Jack(0,0)* invdet;
-
-      }
+};
 
 
-    } else {
-        switch(Dimensionality) {
-        case (0): {
-            Jdet = 1;
-            break;
-        } case(1) : {
-	    // we have and edge in 2D or 3D
-            Jdet = Jack.norm();
-            break;
-        } case(2): {
-            // TODO check
-            Jdet = Jack.row(0).head<3>().cross(Jack.row(1).head<3>()).norm();
-            break;
-        } default : {
-            std::cerr << "Error in the calculation of " << std::endl;
-            assert(0);
-	    }
+void GetJackAndDet(MapMatrixDDD& valdphidxi,
+                   MatrixDDD&  xcoor,
+                   int& Dimensionality,
+                   MatrixDDD&  Jack,
+                   double&    Jdet,
+                   MatrixDDD&  Jinv){
+
+    Jinv.resize(Dimensionality,xcoor.cols());
+    Jack = valdphidxi*xcoor;
+    //std::cout << " ***** Jack ***** " << std::endl;
+
+    switch(Dimensionality) {
+      case (0): {
+        Jdet = 1;
+        //std::cout << "0 " << std::endl; exit(1);
+        break;
+      } case(1) : {
+	    // we have an edge
+        switch(xcoor.cols()) {
+           case (1):{
+              //in a 1D space
+              Jdet = Jack(0, 0);
+              double invdet = 1 / Jdet;
+              Jinv(0,0) = invdet;
+              return;
+              break;
+           } case (2):{
+              //in a 2D space
+              const double der0 = Jack(0,0); // dx
+              const double der1 = Jack(0,1); // dy
+              Jdet = std::sqrt(der0*der0+der1*der1);
+              MatrixD21 Normal;
+              Normal(0) = der1;
+              Normal(1) = -der0;
+
+              MatrixDDD m;
+              m.resize(2,2),
+              m(0,0) = der0;
+              m(1,0) = der1;
+              m.col(1) = Normal;
+
+              Jinv = m.inverse();
+              return;
+              break;
+           } case (3):{
+              const double der0 = Jack(0,0); // dx
+              const double der1 = Jack(0,1); // dy
+              const double der2 = Jack(0,2); // dz
+              Jdet = std::sqrt(der0*der0+der1*der1+der2*der2);
+              MatrixD31 N0;
+              MatrixD31 N1;
+              if(der0 == 0 && der1 ==0){
+                 N0 <<  1, 0,0.;
+                 N1 <<  0, 1,0.;
+              } else {
+                  N0 <<  der1, -der0,0.;
+                  N1 <<  -der2, 0., der0;
+              }
+              N0 /= N0.norm();
+              N1 /= N1.norm();
+
+              MatrixDDD m;
+              m.resize(3,3),
+              m.col(0) = Jack.row(0);
+              m.col(1) = N0;
+              m.col(2) = N1;
+
+
+              Jinv = m.inverse().transpose().col(0) ;
+              return ;
+              break;
+           }
         }
+        Jdet = Jack.norm();
+
+        break;
+      } case(2): {
+   	    // we have a surface triange quad ...
+
+        switch(xcoor.cols()) {
+          case (2):{
+            // in 2D space
+            Jdet = Jack(0, 0) * Jack(1, 1) - Jack(1, 0) * Jack(0, 1);
+            const double invdet = 1 /Jdet;
+
+            Jinv(0,0) =  Jack(1,1)* invdet;
+            Jinv(1,0) = -Jack(1,0)* invdet;
+            Jinv(0,1) = -Jack(0,1)* invdet;
+            Jinv(1,1) =  Jack(0,0)* invdet;
+            return;
+            break;
+          } case (3):{
+            // in 3D space
+            //compute normal
+            MatrixD31 Normal = Jack.row(0).head<3>().cross(Jack.row(1).head<3>());
+            Jdet = Normal.norm();
+            Normal /= Jdet;
+
+
+            MatrixD33 m;
+            m.col(0) = Jack.row(0);
+            m.col(1) = Jack.row(1);
+            m.col(2) = Normal;
+            Jinv = m.inverse();
+
+            return;
+            break;
+          }
+        }
+        break;
+      } case(3):{
+        // we have a 3D element in 3D
+        inv33(Jack,Jinv,Jdet);
+        return;
+      } default : {
+         std::cerr << "Error in the calculation of the jacobian" << std::endl;
+         exit(1);
+	  }
     }
+
 
     //Jinv.compute(Jack);
     std::cerr << "Error in the calculation of the jackob" << std::endl;
     exit(0);
   };
 
-
+//
 void GetJackAndDet(MapMatrixDDD& valdphidxi,
                    MatrixDD3&  xcoor,
                    int& Dimensionality,
                    MatrixDDD&  Jack,
                    double&    Jdet,
-                   QRType&  Jinv){
+                   Eigen::ColPivHouseholderQR<MatrixDDD>&  Jinv){
 
     Jack = valdphidxi*xcoor;
 
 
-    if(Dimensionality > xcoor.cols()){
-    }
-
     if(Dimensionality == xcoor.cols()) {
 	  Jdet = Jack.determinant();
-
-
-
 
     } else {
         switch(Dimensionality) {
@@ -192,6 +274,7 @@ void GetJackAndDet(MapMatrixDDD& valdphidxi,
     Jinv.compute(Jack);
 
   };
+
 void GetNormal(const int&  SpaceDim, const int& elementDim,MatrixDDD& Jack,MatrixD31& Normal){
 
     if( elementDim == 2 && SpaceDim == 3){
@@ -205,21 +288,7 @@ void GetNormal(const int&  SpaceDim, const int& elementDim,MatrixDDD& Jack,Matri
         std::cerr << "error in the normal " << std::endl;
         exit(1);
     }
-    /*
-    //# Edge in 2D
-    if Jack.shape[0] == 1 and Jack.shape[1] == 2 :
-            res = np.array([Jack[1,:] -Jack[0,:]],dtype =np.float)
-        # surface in 3D
-    elif Jack.shape[0] == 2 and Jack.shape[1] == 3 :
-            res =  np.cross(Jack[0,:],Jack[1,:])
-    else:
-            std::cout << "Shape of Jacobian not coherent. Possible error: an elset has the same name of the considered faset" << std::endl;
-
-        res /= np.linalg.norm(res)
-        return res
-
-        */
-        };
+};
 //
 void MonoElementsIntegralCpp::Integrate( WeakForm* wform, std::vector<int>& idstotreat){
 
@@ -241,12 +310,9 @@ void MonoElementsIntegralCpp::Integrate( WeakForm* wform, std::vector<int>& idst
 
 
     MatrixD31 normal;
-    MatrixDD3 xcoor;
-    xcoor.resize(nbcols,3);
+    MatrixDDD xcoor;
 
-    //PRINT(this->geoSpaceNumber);
-
-
+    xcoor.resize(nbcols,this->nodes->cols());
 
     MatrixDDD ElementMatrix(maxsizelocalTestDofs,maxsizelocalUnkownDofs);
 
@@ -277,7 +343,8 @@ void MonoElementsIntegralCpp::Integrate( WeakForm* wform, std::vector<int>& idst
 
         for(int ip = 0; ip< NumberOfIntegrationPoints;  ++ip){
 //            """ we recover the jacobian matrix """
-            MatrixDDD Jack ;
+            MatrixDDD Jack;
+            Jack.resize(3,3);
             double Jdet;
 
             GetJackAndDet(*geoSpace.valdphidxi[ip],

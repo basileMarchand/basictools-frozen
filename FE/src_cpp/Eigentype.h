@@ -9,6 +9,10 @@ using Eigen::Dynamic;
 typedef double FLOAT_TYPE;
 typedef long int INT_TYPE;
 
+
+typedef Eigen::Matrix<FLOAT_TYPE, 2, 1> MatrixD21;
+
+typedef Eigen::Matrix<FLOAT_TYPE, 3, 3> MatrixD33;
 typedef Eigen::Matrix<FLOAT_TYPE, 3, 1> MatrixD31;
 typedef Eigen::Matrix<FLOAT_TYPE, Dynamic, 1> MatrixDD1;
 typedef Eigen::Matrix<FLOAT_TYPE, Dynamic, 3,Eigen::RowMajor> MatrixDD3;
@@ -26,8 +30,9 @@ typedef Eigen::Map<MatrixDDD> MapMatrixDDD;
 typedef Eigen::Map<MatrixIDD> MapMatrixIDD;
 typedef Eigen::Map<MatrixDD1> MapMatrixDD1;
 
-typedef Eigen::ColPivHouseholderQR<MatrixDDD> QRType;
+//typedef Eigen::ColPivHouseholderQR<MatrixDDD> QRType;
 //typedef Eigen::FullPivHouseholderQR<MatrixDDD> QRType;
+typedef MatrixDDD QRType;
 
 //typedef Eigen::Map<MatrixDDD, Eigen::Aligned64> MapMatrixDDD;
 //typedef Eigen::Map<MatrixIDD, Eigen::Aligned64> MapMatrixIDD;

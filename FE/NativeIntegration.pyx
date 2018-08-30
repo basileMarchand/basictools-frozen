@@ -184,10 +184,6 @@ cdef class PyMonoElementsIntegralCpp():
 
       self.numberOfTerms = wform.GetNumberOfTerms();
 
-      #self.NativeIntegrator.AllocateWorkingElementVIJ(self.maxNumberOfElementVIJ*wform.GetNumberOfTerms()wform.GetNumberOfTerms())
-
-      ##we modified the internal structure (varialbe ending with _) for fast access
-
       cdef bint hasnormal = False
       for monom in wform:
          for term in monom:
@@ -220,7 +216,6 @@ cdef class PyMonoElementsIntegralCpp():
 
       self.geoSpaceNumber = sId.index(spacesNames["Geometry_Space_internal"])
       self.NativeIntegrator.geoSpaceNumber = self.geoSpaceNumber
-      #self.__usedSpaces__.index(id(self.geoSpace))
 
       spacesNames = { sn:sId.index(spacesNames[sn]) for sn in spacesNames }
 
@@ -244,10 +239,6 @@ cdef class PyMonoElementsIntegralCpp():
 
       self.testDofsNumbering = np.array([ numberingNames[f.name] for f in self.__tfs__], dtype=int)
       self.unkownDofsNumbering = np.array([ numberingNames[f.name] for f in self.__ufs__] ,dtype=int)
-      #print("self.testDofsNumbering")
-      #print(self.testDofsNumbering)
-      #print("self.unkownDofsNumbering")
-      #print(self.unkownDofsNumbering)
 
       # Values treatement
       valuesId = {}
@@ -300,8 +291,6 @@ cdef class PyMonoElementsIntegralCpp():
                 term.internalType = -1
                 raise(Exception("Term " +str(term.fieldName) + " not found in the database " ))
 
-
-#      self.mesh = mesh
       self.SetPoints(mesh.nodes)
 
       ########### sending values  ################################
@@ -309,18 +298,14 @@ cdef class PyMonoElementsIntegralCpp():
       self.__values = [None]*len(self.__usedValues__)
       cdef np.ndarray[float_DTYPE_t, ndim=1, mode = 'c' ] vdata
       for i in range(len(self.__usedValues__)):
-          #vdata = <np.ndarray[float_DTYPE_t, ndim=1, mode = 'c' ]>
           self.SetValues(i,self.__usedValues__[i])
-          #vdata = self.__usedValues__[i]
-          #self.NativeIntegrator.SetValueI(i,vdata.shape[0],vdata.shape[1], &vdata[0])
+
 
 
 
     def SetValues(self,int i,np.ndarray[float_DTYPE_t, ndim=1,mode="c"] vdata not None):
           self.__values[i] = vdata
           self.NativeIntegrator.SetValueI(i,vdata.shape[0],vdata.shape[1], &vdata[0])
-
-      #self.ProcessWeakForm(<WFNW.WeakForm*> wform.GetCppObject())
 
     #@cython.boundscheck(False)
     #@cython.wraparound(False)
@@ -359,20 +344,9 @@ cdef class PyMonoElementsIntegralCpp():
           self.__localtTestDofsOffset[i] = st
           st += tfssize[i]
 
-      #print("self.unkownDofsNumbering")
-      #print(self.unkownDofsNumbering)
-      #print("localUnkownDofsOffset")
-      #print(localUnkownDofsOffset)
       self.NativeIntegrator.SetLocalOffsets(su,self.__localUnkownDofsOffset,self.unkownDofsNumbering,st,self.__localtTestDofsOffset,self.testDofsNumbering)
 
 
-      #self.BOO.PrintDebug("AllocateWorkingElementVIJ")
-      #self.BOO.PrintDebug("Allocating " + str(self.maxNumberOfElementVIJ*self.numberOfTerms*numberOfIntegrationPoints) )
-      #self.NativeIntegrator.AllocateWorkingElementVIJ(self.maxNumberOfElementVIJ*self.numberOfTerms*numberOfIntegrationPoints)
-      #self.BOO.PrintDebug("AllocateWorkingElementVIJ DOne")
-
-
-      #self.BOO.PrintDebug("SetNumberOfIntegrationPoints")
       self.NativeIntegrator.SetNumberOfIntegrationPoints(numberOfIntegrationPoints)
       for i in range(numberOfIntegrationPoints):
          if p.shape[1] == 1:
@@ -383,7 +357,6 @@ cdef class PyMonoElementsIntegralCpp():
             self.NativeIntegrator.SetIntegrationPointI(i, w[i],p[i,0],p[i,1],p[i,2])
          else:
              raise(Exception("error"))
-      #self.BOO.PrintDebug("SetNumberOfIntegrationPoints DOne")
 
       # sending the connectivity matrix for this elements
       cdef int m, n
@@ -417,23 +390,13 @@ cdef class PyMonoElementsIntegralCpp():
           self.__dphidxi[s] = [None]*numberOfIntegrationPoints
 
           for i in range(numberOfIntegrationPoints):
-              #<cnp.ndarray[np.float_t, ndim=1, mode = 'c' ]?>
               valN = current_space.valN[i]
               self.__valN[s][i] = valN
-              #cdef unsigned int* im_buff = <double*> np_buff.data
               self.NativeIntegrator.SetSpaceSvalNI(s,i,&valN[0])
-              #<np.ndarray[np.float_t, ndim=2, mode = 'c' ]?>
               dphidxi = current_space.valdphidxi[i]
               self.__dphidxi[s][i] = dphidxi
-              #print("\n python ")
-              #print(current_space.valdphidxi[i].shape)
-              #print(dphidxi.flatten() )
-              #for i in range(dphidxi.shape[0]):
-              #    print(list(dphidxi[i,:]))
 
               self.NativeIntegrator.SetSpaceSvaldphidxiI(s,i,&dphidxi[0,0])
-              #print(current_space.valN[i].flags)
-      #self.BOO.PrintDebug("InitSpaceS Done")
       ############ sending lnumbering ###############################
       self.NativeIntegrator.SetNumberOfNumberings(len(self.__usedNumbering__))
       cdef cnp.ndarray[int_DTYPE_t , ndim=2, mode = 'c' ] ndata
@@ -441,21 +404,14 @@ cdef class PyMonoElementsIntegralCpp():
 
       self.__numbering = [None] * len(self.__usedNumbering__)
       for i in range(len(self.__usedNumbering__)):
-          #<np.ndarray[cnp.int_t, ndim=2, mode = 'c' ]?>
           ndata =  self.__usedNumbering__[i].get(elementType,None)
           if ndata is None:
               continue
           self.__numbering[i] = ndata
-          #print("\n python ")
-          #for i in range(ndata.shape[0]):
-          #    print(list(ndata[i,:]))
           self.NativeIntegrator.SetNumberingI(i,ndata.shape[0],ndata.shape[1], &ndata[0,0])
 
 
     def Integrate(self,WFN.PyWeakForm wform,
-#                  list vij,
-#                  dofs,
-#                  numbering,
                   np.ndarray[int_DTYPE_t, ndim=1, mode="c"] idstotreat not None ):
 
         self.NativeIntegrator.Integrate(<WFNW.WeakForm*> wform.GetCppObject(), idstotreat)

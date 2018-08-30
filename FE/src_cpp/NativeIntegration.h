@@ -32,7 +32,10 @@
 #endif
 
 
-
+template<typename T>
+MatrixDDD solve(T& Jinv,MapMatrixDDD &valdphidxi);
+template<>
+MatrixDDD solve(MatrixDDD& Jinv,MapMatrixDDD &valdphidxi);
 
 struct LocalSpace{
    int dimensionality;
@@ -62,7 +65,6 @@ struct LocalSpace{
    }
    void SetvalNI(const int& integrationPoint,double* pd){
        this->valN[integrationPoint] =   new MapMatrixDDD(pd,this->numberOfShapeFunctions,1);
-       //new (this->valN[integrationPoint]) Eigen::Map<MatrixDD1>(pd,this->numberOfShapeFunctions,1);
    }
    void RelseaseData(){
        for(unsigned i=0; i < this->valN.size() ; i++){
@@ -81,13 +83,7 @@ struct LocalSpace{
    }
    void SetvaldphidxiI(const int& integrationPoint,double* pd){
     this->valdphidxi[integrationPoint] = new MapMatrixDDD(pd,this->dimensionality,this->numberOfShapeFunctions);
-       //PRINT(integrationPoint);
-       //PRINT(this->dimensionality);
-       //PRINT(this->numberOfShapeFunctions);
-       //new (this->valdphidxi[integrationPoint]) Eigen::Map<MatrixDDD>(pd,this->dimensionality,this->numberOfShapeFunctions);
-       //PRINT(this->valdphidxi[integrationPoint]);
 
-       //printMatrix(*this->valdphidxi[integrationPoint]);
    }
 
 
@@ -99,33 +95,13 @@ struct LocalSpace{
            return this->BxByBz;
    }
 
-   //void SetNumberOfIntegrationPoints(const int& n ){
-   //     this->valN.resize(n);
-   //     this->valdphidxi.resize(n);
-   //}
+
 
    void SetActiveIntegrationPoint(const int& ip,QRType& Jinv ){
        this->activeIntegrationPoint = ip;
-       /*
-       cvcStorage2D<double> res;
-        res.resize(GetNPhi(),IntegrationWeights.size() );
 
-        for(int p = 0; p < IntegrationWeights.GetSize(); ++p) {
-            //Eigen::ColPivHouseholderQR<cvcMatrixD> Jinv = jacobian(p).colPivHouseholderQr();
-            for(int i = 0; i < dPhidXiAtIntegrationPoints(p).cols(); ++i) {
-                Eigen::Matrix<double,Eigen::Dynamic,1> tmp  =  Jinv(p).solve(dPhidXiAtIntegrationPoints(p).col(i)) ;
-                res(i,p) = tmp(derivation);
-            }
-        }
-        return res;
-        */
-//       std::cout << "this->valdphidxi[ip] : " << std::endl  << *this->valdphidxi[ip] << std::endl;;
+       this->BxByBz = solve(Jinv,*this->valdphidxi[ip]);
 
-
-       this->BxByBz = Jinv.solve(*this->valdphidxi[ip]);
-
-
-//       std::cout << "BxByBz["<< ip <<  "]"  << std::endl << this->BxByBz<< std::endl ;
    }
 
 };
@@ -176,16 +152,11 @@ struct MonoElementsIntegralCpp{
         delete this->values[i];
       }
   }
-  //LocalSpace lgeoSpace;
   int geoSpaceNumber;
 
   std::vector<LocalSpace> lspaces;
   std::vector<MapMatrixIDD* >  lnumbering;
   std::vector<MapMatrixDD1*>  values;
-
-  //std::vector<FLOAT_TYPE> ev;
-  //std::vector<INT_TYPE> ei;
-  //std::vector<INT_TYPE> ej;
 
   void SetLocalOffsets(const int& maxSizeUDof,
                        const std::vector<double>& ludof,
@@ -203,8 +174,6 @@ struct MonoElementsIntegralCpp{
           this->localTestDofsOffset[i] =ltdof[i];
           this->testDofsNumbering[i] =ltNumberingindex[i];
           }
-
-
   }
 
   void SetGeoSpace(const int& i){
@@ -218,24 +187,17 @@ struct MonoElementsIntegralCpp{
                  const int& dim ,
                  const int& NumberOfShapeFunctions,
                  const int& numberOfIntegrationPoints ){
-    //std::cout << "init Space " << s << " "
-    //                           << dim <<" "
-    //                           << NumberOfShapeFunctions << " "
-    //                           << numberOfIntegrationPoints <<std::endl;
     this->lspaces[s].Init(dim, NumberOfShapeFunctions,numberOfIntegrationPoints  );
   };
   void SetSpaceSvalNI(const int& spaceNumber,
                       const int& integrationPoint,
                       double* pd){
-     //std::cout << "SetSpaceSvalNI " << spaceNumber << " " << integrationPoint << std::endl;
      this->lspaces[spaceNumber].SetvalNI(integrationPoint,pd);
-     //new (&this->lspaces[spaceNumber].valN[integrationPoint]) Eigen::Map<MatrixDD1>(pd,this->lspaces[spaceNumber].numberOfShapeFunctions,1);
   }
   void SetSpaceSvaldphidxiI(const int& spaceNumber,
                       const int& integrationPoint,
                       double* pd){
      this->lspaces[spaceNumber].SetvaldphidxiI(integrationPoint, pd);
-     //new (&this->lspaces[spaceNumber].valdphidxi[integrationPoint]) Eigen::Map<MatrixDDD>(pd,this->lspaces[spaceNumber].dimensionality,this->lspaces[spaceNumber].numberOfShapeFunctions);
   }
   //////////////////////////////////////////
   void SetNumberOfNumberings(int i){
@@ -249,7 +211,6 @@ struct MonoElementsIntegralCpp{
   void SetNumberingI(int i, int n, int m, INT_TYPE* ip){
      if(this->lnumbering[i]) delete this->lnumbering[i];
      this->lnumbering[i] = new MapMatrixIDD(ip,n,m);
-     //printMatrix(*this->lnumbering[i]);
    }
   //////////////////////////////////////////
   void SetNumberOfValues(int i){
@@ -283,10 +244,6 @@ struct MonoElementsIntegralCpp{
   void SetNumberOfIntegrationPoints(const int& n){
          this->ip.resize(n,3);
          this->iw.resize(n,1);
-     //    this->geoSpace.SetNumberOfIntegrationPoints(n);
-     //#    for(int i =0, i < this->__usedSpaces__.size(); ++i){
-     //       this->__usedSpaces__.SetNumberOfIntegrationPoints(n);
-     //   }
   }
   void SetIntegrationPointI(const int& n,const double& w,const double& p0,const double& p1,const double& p2){
       this->iw(n,0) = w;

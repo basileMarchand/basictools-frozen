@@ -36,6 +36,7 @@ def IntegrateGeneral( mesh, wform, constants, fields, unkownFields,testFields=No
     try:
         from BasicTools.FE.WeakFormNumerical import PyWeakForm
         typeCpp = (type(wform) == PyWeakForm)
+        import BasicTools.FE.NativeIntegration
     except :
         typeCpp = False
 
@@ -90,10 +91,6 @@ def IntegrateGeneral( mesh, wform, constants, fields, unkownFields,testFields=No
 def CheckIntegrityNormalFlux(GUI=False):
     from BasicTools.FE.UnstructuredMeshTools import CreateMeshOf
 
-    #points = [[0,0,0],[6,-8,5],[6,2,3],[0,5,2] ]
-    #mesh = CreateMeshOf(points,[[0,1,2,3]],EN.Quadrangle_4)
-    #mesh.GetElementsOfType(EN.Quadrangle_4).tags.CreateTag("2D").SetIds(np.arange(mesh.GetElementsOfType(EN.Quadrangle_4).GetNumberOfElements() ) )
-
     points = [[0,0,0],[1,0,1],[0,1,1] ]
     mesh = CreateMeshOf(points,[[0,1,2]],EN.Triangle_3)
     mesh.GetElementsOfType(EN.Triangle_3).tags.CreateTag("2D").SetIds(np.arange(mesh.GetElementsOfType(EN.Triangle_3).GetNumberOfElements() ) )
@@ -121,8 +118,6 @@ def CheckIntegrityNormalFlux(GUI=False):
 
     wformflux = p*Normal.T*ut
 
-    print(numberings)
-    print(wformflux)
     constants = {"alpha":1.0}
     from BasicTools.FE.Fields.NodalField import NodalField as Field
     pf = Field("p",mesh,space,numbering)
@@ -130,10 +125,8 @@ def CheckIntegrityNormalFlux(GUI=False):
 
     fields  = {"p":pf}
     wf = SymWeakToNumWeak(wformflux)
-    print(wf)
 
     K,F = Integrate(mesh=mesh,wform=wf, tag="ALL", constants=constants, fields=fields, dofs=dofs,spaces=spaces,numbering=numberings)
-    print(list(F))
 
     if GUI :
         from BasicTools.Actions.OpenInParaView import OpenInParaView
@@ -141,10 +134,10 @@ def CheckIntegrityNormalFlux(GUI=False):
         F = F.T
         mesh.nodeFields["normalflux"] =  F
         OpenInParaView(mesh)
-    print(np.sum(np.abs(F) ) )
+
     return "ok"
 
-def CheckIntegrityKF(case, sdim,nmesh=1):
+def CheckIntegrityKF(edim, sdim,testCase):
     from math import sqrt
     import numpy as np
     from BasicTools.FE.UnstructuredMeshTools import CreateMeshOfTriangles
@@ -155,25 +148,30 @@ def CheckIntegrityKF(case, sdim,nmesh=1):
     from BasicTools.FE.MaterialHelp import HookeIso
 
 
-    if case == 1:
-
-
+    if edim == 1:
         nu = 0.25
         #https://www.colorado.edu/engineering/CAS/courses.d/IFEM.d/IFEM.Ch20.d/IFEM.Ch20.pdf
         if sdim == 1:
             E = 1
             A = 1
-            points = np.array([[0],[1],])
+            points = np.array([[0,],[2,],])
             L = sqrt(np.sum((points[1,:] - points[0,:])**2))
             K = np.matrix([[E],])
+
+            KValidation = (E*A/L)*np.matrix([[1, -1],[-1, 1]])
+            permut = None
+
         elif sdim == 2:
             E = 1000.
             A = 5.
             points = np.array([[0,0],[30,40], ])
             L = sqrt(np.sum((points[1,:] - points[0,:])**2))
-            K = (E)*np.matrix([[1,0,0],[0,1,0],[0,0,0]])
             K = A*E*np.matrix([[1 ,1,0],[1,1 ,0],[0 ,0,0]])
-#            print(K)
+            KValidation = np.matrix([[36,48,-36,-48],
+                                 [48,64,-48,-64],
+                                 [-36,-48,36,48],
+                                 [-48,-64,48,64]])
+            permut = [0,2,1,3]
 
         elif sdim == 3:
             points = np.array([[0,0,0],[2.,3.,6.], ])
@@ -187,89 +185,110 @@ def CheckIntegrityKF(case, sdim,nmesh=1):
                                [0,0,0,0,0,0],
                                [0,0,0,0,0,0],])
 
+            permut = [0,2,4,1,3,5]
+            KValidation = np.matrix([[40,60,120,-40,-60,-120],
+                                 [60,90,180,-60,-90,-180],
+                                 [120,180,360,-120,-180,-360],
+                                 [-40,-60,-120,40,60,120],
+                                 [-60,-90,-180,60,90,180],
+                                 [-120,-180,-360,120,180,360]])
 
-        #HookeIso(E,nu,dim=sdim)
 
         mesh = CreateMeshOf(points,[[0,1],],EN.Bar_2 )
         mesh.GetElementsOfType(EN.Bar_2).tags.CreateTag("1D").SetIds([0])
-    elif case == 2:
+    elif edim == 2:
         if sdim == 2:
-        #    points = [[0,0],[3,1],[2,2]]
-        #    mesh = CreateMeshOfTriangles(points,[[0,1,2],])
-        #elif sdim == 3:,3
-            if nmesh == 1:
+            if testCase[0] =="A" :
+
                 #http://www.unm.edu/~bgreen/ME360/2D%20Triangular%20Elements.pdf
+
                 points = [[3,0],[3,2],[0,0],[0,2] ]
                 #,[3,2,1][0,1,2]
                 mesh = CreateMeshOfTriangles(points,[[0,1,2],[3,2,1]])
+                mesh.GetElementsOfType(EN.Triangle_3).tags.CreateTag("2D").SetIds(np.arange(mesh.GetElementsOfType(EN.Triangle_3).GetNumberOfElements() ) )
+
                 E = 3.0/2
                 nu = 0.25
                 K = HookeIso(E,nu,dim=2)
 
 
+                permut = [0,4,1,5,3,7,2,6]
+#
+                KValidation = np.matrix([[0.9833333333333333333,-0.5, -.45, .2, 0 ,0,-0.5333333333333333333, 0.3],
+                                [-0.5,1.4,.3,-1.2,0,0,.2,-.2],
+                                [-0.45,.3,0.9833333333333333333,0,-0.5333333333333333333,0.2,0,-0.5],
+                                [.2,-1.2,0,1.4,.3,-.2,-0.5,0],
+                                [0,0,-0.5333333333333333333,.3,0.983333333333333333,-0.5,-0.45,.2],
+                                [0,0,0.2,-0.2,-0.5,1.4,.3,-1.2],
+                                [-0.5333333333333333333,0.2,0.0,-0.5,-0.45,0.3,0.9833333333333333333,0],
+                                [0.3,-0.2,-0.5,0,0.2,-1.2,0,1.4]       ])
+                #                     ^^^
+                #attention il y a un erreur dans le pdf  (ce termet est possitive dans le pdf)
 
-            elif nmesh == 2:
+            elif  testCase[0] == "B" :
+                #https://www.colorado.edu/engineering/CAS/courses.d/IFEM.d/IFEM.Ch15.d/IFEM.Ch15.pdf
+                #pages 15-11
                 points = [[0,0],[3,1],[2,2]]
                 mesh = CreateMeshOfTriangles(points,[[0,1,2],])
-                K = np.matrix([[8,2,0],[2,8,0],[0,0,3]])*8
+                mesh.GetElementsOfType(EN.Triangle_3).tags.CreateTag("2D").SetIds(np.arange(mesh.GetElementsOfType(EN.Triangle_3).GetNumberOfElements() ) )
 
-        elif sdim ==3:
-            if nmesh == 1:
+                K = np.matrix([[8,2,0],[2,8,0],[0,0,3]])*8
+                permut = [0,3,1,4,2,5]
+
+                KValidation = np.matrix([[11,5,-10,-2,-1,-3],
+                                 [5,11,2,10,-7,-21],
+                                 [-10,2,44,-20,-34,18],
+                                 [-2,10,-20,44,22,-54],
+                                 [-1,-7,-34,22,35,-15],
+                                 [-3,-21,18,-54,-15,75]])
+            else:
+                raise
+
+
+        elif sdim == 3:
+            if testCase[0] == "A" :
                 points = [[0,0,0],[6,-8,5],[6,2,3],[0,5,2] ]
                 mesh = CreateMeshOf(points,[[0,1,2,3]],EN.Quadrangle_4)
                 E = 3.0/2
                 nu = 0.25
                 K = HookeIso(E,nu,dim=sdim)
                 mesh.GetElementsOfType(EN.Quadrangle_4).tags.CreateTag("2D").SetIds(np.arange(mesh.GetElementsOfType(EN.Quadrangle_4).GetNumberOfElements() ) )
-            elif nmesh == 2:
-                points = [[3,0,0],[3,2,0],[0,0,1],[0,2,1] ]
-                #,[3,2,1][0,1,2]
-                mesh = CreateMeshOfTriangles(points,[[0,1,2],[3,2,1]])
-                E = 3.0/2
-                nu = 0.25
-                K = HookeIso(E,nu,dim=2)
-        mesh.GetElementsOfType(EN.Triangle_3).tags.CreateTag("2D").SetIds(np.arange(mesh.GetElementsOfType(EN.Triangle_3).GetNumberOfElements() ) )
+                permut = [0,3,6,1,4,7,2,5,8]
 
-    elif case ==3:
-        #from BasicTools.FE.UnstructuredMeshTools import CreateCube
-        #mesh = CreateCube(origin=[0,0,0])
-        data=u"""
-***geometry
-**node
-8 3
-1 0.0000000000000000e+00          0.0000000000000000e+00          0.0000000000000000e+00
-2 1.0000000000000000e+00          0.0000000000000000e+00          0.0000000000000000e+00
-3 0.0000000000000000e+00          1.0000000000000000e+00          0.0000000000000000e+00
-4 1.0000000000000000e+00          1.0000000000000000e+00          0.0000000000000000e+00
-5 0.0000000000000000e+00          0.0000000000000000e+00          1.0000000000000000e+00
-6 1.0000000000000000e+00          0.0000000000000000e+00          1.0000000000000000e+00
-7 0.0000000000000000e+00          1.0000000000000000e+00          1.0000000000000000e+00
-8 1.0000000000000000e+00          1.0000000000000000e+00          1.0000000000000000e+00
-**element
-1
-1 c3d8 1 2 4 3 5 6 8 7
-**elset 3D
-1
-***return
+            else:
+                raise
 
-"""
-        from BasicTools.IO.GeofReader import ReadGeof
-        mesh = ReadGeof(string=data)
+    elif edim == 3:
+        ## https://www.colorado.edu/engineering/CAS/courses.d/AFEM.d/AFEM.Ch09.d/AFEM.Ch09.pdf
+        ## page  9-17
+        points = [[2.,3.,4],[6,3,2],[2,5,1],[4,3,6]]
+        mesh = CreateMeshOf(points,[[0,1,2,3]],EN.Tetrahedron_4)
+        E = 480;
+        nu = 1./3.
 
-#        print(mesh)
-#        print(mesh.nodes)
-        E = 2.E9
-        nu = 0.3
-#        print(mesh.GetElementsOfType(EN.Hexaedron_8).connectivity)
         K = HookeIso(E,nu,dim=sdim)
+        mesh.GetElementsOfType(EN.Tetrahedron_4).tags.CreateTag("3D").SetIds(np.arange(mesh.GetElementsOfType(EN.Tetrahedron_4).GetNumberOfElements() ) )
+
+        permut = [0, 4, 8, 1, 5, 9, 2, 6, 10, 3, 7, 11]
+        KValidation = np.matrix( [[745, 540, 120, -5, 30, 60, -270, -240, 0, -470, -330, -180],
+                                 [540, 1720, 270, -120, 520, 210, -120, -1080, -60, -300, -1160, -420],
+                                 [120, 270, 565, 0, 150, 175, 0, -120, -270, -120, -300, -470],
+                                 [-5, -120, 0, 145, -90, -60, -90, 120, 0, -50, 90, 60],
+                                 [30, 520, 150, -90, 220, 90, 60, -360, -60, 0, -380, -180],
+                                 [60, 210, 175, -60, 90, 145, 0, -120, -90, 0, -180, -230],
+                                 [-270, -120, 0, -90, 60, 0, 180, 0, 0, 180, 60, 0],
+                                 [-240, -1080, -120, 120, -360, -120, 0, 720, 0, 120, 720, 240],
+                                 [0, -60, -270, 0, -60, -90, 0, 0, 180, 0, 120, 180],
+                                 [-470, -300, -120, -50, 0, 0, 180, 120, 0, 340, 180, 120],
+                                 [-330, -1160, -300, 90, -380, -180, 60, 720, 120, 180, 820, 360],
+                                 [-180, -420, -470, 60, -180, -230, 0, 240, 180, 120, 360, 520]])
+
 
     else :
-        raise()
+        raise
 
 
     #CompureVolume(mesh)
-#    print("----------------------- K -------------------------")
-#    print(K)
     space = LagrangeSpaceGeo
     from BasicTools.FE.DofNumbering import ComputeDofNumbering
     numbering = ComputeDofNumbering(mesh,space)
@@ -292,245 +311,56 @@ def CheckIntegrityKF(case, sdim,nmesh=1):
 
     from sympy import pprint
     from sympy import Symbol
-    #init_session()
-#    print(space)
 
     u = GetField("u",sdim)
     ut = GetTestField("u",sdim)
 
-#    print(u)
-#    print(u.shape)
-#
-#    print("-----------------")
-#    pprint(u)
-#    pprint(Gradient(u,sdim=sdim))
-#    pprint(Strain(u,sdim=sdim))
-#    pprint(ToVoigtEpsilon(Strain(u,sdim)))
-
-
-
-#    print(K)
-
-    #weak = 3.*ut[1]
-    #weak = 3*u[0].diff(Symbol("x"))* ut[1].diff(Symbol("x"))
     weak = ToVoigtEpsilon(Strain(u,sdim)).T*K*ToVoigtEpsilon(Strain(ut,sdim))
-    #from sympy.matrices import Matrix
-    #+ Matrix([alpha*ut[0]])#f.T*ut*alpha
-
-    #ener = Matrix([alpha*Tt[0]])#f.T*ut*alpha
-    #+f.diff(PhysicalSpace[0]).T*ut
-    #ener = f[0]*u.T*ut
-    pprint(weak)
-    print(weak)
-
-
 
     wf = SymWeakToNumWeak(weak)
-    print(wf)
 
     rwf = wf.GetRightPart(dofs)
-#    print([str(r) for r in rwf.form])
 
     lwf = wf.GetLeftPart(dofs)
-#    print([str(r) for r in lwf.form])
-#
-#    print("lwf")
-#    print(lwf)
-#    print("rwf")
-#    print(rwf)
 
     import numpy as np
 
-    #alpha = GetConstant("alpha")
 
     constants = {}
     fields  = {}
-    #f0 = Field("f_0",mesh,space,numbering)
-    #f0.Allocate(1)
-    #fields["f0"] = f0
 
-#    print(mesh)
     import time
     startt = time.time()
-    print("lwf")
-    print(lwf)
-    print(mesh)
-    Kinteg,F = Integrate(mesh=mesh,wform=lwf, tag=(str(case)+"D"), constants=constants, fields=fields, dofs=dofs,spaces=spaces,numbering=numberings)
+
+
+    Kinteg,F = Integrate(mesh=mesh,wform=lwf, tag=(str(edim)+"D"), constants=constants, fields=fields, dofs=dofs,spaces=spaces,numbering=numberings)
     stopt = time.time() - startt
-    print(F)
 
-#    print("!-!-!-!-!-!-!-!-!-!-!")
+    KK = Kinteg.todense()
+    if permut is not None:
+        KK = KK[:,permut][permut,:]
 
-
-#    if sdim ==2 and case ==2:
-#        name = EN.Triangle_3
-#        domain = mesh.GetElementsOfType(name)
-#        geoSpace = LagrangeSpaceGeo[name]
-#        #construction of the Bmatrix for the triangle
-#        p,w =  LagrangeP1[EN.geoSupport[name]]
-#        geoSpace.SetIntegrationRule(p,w)
-#        xcoor = mesh.nodes[domain.connectivity[0],:]
-#        Jinv, Jdet = geoSpace.GetJackAndDetI(0,xcoor)
-#        Nfder =  np.array([geoSpace.valdNdxi[0].T, geoSpace.valdNdeta[0].T])
-#        #print(Nfder)
-#        BxByBz = np.dot(Jinv,Nfder)/Jdet
-#        #print(BxByBz)
-#        B = np.matrix([[BxByBz[0][0], 0 ,BxByBz[0][1],0,BxByBz[0][2],0 ],
-#               [0, BxByBz[1][0], 0 ,BxByBz[1][1],0,BxByBz[1][2]],
-#               #[BxByBz[1][0]/2,BxByBz[0][0]/2, BxByBz[1][1] /2,BxByBz[0][1]/2,BxByBz[1][2]/2,BxByBz[0][2]/2 ],
-#               [BxByBz[1][0],BxByBz[0][0], BxByBz[1][1],BxByBz[0][1],BxByBz[1][2],BxByBz[0][2]],
-#               ])
-#        t = 1
-#        A = 3.
-#        print("+++++****************++++++++++")
-#        print(t)
-#        print("A")
-#        print(A)
-#        print(B)
-#        print(K)
-#        print("B.T*K*B")
-#        print(B.T*K*B)
-#        Kref = t*A*B.T*K*B
-        #print(Kref)
-        #error = np.sum(abs(Kinteg.todense()[:,[0,4,1,5,2,6,3,7]][[0,4,1,5,2,6,3,7],:] -Kref))
-        #print(error)
-        #if error  >1e-15 :
-        #    pass
-        #    raise ("error")
-
-
-
-
-#    print("---------------------------------time : "),
-#    print(stopt)
-    #print(F)
-    #print("KintegOriginal")
-    #print(Kinteg.todense())
-
-    if sdim ==1 and case ==1:
-        KK = Kinteg.todense()
-        KValidation = (E*A/L)*np.matrix([[1, -1],[-1, 1]])
-    elif sdim ==2 and case ==1:
-        KK = Kinteg.todense()[:,[0,2,1,3]][[0,2,1,3],:]
-        KValidation = np.matrix([[36,48,-36,-48],
-                                 [48,64,-48,-64],
-                                 [-36,-48,36,48],
-                                 [-48,-64,48,64]])
-    elif sdim ==3 and case ==1:
-        KK = Kinteg.todense()[:,[0,2,4,1,3,5]][[0,2,4,1,3,5],:]
-        KValidation = np.matrix([[40,60,120,-40,-60,-120],
-                                 [60,90,180,-60,-90,-180],
-                                 [120,180,360,-120,-180,-360],
-                                 [-40,-60,-120,40,60,120],
-                                 [-60,-90,-180,60,90,180],
-                                 [-120,-180,-360,120,180,360]])
-
-    elif sdim ==1 and case ==2:
-        KK = Kinteg.todense()
-        KValidation = np.matrix([[0.5, -0.5],[-0.5, 0.5]])
-    elif sdim ==3 and case == 2 and nmesh == 1 :
-        KK = Kinteg.todense()
-        KValidation = np.matrix([[0.5, -0.5],[-0.5, 0.5]])
-
-    elif sdim ==2 and case == 2 and nmesh == 1 :
-        if mesh.GetNumberOfElements() ==1:
-            ind =[0,3,1,4,2,5]
-            name = EN.Triangle_3
-            domain = mesh.GetElementsOfType(name)
-            geoSpace = LagrangeSpaceGeo[name]
-            #construction of the Bmatrix for the triangle
-            p,w =  LagrangeP1[EN.geoSupport[name]]
-            geoSpace.SetIntegrationRule(p,w)
-            xcoor = mesh.nodes[domain.connectivity[0],:]
-            Jack, Jdet, Jinv = geoSpace.GetJackAndDetI(0,xcoor)
-            Nfder =  np.array([geoSpace.valdNdxi[0].T, geoSpace.valdNdeta[0].T])
-            BxByBz = np.dot(Jinv,Nfder)/Jdet
-
-            B = np.matrix([[BxByBz[0][0], 0 ,BxByBz[0][1],0,BxByBz[0][2],0 ],
-               [0, BxByBz[1][0], 0 ,BxByBz[1][1],0,BxByBz[1][2]],
-               #[BxByBz[1][0]/2,BxByBz[0][0]/2, BxByBz[1][1] /2,BxByBz[0][1]/2,BxByBz[1][2]/2,BxByBz[0][2]/2 ],
-               [BxByBz[1][0],BxByBz[0][0], BxByBz[1][1],BxByBz[0][1],BxByBz[1][2],BxByBz[0][2]],
-               ])
-            t = 1
-            A = 3.
-            KValidation = t*A*B.T*K*B
-#            print("Jinv")
-#            print(Jinv)
-#            print("Jdet")
-#            print(Jdet)
-#            print("B")
-#            print(B)*6
-        else:
-            #ind =[0,4,2,6,3,7,1,5]
-            ind =[0,4,1,5,3,7,2,6]
-
-            KValidation = np.matrix([[0.9833333333333333333,-0.5, -.45, .2, 0 ,0,-0.5333333333333333333, 0.3],
-                                [-0.5,1.4,.3,-1.2,0,0,.2,-.2],
-                                [-0.45,.3,0.9833333333333333333,0,-0.5333333333333333333,0.2,0,-0.5],
-                                [.2,-1.2,0,1.4,.3,-.2,-0.5,0],
-                                [0,0,-0.5333333333333333333,.3,0.983333333333333333,-0.5,-0.45,.2],
-                                [0,0,0.2,-0.2,-0.5,1.4,.3,-1.2],
-                                [-0.5333333333333333333,0.2,0.0,-0.5,-0.45,0.3,0.9833333333333333333,0],
-                                [0.3,-0.2,-0.5,0,0.2,-1.2,0,1.4]       ])
-        #                             ^^^
-        #attention il y a un erreur dans le pdf  (ce termet est possitive dans le pdf)
-        KK = Kinteg.todense()[:,ind][ind,:]
-        #print(KK)
-        np.set_printoptions(threshold=np.nan)
-
-
-    elif sdim ==2 and case == 2 and nmesh == 2 :
-        KK = Kinteg.todense()[:,[0,3,1,4,2,5]][[0,3,1,4,2,5],:]
-        KValidation = np.matrix([[11,5,-10,-2,-1,-3],
-                                 [5,11,2,10,-7,-21],
-                                 [-10,2,44,-20,-34,18],
-                                 [-2,10,-20,44,22,-54],
-                                 [-1,-7,-34,22,35,-15],
-                                 [-3,-21,18,-54,-15,75]])
-
-    elif sdim == 3 and case == 2 and nmesh == 1 :
-        KK = Kinteg.todense()[:,[0,3,6,1,4,7,2,5,8]][[0,3,6,1,4,7,2,5,8],:]
-
-    elif sdim == 3 and case == 3  :
-        libtozsetnum = [None]*(3*8)
-        libtozsetnum[slice(0,None,3)] =  np.arange(0,8)
-        libtozsetnum[slice(1,None,3)] =  np.arange(0,8)+8
-        libtozsetnum[slice(2,None,3)] =  np.arange(0,8)+2*8
-
-        KK = Kinteg.todense()[:,libtozsetnum][libtozsetnum,:]
-        from scipy.io import mmread
-        print(KK)
-        KValidation = mmread("/scratch/fcasenave/partage/For_Felipe/0_Zmatrix_1_0").todense()
-        #np.set_printoptions(threshold=np.nan)
-    else:
-        raise
-
-#
-    print("K Validation")
-    print(KValidation)
-    print("K Calcul")
-    print(KK)
-    print((case,sdim,nmesh))
     error = np.sum(abs(KK-KValidation))/(np.sum(abs(KK))  )
 
+    if error > 1e-14 or error is np.nan:
 
-    print("ERROR : "),
-    print(error)
+          print((edim,sdim,testCase))
+          print("K Validation")
+          print(KValidation)
+          print("K Calcul")
+          print(KK)
 
-    if error > 1e-14:
+          print("ERROR : "),
+          print(error)
+
           print(KK-KValidation)
           print(numbering)
+
           raise
-    raise
+
     return "ok"
 
-
-
-
 def CompureVolume(mesh):
-
-    import BasicTools.FE.Elements.SymElement as SE
-    import BasicTools.FE.ElementNames as EN
 
     from BasicTools.FE.DofNumbering import ComputeDofNumbering
     numbering = ComputeDofNumbering(mesh,LagrangeSpaceGeo)
@@ -544,9 +374,6 @@ def CompureVolume(mesh):
     from BasicTools.FE.WeakForm import GetTestField
     from BasicTools.FE.WeakForm import SymWeakToNumWeak
 
-    from sympy import pprint
-    #init_session()
-#    print(LagrangeSpaceGeo)
 
     T = GetField("T",1)
     F = GetField("F",1)
@@ -578,28 +405,46 @@ def CompureVolume(mesh):
 
 
 def CheckIntegrity(GUI=False):
+    global UseCpp
+
+    UseCpp = False
+    if CheckIntegrityNormalFlux(GUI).lower() != "ok":
+        return "Not ok in the Normal Calculation"
+    UseCpp = True
     if CheckIntegrityNormalFlux(GUI).lower() != "ok":
         return "Not ok in the Normal Calculation"
 
     print("Normal Calculation OK")
-    problems = [#(3,3,1), # hexa in 3D
-                #(2,3,1), # quad in 3D
-                #(2,3,2), # tri in 3D
-                (2,2,2), # triangles in 2D http://www.unm.edu/~bgreen/ME360/2D%20Triangular%20Elements.pdf
-                (2,2,1), # triangles in 2D
-                (1,3,1), # bar , espace 3D
-                (1,2,1), # bar , espace 2D
-                (1,1,1), # bar , espace 1d
+
+    problems = [ (1,1,"A bars 1D"),
+                 (1,2,"A bars 2D"),
+                 (1,3,"A bars 3D"),
+                 (2,2,"A Triangles in 2D"),
+                 (2,2,"B Triangle in 2D"),
+                 #(2,3,"A Triangle in 3D"),
+                 (3,3,"A tet in 3D"),
+
                 ]
     import time
     startt = time.time()
 
-    for c,d,m in problems:
+    for ed,sd,m in problems:
         print("*-"*80)
         print("*-"*80)
-        print((c,d,m))
-        if CheckIntegrityKF(case=c,sdim = d,nmesh=m).lower() !=  "ok":
-            return "not ok"
+        print((ed,sd,m))
+
+        UseCpp = False
+        print(" --- python  integration --")
+        if CheckIntegrityKF(edim=ed,sdim = sd,testCase=m).lower() !=  "ok":
+            return "not ok python "
+        else :
+            print(" --- python  integration -- OK ")
+        print(" --- cpp integration --")
+        UseCpp = True
+        if CheckIntegrityKF(edim=ed,sdim = sd,testCase=m).lower() !=  "ok":
+            return "not ok cpp"
+        else:
+            print(" --- cpp integration -- OK")
 
     stopt = time.time() - startt
     print("Total time : ")
@@ -609,4 +454,6 @@ def CheckIntegrity(GUI=False):
     return "ok"
 
 if __name__ == '__main__':
+    print("Start")# pragma: no cover
     print(CheckIntegrity(False))# pragma: no cover
+    print("Stop")# pragma: no cover
