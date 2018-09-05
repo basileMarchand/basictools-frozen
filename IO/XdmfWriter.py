@@ -145,6 +145,7 @@ class XdmfWriter(WriterBase):
         self.__binarycpt = 0;
         self.__binfilecounter = 0
         self.__keepXmlFileInSaneState = True;
+        self.__parafac__ = False
 
         #set to off is you what to put the time at the end of the temporal grid
         #keep this option True to be compatible with the XMDF3 reader of Paraview
@@ -185,6 +186,10 @@ class XdmfWriter(WriterBase):
         self.__path  = os.path.abspath(os.path.dirname(fileName));
         self.binfilecounter = 0
         self.NewBinaryFilename()
+
+    def SetParafac(self,val = True):
+        self.SetMultidomain(val)
+        self.__parafac__ = val
 
     def NewBinaryFilename(self):
 
@@ -303,6 +308,13 @@ class XdmfWriter(WriterBase):
             self.filePointer.seek(filepos)
 
     def __WriteGeoAndTopo(self,baseMeshObject):
+
+        if self.__parafac__:
+            if "ParafacDims" in baseMeshObject.props:
+                self.filePointer.write('    <Information Name="Dims" Value="'+str(baseMeshObject.props["ParafacDims"])+'" /> \n')
+                for i in range(baseMeshObject.props["ParafacDims"]):
+                    self.filePointer.write('    <Information Name="Dim'+str(i)+'" Value="'+baseMeshObject.props["ParafacDim"+str(i)]+'" /> \n')
+
         if baseMeshObject.IsConstantRectilinear() :
             origin = baseMeshObject.GetOrigin()
             spacing = baseMeshObject.GetSpacing()
@@ -892,7 +904,7 @@ def CheckIntegrity(GUI=False):
 
     writer.Close()
     if GUI :
-        from BasicTools.Actions.OpenInParaview import OpenInParaView
+        from BasicTools.Actions.OpenInParaView import OpenInParaView
         OpenInParaView(filename = tempdir+'testdirectTwoDomains.xdmf')
 
 
@@ -911,9 +923,44 @@ def CheckIntegrity(GUI=False):
     writer.Close()
 
     if GUI:
-        from BasicTools.Actions.OpenInParaview import OpenInParaView
+        from BasicTools.Actions.OpenInParaView import OpenInParaView
         OpenInParaView(filename = tempdir+'testdirectTwoDomainsTwoSteps.xdmf')
 
+
+    writer = XdmfWriter()
+    writer.SetFileName(None)
+    writer.SetXmlSizeLimit(0)
+    writer.SetBinary(True)
+    writer.SetMultidomain()
+    writer.SetParafac(True)
+    writer.Open(filename=tempdir+'parafac.pxdmf');
+    from BasicTools.FE.UnstructuredMeshTools import  CreateMeshFromConstantRectilinearMesh as CMFCRM
+
+    from BasicTools.FE.UnstructuredMeshTools import  CreateUniformMeshOfBars
+
+    mesh1D = CreateUniformMeshOfBars(2,5,10)
+    mesh1D.props['ParafacDims'] = 1
+    mesh1D.props['ParafacDim0'] = "T"
+
+    cmesh2D = ConstantRectilinearMesh(2)
+    cmesh2D.SetDimensions([4,4])
+    mesh2D = CMFCRM(cmesh2D)
+    mesh2D.props['ParafacDims'] = 2
+    mesh2D.props['ParafacDim0'] = "Px"
+    mesh2D.props['ParafacDim1'] = "Py"
+
+    cmesh3D = ConstantRectilinearMesh(3)
+    cmesh3D.SetDimensions([8,8,8])
+    mesh3D = CMFCRM(cmesh3D)
+
+    writer.Write(mesh1D)
+    writer.Write(mesh2D)
+    writer.Write(mesh3D)
+    writer.Close()
+
+    if GUI :
+        from BasicTools.Actions.OpenInParaView import OpenInParaView
+        OpenInParaView(filename = tempdir+'parafac.pxdmf')
 
 
 
