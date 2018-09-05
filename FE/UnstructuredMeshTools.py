@@ -5,6 +5,14 @@ from BasicTools.FE.UnstructuredMesh import UnstructuredMesh
 import BasicTools.FE.ElementNames as ElementNames
 import BasicTools.Helpers.BaseOutputObject as BaseOutputObject
 
+def CreateUniformMeshOfBars(pmin,pmax,npoints):
+    points = np.empty((npoints,3))
+    points[:,0] = np.linspace(pmin,pmax,npoints)
+    bars = np.empty((npoints-1,2))
+    bars[:,0] = np.arange(npoints-1)
+    bars[:,1] = np.arange(1,npoints)
+    return CreateMeshOf(points,bars,elemName = ElementNames.Bar_2 )
+
 def CreateMeshOfTriangles(points,tris):
     return CreateMeshOf(points,tris,elemName = ElementNames.Triangle_3 )
 
