@@ -258,18 +258,19 @@ class WormholeClient(WormholeBase):
 
 def CheckIntegrity():
 
-
-   testport = 12349
+   import time
+   testport = GetAnFreePortNumber()
 
    import threading
    try:
-
      def runServer():
          print("(s) Starting Server Side")
          WormholeServer(testport,dry=False)
      TT = threading.Thread(target=runServer )
-     TT.start()
 
+     TT.start()
+     print("(c) Starting Client Side")
+     time.sleep(1.)
 
      client = WormholeClient()
      client.Connect(testport)
@@ -277,9 +278,10 @@ def CheckIntegrity():
      client.RemoteExec("Hola += 3")
      newhola = client.RetrieveData("Hola")
      client.Exit()
-
+     print("Done")
      if newhola == 8:
          return 'ok'
+     return "Not ok"
    except:
      TT.join(0)
      return "Not OK"
@@ -334,7 +336,7 @@ if __name__ == '__main__':
     t.start()
     import time
 
-    time.sleep(0.1)
+    time.sleep(1)
 
     RunClient(testport)
 

@@ -22,6 +22,9 @@ class GeoSupport(object):
         """Overrides the default implementation (unnecessary in Python 3)"""
         return not self.__eq__(other)
 
+    def __hash__(self):
+        return id(self.name)
+
 #GeoEntities = [
 #        GeoSupport(("point",1)),   #0
 #        GeoSupport(("bar"  ,1)),   #1

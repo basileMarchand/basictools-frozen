@@ -4,6 +4,7 @@ import numpy as np
 from sympy.matrices import Matrix
 from sympy import Symbol,Function
 from sympy import pprint
+from sympy.core.containers import Tuple
 
 space = Matrix([Symbol('x'),Symbol('y'), Symbol("z")])
 testcharacter = "'"
@@ -248,9 +249,17 @@ def ConverTermToProd(arg):
     from sympy.core.function import Derivative
     if type(arg) == Derivative:
         t = PyWeakTerm()
-        t.derDegree = 1
+
         t.fieldName = str(arg.args[0].func)
-        t.derCoordName = str(arg.args[1])
+        #Python 3
+        t.derDegree = 1
+        if Tuple == type(arg.args[1]):
+            #sympy 1.2
+            t.derCoordName = str(arg.args[1][0])
+        else:
+            #sympy 1.1.1
+            t.derCoordName = str(arg.args[1])
+
         sn = [ str(c) for c in space]
         t.derCoordIndex_ =  sn.index(t.derCoordName)
         return t
