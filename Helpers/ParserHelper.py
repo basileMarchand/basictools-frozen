@@ -90,10 +90,17 @@ def ReadProperties(data, props ,obj,typeConversion=True):
            theSetter = getattr( obj, "Set"+prop[0].upper()+ str(prop[1:]), None)
            if theSetter is None:
               #print(obj.__dict__)
-              if typeConversion:
-                  obj.__dict__[prop] = Read(data[prop],obj.__dict__[prop])
-              else:
-                  obj.__dict__[prop] = data[prop]
+              #conversion only if the target type is different of None
+              try:
+                  if typeConversion and (obj.__dict__[prop] is not None) :
+                      obj.__dict__[prop] = Read(data[prop],obj.__dict__[prop])
+                  else:
+                      obj.__dict__[prop] = data[prop]
+              except:
+                  print(obj )
+                  print(prop)
+                  print(data)
+                  raise (Exception("Error setting  '"+str(prop)+"'" ) )
            else:
               theSetter(data[prop])
     except KeyError as e:
