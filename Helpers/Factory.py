@@ -46,7 +46,7 @@ class Factory(BaseOutputObject):
         cls._Catalog[name] = (classtype,constructor)
 
     @classmethod
-    def Create(cls,name,ops=None):
+    def Create(cls,name,ops=None,propertiesAssign=True):
 
         res = None
         if name in cls._Catalog:
@@ -59,7 +59,8 @@ class Factory(BaseOutputObject):
                    print(classType)
                    print("Error creating class (" +name+ "):" + str(classType) + ". ")
                    raise(e)
-               PH.ReadProperties(ops, ops, res)
+               if propertiesAssign:
+                   PH.ReadProperties(ops, ops, res)
            else:
                res = classConstructor(ops)
            return res
