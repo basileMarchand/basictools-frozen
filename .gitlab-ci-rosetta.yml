@@ -1,0 +1,37 @@
+variables:    
+    GIT_SSL_NO_VERIFY: "1"
+    MYPROJECT : './BasicTools'
+
+stages:
+    - doc
+    - build
+    - test
+    - coverage
+
+build:
+    stage: build
+    tags:
+        - myproject
+    script:
+        - module load python/2.7.12_Anaconda
+	- export PYTHONPATH=$PWD:$PYTHONPATH
+	   
+
+test:
+    stage: test
+    tags:
+        - myproject
+    script:
+        - module load python/2.7.12_Anaconda
+        - export PYTHONPATH=$PWD:$PYTHONPATH
+        - python BasicTools/Helpers/Tests.py
+
+
+coverage:
+    stage: coverage
+    tags:
+        - myproject
+    script:
+        - module load python/2.7.12_Anaconda
+        - export PYTHONPATH=$PWD:$PYTHONPATH
+        - python BasicTools/Helpers/Tests.py -c
