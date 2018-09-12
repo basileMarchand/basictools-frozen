@@ -1,6 +1,6 @@
 variables:    
     GIT_SSL_NO_VERIFY: "1"
-    MYPROJECT : './BasicTools'
+    MYPROJECT : 'BasicTools'
 
 stages:
     - doc
@@ -13,9 +13,10 @@ build:
     tags:
         - myproject
     script:
-        - module load python/2.7.12_Anaconda
-	- export PYTHONPATH=$PWD:$PYTHONPATH
-	   
+        - module load python/2.7.12_Anaconda eigen/3.3.4 mkl
+        - export PYTHONPATH=$PWD:$PYTHONPATH
+        - python BasicTools/setup.py build_ext --inplace
+   
 
 test:
     stage: test
@@ -24,7 +25,17 @@ test:
     script:
         - module load python/2.7.12_Anaconda
         - export PYTHONPATH=$PWD:$PYTHONPATH
-        - python BasicTools/Helpers/Tests.py
+        - python BasicTools/Helpers/Tests.py -e ${MYPROJECT}
+
+testFull:
+    stage: test
+    tags:
+        - myproject
+    script:
+        - module load python/2.7.12_Anaconda
+        - export PYTHONPATH=$PWD:$PYTHONPATH
+        - python BasicTools/Helpers/Tests.py -e ${MYPROJECT} -f
+
 
 
 coverage:
@@ -34,4 +45,4 @@ coverage:
     script:
         - module load python/2.7.12_Anaconda
         - export PYTHONPATH=$PWD:$PYTHONPATH
-        - python BasicTools/Helpers/Tests.py -c
+        - python BasicTools/Helpers/Tests.py -e ${MYPROJECT} -c
