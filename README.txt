@@ -31,9 +31,9 @@ The page for the bug repports and more:
 
 3) INSTALLATION
 
-    to compile the c++ sources run command in the root directory
+    to compile the c++ sources run command in the parent directory of BasicTools
 
-     > python setup.py build_ext --inplace
+     > python BasicTools/setup.py build_ext --inplace
 
 
 4) NOTES FOR CONTRIBUTORS
