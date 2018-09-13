@@ -15,6 +15,7 @@ Test_Help_String = """
 python  Tests.py -c -f -s -e <extraModules> -m <moduleFilter>
 options :
     -c    To activate coverage and generate a html report
+          -cb (coverage with browser and local file index.html generated)
     -f    Full output for all the test
     -s    Stop at first error
     -e    To test extra Modules (-e can be repeated)
@@ -99,10 +100,11 @@ class TestTempDir(object):
 
 def __RunAndCheck(lis,bp,stopAtFirstError,dryrun,profiling):# pragma: no cover
 
+    res = {}
     from BasicTools.Helpers.TextFormatHelper import TFormat
     import sys
 
-    res = {}
+
     for name in lis:
         bp.Print(TFormat.InBlue(TFormat.Center( "Running Test " +name ,width=80 ) ))
         if lis[name] is None:
@@ -215,33 +217,27 @@ def __tryImport(noduleName,bp,stopAtFirstError):# pragma: no cover
     except:
         print("Error loading module '" + noduleName +"'")
         print("This module will not be tested ")
-        
+
         sys.stdout.flush()
         sys.stderr.flush()
         bp.Print( "Unexpected Error:" + str(sys.exc_info()[0]) )
         traceback.print_exc(file=bp.stdout_)
-            
+
         if(stopAtFirstError): raise
     return tocheck
 
 
-def TestAll(modulestotreat=['ALL'], fulloutput=False, stopAtFirstError= False, coverage= False, extraToolsBoxs= None,dryrun=False,profiling=False) :# pragma: no cover
+def TestAll(modulestotreat=['ALL'], fulloutput=False, stopAtFirstError= False, coverage= False, extraToolsBoxs= None,dryrun=False,profiling=False,browser = False) :# pragma: no cover
 
     print("")
-    print("modulestotreat   : ",end="")
-    print(modulestotreat)
-    print("fulloutput       : ",end="")
-    print(fulloutput)
-    print("stopAtFirstError : ",end="")
-    print(stopAtFirstError)
-    print("coverage         : ",end="")
-    print(coverage)
-    print("profiling        : ",end="")
-    print(profiling)
-    print("extraToolsBoxs: ",end="")
-    print(extraToolsBoxs)
-    print("dryrun: ",end="")
-    print(dryrun)
+    print("modulestotreat   : " + str(modulestotreat))
+    print("fulloutput       : " + str(fulloutput) )
+    print("stopAtFirstError : " + str(stopAtFirstError))
+    print("coverage         : " + str(coverage))
+    print("browser          : " + str(browser))
+    print("profiling        : " + str(profiling))
+    print("extraToolsBoxs   : " + str(extraToolsBoxs))
+    print("dryrun           : " + str(dryrun))
 
 
     cov = None
@@ -267,7 +263,7 @@ def TestAll(modulestotreat=['ALL'], fulloutput=False, stopAtFirstError= False, c
                 tocheck.update(__tryImport(tool,bp,stopAtFirstError))
 
 
-   
+
         if not fulloutput:
             bp.ToSink()
             bp.Print("Sending all the output of the tests to sink")
@@ -279,7 +275,7 @@ def TestAll(modulestotreat=['ALL'], fulloutput=False, stopAtFirstError= False, c
             #bp.Print(str(filtered))
             tocheck = filtered
 
-        __RunAndCheck(tocheck,bp,stopAtFirstError,dryrun,profiling);
+        res = __RunAndCheck(tocheck,bp,stopAtFirstError,dryrun,profiling);
 
         #bp.Restore()
         #now the restore is done automaticaly
@@ -290,20 +286,25 @@ def TestAll(modulestotreat=['ALL'], fulloutput=False, stopAtFirstError= False, c
         cov.save()
 
         # create a temp file
-        tempdir = TestTempDir.GetTempPath()
+        if browser:
+            tempdir = TestTempDir.GetTempPath()
+        else:
+            tempdir = "./"
+
         ss = [ ("*"+k.split(".")[-1]+"*") for k in tocheck ]
         cov.html_report(directory = tempdir, include=ss  ,title="Coverage report of "+ " and ".join(extraToolsBoxs) )
-        import webbrowser
-        import os
-        print('Coverage Report in ')
-        print(tempdir +"index.html")
+        print('Coverage Report in : ' + tempdir +"index.html")
         print(cov.report(show_missing=False))
-        webbrowser.open(tempdir+"index.html")
+        if browser:
+          import webbrowser
+          webbrowser.open(tempdir+"index.html")
+
 
     stop_time = time.time()
     bp.Print( "Total Time : %.3f seconds " %  (stop_time -start_time ))
 
     print("--- End Test ---")
+    return res
 
 def CheckIntegrity():
     TestTempDir().GetTempPath()
@@ -313,7 +314,7 @@ def CheckIntegrity():
 if __name__ == '__main__':# pragma: no cover
     import sys, getopt
     if len(sys.argv) == 1:
-        TestAll(modulestotreat=['ALL'],extraToolsBoxs= ["BasicTools"], fulloutput=False,coverage=False)# pragma: no cover
+        res = TestAll(modulestotreat=['ALL'],extraToolsBoxs= ["BasicTools"], fulloutput=False,coverage=False)# pragma: no cover
     else:
       try:
           opts, args = getopt.getopt(sys.argv[1:],"hcfsdpe:m:")
@@ -329,6 +330,7 @@ if __name__ == '__main__':# pragma: no cover
       modulestotreat=[]
       dryrun = False
       profiling = False
+      browser = False
 
 
 
@@ -338,6 +340,10 @@ if __name__ == '__main__':# pragma: no cover
              sys.exit()
          elif opt in ("-c"):
             coverage = True
+            browser = False
+         elif opt in ("-cb"):
+            coverage = True
+            browser = True
          elif opt in ("-f"):
             fulloutput = True
          elif opt in ("-s"):
@@ -357,14 +363,19 @@ if __name__ == '__main__':# pragma: no cover
       if len(extraToolsBoxs) == 0:
          extraToolsBoxs.append("BasicTools")
 
-
-      TestAll(  modulestotreat=modulestotreat,
+      res = TestAll(  modulestotreat=modulestotreat,
                 coverage=coverage,
                 fulloutput=fulloutput,
                 stopAtFirstError= stopAtFirstError,
                 extraToolsBoxs=extraToolsBoxs,
                 dryrun = dryrun,
-                profiling  =profiling)
+                profiling  =profiling,
+                browser = browser)
+    errors = { x:y  for x,y in res.items() if y.lower() != "ok"}
+    oks = { x:y  for x,y in res.items() if y.lower() == "ok"}
+    #print(errors)
+    #print(len(errors))
+    sys.exit(len(errors))
 
 
 

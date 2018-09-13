@@ -8,6 +8,23 @@ stages:
     - test
     - coverage
 
+
+doc:
+    stage: doc
+    tags:
+        - myproject
+    script:
+        - module load python/2.7.12_Anaconda eigen/3.3.4 mkl zset
+        - export PYTHONPATH=$PWD:$PYTHONPATH
+        - mkdir public
+        - cd BasicTools/doc
+        - make html
+        - mv _build/html ../../public
+    artifacts:
+        paths:
+            - public
+
+
 build:
     stage: build
     tags:
@@ -45,4 +62,9 @@ coverage:
     script:
         - module load python/2.7.12_Anaconda
         - export PYTHONPATH=$PWD:$PYTHONPATH
-        - python BasicTools/Helpers/Tests.py -e ${MYPROJECT} -c
+        - python BasicTools/Helpers/Tests.py -e ${MYPROJECT} -c 
+        - mkdir -p public/coverage
+        - mv index.html ../public/coverage/.
+    artifacts:
+        paths:
+            - public
