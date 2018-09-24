@@ -145,10 +145,9 @@ def Divergence(arg,dim=3):
 def Gradient(arg,sdim=3):
     shape = arg.shape[0]
     res = [[0]*shape for i in range(sdim)]
-
     for s in range(shape):
         for d in range(sdim):
-            res[s][d] = arg[s].diff(space[d])
+            res[d][s] = arg[s].diff(space[d])
     return Matrix(res)
 
 def Strain(arg ,sdim=3):
