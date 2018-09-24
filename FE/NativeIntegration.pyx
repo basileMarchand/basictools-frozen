@@ -5,7 +5,7 @@ import numpy as np
 
 from BasicTools.FE.Fields.NodalField import NodalField
 from BasicTools.FE.WeakForm import testcharacter
-import BasicTools.FE.ElementNames as EN
+import BasicTools.Containers.ElementNames as EN
 #from BasicTools.FE.WeakFormNumerical cimport PyWeakForm
 cimport BasicTools.FE.WeakFormNumerical as WFN
 cimport BasicTools.FE.WeakFormNumericalWrapper as WFNW

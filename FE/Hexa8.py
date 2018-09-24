@@ -6,7 +6,7 @@ import numpy as np
 import BasicTools.FE.MaterialHelp as MH
 from BasicTools.FE.FElement import FElement
 from BasicTools.FE.FemHelp import Integral
-import BasicTools.FE.ElementNames as ElementsNames
+import BasicTools.Containers.ElementNames as ElementsNames
 
 class Hexa8(FElement):
     def __init__(self):

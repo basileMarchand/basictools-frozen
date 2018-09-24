@@ -72,7 +72,7 @@ def WriteMesh(filename,outmesh,binary=False):# pragma: no cover
 
 def PopulateMeshFromVtkAndWriteMesh(filename, vtkobject):# pragma: no cover
 
-    from BasicTools.FE.UnstructuredMeshTools import VtkToMesh
+    from BasicTools.Containers.UnstructuredMeshTools import VtkToMesh
     mesh = VtkToMesh(vtkobject)
 
     WriteMesh(filename,mesh)

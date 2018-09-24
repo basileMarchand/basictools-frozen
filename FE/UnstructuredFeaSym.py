@@ -106,8 +106,8 @@ def CheckIntegrity(GUI=False):
 
     problem.SetSpaceToLagrange()
 
-    from BasicTools.FE.UnstructuredMeshTools import CreateMeshFromConstantRectilinearMesh
-    import BasicTools.FE.ConstantRectilinearMesh as ConstantRectilinearMesh
+    from BasicTools.Containers.UnstructuredMeshTools import CreateMeshFromConstantRectilinearMesh
+    import BasicTools.Containers.ConstantRectilinearMesh as ConstantRectilinearMesh
 
     nx = 11; ny = 12; nz = 13;
     CRMesh = ConstantRectilinearMesh.ConstantRectilinearMesh()
@@ -116,7 +116,7 @@ def CheckIntegrity(GUI=False):
     CRMesh.SetOrigin([0, 0, 0]);
 
     mesh = CreateMeshFromConstantRectilinearMesh(CRMesh)
-    from BasicTools.FE.UnstructuredMeshTools import ComputeSkin
+    from BasicTools.Containers.UnstructuredMeshTools import ComputeSkin
     ComputeSkin(mesh,inplace=True)
 
     # add tags to generate X1
@@ -154,7 +154,7 @@ def CheckIntegrity(GUI=False):
             op0.applyOnElements(mesh,el,i)
             op1.applyOnElements(mesh,el,i)
 
-    import BasicTools.FE.ElementNames as EN
+    import BasicTools.Containers.ElementNames as EN
     hexs = mesh.GetElementsOfType(EN.Hexaedron_8)
     hexs.GetTag("3D").SetIds(range(hexs.GetNumberOfElements()))
 
@@ -189,7 +189,7 @@ def CheckIntegrity(GUI=False):
 
     from BasicTools.FE.LinearSolver import LinearProblem
     """
-    import BasicTools.FE.ElementNames  as EN
+    import BasicTools.Containers.ElementNames  as EN
     dirichletids = mesh.GetElementsOfType(EN.Quadrangle_4).tags["Z0"].GetIds()
     dirichletdof = np.sort(np.unique(numbering[EN.Quadrangle_4][dirichletids,:].flatten() ))
     dirichletdofs = np.concatenate((dirichletdof,dirichletdof+numbering["size"], dirichletdof+2*numbering["size"]))

@@ -3,10 +3,12 @@ __author__ = "Felipe Bordeu"
 
 import numpy as np
 
+import BasicTools.Containers.ElementNames as ElementsNames
+
 from BasicTools.FE.FElement import FElement
 from BasicTools.FE.FemHelp import Integral
 import BasicTools.FE.MaterialHelp as MH
-import BasicTools.FE.ElementNames as ElementsNames
+
 
 class Quad4Rectangle(FElement):
     def __init__(self):

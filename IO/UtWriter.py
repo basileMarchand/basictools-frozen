@@ -11,7 +11,7 @@ from BasicTools.IO.WriterBase import WriterBase as WriterBase
 import BasicTools.IO.GeofWriter as GW
 from BasicTools.IO.GeofWriter import GeofName as GeofName
 from BasicTools.IO.GeofReader import nbIntegrationsPoints as nbIntegrationsPoints
-import BasicTools.FE.UnstructuredMeshTools as UnstructuredMeshTools
+import BasicTools.Containers.UnstructuredMeshTools as UnstructuredMeshTools
 
 
 class UtWriter(WriterBase):
@@ -157,7 +157,7 @@ class UtWriter(WriterBase):
                 data_integ[count0:count0+nbPtIntPerElement[l]] = field[k,nbPtIntPerElement[l]*m:nbPtIntPerElement[l]*m+nbPtIntPerElement[l]]
                 count0 += nbPtIntPerElement[l]
           data_integ.astype(np.float32).byteswap().tofile(integFile)
-          del field; del data_integ  
+          del field; del data_integ
 
         __string = str(int(timeSequenceStep[0]))+" "+str(int(timeSequenceStep[1]))+" "+str(int(timeSequenceStep[2]))+" "+str(int(timeSequenceStep[3]))+" "+str(timeSequenceStep[4])+"\n"
 
@@ -167,7 +167,7 @@ class UtWriter(WriterBase):
 
 
     def Write(self, writeGeof, geofName = None, skipCtnod = False):
-        
+
         nodeFile, ctnodFile, integFile = self.InitWrite(writeGeof, geofName, skipCtnod)
 
         if self.NnodeVar > 0:
@@ -207,10 +207,10 @@ class UtWriter(WriterBase):
                   data_integ[count0:count0+nbPtIntPerElement[l]] = field[k,nbPtIntPerElement[l]*m:nbPtIntPerElement[l]*m+nbPtIntPerElement[l]]
                   count0 += nbPtIntPerElement[l]
           data_integ.astype(np.float32).byteswap().tofile(integFile)
-          del field; del data_integ  
+          del field; del data_integ
 
         __string = ""
-        for i in range(self.Ntime):    
+        for i in range(self.Ntime):
             __string += str(int(self.timeSequence[i,0]))+" "+str(int(self.timeSequence[i,1]))+" "+str(int(self.timeSequence[i,2]))+" "+str(int(self.timeSequence[i,3]))+" "+str(self.timeSequence[i,4])+"\n"
 
         with open(self.folder+self.name+".ut", "a") as f:
@@ -269,9 +269,9 @@ def CheckIntegrity():
 
     import BasicTools.IO.GeofReader as GR
     mymesh = GR.ReadGeof(fileName=BasicToolsTestData.GetTestDataPath() + "UtExample/cube.geof")
-  
+
     ##################################
-    # EXEMPLE SYNTAXE DU WRITER  
+    # EXEMPLE SYNTAXE DU WRITER
     import BasicTools.IO.UtWriter as UW
     UtW = UW.UtWriter()
     UtW.SetName("toto")
@@ -281,7 +281,7 @@ def CheckIntegrity():
     UtW.AttachSequence(timeSequence)
     UtW.Write(writeGeof=True)
     ##################################
-    
+
     print(UtW)
 
     print("Temp directory =", tempdir)

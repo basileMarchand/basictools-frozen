@@ -3,7 +3,7 @@
 import numpy as np
 
 __author__ = "Felipe Bordeu"
-import BasicTools.FE.UnstructuredMesh  as UM
+import BasicTools.Containers.UnstructuredMesh  as UM
 
 def ReadResult(nbNodes, fileName=None, string=None):
 

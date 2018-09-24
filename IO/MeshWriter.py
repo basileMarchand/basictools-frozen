@@ -4,9 +4,9 @@ import struct
 import numpy as np
 __author__ = "Felipe Bordeu"
 
-from BasicTools.FE.MeshBase import Tag as Tag
+from BasicTools.Containers.MeshBase import Tag as Tag
 from BasicTools.IO.WriterBase import WriterBase as WriterBase
-import BasicTools.FE.ElementNames as EN
+import BasicTools.Containers.ElementNames as EN
 
 
 from BasicTools.IO.MeshTools import BinaryNumber,ASCIIName, ASCIITags
@@ -439,8 +439,8 @@ class MeshWriter(WriterBase):
 #        celtags = meshObject.GetNamesOfCellTags()
 
         if meshObject.IsConstantRectilinear():
-            import BasicTools.FE.ElementNames
-            elements = [ BasicTools.FE.ElementNames.Hexaedron_8 ]
+            import BasicTools.Containers.ElementNames
+            elements = [ BasicTools.Containers.ElementNames.Hexaedron_8 ]
         else:
             elements = meshObject.elements
 #        tagcounter = 2
@@ -551,7 +551,7 @@ class MeshWriter(WriterBase):
         #self.filePointer.write("End\n")
 
 def CheckIntegrity():
-    import BasicTools.FE.UnstructuredMesh as UM
+    import BasicTools.Containers.UnstructuredMesh as UM
 
     from BasicTools.Helpers.Tests import TestTempDir
 

@@ -2,7 +2,7 @@
 import numpy as np
 
 __author__ = "Felipe Bordeu"
-import BasicTools.FE.ElementNames as EN
+import BasicTools.Containers.ElementNames as EN
 from BasicTools.IO.ReaderBase import ReaderBase
 
 
@@ -65,7 +65,7 @@ class StlReader(ReaderBase):
         self.readFormat = "rb"
         self.StartReading()
 
-        import BasicTools.FE.UnstructuredMesh as UM
+        import BasicTools.Containers.UnstructuredMesh as UM
 
         header = self.readData(80,np.int8)
         try:
@@ -106,7 +106,7 @@ class StlReader(ReaderBase):
         self.StartReading()
 
 
-        import BasicTools.FE.UnstructuredMesh as UM
+        import BasicTools.Containers.UnstructuredMesh as UM
 
         resUM = UM.UnstructuredMesh()
 

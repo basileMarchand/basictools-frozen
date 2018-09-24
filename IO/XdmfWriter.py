@@ -3,9 +3,13 @@ import numpy as np
 import os
 
 __author__ = "Felipe Bordeu"
+
 from BasicTools.Helpers.TextFormatHelper import TFormat
+
+import BasicTools.Containers.ElementNames as EN
+
 from BasicTools.IO.WriterBase import WriterBase as WriterBase
-import BasicTools.FE.ElementNames as EN
+
 
 def ArrayToString(data):
     return " ".join(str(x) for x in data)
@@ -720,7 +724,7 @@ class XdmfWriter(WriterBase):
 
 def WriteTest(tempdir,Temporal, Binary):
 
-    from BasicTools.FE.ConstantRectilinearMesh import ConstantRectilinearMesh
+    from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearMesh
 
     myMesh = ConstantRectilinearMesh()
     myMesh.SetDimensions([2,3,4]);
@@ -744,7 +748,7 @@ def WriteTest(tempdir,Temporal, Binary):
 
 def WriteTestAppend(tempdir,Temporal, Binary):
 
-    from BasicTools.FE.ConstantRectilinearMesh import ConstantRectilinearMesh
+    from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearMesh
 
     myMesh = ConstantRectilinearMesh()
     myMesh.SetDimensions([2,3,4]);
@@ -769,9 +773,9 @@ def WriteTestAppend(tempdir,Temporal, Binary):
 
 def CheckIntegrity(GUI=False):
     from BasicTools.Helpers.Tests import TestTempDir
-    from BasicTools.FE.ConstantRectilinearMesh import ConstantRectilinearMesh
-    import BasicTools.FE.UnstructuredMesh as UM
-    from BasicTools.FE.UnstructuredMeshTools import CreateMeshOfTriangles
+    from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearMesh
+    import BasicTools.Containers.UnstructuredMesh as UM
+    from BasicTools.Containers.UnstructuredMeshTools import CreateMeshOfTriangles
 
     tempdir = TestTempDir.GetTempPath()
 
@@ -934,9 +938,9 @@ def CheckIntegrity(GUI=False):
     writer.SetMultidomain()
     writer.SetParafac(True)
     writer.Open(filename=tempdir+'parafac.pxdmf');
-    from BasicTools.FE.UnstructuredMeshTools import  CreateMeshFromConstantRectilinearMesh as CMFCRM
+    from BasicTools.Containers.UnstructuredMeshTools import  CreateMeshFromConstantRectilinearMesh as CMFCRM
 
-    from BasicTools.FE.UnstructuredMeshTools import  CreateUniformMeshOfBars
+    from BasicTools.Containers.UnstructuredMeshTools import  CreateUniformMeshOfBars
 
     mesh1D = CreateUniformMeshOfBars(2,5,10)
     mesh1D.props['ParafacDims'] = 1

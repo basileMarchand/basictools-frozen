@@ -6,7 +6,7 @@ from __future__ import print_function
 import numpy as np
 __author__ = "Felipe Bordeu"
 
-import BasicTools.FE.ElementNames as EN
+import BasicTools.Containers.ElementNames as EN
 
 OdbName = {}
 OdbName[EN.Tetrahedron_4] = 'C3D4'
@@ -245,7 +245,7 @@ WormholeServer(""" +str(port) +""",dry=False)
     pOdb.close()
 
 def CheckIntegrity():
-    import BasicTools.FE.UnstructuredMesh as UM
+    import BasicTools.Containers.UnstructuredMesh as UM
 
     from BasicTools.Helpers.Tests import TestTempDir
 

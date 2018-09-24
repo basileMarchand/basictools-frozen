@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 __author__ = "Felipe Bordeu"
-import BasicTools.FE.ElementNames as ElementNames
+import BasicTools.Containers.ElementNames as ElementNames
 
 
 def ReadMesh(filename,out=None):# pragma: no cover
@@ -59,7 +59,7 @@ def ReadMesh(filename,out=None):# pragma: no cover
 
 def ReadMeshAndPopulateVtkObject(filename, vtkobject= None,TagsAsFields=False):# pragma: no cover
     mesh = ReadMesh(filename)
-    from BasicTools.FE.UnstructuredMeshTools import MeshToVtk
+    from BasicTools.Containers.UnstructuredMeshTools import MeshToVtk
     return MeshToVtk(mesh, vtkobject,TagsAsFields=TagsAsFields)
 
 

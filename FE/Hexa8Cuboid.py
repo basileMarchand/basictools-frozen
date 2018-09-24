@@ -3,9 +3,11 @@ __author__ = "Felipe Bordeu"
 
 import numpy as np
 
+import BasicTools.Containers.ElementNames as ElementsNames
+
 import BasicTools.FE.MaterialHelp as MH
 from BasicTools.FE.FElement import FElement
-import BasicTools.FE.ElementNames as ElementsNames
+
 
 class Hexa8Cuboid(FElement):
     def __init__(self):

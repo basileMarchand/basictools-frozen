@@ -3,7 +3,8 @@ __author__ = "Felipe Bordeu"
 
 import math
 import numpy as np
-import BasicTools.FE.ElementNames as ElementsNames
+
+import BasicTools.Containers.ElementNames as ElementsNames
 
 IntegrationRules = {}
 

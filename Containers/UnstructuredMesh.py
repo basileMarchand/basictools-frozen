@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 
-from BasicTools.FE.MeshBase import MeshBase
-from BasicTools.FE.MeshBase import Tag
-from BasicTools.FE.MeshBase import Tags
-import BasicTools.FE.ElementNames as ElementNames
+
+import BasicTools.Containers.ElementNames as ElementNames
+from BasicTools.Containers.MeshBase import MeshBase
+from BasicTools.Containers.MeshBase import Tag
+from BasicTools.Containers.MeshBase import Tags
+
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 
 AllElements = object()
@@ -88,7 +90,7 @@ class ElementsContainer(BaseOutputObject):
     def DeleteElementsById(self,ids):
         mask = np.ones(self.GetNumberOfElements(),dtype=np.bool)
         mask[ids] = False
-        from BasicTools.FE.UnstructuredMeshTools import ExtractElementsByMask
+        from BasicTools.Containers.UnstructuredMeshTools import ExtractElementsByMask
         return  ExtractElementsByMask(self,mask)
 
         self.connectivity = self.connectivity[mask,:]
@@ -308,8 +310,8 @@ class UnstructuredMesh(MeshBase):
         return res
 
 def CheckIntegrity():
-    from BasicTools.FE.UnstructuredMeshTools import CreateMeshOfTriangles
-    from BasicTools.FE.UnstructuredMeshTools import CreateMeshFromConstantRectilinearMesh
+    from BasicTools.Containers.UnstructuredMeshTools import CreateMeshOfTriangles
+    from BasicTools.Containers.UnstructuredMeshTools import CreateMeshFromConstantRectilinearMesh
 
     res = CreateMeshOfTriangles([[0,0,0],[1,2,3],[0,1,0]], [[0,1,2]])
 

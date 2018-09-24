@@ -3,7 +3,7 @@ __author__ = "Felipe Bordeu"
 
 import numpy as np
 
-from BasicTools.FE.MeshBase import MeshBase
+from BasicTools.Containers.MeshBase import MeshBase
 
 class StructuredMesh(MeshBase):
 

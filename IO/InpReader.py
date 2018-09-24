@@ -5,7 +5,7 @@
 import numpy as np
 
 __author__ = "Felipe Bordeu"
-import BasicTools.FE.ElementNames as EN
+import BasicTools.Containers.ElementNames as EN
 import BasicTools.FE.ProblemData as ProblemData
 
 
@@ -44,7 +44,7 @@ def ReadLine(string):
 
 
 def ReadInp(fileName=None,string=None):
-    import BasicTools.FE.UnstructuredMesh as UM
+    import BasicTools.Containers.UnstructuredMesh as UM
 
     if fileName is not None:
         string = open(fileName, 'r')

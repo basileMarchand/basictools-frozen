@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
-from BasicTools.FE.Spaces.SymSpace import SymSpaceBase
-import BasicTools.FE.ElementNames as EN
-from sympy.matrices import Matrix
+
 import numpy as np
+from sympy.matrices import Matrix
+import BasicTools.Containers.ElementNames as EN
+from BasicTools.FE.Spaces.SymSpace import SymSpaceBase
 
 
 class TriSpaceBase(SymSpaceBase):

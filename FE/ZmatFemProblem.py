@@ -223,7 +223,7 @@ ddsddeNew = pyumat.umat(stress=stress,statev=statev,ddsdde=ddsdde,sse=sse,spd=sp
         create(self.var_int)
         create(self.var_aux)
         create(self.var_extra)
-        
+
 
 
     def GetDofsForElementTag(self,tagname,dof=None):
@@ -408,7 +408,7 @@ ddsddeNew = pyumat.umat(stress=stress,statev=statev,ddsdde=ddsdde,sse=sse,spd=sp
 
     def ElementsIntegral(self,domain,vij,elspace,elnumbering,offset,totaldofs,idstotreat,computeK,F,updateInternals ):
         from BasicTools.FE.IntegrationsRules import LagrangeP1
-        import BasicTools.FE.ElementNames as EN
+        import BasicTools.Containers.ElementNames as EN
 
         p,w =  LagrangeP1[EN.geoSupport[domain.elementType]]
         elspace[0].SetIntegrationRule(p,w)
@@ -503,7 +503,7 @@ def CheckIntegrity(GUI=False)     :
     from BasicTools.Helpers.Tests import TestTempDir
     os.chdir(TestTempDir.GetTempPath())
 
-    from BasicTools.FE.UnstructuredMeshTools import CreateCube
+    from BasicTools.Containers.UnstructuredMeshTools import CreateCube
     nx= 10
     ny= 10
     nz= 10
@@ -535,7 +535,7 @@ def CheckIntegrity(GUI=False)     :
 
 
 
-    import BasicTools.FE.ElementNames as EN
+    import BasicTools.Containers.ElementNames as EN
     prob.CallUmatOnIntegrationPointI(EN.Hexaedron_8,0,0)
 
     nx = 10

@@ -5,8 +5,8 @@
 import numpy as np
 __author__ = "Felipe Bordeu"
 
-import BasicTools.FE.UnstructuredMesh  as UM
-import BasicTools.FE.ElementNames as EN
+import BasicTools.Containers.ElementNames as EN
+import BasicTools.Containers.UnstructuredMesh  as UM
 
 
 gmshNumber = {}

@@ -4,7 +4,9 @@
 import numpy as np
 
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
-from BasicTools.FE.UnstructuredMesh import AllElements
+
+from BasicTools.Containers.UnstructuredMesh import AllElements
+
 from BasicTools.FE.IntegrationsRules import Lagrange as Lagrange
 
 
@@ -17,7 +19,7 @@ class IntegrationPointField(BaseOutputObject):
         pass
     def Allocate(self,mesh,integrationrule,tag=AllElements):
         for name,data in mesh.elements.items():
-            import BasicTools.FE.ElementNames  as EN
+            import BasicTools.Containers.ElementNames  as EN
             #geoEl = EN.geoSupport[name]
             #nbItegPoints = len(integrationrule[geoEl][1])
             nbItegPoints = len(Lagrange(name)[1])
@@ -49,7 +51,7 @@ class IntegrationPointField(BaseOutputObject):
 
 def CheckIntegrity(GUI=False):
     from BasicTools.FE.IntegrationsRules import LagrangeP1
-    from BasicTools.FE.UnstructuredMeshTools import CreateCube
+    from BasicTools.Containers.UnstructuredMeshTools import CreateCube
     mesh = CreateCube([10.,10.,10.],[-1.0,-1.0,-1.0],[2./10, 2./10,2./10])
 
     eps = IntegrationPointField("Epsilon_0")

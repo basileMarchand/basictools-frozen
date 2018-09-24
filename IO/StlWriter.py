@@ -3,7 +3,7 @@ import numpy as np
 __author__ = "Felipe Bordeu"
 
 from BasicTools.IO.WriterBase import WriterBase as WriterBase
-import BasicTools.FE.ElementNames as EN
+import BasicTools.Containers.ElementNames as EN
 
 
 def WriteMeshToStl(filename,mesh, normals= None):

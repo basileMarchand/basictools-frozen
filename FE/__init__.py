@@ -2,23 +2,19 @@
 
 __all__ = [
 'ConstantRectilinearFea',
-'ConstantRectilinearMesh',
-'ElementNames',
 'FeaBase',
 'FElement',
 'FemHelp',
 'Hexa8Cuboid',
 'LinearSolver',
 'MaterialHelp',
-'MeshBase',
+
 'Quad4Rectangle',
 'StructuredMesh',
 'Tri3',
 #'UnstructuredFea',
 'UnstructuredFeaSym',
-'UnstructuredMesh',
 'MeshTools',
-'UnstructuredMeshTools',
 "Spaces",
 "Fields",
 "Behaviours",
@@ -27,6 +23,5 @@ __all__ = [
 "ZmatFemProblem",
 "Integration",
 "WeakForm",
-'Octree'
 ]
 

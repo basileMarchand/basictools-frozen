@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 
-import BasicTools.FE.ElementNames as EN
+import BasicTools.Containers.ElementNames as EN
+
 # Triangle GaussLobato 3 poins
-
-
 
 IntegrationRulesAlmanac = {}
 
@@ -15,8 +14,6 @@ LagrangeP1[EN.GeoTri] = ( 1./6.*np.array([[1., 1.] ,[4., 1.],[ 1. ,4.] ]),
 
 #LagrangeP1[EN.GeoTri] = ( 1./3.*np.array([[1, 1]  ]),
 #                                        np.array([ 0.5 ]))
-
-
 
 p0 = 1./4.
 p1 = 1./6.

@@ -1,9 +1,12 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 
-from BasicTools.FE.UnstructuredMesh import UnstructuredMesh
-import BasicTools.FE.ElementNames as ElementNames
 import BasicTools.Helpers.BaseOutputObject as BaseOutputObject
+
+from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
+import BasicTools.Containers.ElementNames as ElementNames
+
+
 
 def CreateUniformMeshOfBars(pmin,pmax,npoints):
     points = np.empty((npoints,3))
@@ -36,10 +39,10 @@ def CreateMeshOf(points,connectivity,elemName = None,out=None):
     return res
 
 def CreateCube(dimensions=[2,2,2], origin=[-1.0,-1.0,-1.0], spacing=[1.,1.,1.], ofTetras=False):
-    from BasicTools.FE.ConstantRectilinearMesh import ConstantRectilinearMesh
-    from BasicTools.FE.UnstructuredMeshTools import CreateMeshFromConstantRectilinearMesh
-    from BasicTools.FE.UnstructuredMeshTools import ComputeSkin
-    import BasicTools.FE.ElementNames as EN
+    from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearMesh
+    from BasicTools.Containers.UnstructuredMeshTools import CreateMeshFromConstantRectilinearMesh
+    from BasicTools.Containers.UnstructuredMeshTools import ComputeSkin
+    import BasicTools.Containers.ElementNames as EN
 
     myMesh = ConstantRectilinearMesh(dim=3)
     myMesh.SetDimensions(dimensions);
@@ -436,7 +439,7 @@ def CleanDoubleNodes(res, tol = None, nodesToTestMask= None):
 
     elif nodesToTestMask is None :
 
-        from BasicTools.FE.Octree import Octree
+        from BasicTools.Containers.Octree import Octree
         cpt  = 0
 
         Ma = res.boundingMax
@@ -952,266 +955,9 @@ def AddTagPerBody(inmesh):
     return pointsPerBody
 
 
-def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
-
-
-    # From www.vtk;org/wp-content/updloads/2015/04/file-formats.pdf
-
-    vtknumbers = {}
-
-    vtknumbers[ElementNames.Point_1] = 1
-
-    vtknumbers[ElementNames.Bar_2] = 3
-
-    vtknumbers[ElementNames.Triangle_3] = 5
-    vtknumbers[ElementNames.Quadrangle_4] = 9
-    vtknumbers[ElementNames.Tetrahedron_4] = 10
-
-    vtknumbers[ElementNames.Hexaedron_8] = 11
-    vtknumbers[ElementNames.Hexaedron_8] = 12
-    vtknumbers[ElementNames.Wedge_6] = 13
-    vtknumbers[ElementNames.Pyramid_5] = 14
-
-    vtknumbers[ElementNames.Bar_3] = 21
-    vtknumbers[ElementNames.Triangle_6] = 22
-    vtknumbers[ElementNames.Quadrangle_8] = 23
-    vtknumbers[ElementNames.Tetrahedron_10] = 24
-    vtknumbers[ElementNames.Hexaedron_20] = 25
-
-    try:
-        from paraview.vtk import vtkPolyData as vtkPolyData
-        from paraview.vtk import vtkUnstructuredGrid as vtkUnstructuredGrid
-        from paraview.vtk import vtkPoints
-        from paraview.vtk import vtkFloatArray
-        from paraview.vtk import vtkIntArray
-        from paraview.vtk import vtkIdList
-    except :
-        from vtk import vtkPolyData
-        from vtk import vtkUnstructuredGrid
-        from vtk import vtkPoints
-        from vtk import vtkFloatArray
-        from vtk import vtkIntArray
-        from vtk import vtkIdList
-
-    if vtkobject is None:
-
-
-        usePoly = True
-        for  elementsname,elementContainer in mesh.elements.items():
-            if ElementNames.dimension[elementsname] == 3:
-                usePoly = False
-                break
-        if usePoly:
-            output = vtkPolyData()
-        else:
-            output = vtkUnstructuredGrid()
-
-    else:
-        output = vtkobject # pragma: no cover
 
 
 
-    output.Allocate(mesh.GetNumberOfElements())
-    ##copy points
-    pts = vtkPoints()
-    pts.Allocate(mesh.GetNumberOfNodes())
-    if mesh.nodes.shape[1] == 3 :
-        for p in range(mesh.GetNumberOfNodes()):
-            point = mesh.nodes[p,:]
-            pts.InsertNextPoint(point[0],point[1],point[2])
-    else:
-        #2DCase
-        for p in range(mesh.GetNumberOfNodes()):
-            point = mesh.nodes[p,:]
-            pts.InsertNextPoint(point[0],point[1],0.0)
-
-    output.SetPoints(pts)
-
-    if hasattr(mesh,"nodeFields"):
-        for name,data in mesh.nodeFields.items():
-            if data is None:
-                continue
-            #VTK_data = numpy_support.numpy_to_vtk(num_array=np.swapaxes(phi,0,2).ravel(), deep=True, array_type=vtk.VTK_FLOAT)
-            #VTK_data.SetName(name)
-            if np.size(data) != mesh.GetNumberOfNodes() and np.size(data) != 2*mesh.GetNumberOfNodes() and np.size(data) != 3*mesh.GetNumberOfNodes():
-                print("field ("+str(name)+") is not consistent : it has " + str(np.size(data)) +" values and the mesh has " +str(mesh.GetNumberOfNodes())+ " nodes" )
-                raise
-                continue
-
-            pd = vtkFloatArray()
-            pd.SetName(name)
-            if len(data.shape) == 1:
-                pd.SetNumberOfComponents(1)
-            else:
-                pd.SetNumberOfComponents(data.shape[1])
-            pd.SetNumberOfTuples(mesh.GetNumberOfNodes())
-
-            if len(data.shape) > 1:
-              cpt = 0
-              for i in range(mesh.GetNumberOfNodes()):
-                 for j in range(data.shape[1]):
-                    pd.SetValue(cpt, data[i,j])
-                    cpt +=1
-              output.GetPointData().AddArray(pd)
-            else:
-              cpt = 0
-              for i in range(mesh.GetNumberOfNodes()):
-                    pd.SetValue(cpt, data[i])
-                    cpt +=1
-              output.GetPointData().AddArray(pd)
-
-    if TagsAsFields:
-        for tag in mesh.nodesTags:
-            pd = vtkIntArray()
-            pd.SetName(tag.name)
-            pd.SetNumberOfComponents(1)
-            pd.SetNumberOfTuples(mesh.GetNumberOfNodes())
-            pd.FillComponent(0,0);
-
-            for i in tag.GetIds():
-                pd.SetValue(i,1 )
-            output.GetPointData().AddArray(pd)
-
-
-    for elementsname,elementContainer in mesh.elements.items():
-        pointIds = vtkIdList()
-        npe = elementContainer.GetNumberOfNodesPerElement()
-        pointIds.SetNumberOfIds(npe)
-        vtknumber = vtknumbers[elementsname]
-        for e in range(elementContainer.GetNumberOfElements()):
-            for i in range(npe):
-                pointIds.SetId(i,elementContainer.connectivity[e,i])
-            output.InsertNextCell(vtknumber, pointIds)
-
-    if hasattr(mesh,"elemFields"):
-        for name,data in mesh.elemFields.items():
-            if data is None:
-                continue
-
-            if np.size(data) != mesh.GetNumberOfElements() and np.size(data) != 3*mesh.GetNumberOfElements():
-                print("field ("+str(name)+") is not consistent : it has " + str(np.size(data)) +" values and the mesh has " +str(mesh.GetNumberOfElements())+ " elements" )
-                continue
-            pd = vtkFloatArray()
-            pd.SetName(name)
-
-            if len(data.shape) == 1:
-                pd.SetNumberOfComponents(1)
-            else:
-                pd.SetNumberOfComponents(data.shape[1])
-
-            pd.SetNumberOfTuples(mesh.GetNumberOfElements())
-
-            if len(data.shape) > 1:
-              cpt = 0
-              for i in range(mesh.GetNumberOfElements()):
-                 for j in range(data.shape[1]):
-                    pd.SetValue(cpt, data[i,j])
-                    cpt +=1
-            else:
-              cpt = 0
-              for i in range(mesh.GetNumberOfElements()):
-                    pd.SetValue(cpt, data[i])
-                    cpt +=1
-
-            output.GetCellData().AddArray(pd)
-            #output.GetCellData().SetScalars(pd)
-
-    if TagsAsFields:
-        elementTags = mesh.GetNamesOfElemTags()
-        for tagname in elementTags:
-            ids = mesh.GetElementsInTag(tagname)
-            pd = vtkIntArray()
-            pd.SetName(tagname)
-            pd.SetNumberOfComponents(1)
-            pd.SetNumberOfTuples(mesh.GetNumberOfElements())
-            pd.FillComponent(0,0);
-            for i in ids:
-                pd.SetValue(i,1 )
-            output.GetCellData().AddArray(pd)
-
-    return output
-
-def VtkToMesh(vtkmesh, meshobject=None, TagsAsFields=False):
-
-    if meshobject is None:
-        out = UnstructuredMesh()
-    else:
-
-        out = meshobject
-
-    from vtk.util import numpy_support
-    data = vtkmesh.GetPoints().GetData()
-    out.nodes = numpy_support.vtk_to_numpy(data)
-
-    import numpy as np
-
-    out.originalIDNodes = np.arange(out.GetNumberOfNodes())
-    nc = vtkmesh.GetNumberOfCells()
-
-    vtknumbers = {}
-    vtknumbers[3 ] = ElementNames.Bar_2
-    vtknumbers[4 ] = ElementNames.Bar_2
-    vtknumbers[5 ] = ElementNames.Triangle_3
-    vtknumbers[9 ] = ElementNames.Quadrangle_4
-    vtknumbers[11] = ElementNames.Hexaedron_8   #voxel
-    vtknumbers[12] = ElementNames.Hexaedron_8
-    vtknumbers[25] = ElementNames.Hexaedron_20
-    vtknumbers[21] = ElementNames.Bar_3
-    vtknumbers[22] = ElementNames.Triangle_6
-    vtknumbers[10] = ElementNames.Tetrahedron_4
-    vtknumbers[24] = ElementNames.Tetrahedron_10
-
-
-    for i in range(nc):
-        cell= vtkmesh.GetCell(i)
-        ct = cell.GetCellType()
-        et = vtknumbers[ct]
-        nps = cell.GetNumberOfPoints()
-        #polyline case
-        # we have to be careful because we potentialy change the number of
-        # elements in the mesh if we have polylines
-        if ct ==4:
-            for j in range(nps-1):
-                out.GetElementsOfType(et).AddNewElement([cell.GetPointId(j),cell.GetPointId(j+1) ] ,i)
-        else:
-            out.GetElementsOfType(et).AddNewElement([cell.GetPointId(j) for j in range(nps)] ,i)
-    out.PrepareForOutput()
-
-    if vtkmesh.GetPointData().GetNumberOfArrays():
-        for f in range(vtkmesh.GetPointData().GetNumberOfArrays()):
-            data =  vtkmesh.GetPointData().GetArray(f)
-            name = data.GetName()
-            nbcomponnents =  data.GetNumberOfComponents()
-            nbtuples  = data.GetNumberOfTuples()
-
-            field = np.empty((nbtuples,nbcomponnents),dtype=float)
-            cpt =0
-            for i in range(nbtuples):
-                 for j in range(nbcomponnents):
-                    field[i,j] = data.GetValue(cpt)
-                    cpt +=1
-            out.nodeFields[name] = field
-
-    EOIds = out.GetElementsOriginalIDs()
-    EOIds = np.argsort(EOIds)
-    if vtkmesh.GetCellData().GetNumberOfArrays():
-        for f in range(vtkmesh.GetCellData().GetNumberOfArrays()):
-            data =  vtkmesh.GetCellData().GetArray(f)
-            if data is None:
-                continue
-            name = data.GetName()
-            nbcomponnents =  data.GetNumberOfComponents()
-            nbtuples  = data.GetNumberOfTuples()
-
-            field = np.empty((nbtuples,nbcomponnents),dtype=float)
-            cpt =0
-            for i in range(nbtuples):
-                 for j in range(nbcomponnents):
-                    field[EOIds[i],j] = data.GetValue(cpt)
-                    cpt +=1
-            out.elemFields[name] = field
-
-    return out
 
 def DeleteElements(mesh,mask):
     OriginalNumberOfElements = mesh.GetNumberOfElements()
@@ -1589,7 +1335,7 @@ def CheckIntegrity_PointToCellData(GUI = False):
     tag.AddToTag(0)
     tag.AddToTag(1)
     tag.AddToTag(2)
-    import BasicTools.FE.ElementNames as ElementNames
+    import BasicTools.Containers.ElementNames as ElementNames
     elements = myMesh.GetElementsOfType(ElementNames.Bar_2)
     elements.AddNewElement([0,1],3)
     elements.AddNewElement([1,2],4)
@@ -1606,7 +1352,7 @@ def CheckIntegrity_PointToCellData(GUI = False):
 
 
 def CheckIntegrity_ComputeFeatures(GUI =False):
-    from BasicTools.FE.ConstantRectilinearMesh import ConstantRectilinearMesh
+    from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearMesh
 
     myMesh = ConstantRectilinearMesh(dim=3)
     myMesh.SetDimensions([2,3,4]);
@@ -1633,7 +1379,7 @@ def CheckIntegrity_ComputeFeatures(GUI =False):
 
 
 def CheckIntegrity_AddSkin(GUI=False):
-    from BasicTools.FE.ConstantRectilinearMesh import ConstantRectilinearMesh
+    from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearMesh
 
     myMesh = ConstantRectilinearMesh(dim=3)
     myMesh.SetDimensions([2,3,4]);
@@ -1652,7 +1398,7 @@ def CheckIntegrity_AddSkin(GUI=False):
     print(skin)
 
 def CheckIntegrity_ExtractElementsByImplicitZone(GUI=False):
-    from BasicTools.FE.ConstantRectilinearMesh import ConstantRectilinearMesh
+    from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearMesh
 
     myMesh = ConstantRectilinearMesh(dim=3)
     myMesh.SetDimensions([20,30,40]);
@@ -1701,32 +1447,6 @@ def CheckIntegrity_DeleteInternalFaces(GUI=False):
 
 
 
-def CheckIntegrity_VtkToMesh(GUI=False):
-    res = CreateMeshOfTriangles([[0,0,0],[1,0,0],[0,1,0],[0,0,1] ], [[0,1,2],[0,2,3]])
-    res.nodeFields = {"x": res.nodes[:,0], "Pos":res.nodes}
-    res.nodesTags.CreateTag("FirstPoint").AddToTag(0)
-    res.elemFields = {"firstPoint": res.GetElementsOfType(ElementNames.Triangle_3).connectivity[:,0], "conn": res.GetElementsOfType(ElementNames.Triangle_3).connectivity }
-    res.GetElementsOfType(ElementNames.Triangle_3).tags.CreateTag("FirstTriangle").AddToTag(0)
-    sol = MeshToVtk(res,TagsAsFields= True)
-
-    print("CheckIntegrity_VtkToMesh :")
-    print(res)
-    print(VtkToMesh(sol))
-    return 'ok'
-
-def CheckIntegrity_MeshToVtk(GUI=False):
-    res = CreateMeshOfTriangles([[0,0,0],[1,0,0],[0,1,0],[0,0,1] ], [[0,1,2],[0,2,3]])
-    res.nodeFields = {"x": res.nodes[:,0], "Pos":res.nodes}
-    res.nodesTags.CreateTag("FirstPoint").AddToTag(0)
-    res.elemFields = {"firstPoint": res.GetElementsOfType(ElementNames.Triangle_3).connectivity[:,0], "conn": res.GetElementsOfType(ElementNames.Triangle_3).connectivity }
-    res.GetElementsOfType(ElementNames.Triangle_3).tags.CreateTag("FirstTriangle").AddToTag(0)
-    sol = MeshToVtk(res,TagsAsFields= True)
-
-    res = CreateMeshOfTriangles([[0,0],[1,0],[0,1],[1,1] ], [[0,1,2],[2,1,3]])
-
-    sol = MeshToVtk(res )
-    print(sol)
-    return "OK"
 
 
 def CheckIntegrity_CreateMeshOfTriangles(GUI=False):
@@ -1735,7 +1455,7 @@ def CheckIntegrity_CreateMeshOfTriangles(GUI=False):
     return "OK"
 
 def CheckIntegrity_CreateMeshFromConstantRectilinearMesh(GUI=False):
-    from BasicTools.FE.ConstantRectilinearMesh import ConstantRectilinearMesh
+    from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearMesh
 
     myMesh = ConstantRectilinearMesh()
     myMesh.SetDimensions([3,3]);
@@ -1762,7 +1482,7 @@ def CheckIntegrity_QuadToLin(GUI=False):
     tag.AddToTag(1)
     tag.AddToTag(2)
     tag.AddToTag(3)
-    import BasicTools.FE.ElementNames as ElementNames
+    import BasicTools.Containers.ElementNames as ElementNames
 
     elements = myMesh.GetElementsOfType(ElementNames.Tetrahedron_10)
     elements.AddNewElement([0,1,2,3,4,5,6,7,8,9],0)
@@ -1822,7 +1542,7 @@ def CheckIntegrity_GetVolume(GUI=False):
     if vol != (1./6.):
         raise Exception('Error en the calculation of the volumen')# pragma: no cover
 
-    from BasicTools.FE.ConstantRectilinearMesh import ConstantRectilinearMesh
+    from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearMesh
     myMesh = ConstantRectilinearMesh()
     myMesh.SetDimensions([3,3,3]);
     myMesh.SetSpacing([0.5, 0.5,0.5]);
@@ -1935,8 +1655,6 @@ def CheckIntegrity(GUI=False):
     CheckIntegrity_ExtractElementByTags(GUI)
     CheckIntegrity_CleanEmptyTags(GUI)
     CheckIntegrity_AddTagPerBody(GUI)
-    CheckIntegrity_MeshToVtk(GUI)
-    CheckIntegrity_VtkToMesh(GUI)
     CheckIntegrity_GetDualGraph(GUI)
     return "ok"
 

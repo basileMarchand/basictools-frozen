@@ -3,9 +3,9 @@ __author__ = "Felipe Bordeu"
 
 import numpy as np
 
-import BasicTools.FE.UnstructuredMeshTools as UMT
-import BasicTools.FE.ConstantRectilinearMesh as CRM
-import BasicTools.FE.ElementNames as EN
+import BasicTools.Containers.UnstructuredMeshTools as UMT
+import BasicTools.Containers.ConstantRectilinearMesh as CRM
+import BasicTools.Containers.ElementNames as EN
 
 def GetElementsCenters(mesh, dim=None):
 

@@ -3,7 +3,7 @@ import numpy as np
 
 from scipy.sparse import coo_matrix
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
-import BasicTools.FE.ElementNames as EN
+import BasicTools.Containers.ElementNames as EN
 
 from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
 from BasicTools.FE.Fields.NodalField import NodalField
@@ -91,7 +91,7 @@ def IntegrateGeneral( mesh, wform, constants, fields, unkownFields,testFields=No
 
 
 def CheckIntegrityNormalFlux(GUI=False):
-    from BasicTools.FE.UnstructuredMeshTools import CreateMeshOf
+    from BasicTools.Containers.UnstructuredMeshTools import CreateMeshOf
 
     points = [[0,0,0],[1,0,1],[0,1,1] ]
     mesh = CreateMeshOf(points,[[0,1,2]],EN.Triangle_3)
@@ -142,9 +142,9 @@ def CheckIntegrityNormalFlux(GUI=False):
 def CheckIntegrityKF(edim, sdim,testCase):
     from math import sqrt
     import numpy as np
-    from BasicTools.FE.UnstructuredMeshTools import CreateMeshOfTriangles
-    from BasicTools.FE.UnstructuredMeshTools import CreateMeshOf
-    import BasicTools.FE.ElementNames as EN
+    from BasicTools.Containers.UnstructuredMeshTools import CreateMeshOfTriangles
+    from BasicTools.Containers.UnstructuredMeshTools import CreateMeshOf
+    import BasicTools.Containers.ElementNames as EN
     from BasicTools.FE.IntegrationsRules import LagrangeP1
 
     from BasicTools.FE.MaterialHelp import HookeIso
@@ -457,5 +457,5 @@ def CheckIntegrity(GUI=False):
 
 if __name__ == '__main__':
     print("Start")# pragma: no cover
-    print(CheckIntegrity(False))# pragma: no cover
+    print(CheckIntegrity(True))# pragma: no cover
     print("Stop")# pragma: no cover

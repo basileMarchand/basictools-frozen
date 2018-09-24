@@ -6,9 +6,11 @@
 import numpy as np
 
 __author__ = "Felipe Bordeu"
-import BasicTools.FE.UnstructuredMesh as UM
+import BasicTools.Containers.UnstructuredMesh as UM
+import BasicTools.Containers.ElementNames as ElementNames
+
 from BasicTools.IO.ReaderBase import ReaderBase
-import BasicTools.FE.ElementNames as ElementNames
+
 
 
 def ReadFem(fileName=None,string=None):

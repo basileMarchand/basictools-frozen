@@ -413,7 +413,7 @@ def CheckIntegrityThermal3D():
     print('----------------------------  Thermal3D -------------------------------------------------')
 
     from BasicTools.FE.Hexa8Cuboid import Hexa8Cuboid
-    import BasicTools.FE.ConstantRectilinearMesh as CRM
+    import BasicTools.Containers.ConstantRectilinearMesh as CRM
     import BasicTools.IO.XdmfWriter  as XdmfWriter
     import time
     from BasicTools.Helpers.Tests import TestTempDir
@@ -504,7 +504,7 @@ def CheckIntegrityThermal3D():
 def CheckIntegrityDep3D():
 
     import time
-    import BasicTools.FE.ConstantRectilinearMesh as CRM
+    import BasicTools.Containers.ConstantRectilinearMesh as CRM
     import BasicTools.IO.XdmfWriter  as XdmfWriter
 
     from BasicTools.Helpers.Tests import TestTempDir
@@ -567,7 +567,7 @@ def CheckIntegrityDep3D():
         raise   Exception("The value must be 1.00215295")# pragma: no cover
 
 def CheckIntegrityThermal2D():
-    import BasicTools.FE.ConstantRectilinearMesh as CRM
+    import BasicTools.Containers.ConstantRectilinearMesh as CRM
     from BasicTools.FE.Quad4Rectangle import Quad4Rectangle
     import BasicTools.IO.XdmfWriter  as XdmfWriter
     import time
@@ -653,7 +653,7 @@ def CheckIntegrityThermal2D():
 
 def CheckIntegrityDep2D():
 
-    import BasicTools.FE.ConstantRectilinearMesh as CRM
+    import BasicTools.Containers.ConstantRectilinearMesh as CRM
     import BasicTools.IO.XdmfWriter  as XdmfWriter
     import time
     from BasicTools.Helpers.Tests import TestTempDir

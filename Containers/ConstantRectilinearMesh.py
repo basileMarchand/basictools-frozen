@@ -4,10 +4,10 @@ __author__ = "Felipe Bordeu"
 import numpy as np
 from scipy.sparse import coo_matrix
 
-from BasicTools.FE.MeshBase import MeshBase
+from BasicTools.Containers.MeshBase import MeshBase
 from BasicTools.FE.Hexa8Cuboid import Hexa8Cuboid
 from BasicTools.FE.Quad4Rectangle import Quad4Rectangle
-from BasicTools.FE.MeshBase import Tags
+from BasicTools.Containers.MeshBase import Tags
 
 class ConstantRectilinearMesh(MeshBase):
 
@@ -403,13 +403,13 @@ class ConstantRectilinearMesh(MeshBase):
             self.connectivity = np.empty((self.GetNumberOfElements(),2**self.GetDimensionality() ), dtype=np.int)
             for i in range(self.GetNumberOfElements()):
                 self.connectivity[i,:] = self.GetConnectivityForElement(i)
-        from BasicTools.FE.UnstructuredMesh import ElementsContainer as ElementsContainer
-        import BasicTools.FE.ElementNames
+        from BasicTools.Containers.UnstructuredMesh import ElementsContainer as ElementsContainer
+        import BasicTools.Containers.ElementNames as ElementNames
         self.elements = {}
-        self.elements[BasicTools.FE.ElementNames.Hexaedron_8 ] = ElementsContainer(BasicTools.FE.ElementNames.Hexaedron_8)
-        self.elements[BasicTools.FE.ElementNames.Hexaedron_8 ].connectivity = self.connectivity
-        self.elements[BasicTools.FE.ElementNames.Hexaedron_8 ].tags =  self.elemTags
-        self.elements[BasicTools.FE.ElementNames.Hexaedron_8 ].cpt = self.GetNumberOfElements()
+        self.elements[ElementNames.Hexaedron_8 ] = ElementsContainer(ElementNames.Hexaedron_8)
+        self.elements[ElementNames.Hexaedron_8 ].connectivity = self.connectivity
+        self.elements[ElementNames.Hexaedron_8 ].tags =  self.elemTags
+        self.elements[ElementNames.Hexaedron_8 ].cpt = self.GetNumberOfElements()
         return self.connectivity
 
 

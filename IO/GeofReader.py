@@ -6,7 +6,8 @@ import numpy as np
 
 __author__ = "Felipe Bordeu"
 
-import BasicTools.FE.ElementNames as EN
+import BasicTools.Containers.ElementNames as EN
+
 from BasicTools.IO.ReaderBase import ReaderBase
 
 GeofNumber = {}
@@ -324,7 +325,7 @@ class GeofReader(ReaderBase):
 
 
   def Read(self, fileName=None,string=None,out=None,readElset=True,readFaset=True,printNotRead=True):
-    import BasicTools.FE.UnstructuredMesh as UM
+    import BasicTools.Containers.UnstructuredMesh as UM
 
     if fileName is not None:
       self.SetFileName(fileName)
@@ -502,7 +503,7 @@ def CheckIntegrity():
     newFileName = WriteTempFile(filename="GeofFileTest.geof",content=data)
 
 
-    import BasicTools.FE.UnstructuredMesh as UM
+    import BasicTools.Containers.UnstructuredMesh as UM
     res = ReadGeof(fileName=newFileName,out = UM.UnstructuredMesh())
     print(res)
     return 'ok'

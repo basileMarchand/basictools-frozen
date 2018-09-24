@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
-from BasicTools.FE.Spaces.SymSpace import SymSpaceBase
-import BasicTools.FE.ElementNames as EN
-from sympy.matrices import Matrix
+
 import numpy as np
+from sympy.matrices import Matrix
+
+import BasicTools.Containers.ElementNames as EN
+from BasicTools.FE.Spaces.SymSpace import SymSpaceBase
 
 
 class Hexa_P0_Global(SymSpaceBase):
@@ -67,5 +69,8 @@ class Hexa_P1_Lagrange(SymSpaceBase):
                               [ 0, 1, 1]])
         self.Create()
 
-def CheckIntegrity():
+def CheckIntegrity(GUI=False):
     return "ok"
+
+if __name__ == '__main__':
+    print(CheckIntegrity(True))# pragma: no cover

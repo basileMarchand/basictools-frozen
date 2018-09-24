@@ -2,11 +2,13 @@
 """Geof file writer (Zset mesh files)
 
 """
-import numpy as np
 __author__ = "Felipe Bordeu"
 
+import numpy as np
+
+import BasicTools.Containers.ElementNames as EN
+
 from BasicTools.IO.WriterBase import WriterBase as WriterBase
-import BasicTools.FE.ElementNames as EN
 
 GeofName = {}
 GeofSetName= {}
@@ -237,7 +239,7 @@ class GeofWriter(WriterBase):
         self.filePointer.write("***return \n")
 
 def CheckIntegrity():
-    import BasicTools.FE.UnstructuredMesh as UM
+    import BasicTools.Containers.UnstructuredMesh as UM
 
     from BasicTools.Helpers.Tests import TestTempDir
 

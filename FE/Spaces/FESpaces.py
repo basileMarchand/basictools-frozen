@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import BasicTools.FE.ElementNames as EN
+import BasicTools.Containers.ElementNames as EN
 import BasicTools.FE.Spaces.BarSpaces as BarSpaces
 import BasicTools.FE.Spaces.TriSpaces as TriSpaces
 import BasicTools.FE.Spaces.TetSpaces as TetSpaces

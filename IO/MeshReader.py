@@ -3,8 +3,8 @@ import struct
 import numpy as np
 
 __author__ = "Felipe Bordeu"
-import BasicTools.FE.UnstructuredMesh  as UM
-import BasicTools.FE.ElementNames as EN
+import BasicTools.Containers.UnstructuredMesh  as UM
+import BasicTools.Containers.ElementNames as EN
 from BasicTools.IO.ReaderBase import ReaderBase
 
 from BasicTools.IO.MeshTools import ASCIITypes

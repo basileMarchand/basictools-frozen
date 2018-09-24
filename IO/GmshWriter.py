@@ -5,10 +5,10 @@
 import numpy as np
 __author__ = "Felipe Bordeu"
 
+import BasicTools.Containers.ElementNames as EN
 
-from BasicTools.FE.MeshBase import Tag as Tag
+from BasicTools.Containers.MeshBase import Tag as Tag
 from BasicTools.IO.WriterBase import WriterBase as WriterBase
-import BasicTools.FE.ElementNames as EN
 
 gmshName = {}
 gmshName[EN.Bar_2]         = '1'
@@ -98,7 +98,7 @@ class GmshWriter(WriterBase):
         self.filePointer.write("$EndElements\n")
 
 def CheckIntegrity():
-    import BasicTools.FE.UnstructuredMesh as UM
+    import BasicTools.Containers.UnstructuredMesh as UM
 
     from BasicTools.Helpers.Tests import TestTempDir
 

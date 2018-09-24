@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import numpy as np
-import BasicTools.FE.ElementNames as EN
-from  BasicTools.FE.UnstructuredMesh import AllElements
+import BasicTools.Containers.ElementNames as EN
+from  BasicTools.Containers.UnstructuredMesh import AllElements
 
 def Hash(space,j,lconn,name=None,i=None):
     T,n,h = space.dofAttachments[j]
@@ -149,7 +149,7 @@ def NodesPermutation(mesh,per):
 
 
 def CheckIntegrity(GUI=False):
-    from BasicTools.FE.UnstructuredMeshTools import CreateCube
+    from BasicTools.Containers.UnstructuredMeshTools import CreateCube
 
     #res2 = CreateCube([100.,100.,100.],[-1.0,-1.0,-1.0],[2./46, 2./46,2./46])
     res2 = CreateCube([2.,2.,2.],[-1.0,-1.0,-1.0],[2./46, 2./46,2./46])
@@ -175,7 +175,7 @@ def CheckIntegrity(GUI=False):
             print(numbering[name])
 
 
-    import BasicTools.FE.ElementNames as EN
+    import BasicTools.Containers.ElementNames as EN
     print(res2.GetElementsOfType(EN.Quadrangle_4).tags["X1"].GetIds() )
 
     from BasicTools.FE.Spaces.FESpaces import ConstantSpaceGlobal
