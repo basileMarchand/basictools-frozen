@@ -346,7 +346,11 @@ class MeshReader(ReaderBase):
                       cpt +=1
               continue
 
-
+          if key == BKeys["GmfCorners"]:
+              nbCorners = self.readInt32()
+              data = np.fromfile(self.filePointer,dtype=np.int32,count=nbCorners, sep="")
+              res.nodesTags.CreateTag("Corners").SetIds(data-1)
+              continue
 
           # all kind of elements
           if key in BinaryTypes:
@@ -365,7 +369,7 @@ class MeshReader(ReaderBase):
 
               data = np.fromfile(self.filePointer,dtype=dt,count=nbElements, sep="")
 
-              elements.connectivity = data[:]["conn"]-1
+              elements.connectivity = (data[:]["conn"]-1).astype(np.int_)
 
               elements.originalIds = np.arange(globalElementCounter,globalElementCounter+nbElements);
               elements.cpt = nbElements
@@ -388,7 +392,7 @@ class MeshReader(ReaderBase):
 
               continue
 
-          if key == 15:
+          if key == BKeys["GmfRequiredVertices"]:
               tagname = MT.RequiredVertices
               self.PrintVerbose("Reading " + str(tagname) )
               nbentries = self.readInt32()
@@ -417,8 +421,11 @@ class MeshReader(ReaderBase):
                   res.nodeFields["SolAtVertices"+str(i)]  =  data[i]
              continue
 
-          self.PrintVerbose("skiping key : "  + str(key) )
+
+          if key not in [BKeys[x] for x in ["GmfNormals", "GmfNormalAtVertices", "GmfTangents", "GmfTangentAtVertices"] ]:
+              self.PrintVerbose("skiping key : "  + str(key) )
           f.seek(endOfInformation)
+
 
       res.GenerateManufacturedOriginalIDs()
 
