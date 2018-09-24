@@ -7,6 +7,7 @@ from scipy.sparse import coo_matrix
 from BasicTools.FE.MeshBase import MeshBase
 from BasicTools.FE.Hexa8Cuboid import Hexa8Cuboid
 from BasicTools.FE.Quad4Rectangle import Quad4Rectangle
+from BasicTools.FE.MeshBase import Tags
 
 class ConstantRectilinearMesh(MeshBase):
 
@@ -19,12 +20,16 @@ class ConstantRectilinearMesh(MeshBase):
         self.__dimensions = np.ones((dim,),dtype=int)*2;
         self.__origin = np.zeros((dim,) )
         self.__spacing = np.ones((dim,))
-        self.elemTags = {}
+        self.elemTags = Tags()
         self.connectivity = None
         self.nodes = None
 
     def GetNamesOfElemTags(self):
         return self.elemTags.keys()
+
+
+    def GetElementsInTag(self,tagname):
+        return self.elemTags[tagname].GetIds()
 
     def GetSubSuperMesh(self,_newDimensions):
         newDimensions = np.array(_newDimensions,dtype=np.int)
