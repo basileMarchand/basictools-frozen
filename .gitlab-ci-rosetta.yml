@@ -12,7 +12,7 @@ stages:
 doc:
     stage: doc
     tags:
-        - myproject
+        - MSBasicTools
     script:
         - module load python/2.7.12_Anaconda eigen/3.3.4 mkl zset
         - export PYTHONPATH=$PWD:$PYTHONPATH
@@ -28,7 +28,7 @@ doc:
 build:
     stage: build
     tags:
-        - myproject
+        - MSBasicTools
     script:
         - module load python/2.7.12_Anaconda eigen/3.3.4 mkl
         - export PYTHONPATH=$PWD:$PYTHONPATH
@@ -47,7 +47,7 @@ test:
 testFull:
     stage: test
     tags:
-        - myproject
+        - MSBasicTools
     script:
         - module load python/2.7.12_Anaconda
         - export PYTHONPATH=$PWD:$PYTHONPATH
@@ -58,7 +58,7 @@ testFull:
 coverage:
     stage: coverage
     tags:
-        - myproject
+        - MSBasicTools
     script:
         - module load python/2.7.12_Anaconda
         - export PYTHONPATH=$PWD:$PYTHONPATH
