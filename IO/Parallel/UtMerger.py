@@ -48,7 +48,7 @@ class UtMerger(WriterBase):
                 temp2[count].append(int(fil))
               except ValueError:
                 temp2[count].append(fil)
-          count += 1        
+          count += 1
         subdomains = []
         for f in temp2:
           if 'ut' in f and self.name in f:
@@ -89,7 +89,7 @@ class UtMerger(WriterBase):
             reader.time.shape = (1,reader.time.shape[0])
 
         localMesh = GR.ReadGeof(fileName = self.dataFolder+reader.meshfile,readElset=False,readFaset=False,printNotRead=False)
-        
+
         Tag3D(localMesh)
         idstotreat = Return3DElements(localMesh)
 
@@ -161,10 +161,10 @@ class UtMerger(WriterBase):
       #write .ut
       __string = "**meshfile " + os.path.relpath(self.dataFolder, self.outputFolder) + os.sep + cutGeof+"\n"
       with open(self.dataFolder + self.name + "-001.ut", 'r') as inFile:
-        next(inFile)
+        inFile.readline()
         for i in range(3):
           __string += inFile.readline()
-      
+
       with open(self.outputFolder + self.name + ".ut", "w") as outFile:
         outFile.write(__string)
         for timeStep in range(reader.time.shape[0]):

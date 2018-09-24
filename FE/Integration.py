@@ -55,6 +55,8 @@ def IntegrateGeneral( mesh, wform, constants, fields, unkownFields,testFields=No
     integrator.SetIntegrationRule(integrationRuleName)
 
     numberOfVIJ = integrator.ComputeNumberOfVIJ(mesh,tag)
+    if numberOfVIJ == 0:
+        print("Warning!!! System with zero dofs")
 
     vK = np.empty(numberOfVIJ,dtype=np.float)
     iK = np.empty(numberOfVIJ,dtype=np.int)
