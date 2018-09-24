@@ -41,19 +41,21 @@ class Bar_P1_Lagrange(BarSpaceBase):
         self.Create()
 
 # work in progress
-#class Bar_P2_Lagrange(BarSpaceBase):
-#    def __init__(self):
-#        super(Bar_P1_Lagrange,self).__init__()
-#        xi = self.xi
-#        self.symN = Matrix([(1-xi), xi])
-#        self.posN = np.array([[0],
-#                              [1],
-#                              [0.5],])
-#
-#        self.dofAttachments = [("P",0,None),
-#                               ("P",1,None),
-#                               ("C",0,None),]
-#        self.Create()
+class Bar_P2_Lagrange(BarSpaceBase):
+    def __init__(self):
+        super(Bar_P2_Lagrange,self).__init__()
+        xi = self.xi
+        L1 = 1-xi
+        L2 = xi
+        self.symN = Matrix([L1*(2*L1-1),L2*(2*L2-1),4*L1*L2 ])
+        self.posN = np.array([[0],
+                              [1],
+                              [0.5],])
+
+        self.dofAttachments = [("P",0,None),
+                               ("P",1,None),
+                               ("C",0,None),]
+        self.Create()
 
 
 def CheckIntegrity():
