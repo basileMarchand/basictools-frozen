@@ -14,7 +14,7 @@ __all__ = [
 'JsonReader',
 'MeshReader',
 'MeshWriter',
-'OdbWriter',
+#'OdbWriter',
 'PathControler',
 'PickleTools',
 'PostReader',

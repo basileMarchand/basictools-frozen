@@ -44,7 +44,7 @@ def WriteSection(odb, section):
     else:
         raise
 
-def WriteOdb(filename,mesh,PointFields=None,CellFields=None,PointFieldsNames=None,CellFieldsNames=None,  __insubprocess= False, abaqusExec="abaqus"):
+def WriteOdb(filename,mesh,PointFields=None,CellFields=None,PointFieldsNames=None,CellFieldsNames=None,  __insubprocess= False, abaqusExec=None):
 
     if PointFields is None:
         PointFields = [];
@@ -63,6 +63,15 @@ def WriteOdb(filename,mesh,PointFields=None,CellFields=None,PointFieldsNames=Non
 
 #    if GridFieldsNames is None:
 #        GridFieldsNames  = [];
+
+
+    if abaqusExec is None:
+        import os
+        if "ABAQUS_ROOT" in os.environ:
+            abaqusExec = os.environ["ABAQUS_ROOT"]+os.sep+ ".." +os.sep+"Commands"+os.sep+"abq6136"
+        else:
+            abaqusExec = "abaqus"
+
 
     try :
         import abaqusConstants as AC

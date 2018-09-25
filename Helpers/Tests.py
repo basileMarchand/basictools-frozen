@@ -227,7 +227,7 @@ def __tryImport(noduleName,bp,stopAtFirstError):# pragma: no cover
     return tocheck
 
 
-def TestAll(modulestotreat=['ALL'], fulloutput=False, stopAtFirstError= False, coverage= False, extraToolsBoxs= None,dryrun=False,profiling=False,browser = False) :# pragma: no cover
+def TestAll(modulestotreat=['ALL'], fulloutput=False, stopAtFirstError= False, extraToolsBoxs= None,dryrun=False,profiling=False,coverage=None) :# pragma: no cover
 
     print("")
     print("modulestotreat   : " + str(modulestotreat))
@@ -241,11 +241,11 @@ def TestAll(modulestotreat=['ALL'], fulloutput=False, stopAtFirstError= False, c
 
 
     cov = None
-    if coverage :
-       import coverage
+    if coverage["active"]:
+       import coverage as modcoverage
        #ss = [ k for k in lis ]
        #cov = coverage.coverage(source=ss, omit=['pyexpat','*__init__.py'])
-       cov = coverage.coverage(omit=['pyexpat','*__init__.py'])
+       cov = modcoverage.coverage(omit=['pyexpat','*__init__.py'])
        cov.start()
 
     # calls to print, ie import module1
@@ -281,21 +281,22 @@ def TestAll(modulestotreat=['ALL'], fulloutput=False, stopAtFirstError= False, c
         #now the restore is done automaticaly
 
 
-    if coverage :
+    if coverage["active"] :
         cov.stop()
         cov.save()
 
         # create a temp file
-        if browser:
-            tempdir = TestTempDir.GetTempPath()
+        if coverage["localhtml"]:
+            #tempdir = "./"
+            import os
+            tempdir = os.getcwd()
         else:
-            tempdir = "./"
+            tempdir = TestTempDir.GetTempPath()
 
         ss = [ ("*"+k.split(".")[-1]+"*") for k in tocheck ]
         cov.html_report(directory = tempdir, include=ss  ,title="Coverage report of "+ " and ".join(extraToolsBoxs) )
         print('Coverage Report in : ' + tempdir +"index.html")
-        print(cov.report(show_missing=False))
-        if browser:
+        if coverage["lauchBrowser"]:
           import webbrowser
           webbrowser.open(tempdir+"index.html")
 
@@ -314,10 +315,10 @@ def CheckIntegrity():
 if __name__ == '__main__':# pragma: no cover
     import sys, getopt
     if len(sys.argv) == 1:
-        res = TestAll(modulestotreat=['ALL'],extraToolsBoxs= ["BasicTools"], fulloutput=False,coverage=False)# pragma: no cover
+        res = TestAll(modulestotreat=['ALL'],extraToolsBoxs= ["BasicTools"], fulloutput=False,coverage={"active":False})# pragma: no cover
     else:
       try:
-          opts, args = getopt.getopt(sys.argv[1:],"hcfsdpe:m:")
+          opts, args = getopt.getopt(sys.argv[1:],"hcblfsdpe:m:")
       except getopt.GetoptError as e:
           print(e)
           print(Test_Help_String)
@@ -331,18 +332,22 @@ if __name__ == '__main__':# pragma: no cover
       dryrun = False
       profiling = False
       browser = False
-
+      localhtml = False
 
 
       for opt, arg in opts:
+         print(opt)
          if opt == '-h':
              print(Test_Help_String)
              sys.exit()
          elif opt in ("-c"):
             coverage = True
             browser = False
-         elif opt in ("-cb"):
-            coverage = True
+            writehtml = False
+         elif opt in ("-l"):
+            localhtml = True
+            browser = False
+         elif opt in ("-b"):
             browser = True
          elif opt in ("-f"):
             fulloutput = True
@@ -364,13 +369,13 @@ if __name__ == '__main__':# pragma: no cover
          extraToolsBoxs.append("BasicTools")
 
       res = TestAll(  modulestotreat=modulestotreat,
-                coverage=coverage,
+                coverage={"active":coverage,"localhtml":localhtml,"lauchBrowser": browser},
                 fulloutput=fulloutput,
                 stopAtFirstError= stopAtFirstError,
                 extraToolsBoxs=extraToolsBoxs,
                 dryrun = dryrun,
-                profiling  =profiling,
-                browser = browser)
+                profiling  = profiling
+                )
     errors = { x:y  for x,y in res.items() if y.lower() != "ok"}
     oks = { x:y  for x,y in res.items() if y.lower() == "ok"}
     #print(errors)

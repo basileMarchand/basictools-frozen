@@ -6,7 +6,6 @@ stages:
     - doc
     - build
     - test
-    - coverage
 
 
 doc:
@@ -19,10 +18,12 @@ doc:
         - mkdir public
         - cd docs
         - make html
-        - mv _build/html ../public
+        - mv _build/html ../public/doc
     artifacts:
+        name: "Documentation"
         paths:
-            - public
+            - public/doc
+
 
 
 build:
@@ -31,17 +32,23 @@ build:
         - MSBasicTools
     script:
         - module load python/2.7.12_Anaconda eigen/3.3.4 mkl
-        - export PYTHONPATH=$PWD:$PYTHONPATH
         - cd ..
+        - export PYTHONPATH=$PWD:$PYTHONPATH
         - python BasicTools/setup.py build_ext --inplace
+    artifacts:
+        paths:
+          - FE/*.so
 
 
 test:
     stage: test
     tags:
-        - myproject
+        - MSBasicTools
     script:
         - module load python/2.7.12_Anaconda
+        - module load zset
+        - module load abaqus/6.13-6
+        - cd ..
         - export PYTHONPATH=$PWD:$PYTHONPATH
         - python BasicTools/Helpers/Tests.py -e ${MYPROJECT}
 
@@ -51,21 +58,34 @@ testFull:
         - MSBasicTools
     script:
         - module load python/2.7.12_Anaconda
+        - module load zset
+        - module load abaqus/6.13-6
+        - cd ..
         - export PYTHONPATH=$PWD:$PYTHONPATH
-        - python BasicTools/Helpers/Tests.py -e ${MYPROJECT} -f
-
-
+        - python BasicTools/Helpers/Tests.py -e ${MYPROJECT} -f -s
+    when: manual
 
 coverage:
-    stage: coverage
+    stage: test
     tags:
         - MSBasicTools
     script:
         - module load python/2.7.12_Anaconda
-        - export PYTHONPATH=$PWD:$PYTHONPATH
-        - python BasicTools/Helpers/Tests.py -e ${MYPROJECT} -c
+        - module load zset
+        - module load abaqus/6.13-6
+        - export PYTHONPATH=$PWD/../:$PYTHONPATH
         - mkdir -p public/coverage
-        - mv index.html public/coverage/.
+        - cd public/coverage
+        - python ../../Helpers/Tests.py -e ${MYPROJECT} -cl
+        - pwd
+        - dir
+        - cd ../..
+        - dir
+        - cd public
+        - dir
+        - cd coverage
+        - dir
     artifacts:
+        name: "Coverage"
         paths:
-            - public
+            - public/coverage
