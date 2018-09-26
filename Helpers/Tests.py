@@ -289,7 +289,7 @@ def TestAll(modulestotreat=['ALL'], fulloutput=False, stopAtFirstError= False, e
         if coverage["localhtml"]:
             #tempdir = "./"
             import os
-            tempdir = os.getcwd()
+            tempdir = os.getcwd() + os.sep
         else:
             tempdir = TestTempDir.GetTempPath()
 
@@ -376,8 +376,11 @@ if __name__ == '__main__':# pragma: no cover
                 dryrun = dryrun,
                 profiling  = profiling
                 )
-    errors = { x:y  for x,y in res.items() if y.lower() != "ok"}
-    oks = { x:y  for x,y in res.items() if y.lower() == "ok"}
+    errors = { x:y  for x,y in res.items() if str(y).lower() != "ok"}
+    oks = { x:y  for x,y in res.items() if str(y).lower() == "ok"}
+    print("Number of test OK : " + str(len(oks)))
+    print("Number of test KO : " + str(len(errors)))
+    print("Percentage of OK test : " + str(((len(oks)*100.0)/(len(oks)+len(errors))) ) + " %")
     #print(errors)
     #print(len(errors))
     sys.exit(len(errors))

@@ -6,6 +6,8 @@ stages:
     - doc
     - build
     - test
+    - debug
+    - deploy
 
 
 doc:
@@ -52,8 +54,8 @@ test:
         - export PYTHONPATH=$PWD:$PYTHONPATH
         - python BasicTools/Helpers/Tests.py -e ${MYPROJECT}
 
-testFull:
-    stage: test
+test_full_output_stop_at_first_error:
+    stage: debug
     tags:
         - MSBasicTools
     script:
@@ -63,7 +65,8 @@ testFull:
         - cd ..
         - export PYTHONPATH=$PWD:$PYTHONPATH
         - python BasicTools/Helpers/Tests.py -e ${MYPROJECT} -f -s
-    when: manual
+    when: on_failure
+    dependencies: [test]
 
 coverage:
     stage: test
@@ -77,15 +80,18 @@ coverage:
         - mkdir -p public/coverage
         - cd public/coverage
         - python ../../Helpers/Tests.py -e ${MYPROJECT} -cl
-        - pwd
-        - dir
-        - cd ../..
-        - dir
-        - cd public
-        - dir
-        - cd coverage
-        - dir
     artifacts:
         name: "Coverage"
         paths:
             - public/coverage
+
+pages:
+    stage: deploy
+    tags:
+        - MSBasicTools
+    script:
+        - pwd
+    artifacts:
+        name: "WebSite"
+        paths:
+            - public
