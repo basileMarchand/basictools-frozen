@@ -501,19 +501,20 @@ ddsddeNew = pyumat.umat(stress=stress,statev=statev,ddsdde=ddsdde,sse=sse,spd=sp
 def CheckIntegrity(GUI=False)     :
     import os
     from BasicTools.Helpers.Tests import TestTempDir
-    os.chdir(TestTempDir.GetTempPath())
+    from BasicTools.IO.PathControler import TemporalChdir
+    with TemporalChdir(TestTempDir.GetTempPath()):
 
-    from BasicTools.Containers.UnstructuredMeshTools import CreateCube
-    nx= 10
-    ny= 10
-    nz= 10
-    mesh = CreateCube([nx,ny,nz],[0,0,0],[1./(nx-1) ,1./(ny-1) ,1./(nz-1)])
+        from BasicTools.Containers.UnstructuredMeshTools import CreateCube
+        nx= 10
+        ny= 10
+        nz= 10
+        mesh = CreateCube([nx,ny,nz],[0,0,0],[1./(nx-1) ,1./(ny-1) ,1./(nz-1)])
 
-    from BasicTools.FE.Behaviours.ZMatLinearMaterials import GetMaterial
+        from BasicTools.FE.Behaviours.ZMatLinearMaterials import GetMaterial
 
-    props = {"YOUNG":4.e5,"POISSON":0.3}
-    matstring = GetMaterial('Elastic',props)
-    matstring = """
+        props = {"YOUNG":4.e5,"POISSON":0.3}
+        matstring = GetMaterial('Elastic',props)
+        matstring = """
 ***behavior gen_evp
  **elasticity isotropic
    young 2.1e5
@@ -526,72 +527,72 @@ def CheckIntegrity(GUI=False)     :
 #   Q  360.
 #   b   30.
 ***return"""
-    prob = UMatFemProblem()
-    print("init mesh")
-    prob.SetMesh(mesh)
-    print("init material")
-    prob.SetMaterial(string=matstring)
-    prob.AllocateMaterialData()
+        prob = UMatFemProblem()
+        print("init mesh")
+        prob.SetMesh(mesh)
+        print("init material")
+        prob.SetMaterial(string=matstring)
+        prob.AllocateMaterialData()
 
 
 
-    import BasicTools.Containers.ElementNames as EN
-    prob.CallUmatOnIntegrationPointI(EN.Hexaedron_8,0,0)
-
-    nx = 10
-    stran = [None]*nx
-    stress = [None]*nx
-    for i in range(nx):
-        dx = nx*i/100000000.
-        prob.dstrain[0].SetValueAtIP(EN.Hexaedron_8,0,0,dx)
-        prob.dstrain[1].SetValueAtIP(EN.Hexaedron_8,0,0,-dx/3*0)
-        prob.dstrain[2].SetValueAtIP(EN.Hexaedron_8,0,0,-dx/3*0)
+        import BasicTools.Containers.ElementNames as EN
         prob.CallUmatOnIntegrationPointI(EN.Hexaedron_8,0,0)
-        stran[i] = dx
-        stress[i] = prob.flux[0].GetValueAtIP(EN.Hexaedron_8,0,0)
-    import time
-    stime = time.time()
-    k, f = prob.GenerateKF()
-    print(k)
-    print(f)
-    print("time" + str(stime-time.time()) )
 
-    fixedValues = np.zeros(f.shape, dtype=np.float)
-    freeMask = np.ones(f.shape, dtype=np.bool)
+        nx = 10
+        stran = [None]*nx
+        stress = [None]*nx
+        for i in range(nx):
+            dx = nx*i/100000000.
+            prob.dstrain[0].SetValueAtIP(EN.Hexaedron_8,0,0,dx)
+            prob.dstrain[1].SetValueAtIP(EN.Hexaedron_8,0,0,-dx/3*0)
+            prob.dstrain[2].SetValueAtIP(EN.Hexaedron_8,0,0,-dx/3*0)
+            prob.CallUmatOnIntegrationPointI(EN.Hexaedron_8,0,0)
+            stran[i] = dx
+            stress[i] = prob.flux[0].GetValueAtIP(EN.Hexaedron_8,0,0)
+        import time
+        stime = time.time()
+        k, f = prob.GenerateKF()
+        print(k)
+        print(f)
+        print("time" + str(stime-time.time()) )
 
-    block0 = prob.GetDofsForElementTag("X0")
-    print("---")
-    print(block0 )
-    freeMask[block0] = False
-    block1 = prob.GetDofsForElementTag("X1",dof=0)
-    freeMask[block1] = False
-    fixedValues[block1] = 0.1
+        fixedValues = np.zeros(f.shape, dtype=np.float)
+        freeMask = np.ones(f.shape, dtype=np.bool)
 
-    prob.SolveUsing(k,f, fixedValues,freeMask)
+        block0 = prob.GetDofsForElementTag("X0")
+        print("---")
+        print(block0 )
+        freeMask[block0] = False
+        block1 = prob.GetDofsForElementTag("X1",dof=0)
+        freeMask[block1] = False
+        fixedValues[block1] = 0.1
 
-    print("stran  =", stran)
-    print("stress =", stress)
-    if GUI :
-        from BasicTools.Actions.OpenInParaView import OpenInParaView
-        #F = f.view()
-        #F.shape = (3,mesh.GetNumberOfNodes())
-        #F = F.T
-        #mesh.nodeFields["normalflux"] =  F[numbering["permutation"],:]
-        #fixedValues[dofs] = res
-        mesh.nodeFields["solx"] = fixedValues[0:mesh.GetNumberOfNodes()]
-        fixedValues.shape = (3,mesh.GetNumberOfNodes())
-        fixedValues= fixedValues.T
-        mesh.nodeFields["sol"] =  fixedValues;
+        prob.SolveUsing(k,f, fixedValues,freeMask)
 
-        OpenInParaView(mesh)
+        print("stran  =", stran)
+        print("stress =", stress)
+        if GUI :
+            from BasicTools.Actions.OpenInParaView import OpenInParaView
+            #F = f.view()
+            #F.shape = (3,mesh.GetNumberOfNodes())
+            #F = F.T
+            #mesh.nodeFields["normalflux"] =  F[numbering["permutation"],:]
+            #fixedValues[dofs] = res
+            mesh.nodeFields["solx"] = fixedValues[0:mesh.GetNumberOfNodes()]
+            fixedValues.shape = (3,mesh.GetNumberOfNodes())
+            fixedValues= fixedValues.T
+            mesh.nodeFields["sol"] =  fixedValues;
 
-        import matplotlib.pyplot as plt
-        plt.plot(stran,stress)
-        plt.xlabel('strain11')
-        plt.ylabel('stress11')
-        plt.show()
+            OpenInParaView(mesh)
 
-    return "ok"
+            import matplotlib.pyplot as plt
+            plt.plot(stran,stress)
+            plt.xlabel('strain11')
+            plt.ylabel('stress11')
+            plt.show()
+
+        return "ok"
 
 if __name__ == '__main__':
     print(CheckIntegrity(True))#pragma: no cover

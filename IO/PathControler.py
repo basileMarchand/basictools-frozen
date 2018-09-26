@@ -5,6 +5,18 @@ import os
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 from BasicTools.Helpers.Tests import TestTempDir
 
+class TemporalChdir(BaseOutputObject):
+    def __init__(self,targetPath):
+        super(TemporalChdir,self).__init__()
+        self.originalPath = os.getcwd()+os.sep
+        self.targetPath = targetPath
+
+    def __enter__(self):
+        os.chdir(self.targetPath)
+
+    def __exit__(self, type, value, traceback):
+        os.chdir(self.originalPath)
+
 
 class PathControler(BaseOutputObject):
     currentDirectory = os.getcwd()+os.sep
