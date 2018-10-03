@@ -234,7 +234,6 @@ def TestAll(modulestotreat=['ALL'], fulloutput=False, stopAtFirstError= False, e
     print("fulloutput       : " + str(fulloutput) )
     print("stopAtFirstError : " + str(stopAtFirstError))
     print("coverage         : " + str(coverage))
-    print("browser          : " + str(browser))
     print("profiling        : " + str(profiling))
     print("extraToolsBoxs   : " + str(extraToolsBoxs))
     print("dryrun           : " + str(dryrun))
@@ -305,7 +304,59 @@ def TestAll(modulestotreat=['ALL'], fulloutput=False, stopAtFirstError= False, e
     bp.Print( "Total Time : %.3f seconds " %  (stop_time -start_time ))
 
     print("--- End Test ---")
+    #print(tocheck)
+    if len(modulestotreat) == 1 and modulestotreat[0] == "ALL" :
+        #we verified that all thepython files in the repository are tested
+        CheckIfAllThePresentFilesAreTested(extraToolsBoxs,res)
     return res
+
+def CheckIfAllThePresentFilesAreTested(extraToolsBoxs,testedFiles):
+    import os
+
+    pythonPath = os.environ['PYTHONPATH']
+
+    toignore = ['.git',"__pycache__","__init__.py","setup.py"]
+    testedFiles = testedFiles.keys()
+    presentFiles = []
+    for eTB in extraToolsBoxs:
+        path = pythonPath + os.sep + eTB
+        #print(path)
+#    if os.path.isdir("/home/el")
+
+        for dirname, dirnames, filenames in os.walk(path):
+            cleandirname = dirname.replace(pythonPath+os.sep,"").replace(os.sep,".")
+            ##print(cleandirname )
+            #return
+            # print path to all subdirectories first.
+            #for subdirname in dirnames:
+            #    print(os.path.join(dirname, subdirname))
+
+            # print path to all filenames.
+            for filename in filenames:
+                if filename in toignore:
+                    continue
+
+                if len(filename) > 3 and filename[-3:] == ".py":
+                    if len(cleandirname) == 0:
+                        presentFiles.append(filename)
+                    else:
+                        presentFiles.append(cleandirname+"."+filename)
+                    #print(os.path.join(dirname, filename))
+
+            # Advanced usage:
+            # editing the 'dirnames' list will stop os.walk() from recursing into there.
+            for dti in toignore:
+                if dti in dirnames:
+                    dirnames.remove(dti)
+
+    for tf in testedFiles:
+        if (tf+".py") in presentFiles:
+            presentFiles.remove(tf+".py")
+
+    if len(presentFiles) > 0 :
+        print("files Present in the repository but not tested")
+        for i in presentFiles:
+            print(i)
 
 def CheckIntegrity():
     TestTempDir().GetTempPath()
@@ -333,10 +384,10 @@ if __name__ == '__main__':# pragma: no cover
       profiling = False
       browser = False
       localhtml = False
+      tmppath = None
 
 
       for opt, arg in opts:
-         print(opt)
          if opt == '-h':
              print(Test_Help_String)
              sys.exit()
@@ -361,6 +412,11 @@ if __name__ == '__main__':# pragma: no cover
             extraToolsBoxs.append(arg)
          elif opt in ("-m"):
             modulestotreat.append(arg)
+         elif opt in ("-p"):
+            print('Setting temp output directory to ' + arg)
+            TestTempDir.SetTempPath(arg)
+
+
 
       if len(modulestotreat) == 0:
          modulestotreat.append("ALL")
@@ -380,7 +436,11 @@ if __name__ == '__main__':# pragma: no cover
     oks = { x:y  for x,y in res.items() if str(y).lower() == "ok"}
     print("Number of test OK : " + str(len(oks)))
     print("Number of test KO : " + str(len(errors)))
-    print("Percentage of OK test : " + str(((len(oks)*100.0)/(len(oks)+len(errors))) ) + " %")
+    noks = len(oks)
+    nerrors = len(errors)
+    if noks ==  0 and nerrors == 0:
+        noks = 1
+    print("Percentage of OK test : " + str(((noks*100.0)/(noks+nerrors)) ) + " %")
     #print(errors)
     #print(len(errors))
     sys.exit(len(errors))
