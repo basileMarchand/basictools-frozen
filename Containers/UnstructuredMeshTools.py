@@ -170,8 +170,7 @@ def CreateMeshFromConstantRectilinearMesh(CRM, ofTetras= False,out=None):
             elements.connectivity[elem*6+5,:] = conn[per[[0,6,4,5]]];
 
     else:
-        CRM.GenerateFullConnectivity()
-        elements.connectivity  =  CRM.connectivity
+        elements.connectivity = CRM.GenerateFullConnectivity()
 
     elements.originalIds = np.arange(0,elements.GetNumberOfElements(),dtype=np.int)
 
@@ -1457,7 +1456,7 @@ def CheckIntegrity_CreateMeshOfTriangles(GUI=False):
 def CheckIntegrity_CreateMeshFromConstantRectilinearMesh(GUI=False):
     from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearMesh
 
-    myMesh = ConstantRectilinearMesh()
+    myMesh = ConstantRectilinearMesh(2)
     myMesh.SetDimensions([3,3]);
     myMesh.SetSpacing([1, 1]);
     print(myMesh)

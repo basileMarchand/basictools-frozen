@@ -9,9 +9,6 @@ import BasicTools.Containers.ElementNames as EN
 
 def GetElementsCenters(mesh, dim=None):
 
-    if mesh.IsConstantRectilinear():
-        mesh.GenerateFullConnectivity()
-
     if dim is None:
         res = np.empty((mesh.GetNumberOfElements(),3) )
     else:

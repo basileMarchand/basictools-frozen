@@ -2,12 +2,44 @@
 __author__ = "Felipe Bordeu"
 
 import numpy as np
-from scipy.sparse import coo_matrix
 
 from BasicTools.Containers.MeshBase import MeshBase
 from BasicTools.FE.Hexa8Cuboid import Hexa8Cuboid
 from BasicTools.FE.Quad4Rectangle import Quad4Rectangle
 from BasicTools.Containers.MeshBase import Tags
+from BasicTools.Containers.UnstructuredMesh import ElementsContainer as ElementsContainer
+from BasicTools.Containers.UnstructuredMesh import AllElements as AllElements
+import BasicTools.Containers.ElementNames as ElementNames
+from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
+
+
+class ConstantRectilinearElementContainer(BaseOutputObject):
+    def __init__(self,caller):
+        super(ConstantRectilinearElementContainer,self).__init__(None)
+        self.caller = caller
+        self.tags = self.caller.elemTags
+        self._connectivity = None
+
+        if caller.GetDimensionality() == 3:
+            self.elementType = ElementNames.Hexaedron_8
+        elif caller.GetDimensionality() == 2 :
+            self.elementType = ElementNames.Quadrangle_4
+        else:
+             raise(Exception("cant build a mesh of this dimensionality"))
+
+    @property
+    def connectivity(self):
+        if(self._connectivity is None):
+            self._connectivity = np.empty((self.caller.GetNumberOfElements(),2**self.caller.GetDimensionality() ), dtype=np.int)
+            for i in range(self.caller.GetNumberOfElements()):
+                self._connectivity[i,:] = self.caller.GetConnectivityForElement(i)
+        return self._connectivity
+
+    def GetNumberOfElements(self):
+        return self.caller.GetNumberOfElements()
+
+    def GetNumberOfNodesPerElement(self):
+        return 2*self.caller.GetDimensionality()
 
 class ConstantRectilinearMesh(MeshBase):
 
@@ -21,93 +53,20 @@ class ConstantRectilinearMesh(MeshBase):
         self.__origin = np.zeros((dim,) )
         self.__spacing = np.ones((dim,))
         self.elemTags = Tags()
-        self.connectivity = None
         self.nodes = None
+        self.elements = AllElements()
+        structElements = ConstantRectilinearElementContainer(self)
+        self.elements[structElements.elementType] = structElements
 
     def GetNamesOfElemTags(self):
         return self.elemTags.keys()
 
-
     def GetElementsInTag(self,tagname):
         return self.elemTags[tagname].GetIds()
-
-    def GetSubSuperMesh(self,_newDimensions):
-        newDimensions = np.array(_newDimensions,dtype=np.int)
-        ## to generate meshes with more or less elements in each directions
-        ## return the mesh
-        newSpac = ((self.__dimensions-1)*self.__spacing).astype(float)/(newDimensions-1)
-
-        res = type(self)(dim=self.GetDimensionality())
-        res.SetSpacing(newSpac)
-        res.SetDimensions(newDimensions)
-        res.SetOrigin(self.GetOrigin())
-
-        return res
-
-    def GetNodeTrasfertMatrix(self, destination):
-        # newVector   = oldToNew * oldVector
-        nbNodes = 2**self.GetDimensionality()
-        oldToNewVals = np.zeros((destination.GetNumberOfNodes(),nbNodes))
-        oldToNewIK = np.zeros((destination.GetNumberOfNodes(),nbNodes), dtype=np.int_)
-        oldToNewJK = np.zeros((destination.GetNumberOfNodes(),nbNodes), dtype=np.int_)
-
-        for i in range(destination.GetNumberOfNodes()):
-
-            pos= destination.GetPosOfNode(i)
-            el = self.GetElementAtPos(pos)
-            coon = self.GetConnectivityForElement(el)
-            xiChiEta = self.GetElementShapeFunctionsAtPos(el,pos)
-            oldToNewVals[i,:] = xiChiEta
-            oldToNewIK[i,:] = i
-            oldToNewJK[i,:] = coon
-
-        oldToNew =  coo_matrix((oldToNewVals.ravel(), (oldToNewIK.flatten(), oldToNewJK.flatten())), shape=(destination.GetNumberOfNodes(), self.GetNumberOfNodes())).tocsc()
-
-        return oldToNew
-
-    def GetElementTrasfertMatrix(self, destination):
-
-        nps = 3
-        nps3 = nps**self.GetDimensionality()
-        oldToNewVals = np.zeros((destination.GetNumberOfNodes(),nps3))
-        oldToNewIK = np.zeros((destination.GetNumberOfNodes(),nps3), dtype=np.int_)
-        oldToNewJK = np.zeros((destination.GetNumberOfNodes(),nps3), dtype=np.int_)
-
-        for i in  range(destination.GetNumberOfElements()):
-            coon = destination.GetConnectivityForElement(i)
-
-            n0pos = destination.GetPosOfNode(coon[0])
-            cpt =0
-            for cx in range(0,nps):
-                for cy in range(0,nps):
-                    if self.GetDimensionality() == 3:
-                        for cz in range(0,nps):
-                            pos = n0pos + destination.GetSpacing()*([cx+0.5,cy+0.5,cz+0.5])/nps
-                            el = self.GetElementAtPos(pos)
-                            oldToNewVals[i,cpt] += 1./nps3
-                            oldToNewIK[i,cpt] += i
-                            oldToNewJK[i,cpt] += el
-                            cpt +=1
-                    else:
-                        pos = n0pos + destination.GetSpacing()*([cx+0.5,cy+0.5])/nps
-                        el = self.GetElementAtPos(pos)
-                        oldToNewVals[i,cpt] += 1./nps3
-                        oldToNewIK[i,cpt] += i
-                        oldToNewJK[i,cpt] += el
-                        cpt +=1
-            #pos = destination.GetPosOfNode(coon[0]) + destination.GetSpacing()/2
-            #el = self.GetElementAtPos(pos)
-            #oldToNewVals[i,:] = 1
-            #oldToNewIK[i,:] = i
-            #oldToNewJK[i,:] = el
-        oldToNew =  coo_matrix((oldToNewVals.ravel(), (oldToNewIK.flatten(), oldToNewJK.flatten())), shape=(destination.GetNumberOfElements(), self.GetNumberOfElements())).tocsc()
-
-        return oldToNew
 
     def SetDimensions(self,data):
         self.__dimensions = np.array(data,int);
         self.nodes = None
-        self.connectivity = None
 
     def GetDimensions(self):
         return self.__dimensions ;
@@ -151,7 +110,6 @@ class ConstantRectilinearMesh(MeshBase):
                 return  res * (self.__dimensions[2]-1)
             else:
                 return 0
-
 
     def GetDimensionality(self):
         return len(self.__dimensions)
@@ -296,7 +254,7 @@ class ConstantRectilinearMesh(MeshBase):
             res[cpt:cpt+face.size] = face
             cpt += face.size
         else:
-                        #the faces, the edges, the corners
+            #the faces, the edges, the corners
             res = np.empty(dim[0]*2+
                            d2[1]*2,dtype=np.int)
 
@@ -310,7 +268,7 @@ class ConstantRectilinearMesh(MeshBase):
             cpt += face.size
         return res
 
-    def GetClosetPointToPos(self,pos, MultiIndex=False):
+    def GetClosestPointToPos(self,pos, MultiIndex=False):
         pos = (pos-self.__origin)-self.__spacing/2.
         pos /= self.__spacing
         elemindex = pos.astype(int)
@@ -399,19 +357,13 @@ class ConstantRectilinearMesh(MeshBase):
             return np.array([n0, n1, n2, n3])
 
     def GenerateFullConnectivity(self):
-        if(self.connectivity is None):
-            self.connectivity = np.empty((self.GetNumberOfElements(),2**self.GetDimensionality() ), dtype=np.int)
-            for i in range(self.GetNumberOfElements()):
-                self.connectivity[i,:] = self.GetConnectivityForElement(i)
-        from BasicTools.Containers.UnstructuredMesh import ElementsContainer as ElementsContainer
         import BasicTools.Containers.ElementNames as ElementNames
-        self.elements = {}
-        self.elements[ElementNames.Hexaedron_8 ] = ElementsContainer(ElementNames.Hexaedron_8)
-        self.elements[ElementNames.Hexaedron_8 ].connectivity = self.connectivity
-        self.elements[ElementNames.Hexaedron_8 ].tags =  self.elemTags
-        self.elements[ElementNames.Hexaedron_8 ].cpt = self.GetNumberOfElements()
-        return self.connectivity
 
+        if self.GetDimensionality() == 3:
+            return self.elements[ElementNames.Hexaedron_8 ].connectivity
+        elif self.GetDimensionality() == 2:
+            return self.elements[ElementNames.Quadrangle_4].connectivity
+        raise(Exception("Invalid dimensionality : " + str(self.GetDimensionality())) )
 
     def __str__(self):
         res = ''
@@ -442,30 +394,21 @@ def CheckIntegrity():
 
     print((myMesh.GetElementShapeFunctionsDerAtPos(0,[0.5,0.5,0.5] )))
 
+    print(myMesh.GenerateFullConnectivity())
+
     np.set_printoptions(threshold=np.nan)
-    newmesh = myMesh.GetSubSuperMesh([3,3,3])
 
-    oldtonew = myMesh.GetNodeTrasfertMatrix(newmesh)
-    print(newmesh)
-    print((oldtonew.todense()))
-
-    print((newmesh.GetNodeTrasfertMatrix(myMesh).todense()))
-
-    print((myMesh.GetElementTrasfertMatrix(newmesh).todense()))
-    print((newmesh.GetElementTrasfertMatrix(myMesh).todense()))
-    print((newmesh.GetDimensionality()))
     print((myMesh.GetValueAtPos(np.array([1,2,3,4,5,6,7,8]),[0.5,0.5,0.5])))
 
 
-    print(newmesh.GetDimensions())
-    res = (newmesh.GetNodalIndicesOfBorder(0))
+    res = (myMesh.GetNodalIndicesOfBorder(0))
     print(res)
     print(res.size)
 
 
     print("-----------------2D const rectilinear mesh------------------------")
     myMesh = ConstantRectilinearMesh()
-    myMesh.SetDimensions([2,2]);
+    myMesh.SetDimensions([3,3]);
     myMesh.SetSpacing([1, 1]);
     myMesh.SetOrigin([0.,0.]);
 
@@ -481,21 +424,14 @@ def CheckIntegrity():
 
 
     np.set_printoptions(threshold=np.nan)
-    newmesh = myMesh.GetSubSuperMesh([3,3])
-
-    oldtonew = myMesh.GetNodeTrasfertMatrix(newmesh)
-    print(newmesh)
-    print((oldtonew.todense()))
-    print((newmesh.GetNodeTrasfertMatrix(myMesh).todense()))
-
-    print((myMesh.GetElementTrasfertMatrix(newmesh).todense()))
-    print((newmesh.GetElementTrasfertMatrix(myMesh).todense()))
-    print((newmesh.GetDimensionality()))
-    print((myMesh.GetValueAtPos(np.array([1,2,3,4]),[0.5,0.5])))
-    print((myMesh.GetDefValueAtPos(np.array([1,2,3,4]),[0.5,0.5] )))
 
 
-    res = (newmesh.GetNodalIndicesOfBorder(0))
+    print((myMesh.GetValueAtPos(np.array([1,2,3,4,5,6,7,8,9]),[0.5,0.5])))
+    print((myMesh.GetDefValueAtPos(np.array([1,2,3,4,5,6,7,8,9]),[0.5,0.5] )))
+
+
+    res = (myMesh.GetNodalIndicesOfBorder(0))
+    print(res)
     if np.any(np.sort(res) != [0, 1, 2, 3, 5, 6, 7, 8 ]):
         return "Not Ok on 'GetNodalIndicesOfBorder(0)'"
 

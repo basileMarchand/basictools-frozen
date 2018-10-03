@@ -169,7 +169,7 @@ class Fea(FeaBase.FeaBase):
             self.support.GenerateFullConnectivity()
             z = np.zeros((self.support.GetNumberOfNodes(),))
             z[support.GetMonoIndexOfNode(neumann_bcs.nodes)] +=  1.;
-            eff = np.clip((np.sum(z[self.support.connectivity],axis=1) ),0, 1)
+            eff = np.clip((np.sum(z[self.support.GenerateFullConnectivity()],axis=1) ),0, 1)
 
             MassMatrix = self.BuildMassMatrix(eff)
             self.f[support.GetMonoIndexOfNode(neumann_bcs.nodes)*dofpernode + neumann_bcs.dofs] += neumann_bcs.vals
