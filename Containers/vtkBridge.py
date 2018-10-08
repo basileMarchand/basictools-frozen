@@ -107,6 +107,7 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
         from paraview.vtk import vtkFloatArray
         from paraview.vtk import vtkIntArray
         from paraview.vtk import vtkIdList
+        from paraview.vtk import vtkImageData
     except :
         from vtk import vtkPolyData
         from vtk import vtkUnstructuredGrid
@@ -114,40 +115,62 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
         from vtk import vtkFloatArray
         from vtk import vtkIntArray
         from vtk import vtkIdList
+        from vtk import vtkImageData
 
+    isimagedata = False
     if vtkobject is None:
-
-
-        usePoly = True
-        for  elementsname,elementContainer in mesh.elements.items():
-            if ElementNames.dimension[elementsname] == 3:
-                usePoly = False
-                break
-        if usePoly:
-            output = vtkPolyData()
+        if mesh.IsConstantRectilinear():
+            output = vtkImageData()
+            isimagedata = True
         else:
-            output = vtkUnstructuredGrid()
+            usePoly = True
+            for  elementsname,elementContainer in mesh.elements.items():
+                if ElementNames.dimension[elementsname] == 3:
+                    usePoly = False
+                    break
+            if usePoly:
+                output = vtkPolyData()
+            else:
+                output = vtkUnstructuredGrid()
 
     else:
         output = vtkobject # pragma: no cover
 
-
-
-    output.Allocate(mesh.GetNumberOfElements())
-    ##copy points
-    pts = vtkPoints()
-    pts.Allocate(mesh.GetNumberOfNodes())
-    if mesh.nodes.shape[1] == 3 :
-        for p in range(mesh.GetNumberOfNodes()):
-            point = mesh.nodes[p,:]
-            pts.InsertNextPoint(point[0],point[1],point[2])
+    if isimagedata:
+        output.SetDimensions(mesh.GetDimensions())
+        output.SetOrigin(mesh.GetOrigin())
+        output.SetSpacing(mesh.GetSpacing())
+        if (hasattr(mesh,"nodeFields") and len(mesh.nodeFields) ) or (hasattr(mesh,"elemFields") and len(mesh.elemFields) ):
+            print("Warning for the moment only the mesh is converted (no field)")
+            print('please use the a vtkUnstructuredGrid container to transfert all the fields')
+        return output
     else:
-        #2DCase
-        for p in range(mesh.GetNumberOfNodes()):
-            point = mesh.nodes[p,:]
-            pts.InsertNextPoint(point[0],point[1],0.0)
+        output.Allocate(mesh.GetNumberOfElements())
+        ##copy points
+        pts = vtkPoints()
+        pts.Allocate(mesh.GetNumberOfNodes())
+        if mesh.nodes.shape[1] == 3 :
+            for p in range(mesh.GetNumberOfNodes()):
+                point = mesh.nodes[p,:]
+                pts.InsertNextPoint(point[0],point[1],point[2])
+        else:
+            #2DCase
+            for p in range(mesh.GetNumberOfNodes()):
+                point = mesh.nodes[p,:]
+                pts.InsertNextPoint(point[0],point[1],0.0)
 
-    output.SetPoints(pts)
+        output.SetPoints(pts)
+
+        for elementsname,elementContainer in mesh.elements.items():
+            pointIds = vtkIdList()
+            npe = elementContainer.GetNumberOfNodesPerElement()
+            pointIds.SetNumberOfIds(npe)
+            vtknumber = vtkNumberByElementName[elementsname]
+            for e in range(elementContainer.GetNumberOfElements()):
+                for i in range(npe):
+                    pointIds.SetId(i,elementContainer.connectivity[e,i])
+                output.InsertNextCell(vtknumber, pointIds)
+
 
     if hasattr(mesh,"nodeFields"):
         for name,data in mesh.nodeFields.items():
@@ -195,15 +218,7 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
             output.GetPointData().AddArray(pd)
 
 
-    for elementsname,elementContainer in mesh.elements.items():
-        pointIds = vtkIdList()
-        npe = elementContainer.GetNumberOfNodesPerElement()
-        pointIds.SetNumberOfIds(npe)
-        vtknumber = vtkNumberByElementName[elementsname]
-        for e in range(elementContainer.GetNumberOfElements()):
-            for i in range(npe):
-                pointIds.SetId(i,elementContainer.connectivity[e,i])
-            output.InsertNextCell(vtknumber, pointIds)
+
 
     if hasattr(mesh,"elemFields"):
         for name,data in mesh.elemFields.items():

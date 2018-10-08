@@ -59,7 +59,7 @@ def ReadMesh(filename,out=None):# pragma: no cover
 
 def ReadMeshAndPopulateVtkObject(filename, vtkobject= None,TagsAsFields=False):# pragma: no cover
     mesh = ReadMesh(filename)
-    from BasicTools.Containers.UnstructuredMeshTools import MeshToVtk
+    from BasicTools.Containers.vtkBridge import MeshToVtk
     return MeshToVtk(mesh, vtkobject,TagsAsFields=TagsAsFields)
 
 

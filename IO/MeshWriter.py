@@ -218,7 +218,7 @@ class MeshWriter(WriterBase):
             if solutionOnOwnFile :
                 #self.filePointer.write(struct.pack('i', 54)) #dimension
                 self.Close();
-                self.OpenSolutionFileBinary()
+                self.OpenSolutionFileBinary(support=meshObject)
             self.WriteSolutionsFieldsBinary(meshObject,PointFields)
 
         #key End
