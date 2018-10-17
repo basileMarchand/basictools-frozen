@@ -29,6 +29,13 @@ def Integrate( mesh, wform, constants, fields, dofs,spaces,numbering, tag="3D",i
 
 def IntegrateGeneral( mesh, wform, constants, fields, unkownFields,testFields=None, tag="3D",integrationRuleName=None,onlyEvaluation=False):
 
+    import sympy
+    import BasicTools.FE.WeakForm as WeakForm
+    if not isinstance(wform, WeakForm.PyWeakForm):
+        from BasicTools.FE.WeakForm import SymWeakToNumWeak
+        wform = SymWeakToNumWeak(wform)
+
+
     import time
     st = time.time()
     BaseOutputObject().PrintDebug("Integration ")
@@ -128,7 +135,7 @@ def CheckIntegrityNormalFlux(GUI=False):
     fields  = {"p":pf}
     wf = SymWeakToNumWeak(wformflux)
 
-    K,F = Integrate(mesh=mesh,wform=wf, tag="ALL", constants=constants, fields=fields, dofs=dofs,spaces=spaces,numbering=numberings)
+    K,F = Integrate(mesh=mesh,wform=wformflux, tag="ALL", constants=constants, fields=fields, dofs=dofs,spaces=spaces,numbering=numberings)
 
     if GUI :
         from BasicTools.Actions.OpenInParaView import OpenInParaView
