@@ -54,7 +54,7 @@ class LinearProblem(BOO):
         if algoType in  ["Direct" ,"CG", "lstsq","cholesky" ,"EigenCG","EigenLU"] :
             self.type = algoType
         else:
-            raise(Exception(TF.InRed("Error : ") + "Type not allowed ("+algoType+")"  ) )#pragma: no cover
+            raise(ValueError(TF.InRed("Error : ") + "Type not allowed ("+algoType+")"  ) )#pragma: no cover
 
     def Solve(self, rhs):
         self.PrintDebug('In LinearProblem Solve')
@@ -74,6 +74,7 @@ class LinearProblem(BOO):
             else:
                 res = spslin.cg(self.op, rhs/norm, M = M, x0 = self.u/norm,tol = self.tol)
             self.u = res[0][np.newaxis].T*norm
+            self.u = self.u[:,0]
 
             if res[1] > 0 :
                 self.Print(TF.InYellowBackGround(TF.InRed("Convergence to tolerance not achieved"))) #pragma: no cover
