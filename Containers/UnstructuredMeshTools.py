@@ -7,7 +7,6 @@ from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
 import BasicTools.Containers.ElementNames as ElementNames
 
 
-
 def CreateUniformMeshOfBars(pmin,pmax,npoints):
     points = np.empty((npoints,3))
     points[:,0] = np.linspace(pmin,pmax,npoints)
@@ -39,6 +38,8 @@ def CreateMeshOf(points,connectivity,elemName = None,out=None):
     return res
 
 def CreateCube(dimensions=[2,2,2], origin=[-1.0,-1.0,-1.0], spacing=[1.,1.,1.], ofTetras=False):
+    spacing = np.array(spacing,dtype=float)
+    origin = np.array(origin,dtype=float)
     from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearMesh
     from BasicTools.Containers.UnstructuredMeshTools import CreateMeshFromConstantRectilinearMesh
     from BasicTools.Containers.UnstructuredMeshTools import ComputeSkin
@@ -88,14 +89,13 @@ def CreateCube(dimensions=[2,2,2], origin=[-1.0,-1.0,-1.0], spacing=[1.,1.,1.], 
     y = mesh.GetPosOfNodes()[skin.connectivity,1]
     z = mesh.GetPosOfNodes()[skin.connectivity,2]
     tol = np.min(spacing)/10
+
     skin.GetTag("X0").SetIds( np.where(np.sum(np.abs(x - origin[0]          )<tol,axis=1) == skin.GetNumberOfNodesPerElement())[0])
     skin.GetTag("X1").SetIds( np.where(np.sum(np.abs(x - (origin[0]+d[0]*s[0]))<tol,axis=1) == skin.GetNumberOfNodesPerElement())[0])
     skin.GetTag("Y0").SetIds( np.where(np.sum(np.abs(y - origin[1]          )<tol,axis=1) == skin.GetNumberOfNodesPerElement())[0])
     skin.GetTag("Y1").SetIds( np.where(np.sum(np.abs(y - (origin[1]+d[1]*s[1]))<tol,axis=1) == skin.GetNumberOfNodesPerElement())[0])
     skin.GetTag("Z0").SetIds( np.where(np.sum(np.abs(z - origin[2]          )<tol,axis=1) == skin.GetNumberOfNodesPerElement())[0])
     skin.GetTag("Z1").SetIds( np.where(np.sum(np.abs(z - (origin[2]+d[2]*s[2]))<tol,axis=1) == skin.GetNumberOfNodesPerElement())[0])
-
-
 
     return mesh
 
@@ -1326,7 +1326,131 @@ def PointToCellData(mesh,pointfield):
             res[data.globaloffset:data.globaloffset+data.GetNumberOfElements(),i] = (np.sum(pointfield[data.connectivity,i],axis=1)/data.connectivity.shape[1]).flatten()
 
     return res
+
+def Morphing(mesh,BC,bord_tot,rayon=None,tridim=False,IDW=False):
+##### method for computing the deform mesh knowing displacement of some nodes #######################################
+##### BC is the known displacement in a numpy array (shape [number_of_of_known_nodes,3]) ############################
+##### bord_tot contains the ids of known nodes (list of ids or boolean array)  in same order as BC ##################
+##### you can choose a radius by setting rayon to a value ###########################################################
+##### put tridim to True if you want to do the morphing in one step #################################################
+##### put IDW to True if you want to use another morphing method without system inversion ###########################
+
+##### https://www.researchgate.net/publication/288624175_Mesh_deformation_based_on_radial_basis_function_interpolation_computers_and_structure
+    def dphi(x):
+      table=x>=1
+      y=-20*x*(1-x)**3
+      if len(np.argwhere(table))>1:
+        y[table]=np.zeros(len(np.argwhere(table)))
+      return y
+
+    def phi(x):
+      table=x>=1
+      y=(1-x)**4*(4*x+1)
+      if len(np.argwhere(table))>1:
+        y[table]=np.zeros(len(np.argwhere(table)))
+      return y
+
+
+    grad_max=0.8
+    max_step=10
+    nb_step=1
+    if tridim:
+      nb_step=1
+    step=0
+  ##################################RBF###############################################
+  ####################################################################################
+    nb_nodes = mesh.GetNumberOfNodes()
+    new_nodes =  np.copy(mesh.GetPosOfNodes())
+
+    if rayon==None:
+      mesh.ComputeBoundingBox()
+      r=np.linalg.norm(mesh.boundingMax-mesh.boundingMin)/2
+    else:
+      r=rayon
+    if r==0:
+      r=1
+    while step<nb_step:
+      border_nodes=new_nodes[bord_tot,:]
+
+      rhs=BC/nb_step
+      M=np.eye(np.shape(border_nodes)[0])
+      #print('Building RBF operator {}/{}(shape {})'.format(step+1,nb_step,np.shape(M)))
+      for j in range(np.shape(M)[0]):
+          d=np.linalg.norm(border_nodes-border_nodes[j],axis=1)
+          M[:,j]=phi(d/r)
+      op=M
+      del(M)
+      #print('Solving RBF problem (shape {})'.format(np.shape(op)))
+      try:
+          ab=np.linalg.solve(op,rhs)
+      except np.linalg.LinAlgError:
+          #print('Bad conditioning of RBF operator, using least square solution')
+          ab=np.linalg.lstsq(op,rhs,cond=10**(9))
+      del(op)
+      alpha=ab
+      ds=np.zeros((nb_nodes,3))
+      s=np.zeros((nb_nodes,3))
+    #        pbar=ProgressBar()
+      #print('Building RBF displacement field (shape {})'.format((nb_nodes,np.shape(border_nodes)[0])))
+      for j in range(np.shape(border_nodes)[0]):
+          d=np.array([np.linalg.norm(new_nodes-border_nodes[j],axis=1)])
+          s=s+(phi(d/r)).T*alpha[j]
+          ds=ds+(dphi(d/r)).T*alpha[j]/r
+      if step==0 and tridim:
+          nb_step=min(max_step,int(np.floor(np.max(np.linalg.norm(ds,axis=1)/grad_max)))+1)
+          s=s/nb_step
+
+
+      new_nodes += s
+      step+=1
+
+    return new_nodes
+
 ###############################################################################
+
+def CheckIntegrity_Morphing(GUI = False):
+
+   mesh = CreateCube(dimensions=[20,21,22],spacing=[2.,2.,2.],ofTetras=True)
+   BC = np.empty((mesh.GetNumberOfNodes(),3),dtype=float)
+   bord_tot = np.empty(mesh.GetNumberOfNodes(),dtype=int)
+   cpt = 0
+   print(mesh)
+   for name,data in mesh.elements.items():
+
+       if ElementNames.dimension[name] != 2:
+           continue
+
+       ids = data.GetNodesIdFor(data.GetTag("X0").GetIds())
+       print(ids)
+       bord_tot[cpt:cpt+len(ids)] = ids
+       BC[cpt:cpt+len(ids),:] = 0
+       cpt += len(ids)
+
+       ids = data.GetNodesIdFor(data.GetTag("X1").GetIds())
+       print(ids)
+       bord_tot[cpt:cpt+len(ids)] = ids
+       BC[cpt:cpt+len(ids),:] = [[0,0,10]]
+       cpt += len(ids)
+
+   BC = BC[0:cpt,:]
+   bord_tot = bord_tot[0:cpt]
+
+   new_p1 = Morphing(mesh, BC,bord_tot)
+   new_p2 = Morphing(mesh, BC,bord_tot,rayon= 20. )
+
+   new_p0 = np.copy(mesh.nodes)
+   new_p0[bord_tot,:] += BC
+   mesh.nodeFields["morph0"] = new_p0
+   mesh.nodeFields["morph1"] = new_p1
+   mesh.nodeFields["morph2"] = new_p2
+
+
+   if GUI :
+        from BasicTools.Actions.OpenInParaView import OpenInParaView
+        OpenInParaView(mesh=mesh)
+
+   return "ok"
+
 def CheckIntegrity_PointToCellData(GUI = False):
     myMesh = UnstructuredMesh()
     myMesh.nodes = np.array([[0,0,0],[1,0,0],[2,0,0]] ,dtype=np.float)
@@ -1347,7 +1471,8 @@ def CheckIntegrity_PointToCellData(GUI = False):
     ExactData = np.array([[0,3]], dtype=float).T
     print (res - ExactData)
     if (res - ExactData).any() :
-        raise("Error CheckIntegrity_PointToCellData")
+        return ("Error CheckIntegrity_PointToCellData")
+    return "ok"
 
 
 def CheckIntegrity_ComputeFeatures(GUI =False):
@@ -1375,7 +1500,7 @@ def CheckIntegrity_ComputeFeatures(GUI =False):
         print(res2)
 
     print(edges)
-
+    return "ok"
 
 def CheckIntegrity_AddSkin(GUI=False):
     from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearMesh
@@ -1395,6 +1520,7 @@ def CheckIntegrity_AddSkin(GUI=False):
         OpenInParaView(skin,filename="skin.xmf")
 
     print(skin)
+    return "ok"
 
 def CheckIntegrity_ExtractElementsByImplicitZone(GUI=False):
     from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearMesh
@@ -1584,7 +1710,7 @@ def CheckIntegrity_ExtractElementByTags(GUI=False):
 
     if ExtractElementByTags(res,[],dimensionalityFilter=2 ).GetNumberOfElements() != 2:
         raise# pragma: no cover
-
+    return "ok"
 
 def CheckIntegrity_CleanEmptyTags(GUI=False):
     res = CreateMeshOfTriangles([[0,0,0],[1,0,0],[0,1,0],[0,0,1] ], [[0,1,2],[0,2,3]])
@@ -1638,23 +1764,30 @@ def CheckIntegrity_GetDualGraph(GUI=False):
 
 
 def CheckIntegrity(GUI=False):
-    CheckIntegrity_PointToCellData(GUI)
-    CheckIntegrity_ComputeFeatures(GUI=False)
-    CheckIntegrity_AddSkin(GUI)
-    CheckIntegrity_ExtractElementsByImplicitZone(GUI)
-    CheckIntegrity_DeleteInternalFaces(GUI)
-    CheckIntegrity_ExtractElementsByMask(GUI)
-    CheckIntegrity_GetVolume(GUI)
-    CheckIntegrity_CreateMeshOfTriangles(GUI)
-    CheckIntegrity_CreateMeshFromConstantRectilinearMesh(GUI)
-    CheckIntegrity_QuadToLin(GUI)
-    CheckIntegrity_CleanDoubleNodes(GUI)
-    CheckIntegrity_CleanLonelyNodes(GUI)
-    CheckIntegrity_MirrorMesh(GUI)
-    CheckIntegrity_ExtractElementByTags(GUI)
-    CheckIntegrity_CleanEmptyTags(GUI)
-    CheckIntegrity_AddTagPerBody(GUI)
-    CheckIntegrity_GetDualGraph(GUI)
+    totest= [
+    CheckIntegrity_Morphing,
+    CheckIntegrity_PointToCellData,
+    CheckIntegrity_ComputeFeatures,
+    CheckIntegrity_AddSkin,
+    CheckIntegrity_ExtractElementsByImplicitZone,
+    CheckIntegrity_DeleteInternalFaces,
+    CheckIntegrity_ExtractElementsByMask,
+    CheckIntegrity_GetVolume,
+    CheckIntegrity_CreateMeshOfTriangles,
+    CheckIntegrity_CreateMeshFromConstantRectilinearMesh,
+    CheckIntegrity_QuadToLin,
+    CheckIntegrity_CleanDoubleNodes,
+    CheckIntegrity_CleanLonelyNodes,
+    CheckIntegrity_MirrorMesh,
+    CheckIntegrity_ExtractElementByTags,
+    CheckIntegrity_CleanEmptyTags,
+    CheckIntegrity_AddTagPerBody,
+    CheckIntegrity_GetDualGraph,
+    ]
+    for f in totest:
+        res = f(GUI)
+        if str(res).lower() != "ok":
+            return "error in "+str(f) + " res"
     return "ok"
 
 
