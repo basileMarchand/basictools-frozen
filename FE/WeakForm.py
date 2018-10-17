@@ -185,7 +185,7 @@ def GetMecaElasticProblem(name="u",dim=3,K=None,planeStress=True):
     return ener
 
 def GetMecaNormalPressure(flux="p",name="u", dim=3):
-    ut = GetTestField("u",dim)
+    ut = GetTestField(name,dim)
     if isinstance(flux,str):
         p = GetConstant(flux)
     else:
