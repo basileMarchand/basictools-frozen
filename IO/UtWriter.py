@@ -23,14 +23,26 @@ class UtWriter(WriterBase):
 
     def __str__(self):
         res  = 'UtWriter : \n'
-        res += '   Name : '+str(self.name)+'\n'
+        res += '   Name : '+str(self.fileName)+'\n'
         return res
 
-    def SetName(self,name):
-        self.name = name
+    def Open(self):
+        pass
+    def SetFileName(self,fileName):
+        if fileName is None:
+            self.fileName = None
+            self.folder = None
+            return
+        from os import path
+        self.fileName = path.basename(fileName);
+        self.folder = path.dirname(fileName)
 
-    def SetFolder(self,folder):
-        self.folder = folder
+    def GetFolder(self):
+        return self.folder + os.sep
+
+    def GetBaseName(self):
+        from os import path
+        return path.splitext(self.fileName)[0]
 
     def AttachMesh(self,mesh):
         self.mesh = mesh
@@ -69,7 +81,7 @@ class UtWriter(WriterBase):
           exit()
         else:
           OW = GW.GeofWriter()
-          OW.Open(self.folder+self.name+".geof")
+          OW.Open(self.GetFolder()+self.fileName+".geof")
           OW.Write(self.mesh, useOriginalId=True, lowerDimElementsAsSets=True)
           OW.Close()
 
@@ -77,7 +89,7 @@ class UtWriter(WriterBase):
     def InitWrite(self, writeGeof, geofName = None, skipCtnod = False):
 
         if geofName == None:
-          __string = u"**meshfile "+self.name+".geof\n"
+          __string = u"**meshfile "+self.fileName+".geof\n"
         else:
           __string = u"**meshfile "+geofName+"\n"
 
@@ -102,19 +114,19 @@ class UtWriter(WriterBase):
 
         __string += "**element\n"
 
-        with open(self.folder+self.name+".ut", "w") as f:
+        with open(self.GetFolder()+self.GetBaseName()+".ut", "w") as f:
           f.write(__string)
         f.close()
 
-        os.system("rm -rf "+self.folder+self.name+".node "+self.folder+self.name+".ctnod "+self.folder+self.name+".integ")
+        os.system("rm -rf "+self.GetFolder()+self.GetBaseName()+".node "+self.GetFolder()+self.GetBaseName()+".ctnod "+self.GetFolder()+self.GetBaseName()+".integ")
 
-        nodeFile = open(self.folder+self.name+".node", "a")
+        nodeFile = open(self.GetFolder()+self.GetBaseName()+".node", "a")
         if skipCtnod == False:
-          ctnodFile = open(self.folder+self.name+".ctnod", "a")
+          ctnodFile = open(self.GetFolder()+self.GetBaseName()+".ctnod", "a")
         else:
           ctnodFile = None
         if self.NintVar > 0:
-          integFile = open(self.folder+self.name+".integ", "a")
+          integFile = open(self.GetFolder()+self.GetBaseName()+".integ", "a")
         else:
           integFile = None
 
@@ -161,12 +173,19 @@ class UtWriter(WriterBase):
 
         __string = str(int(timeSequenceStep[0]))+" "+str(int(timeSequenceStep[1]))+" "+str(int(timeSequenceStep[2]))+" "+str(int(timeSequenceStep[3]))+" "+str(timeSequenceStep[4])+"\n"
 
-        with open(self.folder+self.name+".ut", "a") as f:
+        with open(self.GetFolder()+self.GetBaseName()+".ut", "a") as f:
           f.write(__string)
         f.close()
 
+    def Write(self,outmesh,PointFieldsNames,PointFields,GridFieldsNames,CellFields):
 
-    def Write(self, writeGeof, geofName = None, skipCtnod = False):
+        self.AttachMesh(outmesh)
+        self.AttachData( {x:y for x,y in zip(PointFieldsNames,PointFields) }, {}, {})
+        self.AttachSequence(np.array([[0,0,0,0,0]]))
+        self.WriteFiles(writeGeof=True)
+
+
+    def WriteFiles(self, writeGeof, geofName = None, skipCtnod = False):
 
         nodeFile, ctnodFile, integFile = self.InitWrite(writeGeof, geofName, skipCtnod)
 
@@ -213,7 +232,7 @@ class UtWriter(WriterBase):
         for i in range(self.Ntime):
             __string += str(int(self.timeSequence[i,0]))+" "+str(int(self.timeSequence[i,1]))+" "+str(int(self.timeSequence[i,2]))+" "+str(int(self.timeSequence[i,3]))+" "+str(self.timeSequence[i,4])+"\n"
 
-        with open(self.folder+self.name+".ut", "a") as f:
+        with open(self.GetFolder()+self.GetBaseName()+".ut", "a") as f:
           f.write(__string)
         f.close()
 
@@ -274,12 +293,11 @@ def CheckIntegrity():
     # EXEMPLE SYNTAXE DU WRITER
     import BasicTools.IO.UtWriter as UW
     UtW = UW.UtWriter()
-    UtW.SetName("toto")
-    UtW.SetFolder(tempdir)
+    UtW.SetFileName(tempdir+os.sep+"toto.ut")
     UtW.AttachMesh(mymesh)
     UtW.AttachData(data_node, data_ctnod, data_integ)
     UtW.AttachSequence(timeSequence)
-    UtW.Write(writeGeof=True)
+    UtW.WriteFiles(writeGeof=True)
     ##################################
 
     print(UtW)
@@ -287,10 +305,19 @@ def CheckIntegrity():
     print("Temp directory =", tempdir)
 
     import filecmp
-    print("node files equals  ?", filecmp.cmp(tempdir + "toto.node",  BasicToolsTestData.GetTestDataPath() + "UtExample/cube.node", shallow=False))
-    print("ctnod files equals ?", filecmp.cmp(tempdir + "toto.ctnod", BasicToolsTestData.GetTestDataPath() + "UtExample/cube.ctnod", shallow=False))
-    print("integ files equals ?", filecmp.cmp(tempdir + "toto.integ", BasicToolsTestData.GetTestDataPath() + "UtExample/cube.integ", shallow=False))
+    res = filecmp.cmp(tempdir + "toto.node",  BasicToolsTestData.GetTestDataPath() + "UtExample/cube.node", shallow=False)
+    print("node files equals  ?", res )
+    if res == False:
+        return 'Problem comparing toto.node'
+    res = filecmp.cmp(tempdir + "toto.ctnod", BasicToolsTestData.GetTestDataPath() + "UtExample/cube.ctnod", shallow=False)
+    print("ctnod files equals ?", res)
+    if res == False:
+        return 'Problem comparing toto.ctnode'
 
+    res = filecmp.cmp(tempdir + "toto.integ", BasicToolsTestData.GetTestDataPath() + "UtExample/cube.integ", shallow=False)
+    print("integ files equals ?", res)
+    if res == False:
+        return 'Problem comparing toto.integ'
     return "ok"
 
 if __name__ == '__main__':
