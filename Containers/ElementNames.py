@@ -52,6 +52,7 @@ mirrorPermutation = {}
 dimension = {}
 linear = {}
 faces = {}
+faces2 = {}
 geoSupport = {}
 
 #0d
@@ -151,6 +152,13 @@ faces[Tetrahedron_4] = [(Triangle_3,[0, 2, 1]),
                         (Triangle_3,[0, 1, 3]),
                         (Triangle_3,[1, 2, 3]),
                         (Triangle_3,[2, 0, 3]),
+     ]
+faces2[Tetrahedron_4] = [(Bar_2,[0, 1]),
+                         (Bar_2,[1, 2]),
+                         (Bar_2,[2, 0]),
+                         (Bar_2,[0, 3]),
+                         (Bar_2,[1, 3]),
+                         (Bar_2,[2, 3])
      ]
 
 Pyramid_5  = 'pyr5'

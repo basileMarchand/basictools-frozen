@@ -80,9 +80,18 @@ class Tet_P2_Lagrange(TetSpaceBase):
                               [0,0,0.5],
                               [0.5,0,0.5]])
 
-        #PermutationZSetToBasicTools["c3d10"] = [2, 0, 1, 9, 5, 3, 4, 8, 6, 7]
+        self.dofAttachments = [("P",2,None),
+                               ("P",0,None),
+                               ("P",1,None),
+                               ("P",3,None),
+                               ("F2",2,None),
+                               ("F2",0,None),
+                               ("F2",1,None),
+                               ("F2",5,None),
+                               ("F2",3,None),
+                               ("F2",4,None)
+                               ]
 
-        """self.dofAttachments = []"""
 
         self.Create()
 

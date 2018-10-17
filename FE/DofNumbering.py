@@ -9,18 +9,28 @@ def Hash(space,j,lconn,name=None,i=None):
         h = Hash(h,lconn[n])
         raise
 
+
     if T == "P":
+        """P is for point"""
         T = "P"
         n = lconn[n]
     elif T == "C":
+        """C is for cell"""
         T = name
         n = i
-    elif T == "E":
-        raise
-        edge = EN.Faces[name][n]
+    elif T == "F" :
+        """is for face  (face for a 3D element, edge for a 2D element """
+        edge = EN.faces[name][n]
         T = edge[0]
-        n = np.sort(lconn[edge[1]])
+        n = str(list(np.sort(lconn[edge[1]])))
+    elif T == "F2":
+        """is for face second level (edge for a 3D element, point for a 2D element """
+        edge = EN.faces2[name][n]
+        T = edge[0]
+        n = str(list(np.sort(lconn[edge[1]])))
+
     elif T == "G":
+        """G is for global """
         return (T,0,h)
     else:
         raise(Exception(" type of dof unknown : " + str(T) ) )

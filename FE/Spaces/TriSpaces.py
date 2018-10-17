@@ -90,10 +90,10 @@ class Tri_P2_Lagrange(TriSpaceBase):
 
         self.dofAttachments = [("P",0,None),
                                ("P",2,None),
-                               ("E",1,None),
+                               ("F",1,None),
                                ("P",1,None),
-                               ("E",0,None),
-                               ("E",2,None)]
+                               ("F",0,None),
+                               ("F",2,None)]
 
         self.Create()
 
