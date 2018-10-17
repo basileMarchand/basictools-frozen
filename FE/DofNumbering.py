@@ -17,17 +17,17 @@ def Hash(space,j,lconn,name=None,i=None):
     elif T == "C":
         """C is for cell"""
         T = name
-        n = i
+        n = tuple(np.sort(lconn))
     elif T == "F" :
         """is for face  (face for a 3D element, edge for a 2D element """
         edge = EN.faces[name][n]
         T = edge[0]
-        n = str(list(np.sort(lconn[edge[1]])))
+        n = tuple(np.sort(lconn[edge[1]]))
     elif T == "F2":
         """is for face second level (edge for a 3D element, point for a 2D element """
         edge = EN.faces2[name][n]
         T = edge[0]
-        n = str(list(np.sort(lconn[edge[1]])))
+        n = tuple(np.sort(lconn[edge[1]]))
 
     elif T == "G":
         """G is for global """
@@ -41,6 +41,8 @@ def Hash(space,j,lconn,name=None,i=None):
 
 
 def ComputeDofNumbering(mesh,Space,dofs=None,tag=AllElements,sign=1,fromConnectivity=False):
+    if tag is None:
+        raise(ValueError())
     if fromConnectivity:
         if dofs is not None or tag != AllElements or sign != 1:
             raise(Exception("cant take dofs tag or sign different from the default values"))
@@ -193,6 +195,10 @@ def CheckIntegrity(GUI=False):
     t_numbering = ComputeDofNumbering(res2,ConstantSpaceGlobal)
     print(t_numbering)
 
+    from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceP2
+
+    t_numbering = ComputeDofNumbering(res2,LagrangeSpaceP2)
+    print(t_numbering)
     return "OK"
 
 if __name__ == '__main__':

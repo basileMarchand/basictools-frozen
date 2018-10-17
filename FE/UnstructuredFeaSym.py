@@ -22,9 +22,25 @@ class FeaSymMeca(FeaBase):
     def SetPrimalName(self,name):
         self.primalName = name
 
-    def SetSpaceToLagrange(self):
-        from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
-        self.space = LagrangeSpaceGeo
+    def SetSpaceToLagrange(self,P=None,isoParam=None):
+        if P is None and isoParam is None:
+            raise(ValueError("Please set the type of integration P=1,2 or isoParam=True"))
+
+        if P is not None and isoParam is not None:
+            raise(ValueError("Please set the type of integration P=1,2 or isoParam=True"))
+
+        if isoParam or P == 1 :
+            from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
+            self.space = LagrangeSpaceGeo
+            self.integrationRule =  None
+            return
+        elif  P == 2:
+            from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceP2
+            self.space = LagrangeSpaceP2
+            self.integrationRule =  "LagrangeP2"
+            return
+        else:
+            raise(ValueError("I dont understand"))
 
     def SetBulkFormulationToMeca(self,young=1.,poisson=0.3,zone="3D"):
         from BasicTools.FE.WeakForm import GetMecaElasticProblem
@@ -36,7 +52,7 @@ class FeaSymMeca(FeaBase):
 
     def AddPressure(self,zone,pressureName="p"):
         from BasicTools.FE.WeakForm import GetMecaNormalPressure
-        Symwfp = GetMecaNormalPressure(pressureName)
+        Symwfp = GetMecaNormalPressure(pressureName,name=self.primalName)
         wfp = SymWeakToNumWeak(Symwfp)
         self.linearWeakFormulations.append((zone,wfp))
 
@@ -74,7 +90,8 @@ class FeaSymMeca(FeaBase):
 
           for zone,form in linearWeakFormulations:
             self.PrintDebug("integration of f "+ str(zone) )
-            _,f = Integrate(mesh=self.mesh,wform=form, tag=zone, constants=self.constants, fields=self.fields, dofs=dofs,spaces=spaces,numbering=numberings)
+            _,f = Integrate(mesh=self.mesh,wform=form, tag=zone, constants=self.constants, fields=self.fields, dofs=dofs,spaces=spaces,numbering=numberings,
+                            integrationRuleName=self.integrationRule)
             if rhsRes is None:
                 rhsRes = f
             else:
@@ -84,7 +101,8 @@ class FeaSymMeca(FeaBase):
           self.PrintDebug("In Integration K")
           for zone,form in self.bilinearWeakFormulations:
             self.PrintDebug("Integration of bilinear formulation on : " + str(zone))
-            k,f = Integrate(mesh=self.mesh,wform=form, tag=zone, constants=self.constants, fields=self.fields, dofs=dofs,spaces=spaces,numbering=numberings)
+            k,f = Integrate(mesh=self.mesh,wform=form, tag=zone, constants=self.constants, fields=self.fields, dofs=dofs,spaces=spaces,numbering=numberings,
+                            integrationRuleName=self.integrationRule)
             if not (f is None):
                 if rhsRes is None:
                     rhsRes = f
@@ -99,12 +117,21 @@ class FeaSymMeca(FeaBase):
         return (lhsRes,rhsRes)
 
 def CheckIntegrity(GUI=False):
+    res = CheckIntegrityFlexion(1,False,GUI=GUI);
+    if res.lower()!="ok": return res
+    res = CheckIntegrityFlexion(2,False,GUI=GUI);
+    if res.lower()!="ok": return res
+    res = CheckIntegrityFlexion(1,True,GUI=GUI);
+    if res.lower()!="ok": return res
+    res = CheckIntegrityFlexion(2,True,GUI=GUI);
+    if res.lower()!="ok": return res
+    return "ok"
 
+def CheckIntegrityFlexion(P,tetra,GUI=False):
     problem = FeaSymMeca()
     problem.SetGlobalDebugMode(True)
     problem.SetBulkFormulationToMeca(1.0,0.3,zone="3D")
-
-    problem.SetSpaceToLagrange()
+    problem.SetSpaceToLagrange(P=P)
 
     from BasicTools.Containers.UnstructuredMeshTools import CreateMeshFromConstantRectilinearMesh
     import BasicTools.Containers.ConstantRectilinearMesh as ConstantRectilinearMesh
@@ -112,10 +139,10 @@ def CheckIntegrity(GUI=False):
     nx = 11; ny = 12; nz = 13;
     CRMesh = ConstantRectilinearMesh.ConstantRectilinearMesh()
     CRMesh.SetDimensions([nx,ny,nz]);
-    CRMesh.SetSpacing([0.1, 0.1, 10./(nz-1)]);
+    CRMesh.SetSpacing([1./(nx-1),1./(ny-1), 10./(nz-1)]);
     CRMesh.SetOrigin([0, 0, 0]);
 
-    mesh = CreateMeshFromConstantRectilinearMesh(CRMesh)
+    mesh = CreateMeshFromConstantRectilinearMesh(CRMesh,ofTetras=tetra)
     from BasicTools.Containers.UnstructuredMeshTools import ComputeSkin
     ComputeSkin(mesh,inplace=True)
 
@@ -155,35 +182,40 @@ def CheckIntegrity(GUI=False):
             op1.applyOnElements(mesh,el,i)
 
     import BasicTools.Containers.ElementNames as EN
-    hexs = mesh.GetElementsOfType(EN.Hexaedron_8)
-    hexs.GetTag("3D").SetIds(range(hexs.GetNumberOfElements()))
+    if tetra:
+        tets = mesh.GetElementsOfType(EN.Tetrahedron_4)
+        tets.GetTag("3D").SetIds(range(tets.GetNumberOfElements()))
+    else:
+        hexs = mesh.GetElementsOfType(EN.Hexaedron_8)
+        hexs.GetTag("3D").SetIds(range(hexs.GetNumberOfElements()))
+
 
     print(mesh)
-    op0.applyOnNodes(mesh)
-    op1.applyOnNodes(mesh)
+    #op0.applyOnNodes(mesh)
+    #op1.applyOnNodes(mesh)
     print(mesh)
 
 
     problem.SetMesh(mesh)
     problem.ComputeDofNumbering()
 
-    problem.constants["p"] = 1.0
-    #problem.AddPressure("Z1","p")
+    #problem.constants["p"] = 1.0
+    #problem.AddPressure("Z1",1)
+    problem.AddForce("Z1",[1,0,0],0.002)
+
     import time
     starttime = time.time()
+
     k,f = problem.GetLinearProblem()
     stoptime = time.time()
 
     print("time to asembly the matrix {0}s".format(stoptime-starttime))
 
-
-
     problem.AddDirichlet("Z0",0,0.)
     problem.AddDirichlet("Z0",1,0.)
     problem.AddDirichlet("Z0",2,0.)
 
-    problem.AddDirichlet("Z1",0,5.)
-    #problem.AddDirichlet("Z1",1,2.)
+    #problem.AddDirichlet("Z1",0,5.)
 
     kk,ff = problem.ApplyBC(k,f)
 
@@ -220,9 +252,16 @@ def CheckIntegrity(GUI=False):
     print("Done")
 """
     problem.solver = LinearProblem()
-    problem.solver.SetAlgo("Direct")
+    problem.solver.SetAlgo("EigenCG")
     print(f)
-    print(ff)
+    print(np.linalg.norm(f))
+
+    #print(ff)
+    #print(np.linalg.norm(ff))
+    #raise
+    print(f.shape)
+    print(ff.shape)
+
 
     problem.Solve(kk,ff)
     print("done solve")
@@ -245,6 +284,7 @@ def CheckIntegrity(GUI=False):
         field.mesh = problem.mesh
         field.space = problem.space
         offset += field.numbering["size"]
+
 
 
     print("Post process")
@@ -271,20 +311,10 @@ def CheckIntegrity(GUI=False):
     print(f)
     if GUI  :
         from BasicTools.Actions.OpenInParaView import OpenInParaView
-        problem.PushVectorToMesh(True,f,"normalFlux")
-        problem.PushVectorToMesh(True,problem.sol,"sol")
-        problem.PushVectorToMesh(True,energyDensity,"energy")
-        """
-        F = f.view()
-        F.shape = (3,mesh.GetNumberOfNodes())
-        F = F.T
-        mesh.nodeFields["normalflux"] =  F[numbering["permutation"],:]
-        fixedValues[dofs] = res
-        fixedValues.shape = (3,mesh.GetNumberOfNodes())
-        fixedValues= fixedValues.T
-        mesh.nodeFields["sol"] =  fixedValues[numbering["permutation"],:]
-        """
-        OpenInParaView(mesh)
+        problem.PushVectorToMesh(True,f,"normalFlux",vectorSize=3)
+        problem.PushVectorToMesh(True,problem.sol,"sol",vectorSize=3)
+        problem.PushVectorToMesh(True,energyDensity,"energy",vectorSize=1)
+        OpenInParaView(mesh,filename="UnstructuredFeaSym_Sols_P"+str(P)+("Tetra"if tetra else "Hexa")+".xmf",run=False)
     return("ok")
 
 

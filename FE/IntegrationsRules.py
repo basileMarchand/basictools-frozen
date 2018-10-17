@@ -9,8 +9,10 @@ IntegrationRulesAlmanac = {}
 
 
 LagrangeP1 = {}
+
 LagrangeP1[EN.GeoTri] = ( 1./6.*np.array([[1., 1.] ,[4., 1.],[ 1. ,4.] ]),
                                   1./6.*np.array([1. , 1. , 1]))
+
 
 #LagrangeP1[EN.GeoTri] = ( 1./3.*np.array([[1, 1]  ]),
 #                                        np.array([ 0.5 ]))
@@ -34,6 +36,10 @@ def TensorProductPoints(dim,npoints=2):
     if npoints == 2:
         p = [-math.sqrt(1./3)/2+.5, math.sqrt(1./3)/2+.5 ];
         w = [1./2., 1./2.]
+    elif npoints == 3:
+        #https://fr.wikipedia.org/wiki/M%C3%A9thodes_de_quadrature_de_Gauss
+        p = [-math.sqrt(3./5.)/2+.5, 0.5 ,math.sqrt(3./5.)/2+.5 ];
+        w = [5./18., 8./18., 5./18.]
     else:
         raise
     Pres = []
@@ -73,11 +79,11 @@ LagrangeP1[EN.GeoQuad] = TensorProductPoints(dim=2,npoints=2)
 LagrangeP1[EN.GeoHex]  = TensorProductPoints(dim=3,npoints=2)
 
 
-
-IntegrationRulesAlmanac["IsoGeo"] = LagrangeP1
-
 LagrangeP2 = {}
 
+LagrangeP2[EN.GeoBar]  = TensorProductPoints(dim=1,npoints=3)
+LagrangeP2[EN.GeoQuad] = TensorProductPoints(dim=2,npoints=3)
+LagrangeP2[EN.GeoHex]  = TensorProductPoints(dim=3,npoints=3)
 
 
 p = np.array([[0.1666666667,0.1666666667,0.1666666667],
@@ -86,6 +92,7 @@ p = np.array([[0.1666666667,0.1666666667,0.1666666667],
 [0.1666666667,0.1666666667,0.5],
 [0.25,0.25,0.25]]);
 w = np.array([0.075 ,0.075 ,0.075 ,0.075 ,-0.1333333333]);
+
 LagrangeP2[EN.GeoTet] = (p,w)
 
 
@@ -97,9 +104,20 @@ p = np.array([[0.4459484909,0.4459484909,0],
 [0.816847573,0.09157621351,0],
 [0.09157621351,0.816847573,0]])
 w = np.array([0.1116907948 ,0.1116907948 ,0.1116907948 ,0.05497587183 ,0.05497587183 ,0.05497587183])
+
 LagrangeP2[EN.GeoTri] = (p,w)
 
 IntegrationRulesAlmanac["LagrangeP2"] = LagrangeP2
+IntegrationRulesAlmanac["IsoParam"] = LagrangeP1
+
+#LagrangeIsoParam = {} # Lagrange iso parametrique
+#
+#for name, linear in EN.linear.items():
+#    if linear:
+#        LagrangeIsoParam[name] = LagrangeP1[name]
+#    else:
+#        LagrangeIsoParam[name] = LagrangeP2[name]
+#
 
 
 #Nodal Itegration for the evaluation of post quantities at nodes
@@ -110,6 +128,10 @@ NodalEvaluation[EN.GeoHex] = (hexa.posN , np.ones(hexa.posN.shape[0]) )
 import BasicTools.FE.Spaces.TetSpaces as TS
 tet = TS.Tet_P1_Lagrange()
 NodalEvaluation[EN.GeoTet] = (tet.posN , np.ones(tet.posN.shape[0]) )
+import BasicTools.FE.Spaces.TriSpaces as TrS
+tri = TrS.Tri_P1_Lagrange()
+NodalEvaluation[EN.GeoTri] = (tri.posN , np.ones(tri.posN.shape[0]) )
+
 IntegrationRulesAlmanac["NodalEvalGeo"] = NodalEvaluation
 
 

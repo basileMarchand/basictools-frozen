@@ -5,6 +5,7 @@ import numpy as np
 
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 from BasicTools.FE.LinearSolver import LinearProblem
+from  BasicTools.Containers.UnstructuredMesh import AllElements
 
 
 class FeaBase(BaseOutputObject):
@@ -25,7 +26,7 @@ class FeaBase(BaseOutputObject):
     def SetMesh(self,mesh):
         self.mesh = mesh
 
-    def ComputeDofNumbering(self,tag=None):
+    def ComputeDofNumbering(self,tag=AllElements):
         from BasicTools.FE.DofNumbering import ComputeDofNumbering
         from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
 
@@ -54,6 +55,7 @@ class FeaBase(BaseOutputObject):
 
             if zone in self.mesh.nodesTags:
                  nids = self.mesh.nodesTags[zone].GetIds()
+                 nids = np.array([ self.numbering['almanac'][('P',x,None)] for x in nids])
                  dofsids = nids + offset
 
                  self.dofs[dofsids] = False
@@ -89,20 +91,30 @@ class FeaBase(BaseOutputObject):
         res = self.solver.Solve(cleanff)
         self.sol[self.dofs] = res
 
-    def PushVectorToMesh(self,onNodes,field,name):
+    def PushVectorToMesh(self,onNodes,field,name,vectorSize=1):
+        # vectorSize = 1 for scalar field
+        # vectorSize = 3 for 3D vector field (example dep in 3D )
         F = field.view()
         if onNodes:
-            if self.mesh.GetNumberOfNodes() == F.size:
-                self.mesh.nodeFields[name] = np.zeros((self.mesh.GetNumberOfNodes()),dtype=float)
-                self.mesh.nodeFields[name][self.numbering["doftopointLeft"]] =  F[self.numbering["doftopointRight"]]
-                return
-            if self.mesh.GetNumberOfNodes()*3 != F.size :
-                raise Exception("incompatible field")
-            F.shape = (3,F.size/3)
+
+            res = np.zeros((self.mesh.GetNumberOfNodes(), vectorSize),dtype=float)
+            F.shape = (vectorSize,F.size/vectorSize)
             F = F.T
 
-            self.mesh.nodeFields[name] = np.zeros((self.mesh.GetNumberOfNodes(),3),dtype=float)
-            self.mesh.nodeFields[name][self.numbering["doftopointLeft"],:] =  F[self.numbering["doftopointRight"],:]
+            res[self.numbering["doftopointLeft"],:] =  F[self.numbering["doftopointRight"],:]
+            self.mesh.nodeFields[name] = res
+
+#            if self.mesh.GetNumberOfNodes() == F.size:
+#                self.mesh.nodeFields[name] = np.zeros((self.mesh.GetNumberOfNodes(), vectorSize),dtype=float)
+#                self.mesh.nodeFields[name][self.numbering["doftopointLeft"]] =  F[self.numbering["doftopointRight"]]
+#                return
+#            if self.mesh.GetNumberOfNodes()*3 != F.size :
+#                raise Exception("incompatible field")
+#            F.shape = (3,F.size/3)
+#            F = F.T
+#
+#            self.mesh.nodeFields[name] = np.zeros((self.mesh.GetNumberOfNodes(),3),dtype=float)
+#            self.mesh.nodeFields[name][self.numbering["doftopointLeft"],:] =  F[self.numbering["doftopointRight"],:]
             #print(self.numbering["doftopointLeft"])
             #print(self.numbering["doftopointRight"])
             #for cpt in range(len(self.numbering["doftopointLeft"])):

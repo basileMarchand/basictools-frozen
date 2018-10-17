@@ -52,22 +52,74 @@ class Quad_P1_Lagrange(SymSpaceBase):
                                ]
         self.Create()
 
+class Quad_P2_Lagrange(SymSpaceBase):
+    def __init__(self):
+        super(Quad_P2_Lagrange,self).__init__()
+        self.geoSupport = EN.GeoQuad
+
+
+
+        xi = self.xi
+        x1 = 1-xi
+        x2 = xi
+
+        eta = self.eta
+        e1 = 1-eta
+        e2 = eta
+
+        xA = x1*(2*x1-1)
+        xB = 4*x1*x2
+        xC = x2*(2*x2-1)
+
+        eA = e1*(2*e1-1)
+        eB = 4*e1*e2
+        eC = e2*(2*e2-1)
+
+
+
+        self.symN = Matrix([xA*eA, # linear part
+                            xC*eA,
+                            xC*eC,
+                            xA*eC,
+
+                            xB*eA, #edges of base
+                            xC*eB,
+                            xB*eC,
+                            xA*eB,
+
+                            xB*eB, # center
+                            ])
+        self.posN = np.array([[ 0, 0],
+                              [ 1, 0],
+                              [ 1, 1],
+                              [ 0, 1],
+                              [ 0.5, 0 ],
+                              [ 1.0, 0.5],
+                              [ 0.5, 1.],
+                              [ 0, 0.5],
+                              [ 0.5, 0.5],
+                              ])
+        self.dofAttachments = [("P",0,None),
+                               ("P",1,None),
+                               ("P",2,None),
+                               ("P",3,None),
+                               ("F",0,None),
+                               ("F",1,None),
+                               ("F",2,None),
+                               ("F",3,None),
+                               ("C",0,None),
+
+                               ]
+        self.Create()
 
 def plot2DSquare(Space):
     import matplotlib.pyplot as plt
     import numpy as np
     from matplotlib import cm
 
-    # Create triangulation.
-    #x = np.arange(0, 1.1, 0.1)
-    #y = np.arange(0, 1.1, 0.1)
-    #X, Y = np.meshgrid(x,y)
-    #
-    #print(Y)
-    #z = X*.0;
-    #np.empty((len(x),len(y)),dtype=np.float)
 
     ep = np.array([[ 0, 0],[ 0.5, 0],[ 1, 1.2],[ 0, 0.5]])
+    ep = Space.posN
     #ep = Space.posN
     X = np.empty((11,11),dtype=np.float)
     Y = np.empty((11,11),dtype=np.float)
@@ -84,7 +136,11 @@ def plot2DSquare(Space):
             X[xi,yi] =  p[0]
             Y[xi,yi] =  p[1]
 
-
+    from mpl_toolkits.mplot3d import Axes3D
+    plt.ioff()
+    fig = plt.figure()
+    ax = fig.gca(projection='3d')
+    surf = None
     for sf in range(len(Space.posN)):
         #cpt =0
         #for cpt in range(len(X)):
@@ -98,30 +154,36 @@ def plot2DSquare(Space):
 
 
                 #Z[i,j] = Space.valN[0][sf]
-                #Z[i,j] = Space.GetShapeFunc([xi, eta])[sf]
+                Z[i,j] = Space.GetShapeFunc([xi, eta])[sf]
                 #Z[i,j] = Space.GetShapeFuncDer([xi, eta])[0,sf]
                 #Z[i,j] = Space.GetShapeFuncDer([xi, eta])[1,sf]
                 #Z[i,j] = Space.Eval_FieldI(0,ep[:,0],Jack,Jinv,-1)
                 #Z[i,j] = Space.Eval_FieldI(0,ep[:,1],Jack,Jinv,-1)
-                Z[i,j] = Space.Eval_FieldI(0,ep[:,0],Jack,Jinv,0)
+                #Z[i,j] = Space.Eval_FieldI(0,ep[:,0],Jack,Jinv,0)
 
 
-        from mpl_toolkits.mplot3d import Axes3D
-        fig = plt.figure()
-        ax = fig.gca(projection='3d')
+
 
         #surf = ax.plot_surface(X, Y, z, cmap=cm.coolwarm,
         #               linewidth=1, antialiased=False)
+
+        if surf is not None:
+            surf.remove()
         surf = ax.plot_surface(X, Y, Z, rstride=1, cstride=1,cmap=cm.jet)
+
+        #fig.colorbar(surf, shrink=0.5, aspect=5)
 
 
         plt.title('Quad grid')
 
-        fig.colorbar(surf, shrink=0.5, aspect=5)
-        plt.show()
+
+        plt.draw()
         plt.pause(1)
 
+
 def CheckIntegrity(GUI=False):
+    if GUI:
+       plot2DSquare(Quad_P2_Lagrange())
     return "ok"
 
 if __name__ == '__main__':

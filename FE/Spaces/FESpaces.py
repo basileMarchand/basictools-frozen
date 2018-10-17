@@ -49,8 +49,8 @@ LagrangeSpaceP2[EN.Triangle_3] = TriSpaces.Tri_P2_Lagrange()
 LagrangeSpaceP2[EN.Triangle_6] = TriSpaces.Tri_P2_Lagrange()
 LagrangeSpaceP2[EN.Tetrahedron_4] = TetSpaces.Tet_P2_Lagrange()
 LagrangeSpaceP2[EN.Tetrahedron_10] = TetSpaces.Tet_P2_Lagrange()
-#LagrangeSpaceP2[EN.Quadrangle_4] = QuadSpaces.Quad_P2_Lagrange()
-#LagrangeSpaceP2[EN.Hexaedron_8] = HexaSpaces.Hexa_P2_Lagrange()
+LagrangeSpaceP2[EN.Quadrangle_4] = QuadSpaces.Quad_P2_Lagrange()
+LagrangeSpaceP2[EN.Hexaedron_8] = HexaSpaces.Hexa_P2_Lagrange()
 
 def CheckIntegrity(GUI=False):
     return "ok"
