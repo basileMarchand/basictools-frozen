@@ -183,14 +183,28 @@ geoSupport[Hexaedron_8] = GeoHex
 numberOfNodes[Hexaedron_8] = 8;
 dimension[Hexaedron_8] = 3
 linear[Hexaedron_8] = True
-faces[Hexaedron_8] = [(Quadrangle_4,[0, 3, 2, 1]),
-                      (Quadrangle_4,[0, 1, 5, 4]),
+faces[Hexaedron_8] = [(Quadrangle_4,[3, 0, 4, 7]),
                       (Quadrangle_4,[1, 2, 6, 5]),
+                      (Quadrangle_4,[0, 1, 5, 4]),
                       (Quadrangle_4,[2, 3, 7, 6]),
-                      (Quadrangle_4,[3, 0, 4, 7]),
+                      (Quadrangle_4,[0, 3, 2, 1]),
                       (Quadrangle_4,[4, 5, 6, 7]),
      ]
+faces2[Hexaedron_8] = [(Bar_2,[0,1]),
+                       (Bar_2,[1,2]),
+                       (Bar_2,[2,3]),
+                       (Bar_2,[3,0]),
 
+                       (Bar_2,[4,5]),
+                       (Bar_2,[5,6]),
+                       (Bar_2,[6,7]),
+                       (Bar_2,[7,4]),
+
+                       (Bar_2,[0,4]),
+                       (Bar_2,[1,5]),
+                       (Bar_2,[2,6]),
+                       (Bar_2,[3,7]),
+                           ]
 
 #quadratic
 Tetrahedron_10 = 'tet10'
