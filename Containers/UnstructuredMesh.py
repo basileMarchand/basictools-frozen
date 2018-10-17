@@ -62,6 +62,9 @@ class ElementsContainer(BaseOutputObject):
         if  self.connectivity.shape[1] : return self.connectivity.shape[1]
         return ElementNames.numberOfNodes[self.elementType]
 
+    def GetNodesIdFor(self,ids):
+        return np.unique(self.connectivity[ids,:])
+
     def GetTag(self, tagName):
         return self.tags.CreateTag(tagName,False)
 
