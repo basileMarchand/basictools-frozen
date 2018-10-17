@@ -100,7 +100,7 @@ def ReadProperties(data, props ,obj,typeConversion=True):
                   print(obj )
                   print(prop)
                   print(data)
-                  raise (Exception("Error setting  '"+str(prop)+"'" ) )
+                  raise (ValueError("Error setting  '"+str(prop)+"'" ) )
            else:
               theSetter(data[prop])
     except KeyError as e:
