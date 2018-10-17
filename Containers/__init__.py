@@ -4,6 +4,7 @@ __all__ = ["vtkBridge",
            "UnstructuredMesh",
            'UnstructuredMeshTools',
            'ConstantRectilinearMesh',
+           'ConstantRectilinearMeshTools',
            'MeshBase',
            'Octree',
            'ElementNames'

@@ -11,7 +11,9 @@ __all__ = [
 'PrintBypass',
 'Tests',
 'TextFormatHelper',
-'which'
+'which',
+"Factory",
+"ProgressBar"
  ]
 
 

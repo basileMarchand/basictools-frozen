@@ -48,7 +48,7 @@ class UtSplitter(WriterBase):
                 temp2[count].append(int(fil))
               except ValueError:
                 temp2[count].append(fil)
-          count += 1        
+          count += 1
         subdomains = []
         for f in temp2:
           if 'geof' in f and self.name in f:
@@ -106,7 +106,7 @@ class UtSplitter(WriterBase):
       for sd in range(1,self.nbsd+1):
         sdString = sdTosdString(sd)
         localMesh = GR.ReadGeof(fileName = self.dataFolder+self.name + "-pmeshes" + os.sep + self.name + sdString + ".geof",readElset=False,readFaset=False,printNotRead=False)
-        
+
         Tag3D(localMesh)
         localIdstotreat = Return3DElements(localMesh)
         localOriginalIDNodes = np.array(localMesh.originalIDNodes-1, dtype=int)
@@ -139,15 +139,16 @@ class UtSplitter(WriterBase):
             data_node[count0:count0+localMesh.Nodes] = globaldataNode[reader.node[k]][localOriginalIDNodes,timeStep]
             count0 += localMesh.Nodes
         data_node.astype(np.float32).byteswap().tofile(self.outputFolder + self.name + sdString +".node")
- 
+
 
         #write .ut
         __string = "**meshfile " + os.path.relpath(self.dataFolder, self.outputFolder) + os.sep + self.name + "-pmeshes" + os.sep + self.name + sdString + ".geof\n"
         with open(self.dataFolder + self.name + ".ut", 'r') as inFile:
-          next(inFile)
+          #next(inFile)
+          inFile.readline()
           for i in range(3):
             __string += inFile.readline()
-      
+
         with open(self.outputFolder + self.name + sdString + ".ut", "w") as outFile:
           outFile.write(__string)
           for timeStep in range(reader.time.shape[0]):
@@ -220,7 +221,7 @@ def CheckIntegrity():
       sdString = sdTosdString(i+1)
       print(TFormat.InRed("node files for subdomain "+str(i+1)+" equals  ? "+ str(filecmp.cmp(tempdir + "cube"+sdString+".node",  BasicToolsTestData.GetTestDataPath() + "UtParExample/cube"+sdString+".node", shallow=False))))
       print(TFormat.InRed("integ files for subdomain "+str(i+1)+" equals ? "+ str(filecmp.cmp(tempdir + "cube"+sdString+".integ", BasicToolsTestData.GetTestDataPath() + "UtParExample/cube"+sdString+".integ", shallow=False))))
-    
+
     print(tempdir)
     return "ok"
 

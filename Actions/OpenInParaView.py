@@ -28,7 +28,11 @@ def OpenInParaView( mesh=None,filename=None, run=True):
         Popen([paraviewExec,filename])
 
 def CheckIntegrity():
+    from BasicTools.Containers.UnstructuredMeshTools import CreateCube
+    mesh = CreateCube(dimensions=[20,21,22],spacing=[2.,2.,2.],ofTetras=True)
+
     from BasicTools.Actions.OpenInParaView import OpenInParaView
-    #OpenInParaView(mesh)
-    pass
+    OpenInParaView(mesh,run=False)
+
+    return "ok"
 

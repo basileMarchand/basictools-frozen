@@ -31,7 +31,8 @@ __all__ = [
 'XdmfTools',
 'XdmfWriter',
 'ZebulonIO',
-'Parallel'
+'Parallel',
+"MeshTools"
 ]
 
 __author__ = "Felipe Bordeu"

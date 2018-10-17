@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
 __all__ = [
-'UtMerger'
+'UtMerger',
+'UtSplitter'
 ]
 
 __author__ = "Fabien Casenave"

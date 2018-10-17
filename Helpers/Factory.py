@@ -67,3 +67,10 @@ class Factory(BaseOutputObject):
 
         raise(Exception("Unable to create object of type " + str(name) +"\n Possible object are :"+ str(cls._Catalog.keys())  ))# pragma: no cover
 
+def CheckIntegrity(GUI=False):
+    fact = Factory()
+    return "ok"
+
+
+if __name__ == '__main__':
+    print(CheckIntegrity(True))#pragma: no cover
