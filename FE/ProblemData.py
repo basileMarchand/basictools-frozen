@@ -46,7 +46,6 @@ class Solution(object):
       res =  "\n    node  : "+str(list(self.data_node.keys()))
       res += "\n    integ : "+str(list(self.data_integ.keys()))
       return res
-    
 
 class ProblemData(BaseOutputObject):
     def __init__(self):
@@ -72,16 +71,16 @@ class ProblemData(BaseOutputObject):
 
     def InitWriter(self, loadingKey, name, folder, Nnode = None, Nint = None):
        import BasicTools.IO.UtWriter as UW
+       import os
        self.UtW = UW.UtWriter()
-       self.UtW.SetName(name)
-       self.UtW.SetFolder(folder)
+       self.UtW.SetFileName(folder+os.sep+name)
        self.UtW.AttachMesh(self.mesh)
        self.UtW.AttachDataFromProblemData(self, loadingKey, Nnode = Nnode, Nint = Nint)
        self.UtW.AttachSequence(self.loadings[loadingKey].timeSequence)
 
     def Write(self, loadingKey, name, folder, skipCtnod = False):
        self.InitWriter(loadingKey, name, folder)
-       self.UtW.Write(writeGeof=True, skipCtnod = skipCtnod)
+       self.UtW.WriteFiles(writeGeof=True, skipCtnod = skipCtnod)
 
 
     def __str__(self):
@@ -160,18 +159,39 @@ class Orientation(BaseOutputObject):
        self.first  = np.array([1.0, 0.0, 0.0], dtype=np.float)
        # second lies on the y axis for cartesian
        self.second = np.array([0.0, 1.0, 0.0], dtype=np.float)
+       self.third = np.array([0.0, 0.0,1.0], dtype=np.float)
 
+       self.RMatrix = np.array([[1.0,0,0],[0,1,0],[0,0,1]])
     def SetOffset(self,data):
+        # this point define the origin of the new coordinate system
         self.offset  = np.array(data, dtype=np.float)
 
     def SetFirst(self,data):
+        # this point define the x coordinate (direction) with respect to the new origin
         self.first  = np.array(data, dtype=np.float)
         self.first /= np.linalg.norm(self.first)
 
     def SetSecond(self,data):
+        # this point define the y coordinate (direction) with respect to the new origin
+        # the z direction is calculated with a cross product
         self.second = np.array(data, dtype=np.float)
         self.second -= self.first*np.dot(self.first,self.second)
         self.second /= np.linalg.norm(self.second)
+        self.third = np.cross(self.first,self.second)
+        self.RMatrix[0,:] = self.first
+        self.RMatrix[1,:] = self.second
+        self.RMatrix[2,:] = self.third
+
+    def ApplyInvTransform(self,point):
+        # we apply inverse of the transformation
+        #p = point+self.offset
+        return np.dot(self.RMatrix.T,point)+self.offset
+
+    def ApplyTransform(self,point):
+        # we apply inverse of the transformation
+        #p = point+self.offset
+        return np.dot(self.RMatrix,point-self.offset)
+
     def __str__(self):
         res  = "\n    offset : " + str(self.offset)
         res += "\n    first  : " + str(self.first)
@@ -185,6 +205,10 @@ def CheckIntegrity():
     orient = Orientation()
     orient.SetFirst([2,1,0])
     orient.SetSecond([1,2,0])
+    p = [1,2,3]
+    pprim = orient.ApplyTransform(p)
+    if np.linalg.norm(orient.ApplyInvTransform(pprim) -p ) > 1e-15 :raise
+
     res.orientations["Toto"] = orient
 
 
@@ -232,9 +256,9 @@ def CheckIntegrity():
     mymesh = GR.ReadGeof(fileName=BasicToolsTestData.GetTestDataPath() + "UtExample/cube.geof")
 
     res.AttachMesh(mymesh)
-  
+
     ##################################
-    # Check WriteUt  
+    # Check WriteUt
     res.Write("Run1", "toto", tempdir)
     ##################################
 

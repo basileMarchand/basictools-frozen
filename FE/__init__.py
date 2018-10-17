@@ -23,5 +23,6 @@ __all__ = [
 "ZmatFemProblem",
 "Integration",
 "WeakForm",
+"ProblemData"
 ]
 
