@@ -42,33 +42,7 @@ build:
           - FE/*.so
 
 
-test:
-    stage: test
-    tags:
-        - MSBasicTools
-    script:
-        - module load python/2.7.12_Anaconda
-        - module load zset
-        - module load abaqus/6.13-6
-        - cd ..
-        - export PYTHONPATH=$PWD:$PYTHONPATH
-        - python BasicTools/Helpers/Tests.py -e ${MYPROJECT}
-
-test_full_output_stop_at_first_error:
-    stage: debug
-    tags:
-        - MSBasicTools
-    script:
-        - module load python/2.7.12_Anaconda
-        - module load zset
-        - module load abaqus/6.13-6
-        - cd ..
-        - export PYTHONPATH=$PWD:$PYTHONPATH
-        - python BasicTools/Helpers/Tests.py -e ${MYPROJECT} -f -s
-    when: on_failure
-    dependencies: [test]
-
-coverage:
+test_with_coverage:
     stage: test
     tags:
         - MSBasicTools
@@ -84,6 +58,22 @@ coverage:
         name: "Coverage"
         paths:
             - public/coverage
+
+test_full_output_stop_at_first_error:
+    stage: debug
+    tags:
+        - MSBasicTools
+    script:
+        - module load python/2.7.12_Anaconda
+        - module load zset
+        - module load abaqus/6.13-6
+        - cd ..
+        - export PYTHONPATH=$PWD:$PYTHONPATH
+        - python BasicTools/Helpers/Tests.py -e ${MYPROJECT} -f -s
+    when: on_failure
+    dependencies: [test_with_coverage]
+
+
 
 pages:
     stage: deploy
