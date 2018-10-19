@@ -26,6 +26,13 @@ options :
 
 from BasicTools.Helpers.which import which
 
+def SkipTest(evironementVaribleName):
+    import os
+    if evironementVaribleName in os.environ:
+        print("Warning skiping test (environement variable "+str(evironementVaribleName)+" set)")
+        return True
+    return False
+
 
 def GetUniqueTempFile(suffix="",prefix='tmp'):
     #solution from

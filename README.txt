@@ -85,5 +85,15 @@ The page for the bug repports and more:
                coverage http://coverage.readthedocs.org/en/coverage-4.0.3/excluding.html
 
 
+    DISABLING TESTS :
 
 
+    Some tests can be disabled using an enviroment variable. For Example in the case
+    the test needs an external program not available in the current system.
+
+    The idea is to use a non empty enviroment variable in the form of :
+
+        "appsname_NO_FAIL"
+
+    Please look at the file BasicTools/FE/ZmatFemProblem.py at the beginning of
+    the CheckIntegrity() function for an example.

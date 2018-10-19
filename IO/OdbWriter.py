@@ -254,6 +254,10 @@ WormholeServer(""" +str(port) +""",dry=False)
     pOdb.close()
 
 def CheckIntegrity():
+
+    from BasicTools.Helpers.Tests import SkipTest
+    if SkipTest("ABAQUS_NO_FAIL"): return "ok"
+
     import BasicTools.Containers.UnstructuredMesh as UM
 
     from BasicTools.Helpers.Tests import TestTempDir

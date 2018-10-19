@@ -14,10 +14,6 @@ from BasicTools.FE.Fields.IntegrationPointField import IntegrationPointField
 from BasicTools.FE.IntegrationsRules import LagrangeP1
 import sys
 
-if sys.version_info[0] == 2:
-    import pyumat
-else:
-    import py3umat as pyumat
 
 class UMatFemProblem(BaseOutputObject):
     cpt = 0
@@ -37,6 +33,14 @@ class UMatFemProblem(BaseOutputObject):
 
         self.u = [ NodalField() for i in range(3)]
         self.du = [ NodalField() for i in range(3)]
+
+        if sys.version_info[0] == 2:
+            import pyumat
+            #return __import__('pyumat')
+        else:
+            import py3umat as pyumat
+            #return __import__('py3umat')
+        self.pyumat = pyumat
 
     def SetMesh(self,mesh):
         self.mesh = mesh
@@ -319,7 +323,7 @@ ddsddeNew = pyumat.umat(stress=stress,statev=statev,ddsdde=ddsdde,sse=sse,spd=sp
         kinc  = 1
 
         #print(stran)
-        ddsddeNew = pyumat.umat(stress=stress,statev=statev,ddsdde=ddsdde,sse=sse,spd=spd,scd=scd,rpl=rpl,ddsddt=ddsddt,drplde=drplde,drpldt=drpldt,stran=stran,dstran=dstran,time=timesim,dtime=dtime,
+        ddsddeNew = self.pyumat.umat(stress=stress,statev=statev,ddsdde=ddsdde,sse=sse,spd=spd,scd=scd,rpl=rpl,ddsddt=ddsddt,drplde=drplde,drpldt=drpldt,stran=stran,dstran=dstran,time=timesim,dtime=dtime,
         temp=temperature,dtemp=dtemp,predef=predef,dpred=dpred,cmname=cmname,ndi=ndi,nshr=nshr,ntens=ntens,nstatv=nstatv,props=props,nprops=nprops,coords=coords,drot=drot,pnewdt=pnewdt,celent=celent,dfgrd0=dfgrd0,
         dfgrd1=dfgrd1,noel=noel,npt=npt,kslay=kslay,kspt=kspt,kstep=kstep,kinc=kinc)
 
@@ -498,8 +502,11 @@ ddsddeNew = pyumat.umat(stress=stress,statev=statev,ddsdde=ddsdde,sse=sse,spd=sp
             fixedValues[freeMask] = res
 
 
-def CheckIntegrity(GUI=False)     :
-    import os
+def CheckIntegrity(GUI=False):
+
+    from BasicTools.Helpers.Tests import SkipTest
+    if SkipTest("ZSET_NO_FAIL"): return "ok"
+
     from BasicTools.Helpers.Tests import TestTempDir
     from BasicTools.IO.PathControler import TemporalChdir
     with TemporalChdir(TestTempDir.GetTempPath()):
