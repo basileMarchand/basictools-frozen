@@ -268,7 +268,6 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
 
     return output
 
-
 def VtkToMesh(vtkmesh, meshobject=None, TagsAsFields=False):
 
     if meshobject is None:
@@ -338,6 +337,16 @@ def VtkToMesh(vtkmesh, meshobject=None, TagsAsFields=False):
             out.elemFields[name] = field
 
     return out
+
+def VtkToMeshMultiblock(vtkObject,OP=VtkToMesh)
+    if input.IsA("vtkMultiBlockDataSet"):
+        res = list()
+        nb = input.GetNumberOfBlock()
+        for i in range(nb):
+            block = input.GetBlock(i)
+            res.append(VtkToMeshMultiblock(block,OP=OP))
+    else:
+      return OP(input)
 
 
 
