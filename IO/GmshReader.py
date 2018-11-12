@@ -35,7 +35,7 @@ def ReadGmsh(fileName=None,string=None,out=None):
 
     filetointernalid = {}
     #filetointernalidElem =  {}
-
+    tagsNames = []
     while(True):
         line = string.readline()
         if not line: break
@@ -79,6 +79,32 @@ def ReadGmsh(fileName=None,string=None,out=None):
                 cpt +=1
 
             continue
+        if l.find("$PhysicalNames")>-1 :
+            line = string.readline()
+            l = line.strip('\n').strip()
+            numberOfTags = int(l)
+            print(numberOfTags)
+            if l.find("$EndPhysicalNames") > -1:
+                continue
+
+            while(numberOfTags > 0):
+                numberOfTags -= 1
+                line = string.readline()
+                if line.find("$EndPhysicalNames") > -1:
+                    break
+                l = line.strip('\n').strip().split()
+
+                dimensionality = int(l[0])
+                tagNumber = l[1]
+                tagName = l[2].strip('"').strip("'")
+                tagsNames.append((dimensionality,tagNumber,tagName)  )
+
+            line = string.readline()
+            if line.find("$EndPhysicalNames") == -1:
+                print("Specting $EndPhysicalNames Keyword in the file (corrupted file??")
+
+            continue
+
 
         if l.find("$Elements")>-1 :
             line = string.readline()
@@ -122,6 +148,19 @@ def ReadGmsh(fileName=None,string=None,out=None):
                 cpt +=1
             continue
         print("ignoring line : " + l )
+
+
+    ## apply tags names
+    for dim,number,newName in tagsNames:
+        print("*** chaning tag form '" + str("PhyTag"+number) + "' to " + str(newName)+  " of dim " + str(  dim) )
+        for name,data in res.elements.items():
+            print(dim)
+            print(EN.dimension[name])
+            if EN.dimension[name] != dim :
+                continue
+            print("chaning tag form " + str("PhyTag"+number) + " to " + str(newName))
+            data.tags.RenameTag("PhyTag"+number,newName,noError=True)
+
     res.PrepareForOutput()
     return res
 
@@ -133,6 +172,11 @@ def CheckIntegrity():
 $MeshFormat
 2.2 0 8
 $EndMeshFormat
+$PhysicalNames
+2
+0 223 "1D"
+0 227 "2D"
+$EndPhysicalNames
 $Nodes
 3
 1 30 0 0
