@@ -338,7 +338,7 @@ def VtkToMesh(vtkmesh, meshobject=None, TagsAsFields=False):
 
     return out
 
-def VtkToMeshMultiblock(vtkObject,OP=VtkToMesh)
+def VtkToMeshMultiblock(vtkObject,OP=VtkToMesh):
     if input.IsA("vtkMultiBlockDataSet"):
         res = list()
         nb = input.GetNumberOfBlock()
