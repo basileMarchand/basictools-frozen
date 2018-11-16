@@ -321,3 +321,4 @@ def CheckIntegrityFlexion(P,tetra,GUI=False):
 
 if __name__ == '__main__':
     print(CheckIntegrity(True))#pragma: no cover
+    print("Done")
