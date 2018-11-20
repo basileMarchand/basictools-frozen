@@ -28,7 +28,7 @@ doc:
 
 
 
-build:
+build_Python2:
     stage: build
     tags:
         - MSBasicTools
@@ -41,8 +41,39 @@ build:
         paths:
           - FE/*.so
 
+build_Python3:
+    stage: build
+    tags:
+        - MSBasicTools
+    script:
+        - module load PISCO eigen/3.3.4
+        - source /softs/python/miniconda3/bin/activate PISCO3
+        - cd ..
+        - export PYTHONPATH=$PWD:$PYTHONPATH
+        - python3 BasicTools/setup.py build_ext --inplace
+    artifacts:
+        paths:
+          - FE/*36*.so
 
-test_with_coverage:
+
+test_with_coverage_Python3:
+    stage: test
+    tags:
+        - MSBasicTools
+    script:
+        - module load PISCO
+        - source /softs/python/miniconda3/bin/activate PISCO3
+        - module load zset
+        - export PYTHONPATH=$PWD/../:$PYTHONPATH
+        - mkdir -p public/coverage3
+        - cd public/coverage3
+        - python3 ../../Helpers/Tests.py -e ${MYPROJECT} -cl
+    artifacts:
+        name: "Coverage3"
+        paths:
+            - public/coverage3
+
+test_with_coverage_Python2:
     stage: test
     tags:
         - MSBasicTools
@@ -51,15 +82,30 @@ test_with_coverage:
         - module load zset
         - module load abaqus/6.13-6
         - export PYTHONPATH=$PWD/../:$PYTHONPATH
-        - mkdir -p public/coverage
-        - cd public/coverage
+        - mkdir -p public/coverage2
+        - cd public/coverage2
         - python ../../Helpers/Tests.py -e ${MYPROJECT} -cl
     artifacts:
-        name: "Coverage"
+        name: "Coverage2"
         paths:
-            - public/coverage
+            - public/coverage2
 
-test_full_output_stop_at_first_error:
+
+test_full_output_stop_at_first_error_Python3:
+    stage: debug
+    tags:
+        - MSBasicTools
+    script:
+        - module load PISCO
+        - source /softs/python/miniconda3/bin/activate PISCO3
+        - module load zset
+        - cd ..
+        - export PYTHONPATH=$PWD:$PYTHONPATH
+        - python BasicTools/Helpers/Tests.py -e ${MYPROJECT} -f -s
+    when: on_failure
+    dependencies: [test_with_coverage_Python3]
+
+test_full_output_stop_at_first_error_Python2:
     stage: debug
     tags:
         - MSBasicTools
@@ -71,7 +117,7 @@ test_full_output_stop_at_first_error:
         - export PYTHONPATH=$PWD:$PYTHONPATH
         - python BasicTools/Helpers/Tests.py -e ${MYPROJECT} -f -s
     when: on_failure
-    dependencies: [test_with_coverage]
+    dependencies: [test_with_coverage_Python2]
 
 
 
