@@ -376,9 +376,17 @@ void MonoElementsIntegralCpp::Integrate( WeakForm* wform, std::vector<int>& idst
 
 
                 const int numberOfProds = monom.prod.size();
+                //if(elem_counter==0 && ip == 0){
+                //	std::cout << "monom " << termn << " : " << monom << std::endl;
+                //}
+
                 for(int prodn=0; prodn< numberOfProds; ++prodn){
 
+
                     WeakTerm& term = monom.prod[prodn];
+                    //if(elem_counter==0 && ip == 0){
+	                //    std::cout << " working on term : " << term << std::endl;
+               	    //}
 
                     if(term.internalType == 0){
                         factor *= normal(term.derDegree,0);

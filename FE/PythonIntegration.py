@@ -287,7 +287,7 @@ class MonoElementsIntegral(BOO):
     self.p, self.w = self.integrationRule[EN.geoSupport[domain.elementType]];
 
     self.geoSpace = LagrangeSpaceGeo[domain.elementType]
-
+    self.geoSpace.SetIntegrationRule(self.p,self.w)
 
     self.NumberOfShapeFunctionForEachSpace = np.zeros(len(self.__usedSpaces__), dtype=int)
 

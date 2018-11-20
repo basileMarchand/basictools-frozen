@@ -29,7 +29,6 @@ def Integrate( mesh, wform, constants, fields, dofs,spaces,numbering, tag="3D",i
 
 def IntegrateGeneral( mesh, wform, constants, fields, unkownFields,testFields=None, tag="3D",integrationRuleName=None,onlyEvaluation=False):
 
-    import sympy
     import BasicTools.FE.WeakForm as WeakForm
     if not isinstance(wform, WeakForm.PyWeakForm):
         from BasicTools.FE.WeakForm import SymWeakToNumWeak
@@ -46,6 +45,7 @@ def IntegrateGeneral( mesh, wform, constants, fields, unkownFields,testFields=No
         import BasicTools.FE.NativeIntegration
     except :
         typeCpp = False
+        print("Warning : Using Python Integration (very slow)")
 
     if UseCpp and typeCpp:
         import BasicTools.FE.NativeIntegration as NI
@@ -415,7 +415,7 @@ def CompureVolume(mesh):
 
 def CheckIntegrity(GUI=False):
     global UseCpp
-
+    saveOldeStateOfUseCpp = UseCpp
     UseCpp = False
     if CheckIntegrityNormalFlux(GUI).lower() != "ok":
         return "Not ok in the Normal Calculation"
@@ -460,6 +460,7 @@ def CheckIntegrity(GUI=False):
     print(stopt)
     print("ALL ok")
 
+    UseCpp = saveOldeStateOfUseCpp
     return "ok"
 
 if __name__ == '__main__':

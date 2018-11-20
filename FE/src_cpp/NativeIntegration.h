@@ -210,7 +210,10 @@ struct MonoElementsIntegralCpp{
   //
   void SetNumberingI(int i, int n, int m, INT_TYPE* ip){
      if(this->lnumbering[i]) delete this->lnumbering[i];
+     //std::cout << "size of the numbering "  << n << "  " << m << std::endl;
      this->lnumbering[i] = new MapMatrixIDD(ip,n,m);
+     //int test = (*this->lnumbering[i])(0,0);
+     //int test2 = (*this->lnumbering[i])(n-1,m-1);
    }
   //////////////////////////////////////////
   void SetNumberOfValues(int i){

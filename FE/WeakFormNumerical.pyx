@@ -46,19 +46,19 @@ cdef class PyWeakTerm:
 
     @property
     def fieldName(self):
-        return self._c_WeakTerm.fieldName
+        return self._c_WeakTerm.fieldName.decode()
 
     @fieldName.setter
     def fieldName(self, value):
-        self._c_WeakTerm.fieldName = value
+        self._c_WeakTerm.fieldName = value.encode()
 
     @property
     def derCoordName(self):
-        return self._c_WeakTerm.derCoordName
+        return self._c_WeakTerm.derCoordName.decode()
 
     @derCoordName.setter
     def derCoordName(self, value):
-        self._c_WeakTerm.derCoordName = value
+        self._c_WeakTerm.derCoordName = value.encode()
 
     @property
     def derCoordIndex_(self):
