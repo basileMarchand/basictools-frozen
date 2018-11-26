@@ -335,24 +335,24 @@ def CheckIntegrity(GUI=False):
     print(u.diff(Symbol("x")))
     print(ut.diff(Symbol("x")))
     print("-----------------")
-    pprint(u)
-    pprint(Gradient(u))
+    pprint(u,use_unicode=GUI)
+    pprint(Gradient(u),use_unicode=GUI)
 
-    pprint(Strain(u))
-    pprint(u[0].diff(space[1]))
+    pprint(Strain(u),use_unicode=GUI)
+    pprint(u[0].diff(space[1]),use_unicode=GUI)
 
 
     from BasicTools.FE.MaterialHelp import HookeIso
     K = HookeIso(1,0.3)
-    pprint(K)
+    pprint(K,use_unicode=GUI)
 
     ener = ToVoigtEpsilon(Strain(u+u0)).T*K*ToVoigtEpsilon(Strain(ut))+ f.T*ut*alpha
-    pprint(ener)
+    pprint(ener,use_unicode=GUI)
 
     wf = SymWeakToNumWeak(ener)
-    print("coucou")
+
     print([str(wf.GetMonom(i)) for i in range(wf.GetNumberOfTerms())])
-    print("coucouII")
+
 
     unknames = ["u_0", "u_1", "u_2"]
 
@@ -374,4 +374,4 @@ def CheckIntegrity(GUI=False):
     return "OK"
 
 if __name__ == '__main__':
-    print(CheckIntegrity())# pragma: no cover
+    print(CheckIntegrity(GUI=True))# pragma: no cover
