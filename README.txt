@@ -27,7 +27,7 @@ The page for the bug repports and more:
     Qt
     Vtk
     Cython
-
+    Eigen
 
 3) INSTALLATION
 
