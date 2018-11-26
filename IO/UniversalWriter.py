@@ -59,7 +59,7 @@ def WriteMesh(filename,outmesh,binary=False):# pragma: no cover
         GridFieldsNames = outmesh.elemFields.keys()
         CellFields = outmesh.elemFields.values()
 
-    writer.Write(baseMeshObject=outmesh,PointFieldsNames=PointFieldsNames,PointFields=PointFields,GridFieldsNames=GridFieldsNames,CellFields=CellFields )
+    writer.Write(outmesh,PointFieldsNames=PointFieldsNames,PointFields=PointFields,GridFieldsNames=GridFieldsNames,CellFields=CellFields )
     writer.Close()
 
 ## to use this function add this lines to the
