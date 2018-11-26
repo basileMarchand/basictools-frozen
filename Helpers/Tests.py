@@ -320,45 +320,50 @@ def TestAll(modulestotreat=['ALL'], fulloutput=False, stopAtFirstError= False, e
 def CheckIfAllThePresentFilesAreTested(extraToolsBoxs,testedFiles):
     import os
 
-    pythonPath = os.environ['PYTHONPATH']
+    pythonPaths = os.environ['PYTHONPATH'].split(":")
 
-    toignore = ['.git',"__pycache__","__init__.py","setup.py"]
+    toignore = ['.git', # git file
+                "__pycache__", # python 3
+                "__init__.py",# infra
+                "setup.py", # compilation
+                "BasicTools/docs/conf.py", #documentation
+                ]
     testedFiles = testedFiles.keys()
     presentFiles = []
-    for eTB in extraToolsBoxs:
-        path = pythonPath + os.sep + eTB
-        #print(path)
-#    if os.path.isdir("/home/el")
+    for pythonPath in pythonPaths:
+        for eTB in extraToolsBoxs:
+            path = pythonPath + os.sep + eTB
+            #print(path)
 
-        for dirname, dirnames, filenames in os.walk(path):
-            cleandirname = dirname.replace(pythonPath+os.sep,"").replace(os.sep,".")
-            ##print(cleandirname )
-            #return
-            # print path to all subdirectories first.
-            #for subdirname in dirnames:
-            #    print(os.path.join(dirname, subdirname))
+            for dirname, dirnames, filenames in os.walk(path):
+                cleandirname = dirname.replace(pythonPath+os.sep,"")#.replace(os.sep,".")
+                #print(cleandirname )
+                #return
+                # print path to all subdirectories first.
+                #for subdirname in dirnames:
+                #    print(os.path.join(dirname, subdirname))
 
-            # print path to all filenames.
-            for filename in filenames:
-                if filename in toignore:
-                    continue
+                # print path to all filenames.
+                for filename in filenames:
+                    if filename in toignore:
+                        continue
 
-                if len(filename) > 3 and filename[-3:] == ".py":
-                    if len(cleandirname) == 0:
-                        presentFiles.append(filename)
-                    else:
-                        presentFiles.append(cleandirname+"."+filename)
-                    #print(os.path.join(dirname, filename))
+                    if len(filename) > 3 and filename[-3:] == ".py":
+                        if len(cleandirname) == 0:
+                            presentFiles.append(filename)
+                        else:
+                            presentFiles.append(cleandirname+os.sep+filename)
+                        #print(os.path.join(dirname, filename))
 
-            # Advanced usage:
-            # editing the 'dirnames' list will stop os.walk() from recursing into there.
-            for dti in toignore:
-                if dti in dirnames:
-                    dirnames.remove(dti)
+                # Advanced usage:
+                # editing the 'dirnames' list will stop os.walk() from recursing into there.
+                for dti in toignore:
+                    if dti in dirnames:
+                        dirnames.remove(dti)
 
     for tf in testedFiles:
-        if (tf+".py") in presentFiles:
-            presentFiles.remove(tf+".py")
+        if (tf.replace(".",os.sep)+".py") in presentFiles:
+            presentFiles.remove(tf.replace(".",os.sep) +".py")
 
     if len(presentFiles) > 0 :
         print("files Present in the repository but not tested")
