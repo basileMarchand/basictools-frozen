@@ -40,30 +40,30 @@ build_Python2:
     artifacts:
         paths:
           - FE/*.so
+        expire_in: 60 minutes
 
 build_Python3:
     stage: build
     tags:
         - MSBasicTools
     script:
-        - module load PISCO eigen/3.3.4
-        - source /softs/python/miniconda3/bin/activate PISCO3
+        - module load PISCO/Python3Dev eigen/3.3.4
         - cd ..
         - export PYTHONPATH=$PWD:$PYTHONPATH
         - python3 BasicTools/setup.py build_ext --inplace
     artifacts:
         paths:
           - FE/*36*.so
-
+        expire_in: 60 minutes
 
 test_with_coverage_Python3:
     stage: test
     tags:
         - MSBasicTools
     script:
-        - module load PISCO
-        - source /softs/python/miniconda3/bin/activate PISCO3
+        - module load PISCO/Python3Dev
         - module load zset
+        - export ZSET_NO_FAIL="True"
         - export PYTHONPATH=$PWD/../:$PYTHONPATH
         - mkdir -p public/coverage3
         - cd public/coverage3
@@ -96,8 +96,7 @@ test_full_output_stop_at_first_error_Python3:
     tags:
         - MSBasicTools
     script:
-        - module load PISCO
-        - source /softs/python/miniconda3/bin/activate PISCO3
+        - module load PISCO/Python3Dev
         - module load zset
         - cd ..
         - export PYTHONPATH=$PWD:$PYTHONPATH
