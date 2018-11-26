@@ -3,7 +3,12 @@ from Cython.Build import cythonize
 import numpy,os
 
 enable_MKL = True
-compile_args = ['-O3', '-std=c++11']#
+Debug = True
+if Debug:
+    compile_args = ['-g','-O', '-std=c++11']
+else:
+    compile_args = ['-O3', '-std=c++11']#
+
 
 if enable_MKL:
     #compile_args.append("-DEIGEN_USE_MKL_ALL")
