@@ -209,7 +209,7 @@ class MeshReader(ReaderBase):
             if l.find("End")>-1 :
                 break
 
-            self.PrintVerbose("ignoring line : " + l )
+            self.PrintVerbose("ignoring line :->" + l +"<-")
 
         self.EndReading()
         return res
