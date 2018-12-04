@@ -8,6 +8,7 @@ import BasicTools.Containers.ElementNames as EN
 from BasicTools.IO.ReaderBase import ReaderBase
 
 from BasicTools.IO.MeshTools import ASCIITypes
+from BasicTools.IO.MeshTools import ASCIITags
 from BasicTools.IO.MeshTools import BinaryTypes
 from BasicTools.IO.MeshTools import BinaryKeywords as BKeys
 from BasicTools.IO.MeshTools import BinaryTags
@@ -190,6 +191,34 @@ class MeshReader(ReaderBase):
                         break
 
                 elements.connectivity -= 1;
+                continue
+
+            if l in ASCIITags:
+                elements = res.GetElementsOfType(ASCIITags[l][0])
+                tag = elements.GetTag(ASCIITags[l][1])
+
+                line = self.filePointer.readline()
+                l = line.strip('\n').lstrip().rstrip()
+                nbIds = int(l.split()[0])
+                self.PrintVerbose("Reading tags Elements")
+                cpt=0
+                ids = []
+                while(True):
+                    if nbIds == cpt:# pragma: no cover
+                        break
+
+                    line = self.filePointer.readline()
+                    l = line.strip('\n').lstrip().rstrip()
+
+                    if len(l) == 0:
+                        continue
+
+                    newids = list(map(int,l.split()))
+                    cpt += len(newids)
+
+                    ids.extend(newids)
+
+                tag.SetIds(np.array(ids,dtype=int)-1)
                 continue
 
             if l in  ["SolAtVertices"]:
