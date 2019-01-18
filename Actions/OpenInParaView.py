@@ -23,7 +23,7 @@ def OpenInParaView( mesh=None,filename=None, run=True):
 
         WriteMeshToXdmf(filename,mesh,PointFieldsNames=PointFieldsNames,PointFields=PointFields,CellFieldsNames=CellFieldsNames,CellFields=CellFields  )
 
-    if run:
+    if run:# pragma: no cover
         from subprocess import Popen
         Popen([paraviewExec,filename])
 
@@ -33,6 +33,7 @@ def CheckIntegrity():
 
     from BasicTools.Actions.OpenInParaView import OpenInParaView
     OpenInParaView(mesh,run=False)
+    OpenInParaView(mesh,filename="CheckIntegrity_OpenInParaview.xmf",run=False)
 
     return "ok"
 
