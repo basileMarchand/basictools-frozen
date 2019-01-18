@@ -1,7 +1,7 @@
 
 
-#include <Dense>
-#include <Sparse>
+#include <Eigen/Dense>
+#include <Eigen/Sparse>
 
 
 using Eigen::Dynamic;

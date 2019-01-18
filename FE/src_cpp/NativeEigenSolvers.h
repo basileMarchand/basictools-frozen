@@ -3,8 +3,8 @@
 
 
 #include <FE/src_cpp/Eigentype.h>
-#include <IterativeLinearSolvers>
-#include <SparseLU>
+#include <Eigen/IterativeLinearSolvers>
+#include <Eigen/SparseLU>
 
 
 using Eigen::Success;

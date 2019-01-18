@@ -1,7 +1,7 @@
 #include <iostream>
 
 #include "NativeIntegration.h"
-#include <SparseCore>
+#include <Eigen/SparseCore>
 //http://cython.readthedocs.io/en/latest/src/userguide/wrapping_CPlusPlus.html
 
 typedef Eigen::SparseMatrix<double> SpMat; // declares a column-major sparse matrix type of double
