@@ -104,6 +104,6 @@ def CheckIntegrity(GUI=False):
         CheckIntegrity_GetElementTrasfertMatrix(dim)
     return  "ok"
 
-if __name__ == '__main__':
-    print(CheckIntegrity(True)) # pragma: no cover
+if __name__ == '__main__':# pragma: no cover
+    print(CheckIntegrity(True))
     print("done")

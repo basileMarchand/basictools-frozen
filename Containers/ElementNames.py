@@ -252,4 +252,8 @@ linear[Hexaedron_27] = False
 
 
 def CheckIntegrity():
+    print(GeoPoint)
+    print(GeoPoint==GeoBar)
+    print(GeoPoint==1)
+    print(GeoPoint!=GeoBar)
     return "ok"

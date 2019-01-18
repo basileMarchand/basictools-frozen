@@ -170,6 +170,16 @@ def CheckIntegrity():
     tag.SetId(0,0)
     tag.AddToTag(1)
     len(tag)
+
+    tagII = obj.GetNodalTag("TagII")
+    tagII.Allocate(2)
+    tagII.SetId(0,1)
+    tagII.SetId(1,2)
+
+    tag.Merge(tagII)
+    print(tag.GetIds())
+
+
     print(obj.nodesTags)
     print('toto' in obj.nodesTags)
     obj.nodesTags.RenameTag('toto','newtoto')

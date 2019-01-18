@@ -92,24 +92,23 @@ class ConstantRectilinearMesh(MeshBase):
     def GetNumberOfElements(self,dim=None):
         if dim is None:
             dim = self.GetDimensionality()
+
         res = 1;
+
         if self.__dimensions[0] >= 1:
             res = res * (self.__dimensions[0]-1)
 
         if self.__dimensions[1] >= 1:
             res = res * (self.__dimensions[1]-1)
 
-        if self.GetDimensionality() == 2 :
-            if dim == 2:
-                return res
-            else:
-                return 0
+        if dim == 2:
+            return res
 
         if self.__dimensions[2] >= 1:
-            if dim == 3:
-                return  res * (self.__dimensions[2]-1)
-            else:
-                return 0
+            res = res * (self.__dimensions[2]-1)
+
+        if dim == 3:
+            return  res
 
     def GetDimensionality(self):
         return len(self.__dimensions)
@@ -363,7 +362,7 @@ class ConstantRectilinearMesh(MeshBase):
             return self.elements[ElementNames.Hexaedron_8 ].connectivity
         elif self.GetDimensionality() == 2:
             return self.elements[ElementNames.Quadrangle_4].connectivity
-        raise(Exception("Invalid dimensionality : " + str(self.GetDimensionality())) )
+        raise(Exception("Invalid dimensionality : " + str(self.GetDimensionality())) )# pragma: no cover
 
     def __str__(self):
         res = ''
@@ -377,18 +376,54 @@ class ConstantRectilinearMesh(MeshBase):
 
 
 def CheckIntegrity():
+
+    # Error checking tests
+    try:
+        # not implemented for dim = 1 this line must fail
+        myMesh = ConstantRectilinearMesh( dim=1)
+        raise("Error detecting bad argument") # pragma: no cover
+    except:
+        pass
+
+    myMesh = ConstantRectilinearMesh()
+    myMesh.SetDimensions([1,1,1]);
+    myMesh.SetSpacing([1, 1, 1]);
+
+
+    try:
+        # not implemented for dim = 1 this line must fail
+        myMesh.GetNodalIndicesOfBorder()
+        raise("Error detecting bad mesh props")# pragma: no cover
+    except:
+        pass
+
+
     myMesh = ConstantRectilinearMesh()
     myMesh.SetDimensions([2,2,2]);
     myMesh.SetSpacing([1, 1, 1]);
     #myMesh.SetOrigin([-2.5,-1.2,-1.5]);
 
     print(myMesh)
+    print(myMesh.elements[ElementNames.Hexaedron_8].GetNumberOfElements())
+    print(myMesh.elements[ElementNames.Hexaedron_8].GetNumberOfNodesPerElement())
     print((myMesh.IsConstantRectilinear()))
     print((myMesh.GetNamesOfElemTags()))
     print((myMesh.GetDimensions()))
     print((myMesh.GetMonoIndexOfNode(np.array([0,0,0]) )))
     print((myMesh.GetMonoIndexOfNode(np.array([[0,0,0],[1,1,1]]) )))
     print((myMesh.GetPosOfNodes()))
+    print(myMesh.GetClosestPointToPos([0,0.5,1.5]))
+    print(myMesh.GetClosestPointToPos([0,0.5,1.5],MultiIndex=True))
+
+    print(myMesh.GetElementAtPos([0,0.5,1.5]))
+    print(myMesh.GetElementAtPos([0,0.5,1.5],MultiIndex=True))
+
+    myMesh.elemTags.CreateTag("TestTag",False).SetIds([0,1])
+
+    if len(myMesh.GetElementsInTag("TestTag")) != 2 :
+        raise(Exception("Tag system not working corretly") )# pragma: no cover
+
+
 
     print((myMesh.GetConnectivityForElement(0)))
 
@@ -432,7 +467,7 @@ def CheckIntegrity():
 
     res = (myMesh.GetNodalIndicesOfBorder(0))
     print(res)
-    if np.any(np.sort(res) != [0, 1, 2, 3, 5, 6, 7, 8 ]):
+    if np.any(np.sort(res) != [0, 1, 2, 3, 5, 6, 7, 8 ]): # pragma: no cover
         return "Not Ok on 'GetNodalIndicesOfBorder(0)'"
 
     return "OK"

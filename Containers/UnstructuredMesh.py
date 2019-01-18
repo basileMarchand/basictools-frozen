@@ -96,27 +96,6 @@ class ElementsContainer(BaseOutputObject):
         from BasicTools.Containers.UnstructuredMeshTools import ExtractElementsByMask
         return  ExtractElementsByMask(self,mask)
 
-        self.connectivity = self.connectivity[mask,:]
-
-        numberOfNewElements = self.connectivity.shape[0]
-        self.cpt = numberOfNewElements ;
-        self.originalIds = np.empty((numberOfNewElements ,),dtype=np.int)
-        cpt = 0
-        for i in range(len(mask)):
-            if mask[i]:
-              self.originalIds[cpt] = i
-              cpt += 0
-
-        #CleanTags
-        for tag in self.tags  :
-            temp = np.extract(mask[tag.GetIds()],tag.GetIds())
-            newid = newIndex[temp]
-            outelems.tags.CreateTag(tag.name).SetIds(newid)
-
-        self.tags = Tags()
-
-
-
     def __str__(self):
         res  = "ElementsContainer \n"
         res += "  elementType    : {}\n".format(self.elementType)
@@ -187,6 +166,13 @@ class UnstructuredMesh(MeshBase):
                     n += data.GetNumberOfElements()
 
         return n
+
+    def MergeElements(self,other,force=False):
+        if (self.nodes is not other.nodes) and (not force) :
+            raise(RuntimeError("the two meshes does not share the same nodes fiels (potentially dangerous)"))
+
+        for name,data in other.elements.items():
+            self.GetElementsOfType(name).Merge(data)
 
     def ComputeGlobalOffset(self):
         cpt = 0
@@ -350,11 +336,27 @@ def CheckIntegrity():
     print(res.GetElementsInTag("bars"))
     print(res.GetElementsInTag("bars",useOriginalId=True))
 
-    print(res.GetElementsOfType("bars").GetTag("toto"))
+    print(res.GetElementsOfType(ElementNames.Bar_2).GetTag("toto"))
     print(res.GetPosOfNode(0))
     print(res)
     res.DeleteElemTags(["SecondElement"])
     print(res)
+
+    resII = CreateMeshOfTriangles([[0,0,0],[1,2,3],[0,1,0]], [[0,1,2]])
+    resII.AddNodeToTagUsingOriginalId(0,"First Point")
+    resII.GenerateManufacturedOriginalIDs()
+
+    try:
+        resII.MergeElements(res)
+        raise#pragma: no cover
+    except:
+        pass
+    resII.MergeElements(res,force=True)
+    print("----")
+    print(resII)
+    print(resII.GetElementsOfType(ElementNames.Triangle_3).DeleteElementsById([0]))
+    print(resII.GetNumberOfElements(dim=2))
+    del resII.elements[ElementNames.Triangle_3]
     return "ok"
 
 if __name__ == '__main__':

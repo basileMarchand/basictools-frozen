@@ -32,12 +32,21 @@ class node():
 
         self.value = None
 
-    def _str_(self):
+    def __str__(self):
         res = ""
-        if  self.posXposYposZ is None :
-            res += "(-)"
-        else :
-            res += self.posXposYposZ.__str__()
+        if self.value is not None:
+            res += "("+str(len(self.value))+")\n"
+            return res
+
+        res += "(A)" if self.posXposYposZ is None else str(self.posXposYposZ)
+        res += "(B)" if self.posXposYnegZ is None else str(self.posXposYnegZ)
+        res += "(C)" if self.posXnegYposZ is None else str(self.posXnegYposZ)
+        res += "(D)" if self.posXnegYnegZ is None else str(self.posXnegYnegZ)
+        res += "(E)" if self.negXposYposZ is None else str(self.negXposYposZ)
+        res += "(F)" if self.negXposYnegZ is None else str(self.negXposYnegZ)
+        res += "(G)" if self.negXnegYposZ is None else str(self.negXnegYposZ)
+        res += "(H)" if self.negXnegYnegZ is None else str(self.negXnegYnegZ)
+
 
         return res
 
@@ -447,26 +456,6 @@ class Octree():
             #flaten the output
             return [ item for sublist in list_list[-1] for item in  sublist.value]
 
-def find_closest_three(x, y, z, tree):
-    """
-    function to find the closest three data points to
-    a given data point
-    """
-    #brief sanity checking
-    if (x >= tree.Xmax or x <= tree.Xmin):
-        print( "Fail, out of range")
-    if (y >= tree.Ymax or y <= tree.Ymin):
-        print( "Fail, out of range")
-    if (z >= tree.Zmax or z <= tree.Zmin):
-        print( "Fail, out of range")
-
-    #find the node by coords
-    for level in range(tree.maxiter):
-        pass
-
-
-
-
 
 def CheckIntegrity():
 
@@ -488,6 +477,8 @@ def CheckIntegrity():
     tree.add_item("derp5", (10.34251,10.1234,-10.9876))
     print( "Great success")
 
+    print(tree.root)
+    print("-------")
     #get some data
     entries = tree.find_within_range((0,0,0), 40, "cube")
     entries = tree.find_within_range((0,0,0), [40]*3, "cube")
@@ -498,8 +489,8 @@ def CheckIntegrity():
       cpt += 1
 
     print(len(i))
-    if len(entries) != 4:
-        raise
+    if len(entries) != 4:# pragma: no cover
+        raise(Exception("Error") )
 
     return "ok"
 
