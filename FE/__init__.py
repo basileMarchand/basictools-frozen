@@ -6,7 +6,7 @@ __all__ = [
 'FElement',
 'FemHelp',
 'Hexa8Cuboid',
-'LinearSolver',
+
 'MaterialHelp',
 
 'Quad4Rectangle',
