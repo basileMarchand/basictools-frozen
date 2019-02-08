@@ -251,9 +251,12 @@ linear[Hexaedron_27] = False
 
 
 
-def CheckIntegrity():
+def CheckIntegrity(GUI=False):
     print(GeoPoint)
     print(GeoPoint==GeoBar)
     print(GeoPoint==1)
     print(GeoPoint!=GeoBar)
     return "ok"
+
+if __name__ == '__main__':# pragma: no cover
+    print(CheckIntegrity(GUI=True))
