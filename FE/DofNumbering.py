@@ -79,10 +79,10 @@ def ComputeDofNumbering(mesh,Space,dofs=None,tag=AllElements,sign=1,fromConnecti
     for name,data in mesh.elements.items():
         sp = Space[name]
 
-        if not name in dofs:
-            dof = np.empty((data.GetNumberOfElements(),sp.GetNumberOfShapeFunctions()), dtype=np.int_)
-        else:
+        if name in dofs:
             dof = dofs[name]
+        else:
+            dof = np.zeros((data.GetNumberOfElements(),sp.GetNumberOfShapeFunctions()), dtype=np.int_) -1
 
         if tag is AllElements:
             fil = range(data.GetNumberOfElements())
@@ -106,7 +106,6 @@ def ComputeDofNumbering(mesh,Space,dofs=None,tag=AllElements,sign=1,fromConnecti
                 dof[i,j] = d
 
         dofs[name] = dof
-
 
     if sign ==1:
         #print("size : " + str(cpt) )
@@ -137,6 +136,35 @@ def ComputeDofNumbering(mesh,Space,dofs=None,tag=AllElements,sign=1,fromConnecti
         dofs["doftopointLeft"] =   extractorLeftSide
         dofs["doftopointRight"] =  extractorRightSide
 
+        extractorLeftSide = np.empty(cpt,dtype=np.int)
+        extractorRightSide = np.empty(cpt,dtype=np.int)
+
+        tmpcpt = 0
+        # if k[0] is the elementname then k[1] is the connecivity
+        # we generate the same almanac with the number of each element
+        elemDic = {}
+        for name,data in mesh.elements.items():
+            #num = elemDic.get(name,np.zeros(data.GetNumberOfElements()) -1)
+            elemDic[name] = {}
+            elemDic2 = elemDic[name]
+
+            for i in range(data.GetNumberOfElements()):
+                elemDic2[tuple(np.sort(data.connectivity[i,:]))] = i
+
+        for k,v in almanac.items():
+            #if not k[0] in {'P',"F","F2","G"} :
+            #we need the global number of the element (not the local to the element container)
+            if k[0] in elemDic.keys():
+                localdic = elemDic[k[0]]
+                if k[1] in localdic.keys():
+                    extractorLeftSide[tmpcpt] = mesh.elements[k[0]].globaloffset + localdic[k[1]]
+                    extractorRightSide[tmpcpt] = v
+                    tmpcpt += 1
+
+        extractorLeftSide.resize(tmpcpt)
+        extractorRightSide.resize(tmpcpt)
+        dofs["doftocellLeft"] =   extractorLeftSide
+        dofs["doftocellRight"] =  extractorRightSide
 
     else:
         dofs["dirichelet"] = cpt
