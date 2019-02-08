@@ -27,13 +27,16 @@ def OpenInParaView( mesh=None,filename=None, run=True):
         from subprocess import Popen
         Popen([paraviewExec,filename])
 
-def CheckIntegrity():
+def CheckIntegrity(GUI=False):
     from BasicTools.Containers.UnstructuredMeshTools import CreateCube
     mesh = CreateCube(dimensions=[20,21,22],spacing=[2.,2.,2.],ofTetras=True)
 
     from BasicTools.Actions.OpenInParaView import OpenInParaView
-    OpenInParaView(mesh,run=False)
-    OpenInParaView(mesh,filename="CheckIntegrity_OpenInParaview.xmf",run=False)
+    OpenInParaView(mesh,run=GUI)
+    OpenInParaView(mesh,filename="CheckIntegrity_OpenInParaview.xmf",run=GUI)
 
     return "ok"
 
+if __name__ == '__main__':
+    print(CheckIntegrity(GUI=True))
+    print("Done")
