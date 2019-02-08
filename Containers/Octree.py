@@ -11,6 +11,9 @@ class node():
 
     def __init__(self,parent, Xupperlimit, Yupperlimit, Zupperlimit, Xlowerlimit, Ylowerlimit, Zlowerlimit):
         self.parent = parent
+        #self.xxx = [Xlowerlimit,(Xlowerlimit+Xupperlimit)/2.,Xupperlimit]
+        #self.yyy = [Ylowerlimit,(Ylowerlimit+Yupperlimit)/2.,Yupperlimit]
+        #self.zzz = [Zlowerlimit,(Zlowerlimit+Zupperlimit)/2.,Zupperlimit]
         self.Xupperlimit = Xupperlimit
         self.Yupperlimit = Yupperlimit
         self.Zupperlimit = Zupperlimit
@@ -21,159 +24,69 @@ class node():
         self.Ycenter = (self.Yupperlimit + self.Ylowerlimit)/2.
         self.Zcenter = (self.Zupperlimit + self.Xlowerlimit)/2.
 
-        self.posXposYposZ = None
-        self.posXposYnegZ = None
-        self.posXnegYposZ = None
-        self.posXnegYnegZ = None
-        self.negXposYposZ = None
-        self.negXposYnegZ = None
-        self.negXnegYposZ = None
-        self.negXnegYnegZ = None
-
+        self.feather = [[[None,None],[None,None]],[[None,None],[None,None]]]
         self.value = None
+
 
     def __str__(self):
         res = ""
         if self.value is not None:
-            res += "("+str(len(self.value))+")\n"
+            res += "("+str(len(self.value))+")*\n"
             return res
 
-        res += "(A)" if self.posXposYposZ is None else str(self.posXposYposZ)
-        res += "(B)" if self.posXposYnegZ is None else str(self.posXposYnegZ)
-        res += "(C)" if self.posXnegYposZ is None else str(self.posXnegYposZ)
-        res += "(D)" if self.posXnegYnegZ is None else str(self.posXnegYnegZ)
-        res += "(E)" if self.negXposYposZ is None else str(self.negXposYposZ)
-        res += "(F)" if self.negXposYnegZ is None else str(self.negXposYnegZ)
-        res += "(G)" if self.negXnegYposZ is None else str(self.negXnegYposZ)
-        res += "(H)" if self.negXnegYnegZ is None else str(self.negXnegYnegZ)
-
+        for i in range(2):
+            for j in range(2):
+                for k in range(2):
+                    if not self.feather[i][j][k] is None:
+                        lres = "("+str(i)+str(j)+str(k)+")" +str(self.feather[i][j][k])
+                        if lres.find('*') != -1:
+                            res += lres
 
         return res
 
-
-    def add(self, payload, coord, level):
-
+    def OpOnFeather(self, coord, level, op, *args ):
         """
         Create a subnode
         """
 
-
         if level != 0 :
             level -= 1
-            #Determine quadrant
-            if coord[0] <= self.Xcenter:
-                Xupperlimit = self.Xcenter
-                Xlowerlimit = self.Xlowerlimit
 
-                #negX
-                if coord[1] <= self.Ycenter:
-                    #negY
-                    Yupperlimit = self.Ycenter
-                    Ylowerlimit = self.Ylowerlimit
+            xxx = [self.Xlowerlimit,self.Xcenter,self.Xupperlimit]
+            yyy = [self.Ylowerlimit,self.Ycenter,self.Yupperlimit]
+            zzz = [self.Zlowerlimit,self.Zcenter,self.Zupperlimit]
 
-                    if coord[2] <= self.Zcenter:
-                        #negZ
-                        Zupperlimit = self.Zcenter
-                        Zlowerlimit = self.Zlowerlimit
-                        if self.negXnegYnegZ is None:
-                            self.negXnegYnegZ = node(self, Xupperlimit, Yupperlimit, Zupperlimit, Xlowerlimit, Ylowerlimit, Zlowerlimit)
-                        self.negXnegYnegZ.add(payload, coord, level)
-                    else:
-                        #posZ
-                        Zupperlimit = self.Zupperlimit
-                        Zlowerlimit = self.Zcenter
-                        if self.negXnegYposZ is None:
-                            self.negXnegYposZ = node(self, Xupperlimit, Yupperlimit, Zupperlimit, Xlowerlimit, Ylowerlimit, Zlowerlimit)
-                        self.negXnegYposZ.add(payload, coord, level)
-                else:
-                    #posY
-                    if coord[2] <= self.Zcenter:
-                        #negZ
-                        Yupperlimit = self.Yupperlimit
-                        Zupperlimit = self.Zcenter
-                        Ylowerlimit = self.Ycenter
-                        Zlowerlimit = self.Zlowerlimit
-                        if self.negXposYnegZ is None:
-                            self.negXposYnegZ = node(self, Xupperlimit, Yupperlimit, Zupperlimit, Xlowerlimit, Ylowerlimit, Zlowerlimit)
-                        self.negXposYnegZ.add(payload, coord, level)
+#            #Determine quadrant
+            i =  coord[0] > self.Xcenter
+            j =  coord[1] > self.Ycenter
+            k =  coord[2] > self.Zcenter
 
-                    else:
-                        #posZ
-                        Yupperlimit = self.Yupperlimit
-                        Zupperlimit = self.Zupperlimit
-                        Ylowerlimit = self.Ycenter
-                        Zlowerlimit = self.Zcenter
-                        if self.negXposYposZ is None:
-                            self.negXposYposZ = node(self, Xupperlimit, Yupperlimit, Zupperlimit, Xlowerlimit, Ylowerlimit, Zlowerlimit)
-                        self.negXposYposZ.add(payload, coord, level)
+            Xlowerlimit, Xupperlimit = xxx[i],xxx[i+1]
+            Ylowerlimit, Yupperlimit = yyy[j],yyy[j+1]
+            Zlowerlimit, Zupperlimit = zzz[k],zzz[k+1]
 
-
-            else:
-                #posX
-                if coord[1] <= self.Ycenter:
-                    #negY
-                    if coord[2] <= self.Zcenter:
-                        #negZ
-                        Xupperlimit = self.Xupperlimit
-                        Yupperlimit = self.Ycenter
-                        Zupperlimit = self.Zcenter
-                        Xlowerlimit = self.Xcenter
-                        Ylowerlimit = self.Ylowerlimit
-                        Zlowerlimit = self.Zlowerlimit
-                        if self.posXnegYnegZ is None:
-                            self.posXnegYnegZ = node(self, Xupperlimit, Yupperlimit, Zupperlimit, Xlowerlimit, Ylowerlimit, Zlowerlimit)
-                        self.posXnegYnegZ.add(payload, coord, level)
-
-                    else:
-                        #posZ
-                        Xupperlimit = self.Xupperlimit
-                        Yupperlimit = self.Ycenter
-                        Zupperlimit = self.Zupperlimit
-                        Xlowerlimit = self.Xcenter
-                        Ylowerlimit = self.Ylowerlimit
-                        Zlowerlimit = self.Zcenter
-                        if self.posXnegYposZ is None:
-                            self.posXnegYposZ = node(self, Xupperlimit, Yupperlimit, Zupperlimit, Xlowerlimit, Ylowerlimit, Zlowerlimit)
-                        self.posXnegYposZ.add(payload, coord, level)
-
-                else:
-                    #posY
-                    if coord[2] <= self.Zcenter:
-                        #negZ
-                        Xupperlimit = self.Xupperlimit
-                        Yupperlimit = self.Yupperlimit
-                        Zupperlimit = self.Zcenter
-                        Xlowerlimit = self.Zcenter
-                        Ylowerlimit = self.Ycenter
-                        Zlowerlimit = self.Zlowerlimit
-                        if self.posXposYnegZ is None:
-                            self.posXposYnegZ = node(self, Xupperlimit, Yupperlimit, Zupperlimit, Xlowerlimit, Ylowerlimit, Zlowerlimit)
-                        self.posXposYnegZ.add(payload, coord, level)
-
-                    else:
-                        #posZ
-                        Xupperlimit = self.Xupperlimit
-                        Yupperlimit = self.Yupperlimit
-                        Zupperlimit = self.Zupperlimit
-                        Xlowerlimit = self.Xcenter
-                        Ylowerlimit = self.Ycenter
-                        Zlowerlimit = self.Zcenter
-                        if self.posXposYposZ is None:
-                            self.posXposYposZ = node(self, Xupperlimit, Yupperlimit, Zupperlimit, Xlowerlimit, Ylowerlimit, Zlowerlimit)
-                        self.posXposYposZ.add(payload, coord, level)
+            if self.feather[i][j][k] is None:
+                 self.feather[i][j][k] = node(self, Xupperlimit, Yupperlimit, Zupperlimit, Xlowerlimit, Ylowerlimit, Zlowerlimit)
+            self.feather[i][j][k].OpOnFeather(coord, level,op,*args )
 
         else :
-            #if level == 0:
+            op(self,coord,*args )
+
+    def remove(self,payload,coord, level):
+        def remOp(_self, coord,payload):
+            _self.value.remove((coord,payload))
+        self.OpOnFeather( coord, level,remOp, payload)
+
+    def add(self, payload, coord, level):
+
+        def addOp(_self, coord, payload):
             try:
-                self.value.append((coord,payload))
+                _self.value.append((coord,payload))
             except AttributeError:
-                self.value = []
-                self.value.append((coord,payload))
+                _self.value = []
+                _self.value.append((coord,payload))
 
-
-
-
-
+        self.OpOnFeather( coord, level,addOp, payload)
 
 
 class Octree():
@@ -200,6 +113,14 @@ class Octree():
         """
 
         self.root.add(payload, coord, self.maxiter)
+
+    def remove_item(self, payload, coord):
+        """
+        Create recursively create subnodes until maxiter is reached
+        then try to remove the payload in that node
+        """
+
+        self.root.remove(payload, coord, self.maxiter)
 
     def find_within_range(self, center, size, shape):
         """
@@ -394,63 +315,66 @@ class Octree():
             #print list_list
             for level in range(self.maxiter):
                 for node in list_list[level]:
+
+
+
                     if Xedge_max > node.Xcenter :
                         if corner0[1] > node.Ycenter :
-                            if node.posXposYposZ is not None:
+                            if node.feather[1][1][1] is not None:
                                 if  corner0[2] > node.Zcenter:
                                 #if corner0[0] > node.Xcenter and corner0[1] > node.Ycenter  and corner0[2] > node.Zcenter:
                                 #table = ((corner0[0] > node.Xcenter),(corner0[1] > node.Ycenter) ,(corner0[2] > node.Zcenter))
                                 #if not False in table :
-                                    list_list[level+1].append(node.posXposYposZ)
-                            if node.posXposYnegZ is not None:
+                                    list_list[level+1].append(node.feather[1][1][1])
+                            if node.feather[1][1][0] is not None:
                                 if corner1[2] <= node.Zcenter:
                                 #if corner1[0] > node.Xcenter and corner1[1] > node.Ycenter and corner1[2] <= node.Zcenter:
                                 #table = ((corner1[0] > node.Xcenter),(corner1[1] > node.Ycenter) ,(corner1[2] <= node.Zcenter))
                                 #if not False in table:
-                                    list_list[level+1].append(node.posXposYnegZ)
+                                    list_list[level+1].append(node.feather[1][1][0])
                         if corner2[1] <= node.Ycenter :
-                            if node.posXnegYposZ is not None:
+                            if node.feather[1][0][1] is not None:
                                 if corner2[2] > node.Zcenter:
                                 #if corner2[0] > node.Xcenter and corner2[1] <= node.Ycenter and corner2[2] > node.Zcenter:
                                 #table = ((corner2[0] > node.Xcenter),(corner2[1] <= node.Ycenter) ,(corner2[2] > node.Zcenter))
                                 #if not False in table:
-                                    list_list[level+1].append(node.posXnegYposZ)
-                            if node.posXnegYnegZ is not None:
+                                    list_list[level+1].append(node.feather[1][0][1])
+                            if node.feather[1][0][0] is not None:
                                 if corner3[2] <= node.Zcenter:
                                 #if corner3[0] > node.Xcenter and corner3[1] <= node.Ycenter and corner3[2] <= node.Zcenter:
                                 #table = ((corner3[0] > node.Xcenter),(corner3[1] <= node.Ycenter) ,(corner3[2] <= node.Zcenter))
                                 #if not False in table:
-                                    list_list[level+1].append(node.posXnegYnegZ)
+                                    list_list[level+1].append(node.feather[1][0][0])
 
 
                     if corner4[0] <= node.Xcenter:
                         if corner4[1] > node.Ycenter:
-                            if node.negXposYposZ is not None:
+                            if node.feather[0][1][1] is not None:
                                 if  corner4[2] > node.Zcenter:
                                 #if corner4[0] <= node.Xcenter and corner4[1] > node.Ycenter and corner4[2] > node.Zcenter:
                                 #table = ((corner4[0] <= node.Xcenter),(corner4[1] > node.Ycenter) ,(corner4[2] > node.Zcenter))
                                 #if not False in table:
-                                    list_list[level+1].append(node.negXposYposZ)
-                            if node.negXposYnegZ is not None:
+                                    list_list[level+1].append(node.feather[0][1][1])
+                            if node.feather[0][1][0] is not None:
                                 if corner5[2] <= node.Zcenter:
                                 #if corner5[0] <= node.Xcenter and corner5[1] > node.Ycenter and corner5[2] <= node.Zcenter:
                                 #table = ((corner5[0] <= node.Xcenter),(corner5[1] > node.Ycenter) ,(corner5[2] <= node.Zcenter))
                                 #if not False in table:
-                                    list_list[level+1].append(node.negXposYnegZ)
+                                    list_list[level+1].append(node.feather[0][1][0])
 
                         if corner6[1] <= node.Ycenter:
-                            if node.negXnegYposZ is not None:
+                            if node.feather[0][0][1] is not None:
                                 if corner6[2] > node.Zcenter:
                                 #if corner6[0] <= node.Xcenter and corner6[1] <= node.Ycenter and corner6[2] > node.Zcenter:
                                 #table = ((corner6[0] <= node.Xcenter),(corner6[1] <= node.Ycenter) ,(corner6[2] > node.Zcenter))
                                 #if not False in table:
-                                    list_list[level+1].append(node.negXnegYposZ)
-                            if node.negXnegYnegZ is not None:
+                                    list_list[level+1].append(node.feather[0][0][1])
+                            if node.feather[0][0][0] is not None:
                                 if corner7[2] <= node.Zcenter:
                                 #if corner7[0] <= node.Xcenter and corner7[1] <= node.Ycenter and corner7[2] <= node.Zcenter:
                                 #table = ((corner7[0] <= node.Xcenter),(corner7[1] <= node.Ycenter) ,(corner7[2] <= node.Zcenter))
                                 #if not False in table:
-                                    list_list[level+1].append(node.negXnegYnegZ)
+                                    list_list[level+1].append(node.feather[0][0][0])
 
 
             #flaten the output
@@ -477,11 +401,11 @@ def CheckIntegrity():
     tree.add_item("derp5", (10.34251,10.1234,-10.9876))
     print( "Great success")
 
-    print(tree.root)
+    print("tree :\n",tree.root)
     print("-------")
     #get some data
     entries = tree.find_within_range((0,0,0), 40, "cube")
-    entries = tree.find_within_range((0,0,0), [40]*3, "cube")
+
     cpt =0
     for i in entries:
       print(cpt),
@@ -492,6 +416,19 @@ def CheckIntegrity():
     if len(entries) != 4:# pragma: no cover
         raise(Exception("Error") )
 
+    tree.remove_item("derp5", (10.34251,10.1234,-10.9876))
+    entries = tree.find_within_range((0,0,0), [40]*3, "cube")
+
+    print("tree :\n",tree.root)
+    print("-------")
+    cpt =0
+    for i in entries:
+      print(cpt),
+      print(i)
+      cpt += 1
+
+    if len(entries) != 3:# pragma: no cover
+        raise(Exception("Error") )
     return "ok"
 
 if __name__ == '__main__':
