@@ -14,7 +14,6 @@ __all__ = [
 'Tri3',
 #'UnstructuredFea',
 'UnstructuredFeaSym',
-'MeshTools',
 "Spaces",
 "Fields",
 "Behaviours",

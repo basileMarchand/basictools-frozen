@@ -7,5 +7,6 @@ __all__ = ["vtkBridge",
            'ConstantRectilinearMeshTools',
            'MeshBase',
            'Octree',
-           'ElementNames'
+           'ElementNames',
+           'MeshTools',
            ];
