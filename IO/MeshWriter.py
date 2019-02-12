@@ -13,6 +13,8 @@ from BasicTools.IO.MeshTools import BinaryNumber,ASCIIName, ASCIITags
 from BasicTools.IO.MeshTools import Corners
 import BasicTools.IO.MeshTools as MT
 
+from BasicTools.IO.MeshTools import BinaryKeywords as BKeys
+
 
 def WriteMesh(filename,mesh,PointFields=None,solutionOnOwnFile= False, binary=True, nodalRefNumber= None,elemRefNumber=None):
     OW = MeshWriter()
@@ -55,7 +57,7 @@ class MeshWriter(WriterBase):
 
     def WriteBINARY(self,meshObject,PointFields=None, solutionOnOwnFile= False, nodalRefNumber = None,elemRefNumber=None):
 
-
+        self.SetSinglePrecission(single=False)
         #key MeshVersionFormatted
         self.filePointer.write(struct.pack('i', 1))
         self.filePointer.write(struct.pack('i', self.dataSize//4))
@@ -139,6 +141,19 @@ class MeshWriter(WriterBase):
             self.PrintDebug("calculate position at end " + str(endOfInformation))
 
 
+        if "Corners" in meshObject.nodesTags:
+            tag = meshObject.nodesTags['Corners']
+            ids = tag.GetIds()
+            nbids = len(ids)
+            if nbids:
+                self.filePointer.write(struct.pack('i', BKeys["GmfCorners"] ))
+                currentposition = self.filePointer.tell()
+                endOfInformation = currentposition+ (2+nbids)*4
+                self.filePointer.write(struct.pack('i', endOfInformation ))# end of information
+                self.filePointer.write(struct.pack('i', nbids))# GetNumberOfElements
+                (ids+1).astype(np.int32).tofile(self.filePointer, format=dataformat,sep='')
+                self.PrintDebug("Corners (W) position at end " + str(self.filePointer.tell()))
+                self.PrintDebug("Corners (W) calculate position at end " + str(endOfInformation))
 
         bars = meshObject.GetElementsOfType(EN.Bar_2)
         if "Ridges" in bars.tags  and len(bars.tags["Ridges"]):
