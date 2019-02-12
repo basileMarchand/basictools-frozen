@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+
 __author__ = "Felipe Bordeu"
 
 import numpy as np
@@ -8,6 +9,7 @@ import scipy.sparse.linalg as spslin
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject as BOO
 from BasicTools.Helpers.TextFormatHelper import TFormat as TF
 
+from BasicTools.Linalg.ConstraintsHolder import ConstraintsHolder
 # you must set SetAlgo before setting the Op
 
 class LinearProblem(BOO):
@@ -19,9 +21,24 @@ class LinearProblem(BOO):
         self.u = None
         self.tol = 1.e-6
 
+        self.constraints = ConstraintsHolder()
+
+    def HasConstraints(self):
+        return self.constraints.numberOfEquations > 0
+
     def SetOp(self, op):
         self.PrintVerbose('In SetOp (type:' +str(self.type) + ')')
+
+        if self.HasConstraints():
+            self.PrintVerbose('With constraints (' +str(self.constraints.numberOfEquations) + ')')
+            self.constraints.SetNumberOfDofs(op.shape[1])
+            self.constraints.SetOp( op  )
+            self.constraints.ComputeProjector()
+            op = self.constraints.GetReducedOp()
+            self.PrintVerbose('Constraints treatememnt Done ')
         self.op = op
+
+
         if self.type == "Direct":
             self.PrintDebug('Starting Factorisaton')
             self.solver = sps.linalg.factorized(op)
@@ -35,7 +52,10 @@ class LinearProblem(BOO):
             from sksparse.cholmod import cholesky
             self.solver = cholesky(op)
         elif len(self.type) >= 5 and  self.type[0:5] == "Eigen":
+            self.PrintVerbose('Loading Eigensolver ')
+
             import BasicTools.FE.EigenSolver as EigenSolver
+            self.PrintVerbose('Loading Eigensolver Done')
             self.solver = EigenSolver.EigenSolvers()
             #print(self.type[5:])
             if self.type[5:] =="CG":
@@ -57,9 +77,12 @@ class LinearProblem(BOO):
             raise(ValueError(TF.InRed("Error : ") + "Type not allowed ("+algoType+")"  ) )#pragma: no cover
 
     def Solve(self, rhs):
+        if self.HasConstraints():
+            rhs = self.constraints.GetReducedRhs(rhs)
+
         self.PrintDebug('In LinearProblem Solve')
         if self.type == "Direct":
-            self.u =  self.solver(rhs)
+            self.u = self.solver(rhs)
         elif len(self.type) >= 5 and  self.type[0:5] == "Eigen":
             #print("solve using eigen")
             self.u = self.solver.Solve(rhs)
@@ -86,14 +109,16 @@ class LinearProblem(BOO):
             self.u = self.solver(rhs)
 
         self.PrintDebug("Done Linear solver")
-            #norm_rhs = np.linalg.norm(rhs)
-            #norm = np.linalg.norm(self.op.dot(self.u)-rhs)/norm_rhs
-            #self.Print(TF.InYellowBackGround(TF.InRed("norm(error)/norm(rhs) : " + str(norm) )))
-            #self.Print(TF.InYellowBackGround(TF.InRed("norm(rhs)  : " + str(norm_rhs))))
+
+        if self.HasConstraints():
+            res = np.empty(self.constraints.nbdof, dtype=float)
+            res[self.constraints.masters] = self.u
+            res[self.constraints.slaves] = self.constraints.slaveValues
+            self.u = res
 
         return self.u
 
-def CheckIntegrity():
+def CheckIntegrity(GUI=False):
 
     LS = LinearProblem ()
 
