@@ -4,24 +4,19 @@ __author__ = "Felipe Bordeu"
 import numpy as np
 
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
-from BasicTools.FE.LinearSolver import LinearProblem
+from BasicTools.Linalg.LinearSolver import LinearProblem
 from  BasicTools.Containers.UnstructuredMesh import AllElements
 
 
 class FeaBase(BaseOutputObject):
-    def __init__(self,dim=3, size= 1):
+    def __init__(self,spaceDim=3, size= 1):
         super(FeaBase,self).__init__()
         self.mesh = None
-        self.space = None
-        self.numbering = None
 
-
-
-        # tuple (zone,dof,val)
-        self.dirichletBC = []
-        self.rhsfixed = None
         self.sol = None
         self.solver = LinearProblem()
+        self.spaceDim = spaceDim
+        self.totalNumberOfDof = 0
 
     def SetMesh(self,mesh):
         self.mesh = mesh
@@ -38,48 +33,51 @@ class FeaBase(BaseOutputObject):
         else :
             self.numbering = ComputeDofNumbering(self.mesh,self.space,fromConnectivity =False,tag=tag,dofs=self.numbering)
 
-    def AddDirichlet(self,zone,dofs,val):
-        self.dirichletBC.append((zone,dofs,val))
+    #def AddDirichlet(self,zone,dofs,val):
+    #    self.dirichletBC.append((zone,dofs,val))
 
-    def ApplyBC(self,K,rhs):
-        #for every bc we generate the list of dofs
-
-        self.dofs = np.ones(len(rhs), dtype=bool)
-        if self.sol is None or len(rhs) != len(self.sol) :
-            self.sol = np.zeros(len(rhs),dtype=np.float)
-
-        for zone,dof,val in self.dirichletBC:
-            offset = 0
-            for i in range(dof):
-                offset += self.numbering["size"]
-
-            if zone in self.mesh.nodesTags:
-                 nids = self.mesh.nodesTags[zone].GetIds()
-                 nids = np.array([ self.numbering['almanac'][('P',x,None)] for x in nids])
-                 dofsids = nids + offset
-
-                 self.dofs[dofsids] = False
-                 self.sol[dofsids] = val
-            else :
-                for name,data in self.mesh.elements.items():
-                    if zone in data.tags:
-                        elids = data.tags[zone].GetIds()
-                        dofsids = np.unique(self.numbering[name][elids,:].ravel()) + offset
-
-                        self.dofs[dofsids] = False
-                        self.sol[dofsids] = val
-
-        [cleanK, self.rhsfixed] = deleterowcol(K, np.logical_not(self.dofs), np.logical_not(self.dofs), self.sol)
-
-        return cleanK, self.ApplyBCF(rhs)
-
-    def ApplyBCF(self,rhs):
-        return rhs[self.dofs]-self.rhsfixed[self.dofs]
+#    def ApplyBC(self,K,rhs):
+#        #for every bc we generate the list of dofs
+#
+#        self.dofs = np.ones(len(rhs), dtype=bool)
+#        if self.sol is None or len(rhs) != len(self.sol) :
+#            self.sol = np.zeros(len(rhs),dtype=np.float)
+#
+#        for zone,dof,val in self.dirichletBC:
+#            offset = 0
+#            for i in range(dof):
+#                offset += self.numbering["size"]
+#
+#            if zone in self.mesh.nodesTags:
+#                 nids = self.mesh.nodesTags[zone].GetIds()
+#                 nids = np.array([ self.numbering['almanac'][('P',x,None)] for x in nids])
+#                 dofsids = nids + offset
+#
+#                 self.dofs[dofsids] = False
+#                 self.sol[dofsids] = val
+#            else :
+#                for name,data in self.mesh.elements.items():
+#                    if zone in data.tags:
+#                        elids = data.tags[zone].GetIds()
+#                        dofsids = np.unique(self.numbering[name][elids,:].ravel()) + offset
+#
+#                        self.dofs[dofsids] = False
+#                        self.sol[dofsids] = val
+#
+#        [cleanK, self.rhsfixed] = deleterowcol(K, np.logical_not(self.dofs), np.logical_not(self.dofs), self.sol)
+#
+#        return cleanK, self.ApplyBCF(rhs)
+#
+#    def ApplyBCF(self,rhs):
+#        return rhs[self.dofs]-self.rhsfixed[self.dofs]
 
     def Reset(self):
         self.sol = None
         self.solver.u = None
         pass
+
+    def ComputeConstraintsEquations(self):
+        self.solver.constraints.ComputeConstraintsEquations(self.mesh,self.unkownFields)
 
     def Solve(self,cleanK,cleanff):
         #self.PrintDebug(cleanK.tocsc())
@@ -89,88 +87,44 @@ class FeaBase(BaseOutputObject):
 
     def Resolve(self,cleanff):
         res = self.solver.Solve(cleanff)
-        self.sol[self.dofs] = res
+        self.sol = res
+        #self.sol[self.dofs] = res
 
-    def PushVectorToMesh(self,onNodes,field,name,vectorSize=1):
+    def PushVectorToUnkownFields(self):
+        offset =0
+        for f in self.unkownFields:
+              f.data = self.sol[offset:offset+f.numbering["size"]]
+              offset += f.numbering["size"]
+
+
+    def PushVectorToMesh(self,onNodes,fieldValues,name,numberings):
         # vectorSize = 1 for scalar field
         # vectorSize = 3 for 3D vector field (example dep in 3D )
-        F = field.view()
+        F = fieldValues.view()
+
+        ncomp = len(numberings)
         if onNodes:
-
-            res = np.zeros((self.mesh.GetNumberOfNodes(), vectorSize),dtype=float)
-            F.shape = (vectorSize,F.size/vectorSize)
-            F = F.T
-
-            res[self.numbering["doftopointLeft"],:] =  F[self.numbering["doftopointRight"],:]
+            res = np.zeros((self.mesh.GetNumberOfNodes(), ncomp),dtype=float)
+            cpt = 0
+            for i in range(ncomp):
+                if len(numberings[i]["doftopointLeft"]) == 0:
+                    print("Warning : PushVectorToMesh()  transfert vector is empty")
+                res[numberings[i]["doftopointLeft"],i] =  F[cpt+numberings[i]["doftopointRight"]]
+                cpt += numberings[i]["size"]
             self.mesh.nodeFields[name] = res
-
-#            if self.mesh.GetNumberOfNodes() == F.size:
-#                self.mesh.nodeFields[name] = np.zeros((self.mesh.GetNumberOfNodes(), vectorSize),dtype=float)
-#                self.mesh.nodeFields[name][self.numbering["doftopointLeft"]] =  F[self.numbering["doftopointRight"]]
-#                return
-#            if self.mesh.GetNumberOfNodes()*3 != F.size :
-#                raise Exception("incompatible field")
-#            F.shape = (3,F.size/3)
-#            F = F.T
-#
-#            self.mesh.nodeFields[name] = np.zeros((self.mesh.GetNumberOfNodes(),3),dtype=float)
-#            self.mesh.nodeFields[name][self.numbering["doftopointLeft"],:] =  F[self.numbering["doftopointRight"],:]
-            #print(self.numbering["doftopointLeft"])
-            #print(self.numbering["doftopointRight"])
-            #for cpt in range(len(self.numbering["doftopointLeft"])):
-                #i = self.numbering["doftopointLeft"][cpt]
-                #j = self.numbering["doftopointRight"][cpt]
-                #print(i),
-                #print(j)
-                #self.mesh.nodeFields[name][i,:] =  F[j,:]
         else:
-            raise
-            if self.mesh.GetNumberOfElements(3)*3 != F.size :
-                raise Exception("incompatible field")
-            F.shape = (3,self.mesh.GetNumberOfElements(3))
-            F = F.T
-            self.mesh.elemFields[name] = np.zeros((self.mesh.GetNumberOfElements(),3),dtype=float)
-            self.mesh.elemFields[name][self.numbering["doftopointLeft"],:] =  F[self.numbering["doftopointRight"],:]
-
-
-
-def deleterowcol(A, delrow, delcol, fixedValues ):
-    # Assumes that matrix is in symmetric csc form !
-
-    rhs = A.dot(fixedValues)
-    #keep = np.delete (np.arange(0, m), delrow)
-    A = A[np.logical_not(delrow) , :]
-    #keep = np.delete (np.arange(0, m), delcol)
-    A = A[:, np.logical_not(delcol)]
-
-    return [A, rhs]
-
-
+            res = np.zeros((self.mesh.GetNumberOfElements(), ncomp),dtype=float)
+            cpt = 0
+            for i in range(ncomp):
+                if len(numberings[i]["doftocellLeft"]) == 0:
+                    print("Warning : PushVectorToMesh()  transfert vector is empty")
+                res[numberings[i]["doftocellLeft"],i] =  F[cpt+numberings[i]["doftocellRight"]]
+                cpt += numberings[i]["size"]
+            self.mesh.elemFields[name] = res
 
 def CheckIntegrity(GUI=False):
     FeaBase()
-    from scipy.sparse import csr_matrix
 
-    fv = np.array([1,2]).T
-    fv = np.array([[1,2],]).T
-    mask = np.zeros(2)
-    mask[1] = True
-
-    for sp in [True,False]:
-        if sp:
-            K = csr_matrix([[1, 2], [3, 4]])
-        else:
-            K = np.array([[1, 2], [3, 4]]);
-
-        A,rhs = deleterowcol(K, mask, mask, fv )
-        print("using Sparse : " + ("True" if sp else "False" ) )
-        print("Vals")
-        print(A)
-        print("--")
-        print(rhs)
-        print("Types")
-        print(type(A))
-        print(type(rhs))
     return "ok"
 
 

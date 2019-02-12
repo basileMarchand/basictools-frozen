@@ -88,11 +88,17 @@ class Tri_P2_Lagrange(TriSpaceBase):
                               [0.5,0.5],
                               [0,0.5]])
 
+#        self.dofAttachments = [("P",0,None),
+#                               ("P",2,None),
+#                               ("F",1,None),
+#                               ("P",1,None),
+#                               ("F",0,None),
+#                               ("F",2,None)]
         self.dofAttachments = [("P",0,None),
-                               ("P",2,None),
-                               ("F",1,None),
                                ("P",1,None),
+                               ("P",2,None),
                                ("F",0,None),
+                               ("F",1,None),
                                ("F",2,None)]
 
         self.Create()

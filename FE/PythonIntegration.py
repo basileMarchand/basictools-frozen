@@ -11,7 +11,7 @@ import BasicTools.Containers.ElementNames as EN
 
 from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
 from BasicTools.FE.WeakForm import testcharacter
-from BasicTools.FE.Fields.NodalField import NodalField
+from BasicTools.FE.Fields.FEField import FEField
 
 
 class MonoElementsIntegral(BOO):
@@ -91,7 +91,7 @@ class MonoElementsIntegral(BOO):
       if tfs is None:
          tfs = []
          for f in self.__ufs__:
-            tfs.append(NodalField(name=f.name+testcharacter,mesh=f.mesh,space=f.space,numbering=f.numbering,data=f.data) )
+            tfs.append(FEField(name=f.name+testcharacter,mesh=f.mesh,space=f.space,numbering=f.numbering,data=f.data) )
 
       self.__tfs__ = tfs
 

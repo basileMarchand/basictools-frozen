@@ -6,7 +6,7 @@ from BasicTools.Helpers.TextFormatHelper import TFormat
 
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 from BasicTools.FE.Fields.ConstantField import ConstantField
-from BasicTools.FE.Fields.NodalField import NodalField
+from BasicTools.FE.Fields.FEField import FEField
 from BasicTools.FE.Fields.IntegrationPointField import IntegrationPointField
 
 class Loading(object):
@@ -149,68 +149,131 @@ class Section():
         self.elemtag = None
 
 
-class Orientation(BaseOutputObject):
-    def __init__(self):
-       super(Orientation,self).__init__()
+class Transform(BaseOutputObject):
+    def __init__(self, offset=None, first=None, second=None):
+       super(Transform,self).__init__()
        self.system = ''
-       # offset off the new origin with respect to the old
-       self.offset = np.array([0.0, 0.0, 0.0], dtype=np.float)
-       # first lies on the x axis for cartesian
-       self.first  = np.array([1.0, 0.0, 0.0], dtype=np.float)
-       # second lies on the y axis for cartesian
-       self.second = np.array([0.0, 1.0, 0.0], dtype=np.float)
-       self.third = np.array([0.0, 0.0,1.0], dtype=np.float)
 
+       self.offset  = np.array([0.0, 0.0, 0.0], dtype=np.float)
        self.RMatrix = np.array([[1.0,0,0],[0,1,0],[0,0,1]])
+       self.keepOrthogonal = True
+       self.keepNormalised = True
+
+       # offset off the new origin with respect to the old
+       if offset is None:
+           self.SetOffset([0.0, 0.0, 0.0])
+       else:
+           self.SetOffset(offset)
+
+       if first is None:
+           self.SetFirst([1.0, 0.0, 0.0])
+       else:
+           self.SetFirst(first)
+
+       if second is None:
+           self.SetSecond([0.0, 1.0, 0.0])
+       else:
+           self.SetSecond(second)
+
+    def GetDirection(self,i, pos=None, direction=None):
+        return self.RMatrix[i,:]
+
     def SetOffset(self,data):
         # this point define the origin of the new coordinate system
         self.offset  = np.array(data, dtype=np.float)
 
     def SetFirst(self,data):
         # this point define the x coordinate (direction) with respect to the new origin
-        self.first  = np.array(data, dtype=np.float)
-        self.first /= np.linalg.norm(self.first)
+        first  = np.array(data, dtype=np.float)
+        if self.keepNormalised :
+            first /= np.linalg.norm(first)
+        self.RMatrix[0,:] = first
+        self.SetSecond(self.RMatrix[1,:])
+        self.SetThird(self.RMatrix[2,:])
 
     def SetSecond(self,data):
         # this point define the y coordinate (direction) with respect to the new origin
         # the z direction is calculated with a cross product
-        self.second = np.array(data, dtype=np.float)
-        self.second -= self.first*np.dot(self.first,self.second)
-        self.second /= np.linalg.norm(self.second)
-        self.third = np.cross(self.first,self.second)
-        self.RMatrix[0,:] = self.first
-        self.RMatrix[1,:] = self.second
-        self.RMatrix[2,:] = self.third
+        first = self.RMatrix[0,:]
+        second = np.array(data, dtype=np.float)
+        second -= first*np.dot(first,second)/np.dot(first,first)
+        if self.keepNormalised :
+            second /= np.linalg.norm(second)
+        self.RMatrix[1,:] = second
+        self.SetThird(self.RMatrix[2,:])
+
+    def SetThird(self,data=None):
+        first = self.RMatrix[0,:]
+        second = self.RMatrix[1,:]
+
+        if data is None:
+            self.RMatrix[2,:] = np.cross(first, second)
+        else:
+            third = np.array(data, dtype=np.float)
+            third -= first*np.dot(first,third)/np.dot(first,first)
+            third -= second*np.dot(second,third)/np.dot(second,second)
+            self.RMatrix[2,:] = third
+
+        if self.keepNormalised :
+            self.RMatrix[2,:] /= np.linalg.norm(self.RMatrix[2,:])
+
+    def SetOperator(self, first=None, second=None, third=None, op=None)    :
+        if op in None:
+            self.SetFirst(first)
+            self.SetSecond(second)
+            self.SetThird(third)
+        else:
+            if (first is not None) or (second is not None) or  (third is not None):
+                raise(Exception("Cant define operanter and direction verctor at the same time") )
+            self.RMatrix[:,:] = op[:,:]
+
+            if self.keepNormalised :
+                for i in [0,1,2]:
+                    self.RMatrix[i,:] /= np.linalg.norm(self.RMatrix[i,:])
 
     def ApplyInvTransform(self,point):
         # we apply inverse of the transformation
         #p = point+self.offset
-        return np.dot(self.RMatrix.T,point)+self.offset
+        if self.keepNormalised == False:
+            return np.dot(np.linalg.inv(self.RMatrix),point)+self.offset
+        else:
+            return np.dot(self.RMatrix.T,point)+self.offset
 
     def ApplyTransform(self,point):
         # we apply inverse of the transformation
         #p = point+self.offset
         return np.dot(self.RMatrix,point-self.offset)
 
+    def GetOrthoNormalBase(self):
+        return Transform(self.offset, self.RMatrix[0,:], self.RMatrix[1,:])
+
     def __str__(self):
         res  = "\n    offset : " + str(self.offset)
-        res += "\n    first  : " + str(self.first)
-        res += "\n    second : " + str(self.second)
+        res += "\n    first  : " + str(self.RMatrix[0,:])
+        res += "\n    second : " + str(self.RMatrix[1,:])
+        res += "\n    third : " + str(self.RMatrix[2,:])
         return res
 
 
-def CheckIntegrity():
+def CheckIntegrity(GUI=False):
+
     res = ProblemData()
 
-    orient = Orientation()
+    orient = Transform()
+    orient.keepNormalised = False
     orient.SetFirst([2,1,0])
-    orient.SetSecond([1,2,0])
-    p = [1,2,3]
+    orient.SetSecond([1,3,0])
+    p = [1,3,3]
+    print(orient)
+
     pprim = orient.ApplyTransform(p)
+    print("p",p)
+    print("pprim",pprim)
+
+    print("p back",orient.ApplyInvTransform(pprim))
     if np.linalg.norm(orient.ApplyInvTransform(pprim) -p ) > 1e-15 :raise
 
     res.orientations["Toto"] = orient
-
 
     from BasicTools.Helpers.Tests import TestTempDir
     tempdir = TestTempDir.GetTempPath()
@@ -273,4 +336,4 @@ def CheckIntegrity():
     return "ok"
 
 if __name__ == '__main__':
-    print((CheckIntegrity()))# pragma: no cover
+    print((CheckIntegrity(GUI=True)))# pragma: no cover

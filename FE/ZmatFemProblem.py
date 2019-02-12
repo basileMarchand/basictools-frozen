@@ -4,14 +4,16 @@ import numpy as np
 from scipy.sparse import coo_matrix
 
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
-from BasicTools.FE import FeaBase as FeaBase
+from BasicTools.Linalg.MatOperations import deleterowcol
 from BasicTools.FE.Fields.ConstantField import ConstantField
-from BasicTools.FE.Fields.NodalField import NodalField
+from BasicTools.FE.Fields.FEField import FEField
 
 from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
 from BasicTools.FE.DofNumbering import ComputeDofNumbering
 from BasicTools.FE.Fields.IntegrationPointField import IntegrationPointField
 from BasicTools.FE.IntegrationsRules import LagrangeP1
+
+
 import sys
 
 
@@ -31,8 +33,8 @@ class UMatFemProblem(BaseOutputObject):
 
         self.tag = "3D"
 
-        self.u = [ NodalField() for i in range(3)]
-        self.du = [ NodalField() for i in range(3)]
+        self.u = [ FEField() for i in range(3)]
+        self.du = [ FEField() for i in range(3)]
 
         if sys.version_info[0] == 2:
             import pyumat
@@ -490,10 +492,10 @@ ddsddeNew = pyumat.umat(stress=stress,statev=statev,ddsdde=ddsdde,sse=sse,spd=sp
 
     def SolveUsing(self,k,f,fixedValues=None,freeMask=None):
         if  fixedValues is not None:
-            [K, rhsfixed] = FeaBase.deleterowcol(k.tocsr(), np.logical_not(freeMask), np.logical_not(freeMask), fixedValues)
+            [K, rhsfixed] = deleterowcol(k.tocsr(), np.logical_not(freeMask), np.logical_not(freeMask), fixedValues)
             rhs = f[freeMask]-rhsfixed[freeMask]
 
-            from BasicTools.FE.LinearSolver import LinearProblem
+            from BasicTools.Linalg.LinearSolver import LinearProblem
 
             prob = LinearProblem()
             prob.SetAlgo("Direct")

@@ -3,9 +3,9 @@ import numpy as np
 from BasicTools.Helpers.TextFormatHelper import TFormat
 
 
-class NodalField(object):
+class FEField(object):
     def __init__(self,name=None,mesh=None,space=None,numbering=None,data=None):
-        super(NodalField,self).__init__()
+        super(FEField,self).__init__()
         self.name = name
         self.data = data
         self.mesh = mesh
@@ -54,5 +54,5 @@ class NodalField(object):
         self.data[self.numbering["doftopointRight"]] = userdata[self.numbering["doftopointLeft"]]
 
 def CheckIntegrity():
-    obj = NodalField("temp")
+    obj = FEField("temp")
     return "ok"

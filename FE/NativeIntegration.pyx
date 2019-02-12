@@ -3,7 +3,7 @@
 ##https://stackoverflow.com/questions/21851985/difference-between-np-int-np-int-int-and-np-int-t-in-cython
 import numpy as np
 
-from BasicTools.FE.Fields.NodalField import NodalField
+from BasicTools.FE.Fields.FEField import FEField
 from BasicTools.FE.WeakForm import testcharacter
 import BasicTools.Containers.ElementNames as EN
 #from BasicTools.FE.WeakFormNumerical cimport PyWeakForm
@@ -99,7 +99,7 @@ cdef class PyMonoElementsIntegralCpp():
       if tfs is None:
          self.__tfs__  = []
          for f in self.__ufs__:
-            self.__tfs__.append(NodalField(name=f.name+testcharacter,mesh=f.mesh,space=f.space,numbering=f.numbering,data=f.data) )
+            self.__tfs__.append(FEField(name=f.name+testcharacter,mesh=f.mesh,space=f.space,numbering=f.numbering,data=f.data) )
       else:
           self.__tfs__ = tfs
 
@@ -147,7 +147,7 @@ cdef class PyMonoElementsIntegralCpp():
 
        return self.numberOfVIJ
 
-    def SetIntegrationRule(self,itegrationRuleOrName=None):  # OK
+    def SetIntegrationRule(self,itegrationRuleOrName):  # OK
 
       if itegrationRuleOrName is None :
           from BasicTools.FE.IntegrationsRules import LagrangeP1
@@ -159,6 +159,7 @@ cdef class PyMonoElementsIntegralCpp():
           self.integrationRule = IntegrationRulesAlmanac[itegrationRuleOrName]
       else:
           raise(Exception("Error seting the integration rule.."))
+
 
 
 
@@ -325,6 +326,13 @@ cdef class PyMonoElementsIntegralCpp():
     def ActivateElementType(self, domain):
 
       elementType = domain.elementType
+
+      if not elementType in EN.geoSupport :
+          print("Dont know this element : ", elementType)
+
+      if not EN.geoSupport[elementType] in self.integrationRule :
+          print("Integration rule incomplete for this type of geo element : ", str(EN.geoSupport[elementType]))
+
       p, w = self.integrationRule[EN.geoSupport[elementType]];
       cdef int numberOfIntegrationPoints = len(w)
 

@@ -6,7 +6,7 @@ from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 import BasicTools.Containers.ElementNames as EN
 
 from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
-from BasicTools.FE.Fields.NodalField import NodalField
+from BasicTools.FE.Fields.FEField import FEField
 
 #UseCpp = False
 UseCpp = True
@@ -16,7 +16,7 @@ def Integrate( mesh, wform, constants, fields, dofs,spaces,numbering, tag="3D",i
 
     UnkownFields = []
     for i in range(len(dofs)):
-        field = NodalField()
+        field = FEField()
         field.numbering = numbering[i]
         field.name = dofs[i]
         field.data = None
@@ -30,6 +30,9 @@ def Integrate( mesh, wform, constants, fields, dofs,spaces,numbering, tag="3D",i
 def IntegrateGeneral( mesh, wform, constants, fields, unkownFields,testFields=None, tag="3D",integrationRuleName=None,onlyEvaluation=False):
 
     import BasicTools.FE.WeakForm as WeakForm
+    if wform is None :
+        return
+
     if not isinstance(wform, WeakForm.PyWeakForm):
         from BasicTools.FE.WeakForm import SymWeakToNumWeak
         wform = SymWeakToNumWeak(wform)
@@ -62,6 +65,7 @@ def IntegrateGeneral( mesh, wform, constants, fields, unkownFields,testFields=No
     integrator.SetIntegrationRule(integrationRuleName)
 
     numberOfVIJ = integrator.ComputeNumberOfVIJ(mesh,tag)
+
     if numberOfVIJ == 0:
         print("Warning!!! System with zero dofs")
 
@@ -88,6 +92,7 @@ def IntegrateGeneral( mesh, wform, constants, fields, unkownFields,testFields=No
             continue
 
         integrator.ActivateElementType(data)
+
         integrator.Integrate(wform,idstotreat)
 
     numberOfUsedvij = integrator.GetNumberOfUsedIvij()
@@ -128,8 +133,8 @@ def CheckIntegrityNormalFlux(GUI=False):
     wformflux = p*Normal.T*ut
 
     constants = {"alpha":1.0}
-    from BasicTools.FE.Fields.NodalField import NodalField as Field
-    pf = Field("p",mesh,space,numbering)
+
+    pf = FEField("p",mesh,space,numbering)
     pf.Allocate(1)
 
     fields  = {"p":pf}
@@ -395,8 +400,8 @@ def CompureVolume(mesh):
 
     constants = {}
     fields  = {}
-    from BasicTools.FE.Fields.NodalField import NodalField as Field
-    f = Field("f",mesh,LagrangeSpaceGeo,numbering)
+    from BasicTools.FE.Fields.FEField import FEField
+    f = FEField("f",mesh,LagrangeSpaceGeo,numbering)
     f.Allocate(1)
     fields["F"] = f
 

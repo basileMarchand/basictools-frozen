@@ -3,322 +3,236 @@
 import numpy as np
 
 from BasicTools.FE.FeaBase import FeaBase
-from BasicTools.FE.Integration import Integrate
+
 from BasicTools.FE.WeakForm import SymWeakToNumWeak
 import BasicTools.FE.WeakForm as wf
 
-class FeaSymMeca(FeaBase):
-    def __init__(self,dim=3 ):
-        super(FeaSymMeca,self).__init__(dim=dim)
+from BasicTools.FE.Integration import IntegrateGeneral
+from BasicTools.FE.Integration import Integrate
+from BasicTools.FE.Fields.FEField import FEField
 
-        #tuple  (zone,formulation)
-        self.bilinearWeakFormulations = []
-        #tuple  (zone,formulation)
-        self.linearWeakFormulations = []
+
+class UnstructuredFeaSym(FeaBase):
+    def __init__(self,spaceDim=3 ):
+        super(UnstructuredFeaSym,self).__init__(spaceDim=spaceDim)
+
         self.constants = {}
         self.fields = {}
-        self.primalName = "u"
 
-    def SetPrimalName(self,name):
-        self.primalName = name
+        self.physics = []
 
-    def SetSpaceToLagrange(self,P=None,isoParam=None):
-        if P is None and isoParam is None:
-            raise(ValueError("Please set the type of integration P=1,2 or isoParam=True"))
+        self.spaces = []
+        self.numberings = []
 
-        if P is not None and isoParam is not None:
-            raise(ValueError("Please set the type of integration P=1,2 or isoParam=True"))
+    def ComputeDofNumbering(self,tagsToKeep=None):
 
-        if isoParam or P == 1 :
-            from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
-            self.space = LagrangeSpaceGeo
-            self.integrationRule =  None
-            return
-        elif  P == 2:
-            from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceP2
-            self.space = LagrangeSpaceP2
-            self.integrationRule =  "LagrangeP2"
-            return
-        else:
-            raise(ValueError("I dont understand"))
+        self.spaces = []
+        self.numberings = []
 
-    def SetBulkFormulationToMeca(self,young=1.,poisson=0.3,zone="3D"):
-        from BasicTools.FE.WeakForm import GetMecaElasticProblem
-        from BasicTools.FE.MaterialHelp import HookeIso
-        self.HookeLocalOperator = HookeIso(young,poisson,dim=3)
-        Symwfb = GetMecaElasticProblem(self.primalName,3,K=self.HookeLocalOperator)
-        wfb = SymWeakToNumWeak(Symwfb)
-        self.bilinearWeakFormulations = [(zone,wfb)]
+        for phy in self.physics:
+            self.spaces.extend(phy.spaces)
+            phy.ComputeDofNumbering(self.mesh,tagsToKeep)
+            self.numberings.extend(phy.numberings)
 
-    def AddPressure(self,zone,pressureName="p"):
-        from BasicTools.FE.WeakForm import GetMecaNormalPressure
-        Symwfp = GetMecaNormalPressure(pressureName,name=self.primalName)
-        wfp = SymWeakToNumWeak(Symwfp)
-        self.linearWeakFormulations.append((zone,wfp))
+        self.totalNumberOfDof = 0
+        for num in self.numberings:
+            self.totalNumberOfDof += num["size"]
 
-    def AddForce(self,zone,direction,flux="F"):
-        from BasicTools.FE.WeakForm import GetTestField
-        from sympy import Symbol
+        self.unkownFields = []
+        for phy in self.physics:
+            for dim in range(phy.GetNumberOfUnkownFields()):
+                field = FEField()
+                field.numbering = phy.numberings[dim]
+                field.name = phy.GetPrimalNames()[dim]
+                field.data = None
+                field.mesh = self.mesh
+                field.space = phy.spaces[dim]
+                self.unkownFields.append(field)
 
-        ut = GetTestField(self.primalName,3)
-        if isinstance(flux,str):
-            f = Symbol(flux)
-        else:
-            f = float(flux)
-
-        from sympy.matrices import Matrix
-        if not isinstance(direction,Matrix):
-            direction = Matrix([direction]).T
-
-        wflux = f*direction.T*ut
-        wfp = SymWeakToNumWeak(wflux)
-        self.linearWeakFormulations.append((zone,wfp))
+        self.solver.constraints.SetNumberOfDofs(self.totalNumberOfDof)
 
     def GetLinearProblem(self,computeK=True, computeF=True, linearWeakFormulations = None):
 
-        dim = 3
-        dofs= [self.primalName+"_"+ str(i) for i in range(dim)]
-        spaces = [self.space]*dim
-        numberings = [self.numbering]*dim
-
         rhsRes = None
         lhsRes = None
+
+        if linearWeakFormulations is not None:
+            for zone,form in linearWeakFormulations:
+                if form is None:
+                    continue
+                self.PrintDebug("integration of f "+ str(zone) )
+                _,f = IntegrateGeneral(mesh=self.mesh,wform=form, tag=zone, constants=self.constants, fields=list(self.fields.values()),unkownFields= self.unkownFields)
+                if rhsRes is None:
+                    rhsRes = f
+                else:
+                    rhsRes += f
+            return (lhsRes,rhsRes)
+
+
         if (computeF):
           self.PrintDebug("In Integration F")
-          if linearWeakFormulations is None:
-              linearWeakFormulations = self.linearWeakFormulations
+          for phy in self.physics:
+              linearWeakFormulations = phy.linearWeakFormulations
 
-          for zone,form in linearWeakFormulations:
-            self.PrintDebug("integration of f "+ str(zone) )
-            _,f = Integrate(mesh=self.mesh,wform=form, tag=zone, constants=self.constants, fields=self.fields, dofs=dofs,spaces=spaces,numbering=numberings,
-                            integrationRuleName=self.integrationRule)
-            if rhsRes is None:
-                rhsRes = f
-            else:
-                rhsRes += f
-
-        if (computeK):
-          self.PrintDebug("In Integration K")
-          for zone,form in self.bilinearWeakFormulations:
-            self.PrintDebug("Integration of bilinear formulation on : " + str(zone))
-            k,f = Integrate(mesh=self.mesh,wform=form, tag=zone, constants=self.constants, fields=self.fields, dofs=dofs,spaces=spaces,numbering=numberings,
-                            integrationRuleName=self.integrationRule)
-            if not (f is None):
+              for zone,form in linearWeakFormulations:
+                if form is None:
+                    continue
+                self.PrintDebug("integration of f "+ str(zone) )
+                _,f = IntegrateGeneral(mesh=self.mesh,wform=form, tag=zone, constants=self.constants, fields=list(self.fields.values()),unkownFields= self.unkownFields,
+                                integrationRuleName=phy.integrationRule)
                 if rhsRes is None:
                     rhsRes = f
                 else:
                     rhsRes += f
 
-            if lhsRes is None:
-                lhsRes = k
-            else:
-                lhsRes += k
+        if (computeK):
+          self.PrintDebug("In Integration K")
+          for phy in self.physics:
+              bilinearWeakFormulations = phy.bilinearWeakFormulations
+
+              for zone,form in bilinearWeakFormulations:
+                if form is None:
+                    continue
+                self.PrintDebug("Integration of bilinear formulation on : " + str(zone))
+                k,f = IntegrateGeneral(mesh=self.mesh,wform=form, tag=zone, constants=self.constants, fields=list(self.fields.values()), unkownFields= self.unkownFields,
+                                integrationRuleName=phy.integrationRule)
+                if not (f is None):
+                    if rhsRes is None:
+                        rhsRes = f
+                    else:
+                        rhsRes += f
+
+                if lhsRes is None:
+                    lhsRes = k
+                else:
+                    lhsRes += k
 
         return (lhsRes,rhsRes)
 
 def CheckIntegrity(GUI=False):
-    res = CheckIntegrityFlexion(1,False,GUI=GUI);
-    if res.lower()!="ok": return res
-    res = CheckIntegrityFlexion(2,False,GUI=GUI);
-    if res.lower()!="ok": return res
-    res = CheckIntegrityFlexion(1,True,GUI=GUI);
-    if res.lower()!="ok": return res
-    res = CheckIntegrityFlexion(2,True,GUI=GUI);
-    if res.lower()!="ok": return res
+    for P in [1,2]:
+        for tetra in [False,True]:
+           print("in CheckIntegrityFlexion P="+str(P)+" tetra="+str(tetra))
+           res = CheckIntegrityFlexion( P = P,tetra = tetra,GUI=GUI);
+           if res.lower()!="ok": return res + " " + str(P) + " " + str(tetra)
     return "ok"
 
 def CheckIntegrityFlexion(P,tetra,GUI=False):
-    problem = FeaSymMeca()
-    problem.SetGlobalDebugMode(True)
-    problem.SetBulkFormulationToMeca(1.0,0.3,zone="3D")
-    problem.SetSpaceToLagrange(P=P)
 
-    from BasicTools.Containers.UnstructuredMeshTools import CreateMeshFromConstantRectilinearMesh
-    import BasicTools.Containers.ConstantRectilinearMesh as ConstantRectilinearMesh
+    # the main class
+    problem = UnstructuredFeaSym()
+    problem.SetGlobalDebugMode(True)
+
+    # the mecanical problem
+    from BasicTools.FE.SymPhysics import MecaPhysics
+    mecaPhysics = MecaPhysics()
+    mecaPhysics.SetSpaceToLagrange(P=P)
+    mecaPhysics.AddBFormulation( "3D",mecaPhysics.GetBulkFormulation(1.0,0.3)  )
+    mecaPhysics.AddLFormulation( "Z1", mecaPhysics.GetForceFormulation([1,0,0],0.002)  )
+    mecaPhysics.AddLFormulation( "Z0", None  )
+    problem.physics.append(mecaPhysics)
+
+    # the boundary conditions
+    from BasicTools.FE.KR.KRBlock import KRBlock
+    dirichlet = KRBlock()
+    dirichlet.AddArg("u").On('Z0').Fix0().Fix1().Fix2().To(offset=[1,2,3],first=[1,0,1] )
+    dirichlet.constraintDiretions= "Global"
+
+    problem.solver.constraints.AddConstraint(dirichlet)
+
+    # the mesh
+
+    from BasicTools.Containers.UnstructuredMeshTools import CreateCube
 
     nx = 11; ny = 12; nz = 13;
-    CRMesh = ConstantRectilinearMesh.ConstantRectilinearMesh()
-    CRMesh.SetDimensions([nx,ny,nz]);
-    CRMesh.SetSpacing([1./(nx-1),1./(ny-1), 10./(nz-1)]);
-    CRMesh.SetOrigin([0, 0, 0]);
-
-    mesh = CreateMeshFromConstantRectilinearMesh(CRMesh,ofTetras=tetra)
-    from BasicTools.Containers.UnstructuredMeshTools import ComputeSkin
-    ComputeSkin(mesh,inplace=True)
-
-    # add tags to generate X1
-    class ElementIteratorByZone(object):
-        def __init__(self,zone,name):
-            self.zone = zone
-            self.tol = 1E-6
-            self.tagname = name
-
-        def applyOnElements(self,mesh,elements,el_id, allPoints=True):
-            nodes = mesh.nodes[elements.connectivity[el_id,:],:]
-            total = np.sum(self.zone(nodes) < self.tol)
-            if allPoints:
-                if total == elements.GetNumberOfNodesPerElement():
-                    elements.tags.CreateTag(self.tagname,errorIfAlreadyCreated=False).AddToTag(el_id)
-            else:
-                if total > 0:
-                    elements.tags.CreateTag(self.tagname,errorIfAlreadyCreated=False).AddToTag(el_id)
-
-        def applyOnNodes(self,mesh):
-            mask = self.zone(mesh.nodes) < self.tol
-            for i in range(len(mask)):
-                if mask[i]:
-                    mesh.nodesTags.CreateTag(self.tagname,errorIfAlreadyCreated=False).AddToTag(i)
-
-
-    mesh.ComputeBoundingBox()
-
-    op0 = ElementIteratorByZone( lambda p: (p[:,2]-mesh.boundingMin[2]),"Z0" )
-    op1 = ElementIteratorByZone( lambda p: (mesh.boundingMax[2]-p[:,2]),"Z1" )
-
-
-    for name,el in mesh.elements.items():
-        for i in range(el.GetNumberOfElements()):
-            op0.applyOnElements(mesh,el,i)
-            op1.applyOnElements(mesh,el,i)
-
-    import BasicTools.Containers.ElementNames as EN
-    if tetra:
-        tets = mesh.GetElementsOfType(EN.Tetrahedron_4)
-        tets.GetTag("3D").SetIds(range(tets.GetNumberOfElements()))
-    else:
-        hexs = mesh.GetElementsOfType(EN.Hexaedron_8)
-        hexs.GetTag("3D").SetIds(range(hexs.GetNumberOfElements()))
-
-
-    print(mesh)
-    #op0.applyOnNodes(mesh)
-    #op1.applyOnNodes(mesh)
-    print(mesh)
-
-
+    mesh = CreateCube(dimensions=[nx,ny,nz],origin=[0,0,0.], spacing=[1./(nx-1),1./(ny-1), 10./(nz-1)], ofTetras=tetra )
     problem.SetMesh(mesh)
+    print(mesh)
+    # we compute the numbering
     problem.ComputeDofNumbering()
-
-    #problem.constants["p"] = 1.0
-    #problem.AddPressure("Z1",1)
-    problem.AddForce("Z1",[1,0,0],0.002)
-
-    import time
-    starttime = time.time()
-
-    k,f = problem.GetLinearProblem()
-    stoptime = time.time()
-
-    print("time to asembly the matrix {0}s".format(stoptime-starttime))
-
-    problem.AddDirichlet("Z0",0,0.)
-    problem.AddDirichlet("Z0",1,0.)
-    problem.AddDirichlet("Z0",2,0.)
-
-    #problem.AddDirichlet("Z1",0,5.)
-
-    kk,ff = problem.ApplyBC(k,f)
-
-    from BasicTools.FE.LinearSolver import LinearProblem
-    """
-    import BasicTools.Containers.ElementNames  as EN
-    dirichletids = mesh.GetElementsOfType(EN.Quadrangle_4).tags["Z0"].GetIds()
-    dirichletdof = np.sort(np.unique(numbering[EN.Quadrangle_4][dirichletids,:].flatten() ))
-    dirichletdofs = np.concatenate((dirichletdof,dirichletdof+numbering["size"], dirichletdof+2*numbering["size"]))
-
-    #print(list(dirichletdofs))
-    #print(list(f))
-
-    dofs = np.ones(len(f), dtype=bool)
-    dofs[dirichletdofs] = False
-
-    import BasicTools.FE.FeaBase as FeaBase
-    fixedValues = np.zeros(len(f),dtype=np.float)
-    [K, rhsfixed] = FeaBase.deleterowcol(k, np.logical_not(dofs), np.logical_not(dofs), fixedValues)
-    print(len(rhsfixed))
-    rhs = f[dofs]-rhsfixed[dofs]
-
-    prob = LinearProblem()
-    prob.SetAlgo("Direct")
+    #print(mecaPhysics.numberings[0])
 
 
-    prob.SetOp(K.tocsc())
-    #print(list(dirichletdofs))
-    print(k.shape )
-    print(K.shape )
-    print(rhs.shape )
-    res = prob.Solve(rhs)
-    #print(list(res))
-    print("Done")
-"""
-    problem.solver = LinearProblem()
-    problem.solver.SetAlgo("EigenCG")
-    print(f)
-    print(np.linalg.norm(f))
-
-    #print(ff)
-    #print(np.linalg.norm(ff))
-    #raise
-    print(f.shape)
-    print(ff.shape)
+    from BasicTools.Helpers.Timer import Timer
+    with Timer("Assembly "):
+        k,f = problem.GetLinearProblem()
 
 
-    problem.Solve(kk,ff)
+    #problem.solver = LinearProblem()
+    #problem.solver.SetAlgo("EigenCG")
+    #problem.solver.SetAlgo("EigenLU")
+
+    problem.solver.SetAlgo("Direct")
+    problem.ComputeConstraintsEquations()
+    print("k.shape", k.shape)
+    print("f.shape",f.shape)
+
+    with Timer("Solve"):
+        problem.Solve(k,f)
+
+    problem.PushVectorToUnkownFields()
+
     print("done solve")
 
-    symdep = wf.GetField("dep",3)
+    symdep = wf.GetField("u",3)
     from BasicTools.FE.MaterialHelp import HookeIso
     K = HookeIso(1,0.3,dim=3)
     symCellData = wf.GetField("cellData",1)
     symCellDataT = wf.GetTestField("cellData",1)
 
-    from BasicTools.FE.Fields import NodalField
-    fields = {}
-    offset = 0
-    for i in range(3):
-        field = NodalField.NodalField()
-        fields["dep_" +str(i)]  = field
-        field.numbering = problem.numbering
-        field.name = "dep_" +str(i)
-        field.data = problem.sol[offset:offset+field.numbering["size"]]
-        field.mesh = problem.mesh
-        field.space = problem.space
-        offset += field.numbering["size"]
-
-
-
     print("Post process")
-    #symEner = wf.ToVoigtEpsilon(wf.Strain(symdep)).T*K*wf.ToVoigtEpsilon(wf.Strain(symdep))*symCellDataT + symCellData.T*symCellDataT
+
+    EnerForm = wf.ToVoigtEpsilon(wf.Strain(symdep)).T*K*wf.ToVoigtEpsilon(wf.Strain(symdep))*symCellDataT + symCellData.T*symCellDataT
+
     symEner = wf.ToVoigtEpsilon(wf.Strain(symdep))[0,0]*symCellDataT + symCellData.T*symCellDataT
 
-    nener = SymWeakToNumWeak(symEner)
     #from BasicTools.Actions.OpenInParaView import OpenInParaView
     #problem.PushVectorToMesh(True,f,"normalFlux")
     #problem.PushVectorToMesh(True,problem.sol,"sol")
     #OpenInParaView(mesh)
-    #return
+    #return()
     print("Post process Eval")
-    m,energyDensity = Integrate(mesh=problem.mesh, wform=nener, tag="3D", constants={},
-                        fields=fields, dofs=["cellData"], spaces=[problem.space],
-                        numbering=[problem.numbering], integrationRuleName="NodalEvalGeo",
+
+    m,energyDensity = Integrate(mesh=problem.mesh, wform=EnerForm, tag="3D", constants={},
+                        fields={f.name:f for f in problem.unkownFields}, dofs=["cellData"], spaces=[problem.spaces[0] ],
+                        numbering=[problem.numberings[0]], integrationRuleName="NodalEvalP"+str(P),
+                        onlyEvaluation=True)
+    print("energyDensity",energyDensity)
+    energyDensity /= m.diagonal()
+
+    from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceP0
+    from BasicTools.FE.DofNumbering import ComputeDofNumbering
+    P0Numbering = ComputeDofNumbering(mesh,LagrangeSpaceP0,tag="3D")
+
+    m,P0energyDensity = Integrate(mesh=problem.mesh, wform=EnerForm, tag="3D", constants={},
+                        fields={f.name:f for f in problem.unkownFields}, dofs=["cellData"], spaces=[LagrangeSpaceP0 ],
+                        numbering=[P0Numbering], integrationRuleName="ElementEvalGeo",
                         onlyEvaluation=True)
 
-    print(np.min(energyDensity))
-    print(np.max(energyDensity))
+    P0energyDensity /= m.diagonal()
 
-#    raise
-    energyDensity /= m.diagonal()
-    print(f)
+
     if GUI  :
         from BasicTools.Actions.OpenInParaView import OpenInParaView
-        problem.PushVectorToMesh(True,f,"normalFlux",vectorSize=3)
-        problem.PushVectorToMesh(True,problem.sol,"sol",vectorSize=3)
-        problem.PushVectorToMesh(True,energyDensity,"energy",vectorSize=1)
-        OpenInParaView(mesh,filename="UnstructuredFeaSym_Sols_P"+str(P)+("Tetra"if tetra else "Hexa")+".xmf",run=False)
+        problem.PushVectorToMesh(True,f,"normalFlux",problem.numberings)
+        problem.PushVectorToMesh(True,problem.sol,"sol",problem.numberings)
+        problem.PushVectorToMesh(True,energyDensity,"PEnergy",[problem.numberings[0]])
+        problem.PushVectorToMesh(False,energyDensity,"CEnergy_FromP",[problem.numberings[0]])
+        problem.PushVectorToMesh(False,P0energyDensity,"CEnergy",[P0Numbering])
+
+        OpenInParaView(mesh,filename="UnstructuredFeaSym_Sols_P"+str(P)+("Tetra"if tetra else "Hexa")+".xmf",run=True)
+
+    print(Timer())
     return("ok")
 
 
 
 if __name__ == '__main__':
+
+    import time
+    starttime = time.time()
     print(CheckIntegrity(True))#pragma: no cover
+
+    stoptime = time.time()
+    print("Total Time {0}s".format(stoptime-starttime))
     print("Done")

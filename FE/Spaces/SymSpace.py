@@ -68,7 +68,7 @@ class SymSpaceBase(SpaceBase):
                 func = self.symN[i].diff(self.lcoords[j])
                 self.fct_dNdxi[i][j] =  lambda p,func=func: func.subs(zip(self.lcoords,p)).evalf()
         #print(self.fct_dNdxi)
-        
+
 
     def SetIntegrationRule(self, points, weights):
        self.int_Weights = weights
@@ -90,6 +90,11 @@ class SymSpaceBase(SpaceBase):
     def GetShapeFunc(self,qcoor):
         res = np.array([self.fct_N[i](qcoor) for i in range(self.GetNumberOfShapeFunctions()) ], dtype=np.float)
         return res
+
+    def GetPosOfShapeFunction(self,i,Xi):
+        valN = self.GetShapeFunc(self.posN[i,:])
+        return np.dot(valN,Xi).T
+
 
     def GetShapeFuncDer(self,qcoor):
         nsf = self.GetNumberOfShapeFunctions()

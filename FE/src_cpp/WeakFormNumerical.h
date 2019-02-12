@@ -44,7 +44,7 @@ std::ostream& operator <<(std::ostream& stream, const WeakMonom& monom) {
     if (monom.prefactor != 0) {
         stream << monom.prefactor << "*";
     }
-    for(int prodn=0; prodn<  monom.prod.size(); ++prodn){
+    for(unsigned int prodn=0; prodn<  monom.prod.size(); ++prodn){
         const WeakTerm& term = monom.prod[prodn];
         if(prodn ) stream << "*";
         stream << term;

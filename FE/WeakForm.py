@@ -181,7 +181,7 @@ def GetMecaElasticProblem(name="u",dim=3,K=None,planeStress=True):
     if K is None:
         from MaterialHelp import HookeIso
         K = HookeIso(1,0.3,dim, planeStress)
-    ener = ToVoigtEpsilon(Strain(u)).T*K*ToVoigtEpsilon(Strain(ut))
+    ener = ToVoigtEpsilon(Strain(u,dim)).T*K*ToVoigtEpsilon(Strain(ut,dim))
     return ener
 
 def GetMecaNormalPressure(flux="p",name="u", dim=3):
