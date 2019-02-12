@@ -4,6 +4,7 @@
 __author__ = "Felipe Bordeu"
 
 import numpy as np
+import math
 
 def Read(inputData, inout):
     if type(inout).__module__ == np.__name__:
@@ -78,6 +79,30 @@ def ReadBool(string):
 def ReadBools(string):
     return ReadVector(string,bool)
 
+def ReadVectorXYZ(string,normalised=False):
+    res = ReadFloats(string)
+    if len(res) != 3:
+        raise
+    if normalised:
+        res /= np.linalg.norm(res)
+    return res
+
+def ReadVectorPhiThetaMag(string,normalised=False):
+    res = ReadFloats(string)
+    if len(res) == 3:
+        phi,theta,mag = res
+    else:
+        phi,theta = res
+        mag = 1.
+
+    if normalised:
+        mag = 1.
+
+    phi = phi*math.pi/180.
+    theta = theta*math.pi/180.
+    res = np.array([math.sin(phi)*math.cos(theta), math.sin(phi)*math.sin(theta), math.cos(phi)])
+    return res*mag
+
 
 def ReadProperties(data, props ,obj,typeConversion=True):
     if props is None:
@@ -100,7 +125,7 @@ def ReadProperties(data, props ,obj,typeConversion=True):
                   print(obj )
                   print(prop)
                   print(data)
-                  raise (ValueError("Error setting  '"+str(prop)+"'" ) )
+                  raise (ValueError("Error setting  '"+str(prop)+"'  to object of type " + str(type(obj)) ) )
            else:
               theSetter(data[prop])
     except KeyError as e:
