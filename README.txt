@@ -35,6 +35,10 @@ The page for the bug repports and more:
 
      > python BasicTools/setup.py build_ext --inplace
 
+     or for Python 3
+
+     > python3 BasicTools/setup.py build_ext --inplace
+
 
 4) NOTES FOR CONTRIBUTORS
 
@@ -97,3 +101,4 @@ The page for the bug repports and more:
 
     Please look at the file BasicTools/FE/ZmatFemProblem.py at the beginning of
     the CheckIntegrity() function for an example.
+
