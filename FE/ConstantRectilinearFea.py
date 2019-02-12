@@ -14,6 +14,8 @@ from BasicTools.FE.Hexa8Cuboid import Hexa8Cuboid
 from BasicTools.FE.Quad4Rectangle import  Quad4Rectangle
 import BasicTools.FE.FeaBase as FeaBase
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
+from BasicTools.Linalg.MatOperations import deleterowcol
+
 
 class BundaryCondition(BaseOutputObject):
     def __init__(self,dim=3, size= 1):
@@ -241,7 +243,7 @@ class Fea(FeaBase.FeaBase):
 
         # Remove constrained dofs from matrix
         self.PrintDebug(" Delete fixed Dofs")
-        [K, rhsfixed] = FeaBase.deleterowcol(K, self.fixed, self.fixed, self.fixedValues)
+        [K, rhsfixed] = deleterowcol(K, self.fixed, self.fixed, self.fixedValues)
 
         self.PrintDebug(" Start solver (" + str(self.linearSolver) + ")")
         rhs = self.f[self.free, 0]-rhsfixed[self.free, 0]
