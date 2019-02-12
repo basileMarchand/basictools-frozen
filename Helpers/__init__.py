@@ -13,7 +13,8 @@ __all__ = [
 'TextFormatHelper',
 'which',
 "Factory",
-"ProgressBar"
+"ProgressBar",
+"Timer"
  ]
 
 
