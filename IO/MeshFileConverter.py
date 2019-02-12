@@ -39,3 +39,5 @@ if __name__ == '__main__' :
       print("DONE")
 
 
+def CheckIntegrity(GUI=False):
+    return "ok"
