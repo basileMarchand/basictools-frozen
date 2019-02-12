@@ -58,12 +58,15 @@ class TestTempDir(object):
     path = None
 
     @classmethod
-    def GetTempPath(cls):
+    def GetTempPath(cls, onRam=False):
         if cls.path is not None:
             return cls.path
         import tempfile
         import os
-        cls.path = tempfile.mkdtemp(prefix="BasicTools_Test_Directory_",suffix="_safe_to_delete") + os.sep
+        if onRam:
+            cls.path = tempfile.mkdtemp(prefix="BasicTools_Test_Directory_",suffix="_safe_to_delete") + os.sep
+        else:
+            cls.path = tempfile.mkdtemp(prefix="BasicTools_Test_Directory_",suffix="_safe_to_delete",dir="/dev/shm/") + os.sep
         cls.__saveTempPath()
         return TestTempDir.path
 
@@ -376,6 +379,7 @@ def CheckIntegrity():
     return "Ok"
 
 if __name__ == '__main__':# pragma: no cover
+
     import sys, getopt
     if len(sys.argv) == 1:
         res = TestAll(modulestotreat=['ALL'],extraToolsBoxs= ["BasicTools"], fulloutput=False,coverage={"active":False})# pragma: no cover
