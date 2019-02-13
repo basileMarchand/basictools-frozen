@@ -24,5 +24,6 @@ __all__ = [
 "WeakForm",
 "ProblemData",
 "PythonIntegration",
-"SymPhysics"]
+"SymPhysics",
+"KR"]
 
