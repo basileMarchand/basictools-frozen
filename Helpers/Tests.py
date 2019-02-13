@@ -64,9 +64,10 @@ class TestTempDir(object):
         import tempfile
         import os
         if onRam:
-            cls.path = tempfile.mkdtemp(prefix="BasicTools_Test_Directory_",suffix="_safe_to_delete") + os.sep
-        else:
             cls.path = tempfile.mkdtemp(prefix="BasicTools_Test_Directory_",suffix="_safe_to_delete",dir="/dev/shm/") + os.sep
+        else:
+            cls.path = tempfile.mkdtemp(prefix="BasicTools_Test_Directory_",suffix="_safe_to_delete") + os.sep
+
         cls.__saveTempPath()
         return TestTempDir.path
 
