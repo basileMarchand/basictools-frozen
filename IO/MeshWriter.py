@@ -9,8 +9,8 @@ from BasicTools.IO.WriterBase import WriterBase as WriterBase
 import BasicTools.Containers.ElementNames as EN
 
 
-from BasicTools.IO.MeshTools import BinaryNumber,ASCIIName, ASCIITags
-from BasicTools.IO.MeshTools import Corners
+from BasicTools.IO.MeshTools import BinaryKeywords,BinaryNumber,ASCIIName, ASCIITags
+from BasicTools.IO.MeshTools import Corners,Ridges,RequiredEdges,RequiredTriangles,RequiredVertices
 import BasicTools.IO.MeshTools as MT
 
 from BasicTools.IO.MeshTools import BinaryKeywords as BKeys
@@ -180,6 +180,29 @@ class MeshWriter(WriterBase):
                 self.PrintDebug("position at end " + str(self.filePointer.tell()))
                 self.PrintDebug("calculate position at end " + str(endOfInformation))
 
+
+
+        bars = meshObject.GetElementsOfType(EN.Bar_2)
+        if RequiredEdges in bars.tags  and len(bars.tags[RequiredEdges]):
+
+            self.PrintDebug("output RequiredEdges" )
+            ids = np.empty(0,dtype=int)
+            if RequiredEdges in bars.tags :
+                tag = bars.tags[RequiredEdges]
+
+                ids = np.concatenate((ids,tag.GetIds()))
+            nbids = len(ids)
+            if nbids:
+                self.filePointer.write(struct.pack('i', BinaryKeywords["GmfRequiredEdges"] ))
+                currentposition = self.filePointer.tell()
+                endOfInformation = currentposition+ (2+nbids)*4
+                self.filePointer.write(struct.pack('i', endOfInformation ))# end of information
+                self.filePointer.write(struct.pack('i', nbids))# GetNumberOfElements
+                (ids+1).astype(np.int32).tofile(self.filePointer, format=dataformat,sep='')
+                self.PrintDebug("position at end " + str(self.filePointer.tell()))
+                self.PrintDebug("calculate position at end " + str(endOfInformation))
+
+
         tris = meshObject.GetElementsOfType(EN.Triangle_3)
         if "RequiredTriangles" in tris.tags  and len(tris.tags["RequiredTriangles"]):
 
@@ -189,11 +212,6 @@ class MeshWriter(WriterBase):
                 tag = tris.tags["RequiredTriangles"]
 
                 ids = np.concatenate((ids,tag.GetIds()))
-
-            #if "Meca" in bars.tags :
-            #    tag = bars.tags["Meca"]
-            #    ids = np.concatenate((ids,tag.GetIds()))
-
             nbids = len(ids)
             if nbids:
                 self.filePointer.write(struct.pack('i', 17 ))

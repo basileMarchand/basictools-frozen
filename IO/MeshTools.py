@@ -29,7 +29,7 @@ RequiredTriangles ="RequiredTriangles"
 ASCIITags = {}
 ASCIITags["Ridges"] =  (EN.Bar_2,Ridges)
 ASCIITags['RequiredTriangles'] = (EN.Triangle_3,RequiredTriangles)
-
+ASCIITags['RequiredEdges'] = (EN.Bar_2,RequiredEdges)
 
 
 ## binary elemnts number and tags numbers
