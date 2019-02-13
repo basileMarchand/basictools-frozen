@@ -47,8 +47,12 @@ class Tag(object):
         self.Tighten()
         return self._id
 
-    def Merge(self,other):
-        self.SetIds(list(set().union(self.GetIds(),other.GetIds())))
+    def Merge(self,other=None,ids=None):
+        if other is not None:
+            self.SetIds(list(set().union(self.GetIds(),other.GetIds())))
+
+        if ids is not None:
+            self.SetIds(list(set().union(self.GetIds(),ids)))
 
     def __str__(self):
         res = ''
