@@ -58,7 +58,10 @@ class UtWriter(WriterBase):
         if Nnode is not None:
           self.Nnode = Nnode
         else:
-          self.Nnode            = data_node[self.data_node_names[0]].shape[0]
+          if len(self.data_node_names):
+              self.Nnode            = data_node[self.data_node_names[0]].shape[0]
+              print("warning empty self.dat_node_names")
+
         if Nint is not None:
           self.Nint = Nint
         else:
@@ -242,6 +245,9 @@ class UtWriter(WriterBase):
         if self.NintVar > 0:
           integFile.close()
 
+    def Close(self):
+        # to override the WriterBase().Close()
+        pass
 
 def CheckIntegrity():
 
