@@ -22,6 +22,7 @@ options :
     -m    To filter the output by this string (-m can be repeated)
     -d    Dry run do not execute anything, only show what will be executed
     -p    Activate profiling
+    -v    Activate maximal level of verbosity
 """
 
 from BasicTools.Helpers.which import which
@@ -386,7 +387,7 @@ if __name__ == '__main__':# pragma: no cover
         res = TestAll(modulestotreat=['ALL'],extraToolsBoxs= ["BasicTools"], fulloutput=False,coverage={"active":False})# pragma: no cover
     else:
       try:
-          opts, args = getopt.getopt(sys.argv[1:],"hcblfsdpe:m:")
+          opts, args = getopt.getopt(sys.argv[1:],"hcblfsdpve:m:")
       except getopt.GetoptError as e:
           print(e)
           print(Test_Help_String)
@@ -423,6 +424,10 @@ if __name__ == '__main__':# pragma: no cover
             stopAtFirstError = True
          elif opt in ("-d"):
             dryrun = True
+         elif opt in ("-v"):
+            from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
+            myObj = BaseOutputObject()
+            myObj.SetGlobalDebugMode(True)
          elif opt in ("-p"):
             profiling = True
          elif opt in ("-e"):
@@ -432,7 +437,6 @@ if __name__ == '__main__':# pragma: no cover
          elif opt in ("-p"):
             print('Setting temp output directory to ' + arg)
             TestTempDir.SetTempPath(arg)
-
 
 
       if len(modulestotreat) == 0:
