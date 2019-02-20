@@ -260,7 +260,7 @@ cdef class PyMonoElementsIntegralCpp():
                 term.internalType = 0
             elif term.constant:
                 try:
-                    term.valuesIndex_ = self.constantNames.index(term.fieldName)
+                    term.valuesIndex_ = self.constantsNames.index(term.fieldName)
                     term.internalType = 1
                 except:
                     #print("Warning: constant '" +str(term.fieldName) + "'  not found in constants ")
