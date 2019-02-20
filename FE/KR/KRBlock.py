@@ -10,7 +10,7 @@ class KRBlock(KRBase):
     def __init__(self):
         super(KRBlock,self).__init__()
         self.type = "Block"
-        self.constraintDiretions = "Final" # ["Global","Local","Original","Final"]
+        self.constraintDiretions = "Final" # ["Global","Local","Original","Final","Normal"]
 
         self.OriginSystem = Transform()
         self.FinalSystem = Transform()
@@ -102,23 +102,43 @@ class KRBlock(KRBase):
 
               sp = field.space[name]
               nbsf = sp.GetNumberOfShapeFunctions()
-
+              geoSpace.SetIntegrationRule(sp.posN,np.ones(nbsf) )
               if zone in data.tags:
                 elids = data.tags[zone].GetIds()
                 for elid in elids:
                     for i in range(nbsf):
                         dofid = field.numbering[name][elid,i]
+
+                        parampos = sp.posN[i,:]
+                        valN = geoSpace.GetShapeFunc(parampos)
+                        xcoor = mesh.nodes[data.connectivity[elid,:],:]
+                        pos = np.dot(valN ,xcoor).T
                         if dim == 1:
                             CH.AddFactor(dofid+offsets[0],1)
-                            CH.AddConstant()
-                            raise
+                            CH.AddConstant(self.factor(pos))
                             CH.NextEquation()
                         else:
-                            parampos = sp.posN[i,:]
-                            valN = geoSpace.GetShapeFunc(parampos)
-                            pos = np.dot(valN ,mesh.nodes[data.connectivity[elid,:],:]).T
+
                             disp =  self.CompluteDisplacement(pos) -pos
-                            dirs = self.GetConstrainedDirections(pos,disp)
+                            if self.constraintDiretions == "Local":
+                                Jack, Jdet, Jinv = geoSpace.GetJackAndDetI(i,xcoor)
+                                normal = self.geoSpace.GetNormal(Jack)
+
+                                dirs = []
+                                for x,y in zip([0,1,2],self.blockDirections):
+                                    vec1 = np.lialg.cross([ 1,0,0 ],normal ) + np.lialg.cross([ 0,1,0 ],normal )
+                                    vec1 = vec1/np.linalg.norm(vec1)
+                                    if y and x== 0:
+                                        dirs.append(normal)
+                                    elif y and x == 1:
+                                        dirs.append(vec1)
+                                    elif y and x == 2:
+                                        vec2 = np.linal.cross(normal,vec1)
+                                        vec2 = vec2/np.linalg.norm(vec2)
+                                        dirs.append(vec2)
+                            else:
+                                dirs = self.GetConstrainedDirections(pos,disp)
+
                             for dirToBlock in dirs:
                                 CH.AddEquationSparse(dofid+offsets,dirToBlock,np.dot(disp,dirToBlock)  )
 
@@ -143,3 +163,12 @@ class KRBlock(KRBase):
         res += str(self.FinalSystem)
         return res
 
+
+def CheckIntegrity(GUI=False):
+    obj = KRBlock()
+    obj.AddArg("u").On("Z0").Fix0().Fix1(False).Fix2(True)
+
+    return "ok"
+
+if __name__ == '__main__':
+    print(CheckIntegrity(GUI=True))

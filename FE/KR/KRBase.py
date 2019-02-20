@@ -17,7 +17,10 @@ class KRBase(BOO):
         return self
 
     def On(self,zone):
-        self.on.append(zone)
+        if type(zone) is list:
+            self.on.extend(zone)
+        else:
+            self.on.append(zone)
         self.on = list(set(self.on))
         return self
 
@@ -30,3 +33,13 @@ class KRBase(BOO):
     def Fix2(self,val=True):
         self.blockDirections[2] = val
         return self
+
+
+
+def CheckIntegrity(GUI=False):
+    obj = KRBase()
+    obj.AddArg("u").On("Z0").Fix0().Fix1(False).Fix2(True)
+    return "ok"
+
+if __name__ == '__main__':
+    print(CheckIntegrity(GUI=True))

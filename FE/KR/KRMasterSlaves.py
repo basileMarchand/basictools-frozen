@@ -121,3 +121,11 @@ class KRMasterSlaves(KRBase):
 
         return res
 
+def CheckIntegrity(GUI=False):
+    obj = KRMasterSlaves()
+    obj.AddArg("u").On("Z0").Fix0().Fix1(False).Fix2(True)
+
+    return "ok"
+
+if __name__ == '__main__':
+    print(CheckIntegrity(GUI=True))
