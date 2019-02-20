@@ -53,6 +53,10 @@ class FEField(object):
 
         self.data[self.numbering["doftopointRight"]] = userdata[self.numbering["doftopointLeft"]]
 
+    def __repr__(self):
+        res = "FEField " + self.name
+        return res
+
 def CheckIntegrity():
     obj = FEField("temp")
     return "ok"
