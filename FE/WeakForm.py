@@ -2,7 +2,7 @@
 
 import numpy as np
 from sympy.matrices import Matrix
-from sympy import Symbol,Function
+from sympy import Symbol,Function,trace
 from sympy import pprint
 from sympy.core.containers import Tuple
 
@@ -136,6 +136,9 @@ def GetField(name,size,star=False,sdim=3,extraCoordinates=[]):
         for i in range(size):
             res.append(Function(name+"_"+str(i)+suffix)(*s))
     return (Matrix([res])).T
+
+def Trace(arg):
+    return Matrix([trace(arg)])
 
 def Divergence(arg,dim=3):
     res = 0
