@@ -516,6 +516,7 @@ import xml.sax
 class XdmfReader(xml.sax.ContentHandler):
 
     def __init__(self,filename=''):
+        super(XdmfReader,self).__init__()
         self.xdmf = Xdmf();
         self.pile = [];
         self.path = '';
