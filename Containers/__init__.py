@@ -9,4 +9,5 @@ __all__ = ["vtkBridge",
            'Octree',
            'ElementNames',
            'MeshTools',
+           'Filters'
            ];
