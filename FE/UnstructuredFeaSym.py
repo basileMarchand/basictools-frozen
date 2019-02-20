@@ -51,23 +51,47 @@ class UnstructuredFeaSym(FeaBase):
 
         self.solver.constraints.SetNumberOfDofs(self.totalNumberOfDof)
 
-    def GetLinearProblem(self,computeK=True, computeF=True, linearWeakFormulations = None):
+    def GetLinearProblem(self,computeK=True, computeF=True, lform = None ,bform = None,unkownFields=None):
 
         rhsRes = None
         lhsRes = None
 
-        if linearWeakFormulations is not None:
-            for zone,form in linearWeakFormulations:
+        if lform is not None:
+            if unkownFields is None:
+               unkownFields =  self.unkownFields
+            for zone,form in lform:
                 if form is None:
                     continue
                 self.PrintDebug("integration of f "+ str(zone) )
-                _,f = IntegrateGeneral(mesh=self.mesh,wform=form, tag=zone, constants=self.constants, fields=list(self.fields.values()),unkownFields= self.unkownFields)
+
+                _,f = IntegrateGeneral(mesh=self.mesh,wform=form, tag=zone, constants=self.constants, fields=list(self.fields.values()),unkownFields= unkownFields)
                 if rhsRes is None:
                     rhsRes = f
                 else:
                     rhsRes += f
             return (lhsRes,rhsRes)
 
+        if bform is not None:
+            if unkownFields is None:
+               unkownFields =  self.unkownFields
+            for zone,form in bform:
+                if form is None:
+                    continue
+                self.PrintDebug("integration of f "+ str(zone) )
+                self.PrintDebug("integration of f "+ str(form) )
+
+                k,f = IntegrateGeneral(mesh=self.mesh,wform=form, tag=zone, constants=self.constants, fields=list(self.fields.values()),unkownFields= unkownFields)
+                if rhsRes is None:
+                    rhsRes = f
+                else:
+                    rhsRes += f
+
+                if lhsRes is None:
+                    lhsRes = k
+                else:
+                    lhsRes += k
+
+            return (lhsRes,rhsRes)
 
         if (computeF):
           self.PrintDebug("In Integration F")
