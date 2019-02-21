@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
-from BasicTools.FE.KR import KRBase
+from BasicTools.FE.KR.KRBase import KRBase
 
 class KRMasterSlaves(KRBase):
     def __init__(self):
