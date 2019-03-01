@@ -377,6 +377,23 @@ def GetCycleTables(data):
     return cycleTables
 
 
+
+def GetBoundaryConditions(data):
+    """
+    return a dictionary containing the infos of an inp file "data" read by ReadInp2()
+    concerning all the infos respecting ****calcul, ***bc
+    """
+    tableData = GetFromInp(data,{'4':'calcul', '3':'bc'})
+    bcs = {}
+    for i in range(1, len(tableData)):
+      if tableData[i][0][0] not in bcs:
+        bcs[tableData[i][0][0]] = []
+      bc = [b for b in tableData[i][1:]]
+      bcs[tableData[i][0][0]].append(bc)
+
+    return bcs
+
+
 def CheckIntegrity():
     import BasicTools.IO.ZebulonIO as ZIO
     import BasicTools.Helpers.Tests as T
@@ -399,6 +416,7 @@ def CheckIntegrity():
     GetFromInp(res,{'4':'calcul', '2':'impose_nodal_dof'})
     GetFromInp(res,{'4':'calcul', '3':'linear_solver'})
     GetCycleTables(res)
+    GetBoundaryConditions(res)
     WriteInp2(res)
 
     return 'ok'
