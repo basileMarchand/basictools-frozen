@@ -353,6 +353,30 @@ def ValueToString(value):
     return string[:-1]
 
 
+def GetCycleTables(data):
+    """
+    return a dictionary containing the infos of an inp file "data" read by ReadInp2()
+    concerning all the infos respecting ****calcul, ***table and **cycle
+    """
+    tableData = GetFromInp(data,{'4':'calcul', '3':'table', '2':'cycle'})
+    
+    cycleTables = {}
+    for t in range(int(len(tableData)/3)):
+      cycleTables[tableData[3*t][0][1]] = {}
+      cycleTables[tableData[3*t][0][1]]['tInit'] = tableData[3*t][0][2]
+      cycleTables[tableData[3*t][0][1]]['tEnd'] = tableData[3*t][0][3]
+      tempTime = []
+      for i in range(1, len(tableData[3*t+1])):
+        tempTime += tableData[3*t+1][i]
+      tempValue = []
+      for i in range(1, len(tableData[3*t+2])):
+        tempValue += tableData[3*t+2][i]
+      cycleTables[tableData[3*t][0][1]]['time'] = np.array(tempTime, dtype = float)
+      cycleTables[tableData[3*t][0][1]]['value'] = np.array(tempValue, dtype = float)
+
+    return cycleTables
+
+
 def CheckIntegrity():
     import BasicTools.IO.ZebulonIO as ZIO
     import BasicTools.Helpers.Tests as T
@@ -371,9 +395,10 @@ def CheckIntegrity():
     WriteInp(res)
 
     # check ReadInp2 and WriteInp2
-    res = ReadInp2(T2.GetTestDataPath() + 'calcul1.inp')
-    GetFromInp(res,{'4':'simulate', '2':'model'})
-    GetFromInp(res,{'4':'simulate', '3':'solver'})
+    res = ReadInp2(T2.GetTestDataPath() + 'calcul2.inp')
+    GetFromInp(res,{'4':'calcul', '2':'impose_nodal_dof'})
+    GetFromInp(res,{'4':'calcul', '3':'linear_solver'})
+    GetCycleTables(res)
     WriteInp2(res)
 
     return 'ok'
