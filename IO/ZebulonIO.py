@@ -246,20 +246,19 @@ def WriteInp(data,output= None):
         output.write('****return\n')
 
 
-def StringReader(inputString, folder, appendedString = None):
+def StringReader(inputString, folder):
     """
     convert string from Zebulon input file into cleaned string, robust with respect to (potentially nested) '@include'
     """
 
-    if appendedString == None:
-      appendedString = ''
+    appendedString = ''
 
     for line in inputString:
       l = line.strip('\n').lstrip().rstrip()
       if (len(l) == 0) or (l[0] == "%"): continue
       l = l.split("%")[0]
       if l.split()[0]=='@include':
-        StringReader(appendedString, open(folder + os.sep + l.split()[1], 'r'))
+        appendedString += StringReader(open(folder + os.sep + l.split()[1], 'r'), folder)
         continue
       for ll in l:
         appendedString += ll
