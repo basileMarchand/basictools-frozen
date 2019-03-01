@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
-from BasicTools.FE.KR import KRBase
+from BasicTools.FE.KR.KRBase import KRBase
 
 class KRMasterSlaves(KRBase):
     def __init__(self):
@@ -121,3 +121,11 @@ class KRMasterSlaves(KRBase):
 
         return res
 
+def CheckIntegrity(GUI=False):
+    obj = KRMasterSlaves()
+    obj.AddArg("u").On("Z0").Fix0().Fix1(False).Fix2(True)
+
+    return "ok"
+
+if __name__ == '__main__':
+    print(CheckIntegrity(GUI=True))

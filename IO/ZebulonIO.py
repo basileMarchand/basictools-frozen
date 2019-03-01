@@ -6,6 +6,7 @@ import numpy as np
 from scipy.sparse import csr_matrix
 from scipy.sparse import lil_matrix
 import time
+from collections import OrderedDict as OD
 
 def ReadMat(fileName, symetry=True , returnReorderOnly=False):
 
@@ -135,7 +136,6 @@ def ReadInp(fileName=None,string=None):
         from io import StringIO
         string = StringIO(string)
 
-
     res = OD();
     pobj= [res]
     cobj = pobj[-1];
@@ -156,46 +156,50 @@ def ReadInp(fileName=None,string=None):
             continue
 
         while l.find("*"*(clevel))>-1 :
-            pobj.pop()
-            pobj.pop()
-            cobj = pobj[-1]
-            plevel.pop()
-            clevel = plevel[-1]
-
-
-        #print(cobj)
+            try:
+              pobj.pop()
+              pobj.pop()
+              cobj = pobj[-1]
+              plevel.pop()
+              clevel = plevel[-1]
+            except IndexError:
+              break
 
         for sublevel in range(4,0,-1):
-          if l.find("*"*(sublevel))>-1 :
-            #print(sublevel),
-            #print(cobj)
+          if len(l)>=sublevel and l[:sublevel]=="*"*(sublevel):
+          #if l.find("*"*(sublevel))>-1 :
             l = l[sublevel:]
             data = l.split()
             #print(data)
             if "*"*(sublevel) not in cobj:
                 cobj["*"*(sublevel)] = OD()
+
             pobj.append(cobj["*"*(sublevel)])
             cobj = pobj[-1]
+            #if data[0] not in cobj:
             cobj[data[0]] = OD()
+            
             pobj.append(cobj[data[0]])
             cobj = pobj[-1]
             plevel.append(sublevel)
             clevel = plevel[-1]
             if len(data)> 1:
-                cobj["header"]  = data[1:]
+              cobj["header"]  = data[1:]
+              #cobj[data[1]]  = data[1:]
             else:
-                cobj["header"]  = ['']
+              cobj["header"]  = ['']
             clevel = sublevel
             break
-        else :
-             #print(l)
+        else:
+            #print(l)
             # Treat the cdata (no stating start)
             if "CDATA" not in cobj:
                 cobj["CDATA"] = []
             cobj["CDATA"].append(l)
 
-
     return res['****']
+
+
 
 def WriteInp(data,output= None):
     import sys
@@ -234,6 +238,162 @@ def WriteInp(data,output= None):
                                      output.write(" \n".join(map(str,value1["CDATA"]))+"\n")
         output.write('****return\n')
 
+
+
+def ReadInp2(fileName=None,string=None):
+    """
+    Reads an Zebulon inp files and return the results in nested lists
+    """
+
+    if fileName is not None:
+      string = open(fileName, 'r')
+    elif string is not None:
+      from io import StringIO
+      string = StringIO(string)
+
+
+    string0 = ''
+    for line in string:
+      l = line.strip('\n').lstrip().rstrip()
+      if (len(l) == 0) or (l[0] == "%"): continue
+      l = l.split("%")[0]
+      for ll in l:
+        string0 += ll
+      string0 += '\n'
+
+    string = string0.strip('\n').lstrip().rstrip().split('****return')[:-1]
+    for i in range(len(string)):
+      string[i] = string[i].strip('\n').lstrip().rstrip()[4:].strip('\n').lstrip().rstrip().split('\n***')
+      for j in range(len(string[i])):
+        string[i][j] = string[i][j].strip('\n').lstrip().rstrip().split('\n**')
+        for k in range(len(string[i][j])):
+          string[i][j][k] = string[i][j][k].strip('\n').lstrip().rstrip().split('\n*')
+          for l in range(len(string[i][j][k])):
+            string[i][j][k][l] = string[i][j][k][l].strip('\n').lstrip().rstrip().split('\n')
+            for m in range(len(string[i][j][k][l])):
+              string[i][j][k][l][m] = string[i][j][k][l][m].lstrip().rstrip().split()
+    return string
+
+
+def WriteInp2(data,output= None):
+    """
+    Writes an Zebulon inp files constructed by the function ReadInp2
+    """
+    import sys
+    if output is None:
+        output = sys.stdout
+
+    current4star = data[0][0][0][0]
+    for i in range(len(data)):
+      for j in range(len(data[i])):
+        for k in range(len(data[i][j])):
+          for l in range(len(data[i][j][k])):
+            if data[i][0][0][0] != current4star:
+              output.write('****return\n\n')
+              current4star = data[i][0][0][0]
+            output.write(Nstar(i, j, k, l)+ValueToString(data[i][j][k][l])+'\n')
+
+    output.write('****return\n')
+            
+
+
+
+def GetFromInp(data,dic):
+    """
+    returns a list of lists containing the elements of each line of the inp file "data" read by ReadInp2()
+    respecting the conditions in dic: for example, for dic = {'4':'simulate', '2':'model'}, the function returns
+    all the lines being in a **** section starting by "simulate" and a ** section starting by "model" 
+    """
+    res = []
+
+    for i in range(len(data)):
+        for j in range(len(data[i])):
+            for k in range(len(data[i][j])):
+                for l in range(len(data[i][j][k])):
+                  count = 0
+                  if '4' in dic and data[i][0][0][0][0][0] == dic['4']:
+                    count += 1
+                  if '3' in dic and data[i][j][0][0][0][0] == dic['3']:
+                    count += 1
+                  if '2' in dic and data[i][j][k][0][0][0] == dic['2']:
+                    count += 1
+                  if '1' in dic and data[i][j][k][l][0][0] == dic['1']:
+                    count += 1
+                  if count == len(dic):
+                    res.append(data[i][j][k][l])
+    return res
+
+
+def Nstar(i, j, k, l):
+    if l!=0:
+      return "      *"
+    if k!=0:
+      return "    **"
+    if j!=0:
+      return "  ***"
+    return "****"
+
+
+def NstarDigit(i, j, k, l):
+    if l!=0:
+      return 1
+    if k!=0:
+      return 2
+    if j!=0:
+      return 3
+    return 4
+
+
+def ValueToString(value):
+    string = ''
+    for i in range(len(value)):
+      for j in range(len(value[i])):
+        string += value[i][j]+' '
+      string = string[:-1]+'\n'
+    return string[:-1]
+
+
+def GetCycleTables(data):
+    """
+    return a dictionary containing the infos of an inp file "data" read by ReadInp2()
+    concerning all the infos respecting ****calcul, ***table and **cycle
+    """
+    tableData = GetFromInp(data,{'4':'calcul', '3':'table', '2':'cycle'})
+    
+    cycleTables = {}
+    for t in range(int(len(tableData)/3)):
+      cycleTables[tableData[3*t][0][1]] = {}
+      cycleTables[tableData[3*t][0][1]]['tInit'] = tableData[3*t][0][2]
+      cycleTables[tableData[3*t][0][1]]['tEnd'] = tableData[3*t][0][3]
+      tempTime = []
+      for i in range(1, len(tableData[3*t+1])):
+        tempTime += tableData[3*t+1][i]
+      tempValue = []
+      for i in range(1, len(tableData[3*t+2])):
+        tempValue += tableData[3*t+2][i]
+      cycleTables[tableData[3*t][0][1]]['time'] = np.array(tempTime, dtype = float)
+      cycleTables[tableData[3*t][0][1]]['value'] = np.array(tempValue, dtype = float)
+
+    return cycleTables
+
+
+
+def GetBoundaryConditions(data):
+    """
+    return a dictionary containing the infos of an inp file "data" read by ReadInp2()
+    concerning all the infos respecting ****calcul, ***bc
+    """
+    tableData = GetFromInp(data,{'4':'calcul', '3':'bc'})
+    bcs = {}
+    for i in range(1, len(tableData)):
+      if tableData[i][0][0] not in bcs:
+        bcs[tableData[i][0][0]] = []
+      bc = [b for b in tableData[i][1:]]
+      bcs[tableData[i][0][0]].append(bc)
+
+    return bcs
+
+
 def CheckIntegrity():
     import BasicTools.IO.ZebulonIO as ZIO
     import BasicTools.Helpers.Tests as T
@@ -245,10 +405,19 @@ def CheckIntegrity():
     tempPath = T.TestTempDir.GetTempPath()
     ZIO.WriteVec(vec, tempPath+'Zvector')
 
+    # check ReadInp and WriteInp
     res = ReadInp(T2.GetTestDataPath() + 'calcul1.inp')
     res['simulate']['***']['solver']['*']['ratio']['header'][1] = 1e-4
     res['simulate']['***']['test']['**']['load']['header'][1] = 6
     WriteInp(res)
+
+    # check ReadInp2 and WriteInp2
+    res = ReadInp2(T2.GetTestDataPath() + 'calcul2.inp')
+    GetFromInp(res,{'4':'calcul', '2':'impose_nodal_dof'})
+    GetFromInp(res,{'4':'calcul', '3':'linear_solver'})
+    GetCycleTables(res)
+    GetBoundaryConditions(res)
+    WriteInp2(res)
 
     return 'ok'
 

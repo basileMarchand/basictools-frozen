@@ -1,0 +1,82 @@
+****calcul
+***mesh
+**file cube.geof
+
+***resolution newton
+**cycles 1
+*ratio 0.0001
+*time 20.
+*increment 20
+*algorithm p1p2p3
+
+
+***linear_solver mumps
+
+***bc
+**impose_nodal_dof
+y0 U2 0.0
+x0y0z0 U1 0.0
+x0y0z0 U3 0.0
+x0y0z1 U1 0.0
+**pressure 
+y1 file pressure.node pressure
+**centrifugal
+ALL_ELEMENT (3.5 -20 1.5) d3 0.3e4 rotation #masvol 8.9e-9 0.6e4
+**pressure
+y2 file pressure2.node pressure2
+
+***parameter
+**file temperature
+*node
+*rec_size 2940
+*cycle_conversion 0. 200. 20.
+function 00.0+cycle*20.; file temperature1.node 1
+function 10.0+cycle*20.; file temperature2.node 1
+function 20.0+cycle*20.; file temperature1.node 1
+
+
+***table
+**cycle rotation 0. 200.
+*time
+0.0 10.0 20.0
+*value
+0.0 1.0 0.0
+**cycle pressure 0. 200.
+*time
+0.0 10.0 20.0
+21.0 22.0 23.0
+*value
+0. -80. 0.
+1.0 0.0 1.0
+
+**cycle pressure2 0. 200.
+*time
+0.0 10.0 20.0
+21.0 22.0 23.0
+*value
+0. -80. 0.
+1.0 0.0 1.0
+
+
+***output
+**output_first
+**save_all_variables
+%**component eto11 eto22 eto33 eto12 eto23 eto31 sig11 sig22 sig33 sig12 sig23 sig31 eel11 eel22 eel33 eel12 eel23 eel31 evrcum al111 al122 al133 al112 al123 al131 evri11 evri22 evri33 evri12 evri23 evri31
+
+***material
+*file evp
+
+
+****return
+
+%****post_processing
+%***data_source Z7
+% **open cube.ut 
+%***local_post_processing
+%**file integ
+%**elset ALL_ELEMENT
+%**process mises
+%*var sig
+%****return
+
+

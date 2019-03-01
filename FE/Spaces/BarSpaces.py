@@ -29,6 +29,9 @@ class Bar_P0_Lagrange(BarSpaceBase):
         self.dofAttachments = [("C",0,None) ]
         self.Create()
 
+class Bar_P0_Legendre(Bar_P0_Lagrange):
+    def __init__(self):
+        super(Bar_P0_Legendre,self).__init__()
 
 class Bar_P1_Lagrange(BarSpaceBase):
     def __init__(self):
