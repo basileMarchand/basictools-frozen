@@ -47,7 +47,8 @@ class MeshWriter(WriterBase):
             self.dataType = np.float64
             self.dataSize = 8;
 
-    def Write(self,meshObject,PointFields=None, solutionOnOwnFile= False, nodalRefNumber= None, elemRefNumber=None):
+    def Write(self,meshObject,PointFields=None, solutionOnOwnFile= False, nodalRefNumber= None, elemRefNumber=None,PointFieldsNames=None,GridFieldsNames=None,GridFields=None,CellFieldsNames=None,CellFields=None):
+        
         if self.isBinary():
             return self.WriteBINARY(meshObject,PointFields=PointFields, solutionOnOwnFile=solutionOnOwnFile, nodalRefNumber=nodalRefNumber,elemRefNumber=elemRefNumber )
         else:
@@ -282,6 +283,8 @@ class MeshWriter(WriterBase):
             self._WriteSolutionsFieldsAsciiUsingKey(meshObject,"SolAtTetrahedra",SolsAtTetrahedra)
 
     def _WriteSolutionsFieldsAsciiUsingKey(self,meshObject,keyword,Sols):
+        if len(Sols) == 0:
+            return
         nbentries = Sols[0].shape[0]
 
         #key SolAtVertices = 62
@@ -555,7 +558,7 @@ class MeshWriter(WriterBase):
 
 
         if PointFields is not None:
-             self._WriteSolutionsFieldsAsciiUsingKey(meshObject,"SolAtVertices",PointFields)
+             self._WriteSolutionsFieldsAsciiUsingKey(meshObject,"SolAtVertices",list(PointFields))
 
 #            self.filePointer.write("SolAtVertices\n")
 #            self.filePointer.write("{} \n".format(numberofpoints) )
