@@ -47,7 +47,7 @@ class MeshWriter(WriterBase):
             self.dataType = np.float64
             self.dataSize = 8;
 
-    def Write(self,meshObject,PointFields=None, solutionOnOwnFile= False, nodalRefNumber= None, elemRefNumber=None,PointFieldsNames=None,GridFieldsNames=None,GridFields=None,CellFieldsNames=None,CellFields=None):
+    def Write(self,meshObject,PointFields=None, solutionOnOwnFile= False, nodalRefNumber= None, elemRefNumber=None,PointFieldsNames=None,CellFieldsNames=None,CellFields=None):
         
         if self.isBinary():
             return self.WriteBINARY(meshObject,PointFields=PointFields, solutionOnOwnFile=solutionOnOwnFile, nodalRefNumber=nodalRefNumber,elemRefNumber=elemRefNumber )
