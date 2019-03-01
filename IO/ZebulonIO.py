@@ -7,6 +7,7 @@ from scipy.sparse import csr_matrix
 from scipy.sparse import lil_matrix
 import time
 from collections import OrderedDict as OD
+import os
 
 def ReadMat(fileName, symetry=True , returnReorderOnly=False):
 
@@ -127,6 +128,9 @@ def WriteVec(data, fileName):
 
 
 def ReadInp(fileName=None,string=None):
+    """
+    dictionary-based reader: WARNING: multiple entry keys may be overwritten !!
+    """
     from collections import OrderedDict as OD
 
 
@@ -202,6 +206,9 @@ def ReadInp(fileName=None,string=None):
 
 
 def WriteInp(data,output= None):
+    """
+    dictionary-based reader: WARNING: multiple entry keys may be missing !!
+    """
     import sys
     if output is None:
         output = sys.stdout
@@ -239,6 +246,27 @@ def WriteInp(data,output= None):
         output.write('****return\n')
 
 
+def StringReader(inputString, folder, appendedString = None):
+    """
+    convert string from Zebulon input file into cleaned string, robust with respect to (potentially nested) '@include'
+    """
+
+    if appendedString == None:
+      appendedString = ''
+
+    for line in inputString:
+      l = line.strip('\n').lstrip().rstrip()
+      if (len(l) == 0) or (l[0] == "%"): continue
+      l = l.split("%")[0]
+      if l.split()[0]=='@include':
+        StringReader(appendedString, open(folder + os.sep + l.split()[1], 'r'))
+        continue
+      for ll in l:
+        appendedString += ll
+      appendedString += '\n'    
+
+    return appendedString
+
 
 def ReadInp2(fileName=None,string=None):
     """
@@ -252,14 +280,7 @@ def ReadInp2(fileName=None,string=None):
       string = StringIO(string)
 
 
-    string0 = ''
-    for line in string:
-      l = line.strip('\n').lstrip().rstrip()
-      if (len(l) == 0) or (l[0] == "%"): continue
-      l = l.split("%")[0]
-      for ll in l:
-        string0 += ll
-      string0 += '\n'
+    string0 = StringReader(inputString = string, folder = os.path.dirname(fileName))
 
     string = string0.strip('\n').lstrip().rstrip().split('****return')[:-1]
     for i in range(len(string)):
@@ -301,23 +322,24 @@ def WriteInp2(data,output= None):
 def GetFromInp(data,dic):
     """
     returns a list of lists containing the elements of each line of the inp file "data" read by ReadInp2()
-    respecting the conditions in dic: for example, for dic = {'4':'simulate', '2':'model'}, the function returns
-    all the lines being in a **** section starting by "simulate" and a ** section starting by "model" 
+    respecting the conditions in dic: for example, for dic = {'4':['calcul'], '2':['file', 'temperature']},
+    the function returns all the lines being in a **** section starting by "simulate" and a ** section 
+    starting by "file temperature" (robust with respect to the number of spaces between 'file' and 'temperature')  
     """
-    res = []
 
+    res = []
     for i in range(len(data)):
         for j in range(len(data[i])):
             for k in range(len(data[i][j])):
                 for l in range(len(data[i][j][k])):
                   count = 0
-                  if '4' in dic and data[i][0][0][0][0][0] == dic['4']:
+                  if '4' in dic and all(data[i][0][0][0][0][p] == val for p, val in enumerate(dic['4'])):
                     count += 1
-                  if '3' in dic and data[i][j][0][0][0][0] == dic['3']:
+                  if '3' in dic and all(data[i][j][0][0][0][p] == val for p, val in enumerate(dic['3'])):
                     count += 1
-                  if '2' in dic and data[i][j][k][0][0][0] == dic['2']:
+                  if '2' in dic and all(data[i][j][k][0][0][p] == val for p, val in enumerate(dic['2'])):
                     count += 1
-                  if '1' in dic and data[i][j][k][l][0][0] == dic['1']:
+                  if '1' in dic and all(data[i][j][k][l][0][p] == val for p, val in enumerate(dic['1'])):
                     count += 1
                   if count == len(dic):
                     res.append(data[i][j][k][l])
@@ -358,7 +380,7 @@ def GetCycleTables(data):
     return a dictionary containing the infos of an inp file "data" read by ReadInp2()
     concerning all the infos respecting ****calcul, ***table and **cycle
     """
-    tableData = GetFromInp(data,{'4':'calcul', '3':'table', '2':'cycle'})
+    tableData = GetFromInp(data,{'4':['calcul'], '3':['table'], '2':['cycle']})
     
     cycleTables = {}
     for t in range(int(len(tableData)/3)):
@@ -383,15 +405,45 @@ def GetBoundaryConditions(data):
     return a dictionary containing the infos of an inp file "data" read by ReadInp2()
     concerning all the infos respecting ****calcul, ***bc
     """
-    tableData = GetFromInp(data,{'4':'calcul', '3':'bc'})
+    bcData = GetFromInp(data,{'4':['calcul'], '3':['bc']})
     bcs = {}
-    for i in range(1, len(tableData)):
-      if tableData[i][0][0] not in bcs:
-        bcs[tableData[i][0][0]] = []
-      bc = [b for b in tableData[i][1:]]
-      bcs[tableData[i][0][0]].append(bc)
+    for i in range(1, len(bcData)):
+      if bcData[i][0][0] not in bcs:
+        bcs[bcData[i][0][0]] = []
+      bc = [b for b in bcData[i][1:]]
+      bcs[bcData[i][0][0]].append(bc)
 
     return bcs
+
+
+def GetParameterFiles(data, parameterName = None):
+    """
+    return a dictionary containing the infos of an inp file "data" read by ReadInp2()
+    concerning all the infos respecting ****calcul, ***parameter, **file
+    !! only with 'cycle_conversion' time table
+    """
+    if parameterName == None:
+      print("Warning, not supported for the moment when parameterName is not specified (dictionary keys may be overwritten)")
+      paraFilesData = GetFromInp(data,{'4':['calcul'], '3':['parameter'], '2':['file']})
+    else:
+      paraFilesData = GetFromInp(data,{'4':['calcul'], '3':['parameter'], '2':['file', parameterName]})
+    
+    parameterFiles = {}
+    for i in range(1, len(paraFilesData)):
+      if paraFilesData[i][0][0] != 'cycle_conversion':
+        parameterFiles[paraFilesData[i][0][0]] = [p for p in paraFilesData[i][0][1:]]
+      else:
+        parameterFiles['cycle_conversion'] = {}
+        parameterFiles['cycle_conversion']['tInit'] = paraFilesData[i][0][1]
+        parameterFiles['cycle_conversion']['tEnd']  = paraFilesData[i][0][2]
+        parameterFiles['cycle_conversion']['tStep'] = paraFilesData[i][0][3]
+        parameterFiles['cycle_conversion']['timeTable'] = []
+        parameterFiles['cycle_conversion']['fileTable'] = []
+        for j in range(1, len(paraFilesData[i])):
+          parameterFiles['cycle_conversion']['timeTable'].append(float(paraFilesData[i][j][1].split("+")[0]))
+          parameterFiles['cycle_conversion']['fileTable'].append(paraFilesData[i][j][3])
+
+    return parameterFiles
 
 
 def CheckIntegrity():
@@ -413,12 +465,14 @@ def CheckIntegrity():
 
     # check ReadInp2 and WriteInp2
     res = ReadInp2(T2.GetTestDataPath() + 'calcul2.inp')
-    GetFromInp(res,{'4':'calcul', '2':'impose_nodal_dof'})
-    GetFromInp(res,{'4':'calcul', '3':'linear_solver'})
+    WriteInp2(res)
+    GetFromInp(res,{'4':['calcul'], '3':['parameter'], '2':['file', 'temperature']})
+    GetFromInp(res,{'4':['calcul'], '2':['impose_nodal_dof']})
+    GetFromInp(res,{'4':['calcul'], '3':['linear_solver']})
     GetCycleTables(res)
     GetBoundaryConditions(res)
-    WriteInp2(res)
-
+    GetParameterFiles(res, parameterName = 'temperature')
+    
     return 'ok'
 
 

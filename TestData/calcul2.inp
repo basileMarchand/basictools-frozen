@@ -33,6 +33,13 @@ y2 file pressure2.node pressure2
 function 00.0+cycle*20.; file temperature1.node 1
 function 10.0+cycle*20.; file temperature2.node 1
 function 20.0+cycle*20.; file temperature1.node 1
+**file toto
+*node
+*rec_size 2940
+*cycle_conversion 0. 200. 20.
+function 00.0+cycle*20.; file temperature1.node 1
+function 10.0+cycle*20.; file temperature2.node 1
+function 20.0+cycle*20.; file temperature1.node 1
 
 
 ***table
@@ -48,6 +55,7 @@ function 20.0+cycle*20.; file temperature1.node 1
 *value
 0. -80. 0.
 1.0 0.0 1.0
+@include tab1.inp
 
 **cycle pressure2 0. 200.
 *time
