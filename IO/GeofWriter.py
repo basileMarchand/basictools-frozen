@@ -69,11 +69,11 @@ class GeofWriter(WriterBase):
         if val is not None:
             self.lowerDimElementsAsSets= bool(val)
 
-    def Write(self,meshObject,useOriginalId=False,lowerDimElementsAsSets=None,PointFieldsNames=None,PointFields=None,GridFieldsNames=None,CellFields=None):
+    def Write(self,meshObject,useOriginalId=False,lowerDimElementsAsSets=None,PointFieldsNames=None,PointFields=None,CellFieldsNames=None,CellFields=None):
 
         if PointFieldsNames is not None or \
            PointFields      is not None or \
-           GridFieldsNames  is not None or \
+           CellFieldsNames  is not None or \
            CellFields       is not None:
                print("warning GeofWriter only canr write the mesh, fields are ignored")
 

@@ -9,7 +9,42 @@ def PrintHelp():
   print( '       -i    Input file name')
   print( '       -o    output file name')
   print( '       -h    this help')
+
   sys.exit(2)
+
+def Convert(inputfilename,outputfilename):
+      print("Start Reading...")
+      mesh = ReadMesh(inputfilename)
+      print(mesh)
+      print("Start Writing...")
+      WriteMesh(outputfilename,mesh)
+      print("DONE")
+
+
+def CheckIntegrity(GUI=False):
+    from BasicTools.Helpers.Tests import TestTempDir
+    from BasicTools.TestData import GetTestDataPath
+
+    inputfiles = ["coneAscii.stl",
+                  "coneBinary.stl",
+                  "cube.geof",
+                  "GCodeTest.gcode",
+                  "mesh1.msh",
+                  #"Structured.xmf",
+                  #"Unstructured.xmf"
+            ]
+
+    outputext = [ "geof",
+                  "mesh"
+            ]
+
+    for iff in inputfiles:
+        for off in outputext:
+            inputfilename = GetTestDataPath() + iff
+            outputfilename = TestTempDir().GetTempPath()+iff+"." + off
+            Convert(inputfilename,outputfilename)
+
+    return "ok"
 
 if __name__ == '__main__' :
     import sys, getopt
@@ -18,7 +53,7 @@ if __name__ == '__main__' :
         sys.exit()
     else:
       try:
-          opts, args = getopt.getopt(sys.argv[1:],"hi:o:")
+          opts, args = getopt.getopt(sys.argv[1:],"thi:o:")
       except getopt.GetoptError:
           PrintHelp()
           sys.exit(2)
@@ -31,13 +66,9 @@ if __name__ == '__main__' :
             inputfilename = arg
          elif opt in ("-o"):
             outputfilename = arg
-
-      print("Start Reading...")
-      mesh = ReadMesh(inputfilename)
-      print("Start Writing...")
-      WriteMesh(outputfilename,mesh)
-      print("DONE")
+         elif opt in ("-t"):
+            print(CheckIntegrity(GUI=True))
+            exit(0)
 
 
-def CheckIntegrity(GUI=False):
-    return "ok"
+    Convert(inputfilename,outputfilename)

@@ -35,7 +35,8 @@ def WriterFactory(nameOrFilename,ops={"default":"xmf"}):
         if extention in externalWriters:
             res = externalWriters[extention]()
         else:
-            res = WriterFactory(ops["default"])
+            raise("Unable to find a suitable writer")
+            #res = WriterFactory(ops["default"])
 
     res.SetFileName(nameOrFilename)
     return res
@@ -50,16 +51,16 @@ def WriteMesh(filename,outmesh,binary=False):# pragma: no cover
     PointFields = None
     PointFieldsNames = None
     if hasattr(outmesh,"nodeFields"):
-        PointFieldsNames = outmesh.nodeFields.keys()
-        PointFields = outmesh.nodeFields.values()
+        PointFieldsNames = list(outmesh.nodeFields.keys())
+        PointFields = list(outmesh.nodeFields.values())
 
     CellFields = None
-    GridFieldsNames = None
+    CellFieldsNames = None
     if hasattr(outmesh,"elemFields"):
-        GridFieldsNames = outmesh.elemFields.keys()
-        CellFields = outmesh.elemFields.values()
+        CellFieldsNames = list(outmesh.elemFields.keys())
+        CellFields = list(outmesh.elemFields.values())
 
-    writer.Write(outmesh,PointFieldsNames=PointFieldsNames,PointFields=PointFields,GridFieldsNames=GridFieldsNames,CellFields=CellFields )
+    writer.Write(outmesh,PointFieldsNames=PointFieldsNames,PointFields=PointFields,CellFieldsNames=CellFieldsNames,CellFields=CellFields )
     writer.Close()
 
 ## to use this function add this lines to the
