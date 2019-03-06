@@ -63,7 +63,7 @@ class ProblemData(BaseOutputObject):
        self.mesh = mesh
 
     def AttachLoading(self, tag, loading):
-       loading.Ntime = loading.timeSequence.shape[0]
+       #loading.Ntime = loading.timeSequence.shape[0]
        self.loadings[tag] = loading
 
     def AttachSolution(self, tag, solution):
