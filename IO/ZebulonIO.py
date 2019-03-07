@@ -355,6 +355,7 @@ def Nstar(i, j, k, l):
     return "****"
 
 
+
 def NstarDigit(i, j, k, l):
     if l!=0:
       return 1
@@ -363,6 +364,7 @@ def NstarDigit(i, j, k, l):
     if j!=0:
       return 3
     return 4
+
 
 
 def ValueToString(value):
@@ -374,9 +376,68 @@ def ValueToString(value):
     return string[:-1]
 
 
+
+def GetInputTimeSequence(data):
+    """
+    returns the list of the time steps to be computed (from Zebulon input file)
+    """
+
+    incrementSequence = []
+    timeSequence      = []
+    dTimeSequence     = []
+
+    dataIncrement = GetFromInp(data,{'3':['resolution'], '1':['increment']})
+    dataTime      = GetFromInp(data,{'3':['resolution'], '1':['time']})
+    dataDtime     = GetFromInp(data,{'3':['resolution'], '1':['dtime']})
+
+    if len(dataTime) > 0:
+      count = 0
+      for line in dataTime[0]:
+        for t in line:
+          if count > 0:
+            timeSequence.append(float(t))
+          count += 1 
+
+    if len(dataDtime) > 0:
+      if len(dataTime) > 0:
+        print("both time and dtime defined !!!")
+        return
+      count = 0
+      for line in dataDtime[0]:
+        for t in line:
+          if count > 0:
+            dTimeSequence.append(float(t))
+          count += 1
+      timeSequence.append(0)
+      for i, dt in enumerate(dTimeSequence):
+        timeSequence.append(timeSequence[i]+dt)
+
+    if len(dataIncrement) > 0:
+      count = 0
+      for line in dataIncrement[0]:
+        for t in line:
+          if count > 0:
+            incrementSequence.append(int(t))
+          count += 1
+
+    reconstructedTimeSequence = []
+
+    if timeSequence[0] != 0:
+      reconstructedTimeSequence.append(0.)
+    for j in range(incrementSequence[0]):
+      reconstructedTimeSequence.append((j+1)*(timeSequence[0])/incrementSequence[0])
+    for i in range(1, len(timeSequence)):
+      for j in range(incrementSequence[i]):
+        print(i, j, len(timeSequence), len(incrementSequence))
+        reconstructedTimeSequence.append(timeSequence[i-1]+(j+1)*(timeSequence[i]-timeSequence[i-1])/incrementSequence[i])      
+
+    return reconstructedTimeSequence
+
+
+
 def GetCycleTables(data):
     """
-    return a dictionary containing the infos of an inp file "data" read by ReadInp2()
+    returns a dictionary containing the infos of an inp file "data" read by ReadInp2()
     concerning all the infos respecting ****calcul, ***table and **cycle
     """
     tableData = GetFromInp(data,{'4':['calcul'], '3':['table'], '2':['cycle']})
@@ -401,7 +462,7 @@ def GetCycleTables(data):
 
 def GetBoundaryConditions(data):
     """
-    return a dictionary containing the infos of an inp file "data" read by ReadInp2()
+    returns a dictionary containing the infos of an inp file "data" read by ReadInp2()
     concerning all the infos respecting ****calcul, ***bc
     """
     bcData = GetFromInp(data,{'4':['calcul'], '3':['bc']})
@@ -415,9 +476,10 @@ def GetBoundaryConditions(data):
     return bcs
 
 
+
 def GetParameterFiles(data, parameterName = None):
     """
-    return a dictionary containing the infos of an inp file "data" read by ReadInp2()
+    returns a dictionary containing the infos of an inp file "data" read by ReadInp2()
     concerning all the infos respecting ****calcul, ***parameter, **file
     !! only with 'cycle_conversion' time table
     """
@@ -443,6 +505,7 @@ def GetParameterFiles(data, parameterName = None):
           parameterFiles['cycle_conversion']['fileTable'].append(paraFilesData[i][j][3])
 
     return parameterFiles
+
 
 
 def CheckIntegrity():
@@ -471,6 +534,7 @@ def CheckIntegrity():
     GetCycleTables(res)
     GetBoundaryConditions(res)
     GetParameterFiles(res, parameterName = 'temperature')
+    GetInputTimeSequence(res)
     
     return 'ok'
 
