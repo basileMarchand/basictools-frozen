@@ -136,6 +136,10 @@ class AllElements(object):
     def __delitem__(self,key):
         del self.storage[key]
 
+    def GetElementsOfType(self,typename):
+        if not typename in self:
+            self[typename] = ElementsContainer(typename)
+        return self[typename]
 
 class UnstructuredMesh(MeshBase):
 
@@ -293,9 +297,9 @@ class UnstructuredMesh(MeshBase):
         res += "  Node Tags          : " + str(self.nodesTags) + "\n"
         res += "  Cell Tags          : " + str([x for x in self.GetNamesOfElemTags()])+ "\n"
         if len(self.nodeFields.keys()):
-            res += "  nodeFields         : " + str(self.nodeFields.keys()) + "\n"
+            res += "  nodeFields         : " + str(list(self.nodeFields.keys())) + "\n"
         if len(self.elemFields.keys()):
-            res += "  elemFields         : " + str(self.elemFields.keys()) + "\n"
+            res += "  elemFields         : " + str(list(self.elemFields.keys())) + "\n"
         return res
 
 def CheckIntegrity():
