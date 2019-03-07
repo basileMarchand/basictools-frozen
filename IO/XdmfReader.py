@@ -6,6 +6,12 @@ from BasicTools.Helpers.TextFormatHelper import TFormat
 from BasicTools.IO.XdmfTools import FieldNotFound
 
 
+def ReadXdmf(fileName):
+    obj = XdmfReader(filename=fileName)
+    return obj.Read()
+
+
+
 class Xdmfbase(object):
     """ Base class for all the xdmf Releated objects """
 
@@ -99,13 +105,27 @@ class XdmfGrid(Xdmfbase):
 
     def GetSupport(self):
         if self.geometry.Type == "ORIGIN_DXDYDZ":
-            from BasicTools.FE.ConstantRectilinearMesh import ConstantRectilinearMesh
+            from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearMesh
             res = ConstantRectilinearMesh()
             res.SetOrigin(self.geometry.GetOrigin())
             res.SetSpacing(self.geometry.GetSpacing())
             res.SetDimensions(self.topology.GetDimensions())
             return res
+        if self.geometry.Type == "XYZ":
+            from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
+            res = UnstructuredMesh()
+            res.nodes = self.geometry.GetNodes()
 
+            res.elements = self.topology.GetConnectivity()
+            print(self.topology)
+
+
+            #res.SetOrigin(self.geometry.GetOrigin())
+            #res.SetSpacing(self.geometry.GetSpacing())
+            #res.SetDimensions(self.topology.GetDimensions())
+            res.GenerateManufacturedOriginalIDs()
+            res.PrepareForOutput()
+            return res
 
     def ReadAttributes(self,attrs):
         self.Name = self.ReadAttribute(attrs,'Name')
@@ -295,11 +315,46 @@ class XdmfTopology(Xdmfbase):
 
 
     def GetConnectivity(self):
+        from BasicTools.IO.XdmfTools import XdmfNumberToEN
+        from BasicTools.IO.XdmfTools import XdmfNameToEN
+        from BasicTools.Containers.UnstructuredMesh import ElementsContainer,AllElements
+        res = AllElements()
+        from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearMesh
 
-        if self.Type != "3DCoRectMesh":
-            return self.dataitems[0].GetData()
-        else:
-            raise Exception# pragma: no cover
+
+        if self.Type == "Mixed":
+            rawdata = self.dataitems[0].GetData()
+            ts = len(rawdata)
+            cpt = 0
+            elcpt = 0
+            while(cpt < ts):
+                print(rawdata)
+                print(XdmfNumberToEN)
+                EN = XdmfNumberToEN[rawdata[cpt]]
+                if rawdata[cpt] == 0x2 or rawdata[cpt] == 0x1 :
+                   cpt += 1
+                cpt += 1
+                elements = res.GetElementsOfType(EN)
+                connectivity =rawdata[cpt:elements.GetNumberOfNodesPerElement()+cpt]
+                elements.AddNewElement(connectivity,elcpt)
+                elcpt +=1
+                cpt += elements.GetNumberOfNodesPerElement()
+            return res
+        elif self.Type == "3DCoRectMesh" :
+            raise
+        elif self.Type == "3DSMesh" :
+            m = ConstantRectilinearMesh()
+            m.SetDimensions(self.Dimensions)
+
+            #m.GenerateFullConnectivity()
+            return m.elements
+        else :
+            EN = XdmfNameToEN[self.Type]
+            data = ElementsContainer(EN)
+            data.connectivity = self.dataitems[0].GetData()
+            res[EN] = data
+            return res
+
 
 
     def GetDimensions(self):
@@ -541,11 +596,16 @@ class XdmfReader(xml.sax.ContentHandler,object):
         self.path = __os.path.dirname(filename)
 
 
-    def Read(self):
+    def Read(self,fileName=None):
+
+        if fileName is not None:
+            self.SetFileName(fileName)
+            self.readed = False
+
         if len(self.filename) == 0 :
             raise Exception('Need a filename ')
 
-        # read only one time the file
+        # read only one time the filel
         if( self.readed ): return;
         self.Reset();
 
@@ -556,6 +616,7 @@ class XdmfReader(xml.sax.ContentHandler,object):
         parser.setFeature(xml.sax.handler.feature_external_ges, False)
         parser.parse(thefile)
         thefile.close();
+        return self.xdmf.GetDomain(-1).GetGrid(-1).GetSupport()
 
     # this a a overloaded function (must start with lower case)      !!!!!
     def startElement(self, name, attrs):
@@ -666,6 +727,9 @@ def GetTensorRepOfField(domain,fieldname):
             res.AddSubTensor(G)
     return res
 
+from BasicTools.IO.IOFactory import RegisterReaderClass
+RegisterReaderClass(".xdmf",XdmfReader)
+RegisterReaderClass(".pxdmf",XdmfReader)
 
 def CheckIntegrity():
 
@@ -833,7 +897,7 @@ def Example2():
 
     # Do the reading (only the xml part, to read all the data set lazy to False)
     #res.lazy = False;
-    reader.Read();
+    reader.Read()
 
 
     # Get the domaine "Dom 1"

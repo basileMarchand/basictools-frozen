@@ -284,6 +284,10 @@ class FemReader(ReaderBase):
         res.PrepareForOutput()
         return res,resdic
 
+from BasicTools.IO.IOFactory import RegisterReaderClass
+RegisterReaderClass(".fem",FemReader)
+
+
 def ParseFloat(line):
     line += (8-len(line))*' '
     if line[6] == "-"  and line[5] != " ":

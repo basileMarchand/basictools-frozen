@@ -19,8 +19,8 @@ gmshName[EN.Hexaedron_8]   = '5'
 gmshName[EN.Wedge_6]       = '6'
 gmshName[EN.Pyramid_5]     = '7'
 gmshName[EN.Point_1]   = '15'
-
-
+gmshName[EN.Quadrangle_8]  = '16'
+gmshName[EN.Hexaedron_20]   = '17'
 
 def WriteMeshToGmsh(filename,mesh, useOriginalId=False):
     OW = GmshWriter()
@@ -40,7 +40,7 @@ class GmshWriter(WriterBase):
     def SetFileName(self,fileName):
         self.fileName = fileName;
 
-    def Write(self,meshObject,useOriginalId=False):
+    def Write(self,meshObject,useOriginalId=False,PointFieldsNames=None,PointFields=None,CellFieldsNames=None,CellFields=None):
         self.filePointer.write("$MeshFormat\n");
         self.filePointer.write("2.2 0 8\n");
         self.filePointer.write("$EndMeshFormat\n");
@@ -96,6 +96,9 @@ class GmshWriter(WriterBase):
           #tagcounter += 1
 
         self.filePointer.write("$EndElements\n")
+
+from BasicTools.IO.IOFactory import RegisterWriterClass
+RegisterWriterClass(".msh",GmshWriter)
 
 def CheckIntegrity():
     import BasicTools.Containers.UnstructuredMesh as UM

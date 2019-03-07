@@ -7,53 +7,13 @@ __author__ = "Felipe Bordeu"
 from BasicTools.Helpers.TextFormatHelper import TFormat
 
 import BasicTools.Containers.ElementNames as EN
-
+from BasicTools.IO.XdmfTools import XdmfName,XdmfNumber
 from BasicTools.IO.WriterBase import WriterBase as WriterBase
 
 
 def ArrayToString(data):
     return " ".join(str(x) for x in data)
 
-XdmfName = {}
-XdmfName[EN.Point_1] = 'Polyvertex'
-XdmfName[EN.Bar_2] = 'Polyline'
-XdmfName[EN.Triangle_3] = 'Triangle'
-XdmfName[EN.Quadrangle_4] = 'Quadrilateral'
-XdmfName[EN.Tetrahedron_4] ="Tetrahedron"
-XdmfName[EN.Pyramid_5] = 'Pyramid'
-XdmfName[EN.Wedge_6] = 'Wedge'
-XdmfName[EN.Hexaedron_8] = 'Hexahedron'
-
-
-XdmfName[EN.Bar_3] = "Edge_3"
-XdmfName[EN.Triangle_6] = 'Triangle_6'
-XdmfName[EN.Quadrangle_9] = 'Quadrilateral_9'
-XdmfName[EN.Quadrangle_8] = 'Quadrilateral_8'
-XdmfName[EN.Tetrahedron_10] = 'Tetrahedron_10'
-XdmfName[EN.Pyramid_13] = 'Pyramid_13'
-XdmfName[EN.Wedge_15] = 'Wedge_13'
-XdmfName[EN.Wedge_18] = 'Wedge_18'
-XdmfName[EN.Hexaedron_20] = 'Hexahedron_20'
-
-XdmfNumber = {}
-XdmfNumber[EN.Point_1] = 0x1
-XdmfNumber[EN.Bar_2] = 0x2
-XdmfNumber[EN.Triangle_3] = 0x4
-XdmfNumber[EN.Quadrangle_4] = 0x5
-XdmfNumber[EN.Tetrahedron_4] = 0x6
-XdmfNumber[EN.Pyramid_5] = 0x7
-XdmfNumber[EN.Wedge_6] = 0x8
-XdmfNumber[EN.Hexaedron_8] = 0x9
-
-XdmfNumber[EN.Bar_3] = 0x22
-XdmfNumber[EN.Triangle_6] = 0x24
-XdmfNumber[EN.Quadrangle_9] = 0x23
-XdmfNumber[EN.Quadrangle_8] = 0x25
-XdmfNumber[EN.Tetrahedron_10] = 0x26
-XdmfNumber[EN.Pyramid_13] = 0x27
-XdmfNumber[EN.Wedge_15] = 0x28
-XdmfNumber[EN.Wedge_18] = 0x29
-XdmfNumber[EN.Hexaedron_20] = 0x30
 
 #* Xdmf supports the following topology types:
 # *   NoTopologyType
@@ -165,7 +125,7 @@ class XdmfWriter(WriterBase):
 
     def __str__(self):
         res  = 'XdmfWriter : \n'
-        res += '   FileName : '+self.fileName+'\n'
+        res += '   FileName : '+ str(self.fileName) +'\n'
         if self.isBinary():
            res += '   Binary output Active \n'
            res += '   Binary FileName : '+ self.__binFileName +'\n'
@@ -722,6 +682,11 @@ class XdmfWriter(WriterBase):
 
             self.filePointer.write('</DataItem>\n')
 
+
+from BasicTools.IO.IOFactory import RegisterWriterClass
+RegisterWriterClass(".xdmf",XdmfWriter)
+RegisterWriterClass(".xmf",XdmfWriter)
+
 def WriteTest(tempdir,Temporal, Binary):
 
     from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearMesh
@@ -977,21 +942,17 @@ def CheckIntegrity(GUI=False):
     f.xdmf.GetDomain(0).GetGrid(0).GetFieldsOfType("Cell")
     print(f.xdmf.GetDomain(0).GetGrid(0).attributes )
 
-    print("Structured Mesh in 3D")
-    import BasicTools.FE.StructuredMesh as SM
-
-    SM3D = SM.StructuredMesh();
-
-
-    WriteMeshToXdmf(tempdir+'StructuredMesh.xdmf',SM3D, PointFields = [ np.arange(SM3D.GetNumberOfNodes()) ],
-                                                                       PointFieldsNames = ["Test"],
-                                                                       CellFields= [ np.arange(SM3D.GetNumberOfElements()*3)],
-                                                                       CellFieldsNames = [ "TestV"] );
-
-    from BasicTools.IO.XdmfReader import XdmfReader  as XR
-    f = XR(filename = tempdir+'StructuredMesh.xdmf' )
-    f.lazy = False;
-    f.Read();
+    #print("Structured Mesh in 3D")
+    #import BasicTools.FE.StructuredMesh as SM
+    #SM3D = SM.StructuredMesh();
+    #WriteMeshToXdmf(tempdir+'StructuredMesh.xdmf',SM3D, PointFields = [ np.arange(SM3D.GetNumberOfNodes()) ],
+    #                                                                   PointFieldsNames = ["Test"],
+    #                                                                   CellFields= [ np.arange(SM3D.GetNumberOfElements()*3)],
+    #                                                                   CellFieldsNames = [ "TestV"] );
+    #from BasicTools.IO.XdmfReader import XdmfReader  as XR
+    #f = XR(filename = tempdir+'StructuredMesh.xdmf' )
+    #f.lazy = False;
+    #f.Read();
 
     domain = f.xdmf.GetDomain(0)
     grid  = domain.GetGrid(0)

@@ -630,9 +630,9 @@ class MeshReader(ReaderBase):
 #        myFile.EndReading()
 #        return res
 
-from BasicTools.IO.UniversalReader import RegisterClass
-RegisterClass(".mesh",MeshReader)
-RegisterClass(".meshb",MeshReader)
+from BasicTools.IO.IOFactory import RegisterReaderClass
+RegisterReaderClass(".mesh",MeshReader)
+RegisterReaderClass(".meshb",MeshReader)
 
 def CheckIntegrity():
 

@@ -45,213 +45,247 @@ def WriteSection(odb, section):
         raise
 
 def WriteOdb(filename,mesh,PointFields=None,CellFields=None,PointFieldsNames=None,CellFieldsNames=None,  __insubprocess= False, abaqusExec=None):
-
-    if PointFields is None:
-        PointFields = [];
-
-    if CellFields  is None:
-        CellFields   = [];
-
-#    if GridFields is None:
-#        GridFields  = [];
-
-    if PointFieldsNames is None:
-        PointFieldsNames  = [];
-
-    if CellFieldsNames is None:
-        CellFieldsNames  = [];
-
-#    if GridFieldsNames is None:
-#        GridFieldsNames  = [];
+    OW = OdbWriter()
+    OW.Open(filename)
+    OW.Write(mesh)
+    OW.Close()
 
 
-    if abaqusExec is None:
-        import os
-        if "ABAQUS_ROOT" in os.environ:
-            abaqusExec = os.environ["ABAQUS_ROOT"]+os.sep+ ".." +os.sep+"Commands"+os.sep+"abq6136"
-        else:
-            abaqusExec = "abaqus"
+class OdbWriter(object):
+    def __init__(self):
+        super(OdbWriter,self).__init__()
+        self.abaqusExec=None
+        self.__insubprocess = False
+        self.filename = ""
+
+    def SetInSubprocess(self):
+        self.__insubprocess = True
+
+    def __str__(self):
+        res  = 'StlWriter : \n'
+        res += '   FileName : '+str(self.fileName)+'\n'
+        return res
+
+    def SetFileName(self,filename):
+        self.filename = filename;
+
+    def Open(self,fileName):
+        self.SetFileName(fileName)
+
+    def Close(self):
+        pass
+
+    def Write(self,mesh, PointFields = None, CellFields = None, GridFields= None, PointFieldsNames = None, CellFieldsNames= None, GridFieldsNames=None):
+
+        if PointFields is None:
+            PointFields = [];
+
+        if CellFields  is None:
+            CellFields   = [];
+
+        if PointFieldsNames is None:
+            PointFieldsNames  = [];
+
+        if CellFieldsNames is None:
+            CellFieldsNames  = [];
 
 
-    try :
-        import abaqusConstants as AC
-        import odbAccess
-    except :
-        if __insubprocess :
-            print("Error Loading libraries in the subprocess")
-            return
-        # it was not possible to load the libraries, we tried to launch a
-        # writing service
-        import BasicTools.IO.CodeInterface as CodeInterface
-        import os
-        from BasicTools.IO.Wormhole import WormholeClient
+        if self.abaqusExec is None:
+            import os
+            if "ABAQUS_ROOT" in os.environ:
+                abaqusExec = os.environ["ABAQUS_ROOT"]+os.sep+ ".." +os.sep+"Commands"+os.sep+"abq6136"
+            else:
+                abaqusExec = "abaqus"
 
 
-        path = os.sep.join(filename.split("/")[0:-1])
+        try :
+            import abaqusConstants as AC
+            import odbAccess
+        except :
+            if self.__insubprocess :
+                print("Error Loading libraries in the subprocess")
+                return
+            # it was not possible to load the libraries, we tried to launch a
+            # writing service
+            import BasicTools.IO.CodeInterface as CodeInterface
+            import os
+            from BasicTools.IO.Wormhole import WormholeClient
 
-        interface = CodeInterface.Interface(path)
 
-        from BasicTools.Helpers.Tests import TestTempDir
+            path = os.sep.join(self.filename.split("/")[0:-1])
 
-        interface.SetWorkingDirectory(TestTempDir.GetTempPath())
-        interface.processDirectory = TestTempDir.GetTempPath()
-        absfilename   = os.path.abspath(filename)
+            interface = CodeInterface.Interface(path)
 
-        from BasicTools.IO.Wormhole import GetAnFreePortNumber
-        port = GetAnFreePortNumber()
-        interface.tpl = """
+            from BasicTools.Helpers.Tests import TestTempDir
+
+            interface.SetWorkingDirectory(TestTempDir.GetTempPath())
+            interface.processDirectory = TestTempDir.GetTempPath()
+            absfilename   = os.path.abspath(self.filename)
+
+            from BasicTools.IO.Wormhole import GetAnFreePortNumber
+            port = GetAnFreePortNumber()
+            interface.tpl = """
 from BasicTools.IO.Wormhole import WormholeServer
 WormholeServer(""" +str(port) +""",dry=False)
-"""
-        interface.inputFilename = "ServerCode"
-        interface.inputFileExtension = ".py"
+    """
+            interface.inputFilename = "ServerCode"
+            interface.inputFileExtension = ".py"
 
-        interface.WriteFile(0)
-
-
-        #interface.SetCodeCommand('"C:\\Program Files (x86)\\Notepad++\\notepad++.exe"')
-        from BasicTools.Helpers.which import which
-        if which(abaqusExec) is None:
-            print(abaqusExec)
-            raise RuntimeError("Abaqus not available in your system")
-        interface.SetCodeCommand(abaqusExec)
-        interface.SetOptions(["python"])
-        import sys
-        proc = interface.SingleRunComputation(0)
-        import time
-        time.sleep(2)
-        print(interface.lastCommandExecuted)
-
-        client = WormholeClient()
-        client.Connect(port)
-        client.SendData("filename",absfilename)
-        print("Writing file :")
-        print(absfilename)
-        client.SendData("mesh",mesh)
-        client.SendData("PointFields",PointFields)
-        client.SendData("CellFields",CellFields)
-        client.SendData("PointFieldsNames",PointFieldsNames)
-        client.SendData("CellFieldsNames",CellFieldsNames)
-        client.RemoteExec("from BasicTools.IO.OdbWriter import WriteOdb")
-        client.RemoteExec("WriteOdb(filename,mesh,PointFields,CellFields,PointFieldsNames,CellFieldsNames)")
-        client.RemoteExec("print('Done')")
-        client.Exit()
-
-        proc.wait()
-        return
-
-    mesh.PrepareForOutput()
-
-    odbName = filename.split("/")[-1]
-    pOdb = odbAccess.Odb(name=odbName,analysisTitle='MyFirstAnalisys',path=filename,description='1D beam')
-    pOdb.save()
-
-    WriteMaterial(pOdb,None)
-    WriteSection(pOdb,None)
-
-    ##Creating the 3D solid part
-
-    pPart = pOdb.Part(name='beamTaylor',embeddedSpace = AC.THREE_D,type= AC.DEFORMABLE_BODY)
-    nodeLabels = list(range(1,1+mesh.GetNumberOfNodes()))
-    pPart.addNodes(labels = nodeLabels,coordinates = mesh.GetPosOfNodes())
+            interface.WriteFile(0)
 
 
-    ##Create a node and element set
-    for tag in mesh.nodesTags:
-        #print(pPart.nodes)
-        #print(pPart.nodes[1])
-        #print(tag.GetIds().astype(np.int32))
-        #print(pPart.nodes[tag.GetIds().astype(np.int32)])
-        #print("----")
-        pPartNodes= pPart.NodeSetFromNodeLabels(tag.name,(tag.GetIds()+1).astype(np.int32))
-#
+            #interface.SetCodeCommand('"C:\\Program Files (x86)\\Notepad++\\notepad++.exe"')
+            from BasicTools.Helpers.which import which
+            if which(abaqusExec) is None:
+                print(abaqusExec)
+                raise RuntimeError("Abaqus not available in your system")
+            interface.SetCodeCommand(abaqusExec)
+            interface.SetOptions(["python"])
+            interface.openExternalWindows = True
+            interface.keepExternalWindows = True
 
-    cpt =0;
-    for ntype, data in mesh.elements.items():
-        elemtype = OdbName[ntype]
+            import sys
+            proc = interface.SingleRunComputation(0)
+            import time
+            time.sleep(2)
+            print(interface.lastCommandExecuted)
 
-        dd = list(range(data.globaloffset+1,data.globaloffset+1+data.GetNumberOfElements()))
-        dd = np.array(dd,dtype=np.int32)
-        print(dd)
-        print(data.connectivity.astype(np.int32))
-        print(elemtype)
-        print(ntype)
+            client = WormholeClient()
+            client.Connect(port)
+            client.SendData("filename",absfilename)
+            print("Writing file :")
+            print(absfilename)
+            client.SendData("mesh",mesh.nodes)
+            #client.SendData("PointFields",PointFields)
+            #client.SendData("CellFields",CellFields)
+            #client.SendData("PointFieldsNames",PointFieldsNames)
+            #client.SendData("CellFieldsNames",CellFieldsNames)
+            client.RemoteExec("from BasicTools.IO.OdbWriter import OdbWriter")
+            client.RemoteExec("obj = OdbWriter()")
+            #client.RemoteExec("obj.SetInSubprocess()")
+            #client.RemoteExec("obj.SetFilename(filename)")
+            #client.RemoteExec("obj.Write(mesh,PointFields,CellFields,PointFieldsNames,CellFieldsNames)")
+            #client.RemoteExec("print('Done')")
+            client.Exit()
 
+            proc.wait()
+            return
 
-        pPart.addElements(labels = dd , connectivity=(data.connectivity+1).astype(np.int32) , type = elemtype, elementSetName=ntype)
+        mesh.PrepareForOutput()
 
+        odbName = filename.split("/")[-1]
+        pOdb = odbAccess.Odb(name=odbName,analysisTitle='MyFirstAnalisys',path=filename,description='1D beam')
+        pOdb.save()
 
-    for name in mesh.GetNamesOfElemTags():
-        ids = mesh.GetElementsInTag(name)+1
-        elementSet = pPart.ElementSetFromElementLabels(    name=name,elementLabels=ids.astype(np.int32))
+        WriteMaterial(pOdb,None)
+        WriteSection(pOdb,None)
 
+        ##Creating the 3D solid part
 
-##Creating the instance for the solid part
-    pAssembly = pOdb.rootAssembly.Instance(name = 'Principal',object = pPart)
-    #pOdb.update()
-    #pOdb.save()
-    #pOdb.close()
-    #return
-
-#
-##Creating section for odb
-#
-##Creating the analysis step
-    pStep = pOdb.Step(name='StaticAnalysis',description='Analysis type - 101',domain=AC.TIME,timePeriod = 1.0)
-    pFrame0 = pStep.Frame(incrementNumber=0,frameValue=0.0000)
-    #pDisp0 = pFrame0.FieldOutput(name='U',description='Displace ment',type=AC.VECTOR,componentLabels=('1','2','3'))
-
-    #dispValues = np.hstack((np.array(nodeLabels)[:,np.newaxis],)*3).ravel().astype(float)
-    #dispValues.shape = (len(nodeLabels),3)
-    #dispValues /= len(nodeLabels)*10
-
-    #pDisp0.addData(position = AC.NODAL,instance = pAssembly,labels = nodeLabels,data=dispValues)
-
-
-
-    cellLabels = range(1,1+mesh.GetNumberOfElements())
-    for i in range(len(CellFieldsNames)):
-        if mesh.GetNumberOfElements() == CellFields[i].size:
-            ftype = AC.SCALAR
-        elif mesh.GetNumberOfElements()*3 == CellFields[i].size:
-            ftype = AC.VECTOR
-        else:
-            raise
-        fo = pFrame0.FieldOutput(name=CellFieldsNames[i],description=CellFieldsNames[i],type=ftype)
-        fo.addData(position = AC.CENTROID,instance = pAssembly,labels = cellLabels,data=CellFields[i])
-
-    for i in range(len(PointFieldsNames)):
-        if mesh.GetNumberOfNodes() == PointFields[i].size:
-            ftype = AC.SCALAR
-        elif mesh.GetNumberOfNodes()*3 == PointFields[i].size:
-            ftype = AC.VECTOR
-        else:
-            raise
-        fo = pFrame0.FieldOutput(name=PointFieldsNames[i],description=PointFieldsNames[i],type=ftype )
-        fo.addData(position = AC.NODAL,instance = pAssembly,labels = nodeLabels,data=PointFields[i])
+        pPart = pOdb.Part(name='beamTaylor',embeddedSpace = AC.THREE_D,type= AC.DEFORMABLE_BODY)
+        nodeLabels = list(range(1,1+mesh.GetNumberOfNodes()))
+        pPart.addNodes(labels = nodeLabels,coordinates = mesh.GetPosOfNodes())
 
 
-##Creating the frame for the step
-#
-#pFrame1 = pStep.Frame(incrementNumber=1,frameValue=1.0000)
-#
-##Reading the result file
-#dispValues = ny.loadtxt('DISPL_POINTS.dat',skiprows=1,usecols = (3,4,5))
-#
-##Creating the Field Output - Displacement
-#
-#pDisp1 = pFrame1.FieldOutput(name='U',description='Displace ment',type=VECTOR,componentLabels=('1','2','3'))
-#
-##Adding data
-#
-#pDisp1.addData(position = NODAL,instance = pAssembly,labels = nodeLabels,data=dispValues)
-#
-##Setting default display options
-#pStep.setDefaultField(pDisp0)
-#
-    pOdb.update()
-    pOdb.save()
-    pOdb.close()
+        ##Create a node and element set
+        for tag in mesh.nodesTags:
+            #print(pPart.nodes)
+            #print(pPart.nodes[1])
+            #print(tag.GetIds().astype(np.int32))
+            #print(pPart.nodes[tag.GetIds().astype(np.int32)])
+            #print("----")
+            pPartNodes= pPart.NodeSetFromNodeLabels(tag.name,(tag.GetIds()+1).astype(np.int32))
+    #
+
+        cpt =0;
+        for ntype, data in mesh.elements.items():
+            elemtype = OdbName[ntype]
+
+            dd = list(range(data.globaloffset+1,data.globaloffset+1+data.GetNumberOfElements()))
+            dd = np.array(dd,dtype=np.int32)
+            print(dd)
+            print(data.connectivity.astype(np.int32))
+            print(elemtype)
+            print(ntype)
+
+
+            pPart.addElements(labels = dd , connectivity=(data.connectivity+1).astype(np.int32) , type = elemtype, elementSetName=ntype)
+
+
+        for name in mesh.GetNamesOfElemTags():
+            ids = mesh.GetElementsInTag(name)+1
+            elementSet = pPart.ElementSetFromElementLabels(    name=name,elementLabels=ids.astype(np.int32))
+
+
+    ##Creating the instance for the solid part
+        pAssembly = pOdb.rootAssembly.Instance(name = 'Principal',object = pPart)
+        #pOdb.update()
+        #pOdb.save()
+        #pOdb.close()
+        #return
+
+    #
+    ##Creating section for odb
+    #
+    ##Creating the analysis step
+        pStep = pOdb.Step(name='StaticAnalysis',description='Analysis type - 101',domain=AC.TIME,timePeriod = 1.0)
+        pFrame0 = pStep.Frame(incrementNumber=0,frameValue=0.0000)
+        #pDisp0 = pFrame0.FieldOutput(name='U',description='Displace ment',type=AC.VECTOR,componentLabels=('1','2','3'))
+
+        #dispValues = np.hstack((np.array(nodeLabels)[:,np.newaxis],)*3).ravel().astype(float)
+        #dispValues.shape = (len(nodeLabels),3)
+        #dispValues /= len(nodeLabels)*10
+
+        #pDisp0.addData(position = AC.NODAL,instance = pAssembly,labels = nodeLabels,data=dispValues)
+
+
+
+        cellLabels = range(1,1+mesh.GetNumberOfElements())
+        for i in range(len(CellFieldsNames)):
+            if mesh.GetNumberOfElements() == CellFields[i].size:
+                ftype = AC.SCALAR
+            elif mesh.GetNumberOfElements()*3 == CellFields[i].size:
+                ftype = AC.VECTOR
+            else:
+                raise
+            fo = pFrame0.FieldOutput(name=CellFieldsNames[i],description=CellFieldsNames[i],type=ftype)
+            fo.addData(position = AC.CENTROID,instance = pAssembly,labels = cellLabels,data=CellFields[i])
+
+        for i in range(len(PointFieldsNames)):
+            if mesh.GetNumberOfNodes() == PointFields[i].size:
+                ftype = AC.SCALAR
+            elif mesh.GetNumberOfNodes()*3 == PointFields[i].size:
+                ftype = AC.VECTOR
+            else:
+                raise
+            fo = pFrame0.FieldOutput(name=PointFieldsNames[i],description=PointFieldsNames[i],type=ftype )
+            fo.addData(position = AC.NODAL,instance = pAssembly,labels = nodeLabels,data=PointFields[i])
+
+
+    ##Creating the frame for the step
+    #
+    #pFrame1 = pStep.Frame(incrementNumber=1,frameValue=1.0000)
+    #
+    ##Reading the result file
+    #dispValues = ny.loadtxt('DISPL_POINTS.dat',skiprows=1,usecols = (3,4,5))
+    #
+    ##Creating the Field Output - Displacement
+    #
+    #pDisp1 = pFrame1.FieldOutput(name='U',description='Displace ment',type=VECTOR,componentLabels=('1','2','3'))
+    #
+    ##Adding data
+    #
+    #pDisp1.addData(position = NODAL,instance = pAssembly,labels = nodeLabels,data=dispValues)
+    #
+    ##Setting default display options
+    #pStep.setDefaultField(pDisp0)
+    #
+        pOdb.update()
+        pOdb.save()
+        pOdb.close()
+
+from BasicTools.IO.IOFactory import RegisterWriterClass
+RegisterWriterClass(".odb",OdbWriter)
 
 def CheckIntegrity():
 
@@ -266,7 +300,7 @@ def CheckIntegrity():
     print(tempdir)
 
     mymesh = UM.UnstructuredMesh()
-    mymesh.nodes = np.array([[0.00000000001,0,0],[1,0,0],[0,1,0],[1,1,1]],dtype=np.float)
+    mymesh.nodes = np.array([[0.00000000001,0,0],[1,0,0],[0,1,0],[1,1,1.]])
     mymesh.originalIDNodes = np.array([1, 3, 4, 5],dtype=np.int)
 
     tag = mymesh.nodesTags.CreateTag("coucou")
