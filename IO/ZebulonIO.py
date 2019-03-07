@@ -258,7 +258,11 @@ def StringReader(inputString, folder):
       if (len(l) == 0) or (l[0] == "%"): continue
       l = l.split("%")[0]
       if l.split()[0]=='@include':
-        appendedString += StringReader(open(folder + os.sep + l.split()[1], 'r'), folder)
+        sep = os.sep
+        lsep = len(sep)
+        if folder[-lsep:] == sep or len(folder) == 0:
+          sep = ""
+        appendedString += StringReader(open(folder + sep + l.split()[1], 'r'), folder)
         continue
       for ll in l:
         appendedString += ll
