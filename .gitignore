@@ -47,7 +47,10 @@ Thumbs.db
 *.h~
 *.cpp~
 *.c~
-
+docs/_build/*
+docs/_source/*
+*~
+.spyproject/*
 
 # Zebulon generated files #
 ###########################
