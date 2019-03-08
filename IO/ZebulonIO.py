@@ -431,9 +431,8 @@ def GetInputTimeSequence(data):
     for j in range(incrementSequence[0]):
       reconstructedTimeSequence.append((j+1)*(timeSequence[0])/incrementSequence[0])
     for i in range(1, len(timeSequence)):
-      for j in range(incrementSequence[i]):
-        print(i, j, len(timeSequence), len(incrementSequence))
-        reconstructedTimeSequence.append(timeSequence[i-1]+(j+1)*(timeSequence[i]-timeSequence[i-1])/incrementSequence[i])      
+      for j in range(incrementSequence[i-1]):
+        reconstructedTimeSequence.append(timeSequence[i-1]+(j+1)*(timeSequence[i]-timeSequence[i-1])/incrementSequence[i-1])      
 
     return reconstructedTimeSequence
 
@@ -450,16 +449,18 @@ def GetCycleTables(data):
     for t in range(int(len(tableData)/3)):
       cycleTables[tableData[3*t][0][1]] = {}
       cycleTables[tableData[3*t][0][1]]['tInit'] = tableData[3*t][0][2]
-      cycleTables[tableData[3*t][0][1]]['tEnd'] = tableData[3*t][0][3]
+      cycleTables[tableData[3*t][0][1]]['tEnd']  = tableData[3*t][0][3]
       tempTime = []
       for i in range(1, len(tableData[3*t+1])):
         tempTime += tableData[3*t+1][i]
       tempValue = []
       for i in range(1, len(tableData[3*t+2])):
         tempValue += tableData[3*t+2][i]
-      cycleTables[tableData[3*t][0][1]]['time'] = np.array(tempTime, dtype = float)
+      cycleTables[tableData[3*t][0][1]]['time']  = np.array(tempTime, dtype = float)
       cycleTables[tableData[3*t][0][1]]['value'] = np.array(tempValue, dtype = float)
 
+      if len(tempTime) != len(tempValue):
+        print("WARNING ! length of time table and value table for "+ tableData[3*t][0][1] + "are different")
     return cycleTables
 
 
@@ -486,6 +487,8 @@ def GetParameterFiles(data, parameterName = None):
     returns a dictionary containing the infos of an inp file "data" read by ReadInp2()
     concerning all the infos respecting ****calcul, ***parameter, **file
     !! only with 'cycle_conversion' time table
+    
+    extract floats from string: solution from https://stackoverflow.com/questions/4703390/how-to-extract-a-floating-number-from-a-string
     """
     if parameterName == None:
       print("Warning, not supported for the moment when parameterName is not specified (dictionary keys may be overwritten)")
@@ -493,6 +496,10 @@ def GetParameterFiles(data, parameterName = None):
     else:
       paraFilesData = GetFromInp(data,{'4':['calcul'], '3':['parameter'], '2':['file', parameterName]})
     
+    import re
+    numeric_const_pattern = '[-+]? (?: (?: \d* \. \d+ ) | (?: \d+ \.? ) )(?: [Ee] [+-]? \d+ ) ?'
+    rx = re.compile(numeric_const_pattern, re.VERBOSE)
+
     parameterFiles = {}
     for i in range(1, len(paraFilesData)):
       if paraFilesData[i][0][0] != 'cycle_conversion':
@@ -505,9 +512,14 @@ def GetParameterFiles(data, parameterName = None):
         parameterFiles['cycle_conversion']['timeTable'] = []
         parameterFiles['cycle_conversion']['fileTable'] = []
         for j in range(1, len(paraFilesData[i])):
-          parameterFiles['cycle_conversion']['timeTable'].append(float(paraFilesData[i][j][1].split("+")[0]))
-          parameterFiles['cycle_conversion']['fileTable'].append(paraFilesData[i][j][3])
-
+          line = " ".join(paraFilesData[i][j])
+          timeStamp = float(rx.findall(line)[0])
+          fileName  = line.split("file ")[-1].split(" ")[0]
+          print("><><><><><>< line      =", line) 
+          print("><><><><><>< timeStamp =", timeStamp) 
+          print("><><><><><>< fileName  =", fileName) 
+          parameterFiles['cycle_conversion']['timeTable'].append(timeStamp)
+          parameterFiles['cycle_conversion']['fileTable'].append(fileName)
     return parameterFiles
 
 
