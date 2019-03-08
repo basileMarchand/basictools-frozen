@@ -42,6 +42,7 @@ build_Python2:
           - FE/*.so
         expire_in: 60 minutes
 
+
 build_Python3:
     stage: build
     tags:
@@ -55,6 +56,7 @@ build_Python3:
         paths:
           - FE/*36*.so
         expire_in: 60 minutes
+
 
 test_with_coverage_Python3:
     stage: test
@@ -72,6 +74,7 @@ test_with_coverage_Python3:
         name: "Coverage3"
         paths:
             - public/coverage3
+
 
 test_with_coverage_Python2:
     stage: test
@@ -103,6 +106,7 @@ test_full_output_stop_at_first_error_Python3:
         - python BasicTools/Helpers/Tests.py -e ${MYPROJECT} -f -s
     when: on_failure
     dependencies: [test_with_coverage_Python3]
+
 
 test_full_output_stop_at_first_error_Python2:
     stage: debug
