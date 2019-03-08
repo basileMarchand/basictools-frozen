@@ -2,6 +2,7 @@
 
 from BasicTools.IO.UniversalReader import ReadMesh
 from BasicTools.IO.UniversalWriter import WriteMesh
+import  BasicTools.IO.IOFactory as IOF
 
 def PrintHelp():
   print( 'python  MeshFileConverter -i <inputfile> -o <outputfile>')
@@ -9,14 +10,21 @@ def PrintHelp():
   print( '       -i    Input file name')
   print( '       -o    output file name')
   print( '       -h    this help')
+  IOF.InitAllReaders()
+  print("Available Readers : ", IOF.GetAvailableReaders())
 
+  IOF.InitAllWriters()
+  print("Available Writers : ", IOF.GetAvailableWriter())
   sys.exit(2)
 
 def Convert(inputfilename,outputfilename):
+      IOF.InitAllReaders()
+      IOF.InitAllWriters()
+
       print("Start Reading...")
       mesh = ReadMesh(inputfilename)
       print(mesh)
-      print("Start Writing...")
+      print("Start Writing to ", outputfilename)
       WriteMesh(outputfilename,mesh)
       print("DONE")
 
@@ -35,7 +43,10 @@ def CheckIntegrity(GUI=False):
             ]
 
     outputext = [ "geof",
-                  "mesh"
+                  "mesh",
+                  "msh",
+                  "stl",
+                  "xdmf"
             ]
 
     for iff in inputfiles:

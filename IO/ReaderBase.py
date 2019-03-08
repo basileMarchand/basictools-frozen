@@ -123,8 +123,15 @@ class ReaderBase(BaseOutputObject):
             if self.commentChar is None:
                 break# pragma: no cover
             else :
-                if string[0] != self.commentChar:
+                inbreak = False
+                for i,j in zip(string,self.commentChar):
+                    if i != j :
+                        inbreak = True
+                        break
+                if inbreak:
                     break
+                #if string[0] != self.commentChar:
+                #    break
         return string
 
 ##binary interface

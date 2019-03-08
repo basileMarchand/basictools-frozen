@@ -24,7 +24,7 @@ class StlWriter(WriterBase):
     def SetFileName(self,fileName):
         self.fileName = fileName;
 
-    def Write(self,meshObject,normals=None,Name= None):
+    def Write(self,meshObject,normals=None,Name= None,PointFieldsNames=None,PointFields=None,CellFieldsNames=None,CellFields=None):
 
         elements = meshObject.GetElementsOfType(EN.Triangle_3)
 
@@ -45,6 +45,9 @@ class StlWriter(WriterBase):
             self.filePointer.write("  endloop\n")
             self.filePointer.write(" endfacet\n")
         self.filePointer.write("endsolid\n")
+
+from BasicTools.IO.IOFactory import RegisterWriterClass
+RegisterWriterClass(".stl",StlWriter)
 
 
 def CheckIntegrity():

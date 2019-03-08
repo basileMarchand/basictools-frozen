@@ -465,11 +465,12 @@ class GeofReader(ReaderBase):
     return res
 
 
-from BasicTools.IO.UniversalReader import RegisterClass
-RegisterClass(".geof",GeofReader)
+from BasicTools.IO.IOFactory import RegisterReaderClass
+RegisterReaderClass(".geof",GeofReader)
 
 
 def CheckIntegrity():
+
     data = u"""
     ***geometry
     **node

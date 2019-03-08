@@ -4,6 +4,8 @@ __author__ = "Felipe Bordeu"
 import BasicTools.Containers.ElementNames as ElementNames
 
 
+
+
 def ReadMesh(filename,out=None):# pragma: no cover
     import os.path
 
@@ -44,7 +46,8 @@ def ReadMesh(filename,out=None):# pragma: no cover
         from BasicTools.IO.StlReader import ReadStl
         return ReadStl(fileName=filename)
     else:
-        Create(extention)
+        from BasicTools.IO.IOFactory import CreateReader
+        CreateReader(extention)
         raise Exception ("Unkown file extention : " + str(extention))
 
 
@@ -57,35 +60,13 @@ def ReadMesh(filename,out=None):# pragma: no cover
 #filename = "here you put your filename"
 #ReadMeshAndPopulateVtkObject(filename,self.GetOutput(),TagsAsFields=True/False )
 
+
 def ReadMeshAndPopulateVtkObject(filename, vtkobject= None,TagsAsFields=False):# pragma: no cover
     mesh = ReadMesh(filename)
     from BasicTools.Containers.vtkBridge import MeshToVtk
     return MeshToVtk(mesh, vtkobject,TagsAsFields=TagsAsFields)
 
-
-
-from BasicTools.Helpers.Factory import Factory
-
-def RegisterClass(name, classtype, constructor=None, withError = True):
-    return ReaderFactory.RegisterClass(name,classtype, constructor=constructor, withError = withError )
-
-def Create(name,ops=None):
-   return ReaderFactory.Create(name,ops)
-
-class ReaderFactory(Factory):
-    _Catalog = {}
-    def __init__(self):
-        super(ReaderFactory,self).__init__()
-
-def InitAllReaders():
-
-    import BasicTools.IO.GeofReader
-    import BasicTools.IO.GReader
-    import BasicTools.IO.MeshReader
-    import BasicTools.IO.StlReader
-
 def CheckIntegrity():
-
     return "ok"
 
 
