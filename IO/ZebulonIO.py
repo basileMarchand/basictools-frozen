@@ -515,9 +515,6 @@ def GetParameterFiles(data, parameterName = None):
           line = " ".join(paraFilesData[i][j])
           timeStamp = float(rx.findall(line)[0])
           fileName  = line.split("file ")[-1].split(" ")[0]
-          print("><><><><><>< line      =", line) 
-          print("><><><><><>< timeStamp =", timeStamp) 
-          print("><><><><><>< fileName  =", fileName) 
           parameterFiles['cycle_conversion']['timeTable'].append(timeStamp)
           parameterFiles['cycle_conversion']['fileTable'].append(fileName)
     return parameterFiles
