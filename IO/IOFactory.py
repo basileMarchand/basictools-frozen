@@ -42,7 +42,7 @@ def RegisterWriterClass(name, classtype, constructor=None, withError = True):
     WriterFactory.RegisterClass(name,classtype, constructor=constructor, withError = withError )
 
 def CreateWriter(name,ops=None):
-    return WriterFactory.Create(name,ops)
+    return WriterFactory.Create("."+name.split(".")[-1],ops)
 
 class WriterFactory(Factory):
     _Catalog = {}
