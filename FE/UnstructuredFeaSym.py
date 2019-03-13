@@ -44,9 +44,9 @@ class UnstructuredFeaSym(FeaBase):
                 field = FEField()
                 field.numbering = phy.numberings[dim]
                 field.name = phy.GetPrimalNames()[dim]
-                field.data = None
                 field.mesh = self.mesh
                 field.space = phy.spaces[dim]
+                field.Allocate()
                 self.unkownFields.append(field)
 
         self.solver.constraints.SetNumberOfDofs(self.totalNumberOfDof)
