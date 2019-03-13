@@ -299,10 +299,14 @@ cdef class PyMonoElementsIntegralCpp():
       self.__values = [None]*len(self.__usedValues__)
       cdef np.ndarray[float_DTYPE_t, ndim=1, mode = 'c' ] vdata
       for i in range(len(self.__usedValues__)):
-          self.SetValues(i,self.__usedValues__[i])
+          try:
+              self.SetValues(i,self.__usedValues__[i])
+          except:
+              print("error setting field " +str(vId[i]))
+              for ef in self.__efs__:
+                  print(ef.name,id(ef.data), ef.data)
 
-
-
+              raise
 
     def SetValues(self,int i,np.ndarray[float_DTYPE_t, ndim=1,mode="c"] vdata not None):
           self.__values[i] = vdata
