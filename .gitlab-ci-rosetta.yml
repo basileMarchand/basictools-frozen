@@ -130,6 +130,9 @@ pages:
         - MSBasicTools
     script:
         - pwd
+        - echo "Trigger TopoTool test Pipeline"
+        - "curl -X POST -F token=thfkSyJnESc3LvhCYb4j -F ref=master https://gitlab.safrantech.safran/api/v4/projects/82/trigger/pipeline"
+
     artifacts:
         name: "WebSite"
         paths:
