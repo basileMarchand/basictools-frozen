@@ -131,7 +131,7 @@ pages:
     script:
         - pwd
         - echo "Trigger TopoTool test Pipeline"
-        - "curl -k -X POST -F token=thfkSyJnESc3LvhCYb4j -F ref=master https://gitlab.safrantech.safran/api/v4/projects/82/trigger/pipeline"
+        - "curl -k -X POST -F token=2f8781bddd013486f19b36ac3903d4 -F ref=master https://gitlab.safrantech.safran/api/v4/projects/82/trigger/pipeline"
 
     artifacts:
         name: "WebSite"
