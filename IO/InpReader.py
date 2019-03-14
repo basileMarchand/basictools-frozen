@@ -73,7 +73,7 @@ class InpReader(ReaderBase):
             res = out
 
         coef = 1.
-        res.meta = ProblemData.ProblemData()
+        meta = ProblemData.ProblemData()
 
         filetointernalid = {}
         filetointernalidElement = {}
@@ -198,7 +198,7 @@ class InpReader(ReaderBase):
 
           if l.find("*HEADING")>-1:
                HEADING = self.ReadCleanLine()
-               res.meta.HEADING = HEADING
+               meta.HEADING = HEADING
                l = self.ReadCleanLine()
                continue
     #*MATERIAL, NAME="ALU ALsi10mg"
@@ -226,7 +226,7 @@ class InpReader(ReaderBase):
                  s = list(map(float, string.readline().strip('\n').lstrip().rstrip().replace(","," ").split() ))
                  mat.AddProperty(t,st,s)
 
-               res.meta.materials[name] = mat
+               meta.materials[name] = mat
                continue
     #line to delete
     #           break
@@ -247,7 +247,7 @@ class InpReader(ReaderBase):
                if len(s) >= 9:
                    orient.SetOffset(s[6:9])
 
-               res.meta.orientations[name] = orient
+               meta.orientations[name] = orient
                l = self.ReadCleanLine()
                while(True):
                   if l is None:
@@ -372,7 +372,7 @@ class InpReader(ReaderBase):
         self.EndReading()
         res.originalIDNodes = np.squeeze(res.originalIDNodes)
         res.PrepareForOutput()
-        self.output = res
+        self.output = (res,meta)
         return res
 
 

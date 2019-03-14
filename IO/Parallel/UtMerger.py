@@ -89,7 +89,7 @@ class UtMerger(WriterBase):
             reader.time.shape = (1,reader.time.shape[0])
 
         localMesh = GR.ReadGeof(fileName = self.dataFolder+reader.meshfile,readElset=False,readFaset=False,printNotRead=False)
-
+        localMesh.UnFrozen()
         Tag3D(localMesh)
         idstotreat = Return3DElements(localMesh)
 
@@ -116,6 +116,8 @@ class UtMerger(WriterBase):
 
       cutGeof = GeofFromCut(self.dataFolder, self.name)
       globalMesh = GR.ReadGeof(fileName = self.dataFolder + cutGeof,readElset=False,readFaset=False,printNotRead=False)
+      globalMesh.UnFrozen()
+
       Tag3D(globalMesh)
       globalIdstotreat = Return3DElements(globalMesh)
       #globalMesh.originalIDNodes = np.array(globalMesh.originalIDNodes-1, dtype=int)

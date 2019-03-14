@@ -93,6 +93,7 @@ class UtSplitter(WriterBase):
 
 
       globalMesh = GR.ReadGeof(fileName = self.dataFolder + self.name + ".geof",readElset=False,readFaset=False,printNotRead=False)
+      globalMesh.UnFrozen()
       Tag3D(globalMesh)
       globalIdstotreat = Return3DElements(globalMesh)
       globalMesh.originalIDNodes = np.array(globalMesh.originalIDNodes-1, dtype=int)
@@ -106,7 +107,7 @@ class UtSplitter(WriterBase):
       for sd in range(1,self.nbsd+1):
         sdString = sdTosdString(sd)
         localMesh = GR.ReadGeof(fileName = self.dataFolder+self.name + "-pmeshes" + os.sep + self.name + sdString + ".geof",readElset=False,readFaset=False,printNotRead=False)
-
+        localMesh.UnFrozen()
         Tag3D(localMesh)
         localIdstotreat = Return3DElements(localMesh)
         localOriginalIDNodes = np.array(localMesh.originalIDNodes-1, dtype=int)
