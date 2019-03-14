@@ -78,6 +78,10 @@ class ConstantRectilinearMesh(MeshBase):
     def GetSpacing(self):
         return self.__spacing;
 
+    def GetdV(self):
+        """Get the volume of one element."""
+        return np.prod(self.GetSpacing())
+
     def SetOrigin(self,data):
         self.__origin = np.array(data);
         self.nodes = None
