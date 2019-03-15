@@ -84,7 +84,7 @@ class MecaPhysics(Physics):
 
 
     def SetMecaPrimalName(self,name):
-        self.mecaPrimalName = name
+        self.mecaPrimalName = (name,3)
 
     def GetPrimalNames(self):
         return self.ExpandNames(self.mecaPrimalName)
@@ -108,7 +108,7 @@ class MecaPhysics(Physics):
         from BasicTools.FE.WeakForm import GetMecaNormalPressure
         if pressureName is None:
             pressureName = self.pressureName
-        Symwfp = GetMecaNormalPressure(self.pressureName,name=self.mecaPrimalName)
+        Symwfp = GetMecaNormalPressure(self.pressureName[0],name=self.mecaPrimalName[0])
         wfp = SymWeakToNumWeak(Symwfp)
         return wfp
 
