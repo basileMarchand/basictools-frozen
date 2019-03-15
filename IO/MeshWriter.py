@@ -589,6 +589,11 @@ class MeshWriter(WriterBase):
 from BasicTools.IO.IOFactory import RegisterWriterClass
 RegisterWriterClass(".mesh",MeshWriter)
 
+def CreateMeshWriterBinary(ops):
+    obj = MeshWriter()
+    obj.SetBinary()
+    return obj
+RegisterWriterClass(".meshb",MeshWriter,CreateMeshWriterBinary)
 
 def CheckIntegrity():
     import BasicTools.Containers.UnstructuredMesh as UM
