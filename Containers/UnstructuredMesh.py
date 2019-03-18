@@ -214,7 +214,6 @@ class AllElements(object):
             self[typename] = ElementsContainer(typename)
         return self[typename]
 
-@froze_it
 class UnstructuredMesh(MeshBase):
     """
     class to store a UnstructuredMesh:
@@ -223,7 +222,6 @@ class UnstructuredMesh(MeshBase):
         self.elements : the list of all the elememnt in the mesh
         self.boundingMin/Max : the bounding box of the mesh (use ComputeBoundingBox
          to compute it)
-
     """
     def IsUnstructured(self):
         return True
