@@ -89,6 +89,13 @@ class ConstantRectilinearMesh(MeshBase):
     def GetOrigin(self):
         return self.__origin;
 
+    @property
+    def boundingMin(self):
+        return self.GetOrigin()
+
+    @property
+    def boundingMax(self):
+        return self.GetOrigin() + (self.GetDimensions()-1)*self.GetSpacing()
 
     def GetNumberOfNodes(self):
         return np.prod(self.__dimensions)

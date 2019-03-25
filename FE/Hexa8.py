@@ -9,6 +9,11 @@ from BasicTools.FE.FemHelp import Integral
 import BasicTools.Containers.ElementNames as ElementsNames
 
 class Hexa8(FElement):
+    """
+    TODO: this file must be eliminated better more robust implementations can
+    be found in FE/Spaces/HexaSpaces.py
+
+    """
     def __init__(self):
         super(Hexa8,self).__init__()
         self.nnodes = 8
