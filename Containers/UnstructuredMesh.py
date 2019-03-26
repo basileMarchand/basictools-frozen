@@ -12,7 +12,6 @@ from BasicTools.Helpers.BaseOutputObject import BaseOutputObject,froze_it
 
 AllElements = object()
 
-@froze_it
 class ElementsContainer(BaseOutputObject):
     """
     Class to hold a list of element of the same type
@@ -169,7 +168,6 @@ class ElementsContainer(BaseOutputObject):
         res += "  Tags          : " + str([x.name for x in self.tags]) + "\n"
         return res
 
-@froze_it
 class AllElements(object):
     """
     Class to store a list of element containers
