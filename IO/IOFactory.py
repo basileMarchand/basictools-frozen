@@ -18,25 +18,34 @@ def GetAvailableReaders():
     return list(ReaderFactory._Catalog.keys())
 
 def InitAllReaders():
+    try:
+        import BasicTools.IO.InpReader as InpReader
+    except:
+        pass
+
     import BasicTools.IO.AscReader as AscReader
     import BasicTools.IO.GeofReader as GeofReader
     import BasicTools.IO.GmshReader as GmshReader
-    import BasicTools.IO.InpReader as InpReader
     import BasicTools.IO.MeshReader as MeshReader
     import BasicTools.IO.GReader as GReader
     import BasicTools.IO.FemReader as FemReader
     from BasicTools.IO.StlReader import ReadStl
     from BasicTools.IO.XdmfReader import ReadXdmf
+    from BasicTools.IO.PipeIO import PipeReader
+    from BasicTools.IO.OdbReader import OdbReader
+
 
 
 
 def InitAllWriters():
+
     from BasicTools.IO.GeofWriter import GeofWriter
     from BasicTools.IO.GmshWriter import GmshWriter
     from BasicTools.IO.MeshWriter import MeshWriter
     from BasicTools.IO.OdbWriter  import OdbWriter
     from BasicTools.IO.StlWriter  import StlWriter
     from BasicTools.IO.XdmfWriter import XdmfWriter
+    from BasicTools.IO.PipeIO import PipeWriter
 
 def RegisterWriterClass(name, classtype, constructor=None, withError = True):
     WriterFactory.RegisterClass(name,classtype, constructor=constructor, withError = withError )

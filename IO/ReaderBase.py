@@ -16,41 +16,22 @@ class ReaderBase(BaseOutputObject):
         self.nodalFields = {}
         self.elementsFields = {}
         self.readFormat = 'r'
+        self.binary = False
         self.output = None
         self.string = None
         self.commentChar = None
         self.filePointer = None
         self.lineCounter = 0
+        self.pipe = False
+        self.canHandleTemporal = False
+
+    def SetBinary(self,binary=True):
+        self.binary = binary
 
     def StartReading(self):
 
         import sys
-
-        if self.fileName is None:
-            if self.string is None:
-                raise ('Need a file or a string to read')
-            else:
-                if self.readFormat.find('b') > -1 :
-
-                    from io import BytesIO
-                    if sys.version_info >= (3,0):
-                        self.filePointer =  BytesIO(bytearray(self.string,"ascii"))
-                    else:
-                        self.filePointer =  BytesIO(str(self.string))
-
-                    self.text_stream = self.filePointer
-                else:
-                    #python2 test
-                    if sys.version_info >= (3,0):
-                        import io
-                        self.filePointer =  io.StringIO(self.string)
-
-                    else:
-                        import cStringIO
-                        self.filePointer =  cStringIO.StringIO(self.string)
-
-                    self.text_stream = self.filePointer
-        else:
+        if not(self.fileName is None):
             if self.readFormat.find('b') > -1 :
                 self.filePointer =  open(self.fileName, self.readFormat)
                 self.text_stream = self.filePointer
@@ -62,6 +43,44 @@ class ReaderBase(BaseOutputObject):
                 #import codecs
                 #if sys.version_info[0] == 2:
                 #    self.filePointer = codecs.open(self.fileName, self.readFormat, 'utf-8')
+        elif not(self.string is None):
+            if self.readFormat.find('b') > -1 :
+
+                from io import BytesIO
+                if sys.version_info >= (3,0):
+                    self.filePointer =  BytesIO(bytearray(self.string,"ascii"))
+                else:
+                    self.filePointer =  BytesIO(str(self.string))
+
+                self.text_stream = self.filePointer
+            else:
+                #python2 test
+                if sys.version_info >= (3,0):
+                    import io
+                    self.filePointer =  io.StringIO(self.string)
+
+                else:
+                    import cStringIO
+                    self.filePointer =  cStringIO.StringIO(self.string)
+
+                self.text_stream = self.filePointer
+        elif self.pipe:
+            print("Opening a Pipe")
+            import os
+            r, w = os.pipe()
+            if self.readFormat.find('b') > -1 :
+                self.filePointer =  sys.stdin.buffer
+                #os.fdopen(r, self.readFormat)
+                self.text_stream = self.filePointer
+            else:
+                #I have some problems reading with numpy fromfile if the file is
+                #open with the codecs.open
+                #import sys
+                self.filePointer =  sys.stdin
+                #os.fdopen(r, self.readFormat)
+                print(self.readFormat)
+        else:
+            raise ('Need a file or a string to read')
 
 
 
@@ -76,20 +95,28 @@ class ReaderBase(BaseOutputObject):
 
     def SetFileName(self,fileName):
 
-        self.fileName = fileName;
-        if fileName is None :
-            self.__path = None;
-            self.string = None;
+        if  not(fileName is None) and len(fileName) >= 4 and fileName[0:4] == "PIPE" :
+            self.SetReadFromPipe()
         else:
-            self.filePath = os.path.abspath(os.path.dirname(fileName))+os.sep;
-            self.string = None
-
+            self.fileName = fileName;
+            if fileName is None :
+                self.__path = None;
+                self.string = None;
+            else:
+                self.filePath = os.path.abspath(os.path.dirname(fileName))+os.sep;
+                self.string = None
+                self.pipe = False
 
     def SetStringToRead(self,string):
         self.string = string
-
         if string is not None:
             self.fileName = None
+            self.pipe = False
+
+    def SetReadFromPipe(self):
+        self.SetFileName(None)
+        self.SetFileName(None)
+        self.pipe = True
 
     def ReadCleanLine(self,withError=False):
         while(True):

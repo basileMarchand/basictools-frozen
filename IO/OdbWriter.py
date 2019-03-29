@@ -58,6 +58,9 @@ class OdbWriter(object):
         self.__insubprocess = False
         self.filename = ""
 
+    def SetBinary(self,val):
+        pass
+
     def SetInSubprocess(self):
         self.__insubprocess = True
 
@@ -69,8 +72,9 @@ class OdbWriter(object):
     def SetFileName(self,filename):
         self.filename = filename;
 
-    def Open(self,fileName):
-        self.SetFileName(fileName)
+    def Open(self,fileName=None):
+        if not fileName is None:
+            self.SetFileName(fileName)
 
     def Close(self):
         pass
@@ -173,8 +177,8 @@ WormholeServer(""" +str(port) +""",dry=False)
 
         mesh.PrepareForOutput()
 
-        odbName = filename.split("/")[-1]
-        pOdb = odbAccess.Odb(name=odbName,analysisTitle='MyFirstAnalisys',path=filename,description='1D beam')
+        odbName = self.filename.split("/")[-1]
+        pOdb = odbAccess.Odb(name=odbName,analysisTitle='MyFirstAnalisys',path=self.filename,description='1D beam')
         pOdb.save()
 
         WriteMaterial(pOdb,None)
@@ -194,7 +198,7 @@ WormholeServer(""" +str(port) +""",dry=False)
             #print(tag.GetIds().astype(np.int32))
             #print(pPart.nodes[tag.GetIds().astype(np.int32)])
             #print("----")
-            pPartNodes= pPart.NodeSetFromNodeLabels(tag.name,(tag.GetIds()+1).astype(np.int32))
+            pPartNodes= pPart.NodeSetFromNodeLabels(str(tag.name),(tag.GetIds()+1).astype(np.int32))
     #
 
         cpt =0;
@@ -214,7 +218,7 @@ WormholeServer(""" +str(port) +""",dry=False)
 
         for name in mesh.GetNamesOfElemTags():
             ids = mesh.GetElementsInTag(name)+1
-            elementSet = pPart.ElementSetFromElementLabels(    name=name,elementLabels=ids.astype(np.int32))
+            elementSet = pPart.ElementSetFromElementLabels(    name=str(name),elementLabels=ids.astype(np.int32))
 
 
     ##Creating the instance for the solid part
