@@ -15,6 +15,7 @@ def WriteMeshToStl(filename,mesh, normals= None):
 class StlWriter(WriterBase):
     def __init__(self):
         super(StlWriter,self).__init__()
+        self.extractSkin = True
 
     def __str__(self):
         res  = 'StlWriter : \n'
@@ -26,22 +27,33 @@ class StlWriter(WriterBase):
 
     def Write(self,meshObject,normals=None,Name= None,PointFieldsNames=None,PointFields=None,CellFieldsNames=None,CellFields=None):
 
-        elements = meshObject.GetElementsOfType(EN.Triangle_3)
+
+
+        if self.extractSkin :
+            from BasicTools.Containers.UnstructuredMeshTools import ComputeSkin, CleanLonelyNodes
+            skin = ComputeSkin(meshObject)
+            print(skin)
+            CleanLonelyNodes(skin)
+            nodes = skin.nodes
+            elements = skin.GetElementsOfType(EN.Triangle_3)
+        else:
+            nodes = meshObject.nodes
+            elements = meshObject.GetElementsOfType(EN.Triangle_3)
 
         self.filePointer.write("solid {}\n".format(Name))
         for i in range(elements.GetNumberOfElements()):
             if normals is not None:
                 self.filePointer.write(" facet normal {}\n".format(" ".join(map(str,normals[i,:])) ))
             else:
-                p0 = meshObject.nodes[elements.connectivity[i,0],:]
-                p1 = meshObject.nodes[elements.connectivity[i,1],:]
-                p2 = meshObject.nodes[elements.connectivity[i,2],:]
+                p0 = nodes[elements.connectivity[i,0],:]
+                p1 = nodes[elements.connectivity[i,1],:]
+                p2 = nodes[elements.connectivity[i,2],:]
                 normal = np.cross(p1-p0,p2-p0)
                 normal = normal/np.linalg.norm(normal)
                 self.filePointer.write(" facet normal {}\n".format(" ".join(map(str,normal)) ))
             self.filePointer.write("  outer loop\n")
             for p in range(3):
-                self.filePointer.write("   vertex {}\n".format(" ".join(map(str,meshObject.nodes[elements.connectivity[i,p],:] ))))
+                self.filePointer.write("   vertex {}\n".format(" ".join(map(str,nodes[elements.connectivity[i,p],:] ))))
             self.filePointer.write("  endloop\n")
             self.filePointer.write(" endfacet\n")
         self.filePointer.write("endsolid\n")
@@ -85,6 +97,7 @@ def CheckIntegrity():
     from BasicTools.Helpers.Tests import TestTempDir
 
     res = ReadStl(string=data)
+    print(res)
     tempdir = TestTempDir.GetTempPath()
     WriteMeshToStl(tempdir+"Test_StlWriter.stl",res)
     WriteMeshToStl(tempdir+"Test_StlWriter_with_normals.stl",res, normals =res.elemFields["normals"])
