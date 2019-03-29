@@ -119,6 +119,42 @@ class FemReader(ReaderBase):
                 resdic["Objective"] = {"id":int(vec[1]),"type":vec[0].split("(")[1].split(")")[0]}
                 continue
             if key == 'LABEL' and self.ignoreNotTreated : continue
+
+            if key == "SET":
+                need_to_read = False
+                l = line.split()
+                key = l[0]
+                print("--> " + key)
+                setNumber = l[1]
+
+                if l[2] != "=":
+                    raise
+
+                line = "".join(l[3:])
+
+                while(True):
+                    if need_to_read :
+                        line = self.ReadCleanLine()
+                        need_to_read = True
+                    if line is None:
+                        break
+
+                    units = line.split(",")
+                    for u in units:
+                        if len(u) == 0:
+                            continue
+                        if "THRU" in u:
+                            partition = u.split()
+                            begin = partition[0]
+                            end = partition[-1]
+                        else:
+                            idd = int(u)
+                    need_to_read = True
+                    if line[-1] != ",":
+                        break
+                continue
+
+
             if line == "BEGIN BULK" :
                 need_to_read = True
                 while(True):
@@ -130,14 +166,16 @@ class FemReader(ReaderBase):
 
                     l = line.split()
                     key = l[0]
-                    print("---> " + key)
+                    #print("---> " + key)
                     if key == 'DOPTPRM'  :
                         resdic["DOPTPRM"] = {self.GetField(line,1):ParseFloat(self.GetField(line,2))}
                         continue
                     if key == 'DTPL' :
                         print("DTPL intensionally ignored")
                         continue
-                    if key == 'DCONSTR' and self.ignoreNotTreated : continue
+                    if key == 'DCONSTR' and self.ignoreNotTreated :
+                        need_to_read    = True
+                        continue
                     if key == 'DCONADD' and self.ignoreNotTreated : continue
                     if key == 'DRESP1' :
                         #https://knowledge.autodesk.com/support/nastran/learn-explore/caas/CloudHelp/cloudhelp/2019/ENU/NSTRN-Reference/files/GUID-4C44D4BF-E70D-4548-8BED-D4C0497E5479-htm.html?st=DRESP1
@@ -189,6 +227,10 @@ class FemReader(ReaderBase):
                         resdic["CordinateSystems"][idd] = orient
 
                         continue
+                    if key == 'CORD1R' and self.ignoreNotTreated : continue
+                    if key == 'RBE2' and self.ignoreNotTreated : continue
+                    if key == 'RBE3' and self.ignoreNotTreated : continue
+
                     if key == '+'  :
                         #print(line )
                         print("+ intensionally ignored")
@@ -196,6 +238,7 @@ class FemReader(ReaderBase):
                     if key == 'ENDATA' : break
                     if key == 'PSOLID' and self.ignoreNotTreated : continue
                     if key == 'MAT1' and self.ignoreNotTreated : continue
+                    if key == 'LOADADD' and self.ignoreNotTreated : continue
 
                     if l[0] == 'SPC' :
                         tag = res.GetNodalTag("SPC"+str(int(line[8:8*2]) ))
@@ -255,18 +298,28 @@ class FemReader(ReaderBase):
                     if key ==  'CTETRA':
                       oid = int(line[8:8*2])
                       idd2 = str(int(line[8*2:8*3]))
-                      P1 = int(line[8*3:8*4])
-                      P2 = int(line[8*4:8*5])
-                      P3 = int(line[8*5:8*6])
-                      P4 = int(line[8*6:8*7])
+                      points = []
+                      for i in range(3,9):
+                          try:
+                             points.append(int(line[8*i:8*(i+1)]))
+                          except:
+                             pass
 
-                      conn = [filetointernalid[xx] for xx in  [P1, P2,P3,P4 ] ]
-                      elements = res.GetElementsOfType(ElementNames.Tetrahedron_4)
+                      if len(points) > 4:
+                          line = self.ReadCleanLine()
+                          for i in range(1,5):
+                             points.append(int(line[8*i:8*(i+1)]))
+
+                      conn = [filetointernalid[xx] for xx in  points ]
+
+                      if len(conn) == 4:
+                          elements = res.GetElementsOfType(ElementNames.Tetrahedron_4)
+                      elif len(conn) == 10:
+                          elements = res.GetElementsOfType(ElementNames.Tetrahedron_10)
 
                       localid = elements.AddNewElement(conn,oid)
                       elements.tags.CreateTag("ET"+idd2,False).AddToTag(localid-1)
                       #res.AddElementToTagUsingOriginalId(oid,)
-
                       continue
                     if key == 'ENDDATA' : break
                     if line is None: break
