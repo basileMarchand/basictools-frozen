@@ -82,14 +82,14 @@ class UtSplitter(WriterBase):
       for din in reader.integ:
         globaldataInteg[din] = np.empty((reader.meshMetadata['nbIntegrationPoints'],reader.time.shape[0]))
         for timeStep in range(reader.time.shape[0]):
-          globaldataInteg[din][:,timeStep] = reader.Read(fieldname=din, timeIndex=int(reader.time[timeStep,0])-1)
+          globaldataInteg[din][:,timeStep] = reader.ReadField(fieldname=din, timeIndex=int(reader.time[timeStep,0])-1)
 
       reader.atIntegrationPoints = False
       globaldataNode = {}
       for din in reader.node:
           globaldataNode[din] = np.empty((reader.meshMetadata['nbNodes'],reader.time.shape[0]))
           for timeStep in range(reader.time.shape[0]):
-            globaldataNode[din][:,timeStep] = reader.Read(fieldname=din, timeIndex=int(reader.time[timeStep,0])-1)
+            globaldataNode[din][:,timeStep] = reader.ReadField(fieldname=din, timeIndex=int(reader.time[timeStep,0])-1)
 
 
       globalMesh = GR.ReadGeof(fileName = self.dataFolder + self.name + ".geof",readElset=False,readFaset=False,printNotRead=False)
