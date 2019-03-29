@@ -36,12 +36,14 @@ class UtReader(ReaderBase):
         self.element =None
         self.time = None
 
-        self.fieldNameToRead =None
+        self.fieldNameToRead = None
         self.timeToRead = -1
         self.atIntegrationPoints = False
         self.meshMetadata = None
         self.cache = None
         self.oldtimeindex = None
+
+        self.canHandleTemporal = True
 
     def Reset(self):
         self.meshfile = None
@@ -57,6 +59,9 @@ class UtReader(ReaderBase):
     def SetTimeToRead(self,time):
         if time is not None:
             self.timeToRead = time
+
+    def GetAvilableTimes(self):
+           return self.time[:,4]
 
     def ReadMetaData(self):
         if self.meshMetadata is not None : return self.meshMetadata
@@ -114,7 +119,7 @@ class UtReader(ReaderBase):
         return np.fromfile(fileName, dtype=np.float32).byteswap()
 
 
-    def Read(self,fieldname=None,time=None,timeIndex=None):
+    def ReadField(self,fieldname=None,time=None,timeIndex=None):
         self.ReadMetaData()
         postfix = ""
         if self.fileName[-1] == "p":
