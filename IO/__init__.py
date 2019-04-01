@@ -36,6 +36,7 @@ __all__ = [
 "MeshTools",
 "MeshFileConverter",
 "IOFactory",
+"PipeIO",
 
 
 ]
