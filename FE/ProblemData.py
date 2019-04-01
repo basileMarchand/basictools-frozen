@@ -285,9 +285,9 @@ def CheckIntegrity(GUI=False):
     reader.ReadMetaData()
 
     reader.atIntegrationPoints = False
-    Nnode = reader.Read(fieldname="U1", timeIndex=0).shape[0]
+    Nnode = reader.ReadField(fieldname="U1", timeIndex=0).shape[0]
     reader.atIntegrationPoints = True
-    Nint = reader.Read(fieldname="sig11", timeIndex=0).shape[0]
+    Nint = reader.ReadField(fieldname="sig11", timeIndex=0).shape[0]
 
     Ntime = reader.time.shape[0]
     NnodeVar = len(reader.node)
@@ -306,13 +306,13 @@ def CheckIntegrity(GUI=False):
     reader.atIntegrationPoints = False
     for i in range(Ntime):
       for dn in solution.data_node:
-        solution.data_node[dn][:,i] = reader.Read(fieldname=dn, timeIndex=i)
+        solution.data_node[dn][:,i] = reader.ReadField(fieldname=dn, timeIndex=i)
       for dc in solution.data_ctnod:
-        solution.data_ctnod[dc][:,i] = reader.Read(fieldname=dc, timeIndex=i)
+        solution.data_ctnod[dc][:,i] = reader.ReadField(fieldname=dc, timeIndex=i)
     reader.atIntegrationPoints = True
     for i in range(Ntime):
       for di in solution.data_integ:
-        solution.data_integ[di][:,i] = reader.Read(fieldname=di, timeIndex=i)
+        solution.data_integ[di][:,i] = reader.ReadField(fieldname=di, timeIndex=i)
     res.AttachSolution("Run1", solution)
 
     import BasicTools.IO.GeofReader as GR
