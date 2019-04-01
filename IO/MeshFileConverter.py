@@ -17,16 +17,33 @@ def PrintHelp():
   print("Available Writers : ", IOF.GetAvailableWriter())
   sys.exit(2)
 
+#MeshFileConverter -i meshfile.meshb -o .PIPE > toto
+
+from BasicTools.Helpers.PrintBypass import PrintBypass
+
 def Convert(inputfilename,outputfilename):
       IOF.InitAllReaders()
       IOF.InitAllWriters()
 
-      print("Start Reading...")
-      mesh = ReadMesh(inputfilename)
-      print(mesh)
-      print("Start Writing to ", outputfilename)
-      WriteMesh(outputfilename,mesh)
-      print("DONE")
+      with PrintBypass() as f:
+
+          if ".PIPE" in outputfilename :
+              f.ToDisk("MeshFileConverter.log")
+
+          print("Start Reading...", inputfilename)
+          mesh = ReadMesh(inputfilename)
+          print(mesh)
+          print("Start Writing to "+  str(outputfilename))
+          writer = None
+
+
+          from BasicTools.IO.IOFactory import CreateWriter
+          if ".PIPE" in outputfilename :
+              writer = CreateWriter("."+outputfilename.split(".")[-1])
+              writer.outbuffer = f.stdout_.buffer
+
+          WriteMesh(outputfilename,mesh,writer=writer)
+          print("DONE")
 
 
 def CheckIntegrity(GUI=False):
