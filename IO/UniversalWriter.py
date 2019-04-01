@@ -42,13 +42,14 @@ __author__ = "Felipe Bordeu"
 #    return res
 
 
-def WriteMesh(filename,outmesh,binary=False):# pragma: no cover
+def WriteMesh(filename,outmesh,binary=False,writer=None):# pragma: no cover
 
     from BasicTools.IO.IOFactory import CreateWriter
-    writer = CreateWriter("."+filename.split(".")[-1])
-    writer.SetFileName(filename)
-    writer.SetBinary(binary)
-    writer.Open()
+    if writer is None:
+        writer = CreateWriter("."+filename.split(".")[-1])
+        writer.SetFileName(filename)
+        writer.SetBinary(binary)
+        writer.Open()
 
     PointFields = None
     PointFieldsNames = None

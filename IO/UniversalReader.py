@@ -5,12 +5,21 @@ import BasicTools.Containers.ElementNames as ElementNames
 
 
 
-
 def ReadMesh(filename,out=None):# pragma: no cover
+    from BasicTools.IO.IOFactory import InitAllReaders
+    InitAllReaders()
     import os.path
 
     dirname = os.path.dirname(filename)
     basename,extention = os.path.splitext(os.path.basename(filename))
+
+    from BasicTools.IO.IOFactory import CreateReader
+
+
+    reader = CreateReader("."+filename.split(".")[-1])
+    reader.SetFileName(filename)
+
+    return reader.Read()
 
     if extention ==  ".asc":
         import BasicTools.IO.AscReader as AscReader
