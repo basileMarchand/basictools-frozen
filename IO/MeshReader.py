@@ -69,10 +69,18 @@ class MeshReader(ReaderBase):
         self.refsAsAField = bool(val)
 
     def Read(self,out=None):
-        if self.fileName is not None and self.fileName[-1] == "b":
+        if self.binary :
             return self.ReadMeshBinary(out=out)
         else:
             return self.ReadMeshAscii(out=out)
+
+    def SetFileName(self,fileName):
+        super(MeshReader,self).SetFileName(fileName)
+
+        if fileName is not None and fileName[-1] == "b":
+            self.SetBinary(True)
+        else:
+            self.SetBinary(False)
 
     def ReadExtraFields(self,fileName):
         self.SetFileName(fileName)
