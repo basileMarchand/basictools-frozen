@@ -113,7 +113,7 @@ class WormholeServer(BaseOutputObject):
            self.MainLoop()
            self.communicator.socket.close()
        elif cmd is not None:
-           from BasicTools.IO.Proxy import ServerProxy
+           #from BasicTools.IO.Proxy import ServerProxy
            self.communicator = WormholeBase()
            from BasicTools.Helpers.PrintBypass import PrintBypass
            self.printBypass = PrintBypass()
