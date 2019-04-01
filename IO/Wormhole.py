@@ -17,7 +17,7 @@ def _resolve_name(name, package, level):
     if not hasattr(package, 'rindex'):
         raise ValueError("'package' not set to a string")
     dot = len(package)
-    for x in xrange(level, 1, -1):
+    for x in range(level, 1, -1):
         try:
             dot = package.rindex('.', 0, dot)
         except ValueError:
@@ -51,88 +51,127 @@ class WormholeBase(BaseOutputObject):
     def __init__(self,port = None):
         super(WormholeBase,self).__init__()
         self.socket = None
-        self.otherSide =  None
+        self.otherSideR =  None
+        self.otherSideS =  None
+        self.proto = 0
 
-    def _internalReciveData(self):
+    def Receive(self):
           sizestream = ""
           while (len(sizestream) < 64):
-              sizestream += self.otherSide.recv(1).decode()
-          #print(sizestream)
+              if self.socket is None:
+                  sizestream += self.otherSideR.read(1).decode('utf8')
+              else:
+                  sizestream += self.otherSideR.recv(1).decode('utf8')
           size = int(sizestream)
-          #if self.socket is not None:
-          #    print("s : " + str(size))
-          #else:
-          #    print("c : " + str(size))
 
-          datastream = self.otherSide.recv(size)
+          if self.socket is None:
+              datastream = self.otherSideR.read(size)
+          else:
+              datastream = self.otherSideR.recv(size)
           ldata = len(datastream )
           while ldata < size:
-              datastream += self.otherSide.recv(size-ldata)
+              if self.socket is None:
+                  datastream += self.otherSideR.read(size-ldata)
+              else:
+                  datastream += self.otherSideR.recv(size-ldata)
               ldata = len(datastream )
-
           data = pickle.loads(datastream)
           return data
 
-    def _internalSendData(self,data):
-        streamdata = pickle.dumps(data,self.proto)
+    def Send(self,data):
+        print("Sending",data)
+        if int(sys.version_info.major) >= 3:
+            streamdata = pickle.dumps(data,self.proto,fix_imports=True)
+        else:
+            streamdata = pickle.dumps(data,self.proto)
+
         data = str(len(streamdata)).zfill(64)
-        self.otherSide.send( data.encode())
-        self.otherSide.send(streamdata)
+        if self.socket is None:
+            self.otherSideS.write( data.encode('utf8'))
+            self.otherSideS.write(streamdata)
+            self.otherSideS.flush()
+        else:
+            self.otherSideS.send( data.encode('utf8'))
+            self.otherSideS.send(streamdata)
 
+    def Close(self):
 
-class WormholeServer(WormholeBase):
-    def __init__(self,port = None,dry=False):
+        if not (self.otherSideR is self.otherSideS):
+            self.otherSideS.close()
+        self.otherSideR.close()
+
+class WormholeServer(BaseOutputObject):
+    def __init__(self,port = None, cmd=None ,dry=False):
        super(WormholeServer,self).__init__()
        self.globals = {}
 
        # no code is executes only print it
        self.drymode = dry
        if port is not None:
-           self.Listen(port)
+           self.communicator = WormholeBase()
+           self.ListenUsingPort(port)
+           self.MainLoop()
+           self.communicator.socket.close()
+       elif cmd is not None:
+           from BasicTools.IO.Proxy import ServerProxy
+           self.communicator = WormholeBase()
+           from BasicTools.Helpers.PrintBypass import PrintBypass
+           self.printBypass = PrintBypass()
+           from BasicTools.Helpers.Tests import GetUniqueTempFile
+           out = GetUniqueTempFile(".log","output_")[1]
+           err = GetUniqueTempFile(".log2","output_")[1]
+           self.printBypass.ToDisk(out,err)
+           #self.printBypass.ToSink()
+           self.StartUsingPipe()
+           self.MainLoop()
+           self.printBypass.Restore()
 
+    def StartUsingPipe(self):
+        if int(sys.version_info.major) >= 3:
+            self.communicator.otherSideR = self.printBypass.stdin_.buffer
+            self.communicator.otherSideS = self.printBypass.stdout_.buffer
+        else:
+            self.communicator.otherSideR = self.printBypass.stdin_
+            self.communicator.otherSideS = self.printBypass.stdout_
 
-    def Listen(self,port=None):
+    def ListenUsingPort(self,port=None):
         if port is None:
               port = 12345
 
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.bind(('', port))
+        self.communicator.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.communicator.socket.bind(('', port))
+        self.communicator.socket.listen(0)
+        self.communicator.otherSideR, address = self.communicator.socket.accept()
+        self.communicator.otherSideS = self.communicator.otherSideR
+        print("(s) {0} connected".format( address ))
 
-        self.MainLoop()
-        self.socket.close()
 
     def ProtocolNegotiation(self):
-        ClientHighestProtocol = int(self.otherSide.recv(1).decode())
-        self.proto = min(pickle.HIGHEST_PROTOCOL, ClientHighestProtocol)
-        print("(s) Using Protocol " + str(self.proto))
-        self.otherSide.send(str(self.proto).encode() )
+        ClientHighestProtocol = self.communicator.Receive()
+        proto = min(pickle.HIGHEST_PROTOCOL, ClientHighestProtocol)
+        print("(s) Using Protocol " + str(proto))
+        self.communicator.Send(proto)
+        self.communicator.proto = proto
 
 
     def MainLoop(self):
 
-
-        self.socket.listen(0)
-        self.otherSide, address = self.socket.accept()
-        print("(s) {0} connected".format( address ))
-
-
-
-
-
         while(True):
-            rdata = self.otherSide.recv(1)
-            if len(rdata) == 0 :
-                continue
-            action = rdata.decode()
+            action = self.communicator.Receive()
+            #if len(rdata) == 0 :
+            #    continue
+            #action = rdata.decode()
 
             self.PrintDebug(action)
             if action == "p":
                 self.ProtocolNegotiation()
+
             elif action == "s":
                 #print("receiving data")
-                key = self._internalReciveData()
-                value = self._internalReciveData()
-                #print(key + " = value")
+                key = self.communicator.Receive()
+                #print("receiving data for ",key)
+                value = self.communicator.Receive()
+                print(key ," = ", value)
                 if self.drymode:
                     print("(s)" + str(key) +" = " + str(value))
                 else:
@@ -140,66 +179,49 @@ class WormholeServer(WormholeBase):
                 #print(self.globals)
                 #eval(key + " = value",self.globals)
 
-#            elif action == "e":
-#                print("evaluation expression")
-#                key = self._internalReciveData()
-#                expretion = self._internalReciveData()
-#                self.globals[key] =  eval(expretion,self.globals)
-#                print(self.globals)
             elif action == "c":
-                expression = self._internalReciveData()
+                expression = self.communicator.Receive()
                 print(expression)
                 if self.drymode:
                     print("(s) Exec: " + expression )
                 else:
                     exec(str(expression), self.globals)
 
-                #print(self.globals)
-#            elif action == "i":
-#                print("import module")
-#                module = self._internalReciveData()
-#                asname = self._internalReciveData()
-#                print(module)
-#                print(asname)
-#
-#                #try:
-#                if True:
-#                    #import importlib
-#                    #self.globals[asname] =  importlib.import_module(module)
-#                    #import importlib
-#                    self.globals[asname] =  import_module(module)
-#                    print("-------------------------------------")
-#                    print(self.globals[asname])
-#
-#                    #print(self.globals)
-#                    self._internalSendData("OK")
-#                #except :
-#                #    self._internalSendData("KO")
-#
-
             elif action == "r":
-
                 print("(s) Sending data back : "+ str(key))
-
                 if self.drymode:
-                    self._internalSendData(None)
+                    self.Send(None)
                 else:
-                    key = self._internalReciveData()
-                    self._internalSendData(self.globals[key])
+                    key = self.communicator.Receive()
+                    self.communicator.Send(self.globals[key])
 
             elif action  == "x":
                 print("(s) exit")
-                self.otherSide.close()
+                self.communicator.Close()
                 return
+
             else:
                 print("Dont know how to treat " + str(action))
                 return
 
-
-class WormholeClient(WormholeBase):
-    def __init__(self):
+class WormholeClient(BaseOutputObject):
+    def __init__(self,port = None,host=None,proc=None):
        super(WormholeClient,self).__init__()
-       self.proto = 2
+       self.communicator = None
+
+       if port is not None:
+           self.communicator = WormholeBase()
+           self.Connect(port=port, host=host)
+       elif proc is not None:
+           #from BasicTools.IO.Proxy import ServerProxy
+           self.communicator = WormholeBase()
+           self.StartUsingPipe(proc)
+
+    def StartUsingPipe(self,proc):
+        self.communicator.otherSideS = proc.stdin
+        self.communicator.otherSideR = proc.stdout
+        self.ProtocolNegotiation()
+        self.communicator.proto = self.proto
 
     def Connect(self,port=None, host=None):
         if port is None:
@@ -208,72 +230,68 @@ class WormholeClient(WormholeBase):
         if host is None:
             host = "localhost"
 
-        self.otherSide = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.communicator.otherSideS = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.communicator.socket = True
+
+        self.communicator.otherSideR  = self.communicator.otherSideS
         print("(c) connecting to "),
         print((host, port))
-        self.otherSide.connect((host, port))
+        self.communicator.otherSideS.connect((host, port))
         print("(c) Connection on {0}".format(port))
         self.ProtocolNegotiation()
         print("(c) Using protocol " + str(self.proto) )
+        self.communicator.proto = self.proto
 
     def ProtocolNegotiation(self):
         #request protocol negotiation
-        self.otherSide.send(b"p")
-        self.otherSide.send(str(pickle.HIGHEST_PROTOCOL)[0].encode() )
-        self.proto = int(self.otherSide.recv(1).decode())
-
+        print("pickle.HIGHEST_PROTOCOL ",pickle.HIGHEST_PROTOCOL )
+        self.communicator.Send("p")
+        self.communicator.Send(pickle.HIGHEST_PROTOCOL )
+        #self.Communicator.send(str(pickle.HIGHEST_PROTOCOL)[0].encode() )
+        self.proto = self.communicator.Receive()
+        print("self.proto ",self.proto )
 
     def SendData(self,key,data):
 
         print("(c) sending " + str(key) + " :: " + str(data))
-        self.otherSide.send(b"s")
-        self._internalSendData(key)
-        self._internalSendData(data)
-
-    #def RemoteEval(self,key, expression):
-    #    self.otherSide.send("e")
-    #    self._internalSendData(key)
-    #    self._internalSendData(expression)
+        self.communicator.Send("s")
+        self.communicator.Send(key)
+        self.communicator.Send(data)
 
     def RemoteExec(self,expression):
-        self.otherSide.send(b"c")
-        self._internalSendData(expression)
+        print("Remote Exec : '" + str(expression) +"'")
+        self.communicator.Send("c")
+        self.communicator.Send(expression)
 
 
     def RetrieveData(self,variable):
-        self.otherSide.send(b"r")
-        self._internalSendData(variable)
-        return self._internalReciveData()
-
-    #def ImportModule(self,module,asname):
-    #    self.otherSide.send("i")
-    #    self._internalSendData(module)
-    #    self._internalSendData(asname)
-    #    print(self._internalReciveData())
+        self.communicator.Send("r")
+        self.communicator.Send(variable)
+        return self.communicator.Receive()
 
     def Exit(self):
-        self.otherSide.send(b"x")
-        self.otherSide.close()
+        print("Sending Exit")
+        self.communicator.Send("x")
+        self.communicator.Close()
 
 
-def CheckIntegrity():
+def CheckIntegrityNetWork():
 
    import time
    testport = GetAnFreePortNumber()
 
    import threading
-   try:
+   #try:
+   if True:
      def runServer():
-         print("(s) Starting Server Side")
+         print("(s) Starting Server Side ",testport)
          WormholeServer(testport,dry=False)
      TT = threading.Thread(target=runServer )
 
      TT.start()
-     print("(c) Starting Client Side")
-     time.sleep(1.)
-
-     client = WormholeClient()
-     client.Connect(testport)
+     time.sleep(3.)
+     print("(c) Starting Client Side ",testport)
+     client = WormholeClient(testport)
      client.SendData("Hola",5)
      client.RemoteExec("Hola += 3")
      newhola = client.RetrieveData("Hola")
@@ -282,9 +300,52 @@ def CheckIntegrity():
      if newhola == 8:
          return 'ok'
      return "Not ok"
+   try:
+      pass
    except:
      TT.join(0)
-     return "Not OK"
+     return "Not  OK"
+
+def CheckIntegrityPipe():
+
+   import time
+
+   #try:
+   if True:
+     def runServerPipe(cmd):
+         from BasicTools.Helpers.Tests import TestTempDir
+
+         script = """
+from BasicTools.IO.Wormhole import WormholeServer
+from BasicTools.Helpers.Tests import TestTempDir
+TestTempDir.SetTempPath("{0}")
+a = WormholeServer(cmd="")
+""".format(TestTempDir.GetTempPath())
+         print("(s) Starting Server Side")
+         from BasicTools.Helpers.Tests import WriteTempFile
+         import subprocess
+         fn = WriteTempFile("WormholeServer.py",script)
+         proc = subprocess.Popen([cmd,fn], stdout=subprocess.PIPE,stdin=subprocess.PIPE)
+         return proc
+
+     proc = runServerPipe("python2")
+     print("(c) Starting Client Side")
+     time.sleep(1.)
+
+     client = WormholeClient(proc=proc)
+     client.SendData("Hola",5)
+     client.RemoteExec("Hola += 3")
+     newhola = client.RetrieveData("Hola")
+     client.Exit()
+     print("Done")
+     if newhola == 8:
+         return 'ok'
+     return "Not ok"
+   try:
+       pass
+   except:
+     TT.join(0)
+     return "Not  OK"
 
 
 def GetAnFreePortNumber():
@@ -295,16 +356,22 @@ def GetAnFreePortNumber():
     s.close()
     return portNumber
 
+def CheckIntegrity(GU=False):
+    res = CheckIntegrityNetWork()
+    if str(res).lower() != "ok":
+        return res
+    return CheckIntegrityPipe()
 
 if __name__ == '__main__':
 
   def RunClient(testport ):
     print("Client Side")
-    client = WormholeClient()
-    client.Connect(testport)
+    client = WormholeClient(testport)
+
     client.SendData("Hola",5)
     client.RemoteExec("Hola += 3")
     newhola = client.RetrieveData("Hola")
+    print("new Hola :",newhola )
     #client.ImportModule("BasicTools.IO.XdmfWriter","XdmfWriter")
     client.RemoteExec("from BasicTools.IO import XdmfWriter")
     client.RemoteExec("from BasicTools.IO.XdmfWriter import WriteMeshToXdmf")
@@ -335,10 +402,7 @@ if __name__ == '__main__':
     t.daemon = True
     t.start()
     import time
-
     time.sleep(1)
 
     RunClient(testport)
-
-
     t.join(5)
