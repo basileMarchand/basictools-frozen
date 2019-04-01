@@ -60,6 +60,7 @@ with PrintBypass() as f:
     else:
         reader.fieldNameToRead = "{1}"
     reader.timeToRead = {2}
+    reader.ReadMetaData()
     res = reader.{3}()
     wr = PipeWriter()
     wr.outbuffer = f.stdout_
