@@ -136,7 +136,7 @@ class ElementFilter(Filter):
         if self.zone is not None:
             res2 = self.CheckZone(elements)
             if res is not None:
-                res = np.intersect1D(res,res2)
+                res = np.intersect1d(res,res2)
             else:
                 res = res2
 
