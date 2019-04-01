@@ -23,6 +23,7 @@ def eprint(*args, **kwargs):
 class PrintBypass():
 
     def __init__(self):
+        self.stdin_ = sys.stdin
         self.stdout_ = sys.stdout #Keep track of the previous value.
         self.stderr_ = sys.stderr #Keep track of the previous value.
 
@@ -110,12 +111,12 @@ class PrintBypass():
 
     def Restore(self):
         if sys.stdout is not self.stdout_:
-            self.Print("Restore stdout")
+            #self.Print("Restore stdout")
             sys.stdout.flush()
             sys.stdout.close()
             sys.stdout = self.stdout_  # restore the previous stdout.
         if sys.stderr is not self.stderr_ :
-            self.Print("Restore stdcerr")
+            #self.Print("Restore stdcerr")
             sys.stderr.flush()
             sys.stderr.close()
             sys.stderr = self.stderr_  # restore the previous stdout.
