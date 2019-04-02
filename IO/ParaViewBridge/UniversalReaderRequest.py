@@ -1,6 +1,15 @@
 # to deal with time
 # https://blog.kitware.com/defining-time-varying-sources-with-paraviews-programmable-source/
 
+import os
+path = self.GetPythonPath().strip("'")
+
+import subprocess, os
+pp = os.environ.get("PYTHONPATH","").split(":")
+if not(path in pp):
+   os.environ["PYTHONPATH"] = path + ":" + os.environ.get("PYTHONPATH","")
+
+
 from BasicTools.IO.IOFactory import CreateReader
 from BasicTools.IO.IOFactory import InitAllReaders
 
