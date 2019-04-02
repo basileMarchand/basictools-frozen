@@ -75,11 +75,14 @@ class WormholeBase(BaseOutputObject):
               else:
                   datastream += self.otherSideR.recv(size-ldata)
               ldata = len(datastream )
-          data = pickle.loads(datastream)
+          if int(sys.version_info.major) >= 3:
+              data = pickle.loads(datastream,encoding = 'latin1')
+          else:
+              data = pickle.loads(datastream,)
           return data
 
     def Send(self,data):
-        print("Sending",data)
+        print("Sending data")
         if int(sys.version_info.major) >= 3:
             streamdata = pickle.dumps(data,self.proto,fix_imports=True)
         else:
@@ -306,6 +309,16 @@ def CheckIntegrityNetWork():
      TT.join(0)
      return "Not  OK"
 
+def GetPipeWrormholeScript():
+    from BasicTools.Helpers.Tests import TestTempDir
+
+    return """
+from BasicTools.IO.Wormhole import WormholeServer
+from BasicTools.Helpers.Tests import TestTempDir
+TestTempDir.SetTempPath("{0}")
+a = WormholeServer(cmd="")
+""".format(TestTempDir.GetTempPath())
+
 def CheckIntegrityPipe():
 
    import time
@@ -313,14 +326,8 @@ def CheckIntegrityPipe():
    #try:
    if True:
      def runServerPipe(cmd):
-         from BasicTools.Helpers.Tests import TestTempDir
 
-         script = """
-from BasicTools.IO.Wormhole import WormholeServer
-from BasicTools.Helpers.Tests import TestTempDir
-TestTempDir.SetTempPath("{0}")
-a = WormholeServer(cmd="")
-""".format(TestTempDir.GetTempPath())
+         script = GetPipeWrormholeScript()
          print("(s) Starting Server Side")
          from BasicTools.Helpers.Tests import WriteTempFile
          import subprocess

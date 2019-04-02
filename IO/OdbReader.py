@@ -15,12 +15,20 @@ permutaion = {}
 class OdbReader(object):
     def __init__(self):
         super(OdbReader,self).__init__()
+        self.canHandleTemporal = True
+
         self.fieldNameToRead = None
         self.timeToRead = -1
+        self.filename =None
+
         self.time = None
         self.stepData = None
-        self.filename =None
-        self.canHandleTemporal = True
+        self.__VariablesToPush = ["fieldNameToRead","filename","timeToRead"]
+        self.__VariablesToPull = ["time","stepData"]
+        self.__FunctionToBypass = ["SetFileName","SetFieldNameToRead","SetTimeToRead"]
+        self.proc = None
+        self.client = None
+        self.odb = None
 
     def Reset(self):
         self.fieldNameToRead = None
@@ -31,10 +39,54 @@ class OdbReader(object):
     def GetAvilableTimes(self):
            return self.time
 
+
     def __getattribute__(self,name):
         attr = object.__getattribute__(self, name)
         if hasattr(attr, '__call__'):
-            if name in ["SetFileName","SetFieldNameToRead","SetTimeToRead"]:
+            if name in self.__FunctionToBypass:
+                return attr
+            try:
+                import odbAccess as OA
+                return attr
+            except:
+                if self.proc == None:
+                    from BasicTools.IO.Wormhole import WormholeServer,WormholeClient,GetPipeWrormholeScript
+                    from BasicTools.Helpers.Tests import WriteTempFile
+                    import subprocess
+                    script = GetPipeWrormholeScript()
+                    fn = WriteTempFile("WormholeServer.py",script)
+                    self.proc = subprocess.Popen(["abaqus","python",fn], stdout=subprocess.PIPE,stdin=subprocess.PIPE)
+                    self.client = WormholeClient(proc=self.proc)
+                    self.client.RemoteExec("from BasicTools.IO.OdbReader import OdbReader")
+                    self.client.RemoteExec("reader = OdbReader()")
+                def newfunc(*args, **kwargs):
+
+                    for var in self.__VariablesToPush:
+                        val = object.__getattribute__(self, var)
+                        self.client.SendData(var,object.__getattribute__(self, var))
+                        if type(val) == str:
+                            self.client.RemoteExec("{0} = str({0})".format(var) )
+
+                        self.client.RemoteExec("reader.{0} = {0}".format(var) )
+                    self.client.SendData("args",args)
+                    self.client.SendData("kwargs",kwargs)
+                    self.client.RemoteExec("res = reader.{0}(*args, **kwargs)".format(name) )
+                    res = self.client.RetrieveData("res")
+
+                    for var in self.__VariablesToPull:
+                        print(var)
+                        print(object.__getattribute__(self, var))
+                        #object.__getattribute__(self, var)  = self.client.RetrieveData("reader.{0}".format(var) )
+                    return res
+
+                return newfunc
+        else:
+            return attr
+
+    def OLD__getattribute__(self,name):
+        attr = object.__getattribute__(self, name)
+        if hasattr(attr, '__call__'):
+            if name in self.__FunctionToBypass:
                 return attr
             print(name)
             try:
@@ -108,6 +160,8 @@ with PrintBypass() as f:
             self.timeToRead = time
 
     def ReadMetaData(self,odb = None):
+        if not(self.stepData is None):
+            return self.time, self.stepData
 
         if odb is None:
             odb = self.Open()
@@ -200,13 +254,15 @@ with PrintBypass() as f:
         return res
 
     def Open(self):
+        if not(self.odb is None):
+            return self.odb
         print("opening")
         import odbAccess as OA
         print(self.filename)
-        odb = OA.openOdb(self.filename,readOnly=True)
+        self.odb = OA.openOdb(self.filename,readOnly=True)
         print("done")
-        self.ReadMetaData(odb)
-        return odb
+        self.ReadMetaData()
+        return self.odb
 
 
     def ReadField(self,fieldname=None,time=None,odb=None):
@@ -283,20 +339,26 @@ RegisterReaderClass(".odb",OdbReader)
 
 
 def CheckIntegrity(GUI = False):
+    import time as tt
+
+    at = tt.time()
     reader = OdbReader()
     # no .odb in the database for test for the moment
-    return "OK"
+    return "ok"
+
     reader.SetFileName("/home/fbordeu-weld/test/odbReader/Job-1.odb")
 
     time, stepData = reader.ReadMetaData()
+    print("time")
     print(time)
+
     print(stepData)
     reader.timeToRead = 2.0
     reader.SetFieldNameToRead("U")
 
     print(reader.ReadField())
     print(reader.Read())
-
+    print(tt.time() - at)
     return "OK"
 
 if __name__ == '__main__':
