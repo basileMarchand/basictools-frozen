@@ -15,8 +15,13 @@ from BasicTools.IO.IOFactory import InitAllReaders
 
 InitAllReaders()
 
+try:
+    self.reader
+except:
+    self.reader = CreateReader("."+filename.split(".")[-1])
 
-reader = CreateReader("."+filename.split(".")[-1])
+reader = self.reader
+
 if reader.canHandleTemporal :
    reader.SetFileName(filename)
    self.metadata = reader.ReadMetaData()

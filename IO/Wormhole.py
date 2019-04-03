@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import pickle as pickle
 import socket
+import signal
+
 
 __author__ = "Felipe Bordeu"
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
@@ -48,14 +50,25 @@ def import_module(name, package=None):
 ####################################
 
 class WormholeBase(BaseOutputObject):
-    def __init__(self,port = None):
+    def __init__(self,timeout=3600):
         super(WormholeBase,self).__init__()
         self.socket = None
         self.otherSideR =  None
         self.otherSideS =  None
         self.proto = 0
+        self.timeout = timeout
+
+        # solution for time out form https://stackoverflow.com/questions/492519/timeout-on-a-function-call
+        def TimeOutHandler(signum, frame):
+           print("Connection TimeOut")
+           exit(1)
+        signal.signal(signal.SIGALRM, TimeOutHandler)
 
     def Receive(self):
+
+      signal.alarm(self.timeout)
+
+      try:
           sizestream = ""
           while (len(sizestream) < 64):
               if self.socket is None:
@@ -80,6 +93,9 @@ class WormholeBase(BaseOutputObject):
           else:
               data = pickle.loads(datastream,)
           return data
+      except Exception:
+          exit(1)
+
 
     def Send(self,data):
         print("Sending data")
@@ -317,6 +333,7 @@ from BasicTools.IO.Wormhole import WormholeServer
 from BasicTools.Helpers.Tests import TestTempDir
 TestTempDir.SetTempPath("{0}")
 a = WormholeServer(cmd="")
+exit()
 """.format(TestTempDir.GetTempPath())
 
 def CheckIntegrityPipe():

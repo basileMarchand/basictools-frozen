@@ -29,6 +29,12 @@ class OdbReader(object):
         self.proc = None
         self.client = None
         self.odb = None
+        self.output = None
+
+    def __del__(self):
+        if not( self.proc is None):
+            self.client.Close()
+            self.proc = None
 
     def Reset(self):
         self.fieldNameToRead = None
@@ -165,7 +171,6 @@ with PrintBypass() as f:
 
         if odb is None:
             odb = self.Open()
-        print("coucou")
         self.stepData = []
         cpt = 0
         time =0
@@ -192,66 +197,97 @@ with PrintBypass() as f:
 
 
     def Read(self):
+        if self.output == None:
+            res = UnstructuredMesh()
+            odb = self.Open()
+            self.ReadMetaData(odb)
 
-        res = UnstructuredMesh()
-        odb = self.Open()
-        self.ReadMetaData(odb)
+            instance = odb.rootAssembly.instances
+            instancename = list(instance.keys())[0]
 
-        instance = odb.rootAssembly.instances
-        instancename = list(instance.keys())[0]
-
-        nodes = instance[instancename].nodes
+            nodes = instance[instancename].nodes
 
 
-        nbnodes = len(nodes)
-        res.nodes = np.empty((nbnodes,3),dtype=float)
-        res.originalIDNodes = np.empty((nbnodes),dtype=int)
-        abatomesh = {}
-        cpt = 0
-        for i in nodes:
-            res.nodes[cpt,:] = i.coordinates
-            res.originalIDNodes[cpt] = i.label
-            abatomesh[i.label] = cpt
-            cpt += 1
+            nbnodes = len(nodes)
+            res.nodes = np.empty((nbnodes,3),dtype=float)
+            res.originalIDNodes = np.empty((nbnodes),dtype=int)
+            abatomesh = {}
+            cpt = 0
+            print("Reading Nodes")
+            for i in nodes:
+                res.nodes[cpt,:] = i.coordinates
+                res.originalIDNodes[cpt] = i.label
+                abatomesh[i.label] = cpt
+                cpt += 1
 
-        elements = instance[instancename].elements
+            print("Reading Nodes Keys")
+            res.PrepareForOutput()
+            nSets = instance[instancename].nodeSets
+            for nSetK in nSets.keys():
+                print(nSetK)
+                print("This does not work for the moment")
+                nSet =nSets[nSetK]
+                name = nSet.name
 
-        elemMap = {}
-        for elem in elements:
-            #print(elem.label)
-            conn = [abatomesh[n] for n in elem.connectivity ]
-            elems = res.GetElementsOfType(eltype[elem.type])
-            per = permutaion.get(elem.type,None)
-            if per is None:
-                enum = elems.AddNewElement(conn,elem.label) - 1
-            else:
-                enum = elems.AddNewElement([conn[x] for x in per],elem.label) - 1
-            elemMap[elem.label] = (eltype[elem.type],enum)
+                res.nodesTags.GetTag(name).AddToTag([nSet.nodes.label])
+                for elem in nSet.nodes:
+                    res.nodes
+                    elems = res.GetElementsOfType(eltype[elem.type])
+                    enum = elemMap[elem.label][1]
+                    elems.GetTag(elem.instanceName).AddToTag(enum)
+                    elems.GetTag(name).AddToTag(enum)
 
-        res.PrepareForOutput()
-        eSets = instance[instancename].elementSets
 
-        for eSetK in eSets.keys():
-            eSet =eSets[eSetK]
-            name = eSet.name
-            for elem in eSet.elements:
+
+            elements = instance[instancename].elements
+            print("ReadingElements")
+            elemMap = {}
+            #print(elements.bulkDataBlocks)
+
+            for elem in elements:
+                conn = [abatomesh[n] for n in elem.connectivity ]
                 elems = res.GetElementsOfType(eltype[elem.type])
-                enum = elemMap[elem.label][1]
-                elems.GetTag(elem.instanceName).AddToTag(enum)
-                elems.GetTag(name).AddToTag(enum)
+                per = permutaion.get(elem.type,None)
+                if per is None:
+                    enum = elems.AddNewElement(conn,elem.label) - 1
+                else:
+                    enum = elems.AddNewElement([conn[x] for x in per],elem.label) - 1
+                elemMap[elem.label] = (eltype[elem.type],enum)
+
+            print("Reading Keys")
+            res.PrepareForOutput()
+            eSets = instance[instancename].elementSets
+            for eSetK in eSets.keys():
+                eSet =eSets[eSetK]
+                name = eSet.name
+                for elem in eSet.elements:
+                    elems = res.GetElementsOfType(eltype[elem.type])
+                    enum = elemMap[elem.label][1]
+                    elems.GetTag(elem.instanceName).AddToTag(enum)
+                    elems.GetTag(name).AddToTag(enum)
+
+
+            print("Reading fields")
+            res.PrepareForOutput()
+            self.abatomesh = abatomesh
+            self.elemMap = elemMap
+            self.output = res
+
+        self.output.nodeFields,self.output.elemFields = self.ReadFields(self.abatomesh,self.elemMap,self.output)
+
+        return self.output
+
+    def GetActiveFrame(self):
 
         if self.timeToRead == -1.:
             timeIndex = len(self.timeSteps)-1
         else:
             timeIndex = np.argmin(abs(self.time - self.timeToRead ))
-
         name, val = self.stepData[timeIndex]
+        odb = self.Open()
         frame = odb.steps[name].getFrame(val)
+        return frame
 
-        res.PrepareForOutput()
-        res.nodeFields,res.elemFields = self.ReadFields(frame,abatomesh,elemMap,res)
-
-        return res
 
     def Open(self):
         if not(self.odb is None):
@@ -287,7 +323,8 @@ with PrintBypass() as f:
         # for the moment only nodal is supported
         return np.array(field.bulkDataBlocks[0].data)
 
-    def ReadFields(self,frame,nodeMap,elemMap,res):
+    def ReadFields(self,nodeMap,elemMap,res):
+        frame = self.GetActiveFrame()
         import odbAccess as OA
         nodalFields = {}
         elemFields = {}

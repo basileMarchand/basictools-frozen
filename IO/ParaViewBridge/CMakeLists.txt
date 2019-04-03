@@ -29,7 +29,7 @@ function(ESCAPEXMLIII pythontoescapeI pythontoescapeII pythontoescapeIII inputfi
   add_custom_command(OUTPUT  ${CMAKE_CURRENT_BINARY_DIR}/Generated/${outputfile}
   		  COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/Generated
 		  COMMAND python escapexmlstring.py -f ${pythontoescapeI} ${pythontoescapeII} ${pythontoescapeIII} -r ${inputfile} -o ${CMAKE_CURRENT_BINARY_DIR}/Generated/${outputfile}
-		  DEPENDS escapexmlstring.py ${CMAKE_SOURCE_DIR}/${inputfile} ${pythontoescapeI} ${pythontoescapeII}
+		  DEPENDS escapexmlstring.py ${CMAKE_SOURCE_DIR}/${inputfile} ${pythontoescapeI} ${pythontoescapeII} ${pythontoescapeIII}
 		  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 		  VERBATIM)
 endfunction()

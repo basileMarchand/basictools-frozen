@@ -8,7 +8,9 @@ from BasicTools.Containers.vtkBridge import MeshToVtk
 
 InitAllReaders()
 
-reader = CreateReader("."+filename.split(".")[-1])
+#reader = CreateReader("."+filename.split(".")[-1])
+
+reader = self.reader
 
 if reader.canHandleTemporal :
 
@@ -21,6 +23,7 @@ if reader.canHandleTemporal :
 
 reader.SetFileName(filename)
 mesh = reader.Read()
+
 
 
 MeshToVtk(mesh, self.GetOutput(),TagsAsFields=TagsAsFields)
