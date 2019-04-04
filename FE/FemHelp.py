@@ -6,16 +6,22 @@ import numpy as np
 
 import BasicTools.Containers.ElementNames as ElementsNames
 
-IntegrationRules = {}
-
-
-IntegrationRules[ElementsNames.Triangle_3] = ( 1./6.*np.array([[1, 1] ,[4, 1],[ 1 ,4] ]) ,  1./6.*np.array([1 , 1 , 1]))
-
-
 
 def Integral(E,Bop,elem,ndofs,pos=None):
+    """
+    Function to calculate the integral of E(u)*Bop*E(u) over an element:
+
+    inputes:
+        linear operators E : matrix line
+        Bop operator : Bop(integration point coordinates in element space, the coordinates of the nodes of the element )
+            must return the B operator and the determinant of the jacobian.
+       elem: the element
+       ndofs: the number of dofs (E.shape[0])
+       pos, the positions of the nodes of the element (if needed by Bop).
 
     # for the moment this is not a nice implementation
+    """
+
 
     res = np.zeros((ndofs,ndofs),float)
 

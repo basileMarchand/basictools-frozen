@@ -154,8 +154,8 @@ class StlReader(ReaderBase):
         return resUM
 
 
-from BasicTools.IO.UniversalReader import RegisterClass
-RegisterClass(".stl",StlReader)
+from BasicTools.IO.IOFactory import RegisterReaderClass
+RegisterReaderClass(".stl",StlReader)
 
 
 

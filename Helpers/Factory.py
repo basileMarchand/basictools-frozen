@@ -65,7 +65,7 @@ class Factory(BaseOutputObject):
                res = classConstructor(ops)
            return res
 
-        raise(Exception("Unable to create object of type " + str(name) +"\n Possible object are :"+ str(cls._Catalog.keys())  ))# pragma: no cover
+        raise(Exception("Unable to create object of type " + str(name) +"\n Possible object are :"+ str(list(cls._Catalog.keys()))  ))# pragma: no cover
 
 def CheckIntegrity(GUI=False):
     fact = Factory()

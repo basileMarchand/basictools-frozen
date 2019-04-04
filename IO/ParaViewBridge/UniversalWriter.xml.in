@@ -1,0 +1,173 @@
+<ServerManagerConfiguration>
+  <ProxyGroup name="writers">
+
+    <SourceProxy class="vtkPythonProgrammableFilter"
+                 label="UniversalWriter"
+                 name="UniversalWriter">
+      <Documentation long_help="Use the BasicTools library to write a file"
+                     short_help="Use the BasicTools library to write a file">
+                     </Documentation>
+
+
+
+      <StringVectorProperty
+        name="FileName"
+        command="SetParameter"
+        initial_string="filename"
+        animateable="0"
+        number_of_elements="1"
+        panel_visibility="never">
+        <FileListDomain name="files"/>
+        <Documentation>
+          This property specifies the file to be read reader.
+        </Documentation>
+      </StringVectorProperty>
+
+     <InputProperty
+        name="Input"
+        command="SetInputConnection">
+           <ProxyGroupDomain name="groups">
+             <Group name="sources"/>
+             <Group name="filters"/>
+           </ProxyGroupDomain>
+           <DataTypeDomain name="input_type">
+             <DataType value="vtkDataSet"/>
+           </DataTypeDomain>
+      </InputProperty>
+	  
+               <IntVectorProperty command="SetOutputDataSetType"
+                         default_values="4"
+                         name="OutputDataSetType"
+                         number_of_elements="1"
+                         panel_visibility="never">
+        <EnumerationDomain name="enum">
+          <!-- Values come from vtkType.h-->
+          <Entry text="Same as Input"
+                 value="8" />
+          <!-- text="vtkDataSet" -->
+          <Entry text="vtkPolyData"
+                 value="0" />
+          <!-- <Entry value="1" text="vtkStructuredPoints"/> -->
+          <Entry text="vtkStructuredGrid"
+                 value="2" />
+          <Entry text="vtkRectilinearGrid"
+                 value="3" />
+          <Entry text="vtkUnstructuredGrid"
+                 value="4" />
+          <!-- <Entry value="5" text="vtkPiecewiseFunction"/> -->
+          <Entry text="vtkImageData"
+                 value="6" />
+          <!-- <Entry value="7" text="vtkDataObject"/> -->
+          <!-- <Entry value="9" text="vtkPointSet"/> -->
+          <Entry text="vtkUniformGrid"
+                 value="10" />
+          <!-- <Entry value="11" text="vtkCompositeDataSet"/> -->
+          <Entry text="vtkMultiblockDataSet"
+                 value="13" />
+          <Entry text="vtkHierarchicalBoxDataSet"
+                 value="15" />
+          <!-- <Entry value="16" text="vtkGenericDataSet"/> -->
+          <!-- <Entry value="17" text="vtkHyperOctree"/> -->
+          <!-- <Entry value="18" text="vtkTemporalDataSet"/> -->
+          <Entry text="vtkTable"
+                 value="19" />
+          <!-- <Entry value="20" text="vtkGraph"/> -->
+          <!-- <Entry value="21" text="vtkTree"/> -->
+        </EnumerationDomain>
+        <Documentation>The value of this property determines the dataset type
+        for the output of the programmable filter.</Documentation>
+      </IntVectorProperty>
+
+      <IntVectorProperty name="Binary if avilable"
+                         command="SetParameter"
+                         initial_string="binary"
+                         number_of_elements="1"
+                         default_values="0">
+          <BooleanDomain name="bool"/>
+      </IntVectorProperty>
+
+      <StringVectorProperty command="SetScript"
+                            name="Script"
+                            number_of_elements="1"
+                            panel_visibility="advanced"
+                            default_values="KEY1" >
+        <Hints>
+          <Widget type="multi_line" syntax="python" />
+        </Hints>
+        <Documentation>This property contains the text of a python program that
+        the programmable filter runs.</Documentation>
+      </StringVectorProperty>
+      <StringVectorProperty command="SetInformationScript"
+                            label="RequestInformation Script"
+                            name="InformationScript"
+                            number_of_elements="1"
+                            panel_visibility="never"
+                            default_values="" >
+        <Hints>
+          <Widget type="multi_line" syntax="python" />
+        </Hints>
+        <Documentation>This property is a python script that is executed during
+        the RequestInformation pipeline pass. Use this to provide information
+        such as WHOLE_EXTENT to the pipeline downstream.</Documentation>
+      </StringVectorProperty>
+      <StringVectorProperty command="SetUpdateExtentScript"
+                            label="RequestUpdateExtent Script"
+                            name="UpdateExtentScript"
+                            number_of_elements="1"
+                            panel_visibility="never">
+        <Hints>
+          <Widget type="multi_line" syntax="python" />
+        </Hints>
+        <Documentation>This property is a python script that is executed during
+        the RequestUpdateExtent pipeline pass. Use this to modify the update
+        extent that your filter ask up stream for.</Documentation>
+      </StringVectorProperty>
+      <IntVectorProperty animateable="0"
+                         command="SetCopyArrays"
+                         default_values="0"
+                         name="CopyArrays"
+                         number_of_elements="1"
+       panel_visibility="never">
+        <BooleanDomain name="bool" />
+        <Documentation>If this property is set to true, all the cell and point
+        arrays from first input are copied to the output.</Documentation>
+      </IntVectorProperty>
+      <StringVectorProperty animateable="0"
+                            clean_command="ClearParameters"
+                            command="SetParameterInternal"
+                            is_internal="1"
+                            name="Parameters"
+                            number_of_elements_per_command="2"
+                            repeat_command="1"></StringVectorProperty>
+      <StringVectorProperty command="SetPythonPath"
+                            name="PythonPath"
+                            number_of_elements="1"
+                            panel_visibility="advanced"
+                            default_values="'/softs/python/CamLibs/'">
+
+        <Documentation>A semi-colon (;) separated list of directories to add to
+        the python library search path.</Documentation>
+      </StringVectorProperty>
+      <DoubleVectorProperty information_only="1"
+                            name="TimestepValues"
+                            repeatable="1">
+        <TimeStepsInformationHelper />
+        <Documentation>Available timestep values.</Documentation>
+      </DoubleVectorProperty>
+
+  <Hints>
+       <WriterFactory extensions="KEY2" file_description="UniversalWriter (native)(KEY2)" />
+  </Hints>
+
+
+
+    </SourceProxy>
+
+
+
+
+
+
+  </ProxyGroup>
+</ServerManagerConfiguration>
+

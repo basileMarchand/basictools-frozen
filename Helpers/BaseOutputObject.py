@@ -40,10 +40,15 @@ def froze_it(cls):
         @wraps(func)
         def wrapper(self, *args, **kwargs):
             func(self, *args, **kwargs)
+
             def UnFrozen():
                 self.__frozen = False
-
             setattr(self, "UnFrozen", UnFrozen)
+
+            def IsFrozen():
+                return self.__frozen
+            setattr(self, "IsFrozen", IsFrozen)
+
             self.__frozen = True
         return wrapper
 
@@ -232,17 +237,18 @@ def CheckIntegrity():
     class FrozenSubClass(FrozenTest):
         def __init__(self):
             super(FrozenSubClass,self).__init__()
-            self.UnFrozen()
+            print(self.UnFrozen())
             self.b = 50
 
     obj = FrozenTest()
     obj.a = 5
     try:
         obj.b = 7
-        return "Error frozing class"
+        return "Error in a frozen class"
     except Exception as inst:
         pass
         print(inst)
+        print("this error message is normal")
     obj.__frozen = False
     obj.b = 7
 

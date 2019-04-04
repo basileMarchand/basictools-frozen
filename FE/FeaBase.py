@@ -9,6 +9,17 @@ from  BasicTools.Containers.UnstructuredMesh import AllElements
 
 
 class FeaBase(BaseOutputObject):
+    """
+    Base class for a finit element solver, this class is experimental
+
+    normaly a finit element solver has a mesh (slef.mesh), a solution vector
+    (self.sol), a linear solver (self.solver), the dimensionality of the physical
+    space (1D,2D,3D) (self.spaceDim), and the number of dofs to allocate the
+    objects. All the other parts (asembly operator, IO). must be defined in the
+    derived class
+
+    """
+
     def __init__(self,spaceDim=3, size= 1):
         super(FeaBase,self).__init__()
         self.mesh = None
@@ -19,9 +30,15 @@ class FeaBase(BaseOutputObject):
         self.totalNumberOfDof = 0
 
     def SetMesh(self,mesh):
+        """
+        To set the mesh
+        """
         self.mesh = mesh
 
     def ComputeDofNumbering(self,tag=AllElements):
+        """
+        This fuction must be eliminated (it uses self.space).
+        """
         from BasicTools.FE.DofNumbering import ComputeDofNumbering
         from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
 
@@ -72,34 +89,54 @@ class FeaBase(BaseOutputObject):
 #        return rhs[self.dofs]-self.rhsfixed[self.dofs]
 
     def Reset(self):
+        """
+        To eliminate the solution vector and to reset the linear solver
+        """
         self.sol = None
         self.solver.u = None
         pass
 
     def ComputeConstraintsEquations(self):
+        """
+        To computhe the cinematic relation in terms of dofs.
+
+        The the cinematic relations are stored in the solver
+        """
         self.solver.constraints.ComputeConstraintsEquations(self.mesh,self.unkownFields)
 
     def Solve(self,cleanK,cleanff):
-        #self.PrintDebug(cleanK.tocsc())
-        #self.PrintDebug(cleanff)
+        """
+        Solve a linear system using the internal solver with the cinematic
+        reations calculated previously
+        """
         self.solver.SetOp(cleanK.tocsc())
         self.Resolve(cleanff)
 
     def Resolve(self,cleanff):
+        """
+        To solve a problem with the same tangent operator but with a different
+        RHS term
+        """
         res = self.solver.Solve(cleanff)
         self.sol = res
-        #self.sol[self.dofs] = res
+
 
     def PushVectorToUnkownFields(self):
+        """
+        Function to extract fields from the solution vector and to put it into
+        fields data
+        """
         offset =0
         for f in self.unkownFields:
               f.data = self.sol[offset:offset+f.numbering["size"]]
               offset += f.numbering["size"]
 
-
     def PushVectorToMesh(self,onNodes,fieldValues,name,numberings):
-        # vectorSize = 1 for scalar field
-        # vectorSize = 3 for 3D vector field (example dep in 3D )
+        """
+        Function to push the data from the fields into a vector homogeneous to
+        the mesh (for visualition for example). Entities with no dofs are filled
+        with zeros
+        """
         F = fieldValues.view()
 
         ncomp = len(numberings)

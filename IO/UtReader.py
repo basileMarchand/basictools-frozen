@@ -3,14 +3,24 @@ import numpy as np
 
 from BasicTools.IO.ReaderBase import ReaderBase
 
-
-def ReadUt(fileName=None,fieldname=None,time=None,string=None,atIntegrationPoints=False):
+def ReadFieldFromUt(fileName=None,fieldname=None,time=None,string=None,atIntegrationPoints=False):
     reader = UtReader()
     reader.SetFileName(fileName)
     reader.SetStringToRead(string)
     reader.atIntegrationPoints = atIntegrationPoints
     reader.ReadMetaData()
-    return reader.Read(fieldname=fieldname, time=time )
+    reader.SetFieldNameToRead(fieldname)
+    reader.SetTimeToRead(time)
+    return reader.ReadField()
+
+def ReadUt(fileName=None,fieldname=None,time=None,string=None):
+    reader = UtReader()
+    reader.SetFileName(fileName)
+    reader.SetStringToRead(string)
+    reader.ReadMetaData()
+    reader.SetFieldNameToRead(fieldname)
+    reader.SetTimeToRead(time)
+    return reader.Read()
 
 def ReadMeshAndUt(fileName):
         reader = UtReader()
@@ -36,12 +46,14 @@ class UtReader(ReaderBase):
         self.element =None
         self.time = None
 
-        self.fieldNameToRead =None
+        self.fieldNameToRead = None
         self.timeToRead = -1
         self.atIntegrationPoints = False
         self.meshMetadata = None
         self.cache = None
         self.oldtimeindex = None
+
+        self.canHandleTemporal = True
 
     def Reset(self):
         self.meshfile = None
@@ -57,6 +69,9 @@ class UtReader(ReaderBase):
     def SetTimeToRead(self,time):
         if time is not None:
             self.timeToRead = time
+
+    def GetAvilableTimes(self):
+           return self.time[:,4]
 
     def ReadMetaData(self):
         if self.meshMetadata is not None : return self.meshMetadata
@@ -114,7 +129,33 @@ class UtReader(ReaderBase):
         return np.fromfile(fileName, dtype=np.float32).byteswap()
 
 
-    def Read(self,fieldname=None,time=None,timeIndex=None):
+    def Read(self):
+        self.ReadMetaData()
+        from BasicTools.IO.GeofReader import GeofReader
+
+        GR = GeofReader()
+        GR.SetFileName(self.filePath +self.meshfile )
+
+        res = GR.Read()
+
+        if self.fieldNameToRead is None:
+            # loop over the fields
+            for name in self.node:
+                data = self.ReadField(name)
+                res.nodeFields[name] = data
+            for name in self.elem:
+                data = self.ReadField(name)
+                res.elemFields[name] = data
+            self.fieldNameToRead = None
+        else:
+            data = self.ReadField()
+            if self.fieldNameToRead in self.node:
+                res.nodeFields[self.fieldNameToRead] = data
+            elif self.fieldNameToRead in self.element:
+                res.elemFields[self.fieldNameToRead] = data
+        return res
+
+    def ReadField(self,fieldname=None,time=None,timeIndex=None):
         self.ReadMetaData()
         postfix = ""
         if self.fileName[-1] == "p":
@@ -308,14 +349,14 @@ def CheckIntegrity():
     offset = 0
     for t in [0., 1.]:
         for f in ["U1","U2","U3","RU1","RU2","RU3"]:
-            if np.any (reader.Read(fieldname=f,time=t) != np.arange(offset, offset+nbNodes, dtype=np.float32) ):
+            if np.any (reader.ReadField(fieldname=f,time=t) != np.arange(offset, offset+nbNodes, dtype=np.float32) ):
                 raise(Exception("Error Reading field " + f ))
             offset += nbNodes
 
     offset = 0
     for t in [0., 1.]:
         for f in ["sig11","sig22","sig33","sig12","sig23","sig31","eto11","eto22","eto33","eto12","eto23","eto31"]:
-            data = reader.Read(fieldname=f,time=t)
+            data = reader.ReadField(fieldname=f,time=t)
             if np.any (data !=  np.arange(offset, offset+nbNodes, dtype=np.float32)+off1 ):
                 raise(Exception("Error Reading field " + f ))
             offset += nbNodes
@@ -327,7 +368,7 @@ def CheckIntegrity():
         cpt =0
         for f in ["sig11","sig22","sig33","sig12","sig23","sig31","eto11","eto22","eto33","eto12","eto23","eto31"]:
 
-            data = reader.Read(fieldname=f,time=t)
+            data = reader.ReadField(fieldname=f,time=t)
             if np.any (data != ipdata[:,cpt,:].ravel()+ t *1000000 ):
                 print(data)
                 print(' '.join( [ str(int(x)) for x in data[0:30] ] ))

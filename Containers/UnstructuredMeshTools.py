@@ -70,10 +70,6 @@ def CreateSquare(dimensions=[2,2], origin=[-1.0,-1.0], spacing=[1.,1.], ofTetras
     skin = ComputeSkin(mesh)
     #print(skin)
 
-    for name,data in skin.elements.items():
-        mesh.GetElementsOfType(name).Merge(data)
-
-
     if ofTetras:
         tris = mesh.GetElementsOfType(EN.Triangle_3)
         tris.GetTag("2D").SetIds(range(tris.GetNumberOfElements()))
@@ -91,7 +87,13 @@ def CreateSquare(dimensions=[2,2], origin=[-1.0,-1.0], spacing=[1.,1.], ofTetras
     skin.GetTag("X1").SetIds( np.where(np.sum(np.abs(x - (origin[0]+d[0]*s[0]))<tol,axis=1) == skin.GetNumberOfNodesPerElement())[0])
     skin.GetTag("Y0").SetIds( np.where(np.sum(np.abs(y - origin[1]          )<tol,axis=1) == skin.GetNumberOfNodesPerElement())[0])
     skin.GetTag("Y1").SetIds( np.where(np.sum(np.abs(y - (origin[1]+d[1]*s[1]))<tol,axis=1) == skin.GetNumberOfNodesPerElement())[0])
-    res.PrepareForOutput()
+    skin.PrepareForOutput()
+
+    for name,data in skin.elements.items():
+        mesh.GetElementsOfType(name).Merge(data)
+
+    mesh.PrepareForOutput()
+
     return mesh
 
 
@@ -1187,9 +1189,34 @@ def ComputeSkin(mesh, md=None ,inplace=False):
     if md is None:
         md = mesh.GetDimensionality()
 
+    # first we add the 2D element to the skin almanac
+    from BasicTools.Containers.Filters import ElementFilter
 
-    #we use the original id to count the number of time the faces is used
     surf = {}
+
+    class Operator():
+        def __init__(self,surf):
+            self.surf = surf
+
+        def __call__(self,name,data,ids):
+            if name not in surf:
+                self.surf[name] = {}
+            surf2 = self.surf.get(name)
+            print(ids)
+            for i in ids:
+                cc = data.connectivity[i,:]
+                lc = np.sort(cc)
+                ehash = (name,tuple(lc))
+                if ehash in surf2:
+                    surf2[ehash][0] +=1
+                    if  surf2[ehash][0] >= 2:
+                        del surf2[ehash]
+                else:
+                    surf2[ehash] = [1,cc]
+
+    op = Operator(surf)
+    ElementFilter(mesh,dimensionality = md-1 ).ApplyOnElements(op)
+
     for name,data in mesh.elements.items():
         if ElementNames.dimension[name] < md:
             continue
@@ -1200,23 +1227,16 @@ def ComputeSkin(mesh, md=None ,inplace=False):
             if not faceType in surf:
                 surf[faceType] = {}
             surf2 = surf[faceType]
-            key = np.array([ne**x for x in range(ElementNames.numberOfNodes[faceType]) ])
             for i in range(ne):
                 cc = globalFaceConnectivity[i,:]
                 lc = np.sort(cc)
-
-                ehash = np.sum(lc*key)
+                ehash = (faceType,tuple(lc))
                 if ehash in surf2:
                     surf2[ehash][0] +=1
-                    del surf2[ehash]
-
+                    if  surf2[ehash][0] >= 2:
+                        del surf2[ehash]
                 else:
                     surf2[ehash] = [1,cc]
-                #print(lc),
-                #print(ehash),
-                #print(surf2[ehash])
-            #print(surf2)
-
     if inplace:
         res = mesh
     else:
@@ -1676,7 +1696,7 @@ def CheckIntegrity_ComputeFeatures(GUI =False):
     print(edges)
     return "ok"
 
-def CheckIntegrity_AddSkin(GUI=False):
+def CheckIntegrity_ComputeSkin(GUI=False):
     from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearMesh
 
     myMesh = ConstantRectilinearMesh(dim=3)
@@ -1946,7 +1966,7 @@ def CheckIntegrity(GUI=False):
     CheckIntegrity_Morphing,
     CheckIntegrity_PointToCellData,
     CheckIntegrity_ComputeFeatures,
-    CheckIntegrity_AddSkin,
+    CheckIntegrity_ComputeSkin,
     CheckIntegrity_ExtractElementsByImplicitZone,
     CheckIntegrity_DeleteInternalFaces,
     CheckIntegrity_ExtractElementsByMask,

@@ -101,9 +101,10 @@ class GReader(ReaderBase):
         G.shape =  (res.GetNumberOfNodes()-1,1)
         res.elemFields['OnOff'] = G
         self.output = res
+        return res
 
-from BasicTools.IO.UniversalReader import RegisterClass
-RegisterClass(".gcode",GReader)
+from BasicTools.IO.IOFactory import RegisterReaderClass
+RegisterReaderClass(".gcode",GReader)
 
 def CheckIntegrity():
     from BasicTools.TestData import GetTestDataPath

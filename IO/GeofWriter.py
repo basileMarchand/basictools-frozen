@@ -245,6 +245,9 @@ class GeofWriter(WriterBase):
 
         self.filePointer.write("***return \n")
 
+from BasicTools.IO.IOFactory import RegisterWriterClass
+RegisterWriterClass(".geof",GeofWriter)
+
 def CheckIntegrity():
     import BasicTools.Containers.UnstructuredMesh as UM
 

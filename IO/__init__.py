@@ -23,6 +23,7 @@ __all__ = [
 'StlReader',
 'StlWriter',
 'UniversalReader',
+'UniversalWriter',
 'UtReader',
 'UtWriter',
 'WriterBase',
@@ -32,7 +33,12 @@ __all__ = [
 'XdmfWriter',
 'ZebulonIO',
 'Parallel',
-"MeshTools"
+"MeshTools",
+"MeshFileConverter",
+"IOFactory",
+"PipeIO",
+
+
 ]
 
 __author__ = "Felipe Bordeu"

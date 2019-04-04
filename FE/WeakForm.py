@@ -113,8 +113,14 @@ except:
 def GetNormal(size):
     return GetField("Normal",size)
 
-def GetConstant(name):
-    return Symbol(name)
+def GetConstant(name,size=1):
+    if size == 1:
+      return Symbol(name)
+    else:
+        res = []
+        for i in range(size):
+            res.append(Symbol(name+"_"+str(i)))
+        return (Matrix([res])).T
 
 def GetTestField(name,size,sdim=3,extraCoordinates=[]):
     return GetField(name,size,star=True,sdim=sdim,extraCoordinates=extraCoordinates)
@@ -137,13 +143,15 @@ def GetField(name,size,star=False,sdim=3,extraCoordinates=[]):
             res.append(Function(name+"_"+str(i)+suffix)(*s))
     return (Matrix([res])).T
 
+def Inner(a,b):
+    return a.T*b
+
+
 def Trace(arg):
     return Matrix([trace(arg)])
 
-def Divergence(arg,dim=3):
-    res = 0
-    for i in range(dim):
-        res += arg.diff(space[i])
+def Divergence(arg,sdim=3):
+    return Trace(Gradient(arg,sdim=sdim) )
 
 def Gradient(arg,sdim=3):
     shape = arg.shape[0]

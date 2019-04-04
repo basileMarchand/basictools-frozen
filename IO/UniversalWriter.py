@@ -2,51 +2,54 @@
 
 __author__ = "Felipe Bordeu"
 
-externalWriters = {}
+#externalWriters = {}
+#
+#def WriterFactory(nameOrFilename,ops={"default":"xmf"}):
+#
+#    import os.path
+#    dirname = os.path.dirname(nameOrFilename)
+#    basename,extention = os.path.splitext(os.path.basename(nameOrFilename))
+#
+#    res = None
+#    if extention == ".geof" or nameOrFilename == "geof":
+#        from BasicTools.IO.GeofWriter import GeofWriter
+#        res = GeofWriter()
+#        res.SetWriteLowerDimElementsAsSets(True)
+#    elif extention ==  ".gmsh" or nameOrFilename == "gmsh":
+#        from  BasicTools.IO.GmshWriter import GmshWriter
+#        res = GmshWriter()
+#    elif extention ==  ".mesh" or nameOrFilename == "mesh":
+#        from BasicTools.IO.MeshWriter import MeshWriter
+#        res = MeshWriter()
+#    elif extention ==  ".xmf" or extention ==  ".xdmf" or nameOrFilename == "xmf":
+#        from BasicTools.IO.XdmfWriter import XdmfWriter
+#        res = XdmfWriter()
+#
+#    elif extention ==  ".ut" :
+#
+#        import BasicTools.IO.UtWriter as UW
+#        res = UW.UtWriter()
+#        import numpy as np
+#        res.AttachSequence(np.array([[0,0,0,0,0]]))
+#    else:
+#        if extention in externalWriters:
+#            res = externalWriters[extention]()
+#        else:
+#            raise("Unable to find a suitable writer for the file  :"+str() )
+#            #res = WriterFactory(ops["default"])
+#
+#    res.SetFileName(nameOrFilename)
+#    return res
 
-def WriterFactory(nameOrFilename,ops={"default":"xmf"}):
 
-    import os.path
-    dirname = os.path.dirname(nameOrFilename)
-    basename,extention = os.path.splitext(os.path.basename(nameOrFilename))
+def WriteMesh(filename,outmesh,binary=False,writer=None):# pragma: no cover
 
-    res = None
-    if extention == ".geof" or nameOrFilename == "geof":
-        from BasicTools.IO.GeofWriter import GeofWriter
-        res = GeofWriter()
-        res.SetWriteLowerDimElementsAsSets(True)
-    elif extention ==  ".gmsh" or nameOrFilename == "gmsh":
-        from  BasicTools.IO.GmshWriter import GmshWriter
-        res = GmshWriter()
-    elif extention ==  ".mesh" or nameOrFilename == "mesh":
-        from BasicTools.IO.MeshWriter import MeshWriter
-        res = MeshWriter()
-    elif extention ==  ".xmf" or extention ==  ".xdmf" or nameOrFilename == "xmf":
-        from BasicTools.IO.XdmfWriter import  XdmfWriter
-        res = XdmfWriter()
-
-    elif extention ==  ".ut" :
-
-        import BasicTools.IO.UtWriter as UW
-        res = UW.UtWriter()
-        import numpy as np
-        res.AttachSequence(np.array([[0,0,0,0,0]]))
-    else:
-        if extention in externalWriters:
-            res = externalWriters[extention]()
-        else:
-            raise("Unable to find a suitable writer")
-            #res = WriterFactory(ops["default"])
-
-    res.SetFileName(nameOrFilename)
-    return res
-
-
-def WriteMesh(filename,outmesh,binary=False):# pragma: no cover
-
-    writer = WriterFactory(filename)
-    writer.SetBinary(binary)
-    writer.Open()
+    from BasicTools.IO.IOFactory import CreateWriter
+    if writer is None:
+        writer = CreateWriter("."+filename.split(".")[-1])
+        writer.SetFileName(filename)
+        writer.SetBinary(binary)
+        writer.Open()
 
     PointFields = None
     PointFieldsNames = None
@@ -79,11 +82,20 @@ def PopulateMeshFromVtkAndWriteMesh(filename, vtkobject):# pragma: no cover
     WriteMesh(filename,mesh)
 
 def CheckIntegrity():
-    print(WriterFactory("toto.geof"))
-    print(WriterFactory("toto.gmsh"))
-    print(WriterFactory("toto.mesh"))
-    print(WriterFactory("toto.xdmf"))
-    print(WriterFactory("toto"))
+    from BasicTools.IO.IOFactory import CreateWriter, InitAllWriters, RegisterWriterClass
+    InitAllWriters()
+
+    print(CreateWriter(".geof"))
+    print(CreateWriter(".msh"))
+    print(CreateWriter(".mesh"))
+    print(CreateWriter(".xdmf"))
+    try:
+        print(CreateWriter("toto"))
+    except:
+        pass
+    else:
+        raise (Exception("this must fail " ))
+
     #normally this class must have the same API as
     #
     from BasicTools.IO.WriterBase import WriterBase as WriterBase
@@ -91,8 +103,9 @@ def CheckIntegrity():
     class MyCustomWriter(WriterBase):
         pass
 
-    externalWriters[".myExtention"] = MyCustomWriter
-    print(WriterFactory("toto.myExtention"))
+    RegisterWriterClass(".myExtention",MyCustomWriter)
+
+    print(CreateWriter(".myExtention"))
 
     return "ok"
 

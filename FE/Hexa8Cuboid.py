@@ -10,6 +10,12 @@ from BasicTools.FE.FElement import FElement
 
 
 class Hexa8Cuboid(FElement):
+    """
+    Imprementation of a hexa element with parallel and orthogonal faces (cuboid)
+    Used by the structured FEA solver.
+
+    TODO: This element can be ractorised using the new symbolic element
+    """
     def __init__(self):
         super(Hexa8Cuboid,self).__init__()
         self.delta = np.array([1,1,1]);
@@ -18,16 +24,26 @@ class Hexa8Cuboid(FElement):
         self.name = ElementsNames.Hexaedron_8+"Cuboid"
 
     def GetDetJack(self,qcoor):
+        """
+        return the determinant of the jacobian matrix
+        """
         dx = float(self.delta[0]);   dy = float(self.delta[1]);  dz = float(self.delta[2]);
         return dx*dy*dz/8.;
 
     def GetShapeFunc(self, qcoor):
+        """
+        return the value of the shape function at the local coordinate qcoor
+        """
         xi = float(qcoor[0]);   eta = float(qcoor[1]); phi  = float(qcoor[2]);
 
         Nf = (1./8.)*np.array([(1-xi)*(1-eta)*(1-phi), (1+xi)*(1-eta)*(1-phi), (1+xi)*(1+eta)*(1-phi), (1-xi)*(1+eta)*(1-phi), (1-xi)*(1-eta)*(1+phi), (1+xi)*(1-eta)*(1+phi), (1+xi)*(1+eta)*(1+phi), (1-xi)*(1+eta)*(1+phi)])
         return Nf
 
     def ShapeFuncDer(self, qcoor):
+       """
+       return the value of the derivative of the shape fucntion at the local
+       coordinate qcoor
+       """
        dx = float(self.delta[0]);   dy = float(self.delta[1]);  dz = float(self.delta[2]);
        dxidx = 2./dx;
        detady = 2./dy;
@@ -42,6 +58,10 @@ class Hexa8Cuboid(FElement):
 #---------------- Derivative matrices mass matrices ----------
 
     def IsoDispB(self,qcoor,pos):
+        """
+        return the B operator for a displacement problem in 3D for the local
+        coordinate qcoor
+        """
         [Nfx, Nfy, Nfz] = self.ShapeFuncDer(qcoor)
         B = np.array([[Nfx[0], 0     , 0     , Nfx[1], 0     , 0     , Nfx[2], 0     , 0     , Nfx[3], 0     , 0     , Nfx[4], 0     , 0     , Nfx[5], 0     , 0     , Nfx[6], 0     , 0     , Nfx[7], 0     , 0     ],
                       [0     , Nfy[0], 0     , 0     , Nfy[1], 0     , 0     , Nfy[2], 0     , 0     , Nfy[3], 0     , 0     , Nfy[4], 0     , 0     , Nfy[5], 0     , 0     , Nfy[6], 0     , 0     , Nfy[7], 0     ],
@@ -52,6 +72,10 @@ class Hexa8Cuboid(FElement):
         return B, self.GetDetJack(qcoor)
 
     def IsoLaplaceB(self,qcoor,pos):
+         """
+         return the B operator for a thermal problem in 3D for the local
+         coordinate qcoor
+         """
          [Nfx, Nfy, Nfz] = self.ShapeFuncDer(qcoor)
          B = np.array([[Nfx[0], Nfx[1], Nfx[2], Nfx[3], Nfx[4], Nfx[5], Nfx[6], Nfx[7]],
                    [Nfy[0], Nfy[1], Nfy[2], Nfy[3], Nfy[4], Nfy[5], Nfy[6], Nfy[7]],
@@ -61,6 +85,10 @@ class Hexa8Cuboid(FElement):
 
 #----------------mass matrices ----------
     def IsoDispM(self,qcoor,pos):
+        """
+        return the M (mass) operator for a displacement problem in 3D for the local
+        coordinate qcoor
+        """
         N = self.GetShapeFunc(qcoor)
         B = np.array([[N[0], 0   , 0   , N[1], 0   , 0   , N[2], 0   , 0   , N[3], 0   , 0   , N[4], 0   , 0   , N[5], 0   , 0   , N[6], 0   , 0   , N[7], 0   , 0     ],
                    [0   , N[0], 0   , 0   , N[1], 0   , 0   , N[2], 0   , 0   , N[3], 0   , 0   , N[4], 0   , 0   , N[5], 0   , 0   , N[6], 0   , 0   , N[7], 0     ],
@@ -68,6 +96,11 @@ class Hexa8Cuboid(FElement):
         return B, self.GetDetJack(qcoor)
 
     def IsoLaplaceM(self,qcoor,pos):
+         """
+         return the M (mass) operator for a thermal problem in 3D for the local
+         coordinate qcoor
+         """
+
          N = self.GetShapeFunc(qcoor)
          B = np.array([[N[0], N[1], N[2], N[3], N[4], N[5], N[6], N[7]]])
          return B,  self.GetDetJack(qcoor)
@@ -75,18 +108,29 @@ class Hexa8Cuboid(FElement):
 #-------------------------
 
     def GetIsotropLaplaceK(self,k):
+        """
+        Helper to compute the isotropic elementary tangent matrix for an thermal
+        problem
+        """
         from BasicTools.FE.FemHelp import Integral as Integral
         #IsoHexaCubeKLaplace(k,delta):
         K = MH.LaplaceOrtho(k,k,k)
         return Integral(K,self.IsoLaplaceB,self,self.nnodes)
 
     def GetOrthoLaplaceK(self,k):
+        """
+        Helper to compute the orthotropic elementary tangent matrix for an thermal
+        problem
+        """
         from BasicTools.FE.FemHelp import Integral as Integral
         K = MH.LaplaceOrtho(k[0],k[1],k[2])
         return Integral(K,self.IsoLaplaceB,self,self.nnodes)
 
 
     def GetIsotropLaplaceM(self,rho):
+        """
+        Helper to compute the elementary mass matrix for an elastic problem
+        """
         from BasicTools.FE.FemHelp import Integral as Integral
         K = np.identity(1)*rho
         return Integral(K,self.IsoLaplaceM,self,self.nnodes)
@@ -94,15 +138,22 @@ class Hexa8Cuboid(FElement):
 #-------------------------
 
     def GetIsotropDispK(self,E,nu):
+        """
+        Helper to compute the elementary isotropic tangent matrix for an elastic
+        problem
+        """
         from BasicTools.FE.FemHelp import Integral as Integral
         #IsoHexaCubeK
         k = MH.HookeIso(E,nu)
         return Integral(k,self.IsoDispB,self,self.nnodes*3)
 
     def GetIsotropDispM(self,rho):
-         from BasicTools.FE.FemHelp import Integral as Integral
-         K = np.identity(3)*rho
-         return Integral(K,self.IsoDispM,self,self.nnodes*3)
+        """
+        Helper to compute the elementary mass matrix for an elastic problem
+        """
+        from BasicTools.FE.FemHelp import Integral as Integral
+        K = np.identity(3)*rho
+        return Integral(K,self.IsoDispM,self,self.nnodes*3)
 
 #-------------------------
 

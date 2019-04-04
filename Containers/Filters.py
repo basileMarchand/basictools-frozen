@@ -71,9 +71,9 @@ class NodeFilter(Filter):
 
 
 class ElementFilter(Filter):
-    def __init__(self,mesh,zone = None, tag = None):
+    def __init__(self,mesh,zone = None, tag = None, dimensionality = None):
         super(ElementFilter,self).__init__(mesh, zone=zone, tag=tag)
-        self.dimensionality = None  # possible are [-3 -2 -1 0 1 2 3 ]
+        self.dimensionality = dimensionality # possible are [-3 -2 -1 0 1 2 3 ]
         # "the - sign is for the complementary -2 = all non 2D elements"
 
         self.zoneTreatement = "center" # "center", "allnodes", "somenodes"
@@ -127,13 +127,16 @@ class ElementFilter(Filter):
             return []
 
         res = None
-        if self.tag is not None:
+
+        if self.tag is None:
+            res = range(elements.GetNumberOfElements())
+        else:
             res = self.CheckTag(elements)
 
         if self.zone is not None:
             res2 = self.CheckZone(elements)
             if res is not None:
-                res = np.intersect1D(res,res2)
+                res = np.intersect1d(res,res2)
             else:
                 res = res2
 

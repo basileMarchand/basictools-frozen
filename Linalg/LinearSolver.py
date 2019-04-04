@@ -26,8 +26,25 @@ class LinearProblem(BOO):
     def HasConstraints(self):
         return self.constraints.numberOfEquations > 0
 
+    def GetNumberOfDofs(self):
+        return self.op.shape[0]
+
+    def ComputeProjector(self,mesh,fields):
+        self.constraints.ComputeConstraintsEquations(mesh,fields)
+        ndofs = np.sum([f.numbering["size"] for f in fields])
+        print("Number Of dofs" , ndofs)
+
+        self.constraints.SetNumberOfDofs(ndofs)
+        self.constraints.ComputeProjector()
+        self.constraints.SetOp( self.originalOp   )
+        print("Number Of dofs " , self.originalOp.shape)
+        self.op = self.constraints.GetReducedOp()
+
+
     def SetOp(self, op):
         self.PrintVerbose('In SetOp (type:' +str(self.type) + ')')
+
+        self.originalOp = op
 
         if self.HasConstraints():
             self.PrintVerbose('With constraints (' +str(self.constraints.numberOfEquations) + ')')
@@ -36,6 +53,7 @@ class LinearProblem(BOO):
             self.constraints.ComputeProjector()
             op = self.constraints.GetReducedOp()
             self.PrintVerbose('Constraints treatememnt Done ')
+
         self.op = op
 
 
@@ -46,6 +64,9 @@ class LinearProblem(BOO):
             self.solver = None
             pass
         elif self.type == "lstsq":
+            self.solver = None
+            pass
+        elif self.type == "gmres":
             self.solver = None
             pass
         elif self.type == "cholesky":
@@ -71,7 +92,7 @@ class LinearProblem(BOO):
         self.PrintDebug('In SetOp Done')
 
     def SetAlgo(self, algoType):
-        if algoType in  ["Direct" ,"CG", "lstsq","cholesky" ,"EigenCG","EigenLU"] :
+        if algoType in  ["Direct" ,"CG", "lstsq","cholesky" ,"EigenCG","EigenLU","gmres"] :
             self.type = algoType
         else:
             raise(ValueError(TF.InRed("Error : ") + "Type not allowed ("+algoType+")"  ) )#pragma: no cover
@@ -103,6 +124,8 @@ class LinearProblem(BOO):
                 self.Print(TF.InYellowBackGround(TF.InRed("Convergence to tolerance not achieved"))) #pragma: no cover
             if res[1] < 0 :
                 self.Print(TF.InYellowBackGround(TF.InRed("Illegal input or breakdown"))) #pragma: no cover
+        elif self.type == "gmres":
+            self.u = np.linalg.gmres(self.op, rhs,tol = self.tol)[0]
         elif self.type == "lstsq":
             self.u = np.linalg.lstsq(self.op, rhs)[0]
         elif self.type == "cholesky":

@@ -2,6 +2,7 @@
 
 from BasicTools.IO.UniversalReader import ReadMesh
 from BasicTools.IO.UniversalWriter import WriteMesh
+import  BasicTools.IO.IOFactory as IOF
 
 def PrintHelp():
   print( 'python  MeshFileConverter -i <inputfile> -o <outputfile>')
@@ -9,16 +10,40 @@ def PrintHelp():
   print( '       -i    Input file name')
   print( '       -o    output file name')
   print( '       -h    this help')
+  IOF.InitAllReaders()
+  print("Available Readers : ", IOF.GetAvailableReaders())
 
+  IOF.InitAllWriters()
+  print("Available Writers : ", IOF.GetAvailableWriter())
   sys.exit(2)
 
+#MeshFileConverter -i meshfile.meshb -o .PIPE > toto
+
+from BasicTools.Helpers.PrintBypass import PrintBypass
+
 def Convert(inputfilename,outputfilename):
-      print("Start Reading...")
-      mesh = ReadMesh(inputfilename)
-      print(mesh)
-      print("Start Writing...")
-      WriteMesh(outputfilename,mesh)
-      print("DONE")
+      IOF.InitAllReaders()
+      IOF.InitAllWriters()
+
+      with PrintBypass() as f:
+
+          if ".PIPE" in outputfilename :
+              f.ToDisk("MeshFileConverter.log")
+
+          print("Start Reading...", inputfilename)
+          mesh = ReadMesh(inputfilename)
+          print(mesh)
+          print("Start Writing to "+  str(outputfilename))
+          writer = None
+
+
+          from BasicTools.IO.IOFactory import CreateWriter
+          if ".PIPE" in outputfilename :
+              writer = CreateWriter("."+outputfilename.split(".")[-1])
+              writer.outbuffer = f.stdout_.buffer
+
+          WriteMesh(outputfilename,mesh,writer=writer)
+          print("DONE")
 
 
 def CheckIntegrity(GUI=False):
@@ -35,7 +60,10 @@ def CheckIntegrity(GUI=False):
             ]
 
     outputext = [ "geof",
-                  "mesh"
+                  "mesh",
+                  "msh",
+                  "stl",
+                  "xdmf"
             ]
 
     for iff in inputfiles:

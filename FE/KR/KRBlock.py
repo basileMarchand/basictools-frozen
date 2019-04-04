@@ -95,7 +95,6 @@ class KRBlock(KRBase):
               if arg in fieldDic.keys():
                   dim = 1
                   field = fieldDic[arg]
-                  raise
               else:
                   dim = 3
                   field = fieldDic[arg+"_0"]
@@ -115,7 +114,7 @@ class KRBlock(KRBase):
                         pos = np.dot(valN ,xcoor).T
                         if dim == 1:
                             CH.AddFactor(dofid+offsets[0],1)
-                            CH.AddConstant(self.factor(pos))
+                            CH.AddConstant(self.value(pos))
                             CH.NextEquation()
                         else:
 

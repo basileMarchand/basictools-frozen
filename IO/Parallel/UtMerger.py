@@ -89,7 +89,6 @@ class UtMerger(WriterBase):
             reader.time.shape = (1,reader.time.shape[0])
 
         localMesh = GR.ReadGeof(fileName = self.dataFolder+reader.meshfile,readElset=False,readFaset=False,printNotRead=False)
-
         Tag3D(localMesh)
         idstotreat = Return3DElements(localMesh)
 
@@ -100,14 +99,14 @@ class UtMerger(WriterBase):
         for din in reader.integ:
           dataInteg[din] = np.empty((reader.meshMetadata['nbIntegrationPoints'],reader.time.shape[0]))
           for timeStep in range(reader.time.shape[0]):
-            dataInteg[din][:,timeStep] = reader.Read(fieldname=din, timeIndex=int(reader.time[timeStep,0])-1)
+            dataInteg[din][:,timeStep] = reader.ReadField(fieldname=din, timeIndex=int(reader.time[timeStep,0])-1)
 
         reader.atIntegrationPoints = False
         dataNode = {}
         for din in reader.node:
           dataNode[din] = np.empty((reader.meshMetadata['nbNodes'],reader.time.shape[0]))
           for timeStep in range(reader.time.shape[0]):
-            dataNode[din][:,timeStep] = reader.Read(fieldname=din, timeIndex=int(reader.time[timeStep,0])-1)
+            dataNode[din][:,timeStep] = reader.ReadField(fieldname=din, timeIndex=int(reader.time[timeStep,0])-1)
 
         localDataInteg.append(dataInteg)
         localDataNode.append(dataNode)
@@ -116,6 +115,7 @@ class UtMerger(WriterBase):
 
       cutGeof = GeofFromCut(self.dataFolder, self.name)
       globalMesh = GR.ReadGeof(fileName = self.dataFolder + cutGeof,readElset=False,readFaset=False,printNotRead=False)
+
       Tag3D(globalMesh)
       globalIdstotreat = Return3DElements(globalMesh)
       #globalMesh.originalIDNodes = np.array(globalMesh.originalIDNodes-1, dtype=int)

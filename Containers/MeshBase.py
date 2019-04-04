@@ -159,6 +159,9 @@ class MeshBase(BaseOutputObject):
     def GetNumberOfNodes(self):
         raise Exception()# pragma: no cover
 
+    def ComputeBoundingBox(self):
+        pass
+
     def PrepareForOutput(self):
         pass    # pragma: no cover
 

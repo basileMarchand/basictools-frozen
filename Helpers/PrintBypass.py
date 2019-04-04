@@ -5,12 +5,16 @@ Also the output can be duplicated to a file
 """
 #for python 2.6+ compatibility
 from __future__ import print_function
+import re
+from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 
 __author__ = "Felipe Bordeu"
 
 
 import sys
 import os
+
+COLOR_REGEX_FILTER = re.compile(r'\x1b\[(?P<arg_1>\d+)(;(?P<arg_2>\d+)(;(?P<arg_3>\d+))?)?m')
 
 
 def eprint(*args, **kwargs):
@@ -19,6 +23,7 @@ def eprint(*args, **kwargs):
 class PrintBypass():
 
     def __init__(self):
+        self.stdin_ = sys.stdin
         self.stdout_ = sys.stdout #Keep track of the previous value.
         self.stderr_ = sys.stderr #Keep track of the previous value.
 
@@ -44,26 +49,59 @@ class PrintBypass():
         else:
             sys.stderr = open(filenamecerr, 'w')
 
-    def CopyOutputToDisk(self,filename, filenamecerr=None):
-        class COTD():
+    def CopyOutputToDisk(self,filename, filenamecerr=None,filtersToOuput2=None):
+
+        class CopyOutputToDisk():
             def __init__(self,buffertocopy,filename):
                 self.Fdout = open(filename, 'w')
                 self.sysout = buffertocopy
-
             def close(self):
                 self.Fdout.close()
             def flush(self):
                 self.Fdout.flush()
                 self.sysout.flush()
             def write(self,data):
-                self.Fdout.write(data)
+                # to clean the colors
+                filteredData = COLOR_REGEX_FILTER.sub('', data)
+                if len(filteredData):
+                    self.Fdout.write(("[%f] " % BaseOutputObject().GetDiffTime()))
+                    self.Fdout.write(filteredData)
                 self.sysout.write(data)
 
-        sys.stdout = COTD(self.stdout_, filename)
+        class FilterToSecondFile():
+             def __init__(self,original,second,filterString):
+                 self.filterString = filterString
+                 self.original = original
+                 self.second = second
+                 self.cpt = 0
+             def close(self):
+                 self.original.close()
+                 self.second.close()
+             def flush(self):
+                 self.original.flush()
+                 self.second.flush()
+
+             def write(self,data):
+                if data.find(self.filterString) != -1:
+                    if self.second is not None:
+                        self.second.write(COLOR_REGEX_FILTER.sub('', data) )
+                        self.second.flush()
+                    return
+
+                if self.original is not None :
+                    self.original.write(data)
+                    self.original.flush()
+
+        # to make a copy of the main output to a file
+        cotd = CopyOutputToDisk(self.stdout_, filename)
+        # to split the output and send all the -> to a second file
+        ftsf = FilterToSecondFile(cotd,open(filename+"2", 'w'),"-> ")
+
+        sys.stdout = ftsf
         if filenamecerr is None:
             sys.stderr = sys.stdout
         else:
-            sys.stderr = COTD(self.stderr_,filenamecerr)
+            sys.stderr = CopyOutputToDisk(self.stderr_, filenamecerr)
 
     def ToRedirect(self,cout_obj,cerr_obj=None):
         # obj must implement the functions: close(), flush(), write(data)
@@ -73,12 +111,12 @@ class PrintBypass():
 
     def Restore(self):
         if sys.stdout is not self.stdout_:
-            self.Print("Restore stdout")
+            #self.Print("Restore stdout")
             sys.stdout.flush()
             sys.stdout.close()
             sys.stdout = self.stdout_  # restore the previous stdout.
         if sys.stderr is not self.stderr_ :
-            self.Print("Restore stdcerr")
+            #self.Print("Restore stdcerr")
             sys.stderr.flush()
             sys.stderr.close()
             sys.stderr = self.stderr_  # restore the previous stdout.
@@ -102,7 +140,7 @@ def CheckIntegrity():
         f.Print("Print to the original cout")
         f.PrintCerr("Print to the original cerr")
         f.Restore()
-        print("print after ToSink and befor ToFile")
+        print("print after ToSink and before ToFile")
         print("")
 
         f.ToDisk(filename=fname+"_cout.txt" )
@@ -133,6 +171,7 @@ def CheckIntegrity():
         print(' sent to cout (copy to disk) ')
         eprint(' sent to cerr (copy to disk) 2')
         print(' sent to cout (copy to disk) 2')
+        print(' sent to cout (copy to disk) 2 -> coucou')
         f.Restore()
 
 

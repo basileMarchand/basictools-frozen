@@ -242,13 +242,25 @@ geoSupport[Hexaedron_20] = GeoHex
 numberOfNodes[Hexaedron_20] = 20;
 dimension[Hexaedron_20] = 3
 linear[Hexaedron_20] = False
+faces[Hexaedron_20] = [(Quadrangle_8,[3, 0, 4, 7,11,16,15,19]),
+                       (Quadrangle_8,[1, 2, 6, 5, 9,18,13,17]),
+                       (Quadrangle_8,[0, 1, 5, 4, 8,17,12,16]),
+                       (Quadrangle_8,[2, 3, 7, 6,10,19,14,18]),
+                       (Quadrangle_8,[0, 3, 2, 1,11,10, 9, 8]),
+                       (Quadrangle_8,[4, 5, 6, 7,12,13,14,15])]
+
 
 Hexaedron_27 = 'hex27'
 geoSupport[Hexaedron_27] = GeoHex
 numberOfNodes[Hexaedron_27] = 27;
 dimension[Hexaedron_27] = 3
 linear[Hexaedron_27] = False
-
+faces[Hexaedron_27] = [(Quadrangle_9,[3, 0, 4, 7,11,16,15,19,20]),
+                       (Quadrangle_9,[1, 2, 6, 5, 9,18,13,17,21]),
+                       (Quadrangle_9,[0, 1, 5, 4, 8,17,12,16,22]),
+                       (Quadrangle_9,[2, 3, 7, 6,10,19,14,18,23]),
+                       (Quadrangle_9,[0, 3, 2, 1,11,10, 9, 8,24]),
+                       (Quadrangle_9,[4, 5, 6, 7,12,13,14,15,25])]
 
 
 def CheckIntegrity(GUI=False):

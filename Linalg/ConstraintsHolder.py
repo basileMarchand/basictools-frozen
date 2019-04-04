@@ -25,6 +25,8 @@ class ConstraintsHolder(BOO):
         self.Reset()
         for cons in self.constraints:
             cons.GenerateEquations(mesh,unkownFields,self)
+        self.PrintVerbose(len(self.constraints) )
+        self.PrintVerbose(self.numberOfEquations )
 
     def SetNumberOfDofs(self,nbdof):
         self.nbdof = nbdof
@@ -200,7 +202,7 @@ def CheckIntegrity(GUI=False):
 
 
     CH.AddEquation([1,0,0,0],1)
-    CH.AddEquation([0,0,0,1],10)
+    CH.AddEquationSparse([3],[1],10)
     CH.AddEquation([0,0,0,1],10)
 
     # this class can handle redundant equations

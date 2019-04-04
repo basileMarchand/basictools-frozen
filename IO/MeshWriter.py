@@ -48,7 +48,7 @@ class MeshWriter(WriterBase):
             self.dataSize = 8;
 
     def Write(self,meshObject,PointFields=None, solutionOnOwnFile= False, nodalRefNumber= None, elemRefNumber=None,PointFieldsNames=None,CellFieldsNames=None,CellFields=None):
-        
+
         if self.isBinary():
             return self.WriteBINARY(meshObject,PointFields=PointFields, solutionOnOwnFile=solutionOnOwnFile, nodalRefNumber=nodalRefNumber,elemRefNumber=elemRefNumber )
         else:
@@ -585,6 +585,15 @@ class MeshWriter(WriterBase):
 
 
         #self.filePointer.write("End\n")
+
+from BasicTools.IO.IOFactory import RegisterWriterClass
+RegisterWriterClass(".mesh",MeshWriter)
+
+def CreateMeshWriterBinary(ops):
+    obj = MeshWriter()
+    obj.SetBinary()
+    return obj
+RegisterWriterClass(".meshb",MeshWriter,CreateMeshWriterBinary)
 
 def CheckIntegrity():
     import BasicTools.Containers.UnstructuredMesh as UM
