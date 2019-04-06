@@ -4,6 +4,12 @@ import BasicTools.Containers.ElementNames as EN
 from  BasicTools.Containers.UnstructuredMesh import AllElements
 
 def Hash(space,j,lconn,name=None,i=None):
+    """
+    Fucntion to create a unique tuple for a given shape function (dof) this
+    tuple must be independent of the element that use this shape function ( an
+    exception is the discontinues galerkin approximation).
+
+    """
     T,n,h = space.dofAttachments[j]
     if h is not None :
         h = Hash(h,lconn[n])
@@ -41,6 +47,18 @@ def Hash(space,j,lconn,name=None,i=None):
 
 
 def ComputeDofNumbering(mesh,Space,dofs=None,tag=AllElements,sign=1,fromConnectivity=False):
+
+    """
+    Function to compute a unique numbering of dofs. The user must provide:
+        mesh : (UnstructuredMesh), discretisation
+        space : (from FESpaces.py for example) aproximation space
+        dofs : () previous dofNumbering computation
+        tag : (str) tag name to treat
+        sign : (default 1) user can give (-1) to use negative numbering
+        fromConnectivity : (defautl False) for fast computation of isoparametric
+            numbering for all element (space, dofs,tag,sign are ignored). All
+            Elements are treated
+    """
     if tag is None:
         raise(ValueError())
     if fromConnectivity:
@@ -108,7 +126,6 @@ def ComputeDofNumbering(mesh,Space,dofs=None,tag=AllElements,sign=1,fromConnecti
         dofs[name] = dof
 
     if sign ==1:
-        #print("size : " + str(cpt) )
         dofs["size"] = cpt
         # two point to take into account:
         #     the numbering can be applied only to  a subdomain
@@ -169,10 +186,16 @@ def ComputeDofNumbering(mesh,Space,dofs=None,tag=AllElements,sign=1,fromConnecti
     else:
         dofs["dirichelet"] = cpt
 
-
     return dofs
 
 def NodesPermutation(mesh,per):
+    """
+    Function to do a permutation of the nodes in a mesh (inplace)
+    TODO: This function must be in the UnstructuredMesh.py file
+
+    mesh : (UnstructuredMesh) mesh to be modified
+    per : the permutation vector ([1,0,2,3] to permute first an secod node)
+    """
     nnodes = mesh.nodes[per,:]
 
     perII =np.argsort(per)
@@ -185,7 +208,6 @@ def NodesPermutation(mesh,per):
 
     for name,data in mesh.elements.items():
         data.connectivity = perII[data.connectivity]
-
 
 
 def CheckIntegrity(GUI=False):
