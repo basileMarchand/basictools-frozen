@@ -76,7 +76,7 @@ class AscReader(ReaderBase):
                 BaseOutputObject().Print("Reading "+str(nbNodes)+ " Nodes")
                 dim = int(l.split()[2])
                 res.nodes = np.empty((nbNodes,dim))
-                res.originalIDNodes= np.empty((nbNodes,))
+                res.originalIDNodes= np.empty((nbNodes,),dtype=int)
                 cpt =0;
                 while(True):
                     l = self.ReadCleanLine()
