@@ -177,10 +177,7 @@ class UtMerger(WriterBase):
 def GeofFromCut(dataFolder, cutName):
   cutFile = open(dataFolder+cutName+".cut", 'r')
   strings = cutFile.readlines()
-  geofFromCut = strings[1].split()[1]
-  if geofFromCut[-5:] != ".geof" :
-    geofFromCut += ".geof"
-  return geofFromCut
+  return strings[1].split()[1]
 
 def Tag3D(mesh):
   for name, data in mesh.elements.items():
