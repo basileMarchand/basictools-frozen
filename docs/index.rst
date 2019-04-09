@@ -13,6 +13,10 @@ Contents:
 
    _source/BasicTools
 
+.. literalinclude:: ../README.txt
+
+
+
 Indices and tables
 ==================
 
