@@ -371,9 +371,19 @@ class UnstructuredMesh(MeshBase):
         res = np.empty(self.GetNumberOfElements(),dtype=np.int)
         cpt = 0
         for ntype, data in self.elements.items():
-            res[0:data.GetNumberOfElements()] = data.originalIds+data.originalOffset
+            res[0+cpt:data.GetNumberOfElements()+cpt] = data.originalIds+data.originalOffset
             cpt += data.GetNumberOfElements()
         return res
+
+    def SetElementsOriginalIDs(self,originalIDs):
+        """
+        Set from a single list all the originalid
+        """
+        cpt = 0
+        for ntype, data in self.elements.items():
+            data.originalIds = originalIDs[cpt:data.GetNumberOfElements()+cpt]
+            cpt += data.GetNumberOfElements()
+
 
     def GetElementsInTag(self,tagname,useOriginalId=False) :
         """
