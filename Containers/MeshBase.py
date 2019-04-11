@@ -47,6 +47,31 @@ class Tag(object):
         self.Tighten()
         return self._id
 
+    def GetIdsAsMask(self,totalNumberOfObjects=None,output=None,erase=True):
+        """
+        .. py:classmethod:: GetIdsAsMask(self,totalNumberOfObjects,out=None,erase=True)
+
+        Get mask of tag items
+
+        :param int totalNumberOfObjects: total number of Objects to allocate the output
+        :param numpy.ndarray out: output array for inplace work
+        :param bool erase: option to erase the output before asignment
+        :return: mask items contained in tag (True,False)
+        :rtype: numpy.ndarray
+        """
+
+        self.Tighten()
+
+        if output is None:
+            output = np.zeros(totalNumberOfObjects,dtype=bool)
+        else:
+            if erase :
+                output.fill(False)
+
+        output[self._id] = True
+
+        return True
+
     def Merge(self,other=None,ids=None):
         if other is not None:
             self.SetIds(list(set().union(self.GetIds(),other.GetIds())))
