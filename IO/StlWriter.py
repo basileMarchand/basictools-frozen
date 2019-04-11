@@ -25,9 +25,11 @@ class StlWriter(WriterBase):
     def SetFileName(self,fileName):
         self.fileName = fileName;
 
-    def Write(self,meshObject,normals=None,Name= None,PointFieldsNames=None,PointFields=None,CellFieldsNames=None,CellFields=None):
+    def Close(self):
+        if self.isOpen():
+            super(StlWriter,self).Close()
 
-
+    def Write(self,meshObject,normals=None,Name= None,PointFieldsNames=None,PointFields=None,CellFieldsNames=None,CellFields=None,GridFieldsNames=None,GridFields=None):
 
         if self.extractSkin :
             from BasicTools.Containers.UnstructuredMeshTools import ComputeSkin, CleanLonelyNodes
@@ -39,24 +41,27 @@ class StlWriter(WriterBase):
         else:
             nodes = meshObject.nodes
             elements = meshObject.GetElementsOfType(EN.Triangle_3)
+        self.PrintDebug(Name)
+        if Name is None:
+            Name == "Solid"
 
-        self.filePointer.write("solid {}\n".format(Name))
+        self.writeText("solid {}\n".format(Name))
         for i in range(elements.GetNumberOfElements()):
             if normals is not None:
-                self.filePointer.write(" facet normal {}\n".format(" ".join(map(str,normals[i,:])) ))
+                self.writeText(" facet normal {}\n".format(" ".join(map(str,normals[i,:])) ))
             else:
                 p0 = nodes[elements.connectivity[i,0],:]
                 p1 = nodes[elements.connectivity[i,1],:]
                 p2 = nodes[elements.connectivity[i,2],:]
                 normal = np.cross(p1-p0,p2-p0)
                 normal = normal/np.linalg.norm(normal)
-                self.filePointer.write(" facet normal {}\n".format(" ".join(map(str,normal)) ))
-            self.filePointer.write("  outer loop\n")
+                self.writeText(" facet normal {}\n".format(" ".join(map(str,normal)) ))
+            self.writeText("  outer loop\n")
             for p in range(3):
-                self.filePointer.write("   vertex {}\n".format(" ".join(map(str,nodes[elements.connectivity[i,p],:] ))))
-            self.filePointer.write("  endloop\n")
-            self.filePointer.write(" endfacet\n")
-        self.filePointer.write("endsolid\n")
+                self.writeText("   vertex {}\n".format(" ".join(map(str,nodes[elements.connectivity[i,p],:] ))))
+            self.writeText("  endloop\n")
+            self.writeText(" endfacet\n")
+        self.writeText("endsolid\n")
 
 from BasicTools.IO.IOFactory import RegisterWriterClass
 RegisterWriterClass(".stl",StlWriter)
