@@ -90,7 +90,7 @@ class GReader(ReaderBase):
 
         res.nodes = np.reshape(np.asarray(nodes,dtype=np.float),newshape=(len(nodes)//3, 3))
 
-        res.originalIDNodes = np.arange(res.GetNumberOfNodes())
+        res.originalIDNodes = np.arange(res.GetNumberOfNodes(),dtype=np.int)
         elems = res.GetElementsOfType(EN.Bar_2)
         elems.Allocate(res.GetNumberOfNodes()-1)
         elems.connectivity[:,0] = range(res.GetNumberOfNodes()-1)
