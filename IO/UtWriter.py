@@ -180,7 +180,7 @@ class UtWriter(WriterBase):
           f.write(__string)
         f.close()
 
-    def Write(self,outmesh,PointFieldsNames,PointFields,GridFieldsNames,CellFields):
+    def Write(self,outmesh,PointFieldsNames,PointFields,CellFieldsNames,CellFields):
 
         self.AttachMesh(outmesh)
         self.AttachData( {x:y for x,y in zip(PointFieldsNames,PointFields) }, {}, {})
