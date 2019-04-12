@@ -399,7 +399,7 @@ class UnstructuredMesh(MeshBase):
                 if useOriginalId:
                     res[cpt:cpt+len(tag) ] = elem.originalIds[tag];
                 else:
-                    res[cpt:cpt+len(elem.tags[tagname].GetIds()) ] = elem.globaloffset+tag;
+                    res[cpt:cpt+len(tag) ] = elem.globaloffset+tag;
                 cpt +=  len(tag)
         return res[0:cpt]
 

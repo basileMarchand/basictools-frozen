@@ -32,8 +32,12 @@ class Tag(object):
         if self._id.shape[0] != self.cpt:
             self._id = np.resize(self._id, (self.cpt,))
 
+    def RemoveDoubles(self):
+        self.Tighten()
+        self.SetIds(self._id)
+
     def SetIds(self, ids):
-        self._id = np.array(ids,dtype=np.int)
+        self._id = np.unique(np.array(ids,dtype=np.int))
         self.cpt = len(ids)
 
     def SetId(self, pos, ids):
