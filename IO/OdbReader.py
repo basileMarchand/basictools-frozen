@@ -8,6 +8,7 @@ import BasicTools.Containers.ElementNames as EN
 eltype = {}
 eltype["S3"] = EN.Triangle_3
 eltype["C3D4"] = EN.Tetrahedron_4
+eltype["C3D8"] = EN.Hexaedron_8
 
 permutaion = {}
 #permutaion["C3D4"] = [0, 1, 3, 2]
@@ -226,16 +227,13 @@ with PrintBypass() as f:
             for nSetK in nSets.keys():
                 print(nSetK)
                 print("This does not work for the moment")
-                nSet =nSets[nSetK]
+                nSet = nSets[nSetK]
                 name = nSet.name
-
-                res.nodesTags.GetTag(name).AddToTag([nSet.nodes.label])
-                for elem in nSet.nodes:
-                    res.nodes
-                    elems = res.GetElementsOfType(eltype[elem.type])
-                    enum = elemMap[elem.label][1]
-                    elems.GetTag(elem.instanceName).AddToTag(enum)
-                    elems.GetTag(name).AddToTag(enum)
+                tag = res.nodesTags.CreateTag(name,False)
+                for node in nSet.nodes:
+                    enum = abatomesh[node.label]
+                    tag.AddToTag(enum)
+                tag.RemoveDoubles()
 
 
 
@@ -266,6 +264,9 @@ with PrintBypass() as f:
                     elems.GetTag(elem.instanceName).AddToTag(enum)
                     elems.GetTag(name).AddToTag(enum)
 
+            for name,data in res.elements.items():
+                for tag in data.tags:
+                   tag.RemoveDoubles()
 
             print("Reading fields")
             res.PrepareForOutput()
@@ -280,7 +281,7 @@ with PrintBypass() as f:
     def GetActiveFrame(self):
 
         if self.timeToRead == -1.:
-            timeIndex = len(self.timeSteps)-1
+            timeIndex = len(self.time)-1
         else:
             timeIndex = np.argmin(abs(self.time - self.timeToRead ))
         name, val = self.stepData[timeIndex]
