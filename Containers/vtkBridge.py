@@ -120,7 +120,7 @@ def NumpyFieldToVtkField(support,fielddata,fieldname):
         from vtk import VTK_INT
 
     isimagedata = support.IsConstantRectilinear()
-    print("working in field ", fieldname)
+    #print("working in field ", fieldname)
 
     if  fielddata.dtype == bool:
         outputtype = VTK_CHAR
@@ -268,7 +268,7 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
                 raise
                 continue
 
-            print("name : ", name )
+            #print("name : ", name )
             VTK_data = NumpyFieldToVtkField(mesh,data,name)
             output.GetPointData().AddArray(VTK_data)
             continue
