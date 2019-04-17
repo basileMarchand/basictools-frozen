@@ -93,6 +93,10 @@ class Tags(BaseOutputObject):
         super(Tags,self).__init__()
         self.storage = []
 
+    def Tighten(self):
+        for tag in self:
+            tag.Tighten()
+
     def AddTag(self,item):
         if item.name in self:
             raise Exception("Cant add the tag two times!!")# pragma: no cover

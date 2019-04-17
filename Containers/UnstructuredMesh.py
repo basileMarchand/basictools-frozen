@@ -147,6 +147,7 @@ class ElementsContainer(BaseOutputObject):
         to compact the storage an free non used space
         """
         self.Reserve(self.cpt)
+        self.tags.Tighten()
 
 
     def AddElementToTag(self,globalElemNumber,tagname):
@@ -220,6 +221,9 @@ class UnstructuredMesh(MeshBase):
         self.elements : the list of all the elememnt in the mesh
         self.boundingMin/Max : the bounding box of the mesh (use ComputeBoundingBox
          to compute it)
+
+        the manual construction of this class must always end with a call to the
+        function
     """
     def IsUnstructured(self):
         return True
@@ -409,10 +413,9 @@ class UnstructuredMesh(MeshBase):
         and final treatement (offset computation)
         """
         self.ComputeGlobalOffset()
+        self.nodesTags.Tighten()
         for ntype, data in self.elements.items():
              data.tighten()
-             for tag in data.tags:
-                   tag.Tighten()
 
     def GenerateManufacturedOriginalIDs(self):
         """
