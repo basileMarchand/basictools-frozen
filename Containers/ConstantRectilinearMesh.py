@@ -41,6 +41,13 @@ class ConstantRectilinearElementContainer(BaseOutputObject):
     def GetNumberOfNodesPerElement(self):
         return 2*self.caller.GetDimensionality()
 
+    def GetTag(self, tagName):
+        """
+        return the tag based is a name
+        if the tag does not exist a new tag is created
+        """
+        return self.tags.CreateTag(tagName,False)
+
 class ConstantRectilinearMesh(MeshBase):
 
     def IsConstantRectilinear(self):
@@ -383,6 +390,9 @@ class ConstantRectilinearMesh(MeshBase):
         res = res + "  dimensions         : "+str(self.__dimensions )         + "\n"
         res = res + "  origin             : "+str(self.__origin) + "\n"
         res = res + "  spacing            : "+str(self.__spacing) + "\n"
+        for name,data in self.elements.items():
+            if data.GetNumberOfElements():
+                res += " ({}:{})".format(name,data.GetNumberOfElements())
         return res
 
 
