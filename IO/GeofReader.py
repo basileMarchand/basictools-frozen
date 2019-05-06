@@ -20,6 +20,7 @@ GeofNumber['quad']   = EN.Bar_3
 GeofNumber['q4'] = EN.Quadrangle_4
 GeofNumber['quad4'] = EN.Quadrangle_4
 GeofNumber['c2d4'] = EN.Quadrangle_4
+GeofNumber['c2d8'] = EN.Quadrangle_8
 GeofNumber["c2d3"] = EN.Triangle_3
 GeofNumber["c2d6"] = EN.Triangle_6
 PermutationZSetToBasicTools["c2d6"] = [0, 2, 4, 1, 3, 5]
@@ -426,7 +427,7 @@ class GeofReader(ReaderBase):
               oidToElementContainer[oid].tags.CreateTag(elsetname,False).AddToTag(oidToLocalElementNumber[oid])
         continue
 
-      if l.find("**faset")>-1:
+      if l.find("**faset")>-1 or l.find("**liset")>-1:
         fasetName = l[8:]
         print("Reading Group " + fasetName)
         while(True):
