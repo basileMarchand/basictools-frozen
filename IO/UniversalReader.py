@@ -3,9 +3,7 @@
 __author__ = "Felipe Bordeu"
 import BasicTools.Containers.ElementNames as ElementNames
 
-
-
-def ReadMesh(filename,out=None):# pragma: no cover
+def ReadMesh(filename,out=None,timeToRead=-1):# pragma: no cover
     from BasicTools.IO.IOFactory import InitAllReaders
     InitAllReaders()
     import os.path
@@ -18,6 +16,13 @@ def ReadMesh(filename,out=None):# pragma: no cover
 
     reader = CreateReader("."+filename.split(".")[-1])
     reader.SetFileName(filename)
+    if reader.canHandleTemporal :
+        reader.SetTimeToRead(timeToRead)
+        if timeToRead == -1:
+            print("Reading last available time step")
+        else:
+            print("Reading Time")
+            print(timeToRead)
 
     return reader.Read()
 

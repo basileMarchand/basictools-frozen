@@ -41,9 +41,9 @@ class UtReader(ReaderBase):
         super(UtReader,self).__init__()
         self.commentChar ="#"
         self.meshfile = None
-        self.node = None
-        self.integ = None
-        self.element =None
+        self.node = []
+        self.integ = []
+        self.element = []
         self.time = None
 
         self.fieldNameToRead = None
@@ -57,9 +57,9 @@ class UtReader(ReaderBase):
 
     def Reset(self):
         self.meshfile = None
-        self.node = None
-        self.integ = None
-        self.element =None
+        self.node = []
+        self.integ = []
+        self.element =[]
         self.time = []
 
     def SetFieldNameToRead(self,fieldname):
@@ -122,8 +122,7 @@ class UtReader(ReaderBase):
             GR.SetFileName(self.filePath +self.meshfile )
             self.meshMetadata = GR.ReadMetaData()
         else:
-            self.Print("Unable to obtain metadata from meshfile, please set metadata manually")
-
+            self.Print("Unable to obtain metadata from meshfile, please set metadata manually, most probably because the mesh file is a .geo file ")
 
     def ReadBinaryFile(self,fileName):
         return np.fromfile(fileName, dtype=np.float32).byteswap()
@@ -141,14 +140,14 @@ class UtReader(ReaderBase):
         if self.fieldNameToRead is None:
             # loop over the fields
             for name in self.node:
-                data = self.ReadField(name)
+                data = self.ReadField(name,time=self.timeToRead)
                 res.nodeFields[name] = data
-            for name in self.elem:
-                data = self.ReadField(name)
+            for name in self.element:
+                data = self.ReadField(name,time=self.timeToRead)
                 res.elemFields[name] = data
             self.fieldNameToRead = None
         else:
-            data = self.ReadField()
+            data = self.ReadField(time=self.timeToRead)
             if self.fieldNameToRead in self.node:
                 res.nodeFields[self.fieldNameToRead] = data
             elif self.fieldNameToRead in self.element:
@@ -286,6 +285,10 @@ class UtReader(ReaderBase):
             res += "     " +str(i)+ "\n"
         return res
 
+from BasicTools.IO.IOFactory import RegisterReaderClass
+RegisterReaderClass(".ut",UtReader)
+RegisterReaderClass(".utp",UtReader)
+
 def CheckIntegrity():
 
     __teststring = u"""
@@ -387,6 +390,9 @@ def CheckIntegrity():
     ReadUt(tempfileName,fieldname="U1",time=0)
 
     return "OK"
+
+
+
 
 if __name__ == '__main__':# pragma: no cover
     #from BasicTools.Helpers.BaseOutputObject import BaseOutputObject

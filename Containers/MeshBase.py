@@ -32,8 +32,12 @@ class Tag(object):
         if self._id.shape[0] != self.cpt:
             self._id = np.resize(self._id, (self.cpt,))
 
+    def RemoveDoubles(self):
+        self.Tighten()
+        self.SetIds(self._id)
+
     def SetIds(self, ids):
-        self._id = np.array(ids,dtype=np.int)
+        self._id = np.unique(np.array(ids,dtype=np.int))
         self.cpt = len(ids)
 
     def SetId(self, pos, ids):
@@ -46,6 +50,31 @@ class Tag(object):
     def GetIds(self):
         self.Tighten()
         return self._id
+
+    def GetIdsAsMask(self,totalNumberOfObjects=None,output=None,erase=True):
+        """
+        .. py:classmethod:: GetIdsAsMask(self,totalNumberOfObjects,out=None,erase=True)
+
+        Get mask of tag items
+
+        :param int totalNumberOfObjects: total number of Objects to allocate the output
+        :param numpy.ndarray out: output array for inplace work
+        :param bool erase: option to erase the output before asignment
+        :return: mask items contained in tag (True,False)
+        :rtype: numpy.ndarray
+        """
+
+        self.Tighten()
+
+        if output is None:
+            output = np.zeros(totalNumberOfObjects,dtype=bool)
+        else:
+            if erase :
+                output.fill(False)
+
+        output[self._id] = True
+
+        return True
 
     def Merge(self,other=None,ids=None):
         if other is not None:
@@ -63,6 +92,10 @@ class Tags(BaseOutputObject):
     def __init__(self):
         super(Tags,self).__init__()
         self.storage = []
+
+    def Tighten(self):
+        for tag in self:
+            tag.Tighten()
 
     def AddTag(self,item):
         if item.name in self:

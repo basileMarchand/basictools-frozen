@@ -361,7 +361,7 @@ class GeofReader(ReaderBase):
         dim     = int(s[1])
         print("Reading "+str(nbNodes)+ " Nodes in dimension "+str(dim))
         res.nodes = np.empty((nbNodes,dim))
-        res.originalIDNodes= np.empty((nbNodes,))
+        res.originalIDNodes= np.empty((nbNodes,),dtype=np.int)
         cpt = 0
         while(True):
             l  = self.ReadCleanLine()

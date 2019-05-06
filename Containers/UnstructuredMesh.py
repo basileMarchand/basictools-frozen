@@ -147,6 +147,7 @@ class ElementsContainer(BaseOutputObject):
         to compact the storage an free non used space
         """
         self.Reserve(self.cpt)
+        self.tags.Tighten()
 
 
     def AddElementToTag(self,globalElemNumber,tagname):
@@ -220,6 +221,9 @@ class UnstructuredMesh(MeshBase):
         self.elements : the list of all the elememnt in the mesh
         self.boundingMin/Max : the bounding box of the mesh (use ComputeBoundingBox
          to compute it)
+
+        the manual construction of this class must always end with a call to the
+        function
     """
     def IsUnstructured(self):
         return True
@@ -371,9 +375,19 @@ class UnstructuredMesh(MeshBase):
         res = np.empty(self.GetNumberOfElements(),dtype=np.int)
         cpt = 0
         for ntype, data in self.elements.items():
-            res[0:data.GetNumberOfElements()] = data.originalIds+data.originalOffset
+            res[0+cpt:data.GetNumberOfElements()+cpt] = data.originalIds+data.originalOffset
             cpt += data.GetNumberOfElements()
         return res
+
+    def SetElementsOriginalIDs(self,originalIDs):
+        """
+        Set from a single list all the originalid
+        """
+        cpt = 0
+        for ntype, data in self.elements.items():
+            data.originalIds = originalIDs[cpt:data.GetNumberOfElements()+cpt]
+            cpt += data.GetNumberOfElements()
+
 
     def GetElementsInTag(self,tagname,useOriginalId=False) :
         """
@@ -389,7 +403,7 @@ class UnstructuredMesh(MeshBase):
                 if useOriginalId:
                     res[cpt:cpt+len(tag) ] = elem.originalIds[tag];
                 else:
-                    res[cpt:cpt+len(elem.tags[tagname].GetIds()) ] = elem.globaloffset+tag;
+                    res[cpt:cpt+len(tag) ] = elem.globaloffset+tag;
                 cpt +=  len(tag)
         return res[0:cpt]
 
@@ -399,10 +413,9 @@ class UnstructuredMesh(MeshBase):
         and final treatement (offset computation)
         """
         self.ComputeGlobalOffset()
+        self.nodesTags.Tighten()
         for ntype, data in self.elements.items():
              data.tighten()
-             for tag in data.tags:
-                   tag.Tighten()
 
     def GenerateManufacturedOriginalIDs(self):
         """

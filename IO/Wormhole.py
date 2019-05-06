@@ -62,11 +62,12 @@ class WormholeBase(BaseOutputObject):
         def TimeOutHandler(signum, frame):
            print("Connection TimeOut")
            exit(1)
-        signal.signal(signal.SIGALRM, TimeOutHandler)
+        if not (timeout is None):
+            signal.signal(signal.SIGALRM, TimeOutHandler)
 
     def Receive(self):
-
-      signal.alarm(self.timeout)
+      if not (self.timeout is None):
+          signal.alarm(self.timeout)
 
       try:
           sizestream = ""
@@ -120,20 +121,20 @@ class WormholeBase(BaseOutputObject):
         self.otherSideR.close()
 
 class WormholeServer(BaseOutputObject):
-    def __init__(self,port = None, cmd=None ,dry=False):
+    def __init__(self,port = None, cmd=None ,dry=False,timeout=3600):
        super(WormholeServer,self).__init__()
        self.globals = {}
 
        # no code is executes only print it
        self.drymode = dry
        if port is not None:
-           self.communicator = WormholeBase()
+           self.communicator = WormholeBase(timeout=timeout)
            self.ListenUsingPort(port)
            self.MainLoop()
            self.communicator.socket.close()
        elif cmd is not None:
            #from BasicTools.IO.Proxy import ServerProxy
-           self.communicator = WormholeBase()
+           self.communicator = WormholeBase(timeout=timeout)
            from BasicTools.Helpers.PrintBypass import PrintBypass
            self.printBypass = PrintBypass()
            from BasicTools.Helpers.Tests import GetUniqueTempFile
@@ -304,7 +305,7 @@ def CheckIntegrityNetWork():
    if True:
      def runServer():
          print("(s) Starting Server Side ",testport)
-         WormholeServer(testport,dry=False)
+         WormholeServer(testport,dry=False,timeout=None)
      TT = threading.Thread(target=runServer )
 
      TT.start()
@@ -422,7 +423,7 @@ if __name__ == '__main__':
     testport = GetAnFreePortNumber()
 
     import threading
-    t = threading.Thread(target=WormholeServer,name="WormHoleServer",args=(testport,))
+    t = threading.Thread(target=WormholeServer,name="WormHoleServer",kwargs={"port":testport,"timeout":None})
     t.daemon = True
     t.start()
     import time

@@ -247,7 +247,7 @@ class MeshReader(ReaderBase):
                 break
 
             self.PrintVerbose("ignoring line :->" + l +"<-")
-
+        res.PrepareForOutput()
         self.EndReading()
         return res
 

@@ -138,7 +138,7 @@ def CheckIntegrity(GUI=False):
         for tetra in [False,True]:
            print("in CheckIntegrityFlexion P="+str(P)+" tetra="+str(tetra))
            res = CheckIntegrityFlexion( P = P,tetra = tetra,GUI=GUI);
-           if res.lower()!="ok": return res + " " + str(P) + " " + str(tetra)
+           if res.lower()!="ok": return "ERROR: "+res + " " + str(P) + " " + str(tetra)
     return "ok"
 
 def CheckIntegrityFlexion(P,tetra,GUI=False):
@@ -169,6 +169,10 @@ def CheckIntegrityFlexion(P,tetra,GUI=False):
     from BasicTools.Containers.UnstructuredMeshTools import CreateCube
 
     nx = 11; ny = 12; nz = 13;
+    nx = nx//2
+    ny = ny//2
+    nz = nz//2
+
     mesh = CreateCube(dimensions=[nx,ny,nz],origin=[0,0,0.], spacing=[1./(nx-1),1./(ny-1), 10./(nz-1)], ofTetras=tetra )
     problem.SetMesh(mesh)
     print(mesh)

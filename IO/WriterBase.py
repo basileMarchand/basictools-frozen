@@ -18,6 +18,7 @@ class WriterBase(BaseOutputObject):
 
         self.canHandleAppend = False
         self._inAppendMode = False
+        self.filePointer = None
 
     def SetAppendMode(self,mode = True):
         if self.isOpen() :

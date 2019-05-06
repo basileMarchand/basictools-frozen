@@ -426,13 +426,20 @@ def GetInputTimeSequence(data):
 
     reconstructedTimeSequence = []
 
+    lt = len(timeSequence)
     if timeSequence[0] != 0:
       reconstructedTimeSequence.append(0.)
-    for j in range(incrementSequence[0]):
-      reconstructedTimeSequence.append((j+1)*(timeSequence[0])/incrementSequence[0])
-    for i in range(1, len(timeSequence)):
-      for j in range(incrementSequence[i-1]):
-        reconstructedTimeSequence.append(timeSequence[i-1]+(j+1)*(timeSequence[i]-timeSequence[i-1])/incrementSequence[i-1])      
+
+    if lt == 1:
+      for j in range(incrementSequence[0]):
+        reconstructedTimeSequence.append((j+1)*(timeSequence[0])/incrementSequence[0])
+    else:
+      reconstructedTimeSequence.append(timeSequence[0])
+      for i in range(lt-1):
+        for j in range(incrementSequence[i]):
+          #print(i, j, len(timeSequence), len(incrementSequence))
+          reconstructedTimeSequence.append(timeSequence[i]+(j+1)*(timeSequence[i+1]-timeSequence[i])/incrementSequence[i])     
+
 
     return reconstructedTimeSequence
 

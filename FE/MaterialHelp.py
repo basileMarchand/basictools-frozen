@@ -4,12 +4,34 @@ __author__ = "Felipe Bordeu"
 import numpy as np
 
 def HookeIso(E,nu, dim = 3, planeStress = True):
+    """
+    Compute and return the Hooke operator for an isotropic material (OLD INTERFACE)
+
+    E : (scalar) Young modulus
+    nu : (scalar) Poisson coefficient
+    dim : [1|2|3] dimensionality
+    planeStress : (bool) if in 2D plane Stress displacement is assumed
+    """
     hl= HookeLaw({"E":E,"nu":nu})
     return hl.HookeIso(dim=dim ,planeStress= planeStress )
 
 
 
-def LaplaceOrtho(k1,k2,k3=1, dim = 3):
+def LaplaceOrtho(k1,k2=None,k3=None, dim = 3):
+    """
+    Compute and return the Laplace operator for an anisotropic material
+
+    k1,k2,k3 : (scalar) diffusion coefficient
+    dim : [2|3] dimensionality
+
+    if k2,k3 is None the k1 is used
+    """
+    if k2 is None:
+        k2 =k1
+
+    if k3 is None:
+        k3 =k1
+
     if dim == 2:
         return np.array([[k1 , 0 ],
                          [0  , k2]]);
@@ -21,12 +43,31 @@ def LaplaceOrtho(k1,k2,k3=1, dim = 3):
 
 
 class HookeLaw() :
+    """ Class to compute the Hooke using any 2 independent parameters ()
+
+    Possible parameters are:
+         "lambda":Premier coefficient de Lamé (?)
+         "G"     : Module de cisaillement (G)
+         "E"     : Module de Young (E)
+         "K",    : Module d'élasticité isostatique (K)
+         "K" "mu": Module d'élasticité isostatique (K) (mu) deuxiemme coeff de Lamé
+         "nu"    : Coefficient de Poisson (?)
+         "M"     : Module d'onde de compression (M, P-wave modulus)
+    """
     def __init__(self,opt=None):
+        """
+        Constructor opt can be a dict like object
+        """
+        self.data = {}
 
         if not opt is None:
             self.Read(opt)
 
     def HookeIso(self, dim = 3, planeStress = True):
+        """
+        Return the isotropic Hooke operator for dimensionality dim
+        in the 2D case plane stress (defautl) or plane strain case are available
+        """
         E = self.Get("E")
         nu = self.Get("nu")
         if dim == 1:
@@ -52,12 +93,19 @@ class HookeLaw() :
                       [0   , 0   ,  0   , 0      ,0      ,0.5-nu]]));
         return res
 
-    def Read(self,opt):
+    def Read(self,opt,eraseData=True):
+        """
+        Reader function to get the information form the opt (dict like object)
+        this function will erase all the previous data. change the eraseData to
+        False to set the parameters one by one.
+        """
 
         if len(opt) != 2:
             raise(Exception("I need only 2 parameter to define a elastic material"))
 
-        self.data = {}
+        if eraseData:
+            self.data = {}
+
         parser = {  "lambda":"l",# Premier coefficient de Lamé (?)
                   "G":"G",       # Module de cisaillement (G)
                   "E":"E",       # Module de Young (E)
@@ -81,7 +129,12 @@ class HookeLaw() :
                         "nu":["nu"],# to be completed
                         "M":["M"]# to be completed
                          }
+
     def Get(self,name):
+        """
+        Function to retrieve a specific constante based on the provided constant
+        """
+
         formulas = self.formulas[name]
         for f in formulas :
             try:
@@ -89,7 +142,6 @@ class HookeLaw() :
             except:
                 pass
         raise (Exception ("Unable to calculate " + str(name)))
-
 
 def CheckIntegrity():
     HI3D = HookeIso(1,0.3)

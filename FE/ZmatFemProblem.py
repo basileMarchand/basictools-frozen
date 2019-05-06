@@ -18,6 +18,22 @@ import sys
 
 
 class UMatFemProblem(BaseOutputObject):
+    """
+    Class to solve a finit element problem using the local behaviour law subroutine
+    Zmat. For the moment only 3D solid problem are treated.
+
+    mesh    : the discretisation of the domain
+    dtime   : time variation of the current step
+    temp    : current temperature
+    dtemp   : variation of the temperature
+    dstrain : variation of the straint field in the currect step
+    tag     : the name of the domain to be used in the calculation
+    u       : displacement field
+    du      : variation of the displacement field
+    pyumat  : the wraper to the behaviour law
+
+    """
+
     cpt = 0
 
     def __init__(self):
@@ -45,6 +61,15 @@ class UMatFemProblem(BaseOutputObject):
         self.pyumat = pyumat
 
     def SetMesh(self,mesh):
+        """
+        Function to set the discratisation.
+
+        This function will:
+            - define the spaces (LagrangeSpaceGeo)
+            - compute the numbering (il uses the point ids for the dof numbering)
+            - allocate the fields for the strain
+            - allocate the fields for the displacement the the displacment increment
+        """
         self.mesh = mesh
         dim = mesh.GetDimensionality()
         self.spaces = [LagrangeSpaceGeo]*dim
@@ -69,6 +94,11 @@ class UMatFemProblem(BaseOutputObject):
 
 
     def SetMaterial(self,filename=None,string=None):
+        """
+        Function to initialise the behavoiur law, the user can give a filename,
+        or a string containing the behavoiur law parameters.
+        """
+
         if filename is not None:
             self.matfile = filename
         elif string is not None:
@@ -208,6 +238,12 @@ ddsddeNew = pyumat.umat(stress=stress,statev=statev,ddsdde=ddsdde,sse=sse,spd=sp
 
 
     def AllocateMaterialData(self):
+        """
+        This function must be called to allocate the fields for the integration
+        points data
+
+        Attention, the order of the data is not the same as in the umat !!!!
+        """
 
         def create(obj):
           from BasicTools.FE.Fields.IntegrationPointField import IntegrationPointField as IPF
@@ -233,6 +269,13 @@ ddsddeNew = pyumat.umat(stress=stress,statev=statev,ddsdde=ddsdde,sse=sse,spd=sp
 
 
     def GetDofsForElementTag(self,tagname,dof=None):
+        """
+        Get the dofs numbers of all the nodes present in a tag
+
+        tagname : (string) name of the tag
+        dof : [0,1,2,None] Ux,Uy,Uz or all the dofs for the current points
+
+        """
         nbdofs = self.mesh.GetNumberOfNodes()
         dofs = []
         for name,data in self.mesh.elements.items():
@@ -252,7 +295,16 @@ ddsddeNew = pyumat.umat(stress=stress,statev=statev,ddsdde=ddsdde,sse=sse,spd=sp
         return np.unique(dofs)
 
     def CallUmatOnIntegrationPointI(self,elemtype,el,ip,updateInternals=True):
+        """
+        Function to call the umat routine on a specifique integration point of
+        one element:
 
+        elemtype : (string) the element type
+        et       :  (int)   the local id of the element
+        ip       : (int)    the id of the integration point
+        updateInternals : (bool) if we update the internal variable with the output
+            of the routine
+        """
         cmname = self.matfile
 
         nstatv = len(self.var_int) + len(self.var_aux) +  len(self.var_extra)
@@ -353,6 +405,9 @@ ddsddeNew = pyumat.umat(stress=stress,statev=statev,ddsdde=ddsdde,sse=sse,spd=sp
 
 
     def ViewInParaView(self):
+        """
+        Just a helper function to view the mesh
+        """
         from BasicTools.Actions.OpenInParaView import OpenInParaView
 #        F = f.view()
 #        F.shape = (3,mesh.GetNumberOfNodes())
@@ -365,6 +420,16 @@ ddsddeNew = pyumat.umat(stress=stress,statev=statev,ddsdde=ddsdde,sse=sse,spd=sp
         OpenInParaView(self.mesh)
 
     def GenerateKF(self,computeK=True,computeF=True,updateInternals=True):
+        """
+        General function to compute lhs, rhs and to update the internal variables
+        of the material
+
+        computeK : (bool) to compute the lhs
+        computeF : (bool) to compute the rhs
+        updateInternals : (bool) to update the internal variables of the material
+
+
+        """
         #total number of dofs and offset calculation
         offset = []
         totaldofs = 0
@@ -413,6 +478,24 @@ ddsddeNew = pyumat.umat(stress=stress,statev=statev,ddsdde=ddsdde,sse=sse,spd=sp
         return (K,F)
 
     def ElementsIntegral(self,domain,vij,elspace,elnumbering,offset,totaldofs,idstotreat,computeK,F,updateInternals ):
+        """
+        Internal function to compute the tanget matrix using the umat
+
+        domain : (ElementsContainer) a storage of element of the same type
+        vij    : (list(np.array(float)),np.array(int)),np.array(int)))
+                 list containing the 3 vectors (values,Is,Js), for the construction
+                 of the sparse matrix
+        elspace : (SpaceBase) approximation space for the current type of elements
+        elnumbering : list[np.arrays(ints)] numbering of the dofs
+        offset : list(ints) the offset of the numbering with respect to the precedent field
+        totaldofs : (int) total number of dofs (the size of the tanget matrix)
+        idstotreat : list(ints) the element  to be treated
+        computeK : (bool) if true the filling of vij is done
+        F : [None, np.array(float)] if not none then F is fillet with the rhs constribution
+        updateInternals : (bool) to update the internal variable of the class with
+            the calculated data from the umat
+
+        """
         from BasicTools.FE.IntegrationsRules import LagrangeP1
         import BasicTools.Containers.ElementNames as EN
 
@@ -491,6 +574,15 @@ ddsddeNew = pyumat.umat(stress=stress,statev=statev,ddsdde=ddsdde,sse=sse,spd=sp
         return
 
     def SolveUsing(self,k,f,fixedValues=None,freeMask=None):
+        """
+        Simple function to solve the problem ku=f qith the fixed values.
+
+        k : (matrix(floats)) linear operator
+        f : (vector(floats)) rhs
+        fixedValues : (vector(floats)) values of Dirichlet boundary conditions
+        freeMask : (vector(bool)) true to impose Dirichlet value to the courrent dof
+
+        """
         if  fixedValues is not None:
             [K, rhsfixed] = deleterowcol(k.tocsr(), np.logical_not(freeMask), np.logical_not(freeMask), fixedValues)
             rhs = f[freeMask]-rhsfixed[freeMask]

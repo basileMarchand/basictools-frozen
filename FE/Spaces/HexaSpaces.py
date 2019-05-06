@@ -10,7 +10,7 @@ from BasicTools.FE.Spaces.SymSpace import SymSpaceBase
 class Hexa_P0_Global(SymSpaceBase):
     def __init__(self):
         super(Hexa_P0_Global,self).__init__()
-        self.geoSupport = EN.GeoQuad
+        self.geoSupport = EN.GeoHex
 
 
         self.symN = Matrix([1])
@@ -22,7 +22,7 @@ class Hexa_P0_Global(SymSpaceBase):
 class Hexa_P0_Lagrange(SymSpaceBase):
     def __init__(self):
         super(Hexa_P0_Lagrange,self).__init__()
-        self.geoSupport = EN.GeoQuad
+        self.geoSupport = EN.GeoHex
 
 
         self.symN = Matrix([1])

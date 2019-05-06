@@ -10,6 +10,8 @@ def PrintHelp():
   print( '       -i    Input file name')
   print( '       -o    output file name')
   print( '       -h    this help')
+  print( '       -t    time to read (if the input file can handle time) (default last time step is writen)')
+  print( '       -p    print availables time to read ')
   IOF.InitAllReaders()
   print("Available Readers : ", IOF.GetAvailableReaders())
 
@@ -21,7 +23,7 @@ def PrintHelp():
 
 from BasicTools.Helpers.PrintBypass import PrintBypass
 
-def Convert(inputfilename,outputfilename):
+def Convert(inputfilename,outputfilename,ops):
       IOF.InitAllReaders()
       IOF.InitAllWriters()
 
@@ -31,7 +33,22 @@ def Convert(inputfilename,outputfilename):
               f.ToDisk("MeshFileConverter.log")
 
           print("Start Reading...", inputfilename)
-          mesh = ReadMesh(inputfilename)
+
+          if ops["printTimes"]:
+              from BasicTools.IO.IOFactory import InitAllReaders
+              InitAllReaders()
+              import os
+              basename,extention = os.path.splitext(os.path.basename(inputfilename))
+              from BasicTools.IO.IOFactory import CreateReader
+              reader = CreateReader("."+inputfilename.split(".")[-1].lower())
+              reader.SetFileName(inputfilename)
+              if reader.canHandleTemporal :
+                  reader.ReadMetaData()
+                  print("Available Times in files:")
+                  print(reader.GetAvilableTimes())
+                  exit(0)
+
+          mesh = ReadMesh(inputfilename,timeToRead = ops["timeToRead"])
           print(mesh)
           print("Start Writing to "+  str(outputfilename))
           writer = None
@@ -70,7 +87,10 @@ def CheckIntegrity(GUI=False):
         for off in outputext:
             inputfilename = GetTestDataPath() + iff
             outputfilename = TestTempDir().GetTempPath()+iff+"." + off
-            Convert(inputfilename,outputfilename)
+            ops= {}
+            ops["timeToRead"] = -1
+            ops["printTimes"] = False
+            Convert(inputfilename,outputfilename,ops)
 
     return "ok"
 
@@ -81,11 +101,15 @@ if __name__ == '__main__' :
         sys.exit()
     else:
       try:
-          opts, args = getopt.getopt(sys.argv[1:],"thi:o:")
+          opts, args = getopt.getopt(sys.argv[1:],"pht:i:o:")
       except getopt.GetoptError:
           PrintHelp()
           sys.exit(2)
 
+      outputfilename = ""
+      ops= {}
+      ops["timeToRead"] = -1
+      ops["printTimes"] = False
       for opt, arg in opts:
          if opt == '-h':
              PrintHelp()
@@ -95,8 +119,14 @@ if __name__ == '__main__' :
          elif opt in ("-o"):
             outputfilename = arg
          elif opt in ("-t"):
+            ops["timeToRead"] = float(arg)
+            print(ops)
+            #raise
+         elif opt in ("-p"):
+            ops["printTimes"] = bool(True)
+         elif opt in ("-c"):
             print(CheckIntegrity(GUI=True))
             exit(0)
 
 
-    Convert(inputfilename,outputfilename)
+    Convert(inputfilename,outputfilename,ops )
