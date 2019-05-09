@@ -15,6 +15,7 @@ PermutationZSetToBasicTools = {}
 
 GeofNumber['l2d1']   = EN.Point_1
 GeofNumber['l2d2']   = EN.Bar_2
+GeofNumber['line']   = EN.Bar_2
 GeofNumber['quad']   = EN.Bar_3
 
 GeofNumber['q4'] = EN.Quadrangle_4
