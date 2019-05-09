@@ -9,6 +9,7 @@ eltype = {}
 eltype["S3"] = EN.Triangle_3
 eltype["C3D4"] = EN.Tetrahedron_4
 eltype["C3D8"] = EN.Hexaedron_8
+eltype["C3D10"] = EN.Tetrahedron_10
 
 permutaion = {}
 #permutaion["C3D4"] = [0, 1, 3, 2]
