@@ -53,7 +53,15 @@ class Interface(BaseOutputObject):
 
         # Write code input file
         try:
-            inpString = self.tpl.format(**self.parameters)
+            def expand_vars(string, vars):
+                while True:
+                    expanded = string.format(**vars)
+                    if expanded == string:
+                        break
+                    string = expanded
+                return string
+            inpString = expand_vars( self.tpl,self.parameters)
+            #inpString = self.tpl.format(**self.parameters)
         except KeyError as e: # pragma: no cover
             print("The user must supply the key: %s" % str(e))
             raise
