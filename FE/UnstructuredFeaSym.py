@@ -24,6 +24,11 @@ class UnstructuredFeaSym(FeaBase):
         self.spaces = []
         self.numberings = []
 
+    def SetMesh(self,support):
+        super(UnstructuredFeaSym,self).SetMesh(support)
+        for phy in self.physics:
+            phy.Reset()
+
     def ComputeDofNumbering(self,tagsToKeep=None):
 
         self.spaces = []
