@@ -88,10 +88,10 @@ class WriterBase(BaseOutputObject):
                 mode = "wb"
             else:
                 if self.InAppendMode():
-                    mode = "ta"
+                    mode = "a"
                 else:
                     # in python 3 the binary mode must be used to use the numpy.savetxt
-                    mode = "tw"
+                    mode = "w"
 
             # unbuffered text I/O are not allowed in python 3
             # bug http://bugs.python.org/issue17404
