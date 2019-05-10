@@ -757,7 +757,7 @@ def ExtractElementByDimensionalityNoCopy(inmesh,dimensionalityFilter):
 
 def ExtractElementByTags(inmesh,tagsToKeep, allNodes=False,dimensionalityFilter= None, cleanLonelyNodes=True):
 
-    outmesh = type(inmesh)()
+    outmesh = UnstructuredMesh()
     outmesh.CopyProperties(inmesh)
 
     outmesh.nodes = np.copy(inmesh.nodes)
@@ -1240,7 +1240,7 @@ def ComputeSkin(mesh, md=None ,inplace=False):
     if inplace:
         res = mesh
     else:
-        res = type(mesh)()
+        res = UnstructuredMesh()
         res.nodes = mesh.nodes
 
     for name in surf:
@@ -1258,12 +1258,22 @@ def ComputeSkin(mesh, md=None ,inplace=False):
 
 def ComputeFeatures(inputmesh,FeatureAngle=90,skin=None):
 
+    from BasicTools.Containers.Filters import ElementFilter
+    import copy
+
     if skin is None:
         skinmesh = ComputeSkin(inputmesh)
+        skinmeshSave = copy.deepcopy(skinmesh)
+        for name,data,ids in ElementFilter(inputmesh, dimensionality = 2):
+            skinmesh.elements[name].Merge(data)
     else:
         skinmesh = skin
 
+
+    # we have to merge all the 2D elements form the original mesh to the skinmesh
+
     md = skinmesh.GetDimensionality()
+
     nex = skinmesh.GetNumberOfElements()
 
     #we use the original id to count the number of time the faces is used
@@ -1271,11 +1281,11 @@ def ComputeFeatures(inputmesh,FeatureAngle=90,skin=None):
     for name,data in skinmesh.elements.items():
         if ElementNames.dimension[name] != md-1:
             continue
-
         faces = ElementNames.faces[name]
         numberOfNodes = ElementNames.numberOfNodes[name]
 
         ne = data.GetNumberOfElements()
+
         for faceType,localFaceConnectivity in faces:
             globalFaceConnectivity = data.connectivity[:,localFaceConnectivity]
             if not faceType in surf:
@@ -1326,9 +1336,9 @@ def ComputeFeatures(inputmesh,FeatureAngle=90,skin=None):
     for eltype in [ElementNames.Bar_2, ElementNames.Bar_3]:
         bars = edgemesh.GetElementsOfType(eltype)
         bars.tags.CreateTag("Ridges").SetIds(np.arange(bars.GetNumberOfElements()))
-
     skinmesh.PrepareForOutput()
     edgemesh.PrepareForOutput()
+
     """
     Now we compute the corners
 
@@ -1391,7 +1401,7 @@ def ComputeFeatures(inputmesh,FeatureAngle=90,skin=None):
 
     edgemesh.PrepareForOutput()
     skinmesh.PrepareForOutput()
-    return (edgemesh,skinmesh)
+    return (edgemesh,skinmeshSave)
 
 def PointToCellData(mesh,pointfield):
 

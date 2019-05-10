@@ -61,6 +61,8 @@ class ElementsContainer(BaseOutputObject):
         shifted by the value of the offset during the merge
         """
         other.tighten()
+        if other.cpt == 0:
+            return
 
         self.Reserve(self.cpt+other.cpt)
 
@@ -289,12 +291,6 @@ class UnstructuredMesh(MeshBase):
             n = data.GetNumberOfElements()
             cpt = cpt + n
 
-    def GetElementsOfType(self,typename):
-        """
-        return the element container for the typename element
-        """
-        return self.elements.GetElementsOfType(typename)
-
     def ComputeBoundingBox(self):
         """
         to recumpute the bounding box
@@ -368,15 +364,16 @@ class UnstructuredMesh(MeshBase):
 
         return list(res)
 
-    def GetElementsOriginalIDs(self):
+    def GetElementsOriginalIDs(self,dim = None):
         """
         return a single list with all the originalid concatenated
         """
-        res = np.empty(self.GetNumberOfElements(),dtype=np.int)
+        res = np.empty(self.GetNumberOfElements(dim=dim),dtype=np.int)
         cpt = 0
-        for ntype, data in self.elements.items():
-            res[0+cpt:data.GetNumberOfElements()+cpt] = data.originalIds+data.originalOffset
-            cpt += data.GetNumberOfElements()
+        from BasicTools.Containers.Filters import ElementFilter
+        for name,data,ids in ElementFilter(self,dimensionality = dim):
+            res[0+cpt:len(ids)+cpt] = data.originalIds[ids]+data.originalOffset
+            cpt += len(ids)
         return res
 
     def SetElementsOriginalIDs(self,originalIDs):

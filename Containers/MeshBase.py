@@ -176,6 +176,13 @@ class MeshBase(BaseOutputObject):
         """
         self.props = {}
 
+    def GetElementsOfType(self,typename):
+        """
+        return the element container for the typename element
+        """
+        return self.elements.GetElementsOfType(typename)
+
+
     def CopyProperties(self,other):
         import copy
         self.props = copy.deepcopy(self.props)
