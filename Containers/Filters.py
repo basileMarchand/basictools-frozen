@@ -89,11 +89,10 @@ class Filter(BOO):
         if len(self.tags) == 0:
             return None
 
-        res = []
+        res = np.zeros(0,dtype=int)
         for tag in self.tags:
             if tag in tags:
                 res = np.union1d(res,tags[tag].GetIds())
-
         return res
 
     def intersect1D(self,first,second):
@@ -125,12 +124,35 @@ class NodeFilter(Filter):
        Specialized class for node filtering zone and tag
 
     """
-    def __init__(self,mesh,**kwargs):
+    def __init__(self,mesh, etags = None, etag = None, **kwargs):
         """
         Constructor: all the parammeter are passed to the base class
 
         """
+        self.etags = list()
+        if etags is not None:
+            self.SetETags(etags)
+        if etag is not None:
+            self.AddETag(etag)
+
         super(NodeFilter,self).__init__(mesh,**kwargs)
+
+    def SetETags(self,tagNames):
+        """
+        Set the tag list name to treate
+
+        :param list(str) tagNames: list of tag names
+
+        """
+        self.etags = list(tagNames)
+
+    def AddETag(self,tagName):
+        """
+        Add a tagname to the list of tag to treat
+
+        :param str tagName: tag name to add
+        """
+        self.etags.append(tagName)
 
     def _CheckZones_(self,pos,numberOfObjects):
         """
@@ -157,9 +179,27 @@ class NodeFilter(Filter):
         :return list(int): the filtered ids
 
         """
+        if len(self.etags):
+            ff =ElementFilter(self.mesh,tags=self.etags)
+            class OP():
+                 def __init__(self):
+                     self.set = set()
+
+                 def __call__(self,name,data,ids):
+                     self.set.update(data.GetNodesIdFor(ids))
+            op = OP()
+            ff.ApplyOnElements(op)
+            if len(op.set):
+               resE = list(op.set)
+            else:
+                resE = None
+        else:
+            resE = None
+
         res  = self._CheckTags_(self.mesh.nodesTags,self.mesh.GetNumberOfNodes())
         res2 = self._CheckZones_(self.mesh.nodes,self.mesh.GetNumberOfNodes() )
         res3 = self.intersect1D(res,res2)
+        res3 = self.intersect1D(res3,resE)
         if res3 is None:
             return range(self.mesh.GetNumberOfNodes())
         else:
@@ -304,7 +344,6 @@ class ElementFilter(Filter):
 
         res  = self._CheckTags_(elements.tags,elements.GetNumberOfElements())
         res2 = self._CheckZones_(elements)
-
         res3 = self.intersect1D(res,res2)
         if res3 is None:
             return range(elements.GetNumberOfElements())
