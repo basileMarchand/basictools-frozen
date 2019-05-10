@@ -1,6 +1,9 @@
 variables:
     GIT_SSL_NO_VERIFY: "1"
     MYPROJECT : 'BasicTools'
+    PREFIX: "/softs/python/CamLibs/BasicTools"
+    ACLSCRIPT: "/softs/sttools/bin/set-acl-from-file"
+
 
 stages:
     - doc
@@ -40,7 +43,7 @@ build_Python2:
     artifacts:
         paths:
           - FE/*.so
-        expire_in: 60 minutes
+        expire_in: 600 minutes
 
 
 build_Python3:
@@ -55,7 +58,7 @@ build_Python3:
     artifacts:
         paths:
           - FE/*36*.so
-        expire_in: 60 minutes
+        expire_in: 600 minutes
 
 
 test_with_coverage_Python3:
@@ -141,3 +144,20 @@ pages:
         name: "WebSite"
         paths:
             - public
+
+    only :
+       - master
+
+
+deploy:
+  stage: deploy
+  tags:
+    - MSBasicTools
+  script:
+    - echo "Deploy..."
+    - rsync -av --delete-after --cvs-exclude --exclude='.gitlab*' --omit-dir-times --no-perms . $PREFIX
+    - $ACLSCRIPT $PREFIX/.acl
+  environment:
+    name: deploy_to_softs
+  only:
+  - master
