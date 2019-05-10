@@ -91,8 +91,8 @@ class MeshWriter(WriterBase):
                  self.filePointer.write(struct.pack("i", nodalRefNumber[n]))# refs
 
 
-        self.PrintDebug("position at end " + str(self.filePointer.tell()))
-        self.PrintDebug("calculate position at end " + str(endOfInformation))
+        #self.PrintDebug("position at end " + str(self.filePointer.tell()))
+        #self.PrintDebug("calculate position at end " + str(endOfInformation))
 
 #"GmfRequiredVertices": 15,
 
@@ -106,8 +106,8 @@ class MeshWriter(WriterBase):
                self.filePointer.write(struct.pack('i', endOfInformation ))# end of information
                self.filePointer.write(struct.pack('i', nbids))# GetNumberOfElements
                ids.astype(np.int32).tofile(self.filePointer, format=dataformat,sep='')
-               self.PrintDebug("position at end " + str(self.filePointer.tell()))
-               self.PrintDebug("calculate position at end " + str(endOfInformation))
+               #self.PrintDebug("position at end " + str(self.filePointer.tell()))
+               #self.PrintDebug("calculate position at end " + str(endOfInformation))
 
         globalOffset =0
         for elementContainer in meshObject.elements:
@@ -138,8 +138,8 @@ class MeshWriter(WriterBase):
 
             globalOffset += data.GetNumberOfElements()
 
-            self.PrintDebug("position at end " + str(self.filePointer.tell()))
-            self.PrintDebug("calculate position at end " + str(endOfInformation))
+            #self.PrintDebug("position at end " + str(self.filePointer.tell()))
+            #self.PrintDebug("calculate position at end " + str(endOfInformation))
 
 
         if "Corners" in meshObject.nodesTags:
@@ -153,8 +153,8 @@ class MeshWriter(WriterBase):
                 self.filePointer.write(struct.pack('i', endOfInformation ))# end of information
                 self.filePointer.write(struct.pack('i', nbids))# GetNumberOfElements
                 (ids+1).astype(np.int32).tofile(self.filePointer, format=dataformat,sep='')
-                self.PrintDebug("Corners (W) position at end " + str(self.filePointer.tell()))
-                self.PrintDebug("Corners (W) calculate position at end " + str(endOfInformation))
+                #self.PrintDebug("Corners (W) position at end " + str(self.filePointer.tell()))
+                #self.PrintDebug("Corners (W) calculate position at end " + str(endOfInformation))
 
         bars = meshObject.GetElementsOfType(EN.Bar_2)
         if "Ridges" in bars.tags  and len(bars.tags["Ridges"]):
@@ -178,8 +178,8 @@ class MeshWriter(WriterBase):
                 self.filePointer.write(struct.pack('i', endOfInformation ))# end of information
                 self.filePointer.write(struct.pack('i', nbids))# GetNumberOfElements
                 (ids+1).astype(np.int32).tofile(self.filePointer, format=dataformat,sep='')
-                self.PrintDebug("position at end " + str(self.filePointer.tell()))
-                self.PrintDebug("calculate position at end " + str(endOfInformation))
+                #self.PrintDebug("position at end " + str(self.filePointer.tell()))
+                #self.PrintDebug("calculate position at end " + str(endOfInformation))
 
 
 
@@ -200,8 +200,8 @@ class MeshWriter(WriterBase):
                 self.filePointer.write(struct.pack('i', endOfInformation ))# end of information
                 self.filePointer.write(struct.pack('i', nbids))# GetNumberOfElements
                 (ids+1).astype(np.int32).tofile(self.filePointer, format=dataformat,sep='')
-                self.PrintDebug("position at end " + str(self.filePointer.tell()))
-                self.PrintDebug("calculate position at end " + str(endOfInformation))
+                #self.PrintDebug("position at end " + str(self.filePointer.tell()))
+                #self.PrintDebug("calculate position at end " + str(endOfInformation))
 
 
         tris = meshObject.GetElementsOfType(EN.Triangle_3)
@@ -221,8 +221,8 @@ class MeshWriter(WriterBase):
                 self.filePointer.write(struct.pack('i', endOfInformation ))# end of information
                 self.filePointer.write(struct.pack('i', nbids))# GetNumberOfElements
                 (ids+1).astype(np.int32).tofile(self.filePointer, format=dataformat,sep='')
-                self.PrintDebug("position at end " + str(self.filePointer.tell()))
-                self.PrintDebug("calculate position at end " + str(endOfInformation))
+                #self.PrintDebug("position at end " + str(self.filePointer.tell()))
+                #self.PrintDebug("calculate position at end " + str(endOfInformation))
 
 
         if "Meca" in bars.tags :
@@ -242,8 +242,8 @@ class MeshWriter(WriterBase):
                 self.filePointer.write(struct.pack('i', endOfInformation ))# end of information
                 self.filePointer.write(struct.pack('i', nbids))# GetNumberOfElements
                 (ids+1).astype(np.int32).tofile(self.filePointer, format=dataformat,sep='')
-                self.PrintDebug("position at end " + str(self.filePointer.tell()))
-                self.PrintDebug("calculate position at end " + str(endOfInformation))
+                #self.PrintDebug("position at end " + str(self.filePointer.tell()))
+                #self.PrintDebug("calculate position at end " + str(endOfInformation))
 
 
 
@@ -432,8 +432,8 @@ class MeshWriter(WriterBase):
                     sol = sol[:,np.newaxis]
                 sol[i,:].astype(self.dataType).tofile(self.filePointer, sep='')
 
-        self.PrintDebug("position at end " + str(self.filePointer.tell()))
-        self.PrintDebug("calculated position at end " + str(endOfInformation))
+        #self.PrintDebug("position at end " + str(self.filePointer.tell()))
+        #self.PrintDebug("calculated position at end " + str(endOfInformation))
         if ( not (self.filePointer.tell() == endOfInformation) ) : raise Exception("Error in the writing code, please debug me!!!")
 
     def CloseSolutionFileBinary(self):
