@@ -17,11 +17,8 @@ class IntegrationPointField(BaseOutputObject):
         self.name = name
         #self.ncoomp = 1
         pass
-    def Allocate(self,mesh,integrationrule,tag=AllElements):
+    def Allocate(self,mesh,integrationrule, tag = AllElements):
         for name,data in mesh.elements.items():
-            import BasicTools.Containers.ElementNames  as EN
-            #geoEl = EN.geoSupport[name]
-            #nbItegPoints = len(integrationrule[geoEl][1])
             nbItegPoints = len(Lagrange(name)[1])
             if tag == AllElements:
                 nbElements = data.GetNumberOfElements()
@@ -30,7 +27,6 @@ class IntegrationPointField(BaseOutputObject):
                     nbElements = len(data.tags[tag])
                 else:
                     nbElements = 0
-            #, self.ncoomp
             self.storage[name] = np.zeros((nbElements,nbItegPoints), dtype=np.float)
 
     def __str__(self):
@@ -48,6 +44,9 @@ class IntegrationPointField(BaseOutputObject):
 
     def IncrementValueAtIP(self,name,el,ip,val):
         self.storage[name][el,ip] += val
+
+    def GetStorage(self,name):
+        return self.storage[name]
 
 def CheckIntegrity(GUI=False):
     from BasicTools.FE.IntegrationsRules import LagrangeP1
