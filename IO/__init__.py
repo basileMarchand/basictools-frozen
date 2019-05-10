@@ -20,6 +20,7 @@ __all__ = [
 'PickleTools',
 'PostReader',
 'ProcastResultReader',
+'ProxyWriter',
 'ReaderBase',
 'StlReader',
 'StlWriter',
