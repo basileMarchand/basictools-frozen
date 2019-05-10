@@ -3,6 +3,7 @@
 __all__ = [
 'AscReader',
 'CodeInterface',
+'CsvWriter',
 'FemReader',
 'GeofReader',
 'GeofWriter',

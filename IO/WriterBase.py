@@ -87,8 +87,11 @@ class WriterBase(BaseOutputObject):
             if self._isBinary  :
                 mode = "wb"
             else:
-                # in python 3 the binary mode must be used to use the numpy.savetxt
-                mode = "w"
+                if self.InAppendMode():
+                    mode = "ta"
+                else:
+                    # in python 3 the binary mode must be used to use the numpy.savetxt
+                    mode = "tw"
 
             # unbuffered text I/O are not allowed in python 3
             # bug http://bugs.python.org/issue17404
@@ -98,7 +101,8 @@ class WriterBase(BaseOutputObject):
             #self.filePointer = io.TextIOWrapper(binstdout, encoding=sys.stdout.encoding)
             #
             self.filePointer = open(self.fileName, mode)
-
+            # to make the append work
+            self.filePointer.seek(0,2)
         except:# pragma: no cover
             print(TFormat.InRed("Error File Not Open"))# pragma: no cover
             raise
