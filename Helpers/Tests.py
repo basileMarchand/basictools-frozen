@@ -23,6 +23,8 @@ options :
     -d    Dry run do not execute anything, only show what will be executed
     -p    Activate profiling
     -v    Activate maximal level of verbosity
+    -y    Generate .pyc when inporting modules (default False)
+
 """
 
 from BasicTools.Helpers.which import which
@@ -387,7 +389,7 @@ if __name__ == '__main__':# pragma: no cover
         res = TestAll(modulestotreat=['ALL'],extraToolsBoxs= ["BasicTools"], fulloutput=False,coverage={"active":False})# pragma: no cover
     else:
       try:
-          opts, args = getopt.getopt(sys.argv[1:],"hcblfsdpve:m:")
+          opts, args = getopt.getopt(sys.argv[1:],"hcblfsdpvye:m:")
       except getopt.GetoptError as e:
           print(e)
           print(Test_Help_String)
@@ -404,6 +406,8 @@ if __name__ == '__main__':# pragma: no cover
       localhtml = False
       tmppath = None
 
+      import sys
+      sys.dont_write_bytecode = True
 
       for opt, arg in opts:
          if opt == '-h':
@@ -437,6 +441,10 @@ if __name__ == '__main__':# pragma: no cover
          elif opt in ("-p"):
             print('Setting temp output directory to ' + arg)
             TestTempDir.SetTempPath(arg)
+         elif opt in ("-y"):
+             sys.dont_write_bytecode = False
+
+
 
 
       if len(modulestotreat) == 0:

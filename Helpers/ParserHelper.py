@@ -112,6 +112,7 @@ def ReadProperties(data, props ,obj,typeConversion=True):
     try:
       for prop in props:
         if prop in data:
+
            theSetter = getattr( obj, "Set"+prop[0].upper()+ str(prop[1:]), None)
            if theSetter is None:
               #print(obj.__dict__)
@@ -122,9 +123,6 @@ def ReadProperties(data, props ,obj,typeConversion=True):
                   else:
                       obj.__dict__[prop] = data[prop]
               except:
-                  print(obj )
-                  print(prop)
-                  print(data)
                   raise (ValueError("Error setting  '"+str(prop)+"'  to object of type " + str(type(obj)) ) )
            else:
               theSetter(data[prop])
