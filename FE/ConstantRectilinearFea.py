@@ -168,14 +168,15 @@ class Fea(FeaBase.FeaBase):
         if  neumann_bcs is not  None:
 
             neumann_bcs.tighten()
-            self.support.GenerateFullConnectivity()
-            z = np.zeros((self.support.GetNumberOfNodes(),))
-            z[support.GetMonoIndexOfNode(neumann_bcs.nodes)] +=  1.;
-            eff = np.clip((np.sum(z[self.support.GenerateFullConnectivity()],axis=1) ),0, 1)
+            if neumann_bcs.cpt:
+              self.support.GenerateFullConnectivity()
+              z = np.zeros((self.support.GetNumberOfNodes(),))
+              z[support.GetMonoIndexOfNode(neumann_bcs.nodes)] +=  1.;
+              eff = np.clip((np.sum(z[self.support.GenerateFullConnectivity()],axis=1) ),0, 1)
 
-            MassMatrix = self.BuildMassMatrix(eff)
-            self.f[support.GetMonoIndexOfNode(neumann_bcs.nodes)*dofpernode + neumann_bcs.dofs] += neumann_bcs.vals
-            self.f[:,0] = MassMatrix*self.f[:,0]
+              MassMatrix = self.BuildMassMatrix(eff)
+              self.f[support.GetMonoIndexOfNode(neumann_bcs.nodes)*dofpernode + neumann_bcs.dofs] += neumann_bcs.vals
+              self.f[:,0] = MassMatrix*self.f[:,0]
 
         if  neumann_nodal is not  None:
             neumann_nodal.tighten()
@@ -218,6 +219,21 @@ class Fea(FeaBase.FeaBase):
 
 
     def Solve(self, Eeff=None):
+
+        # hack to integrate complex boundary condition in the mesh
+        if hasattr(self,"mecaPhysics") and (self.mecaPhysics is not None):
+            from BasicTools.FE.UnstructuredFeaSym import UnstructuredFeaSym
+            prob = UnstructuredFeaSym()
+            prob.physics.append(self.mecaPhysics)
+            prob.SetMesh(self.support)
+            self.mecaPhysics.ComputeDofNumberingFromConnectivity(self.support)
+            prob.ComputeDofNumbering(self.support)
+            k,f = prob.GetLinearProblem(computeK=False)
+            if f is not None:
+                f.shape = (3,len(f)//3)
+                f = f.ravel(order='F')
+                self.f[:,0] += f
+            self.mecaPhysics = None
 
         self.PrintDebug("Construction of the tangent matrix")
         if Eeff is None:
@@ -299,6 +315,8 @@ class Fea(FeaBase.FeaBase):
         u_reshaped.shape = (self.support.GetNumberOfElements(), self.nodesPerElement*self.dofpernode)
         Ku_reshaped = np.dot(u_reshaped, self.KE)
         np.einsum('ij,ij->i', Ku_reshaped, u_reshaped, out=self.eed)
+        # we divide by the volume of one element to get the energy density
+        self.eed /= np.prod(self.support.GetSpacing())
         self.PrintDebug('Post Process Done')
 
     def GenerateIJs(self):
