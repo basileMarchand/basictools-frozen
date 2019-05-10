@@ -1,0 +1,48 @@
+****calcul thermal_transient
+  ***init_dof_value TP file tinit.node 0
+
+***mesh
+**file cube.geof
+
+***resolution newton
+**sequence 1
+*time 20.
+*increment 20
+*algorithm p1p2p3
+
+
+***linear_solver mumps
+
+***bc
+  **radiation
+  y0   3.9683e-8 20.0  ptab    %(5.669E-8*0.7)
+  x0   3.9683e-8 20.0  ptab    %(5.669E-8*0.7)
+ **convection_heat_flux
+ y1   h 537.1283436721764 Te 1. ptab2
+
+***table
+ **name ptab
+  *time  0.  50000.
+  *value 1.  1.
+**name ptab2
+*time
+0.0 10.0 20.0
+21.0 22.0 23.0
+*value
+0. -80. 0.
+1.0 0.0 1.0
+
+
+@include tab1.inp
+
+
+***output
+**output_first
+
+***material
+*file mat
+
+****return
+
+
+

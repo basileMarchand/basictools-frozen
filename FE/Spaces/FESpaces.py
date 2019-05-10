@@ -14,6 +14,7 @@ LagrangeSpaceGeo[EN.Tetrahedron_4] = TetSpaces.Tet_P1_Lagrange()
 LagrangeSpaceGeo[EN.Triangle_6] = TriSpaces.Tri_P2_Lagrange()
 LagrangeSpaceGeo[EN.Tetrahedron_10] = TetSpaces.Tet_P2_Lagrange()
 LagrangeSpaceGeo[EN.Quadrangle_4] = QuadSpaces.Quad_P1_Lagrange()
+LagrangeSpaceGeo[EN.Quadrangle_8] = QuadSpaces.Quad_P2_Lagrange()
 LagrangeSpaceGeo[EN.Hexaedron_8] = HexaSpaces.Hexa_P1_Lagrange()
 
 

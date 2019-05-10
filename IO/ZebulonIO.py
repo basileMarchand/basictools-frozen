@@ -445,30 +445,35 @@ def GetInputTimeSequence(data):
 
 
 
-def GetCycleTables(data):
+def GetTables(data, cycle = False):
     """
     returns a dictionary containing the infos of an inp file "data" read by ReadInp2()
-    concerning all the infos respecting ****calcul, ***table and **cycle
+    concerning all the infos respecting ****calcul, ***table and **name or **cycle
     """
-    tableData = GetFromInp(data,{'4':['calcul'], '3':['table'], '2':['cycle']})
+
+    if cycle == True:
+      tableData = GetFromInp(data,{'4':['calcul'], '3':['table'], '2':['cycle']})
+    else:
+      tableData = GetFromInp(data,{'4':['calcul'], '3':['table'], '2':['name']})
     
-    cycleTables = {}
+    tables = {}
     for t in range(int(len(tableData)/3)):
-      cycleTables[tableData[3*t][0][1]] = {}
-      cycleTables[tableData[3*t][0][1]]['tInit'] = tableData[3*t][0][2]
-      cycleTables[tableData[3*t][0][1]]['tEnd']  = tableData[3*t][0][3]
+      tables[tableData[3*t][0][1]] = {}
+      if cycle == True:
+        tables[tableData[3*t][0][1]]['tInit'] = tableData[3*t][0][2]
+        tables[tableData[3*t][0][1]]['tEnd']  = tableData[3*t][0][3]
       tempTime = []
       for i in range(1, len(tableData[3*t+1])):
         tempTime += tableData[3*t+1][i]
       tempValue = []
       for i in range(1, len(tableData[3*t+2])):
         tempValue += tableData[3*t+2][i]
-      cycleTables[tableData[3*t][0][1]]['time']  = np.array(tempTime, dtype = float)
-      cycleTables[tableData[3*t][0][1]]['value'] = np.array(tempValue, dtype = float)
+      tables[tableData[3*t][0][1]]['time']  = np.array(tempTime, dtype = float)
+      tables[tableData[3*t][0][1]]['value'] = np.array(tempValue, dtype = float)
 
       if len(tempTime) != len(tempValue):
         print("WARNING ! length of time table and value table for "+ tableData[3*t][0][1] + "are different")
-    return cycleTables
+    return tables
 
 
 
@@ -487,6 +492,14 @@ def GetBoundaryConditions(data):
 
     return bcs
 
+
+def GetInitDofValues(data):
+    """
+    returns a dictionary containing the infos of an inp file "data" read by ReadInp2()
+    concerning all the infos respecting ****calcul, ***init_dof_value
+    """
+    initData = GetFromInp(data,{'4':['calcul'], '3':['init_dof_value']})
+    return initData[0][0][1:]
 
 
 def GetParameterFiles(data, parameterName = None):
@@ -551,11 +564,17 @@ def CheckIntegrity():
     GetFromInp(res,{'4':['calcul'], '3':['parameter'], '2':['file', 'temperature']})
     GetFromInp(res,{'4':['calcul'], '2':['impose_nodal_dof']})
     GetFromInp(res,{'4':['calcul'], '3':['linear_solver']})
-    GetCycleTables(res)
+    GetTables(res, cycle = True)
     GetBoundaryConditions(res)
     GetParameterFiles(res, parameterName = 'temperature')
     GetInputTimeSequence(res)
-    
+
+    res = ReadInp2(T2.GetTestDataPath() + 'calcul3.inp')
+    GetTables(res)
+    GetBoundaryConditions(res)
+    GetInputTimeSequence(res)
+    print(GetInitDofValues(res))
+
     return 'ok'
 
 
