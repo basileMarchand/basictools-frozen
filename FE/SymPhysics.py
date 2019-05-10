@@ -13,8 +13,11 @@ class Physics(BOO):
         self.spaces = [None]
         self.bilinearWeakFormulations = []
         self.linearWeakFormulations = []
-        self.numberings=[]
+        self.numberings = None
         self.spaceDimension = 3
+
+    def Reset(self):
+        self.numberings = None
 
     def ExpandNames(self,data):
         if data[1] == 1:
@@ -52,25 +55,38 @@ class Physics(BOO):
     def AddLFormulation(self, zone, data ) :
         self.linearWeakFormulations.append((zone,data) )
 
-
     def GetNumberOfUnkownFields(self):
         return len(self.GetPrimalNames())
 
-    def ComputeDofNumbering(self,mesh,tagsToKeep=None):
+    def ComputeDofNumbering(self,mesh,tagsToKeep=None,fromConnectivity=False):
         from BasicTools.FE.DofNumbering import ComputeDofNumbering
-        self.numberings = []
+        if self.numberings is None:
+            self.numberings = [None]*self.GetNumberOfUnkownFields()
+        else:
+            return
+
         for d in range(self.GetNumberOfUnkownFields()):
-            self.numberings.append(None)
+            if fromConnectivity:
+                self.numberings[d] = ComputeDofNumbering(mesh,self.spaces[d],fromConnectivity = True ,dofs=self.numberings[d])
+                continue
             if tagsToKeep is not None:
                 for tag in tagsToKeep:
                     self.numberings[d] = ComputeDofNumbering(mesh,self.spaces[d],fromConnectivity =False,tag=tag,dofs=self.numberings[d])
             for tag,form in self.linearWeakFormulations:
-                self.numberings[d] = ComputeDofNumbering(mesh,self.spaces[d],fromConnectivity =False,tag=tag,dofs=self.numberings[d])
+                self.numberings[d] = ComputeDofNumbering(mesh,self.spaces[d],fromConnectivity =False ,tag=tag,dofs=self.numberings[d])
             for tag,form in self.bilinearWeakFormulations:
-                self.numberings[d] = ComputeDofNumbering(mesh,self.spaces[d],fromConnectivity =False,tag=tag,dofs=self.numberings[d])
+                self.numberings[d] = ComputeDofNumbering(mesh,self.spaces[d],fromConnectivity =False ,tag=tag,dofs=self.numberings[d])
             #print("size of numbering", len(self.numberings))
             #print("(mesh.elements['quad4'].connectivity[0,:]", mesh.elements["quad4"].connectivity[0,:])
             #return
+    def ComputeDofNumberingFromConnectivity(self,mesh):
+        from BasicTools.FE.DofNumbering import ComputeDofNumbering
+        if self.numberings is None:
+            self.numberings = [None]*self.GetNumberOfUnkownFields()
+
+        for d in range(self.GetNumberOfUnkownFields()):
+            self.numberings[d] = ComputeDofNumbering(mesh,self.spaces[d],fromConnectivity = True,dofs=self.numberings[d])
+
 
 class MecaPhysics(Physics):
     def __init__(self):
@@ -114,7 +130,6 @@ class MecaPhysics(Physics):
 
     def GetForceFormulation(self,direction,flux="f"):
         from BasicTools.FE.WeakForm import GetTestField
-        from sympy import Symbol
 
         ut = GetTestField(self.mecaPrimalName[0],self.mecaPrimalName[1])
         if isinstance(flux,str):
@@ -145,7 +160,68 @@ class MecaPhysics(Physics):
         return (post1,post2)
 
 
+class BasicPhysics(Physics):
+    def __init__(self):
+        super(BasicPhysics,self).__init__()
+        self.PrimalNameTrial = ("u",1)
+        self.PrimalNameTest = ("u",1)
+        self.Space = None
 
+    def GetPrimalNames(self):
+        return [self.PrimalNameTrial[0]]
+
+    def GetBulkMassFormulation(self,alpha=1):
+        from BasicTools.FE.WeakForm import GetField,GetTestField
+        trial  = GetField(*self.PrimalNameTrial)
+        test = GetTestField(*self.PrimalNameTest)
+
+        if isinstance(alpha,str):
+            a = Symbol(alpha)
+        else:
+            a = float(alpha)
+
+        Symwfb = trial.T*test*a
+        return Symwfb
+
+    def GetBulkFormulation_dudi_dtdj(self,u=0,t=0,i=0,j=0,alpha=1.):
+        from BasicTools.FE.WeakForm import GetField,GetTestField
+
+        trial =    GetField(*self.PrimalNameTrial)
+        if self.PrimalNameTrial[1] > 1:
+            dtestdj = Gradient(trial,self.spaceDimension)[i,u]
+        else:
+            dtestdj = Gradient(trial,self.spaceDimension)[i]
+
+        test  = GetTestField(*self.PrimalNameTest)
+        if self.PrimalNameTest[1] > 1:
+            dtrialdi = Gradient(test,self.spaceDimension)[j,t]
+        else:
+            dtrialdi = Gradient(test,self.spaceDimension)[j]
+
+        Symwfb = dtrialdi*(alpha)*dtestdj
+        return Symwfb
+
+    def GetBulkLaplacian(self,alpha=1):
+        from BasicTools.FE.WeakForm import Gradient
+        from BasicTools.FE.WeakForm import GetField,GetTestField
+        #from sympy import Identity
+
+        t  = GetField(*self.PrimalNameTrial)
+        tt = GetTestField(*self.PrimalNameTest)
+        Symwfb = Gradient(t,self.spaceDimension).T*(alpha)*Gradient(tt,self.spaceDimension)
+        return Symwfb
+
+    def GetFlux(self,flux="f"):
+        from BasicTools.FE.WeakForm import GetTestField
+        from sympy import Symbol
+
+        tt = GetTestField(*self.PrimalNameTest)
+        if isinstance(flux,str):
+            f = Symbol(flux)
+        else:
+            f = float(flux)
+
+        return f*tt
 
 class ThermalPhysics(Physics):
     def __init__(self):
@@ -205,7 +281,6 @@ class StokesPhysics(Physics):
 
 
     def GetBulkFormulation(self,mu=1.):
-        from BasicTools.FE.WeakForm import Gradient,Divergence
         from BasicTools.FE.WeakForm import GetField,GetTestField
         #from sympy import Identity
 
@@ -247,6 +322,11 @@ def CheckIntegrity(GUI=False):
     print(res.GetBulkFormulation())
     print(res.GetPrimalNames())
 
+    print(BasicPhysics().GetBulkFormulation_dudi_dtdj())
+    t = BasicPhysics()
+    t.PrimalNameTrial = ("U",3)
+    t.PrimalNameTest = ("V",3)
+    print(t.GetBulkFormulation_dudi_dtdj(u=0,i=1,t=1,j=2) )
     return "ok"
 
 if __name__ == '__main__':
