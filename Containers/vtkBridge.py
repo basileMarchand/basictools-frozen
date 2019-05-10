@@ -126,6 +126,8 @@ def NumpyFieldToVtkField(support,fielddata,fieldname):
         outputtype = VTK_CHAR
     elif  fielddata.dtype == int:
         outputtype = VTK_INT
+    elif  fielddata.dtype == np.dtype('float32'):
+        outputtype = VTK_FLOAT
     elif  fielddata.dtype == float:
         outputtype = VTK_FLOAT
     else:
