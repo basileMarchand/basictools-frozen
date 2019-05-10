@@ -131,11 +131,11 @@ class FeaBase(BaseOutputObject):
               f.data = self.sol[offset:offset+f.numbering["size"]]
               offset += f.numbering["size"]
 
-    def PushVectorToMesh(self,onNodes,fieldValues,name,numberings):
+    def PushVectorToMesh(self,onNodes,fieldValues,name,numberings,justReturn=False):
         """
         Function to push the data from the fields into a vector homogeneous to
         the mesh (for visualition for example). Entities with no dofs are filled
-        with zeros
+        with zeros. Use the justReturn to get the vector but do not put it in the mesh.
         """
         F = fieldValues.view()
 
@@ -148,6 +148,8 @@ class FeaBase(BaseOutputObject):
                     print("Warning : PushVectorToMesh()  transfert vector is empty")
                 res[numberings[i]["doftopointLeft"],i] =  F[cpt+numberings[i]["doftopointRight"]]
                 cpt += numberings[i]["size"]
+            if justReturn :
+                return res
             self.mesh.nodeFields[name] = res
         else:
             res = np.zeros((self.mesh.GetNumberOfElements(), ncomp),dtype=float)
@@ -157,6 +159,8 @@ class FeaBase(BaseOutputObject):
                     print("Warning : PushVectorToMesh()  transfert vector is empty")
                 res[numberings[i]["doftocellLeft"],i] =  F[cpt+numberings[i]["doftocellRight"]]
                 cpt += numberings[i]["size"]
+            if justReturn :
+                return res
             self.mesh.elemFields[name] = res
 
 def CheckIntegrity(GUI=False):
