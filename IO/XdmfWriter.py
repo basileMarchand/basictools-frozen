@@ -489,10 +489,8 @@ class XdmfWriter(WriterBase):
            print(TFormat.InRed("But support has size : " + str(ndata) ))  # pragma: no cover
 
            raise Exception                                                                                    # pragma: no cover
-       #print(data.shape)
-       #print(shape)
        self.filePointer.write('    <Attribute Center="'+center+'" Name="'+name+'" Type="'+attype+'">\n')#
-       self.PrintDebug("Writing field '"+name +"' at '"+center+ "' of type " + attype )
+       #self.PrintDebug("Writing field '"+name +"' at '"+center+ "' of type " + attype )
        self.__WriteDataItem(data.ravel(),shape)
 
        self.filePointer.write('    </Attribute>\n')
