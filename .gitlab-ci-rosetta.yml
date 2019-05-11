@@ -87,6 +87,7 @@ test_with_coverage_Python2:
         - module load PISCO/Python2Dev
         - module load zset/8.6.9
         - module load abaqus/6.13-6
+        - export ZSET_NO_FAIL="True"
         - export PYTHONPATH=$PWD/../:$PYTHONPATH
         - mkdir -p public/coverage2
         - cd public/coverage2
@@ -104,6 +105,7 @@ test_full_output_stop_at_first_error_Python3:
     script:
         - module load PISCO/Python3Dev
         - module load zset/8.6.9
+        - export ZSET_NO_FAIL="True"
         - cd ..
         - export PYTHONPATH=$PWD:$PYTHONPATH
         - python BasicTools/Helpers/Tests.py -e ${MYPROJECT} -f -s
@@ -118,6 +120,7 @@ test_full_output_stop_at_first_error_Python2:
     script:
         - module load PISCO/Python2Dev
         - module load zset/8.6.9
+        - export ZSET_NO_FAIL="True"
         - module load abaqus/6.13-6
         - cd ..
         - export PYTHONPATH=$PWD:$PYTHONPATH
