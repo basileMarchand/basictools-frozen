@@ -18,7 +18,7 @@ doc:
     tags:
         - MSBasicTools
     script:
-        - module load python/2.7.12_Anaconda eigen/3.3.4 mkl zset
+        - module load PISCO/Python2Dev eigen/3.3.4 mkl zset/8.6.9
         - export PYTHONPATH=$PWD:$PYTHONPATH
         - mkdir public
         - cd docs
@@ -36,7 +36,7 @@ build_Python2:
     tags:
         - MSBasicTools
     script:
-        - module load python/2.7.12_Anaconda eigen/3.3.4 mkl
+        - module load PISCO/Python2Dev eigen/3.3.4 mkl
         - cd ..
         - export PYTHONPATH=$PWD:$PYTHONPATH
         - python BasicTools/setup.py build_ext --inplace
@@ -51,7 +51,7 @@ build_Python3:
     tags:
         - MSBasicTools
     script:
-        - module load PISCO/Python3Dev eigen/3.3.4
+        - module load PISCO/Python3Dev eigen/3.3.4 mkl
         - cd ..
         - export PYTHONPATH=$PWD:$PYTHONPATH
         - python3 BasicTools/setup.py build_ext --inplace
@@ -67,7 +67,7 @@ test_with_coverage_Python3:
         - MSBasicTools
     script:
         - module load PISCO/Python3Dev
-        - module load zset
+        - module load zset/8.6.9
         - export ZSET_NO_FAIL="True"
         - export PYTHONPATH=$PWD/../:$PYTHONPATH
         - mkdir -p public/coverage3
@@ -84,8 +84,8 @@ test_with_coverage_Python2:
     tags:
         - MSBasicTools
     script:
-        - module load python/2.7.12_Anaconda
-        - module load zset
+        - module load PISCO/Python2Dev
+        - module load zset/8.6.9
         - module load abaqus/6.13-6
         - export PYTHONPATH=$PWD/../:$PYTHONPATH
         - mkdir -p public/coverage2
@@ -103,7 +103,7 @@ test_full_output_stop_at_first_error_Python3:
         - MSBasicTools
     script:
         - module load PISCO/Python3Dev
-        - module load zset
+        - module load zset/8.6.9
         - cd ..
         - export PYTHONPATH=$PWD:$PYTHONPATH
         - python BasicTools/Helpers/Tests.py -e ${MYPROJECT} -f -s
@@ -116,8 +116,8 @@ test_full_output_stop_at_first_error_Python2:
     tags:
         - MSBasicTools
     script:
-        - module load python/2.7.12_Anaconda
-        - module load zset
+        - module load PISCO/Python2Dev
+        - module load zset/8.6.9
         - module load abaqus/6.13-6
         - cd ..
         - export PYTHONPATH=$PWD:$PYTHONPATH
