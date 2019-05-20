@@ -392,14 +392,14 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
 
     if TagsAsFields:
         elementTags = mesh.GetNamesOfElemTags()
-        print(elementTags)
+        #print(elementTags)
         for tagname in elementTags:
             ids = mesh.GetElementsInTag(tagname)
             tagMask = np.zeros(mesh.GetNumberOfElements(),bool )
             tagMask[ids] = True
             VTK_data = NumpyFieldToVtkField(mesh,tagMask,tagname)
-            output.GetPointData().AddArray(VTK_data)
-            print("treating Ele ", tag.name)
+            output.GetCellData().AddArray(VTK_data)
+            #print("treating Ele ", tag.name)
             continue
 #
 #            pd = vtkIntArray()
