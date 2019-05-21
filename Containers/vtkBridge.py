@@ -121,17 +121,17 @@ def NumpyFieldToVtkField(support,fielddata,fieldname):
 
     isimagedata = support.IsConstantRectilinear()
     #print("working in field ", fieldname)
-
-    if  fielddata.dtype == bool:
-        outputtype = VTK_CHAR
-    elif  fielddata.dtype == int:
-        outputtype = VTK_INT
-    elif  fielddata.dtype == np.dtype('float32'):
-        outputtype = VTK_FLOAT
-    elif  fielddata.dtype == float:
-        outputtype = VTK_FLOAT
-    else:
-        raise(Exception("Do Not know howto treat type " + str(fielddata.dtype)  ))
+    outputtype = numpy_support.get_vtk_array_type(fielddata.dtype)
+#    if  fielddata.dtype == bool:
+#        outputtype = VTK_CHAR
+#    elif  fielddata.dtype == int:
+#        outputtype = VTK_INT
+#    elif  fielddata.dtype == np.dtype('float32'):
+#        outputtype = VTK_FLOAT
+#    elif  fielddata.dtype == float:
+#        outputtype = VTK_FLOAT
+#    else:
+#        raise(Exception("Do Not know howto treat type " + str(fielddata.dtype)  ))
 
     if len(fielddata.shape) > 1:
       if isimagedata:
