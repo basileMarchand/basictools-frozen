@@ -292,7 +292,8 @@ cdef class PyMonoElementsIntegralCpp():
                 term.internalType = -1
                 raise(Exception("Term " +str(term.fieldName) + " not found in the database " ))
 
-      self.SetPoints(np.ascontiguousarray(mesh.nodes))
+      #self.SetPoints(np.ascontiguousarray(mesh.nodes))
+      self.SetPoints(np.require(mesh.nodes,requirements=["C","A"]))
       #self.SetPoints(mesh.nodes)
 
       ########### sending values  ################################
