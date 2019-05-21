@@ -134,7 +134,7 @@ def GetField(name,size,star=False,sdim=3,extraCoordinates=[]):
     s.extend(extraCoordinates)
 
     if size == 1:
-        if sdim == 0:
+        if len(s) == 0:
             res.append(Function(name+suffix))
         else:
             res.append(Function(name+suffix)(*s))
