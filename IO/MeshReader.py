@@ -181,6 +181,8 @@ class MeshReader(ReaderBase):
                 l = line.strip('\n').lstrip().rstrip()
 
                 nbElements = int(l.split()[0])
+                if nbElements == 0:
+                    continue
                 self.PrintVerbose("Reading "+str(nbElements)+ " Elements")
                 cpt =0;
                 while(True):

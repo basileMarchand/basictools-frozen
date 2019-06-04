@@ -13,8 +13,12 @@ ASCIIName[EN.Triangle_3]    = 'Triangles'
 ASCIIName[EN.Quadrangle_4]  = 'Quadrilaterals'
 ASCIIName[EN.Tetrahedron_4] = 'Tetrahedra'
 ASCIIName[EN.Hexaedron_8]   = 'Hexahedra'
+ASCIIName[EN.Pyramid_5] = "Pyramids"
+ASCIIName[EN.Wedge_6] = "Prisms"
 ASCIIName[EN.Hexaedron_20]   = 'HexahedraP2'
 ASCIIName[EN.Quadrangle_8]  = 'QuadrilateralsP2'
+
+
 
 ASCIITypes = {}
 for types,name in ASCIIName.items():
@@ -34,9 +38,7 @@ ASCIITags['RequiredTriangles'] = (EN.Triangle_3,RequiredTriangles)
 ASCIITags['RequiredEdges'] = (EN.Bar_2,RequiredEdges)
 
 
-## binary elemnts number and tags numbers
-
-
+## binary elemnts number and tags numbers from file "libmesh5.h"
 BinaryKeywords ={
 "GmfReserved1": 0 ,
 "GmfVersionFormatted": 1 ,
@@ -129,7 +131,8 @@ BinaryNumber[EN.Triangle_3] = BinaryKeywords["GmfTriangles"]
 BinaryNumber[EN.Quadrangle_4] = BinaryKeywords["GmfQuadrilaterals"]
 BinaryNumber[EN.Tetrahedron_4] = BinaryKeywords["GmfTetrahedra"]
 BinaryNumber[EN.Hexaedron_8] = BinaryKeywords["GmfHexahedra"]
-
+BinaryNumber[EN.Pyramid_5] = BinaryKeywords["GmfReserved30"]
+BinaryNumber[EN.Wedge_6] = BinaryKeywords["GmfPentahedra"]
 
 BinaryTypes = {}
 for types,number in BinaryNumber.items():
