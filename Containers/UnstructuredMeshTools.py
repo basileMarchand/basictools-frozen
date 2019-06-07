@@ -1931,7 +1931,7 @@ def CheckIntegrity_CleanEmptyTags(GUI=False):
     if len(res.nodesTags) != 1 :
         raise# pragma: no cover
 
-    if len(res.GetNamesOfElemTags()) != 1 :
+    if "EmptyTagE" in  res.GetNamesOfElemTags() :
         raise# pragma: no cover
     return "ok"
 
@@ -1996,6 +1996,7 @@ def CheckIntegrity(GUI=False):
 
     ]
     for f in totest:
+        print("running test : " + str(f))
         res = f(GUI)
         if str(res).lower() != "ok":
             return "error in "+str(f) + " res"
