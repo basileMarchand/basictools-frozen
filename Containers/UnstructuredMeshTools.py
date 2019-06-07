@@ -8,7 +8,7 @@ from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
 import BasicTools.Containers.ElementNames as ElementNames
 
 def CreateUniformMeshOfBars(pmin,pmax,npoints):
-    points = np.empty((npoints,3))
+    points = np.zeros((npoints,3))
     points[:,0] = np.linspace(pmin,pmax,npoints)
     bars = np.empty((npoints-1,2))
     bars[:,0] = np.arange(npoints-1)
@@ -35,7 +35,9 @@ def CreateMeshOf(points,connectivity,elemName = None,out=None):
     elements.connectivity = np.array(connectivity,dtype=np.int)
     elements.originalIds = np.arange(0,elements.connectivity.shape[0],dtype=np.int)
     elements.cpt = elements.connectivity.shape[0]
+    elements.tags.CreateTag(str(ElementNames.dimension[elemName])+"D").SetIds(np.arange(elements.GetNumberOfElements() ) )
     res.PrepareForOutput()
+
     return res
 
 def CreateSquare(dimensions=[2,2], origin=[-1.0,-1.0], spacing=[1.,1.], ofTetras=False):
