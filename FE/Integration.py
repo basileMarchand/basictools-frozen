@@ -30,10 +30,11 @@ def Integrate( mesh, wform, constants, fields, dofs,spaces,numbering, tag="3D",i
 def IntegrateGeneral( mesh, wform, constants, fields, unkownFields,testFields=None, tag="3D",integrationRuleName=None,onlyEvaluation=False):
 
     import BasicTools.FE.WeakForm as WeakForm
+    import BasicTools.FE.WeakFormNumerical as WeakFormNumerical
     if wform is None :
         return
 
-    if not isinstance(wform, WeakForm.PyWeakForm):
+    if not isinstance(wform, (WeakForm.PyWeakForm,WeakFormNumerical.PyWeakForm) ):
         from BasicTools.FE.WeakForm import SymWeakToNumWeak
         wform = SymWeakToNumWeak(wform)
 

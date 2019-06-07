@@ -1,7 +1,7 @@
 
 
 struct WeakTerm {
-    WeakTerm ():fieldName("Nonne"),derCoordName("None"),derDegree(0),constant(false),normal(false){};
+    WeakTerm ():fieldName("None"),derCoordName("None"),derDegree(0),constant(false),normal(false){};
     std::string fieldName;
     std::string derCoordName;
     int derDegree;
