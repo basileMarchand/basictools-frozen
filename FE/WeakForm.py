@@ -271,8 +271,8 @@ def ConverTermToProd(arg):
             t.derCoordName = str(arg.args[1])
 
         sn = []
-        for i in range(1,len(arg.args)):
-            sn.append(str(arg.args[i][0] ) )
+        for i in range(0,len(arg.args[0].args)):
+            sn.append(str(arg.args[0].args[i] ) )
 
         t.derCoordIndex_ =  sn.index(t.derCoordName)
         return t
