@@ -233,7 +233,7 @@ class ElementFilter(Filter):
     """
        Specialized class for element filtering by dimensionality, zone and tag
 
-       for the zones three time of treatment are possible:
+       for the zones three types of treatment are possible:
            Based on the center of the element: self.zoneTreatment = "center"
            if all nodes of the element are in the zone ; self.zoneTreatment = "allnodes"
            if at least one nodes of the element is in the zone ; self.zoneTreatment = "leastonenode"
