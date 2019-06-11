@@ -108,30 +108,10 @@ def VtkFieldToNumpyField(support,vtkField):
     return (name,data)
 
 def NumpyFieldToVtkField(support,fielddata,fieldname):
-    try:
-        from paraview.vtk import VTK_FLOAT
-        from paraview.vtk import VTK_DOUBLE
-        from paraview.vtk import VTK_CHAR
-        from paraview.vtk import VTK_INT
-    except:
-        from vtk import VTK_FLOAT
-        from vtk import VTK_DOUBLE
-        from vtk import VTK_CHAR
-        from vtk import VTK_INT
+
 
     isimagedata = support.IsConstantRectilinear()
-    #print("working in field ", fieldname)
     outputtype = numpy_support.get_vtk_array_type(fielddata.dtype)
-#    if  fielddata.dtype == bool:
-#        outputtype = VTK_CHAR
-#    elif  fielddata.dtype == int:
-#        outputtype = VTK_INT
-#    elif  fielddata.dtype == np.dtype('float32'):
-#        outputtype = VTK_FLOAT
-#    elif  fielddata.dtype == float:
-#        outputtype = VTK_FLOAT
-#    else:
-#        raise(Exception("Do Not know howto treat type " + str(fielddata.dtype)  ))
 
     if len(fielddata.shape) > 1:
       if isimagedata:
@@ -165,22 +145,14 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
         from paraview.vtk import vtkPolyData as vtkPolyData
         from paraview.vtk import vtkUnstructuredGrid as vtkUnstructuredGrid
         from paraview.vtk import vtkPoints
-        from paraview.vtk import vtkFloatArray
-        from paraview.vtk import vtkIntArray
         from paraview.vtk import vtkIdList
         from paraview.vtk import vtkImageData
-        from paraview.vtk import VTK_FLOAT
-        from paraview.vtk import VTK_CHAR
     except :
         from vtk import vtkPolyData
         from vtk import vtkUnstructuredGrid
         from vtk import vtkPoints
-        from vtk import vtkFloatArray
-        from vtk import vtkIntArray
         from vtk import vtkIdList
         from vtk import vtkImageData
-        from vtk import VTK_FLOAT
-        from vtk import VTK_CHAR
 
     isimagedata = False
     if vtkobject is None:
@@ -274,43 +246,6 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
             VTK_data = NumpyFieldToVtkField(mesh,data,name)
             output.GetPointData().AddArray(VTK_data)
             continue
-#
-#            pd = vtkFloatArray()
-#            pd.SetName(name)
-#            if len(data.shape) == 1:
-#                pd.SetNumberOfComponents(1)
-#            else:
-#                pd.SetNumberOfComponents(data.shape[1])
-#            pd.SetNumberOfTuples(mesh.GetNumberOfNodes())
-#
-#            if len(data.shape) > 1:
-#              if isimagedata:
-#                  dataView = data.view()
-#                  dataView.shape = mesh.GetDimensions()
-#                  VTK_data = numpy_support.numpy_to_vtk(num_array=np.swapaxes(dataView,0,2,3).ravel(), deep=True, array_type=VTK_FLOAT)
-#              else:
-#                  VTK_data = numpy_support.numpy_to_vtk(num_array=data, deep=True, array_type=VTK_FLOAT)
-#              #cpt = 0
-#              #for i in range(mesh.GetNumberOfNodes()):
-#              #   for j in range(data.shape[1]):
-#              #      pd.SetValue(cpt, data[i,j])
-#              #      cpt +=1
-#              #output.GetPointData().AddArray(pd)
-#            else:
-#              #cpt = 0
-#              if isimagedata:
-#                  dataView = data.view()
-#                  dataView.shape = mesh.GetDimensions()
-#                  VTK_data = numpy_support.numpy_to_vtk(num_array=np.swapaxes(dataView,0,2).ravel(), deep=True, array_type=VTK_FLOAT)
-#              else:
-#                  VTK_data = numpy_support.numpy_to_vtk(num_array=data, deep=True, array_type=VTK_FLOAT)
-#            VTK_data.SetName(name)
-#            output.GetPointData().AddArray(VTK_data)
-#              #    for i in range(mesh.GetNumberOfNodes()):
-#              #       pd.SetValue(cpt, data[i])
-#              #       cpt +=1
-#
-#              #    output.GetPointData().AddArray(pd)
 
     if TagsAsFields:
         tagMask = np.empty(mesh.GetNumberOfNodes(),int)
@@ -319,34 +254,13 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
             tag.GetIdsAsMask(output=tagMask)
             VTK_data = NumpyFieldToVtkField(mesh,tagMask,tag.name)
             output.GetPointData().AddArray(VTK_data)
-            #print("treating ", tag.name)
             continue
-
-#            VTK_data = numpy_support.numpy_to_vtk(num_array=tagMask, deep=True, array_type=VTK_CHAR)
-#            VTK_data.SetName(tag.name)
-#            print("treating ", tag.name)
-#            output.GetPointData().AddArray(VTK_data)
-#            continue
-#            pd = vtkIntArray()
-#            pd.SetName(tag.name)
-#            pd.SetNumberOfComponents(1)
-#            pd.SetNumberOfTuples(mesh.GetNumberOfNodes())
-#            pd.FillComponent(0,0);
-#
-#            for i in tag.GetIds():
-#                pd.SetValue(i,1 )
-#            output.GetPointData().AddArray(pd)
-
-
-
 
     if hasattr(mesh,"elemFields"):
         for name,data in mesh.elemFields.items():
 
             if data is None:
                 continue
-            #VTK_data = numpy_support.numpy_to_vtk(num_array=np.swapaxes(phi,0,2).ravel(), deep=True, array_type=vtk.VTK_FLOAT)
-            #VTK_data.SetName(name)
             if np.size(data) != mesh.GetNumberOfElements() and np.size(data) != 2*mesh.GetNumberOfElements() and np.size(data) != 3*mesh.GetNumberOfElements():
                 print("field ("+str(name)+") is not consistent : it has " + str(np.size(data)) +" values and the mesh has " +str(mesh.GetNumberOfNodes())+ " nodes" )
                 raise
@@ -357,39 +271,6 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
             output.GetCellData().AddArray(VTK_data)
             continue
 
-
-#
-#            if data is None:
-#                continue
-#
-#            if np.size(data) != mesh.GetNumberOfElements() and np.size(data) != 3*mesh.GetNumberOfElements():
-#                print("field ("+str(name)+") is not consistent : it has " + str(np.size(data)) +" values and the mesh has " +str(mesh.GetNumberOfElements())+ " elements" )
-#                continue
-#            pd = vtkFloatArray()
-#            pd.SetName(name)
-#
-#            if len(data.shape) == 1:
-#                pd.SetNumberOfComponents(1)
-#            else:
-#                pd.SetNumberOfComponents(data.shape[1])
-#
-#            pd.SetNumberOfTuples(mesh.GetNumberOfElements())
-#
-#            if len(data.shape) > 1:
-#              cpt = 0
-#              for i in range(mesh.GetNumberOfElements()):
-#                 for j in range(data.shape[1]):
-#                    pd.SetValue(cpt, data[i,j])
-#                    cpt +=1
-#            else:
-#              cpt = 0
-#              for i in range(mesh.GetNumberOfElements()):
-#                    pd.SetValue(cpt, data[i])
-#                    cpt +=1
-#
-#            output.GetCellData().AddArray(pd)
-#            #output.GetCellData().SetScalars(pd)
-
     if TagsAsFields:
         elementTags = mesh.GetNamesOfElemTags()
         #print(elementTags)
@@ -399,17 +280,7 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
             tagMask[ids] = True
             VTK_data = NumpyFieldToVtkField(mesh,tagMask,tagname)
             output.GetCellData().AddArray(VTK_data)
-            #print("treating Ele ", tag.name)
             continue
-#
-#            pd = vtkIntArray()
-#            pd.SetName(tagname)
-#            pd.SetNumberOfComponents(1)
-#            pd.SetNumberOfTuples(mesh.GetNumberOfElements())
-#            pd.FillComponent(0,0);
-#            for i in ids:
-#                pd.SetValue(i,1 )
-#            output.GetCellData().AddArray(pd)
 
     return output
 
@@ -429,8 +300,6 @@ def VtkToMesh(vtkmesh, meshobject=None, TagsAsFields=False):
 
     out.originalIDNodes = np.arange(out.GetNumberOfNodes())
     nc = vtkmesh.GetNumberOfCells()
-
-
 
     for i in range(nc):
         cell= vtkmesh.GetCell(i)
@@ -454,19 +323,10 @@ def VtkToMesh(vtkmesh, meshobject=None, TagsAsFields=False):
             if name == "originalIds":
                 out.originalIds = field
             else:
-                out.nodeFields[name] = field
-            continue
-#            name = data.GetName()
-#            nbcomponnents =  data.GetNumberOfComponents()
-#            nbtuples  = data.GetNumberOfTuples()
-#            print(name)
-#            field = np.empty((nbtuples,nbcomponnents),dtype=float)
-#            cpt =0
-#            for i in range(nbtuples):
-#                 for j in range(nbcomponnents):
-#                    field[i,j] = data.GetValue(cpt)
-#                    cpt +=1
-#            out.nodeFields[name] = field
+                if len(field.shape) == 1 and field.dtype ==  int and min(field)>=0 and max(field) <= 1:
+                    out.nodesTags.CreateTag(name).SetIds(np.where(field)[0])
+                else:
+                    out.nodeFields[name] = field
 
     EOIds = out.GetElementsOriginalIDs()
     EOIds = np.argsort(EOIds)
@@ -486,20 +346,16 @@ def VtkToMesh(vtkmesh, meshobject=None, TagsAsFields=False):
             if name == "originalIds":
                 out.SetElementsOriginalIDs(Elfield)
             else:
-                out.elemFields[name] = Elfield
+                if len(field.shape) == 1 and field.dtype ==  int and min(field)>=0 and max(field) <= 1 :
+                    cpt = 0
+                    for elname,data in out.elements.items():
+                        nn = data.GetNumberOfElements()
+                        data.tags.CreateTag(name).SetIds(np.where(field[cpt:cpt+nn])[0])
+                        cpt += nn
+
+                else:
+                    out.elemFields[name] = field
             continue
-#
-#            name = data.GetName()
-#            nbcomponnents =  data.GetNumberOfComponents()
-#            nbtuples  = data.GetNumberOfTuples()
-#
-#            field = np.empty((nbtuples,nbcomponnents),dtype=float)
-#            cpt =0
-#            for i in range(nbtuples):
-#                 for j in range(nbcomponnents):
-#                    field[EOIds[i],j] = data.GetValue(cpt)
-#                    cpt +=1
-#            out.elemFields[name] = field
 
     return out
 
@@ -519,26 +375,38 @@ def CheckIntegrity_VtkToMesh(GUI=False):
     res = CreateMeshOfTriangles([[0,0,0],[1,0,0],[0,1,0],[0,0,1] ], [[0,1,2],[0,2,3]])
     res.nodeFields = {"x": res.nodes[:,0].flatten(), "Pos":res.nodes}
     res.nodesTags.CreateTag("FirstPoint").AddToTag(0)
-    res.elemFields = {"firstPoint": res.GetElementsOfType(ElementNames.Triangle_3).connectivity[:,0].flatten(), "conn": res.GetElementsOfType(ElementNames.Triangle_3).connectivity }
+    res.elemFields = {"SecondPoint": res.GetElementsOfType(ElementNames.Triangle_3).connectivity[:,1].flatten(), "conn": res.GetElementsOfType(ElementNames.Triangle_3).connectivity }
     res.GetElementsOfType(ElementNames.Triangle_3).tags.CreateTag("FirstTriangle").AddToTag(0)
     sol = MeshToVtk(res,TagsAsFields= True)
 
     print("CheckIntegrity_VtkToMesh :")
     print(res)
-    print(VtkToMesh(sol))
+    resII=VtkToMesh(sol)
+    print(resII)
+    from BasicTools.Containers.MeshTools import IsClose
+    if not IsClose(res,resII):
+        raise(Exception("The meshes are not equal"))
     return 'ok'
 
 def CheckIntegrity_MeshToVtk(GUI=False):
     res = CreateMeshOfTriangles([[0,0,0],[1,0,0],[0,1,0],[0,0,1] ], [[0,1,2],[0,2,3]])
     res.nodeFields = {"x": res.nodes[:,0].flatten(), "Pos":res.nodes}
     res.nodesTags.CreateTag("FirstPoint").AddToTag(0)
-    res.elemFields = {"firstPoint_Elements": res.GetElementsOfType(ElementNames.Triangle_3).connectivity[:,0].flatten(), "conn": res.GetElementsOfType(ElementNames.Triangle_3).connectivity }
+    res.elemFields = {"SecondPoint": res.GetElementsOfType(ElementNames.Triangle_3).connectivity[:,1].flatten(), "conn": res.GetElementsOfType(ElementNames.Triangle_3).connectivity }
     res.GetElementsOfType(ElementNames.Triangle_3).tags.CreateTag("FirstTriangle").AddToTag(0)
     sol = MeshToVtk(res,TagsAsFields= True)
     print(sol)
-    res = CreateMeshOfTriangles([[0,0],[1,0],[0,1],[1,1] ], [[0,1,2],[2,1,3]])
+    resII = VtkToMesh(sol)
+    print(res)
+    print(resII)
+    from BasicTools.Containers.MeshTools import IsClose
+    if not IsClose(res,resII):
+        raise(Exception("The meshes are not equal"))
 
+    ## test a 2D mesh
+    res = CreateMeshOfTriangles([[0,0],[1,0],[0,1],[1,1] ], [[0,1,2],[2,1,3]])
     sol = MeshToVtk(res )
+
 
     return "OK"
 
