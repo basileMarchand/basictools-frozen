@@ -120,13 +120,12 @@ class UtReader(ReaderBase):
         if self.meshfile[-5:] == ".geof":
             from BasicTools.IO.GeofReader import GeofReader
             GR = GeofReader()
-            GR.SetFileName(self.filePath +self.meshfile )
-            self.meshMetadata = GR.ReadMetaData()
         else:
-            from BasicTools.IO.GeofReader import GeoReader
+            from BasicTools.IO.GeoReader import GeoReader
             GR = GeoReader()
-            GR.SetFileName(self.filePath +self.meshfile )
-            self.meshMetadata = GR.ReadMetaData()
+
+        GR.SetFileName(self.filePath +self.meshfile )
+        self.meshMetadata = GR.ReadMetaData()
 
 
     def ReadBinaryFile(self,fileName):
@@ -135,9 +134,15 @@ class UtReader(ReaderBase):
 
     def Read(self):
         self.ReadMetaData()
-        from BasicTools.IO.GeofReader import GeofReader
 
-        GR = GeofReader()
+
+        if self.meshfile[-5:] == ".geof":
+            from BasicTools.IO.GeofReader import GeofReader
+            GR = GeofReader()
+        else:
+            from BasicTools.IO.GeoReader import GeoReader
+            GR = GeoReader()
+
         GR.SetFileName(self.filePath +self.meshfile )
 
         res = GR.Read()
