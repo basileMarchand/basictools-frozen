@@ -116,13 +116,18 @@ class UtReader(ReaderBase):
         self.time = np.array(self.time)
         self.EndReading()
 
-        from BasicTools.IO.GeofReader import GeofReader
+
         if self.meshfile[-5:] == ".geof":
+            from BasicTools.IO.GeofReader import GeofReader
             GR = GeofReader()
             GR.SetFileName(self.filePath +self.meshfile )
             self.meshMetadata = GR.ReadMetaData()
         else:
-            self.Print("Unable to obtain metadata from meshfile, please set metadata manually, most probably because the mesh file is a .geo file ")
+            from BasicTools.IO.GeofReader import GeoReader
+            GR = GeoReader()
+            GR.SetFileName(self.filePath +self.meshfile )
+            self.meshMetadata = GR.ReadMetaData()
+
 
     def ReadBinaryFile(self,fileName):
         return np.fromfile(fileName, dtype=np.float32).byteswap()

@@ -6,6 +6,7 @@ __all__ = [
 'CsvWriter',
 'FemReader',
 'GeofReader',
+'GeoReader',
 'GeofWriter',
 'GmshReader',
 'GmshWriter',
@@ -39,7 +40,7 @@ __all__ = [
 "MeshFileConverter",
 "IOFactory",
 "PipeIO",
-
+"ZsetTools",
 
 ]
 
