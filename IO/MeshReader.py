@@ -24,6 +24,10 @@ def ReadMesh(fileName=None,string=None,ReadRefsAsField=False ):
     return reader.output
 
 def ReadSol(fileName, out=None):
+    reader = MeshSolutionReaderWrapper()
+    reader.SetFileName(fileName)
+    reader.Read(out=out)
+    return reader.output
 
     import os.path
 
@@ -268,24 +272,7 @@ class MeshReader(ReaderBase):
             elif fieldSizes[i] == 3 :
                 raise
 
-
-        #print ("fieldSizes"),
-        #print (fieldSizes)
         ncoomp = np.sum(fieldSizes)
-        #print("nbfields " + str(fieldSizes))
-    #    self.PrintDebug("nbfields" + str(fieldSizes))
-        #print("nbentries "+str(nbentries)+ " ")
-        #print("ncoomp "+str(ncoomp)+ " ")
-        #print("Reading "+str(ncoomp*nbentries)+ " Entries")
-        #print(f.filePointer)
-        #print(f.filePointer.closed)
-        #print(ncoomp*nbentries)
-        #while(not f.filePointer.closed):
-        #    print(f.ReadCleanLine(True))
-
-        #print(myFile.filePointer.closed)
-
-        #print(myFile.filePointer)
 
         data = np.fromfile(file=myFile.filePointer,dtype=float,count=int(ncoomp*nbentries),sep=" \n")
 
@@ -297,6 +284,13 @@ class MeshReader(ReaderBase):
         return datares
 
 ##BINARY PART ################################################################################
+    def _ReadBinaryInt(self):
+        if self.version <= 3 :
+            return self.readInt32()
+        else:
+            return self.readInt64()
+
+
     def _ReadBinaryHeader(self):
       key = self.readInt32()
 
@@ -482,33 +476,31 @@ class MeshReader(ReaderBase):
 
 
     def _readExtraFieldBinary(self,myFile,dataSize,dim):
-      nbEntities = myFile.readInt32()
-      nbfields = myFile.readInt32()
+
+      nbEntities = myFile._ReadBinaryInt()
+      nbfields = myFile._ReadBinaryInt()
 
       fieldSizes = np.empty(nbfields, dtype=np.int)
-      #self.PrintDebug("nbfields" + str(nbfields))
       res = []
       for i in range(nbfields):
-          fieldSizes[i] =  myFile.readInt32()
-
-      for i in range(nbfields):
+          fieldSizes[i] =  myFile._ReadBinaryInt()
           if fieldSizes[i] == 2 :
              fieldSizes[i] = dim
           elif fieldSizes[i] == 3 :
              raise
 
+      ncoomp = np.sum(fieldSizes)
+      if dataSize == 4:
+          data = myFile.readFloats32(nbEntities*ncoomp)
+      else:
+          data = myFile.readFloats64(nbEntities*ncoomp)
 
-          if dataSize == 4:
-              field = myFile.readFloats32(nbEntities*fieldSizes[i])
-          else:
-              field = myFile.readFloats64(nbEntities*fieldSizes[i])
+      data.shape = (nbEntities,ncoomp)
 
-          if fieldSizes[i] == 1 :
-              field.shape = (len(field))
-          else:
-              field.shape = (nbEntities,fieldSizes[i])
-          res.append(field)
-
+      cpt =0
+      for i in range(nbfields):
+          res.append(data[:,cpt:cpt+fieldSizes[i]])
+          cpt += fieldSizes[i]
       return res
 
 
@@ -639,10 +631,57 @@ class MeshReader(ReaderBase):
 #
 #        myFile.EndReading()
 #        return res
+class MeshSolutionReaderWrapper():
+    def __init__(self):
+       super(MeshSolutionReaderWrapper,self).__init__()
+       self.canHandleTemporal = False
+
+    def SetFileName(self,fileName):
+        import os.path
+        self.fileName = fileName
+        dirname = os.path.dirname(fileName)
+        basename,extention = os.path.splitext(os.path.basename(fileName))
+
+        if extention[-1] == "b":
+            f = os.path.join(dirname,basename+".meshb")
+        else:
+            f = os.path.join(dirname,basename+".mesh")
+
+
+        # we check if the file exist, if not we try the other type
+        if not os.path.isfile(f):
+            if extention[-1] == "b":
+                f = os.path.join(dirname,basename+".mesh")
+            else:
+                f = os.path.join(dirname,basename+".meshb")
+
+        if not os.path.isfile(f):
+            raise Exception("unable to find a mesh file")
+        self.reader = MeshReader()
+        self.reader.SetFileName(fileName=f)
+
+    def Read(self,out=None):
+        if out :
+            raise
+
+        self.reader.Read()
+        mesh = self.reader.output
+        fields = self.reader.ReadExtraFields(self.fileName);
+        mesh.nodeFields = {k:v for k,v in fields.items() if k.find("SolAtVertices") != -1  }
+        if 'SolAtTetrahedra0' in fields:
+            if mesh.GetElementsOfType(EN.Tetrahedron_4).GetNumberOfElements() == mesh.GetNumberOfElements():
+                mesh.elemFields = {k:v for k,v in fields.items() if k.find("SolAtTetrahedra") != -1  }
+        return mesh
+
+
+
 
 from BasicTools.IO.IOFactory import RegisterReaderClass
 RegisterReaderClass(".mesh",MeshReader)
 RegisterReaderClass(".meshb",MeshReader)
+
+RegisterReaderClass(".sol",MeshSolutionReaderWrapper)
+RegisterReaderClass(".solb",MeshSolutionReaderWrapper)
 
 def CheckIntegrity():
 

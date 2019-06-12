@@ -30,10 +30,11 @@ def Integrate( mesh, wform, constants, fields, dofs,spaces,numbering, tag="3D",i
 def IntegrateGeneral( mesh, wform, constants, fields, unkownFields,testFields=None, tag="3D",integrationRuleName=None,onlyEvaluation=False):
 
     import BasicTools.FE.WeakForm as WeakForm
+    import BasicTools.FE.WeakFormNumerical as WeakFormNumerical
     if wform is None :
         return
 
-    if not isinstance(wform, WeakForm.PyWeakForm):
+    if not isinstance(wform, (WeakForm.PyWeakForm,WeakFormNumerical.PyWeakForm) ):
         from BasicTools.FE.WeakForm import SymWeakToNumWeak
         wform = SymWeakToNumWeak(wform)
 
@@ -107,7 +108,6 @@ def CheckIntegrityNormalFlux(GUI=False):
 
     points = [[0,0,0],[1,0,1],[0,1,1] ]
     mesh = CreateMeshOf(points,[[0,1,2]],EN.Triangle_3)
-    mesh.GetElementsOfType(EN.Triangle_3).tags.CreateTag("2D").SetIds(np.arange(mesh.GetElementsOfType(EN.Triangle_3).GetNumberOfElements() ) )
 
     sdim = 3
 
@@ -209,7 +209,7 @@ def CheckIntegrityKF(edim, sdim,testCase):
 
 
         mesh = CreateMeshOf(points,[[0,1],],EN.Bar_2 )
-        mesh.GetElementsOfType(EN.Bar_2).tags.CreateTag("1D").SetIds([0])
+
     elif edim == 2:
         if sdim == 2:
             if testCase[0] =="A" :
@@ -219,7 +219,7 @@ def CheckIntegrityKF(edim, sdim,testCase):
                 points = [[3,0],[3,2],[0,0],[0,2] ]
                 #,[3,2,1][0,1,2]
                 mesh = CreateMeshOfTriangles(points,[[0,1,2],[3,2,1]])
-                mesh.GetElementsOfType(EN.Triangle_3).tags.CreateTag("2D").SetIds(np.arange(mesh.GetElementsOfType(EN.Triangle_3).GetNumberOfElements() ) )
+
 
                 E = 3.0/2
                 nu = 0.25
@@ -244,7 +244,7 @@ def CheckIntegrityKF(edim, sdim,testCase):
                 #pages 15-11
                 points = [[0,0],[3,1],[2,2]]
                 mesh = CreateMeshOfTriangles(points,[[0,1,2],])
-                mesh.GetElementsOfType(EN.Triangle_3).tags.CreateTag("2D").SetIds(np.arange(mesh.GetElementsOfType(EN.Triangle_3).GetNumberOfElements() ) )
+                #mesh.GetElementsOfType(EN.Triangle_3).tags.CreateTag("2D").SetIds(np.arange(mesh.GetElementsOfType(EN.Triangle_3).GetNumberOfElements() ) )
 
                 K = np.matrix([[8,2,0],[2,8,0],[0,0,3]])*8
                 permut = [0,3,1,4,2,5]
@@ -281,7 +281,7 @@ def CheckIntegrityKF(edim, sdim,testCase):
         nu = 1./3.
 
         K = HookeIso(E,nu,dim=sdim)
-        mesh.GetElementsOfType(EN.Tetrahedron_4).tags.CreateTag("3D").SetIds(np.arange(mesh.GetElementsOfType(EN.Tetrahedron_4).GetNumberOfElements() ) )
+        #mesh.GetElementsOfType(EN.Tetrahedron_4).tags.CreateTag("3D").SetIds(np.arange(mesh.GetElementsOfType(EN.Tetrahedron_4).GetNumberOfElements() ) )
 
         permut = [0, 4, 8, 1, 5, 9, 2, 6, 10, 3, 7, 11]
         KValidation = np.matrix( [[745, 540, 120, -5, 30, 60, -270, -240, 0, -470, -330, -180],

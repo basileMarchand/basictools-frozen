@@ -25,6 +25,7 @@ def InitAllReaders():
 
     import BasicTools.IO.AscReader as AscReader
     import BasicTools.IO.GeofReader as GeofReader
+    import BasicTools.IO.GeoReader as GeoReader
     import BasicTools.IO.GmshReader as GmshReader
     import BasicTools.IO.MeshReader as MeshReader
     import BasicTools.IO.GReader as GReader

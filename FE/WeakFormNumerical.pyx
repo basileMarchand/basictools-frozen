@@ -129,7 +129,7 @@ cdef class PyWeakTerm:
         res = ""
         if self.derDegree > 0 and self.normal == 0 :
 #            #res += "d" + self.fieldName + "/"  + "d"  + str(self.derCoordName)
-            res += "Derivative("+str(self.fieldName)+"(x, y, z), "+str(self.derCoordName)+")"
+            res += "Derivative("+str(self.fieldName)+", "+str(self.derCoordName)+")"
         else:
             res += self.fieldName
         return res

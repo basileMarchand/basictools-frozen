@@ -278,6 +278,9 @@ class XdmfWriter(WriterBase):
                 self.filePointer.write('    <Information Name="Dims" Value="'+str(baseMeshObject.props["ParafacDims"])+'" /> \n')
                 for i in range(baseMeshObject.props["ParafacDims"]):
                     self.filePointer.write('    <Information Name="Dim'+str(i)+'" Value="'+baseMeshObject.props["ParafacDim"+str(i)]+'" /> \n')
+                if   "ParafacUnit0" in baseMeshObject.props:
+                    for i in range(baseMeshObject.props["ParafacDims"]):
+                        self.filePointer.write('    <Information Name="Unit'+str(i)+'" Value="'+baseMeshObject.props["ParafacUnit"+str(i)]+'" /> \n')
 
         if baseMeshObject.IsConstantRectilinear() :
             origin = baseMeshObject.GetOrigin()

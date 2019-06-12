@@ -159,7 +159,6 @@ class MecaPhysics(Physics):
 
         return (post1,post2)
 
-
 class BasicPhysics(Physics):
     def __init__(self):
         super(BasicPhysics,self).__init__()
@@ -169,6 +168,9 @@ class BasicPhysics(Physics):
 
     def GetPrimalNames(self):
         return [self.PrimalNameTrial[0]]
+
+    def GetPrimalDims(self):
+        return [self.PrimalNameTrial[1]]
 
     def GetBulkMassFormulation(self,alpha=1):
         from BasicTools.FE.WeakForm import GetField,GetTestField
@@ -230,7 +232,7 @@ class ThermalPhysics(Physics):
         self.thermalSpace = None
 
     def GetPrimalNames(self):
-        return self.thermalPrimalName
+        return [ self.thermalPrimalName[0]]
 
     def SetThermalPrimalName(self,name):
         self.thermalPrimalName = name
@@ -263,11 +265,11 @@ class ThermalPhysics(Physics):
 class StokesPhysics(Physics):
     def __init__(self):
         super(StokesPhysics,self).__init__()
-        self.velocityPrimalName = "v"
-        self.pressurePrimalName = "p"
+        self.velocityPrimalName = ("v",3)
+        self.pressurePrimalName = ("p",1)
 
     def GetPrimalNames(self):
-        res = [self.velocityPrimalName + "_" + str(c) for c in [0,1,2] ]
+        res = [self.velocityPrimalName[0] + "_" + str(c) for c in range(self.velocityPrimalName[1]) ]
         res.append(self.pressurePrimalName)
         return res
 

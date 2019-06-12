@@ -104,7 +104,7 @@ except:
             res = ""
             if self.derDegree > 0 and self.normal == 0 :
     #            #res += "d" + self.fieldName + "/"  + "d"  + str(self.derCoordName)
-                res += "Derivative("+str(self.fieldName)+"(x, y, z), "+str(self.derCoordName)+")"
+                res += "Derivative("+str(self.fieldName)+", "+str(self.derCoordName)+")"
             else:
                 res += self.fieldName
             return res
@@ -270,7 +270,10 @@ def ConverTermToProd(arg):
             #sympy 1.1.1
             t.derCoordName = str(arg.args[1])
 
-        sn = [ str(c) for c in space]
+        sn = []
+        for i in range(0,len(arg.args[0].args)):
+            sn.append(str(arg.args[0].args[i] ) )
+
         t.derCoordIndex_ =  sn.index(t.derCoordName)
         return t
 
@@ -302,7 +305,6 @@ def SymWeakToNumWeak(exp):
         if exp.shape[0] == 1 and exp.shape[1] == 1:
             exp = exp[0,0]
     except:
-
         pass
 
     if exp.func == Mul:

@@ -67,7 +67,8 @@ class UnstructuredFeaSym(FeaBase):
             for zone,form in lform:
                 if form is None:
                     continue
-                self.PrintDebug("integration of f "+ str(zone) )
+                self.PrintDebug("integration of lform "+ str(zone) )
+                #self.PrintDebug("integration of lform "+ str(form) )
 
                 _,f = IntegrateGeneral(mesh=self.mesh,wform=form, tag=zone, constants=self.constants, fields=list(self.fields.values()),unkownFields= unkownFields)
                 if rhsRes is None:
@@ -82,8 +83,8 @@ class UnstructuredFeaSym(FeaBase):
             for zone,form in bform:
                 if form is None:
                     continue
-                self.PrintDebug("integration of f "+ str(zone) )
-                self.PrintDebug("integration of f "+ str(form) )
+                self.PrintDebug("integration of bform " + str(zone) )
+                #self.PrintDebug("integration of bform " + str(form) )
 
                 k,f = IntegrateGeneral(mesh=self.mesh,wform=form, tag=zone, constants=self.constants, fields=list(self.fields.values()),unkownFields= unkownFields)
                 if rhsRes is None:
