@@ -5,6 +5,11 @@ from BasicTools.IO.PathControler import PathControler as PC
 
 paraviewExec= "paraview"
 def OpenInParaView( mesh=None,filename=None, run=True):
+    from subprocess import Popen
+
+    if filename is None and mesh is None and run:
+        Popen([paraviewExec])
+        return
 
     if filename is None:
         from BasicTools.Helpers.Tests import GetUniqueTempFile
@@ -24,8 +29,7 @@ def OpenInParaView( mesh=None,filename=None, run=True):
         WriteMeshToXdmf(filename,mesh,PointFieldsNames=PointFieldsNames,PointFields=PointFields,CellFieldsNames=CellFieldsNames,CellFields=CellFields  )
 
     if run:# pragma: no cover
-        from subprocess import Popen
-        Popen([paraviewExec,filename])
+         Popen([paraviewExec,filename])
 
 def CheckIntegrity(GUI=False):
     from BasicTools.Containers.UnstructuredMeshTools import CreateCube
