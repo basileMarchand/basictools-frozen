@@ -30,11 +30,17 @@ def Integrate( mesh, wform, constants, fields, dofs,spaces,numbering, tag="3D",i
 def IntegrateGeneral( mesh, wform, constants, fields, unkownFields,testFields=None, tag="3D",integrationRuleName=None,onlyEvaluation=False):
 
     import BasicTools.FE.WeakForm as WeakForm
-    import BasicTools.FE.WeakFormNumerical as WeakFormNumerical
     if wform is None :
         return
 
-    if not isinstance(wform, (WeakForm.PyWeakForm,WeakFormNumerical.PyWeakForm) ):
+    ttest = [WeakForm.PyWeakForm]
+    try:
+        import BasicTools.FE.WeakFormNumerical as WeakFormNumerical
+        ttest.append(WeakFormNumerical.PyWeakForm)
+    except :
+        pass
+
+    if not isinstance(wform, tuple(ttest) ):
         from BasicTools.FE.WeakForm import SymWeakToNumWeak
         wform = SymWeakToNumWeak(wform)
 
@@ -70,7 +76,7 @@ def IntegrateGeneral( mesh, wform, constants, fields, unkownFields,testFields=No
     if numberOfVIJ == 0:
         print("Warning!!! System with zero dofs")
 
-    vK = np.empty(numberOfVIJ,dtype=np.float)
+    vK = np.zeros(numberOfVIJ,dtype=np.float)
     iK = np.empty(numberOfVIJ,dtype=np.int)
     jK = np.empty(numberOfVIJ,dtype=np.int)
 
