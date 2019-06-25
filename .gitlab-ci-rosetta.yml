@@ -159,7 +159,7 @@ deploy:
   script:
     - echo "Deploy..."
     - rsync -av --delete-after --cvs-exclude --exclude='.gitlab*' --omit-dir-times --no-perms . $PREFIX
-    - $ACLSCRIPT $PREFIX/.acl
+    - $ACLSCRIPT $PREFIX/../.acl .
   environment:
     name: deploy_to_softs
   only:
