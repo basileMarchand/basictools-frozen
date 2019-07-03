@@ -5,7 +5,6 @@ import numpy as np
 import BasicTools.Containers.ElementNames as ElementNames
 from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
 from BasicTools.Containers.UnstructuredMeshTools import CreateMeshOfTriangles
-from vtk.util import numpy_support
 
 #from file vtkCellType.h  of the vtk sources
 vtkNameByNumber = {}
@@ -87,7 +86,7 @@ vtkNumberByElementName[ElementNames.Triangle_6] = 22
 vtkNumberByElementName[ElementNames.Quadrangle_8] = 23
 vtkNumberByElementName[ElementNames.Tetrahedron_10] = 24
 vtkNumberByElementName[ElementNames.Hexaedron_20] = 25
-
+vtkNumberByElementName[ElementNames.Quadrangle_9] = 28
 elementNameByVtkNumber = {}
 
 for key,vtknumber in vtkNumberByElementName.items():
@@ -96,6 +95,8 @@ for key,vtknumber in vtkNumberByElementName.items():
 elementNameByVtkNumber[11] = ElementNames.Hexaedron_8   #voxel
 
 def VtkFieldToNumpyField(support,vtkField):
+    from vtk.util import numpy_support
+
     name = vtkField.GetName()
 
     data = numpy_support.vtk_to_numpy(vtkField)
@@ -108,6 +109,7 @@ def VtkFieldToNumpyField(support,vtkField):
     return (name,data)
 
 def NumpyFieldToVtkField(support,fielddata,fieldname):
+    from vtk.util import numpy_support
 
 
     isimagedata = support.IsConstantRectilinear()
@@ -266,7 +268,7 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
                 raise
                 continue
 
-            print("name : ", name )
+            #print("name : ", name )
             VTK_data = NumpyFieldToVtkField(mesh,data,name)
             output.GetCellData().AddArray(VTK_data)
             continue
