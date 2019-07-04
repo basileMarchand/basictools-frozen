@@ -41,6 +41,7 @@ __all__ = [
 "IOFactory",
 "PipeIO",
 "ZsetTools",
+"VtuReader",
 
 ]
 

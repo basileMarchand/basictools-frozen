@@ -29,24 +29,28 @@ def escapeForXmlAttribute(s):
     s = s.replace('\t', '&#x9;')
     return s
 
+def SearchAndReplace(data):
 
-import sys
+    source = data[0]
+
+    for i in range(1,len(data)):
+        filtered = escapeForXmlAttribute(data[i].rstrip())
+        source = source.replace("KEY"+str(i),filtered)
+
+    return source
 
 
+if __name__ == '__main__':
 
-source = open(args.r[0]).read()
+    import sys
 
+    source = open(args.r[0]).read()
 
-for i in range(1,len(args.f)+1):
-  filtered = escapeForXmlAttribute(open(args.f[i-1]).read().rstrip())
-  source = source.replace("KEY"+str(i),filtered)
+    for i in range(1,len(args.f)+1):
+      filtered = escapeForXmlAttribute(open(args.f[i-1]).read().rstrip())
+      source = source.replace("KEY"+str(i),filtered)
 
-#source += str(args)
-#import sys
-#source += str(sys.argv)
-#print(args.o[0],'w')
-
-open(args.o[0],'w').write(source)
+    open(args.o[0],'w').write(source)
 
 
 

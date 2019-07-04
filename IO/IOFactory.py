@@ -35,6 +35,7 @@ def InitAllReaders():
     from BasicTools.IO.PipeIO import PipeReader
     from BasicTools.IO.OdbReader import OdbReader
     from BasicTools.IO.UtReader import UtReader
+    from BasicTools.IO.VtuReader import VtuReader
 
 
 

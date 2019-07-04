@@ -33,14 +33,11 @@ class GeoReader(ReaderBase):
            if not (b'Z7BINARYGEOF\x00' == magic ) :
                raise(Exception("Bad file"))
 
-
    def readInt32(self):
        return struct.unpack(">i", self.rawread(4))[0]
 
    def readInts32(self,cpt):
-
        return np.array(struct.unpack(">"+"i"*cpt, self.rawread(4*cpt)))
-
 
    def ReadMetaData(self):
        return self.Read(onlyMeta = True)
