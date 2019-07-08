@@ -9,7 +9,7 @@ from BasicTools.Helpers.TextFormatHelper import TFormat
 import BasicTools.Containers.ElementNames as EN
 from BasicTools.IO.XdmfTools import XdmfName,XdmfNumber
 from BasicTools.IO.WriterBase import WriterBase as WriterBase
-
+from BasicTools.Helpers.MPIInterface import MPIInterface as MPI
 
 def ArrayToString(data):
     return " ".join(str(x) for x in data)
@@ -55,7 +55,21 @@ def ArrayToString(data):
 #  *   Mixed - Mixture of Unstructured Topologies
 
 
-def WriteMeshToXdmf(filename, baseMeshObject, PointFields = None, CellFields = None,GridFields= None, PointFieldsNames = None, CellFieldsNames=None, GridFieldsNames=None , Binary= True):
+def WriteMeshToXdmf(filename,
+                    baseMeshObject,
+                    PointFields = None,
+                    CellFields = None,
+                    GridFields= None,
+                    IntegrationPointData=None,
+                    PointFieldsNames = None,
+                    CellFieldsNames=None,
+                    GridFieldsNames=None,
+                    IntegrationPointDataNames=None,
+                    IntegrationRule=None,
+                    Binary= True, ):
+    """
+    Functional version of the Xdmf Writer
+    """
 
     if PointFields is None:
         PointFields = [];
@@ -75,6 +89,12 @@ def WriteMeshToXdmf(filename, baseMeshObject, PointFields = None, CellFields = N
     if GridFieldsNames is None:
         GridFieldsNames  = [];
 
+    if IntegrationPointData is None:
+        IntegrationPointData  = [];
+
+    if IntegrationPointDataNames is None:
+        IntegrationPointDataNames  = [];
+
     writer = XdmfWriter(filename)
     writer.SetBinary(Binary)
     writer.Open()
@@ -82,14 +102,40 @@ def WriteMeshToXdmf(filename, baseMeshObject, PointFields = None, CellFields = N
                  PointFields= PointFields,
                  CellFields = CellFields,
                  GridFields = GridFields,
+                 IntegrationPointData=IntegrationPointData,
                  PointFieldsNames = PointFieldsNames,
                  CellFieldsNames = CellFieldsNames,
-                 GridFieldsNames = GridFieldsNames
+                 GridFieldsNames = GridFieldsNames,
+                 IntegrationPointDataNames=IntegrationPointDataNames,
+                 IntegrationRule=IntegrationRule,
                  )
     writer.Close()
 #
 
+class inmemoryfile():
+   """
+   Helper class to write the xmf part of the file into memory
+   """
+   def __init__(self,saveFilePointer):
+       self.data = ""
+       self.saveFilePointer = saveFilePointer
+   def write(self,data):
+       self.data += data
+   def tell(self):
+       return 0
+   def seek(self,pos):
+       return 0
+   def close(self):
+       pass
+
 class XdmfWriter(WriterBase):
+    """
+    Class to Write Xdmf files for:
+        - classic finit element solutions
+        - domain decomposition problem (multi mesh)
+        - transient solution (the mesh changes in time)
+        - solution written in parafac format (monolitic or in ddm mpi)
+    """
     def __init__(self, fileName = None):
         super(XdmfWriter,self).__init__()
         self.canHandleTemporal = True
@@ -98,6 +144,8 @@ class XdmfWriter(WriterBase):
 
         self.fileName = None;
         self.timeSteps = [];
+        self.parafacCpt = 0;
+        self.ddmCpt = 0;
         self.currentTime = 0;
         self.__XmlSizeLimit = 0
         self.automaticOpen = False;
@@ -109,23 +157,18 @@ class XdmfWriter(WriterBase):
         self.__binarycpt = 0;
         self.__binfilecounter = 0
         self.__keepXmlFileInSaneState = True;
-        self.__parafac__ = False
+        self.__isParafacFormat = False
 
         #set to off is you what to put the time at the end of the temporal grid
         #keep this option True to be compatible with the XMDF3 reader of Paraview
         self.__printTimeInsideEachGrid = True
 
-
-
         self.SetFileName(fileName)
-
-
-
-
 
     def __str__(self):
         res  = 'XdmfWriter : \n'
         res += '   FileName : '+ str(self.fileName) +'\n'
+        res += '   isParafacFormat : '+ ('True' if self.__isParafacFormat else "False") +'\n'
         if self.isBinary():
            res += '   Binary output Active \n'
            res += '   Binary FileName : '+ self.__binFileName +'\n'
@@ -143,21 +186,25 @@ class XdmfWriter(WriterBase):
             self.__path = None;
             return
 
-        #print('Setting filename '+ fileName)
-
-
         self.fileName = fileName;
         self.__path  = os.path.abspath(os.path.dirname(fileName));
         self.binfilecounter = 0
         self.NewBinaryFilename()
 
     def SetParafac(self,val = True):
-        self.SetMultidomain(val)
-        self.__parafac__ = val
+        self.__isParafacFormat = val
+
+    def IsParafacOutput(self):
+        return self.__isParafacFormat
 
     def NewBinaryFilename(self):
+        name = os.path.splitext(os.path.abspath(self.fileName))[0]
+        name += "" +str(self.__binfilecounter)
+        if MPI.IsParallel():
+            name += "D"+ str(MPI.Rank())
+        name += ".bin"
 
-        self.__binFileName = os.path.splitext(os.path.abspath(self.fileName))[0] +"_" +str(self.__binfilecounter) +".bin"
+        self.__binFileName = name
         self.__binFileNameOnly = os.path.basename(self.__binFileName)
         self.__binfilecounter +=1
 
@@ -177,8 +224,6 @@ class XdmfWriter(WriterBase):
         if self.isOpen() :
             print(TFormat.InRed("The file is already open !!!!!"))
             return
-            #raise Exception
-
 
         if filename is not None:
             self.SetFileName(filename)
@@ -192,11 +237,8 @@ class XdmfWriter(WriterBase):
                 self.filePointer.seek(-100,2)
 
                 lines = self.filePointer.readlines()
-                #print("lines")
                 for line in lines:
-                    #print(line)
                     if line.find("<!--Temporal") != -1:
-                         #pos (for seek)
                          l = line.find('pos="')
                          r = line.find('" ',l+1)
                          pos = int(line[l+5:r])
@@ -223,6 +265,14 @@ class XdmfWriter(WriterBase):
                          return
                 raise(Exception("Unable Open file in append mode "))
             else:
+               mpi = MPI()
+               if mpi.IsParallel:
+                   self.__keepXmlFileInSaneState = False
+                   if mpi.rank > 0:
+                       self.filePointer = inmemoryfile(self.filePointer)
+                   else:
+                       self.filePointer = open(self.fileName, 'w')
+               else:
                 self.filePointer = open(self.fileName, 'w')
 
         except: # pragma: no cover
@@ -239,11 +289,38 @@ class XdmfWriter(WriterBase):
             self.filePointer.write('<Grid Name="Grid_T" GridType="Collection" CollectionType="Temporal"  >\n')
         if self.IsMultidomainOutput():
             self.filePointer.write('<Grid Name="Grid_S" GridType="Collection" CollectionType="Spatial" >\n')
-        #clean the binary file  =
+
+        ## here we recover the output for the slave nodes (rank> 0) and then we
+        ## write this information in the master node (rank = 0)
+        self._OpenParallelWriter()
+
+        if self.IsParafacOutput():
+            self.filePointer.write('<Grid Name="Grid_P" GridType="Collection" CollectionType="None" >\n')
+
         if self.isBinary():
             self.__binaryFilePointer = open (self.__binFileName, "wb")
+
         if self.__keepXmlFileInSaneState:
             self.WriteTail()
+
+    def _OpenParallelWriter(self):
+
+         mpi = MPI()
+         if mpi.mpiOK:
+           self.__keepXmlFileInSaneState = False
+           if mpi.rank > 0:
+             self.filePointer = inmemoryfile(self.filePointer )
+
+    def _CloseParallelWriter(self):
+
+        mpi = MPI()
+        if mpi.mpiOK and mpi.rank > 0:
+             mpi.comm.send(self.filePointer.data, dest=0)
+             self.filePointer = self.filePointer.saveFilePointer
+        else:
+             for i in range(1,mpi.size):
+                 data = mpi.comm.recv( source=i)
+                 self.filePointer.write(data)
 
     def Close(self):
         if self.isOpen():
@@ -256,11 +333,16 @@ class XdmfWriter(WriterBase):
 
     def WriteTail(self):
         if self.isOpen():
-            filepos = self.filePointer.tell()
+
+            if self.IsParafacOutput():
+                self.filePointer.write('</Grid> <!-- Parafac grid -->\n')
+
+            self._CloseParallelWriter()
 
             if self.IsMultidomainOutput() :
                 self.filePointer.write('</Grid> <!-- collection grid -->\n')
 
+            filepos = self.filePointer.tell()
 
             if self.IsTemporalOutput():
                 self.__WriteTime()
@@ -268,12 +350,12 @@ class XdmfWriter(WriterBase):
             self.filePointer.write('  </Domain>\n')
             self.filePointer.write('</Xdmf>\n')
             # we put the pointer just before the tail so we can continue writting
-            # to the file
+            # to the file for a new time step
             self.filePointer.seek(filepos)
 
     def __WriteGeoAndTopo(self,baseMeshObject):
 
-        if self.__parafac__:
+        if self.__isParafacFormat:
             if "ParafacDims" in baseMeshObject.props:
                 self.filePointer.write('    <Information Name="Dims" Value="'+str(baseMeshObject.props["ParafacDims"])+'" /> \n')
                 for i in range(baseMeshObject.props["ParafacDims"]):
@@ -498,6 +580,44 @@ class XdmfWriter(WriterBase):
 
        self.filePointer.write('    </Attribute>\n')
 
+    def WriteIntegrationsPoints(self,datas):
+
+        for elemName, data in datas:
+            npdata = np.array(data)
+            nip = npdata.shape[0]
+            if npdata.shape[1] < 3:
+                b = np.zeros((nip,3))
+                b[:,:-1] = npdata
+                npdata = b
+
+            self.filePointer.write('    <Information Name="QP" Value="')#
+            self.filePointer.write(str(EN.numberOfNodes[elemName]) + " ")
+            #from BasicTools.Containers.vtkBridge import vtkNumberByElementName
+            #self.filePointer.write(str(vtkNumberByElementName[elemName]) + " ")
+            self.filePointer.write(str(XdmfNumber[elemName]) + " ")
+
+
+            self.filePointer.write(str(nip) + '" > \n')
+
+            self.__WriteDataItem(npdata.ravel(),[npdata.size])
+            self.filePointer.write('</Information> \n')#
+
+    def WriteIntegrationsPointDatas(self,names,datas):
+        for name,data in zip(names,datas):
+            self.filePointer.write('    <Information Name="IPF" Value="'+str(name)+'" > \n')#
+            self.__WriteDataItem(data.ravel(),[data.size])
+            self.filePointer.write('</Information> \n')#
+
+    def NextDomain(self):
+        self.parafacCpt = 0
+        self.ddmCpt += 1
+        if self.IsMultidomainOutput() :
+            if self.IsParafacOutput():
+                 self.filePointer.write('</Grid> <!-- Parafac grid -->\n')
+                 self.filePointer.write('<Grid Name="Grid_P" GridType="Collection" CollectionType="None" >\n')
+        else:
+            raise(Exception("Cant make a new domain without a Multidomain output"))
+
     def MakeStep(self,Time=None,TimeStep=None):
 
         if self.IsMultidomainOutput():
@@ -516,7 +636,7 @@ class XdmfWriter(WriterBase):
         if self.IsTemporalOutput() and self.__printTimeInsideEachGrid and (self.IsMultidomainOutput() == False) :
              self.filePointer.write('    <Time Value="'+str(self.currentTime)+'" /> \n')
 
-    def Write(self,baseMeshObject, PointFields = None, CellFields = None, GridFields= None, PointFieldsNames = None, CellFieldsNames= None, GridFieldsNames=None , Time= None, TimeStep = None,domainName=None ):
+    def Write(self,baseMeshObject, PointFields = None, CellFields = None, GridFields= None, PointFieldsNames = None, CellFieldsNames= None, GridFieldsNames=None , Time= None, TimeStep = None,domainName=None, IntegrationRule=None, IntegrationPointData=None, IntegrationPointDataNames=None ):
 
          if (Time is not None or TimeStep is not None) and self.IsMultidomainOutput():
              raise(Exception("set time using MakeStep, not the Write option") )
@@ -539,6 +659,15 @@ class XdmfWriter(WriterBase):
          if GridFieldsNames is None:
             GridFieldsNames  = [];
 
+         if IntegrationRule is None:
+            IntegrationRule  = [];
+
+         if IntegrationPointData is None:
+            IntegrationPointData  = [];
+
+         if IntegrationPointDataNames is None:
+            IntegrationPointDataNames  = [];
+
          if not self.isOpen() :
             if self.automaticOpen:
                 self.Open()
@@ -552,32 +681,43 @@ class XdmfWriter(WriterBase):
                  dt = Time - self.currentTime
              elif TimeStep is not None:
                  dt = TimeStep
-
              if self.IsTemporalOutput():
                  self.Step(dt)
 
-         self.filePointer.write('    <Grid Name="Grid_'+str(len(self.timeSteps))+'">\n')
+         if self.IsParafacOutput ():
+             sufix = "P" + str(self.parafacCpt)
+             self.parafacCpt += 1
+         else:
+             sufix = str(len(self.timeSteps))
+
+         if self.IsMultidomainOutput():
+             if MPI.IsParallel():
+               sufix += "_D" + str(MPI.Rank())
+             else:
+               sufix += "_D" + str(self.ddmCpt)
+
+         self.filePointer.write('    <Grid Name="Grid_'+sufix+'">\n')
+
          if self.IsTemporalOutput() and self.__printTimeInsideEachGrid and (self.IsMultidomainOutput() == False) :
              self.filePointer.write('    <Time Value="'+str(self.currentTime)+'" /> \n')
 
          self.__WriteGeoAndTopo(baseMeshObject)
 
-         #Writing tags for points
-         #try:
          for tag in baseMeshObject.nodesTags:
                  name = "Tag_" + tag.name
                  data = np.zeros((baseMeshObject.GetNumberOfNodes(),1),dtype=np.int8)
                  data[baseMeshObject.nodesTags[tag.name].GetIds()] = 1;
                  self.__WriteAttribute(np.array(data), name, "Node",baseMeshObject)
-         #except:
-         #   pass
 
          #Cell Tags
          baseMeshObject.PrepareForOutput();
 
          celtags = baseMeshObject.GetNamesOfElemTags()
          for tagname in celtags:
-             name = "Tag_" + tagname
+             if tagname in PointFieldsNames:
+                 name = "Tag_" + tagname
+             else:
+                 name = tagname
              data = baseMeshObject.GetElementsInTag(tagname)
              res = np.zeros((baseMeshObject.GetNumberOfElements(),1),dtype=np.int8)
              res[data] = 1;
@@ -598,7 +738,6 @@ class XdmfWriter(WriterBase):
 
            self.__WriteAttribute(np.array(CellFields[i]), name, "Cell",baseMeshObject)
 
-
          for i in range(len(GridFields)):
 
            name = 'GField'+str(i)
@@ -607,13 +746,15 @@ class XdmfWriter(WriterBase):
 
            self.__WriteAttribute(np.array(GridFields[i]), name, "Grid",baseMeshObject)
 
+         self.WriteIntegrationsPoints(IntegrationRule)
+         self.WriteIntegrationsPointDatas(IntegrationPointDataNames,IntegrationPointData)
+
          self.filePointer.write('    </Grid>\n')
 
          if(self.__keepXmlFileInSaneState):
              self.WriteTail()
          if self.isBinary() :# pragma: no cover
            self.__binaryFilePointer.flush()
-
 
     def __WriteTime(self):
         """ this function is called by the WriteTail, this function must NOT change
@@ -679,7 +820,6 @@ class XdmfWriter(WriterBase):
             else:
                 self.filePointer.write(' <DataItem Format="XML" NumberType="'+typename+'" Dimensions="'+dimension+'">')
                 self.filePointer.write(" ".join(str(x) for x in data.ravel()))
-
 
             self.filePointer.write('</DataItem>\n')
 
@@ -901,7 +1041,6 @@ def CheckIntegrity(GUI=False):
     writer.SetFileName(None)
     writer.SetXmlSizeLimit(0)
     writer.SetBinary(True)
-    writer.SetMultidomain()
     writer.SetParafac(True)
     writer.Open(filename=tempdir+'parafac.pxdmf');
     from BasicTools.Containers.UnstructuredMeshTools import  CreateMeshFromConstantRectilinearMesh as CMFCRM
@@ -923,17 +1062,32 @@ def CheckIntegrity(GUI=False):
     cmesh3D.SetDimensions([8,8,8])
     mesh3D = CMFCRM(cmesh3D)
 
-    writer.Write(mesh1D)
-    writer.Write(mesh2D)
-    writer.Write(mesh3D)
+
+
+    integrationPoints = [
+            (EN.Triangle_6,[ [0.5, 0.5] ] ),
+            (EN.Tetrahedron_10, [[0.1381966011, 0.1381966011, 0.1381966011],
+                                 [0.5854101966, 0.1381966011, 0.1381966011],
+                                 [0.1381966011, 0.5854101966, 0.1381966011],
+                                 [0.1381966011, 0.1381966011, 0.5854101966]]),
+            (EN.Quadrangle_4, [[0.5,0.5],
+                               [0.25,0.25]] )
+    ]
+
+    IntegrationPointData = np.arange(18)+0.1
+
+    writer.Write(mesh2D,
+                 IntegrationRule=integrationPoints,
+                 IntegrationPointData=[IntegrationPointData],
+                 IntegrationPointDataNames=["IPId_0"])
+
+    writer.Write(mesh1D, CellFields = [np.arange(mesh1D.GetNumberOfElements())+0.1 ], CellFieldsNames=["IPId_0"])
+    writer.Write(mesh3D, CellFields = [np.arange(mesh3D.GetNumberOfElements())+0.1 ], CellFieldsNames=["IPId_0"])
     writer.Close()
 
     if GUI :
         from BasicTools.Actions.OpenInParaView import OpenInParaView
         OpenInParaView(filename = tempdir+'parafac.pxdmf')
-
-
-
 
     from BasicTools.IO.XdmfReader import XdmfReader  as XR
     f = XR(filename = tempdir+'testdirect.xdmf' )
@@ -959,8 +1113,65 @@ def CheckIntegrity(GUI=False):
     grid  = domain.GetGrid(0)
     grid.GetFieldsOfType("Cell")
 
+    ### Domai nDecomposition and Parafac
+
+    res = CheckIntegrityDDM(GUI=GUI)
+    if res.lower() != "ok": return res
+
     return 'ok'
 
+def CheckIntegrityDDM(GUI=False):
+    from BasicTools.Helpers.Tests import TestTempDir
+
+    tempdir = TestTempDir.GetTempPath()
+
+    from BasicTools.Containers.UnstructuredMeshTools import  CreateUniformMeshOfBars
+
+    mesh1D = CreateUniformMeshOfBars(0,5,10)
+    mesh1D.props['ParafacDims'] = 1
+    mesh1D.props['ParafacDim0'] = "T"
+
+    from BasicTools.Helpers.MPIInterface import MPIInterface as MPI
+
+    writer = XdmfWriter()
+    writer.SetFileName(None)
+    writer.SetXmlSizeLimit(0)
+    writer.SetBinary(True)
+    writer.SetMultidomain()
+    writer.SetParafac(True)
+    mpi = MPI()
+    print("rank ", mpi.rank)
+    writer.Open(filename=tempdir+'DDM_parafac.pxdmf');
+
+
+    mpi = MPI()
+    if mpi.Rank() == 0:
+        mesh1D.props['ParafacDim0'] = "D0_P0"
+        writer.Write(mesh1D, CellFields = [np.arange(mesh1D.GetNumberOfElements())+0.1 ], CellFieldsNames=["IPId_0"])
+
+        mesh1D.nodes[:,0] += 1
+        mesh1D.props['ParafacDim0'] = "D0_P1"
+        writer.Write(mesh1D, CellFields = [np.arange(mesh1D.GetNumberOfElements())+0.1 ], CellFieldsNames=["IPId_0"])
+
+    if mpi.IsParallel() == 0 :
+        writer.NextDomain()
+
+    if mpi.Rank() == mpi.size-1 :
+
+        mesh1D.nodes[:,0] += 1
+        mesh1D.props['ParafacDim0'] = "D1_P0"
+        writer.Write(mesh1D, CellFields = [np.arange(mesh1D.GetNumberOfElements())+0.1 ], CellFieldsNames=["IPId_0"])
+
+        mesh1D.nodes[:,0] += 1
+        mesh1D.props['ParafacDim0'] = "D1_P1"
+        writer.Write(mesh1D, CellFields = [np.arange(mesh1D.GetNumberOfElements())+0.1 ], CellFieldsNames=["IPId_0"])
+
+    writer.Close()
+    return "ok"
+
+
 if __name__ == '__main__':
-    print(CheckIntegrity(GUI=True)) # pragma: no cover
+    #from BasicTools.Helpers.Tests import TestTempDir
+    #TestTempDir.SetTempPath("/tmp/BasicTools_Test_Directory__is42mzi_safe_to_delete/")
+    print(CheckIntegrityDDM(GUI=False)) # pragma: no cover
 

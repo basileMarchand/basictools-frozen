@@ -14,7 +14,8 @@ __all__ = [
 'which',
 "Factory",
 "ProgressBar",
-"Timer"
+"Timer",
+"MPIInterface"
  ]
 
 
