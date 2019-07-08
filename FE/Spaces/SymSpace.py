@@ -109,7 +109,8 @@ class SymSpaceBase(SpaceBase):
     def GetNormal(self,Jack):
         # Edge in 2D
         if Jack.shape[0] == 1 and Jack.shape[1] == 2 :
-            res = np.array([Jack[1,:] -Jack[0,:]],dtype =np.float)
+            res = np.array([Jack[0,1],-Jack[0,0]],dtype =np.float)
+            #res = np.array([Jack[1,:] -Jack[0,:]],dtype =np.float) #ANCIENNE VERSION
         # surface in 3D
         elif Jack.shape[0] == 2 and Jack.shape[1] == 3 :
             res =  np.cross(Jack[0,:],Jack[1,:])
@@ -153,7 +154,7 @@ class SymSpaceBase(SpaceBase):
        q,r = np.linalg.qr(Jack)
        qt = q.T
 
-       jinv = lambda vec,qt=qt,r=r: np.linalg.lstsq(r, np.dot(qt,vec))[0]
+       jinv = lambda vec,qt=qt,r=r: np.linalg.lstsq(r, np.dot(qt,vec), rcond = None)[0]
 
        return Jack, Jdet, jinv
 

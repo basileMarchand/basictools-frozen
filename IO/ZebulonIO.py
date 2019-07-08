@@ -271,7 +271,7 @@ def StringReader(inputString, folder):
     return appendedString
 
 
-def ReadInp2(fileName=None,string=None):
+def ReadInp2(fileName=None,string=None,startingNstar=4):
     """
     Reads an Zebulon inp files and return the results in nested lists
     """
@@ -282,12 +282,11 @@ def ReadInp2(fileName=None,string=None):
       from io import StringIO
       string = StringIO(string)
 
-
     string0 = StringReader(inputString = string, folder = os.path.dirname(fileName))
 
-    string = string0.strip('\n').lstrip().rstrip().split('****return')[:-1]
+    string = string0.strip('\n').lstrip().rstrip().split(startingNstar*"*"+'return')[:-1]
     for i in range(len(string)):
-      string[i] = string[i].strip('\n').lstrip().rstrip()[4:].strip('\n').lstrip().rstrip().split('\n***')
+      string[i] = string[i].strip('\n').lstrip().rstrip()[startingNstar:].strip('\n').lstrip().rstrip().split('\n***')
       for j in range(len(string[i])):
         string[i][j] = string[i][j].strip('\n').lstrip().rstrip().split('\n**')
         for k in range(len(string[i][j])):
@@ -297,6 +296,7 @@ def ReadInp2(fileName=None,string=None):
             for m in range(len(string[i][j][k][l])):
               string[i][j][k][l][m] = string[i][j][k][l][m].lstrip().rstrip().split()
     return string
+
 
 
 def WriteInp2(data,output= None):
@@ -575,6 +575,9 @@ def CheckIntegrity():
     GetInputTimeSequence(res)
     print(GetInitDofValues(res))
 
+    res = ReadInp2(T2.GetTestDataPath() + 'mat', startingNstar=3)
+    GetFromInp(res,{'3':['behavior', 'thermal'], '2':['conductivity', 'isotropic']})
+    GetFromInp(res,{'3':['behavior', 'thermal'], '2':['coefficient']})
     return 'ok'
 
 

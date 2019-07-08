@@ -215,7 +215,7 @@ def __tryImportRecursive(submod,tocheck,stopAtFirstError):
              try:
                  __tryImportRecursive(subsubmod,tocheck,stopAtFirstError)
              except:
-                 print('Error Loading File : ' + subsubmod + '.py'  )
+                 print('Error Loading File : ' + subsubmod + '.py (Current folder'+os.getcwd()+')'  )
                  print('-*-*-*-*-*-*> missing CheckIntegrity()??? <*-*-*-*-*-*--'  )
                  if(stopAtFirstError): raise
      except:
