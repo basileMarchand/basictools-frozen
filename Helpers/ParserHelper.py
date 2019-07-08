@@ -20,10 +20,14 @@ def ReadScalar(inputData,inputtype):
     if inputtype is bool:
         return ReadBool(inputData)
 
-    if type(inputData) is str:
-        return inputtype(inputData.lstrip().rstrip())
-    else:
-        return inputtype(inputData)
+    try:
+        if type(inputData) is str:
+            return inputtype(inputData.lstrip().rstrip())
+        else:
+            return inputtype(inputData)
+    except ValueError:
+        from BasicTools.Containers.SymExpr import SymExprBase
+        return inputtype(SymExprBase(inputData).GetValue())
 
 def ReadVector(string,dtype):
 
@@ -134,10 +138,15 @@ def ReadProperties(data, props ,obj,typeConversion=True):
 
 def TestFunction(func,string,correctVal):
     val = func(string)
-    print( str(string) + " : " +str(val))
 
-    if type(val) != type(correctVal) or np.any(val != correctVal):
-        raise
+
+    print(str(func.__name__) + "("+  str(string) + ") = " +  str(val) + " =? " +str(correctVal))
+
+    if type(val) != type(correctVal):
+        raise Exception("returned values does not have the correct type")
+
+    if np.any(val != correctVal):
+        raise Exception("returned value does not match")
 
 def CheckIntegrity():
 
@@ -157,8 +166,13 @@ def CheckIntegrity():
     TestFunction(ReadInts,"1 2 3 ", np.array([1,2,3]))
 
     TestFunction(ReadFloat,"3.14159", 3.14159 )
+    TestFunction(ReadFloat,"3.14159*10/5/2", 3.14159 )
+    TestFunction(ReadFloat,"exp(pi)", math.exp(math.pi) )
     TestFunction(ReadFloat,3.14159, 3.14159 )
     TestFunction(ReadFloats,"1 2 3 ", np.array([1,2,3],dtype=float))
+    TestFunction(ReadFloats,"1 4/2 9/3 ", np.array([1,2,3],dtype=float))
+    TestFunction(ReadInts,"1 4/2 9/3 ", np.array([1,2,3],dtype=int))
+
 
     TestFunction(ReadStrings,"Hola Chao", np.array(["Hola","Chao"],dtype=str))
 
