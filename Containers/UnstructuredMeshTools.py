@@ -1204,7 +1204,7 @@ def ComputeSkin(mesh, md=None ,inplace=False):
             if name not in surf:
                 self.surf[name] = {}
             surf2 = self.surf.get(name)
-            print(ids)
+            #print(ids)
             for i in ids:
                 cc = data.connectivity[i,:]
                 lc = np.sort(cc)
