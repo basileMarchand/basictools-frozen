@@ -34,14 +34,14 @@ class StlWriter(WriterBase):
         if self.extractSkin :
             from BasicTools.Containers.UnstructuredMeshTools import ComputeSkin, CleanLonelyNodes
             skin = ComputeSkin(meshObject)
-            print(skin)
+            #print(skin)
             CleanLonelyNodes(skin)
             nodes = skin.nodes
             elements = skin.GetElementsOfType(EN.Triangle_3)
         else:
             nodes = meshObject.nodes
             elements = meshObject.GetElementsOfType(EN.Triangle_3)
-        self.PrintDebug(Name)
+        #self.PrintDebug(Name)
         if Name is None:
             Name == "Solid"
 
