@@ -1170,7 +1170,7 @@ def CheckIntegrity(GUI=False):
     grid  = domain.GetGrid(0)
     grid.GetFieldsOfType("Cell")
 
-    ### Domain nDecomposition and Parafac
+    ### Domain Decomposition and Parafac
 
     res = CheckIntegrityDDM(GUI=GUI)
     if res.lower() != "ok": return res
