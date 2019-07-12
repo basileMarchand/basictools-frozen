@@ -128,6 +128,29 @@ class inmemoryfile():
    def close(self):
        pass
 
+class BinaryStorage(object):
+
+    def __init__(self):
+        self.filename = ""
+        self.offset = 0
+        self.type = None
+        self.itemsize = 0
+        self.vectorsize = 0
+
+    def ChangePathOfBinaryStorage(self,newpath):
+        import os
+        self.filename = newpath + os.sep + os.path.basename(self.filename)
+
+    def UpdateHeavyStorage(self,data):
+       if data.size != self.vectorsize:
+           raise(Exception("Size of data and storage not compatible"))
+
+       f = open(self.filename,'r+b')
+       f.seek(self.offset,0)
+       data.astype(self.type).ravel().tofile(f)
+       f.close()
+
+
 class XdmfWriter(WriterBase):
     """
     Class to Write Xdmf files for:
@@ -619,9 +642,10 @@ class XdmfWriter(WriterBase):
             self.filePointer.write('</Information> \n')#
 
     def WriteIntegrationsPointDatas(self,names,datas):
-        for name,data in zip(names,datas):
+        for i, name in enumerate(names):
+            data = datas[i]
             self.filePointer.write('    <Information Name="IPF" Value="'+str(name)+'" > \n')#
-            self.__WriteDataItem(data.ravel(),[data.size])
+            datas[i] = self.__WriteDataItem(data.ravel(),[data.size])
             self.filePointer.write('</Information> \n')#
 
     def NextDomain(self):
@@ -745,14 +769,14 @@ class XdmfWriter(WriterBase):
            if len(PointFields)  == len(PointFieldsNames):
                name = PointFieldsNames[i]
 
-           self.__WriteAttribute(np.array(PointFields[i]), name, "Node",baseMeshObject)
+           PointFields[i] = self.__WriteAttribute(np.array(PointFields[i]), name, "Node",baseMeshObject)
 
          for i in range(len(CellFields)):
            name = 'CField'+str(i)
            if len(CellFields) == len(CellFieldsNames):
                name = CellFieldsNames[i]
 
-           self.__WriteAttribute(np.array(CellFields[i]), name, "Cell",baseMeshObject)
+           CellFields[i] = self.__WriteAttribute(np.array(CellFields[i]), name, "Cell",baseMeshObject)
 
          for i in range(len(GridFields)):
 
@@ -760,7 +784,7 @@ class XdmfWriter(WriterBase):
            if len(GridFields) == len(GridFieldsNames):
                name = GridFieldsNames[i]
 
-           self.__WriteAttribute(np.array(GridFields[i]), name, "Grid",baseMeshObject)
+           GridFields[i] = self.__WriteAttribute(np.array(GridFields[i]), name, "Grid",baseMeshObject)
 
          self.WriteIntegrationsPoints(IntegrationRule)
          self.WriteIntegrationsPointDatas(IntegrationPointDataNames,IntegrationPointData)
@@ -782,6 +806,8 @@ class XdmfWriter(WriterBase):
             self.filePointer.write('<Time Value="'+ (" ".join(str(x) for x in self.timeSteps)) +'"/>\n')
 
     def __WriteDataItem(self,_data, _shape= None):
+
+
 
         import numpy as np
         data = np.array(_data)
@@ -821,6 +847,13 @@ class XdmfWriter(WriterBase):
                 #bindata = bytearray(data.ravel())
 
                 #self.__binaryFilePointer.write(bindata)
+                res = BinaryStorage()
+                res.filename = self.__binaryFilePointer.name
+                res.offset = self.__binaryFilePointer.tell()
+                res.type = data.dtype
+                res.itemsize = s
+                res.vectorsize = data.size
+
                 data.ravel().tofile(self.__binaryFilePointer)
 
                 self.filePointer.write(' <DataItem Format="Binary"'+
@@ -833,11 +866,15 @@ class XdmfWriter(WriterBase):
                 ' Compression="Raw" >')
                 self.filePointer.write(self.__binFileNameOnly)
                 self.__binarycpt += s*len(data)
+                self.filePointer.write('</DataItem>\n')
+
+                return res
             else:
                 self.filePointer.write(' <DataItem Format="XML" NumberType="'+typename+'" Dimensions="'+dimension+'">')
                 self.filePointer.write(" ".join(str(x) for x in data.ravel()))
 
-            self.filePointer.write('</DataItem>\n')
+                self.filePointer.write('</DataItem>\n')
+                return None
 
 
 from BasicTools.IO.IOFactory import RegisterWriterClass
@@ -1092,10 +1129,14 @@ def CheckIntegrity(GUI=False):
 
     IntegrationPointData = np.arange(18)+0.1
 
+    IntegrationPointDatas = [IntegrationPointData]
     writer.Write(mesh2D,
                  IntegrationRule=integrationPoints,
-                 IntegrationPointData=[IntegrationPointData],
+                 IntegrationPointData=IntegrationPointDatas,
                  IntegrationPointDataNames=["IPId_0"])
+
+    print(IntegrationPointDatas)
+    IntegrationPointDatas[0].UpdateHeavyStorage(IntegrationPointData+10)
 
     writer.Write(mesh1D, CellFields = [np.arange(mesh1D.GetNumberOfElements())+0.1 ], CellFieldsNames=["IPId_0"])
     writer.Write(mesh3D, CellFields = [np.arange(mesh3D.GetNumberOfElements())+0.1 ], CellFieldsNames=["IPId_0"])
@@ -1137,9 +1178,13 @@ def CheckIntegrity(GUI=False):
     return 'ok'
 
 def CheckIntegrityDDM(GUI=False):
-    from BasicTools.Helpers.Tests import TestTempDir
+    """ this test function can be lauched using the mpirun -n 2 ...
+    to test the writer in mpi mode
+    """
 
+    from BasicTools.Helpers.Tests import TestTempDir
     tempdir = TestTempDir.GetTempPath()
+
 
     from BasicTools.Containers.UnstructuredMeshTools import  CreateUniformMeshOfBars
 
@@ -1189,5 +1234,5 @@ def CheckIntegrityDDM(GUI=False):
 if __name__ == '__main__':
     #from BasicTools.Helpers.Tests import TestTempDir
     #TestTempDir.SetTempPath("/tmp/BasicTools_Test_Directory__is42mzi_safe_to_delete/")
-    print(CheckIntegrityDDM(GUI=False)) # pragma: no cover
+    print(CheckIntegrity(GUI=False)) # pragma: no cover
 

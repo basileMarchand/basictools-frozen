@@ -123,8 +123,7 @@ def __RunAndCheck(lis,bp,stopAtFirstError,dryrun,profiling):# pragma: no cover
         bp.Print(TFormat.InBlue(TFormat.Center( "Running Test " +name ,width=80 ) ))
         if lis[name] is None:
             bp.Print(TFormat().InRed(TFormat().GetIndent() + 'Sub Module "' + name + '" does not have the CheckIntegrity function'))
-            continue
-
+            raise(Exception(TFormat().GetIndent() + 'Sub Module "' + name + '" does not have the CheckIntegrity function'))
         try:
             start_time = time.time()
             stop_time = time.time()
@@ -215,6 +214,7 @@ def __tryImportRecursive(submod,tocheck,stopAtFirstError):
              try:
                  __tryImportRecursive(subsubmod,tocheck,stopAtFirstError)
              except:
+                 import os
                  print('Error Loading File : ' + subsubmod + '.py (Current folder'+os.getcwd()+')'  )
                  print('-*-*-*-*-*-*> missing CheckIntegrity()??? <*-*-*-*-*-*--'  )
                  if(stopAtFirstError): raise
