@@ -60,11 +60,8 @@ def CheckIntegrity(GUI=False):
 
     import xml.etree.ElementTree as ET
     root = ET.fromstring(string)
+    data = root.attrib
 
-    from TopoTools.CLApp.MainApp import MainApp
-    app = MainApp()
-
-    data = app.XmlToDic(root)
     data.pop("id",None)
 
     obj = CreateSymExprWithPos(data)
