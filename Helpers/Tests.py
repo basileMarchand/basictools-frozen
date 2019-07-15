@@ -327,7 +327,7 @@ def TestAll(modulestotreat=['ALL'], fulloutput=False, stopAtFirstError= False, e
 def CheckIfAllThePresentFilesAreTested(extraToolsBoxs,testedFiles):
     import os
 
-    pythonPaths = os.environ['PYTHONPATH'].split(":")
+    pythonPaths = os.environ.get('PYTHONPATH', os.getcwd()).split(":")
 
     toignore = ['.git', # git file
                 "__pycache__", # python 3
