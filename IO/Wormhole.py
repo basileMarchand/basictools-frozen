@@ -347,13 +347,12 @@ def CheckIntegrityPipe():
 
          script = GetPipeWrormholeScript()
          print("(s) Starting Server Side")
-         from BasicTools.Helpers.Tests import WriteTempFile
-         import subprocess
-         fn = WriteTempFile("WormholeServer.py",script)
-         proc = subprocess.Popen([cmd,fn], stdout=subprocess.PIPE,stdin=subprocess.PIPE)
+         import subprocess, os
+         proc = subprocess.Popen([cmd, '-c', script], cwd=os.getcwd(),
+                 stdout=subprocess.PIPE, stdin=subprocess.PIPE)
          return proc
 
-     proc = runServerPipe("python2")
+     proc = runServerPipe(sys.executable)
      print("(c) Starting Client Side")
      time.sleep(1.)
 
