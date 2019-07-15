@@ -397,6 +397,7 @@ class ConstantRectilinearMesh(MeshBase):
 
 
 def CheckIntegrity():
+    import sys
 
     # Error checking tests
     try:
@@ -452,7 +453,7 @@ def CheckIntegrity():
 
     print(myMesh.GenerateFullConnectivity())
 
-    np.set_printoptions(threshold=np.nan)
+    np.set_printoptions(threshold=sys.maxsize)
 
     print((myMesh.GetValueAtPos(np.array([1,2,3,4,5,6,7,8]),[0.5,0.5,0.5])))
 
@@ -479,7 +480,7 @@ def CheckIntegrity():
 
 
 
-    np.set_printoptions(threshold=np.nan)
+    np.set_printoptions(threshold=sys.maxsize)
 
 
     print((myMesh.GetValueAtPos(np.array([1,2,3,4,5,6,7,8,9]),[0.5,0.5])))
