@@ -20,8 +20,126 @@ def ReadFem(fileName=None,string=None):
     if string is not None:
         obj.SetStringToRead(string)
 
-    return obj.Read()[0]
+    return obj.Read()
 
+keysToIgnore = [ "CORD1R",
+                "DESGLB",
+                "MAT1",
+                "PSOLID",
+                "MAT1",
+                "LABEL",
+                "FORMAT",
+                "OUTPUT",
+                "ELFORCE",
+                "ESE(H3D)",
+                "GPSTRESS(H3D,",
+                "SPCFORCE(SPARSE)",
+                "STRESS",
+                "",
+                "",
+                ]
+
+keysToIgnoreSubcase = [ "",
+                       ]
+
+keysToIgnoreBulk = [ "PSOLID",
+                "DOPTPRM",
+                "GAPPRM",
+                "DCONADD",
+                "CBUSH",
+                "PBUSH",
+                "DCONSTR",
+                "LOAD",
+                "SPCADD",
+                "LOADADD",
+                "MAT1"
+                ]
+
+
+class NastranLineParcer(object):
+    def __init__(self):
+         self.fields = []
+         self.data = {}
+         self.structured = False
+    def Parse(self,line,file=None):
+        #k = GetField(line,0)
+        #if k != self.fields[0][0]:
+        #    raise(Exception("Keyword does not match : " + str(k) + " != "+str(self.fields[0][0])))
+
+        for i in range(1,len(self.fields)):
+            f = self.GetField(line,i)
+            print("Parsing" + str(self.fields[i]))
+            name = self.fields[i][0]
+            types = self.fields[i][1]
+            self.data[name] = self.ParseTypes(f,types)
+        if self.GetField(line,9) == "+" :
+            line = file.getLine()
+            self.ContinueParsing(line)
+
+    def GetField(self,line,fn):
+      if self.structured:
+        if (fn+1)*8 > len(line):
+            line += (8*(fn+1) - len(line))*" "
+
+        return line[8*fn:8*(fn+1)].lstrip().rstrip()
+      else:
+        return line.split()[fn]
+
+    def ParseTypes(self,line,ts):
+        if type(ts) == tuple:
+            for t in ts:
+                try:
+                    res = self.ParseTypes(line, t)
+                    return res
+                except:
+                    pass
+
+        elif ts == float:
+            return self.ParseFloat(line)
+        else:
+            return ts(line)
+
+    def ParseFloat(self,line):
+            line += (8-len(line))*' '
+            if line[6] == "-"  and line[5] != " ":
+                    #print(line)
+                    line = line[0:6] + "e" + line[6:8]
+            elif line[5] == "-"  and line[4] != " ":
+                    #print(line)
+                    line = line[0:5] + "e" + line[5:8]
+            elif line[4] == "-"  and line[3] != " ":
+                    #print(line)
+                    line = line[0:4] + "e" + line[4:8]
+            elif line[3] == "-"  and line[2] != " ":
+                    #print(line)
+                    line = line[0:3] + "e" + line[3:8]
+            elif line[2] == "-"  and line[1] != " ":
+                    #print(line)
+                    line = line[0:2] + "e" + line[2:8]
+
+            try:
+                    res = float(line)
+            except:
+                    print(line)
+                    raise
+            return res
+class FORCE(NastranLineParcer):
+    def __init__(self):
+        super(FORCE,self).__init__()
+        self.structured = True
+        self.fields = [("KeyWord",str), ("SIG",int),("G",int),("CID",(None,int)),("F",float),("N1",float),("N2",float),("N3",float)]
+
+class LOAD(NastranLineParcer):
+    def __init__(self):
+        super(LOAD,self).__init__()
+        self.structured = True
+        self.fields = [("KeyWord",str), ("S",real),("S1",real),("L1",float)]
+
+
+class IgnoredOneLine(NastranLineParcer):
+    pass
+class IgnoredOneMultiline(NastranLineParcer):
+    pass
 
 class FemReader(ReaderBase):
     def __init__(self,fileName = None):
@@ -33,8 +151,16 @@ class FemReader(ReaderBase):
     def GetField(self,line,number):
         return line[8*number:8*(number+1)]
 
+    def ReadCleanLine(self,withError=False):
+        res = super(FemReader,self).ReadCleanLine(withError=withError)
+        import re
+        ## add space after each comma
+        return re.sub(r'([,/\\]+)(?![ ])', r'\1 ', res)
+
     def Read(self):
         self.StartReading()
+
+        NLP = NastranLineParcer()
 
         res = UM.UnstructuredMesh()
         resdic = {}
@@ -47,6 +173,8 @@ class FemReader(ReaderBase):
         ys = []
         zs = []
         filetointernalid = {}
+        filetointernalidElement = {}
+
         cpt =0
 
         elements = res.GetElementsOfType(ElementNames.Tetrahedron_4)
@@ -62,15 +190,33 @@ class FemReader(ReaderBase):
             l = line.split()
             key = l[0]
             #print(key)
-            if key == 'DESGLB' and self.ignoreNotTreated :  continue
+            if key in keysToIgnore and self.ignoreNotTreated :
+                while(True):
+                    line = self.ReadCleanLine()
+                    if line[0] != "+":
+                        break
+                need_to_read = False
+                continue
+
             if key == 'SUBCASE' :
             #https://knowledge.autodesk.com/support/nastran/learn-explore/caas/CloudHelp/cloudhelp/2019/ENU/NSTRN-Reference/files/GUID-38938C32-4019-4DDA-AE94-2987C8355669-htm.html
-                subcase = int(self.GetField(line,1))
+                #subcase = int(self.GetField(line,1))
+                subcase = int(l[1])
                 data = {}
 
                 while(True):
                   line = self.ReadCleanLine()
                   key = line.split()[0]
+
+                  if key in keysToIgnoreSubcase and self.ignoreNotTreated :
+                    while(True):
+                        line = self.ReadCleanLine()
+                        if line[0] != "+":
+                            break
+                    need_to_read = False
+                    continue
+
+
                   #print("tt" +line)
                   if line.find("LABEL") > -1:
                   #https://knowledge.autodesk.com/support/nastran/learn-explore/caas/CloudHelp/cloudhelp/2019/ENU/NSTRN-Reference/files/GUID-99CAEA1D-352E-4CDA-B74B-C58E4D12D020-htm.html?st=label
@@ -118,37 +264,39 @@ class FemReader(ReaderBase):
                 vec = line.split("=")
                 resdic["Objective"] = {"id":int(vec[1]),"type":vec[0].split("(")[1].split(")")[0]}
                 continue
-            if key == 'LABEL' and self.ignoreNotTreated : continue
 
             if key == "SET":
                 need_to_read = False
                 l = line.split()
                 key = l[0]
-                print("--> " + key)
+                self.PrintDebug("Reading Sets ")
                 setNumber = l[1]
+                data = []
 
                 if l[2] != "=":
                     raise
 
-                line = "".join(l[3:])
+                line = " ".join(l[3:])
 
                 while(True):
                     if need_to_read :
-                        line = self.ReadCleanLine()
+                        line = self.ReadCleanLine().strip()
                         need_to_read = True
                     if line is None:
                         break
 
-                    units = line.split(",")
+                    units = [x.strip() for x in  line.split(",")]
                     for u in units:
                         if len(u) == 0:
                             continue
                         if "THRU" in u:
                             partition = u.split()
-                            begin = partition[0]
-                            end = partition[-1]
+                            begin = int(partition[0])
+                            end = int(partition[-1])
+                            data.extend(range(begin,end+1) )
                         else:
                             idd = int(u)
+                            data.append(idd)
                     need_to_read = True
                     if line[-1] != ",":
                         break
@@ -160,23 +308,33 @@ class FemReader(ReaderBase):
                 while(True):
                     if need_to_read :
                         line = self.ReadCleanLine()
-                        need_to_read = True
+                    need_to_read = True
                     if line is None:
                         break
 
                     l = line.split()
                     key = l[0]
-                    #print("---> " + key)
+
+                    if key in keysToIgnoreBulk and self.ignoreNotTreated :
+                        while(True):
+                            line = self.ReadCleanLine()
+                            if line[0] != "+":
+                                break
+                        need_to_read = False
+                        continue
+
                     if key == 'DOPTPRM'  :
                         resdic["DOPTPRM"] = {self.GetField(line,1):ParseFloat(self.GetField(line,2))}
                         continue
                     if key == 'DTPL' :
                         print("DTPL intensionally ignored")
+                        while(True):
+                            line = self.ReadCleanLine()
+                            if line[0] != " ":
+                                break
+                        need_to_read = True
                         continue
-                    if key == 'DCONSTR' and self.ignoreNotTreated :
-                        need_to_read    = True
-                        continue
-                    if key == 'DCONADD' and self.ignoreNotTreated : continue
+
                     if key == 'DRESP1' :
                         #https://knowledge.autodesk.com/support/nastran/learn-explore/caas/CloudHelp/cloudhelp/2019/ENU/NSTRN-Reference/files/GUID-4C44D4BF-E70D-4548-8BED-D4C0497E5479-htm.html?st=DRESP1
                         idd = int(self.GetField(line,1))
@@ -210,8 +368,8 @@ class FemReader(ReaderBase):
                         floats = [ParseFloat(self.GetField(line,x)) for x in [3,4,5,6,7,8]]
                         line = self.ReadCleanLine()
                         floats.extend([ParseFloat(self.GetField(line,x)) for x in [1,2,3]] )
-                        from BasicTools.FE.ProblemData import Orientation
-                        orient = Orientation()
+                        from BasicTools.FE.ProblemData import Transform
+                        orient = Transform()
                         orient.system = "CORD2R"
 
                         A = np.array(floats[0:3])
@@ -228,28 +386,105 @@ class FemReader(ReaderBase):
 
                         continue
                     if key == 'CORD1R' and self.ignoreNotTreated : continue
-                    if key == 'RBE2' and self.ignoreNotTreated : continue
-                    if key == 'RBE3' and self.ignoreNotTreated : continue
+                    if key == 'RBE2' :
+                        #https://knowledge.autodesk.com/support/nastran/learn-explore/caas/CloudHelp/cloudhelp/2017/ENU/NSTRN-Reference/files/GUID-9C8F3EE5-D900-487A-88E7-9502838E0A3F-htm.html?st=RBE2
+                        EID = int(line[8:8*2])
+                        GN = int(line[8*2:8*3])
+                        CM = line[8*3:8*4]
+                        elements = res.GetElementsOfType(ElementNames.Bar_2)
+                        tag = elements.tags.CreateTag("RBE2_"+str(EID),False)
+
+                        oidd = filetointernalid[GN]
+
+                        start =  4
+                        while(True):
+                            line = self.ReadCleanLine()
+                            if line[0] != "+":
+                                break
+                            for i in range(start,9):
+                                data = line[8*i:8*(i+1)].strip()
+                                if len(data) ==0:
+                                    break
+                                P1 = int(data)
+                                localid = elements.AddNewElement([oidd, filetointernalid[P1] ],-1)
+                                tag.AddToTag(localid-1)
+
+
+                            start =1
+                        need_to_read = False
+                        continue
+                    if key == 'RBE3' :
+                        # from https://knowledge.autodesk.com/support/nastran/learn-explore/caas/CloudHelp/cloudhelp/2017/ENU/NSTRN-Reference/files/GUID-69695F7D-3B6E-4183-8BB0-838E8A014CD2-htm.html?st=RBE3
+
+                        EID = int(line[8:8*2])
+                        REFGRID = int(line[8*3:8*4])
+                        REFC = int(line[8*4:8*5])
+                        WTi = float(line[8*5:8*6])
+                        P1 = int(line[8*6:8*7])
+                        oidd = filetointernalid[REFGRID]
+                        elements = res.GetElementsOfType(ElementNames.Bar_2)
+                        tag = elements.tags.CreateTag("RBE3_"+str(EID))
+                        localid = elements.AddNewElement([oidd, filetointernalid[P1] ],-1)
+                        tag.AddToTag(localid-1)
+                        P2 = int(line[8*7:8*8])
+                        localid = elements.AddNewElement([oidd, filetointernalid[P2]],-1)
+                        tag.AddToTag(localid-1)
+                        P3 = int(line[8*8:8*9])
+                        localid = elements.AddNewElement([oidd, filetointernalid[P3]],-1)
+                        tag.AddToTag(localid-1)
+
+                        while(True):
+                            line = self.ReadCleanLine()
+                            if line[0] != "+":
+                                break
+                            for i in range(1,9):
+                                data = line[8*i:8*(i+1)].strip()
+                                if len(data) == 0:
+                                    break
+                                P1 = int(data)
+                                localid = elements.AddNewElement([oidd ,filetointernalid[P1]],-1)
+                                tag.AddToTag(localid-1)
+
+
+                        need_to_read = False
+                        continue
+
+
 
                     if key == '+'  :
-                        #print(line )
+                        print(line )
                         print("+ intensionally ignored")
                         continue
-                    if key == 'ENDATA' : break
-                    if key == 'PSOLID' and self.ignoreNotTreated : continue
-                    if key == 'MAT1' and self.ignoreNotTreated : continue
-                    if key == 'LOADADD' and self.ignoreNotTreated : continue
 
                     if l[0] == 'SPC' :
-                        tag = res.GetNodalTag("SPC"+str(int(line[8:8*2]) ))
-                        tag.AddToTag(filetointernalid[int(line[8*2:8*3]) ])
+                        ##https://knowledge.autodesk.com/support/nastran/learn-explore/caas/CloudHelp/cloudhelp/2018/ENU/NSTRN-Reference/files/GUID-942678EC-4197-4D05-8CEC-6D61961444B0-htm.html?st=SPC
+                        NLP.structured = True
+                        SID = int(line[8:8*2])
+                        tag = res.GetNodalTag("SPC"+str(SID))
+
+                        G1 = int(line[8*2:8*3])
+                        C1 = int(line[8*3:8*4])
+                        D1 = float(line[8*4:8*5])
+                        tag.AddToTag(filetointernalid[G1])
+                        if len(NLP.GetField(line,5)) :
+                            G2 = int(line[8*5:8*6])
+                            C2 = int(line[8*6:8*7])
+                            D2 = float(line[8*7:8*8])
+                            tag.AddToTag(filetointernalid[G2 ])
+
                         continue
                     if key == 'PLOAD4' :
-                        name = "PLOAD4"+str(int(line[8:8*2]) )
+                        name = "PLOAD4_"+str(int(line[8:8*2]) )
                         tag = res.GetNodalTag(name)
-                        node = filetointernalid[int(line[8*2:8*3]) ]
-                        tag.AddToTag(node)
-                        resdic[name] = {'N':node, "val":ParseFloat(line[8*3:8*4]) }
+                        idd = int(line[8*2:8*3])
+                        node = filetointernalid[idd ]
+                        #tag.AddToTag(filetointernalid[idd])
+                        #resdic[name] = {'N':node, "val":ParseFloat(line[8*3:8*4]) }
+
+                        ElementsAndNumber = filetointernalidElement[idd]
+                        ElementsAndNumber[0].AddElementToTag(ElementsAndNumber[1],name)
+
+
                         continue
                     if key == 'FORCE' :
                         name = "FORCE"+str(int(line[8:8*2]) )
@@ -257,14 +492,13 @@ class FemReader(ReaderBase):
                         node = filetointernalid[int(line[8*2:8*3]) ]
                         tag.AddToTag(node)
 
-                        fx = ParseFloat(line[8*4:8*5])
-                        fy = ParseFloat(line[8*5:8*6])
-                        fz = ParseFloat(line[8*6:8*7])
+                        fx = ParseFloat(line[8*5:8*6])
+                        fy = ParseFloat(line[8*6:8*7])
+                        fz = ParseFloat(line[8*7:8*8])
                         val = [fx,fy,fz]
-                        resdic[name] = {'N':node, "factor":ParseFloat(line[8*3:8*4]), "val":val }
+                        resdic[name] = {'N':node, "factor":ParseFloat(line[8*4:8*5]), "val":val }
                         continue
                     if key == 'GRID' :
-
                       oid = int(line[8:8*2])
 
                       x = ParseFloat(line[8*3:8*4])
@@ -292,6 +526,8 @@ class FemReader(ReaderBase):
                       elements = res.GetElementsOfType(ElementNames.Triangle_3)
 
                       localid = elements.AddNewElement(conn,oid)
+                      filetointernalidElement[oid] = (elements,localid-1)
+
                       elements.tags.CreateTag("ET"+idd2,False).AddToTag(localid-1)
                       #res.AddElementToTagUsingOriginalId(oid,)
                       continue
@@ -318,28 +554,34 @@ class FemReader(ReaderBase):
                           elements = res.GetElementsOfType(ElementNames.Tetrahedron_10)
 
                       localid = elements.AddNewElement(conn,oid)
+                      filetointernalidElement[oid] = (elements,localid-1)
+
                       elements.tags.CreateTag("ET"+idd2,False).AddToTag(localid-1)
                       #res.AddElementToTagUsingOriginalId(oid,)
                       continue
+
+
                     if key == 'ENDDATA' : break
                     if line is None: break
 
-                    print("string '" + str(line) + "' not treated")
+                    print("key " + str(key) )
                     raise(ValueError("string  '" + str(line) + "' not treated"))
 
             if key == 'ENDDATA' : break
-            if line is None: break
+
+            print("key " + str(key) )
             raise(ValueError("string '" + str(line) + "' not treated"))
 
         res.nodes = np.array([xs,ys,zs],dtype=np.float).T
         res.originalIDNodes = np.array(ids,dtype=np.int)
         self.EndReading()
         res.PrepareForOutput()
-        return res,resdic
+        self.output = res
+        self.data = resdic
+        return res
 
 from BasicTools.IO.IOFactory import RegisterReaderClass
 RegisterReaderClass(".fem",FemReader)
-
 
 def ParseFloat(line):
     line += (8-len(line))*' '
@@ -355,8 +597,16 @@ def ParseFloat(line):
     elif line[3] == "-"  and line[2] != " ":
         #print(line)
         line = line[0:3] + "e" + line[3:8]
+    elif line[2] == "-"  and line[1] != " ":
+        #print(line)
+        line = line[0:2] + "e" + line[2:8]
 
-    return float(line)
+    try:
+        res = float(line)
+    except:
+        print(line)
+        raise
+    return res
 
 
 
@@ -381,7 +631,7 @@ ENDDATA
 
     FR = FemReader()
     FR.SetStringToRead(testData)
-    res = FR.Read()[0]
+    res = FR.Read()
 
     print(res.nodes)
     print(res)
