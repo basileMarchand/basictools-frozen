@@ -1778,7 +1778,109 @@ def CheckIntegrity_DeleteInternalFaces(GUI=False):
 
 
 
+def GetValueAtPosLinearSymplecticMesh(field,mesh,constantRectilinearMesh):
+        """
+        Works only for linear symplectic meshes
+        """
+        import math
+        from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
+        from BasicTools.FE.IntegrationsRules import Lagrange as Lagrange
+        from BasicTools.FE.DofNumbering import ComputeDofNumbering
 
+        numbering = ComputeDofNumbering(mesh,LagrangeSpaceGeo,fromConnectivity =True)
+                
+        mesh.ComputeBoundingBox()
+        
+        origin = constantRectilinearMesh.GetOrigin()
+        spacing = constantRectilinearMesh.GetSpacing()
+        dimensions = constantRectilinearMesh.GetDimensions()
+        
+        #print("origin =", origin)
+        #print("spacing =", spacing)
+        #print("dimensions =", dimensions)
+        
+        kmin, kmax = 0, 1
+        
+        result = np.zeros(tuple(dimensions))
+        
+        for name, data in mesh.elements.items():
+            if (ElementNames.dimension[name] == mesh.GetDimensionality() and ElementNames.linear[name] == True):
+
+                for el in range(data.GetNumberOfElements()):
+                    
+                    localNumbering = numbering[name][el,:]
+                    
+                    localNodes = mesh.nodes[data.connectivity[el,:]]
+                    nodesCoords = localNodes - mesh.boundingMin          
+                    localBoundingMin = np.amin(localNodes, axis=0)
+                    localBoundingMax = np.amax(localNodes, axis=0)
+                    #print("nodesCoords =", nodesCoords)
+                    #print("localBoundingMin =", localBoundingMin)
+                    #print("localBoundingMax =", localBoundingMax)
+                    
+                    numbering = ComputeDofNumbering(mesh, LagrangeSpaceGeo,fromConnectivity = True)
+
+                    imin, imax = math.floor((localBoundingMin[0]-origin[0])/spacing[0]),math.floor((localBoundingMax[0]-origin[0])/spacing[0])+1
+                    jmin, jmax = math.floor((localBoundingMin[1]-origin[1])/spacing[1]),math.floor((localBoundingMax[1]-origin[1])/spacing[1])+1
+                    
+                    if mesh.GetDimensionality()>2:
+                        kmin, kmax = math.floor((localBoundingMin[2]-origin[2])/spacing[2]),math.floor((localBoundingMax[2]-origin[2])/spacing[2])+1
+                        
+                    """imin, imax = math.floor((localBoundingMin[0])/spacing[0]),math.floor((localBoundingMax[0])/spacing[0])+1
+                    jmin, jmax = math.floor((localBoundingMin[1])/spacing[1]),math.floor((localBoundingMax[1])/spacing[1])+1
+                    
+                    if mesh.GetDimensionality()>2:
+                        kmin, kmax = math.floor((localBoundingMin[2])/spacing[2]),math.floor((localBoundingMax[2])/spacing[2])+1"""
+
+                    for i in range(imin,imax):
+                        idelta = int(origin[0]/spacing[0])
+                        for j in range(jmin,jmax):
+                            jdelta = int(origin[1]/spacing[1])
+                            for k in range(kmin,kmax):
+                                kdelta = int(origin[2]/spacing[2])
+                                if mesh.GetDimensionality()==2:
+                                    point = np.asarray([i*spacing[0],j*spacing[1]]) + origin - mesh.boundingMin
+                                else:
+                                    point = np.asarray([i*spacing[0],j*spacing[1],k*spacing[2]]) + origin - mesh.boundingMin
+                                
+                                rhs = np.hstack((point,np.asarray([1.])))
+                                M = np.vstack((nodesCoords.T,np.ones(ElementNames.numberOfNodes[name])))
+                                qcoord = np.linalg.solve(M,rhs)        # coordonnees barycentriques pour evaluer les fct de forme
+                                if (qcoord>=0.).all() == True:
+                                    if mesh.GetDimensionality()==2:
+                                        result[i+idelta,j+jdelta] = np.dot(qcoord,field[localNumbering])
+                                    else:
+                                        result[i,j,k] = np.dot(qcoord,field[localNumbering])
+        return result
+                
+
+
+def CheckIntegrity_GetValueAtPosLinearSymplecticMesh(GUI=False):
+    from BasicTools.Containers.UnstructuredMeshTools import CreateMeshOf
+    from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearMesh
+    points = [[-0.5,-0.5,-0.5],[2.5,-0.5,-0.5],[-0.5,2.5,-0.5],[-0.5,-0.5,2.5],[2.5,2.5,2.5]]
+    tets = [[0,1,2,3]]
+    mesh = CreateMeshOf(points,tets,ElementNames.Tetrahedron_4)
+    
+    recMesh = ConstantRectilinearMesh()
+    recMesh.SetDimensions([5,5,5])
+    recMesh.SetSpacing([1, 1, 1])
+    recMesh.SetOrigin([-1, -1, -1])
+        
+    
+    #from BasicTools.IO.GeofWriter import WriteMeshToGeof
+    #WriteMeshToGeof("mesh.geof", mesh)
+    #WriteMeshToGeof("recMesh.geof", recMesh)
+    
+    res = GetValueAtPosLinearSymplecticMesh(np.arange(mesh.GetNumberOfNodes()),mesh,recMesh)
+    """import matplotlib
+    import matplotlib.pyplot as plt
+    fig = plt.figure(figsize=(6, 3.2))
+    plt.pcolor(res[1,:,:].transpose(), cmap=None)
+    plt.colorbar(orientation='vertical')
+    plt.show()"""
+
+    return "OK"
 
 def CheckIntegrity_CreateMeshOfTriangles(GUI=False):
     res = CreateMeshOfTriangles([[0,0,0],[1,0,0],[0,1,0],[0,0,1] ], [[0,1,2],[0,2,3]])
@@ -1970,8 +2072,10 @@ def CheckIntegrity_GetDualGraph(GUI=False):
     return "ok"
 
 
+
 def CheckIntegrity(GUI=False):
     totest= [
+    CheckIntegrity_GetValueAtPosLinearSymplecticMesh,
     CheckIntegrity_CreateUniformMeshOfBars,
     CheckIntegrity_CreateCube,
     CheckIntegrity_EnsureUniquenessElements,
@@ -1993,7 +2097,6 @@ def CheckIntegrity(GUI=False):
     CheckIntegrity_CleanEmptyTags,
     CheckIntegrity_AddTagPerBody,
     CheckIntegrity_GetDualGraph,
-
     ]
     for f in totest:
         print("running test : " + str(f))
