@@ -1833,11 +1833,8 @@ def GetValueAtPosLinearSymplecticMesh(field,mesh,constantRectilinearMesh):
                         kmin, kmax = math.floor((localBoundingMin[2])/spacing[2]),math.floor((localBoundingMax[2])/spacing[2])+1"""
 
                     for i in range(imin,imax):
-                        idelta = int(origin[0]/spacing[0])
                         for j in range(jmin,jmax):
-                            jdelta = int(origin[1]/spacing[1])
                             for k in range(kmin,kmax):
-                                kdelta = int(origin[2]/spacing[2])
                                 if mesh.GetDimensionality()==2:
                                     point = np.asarray([i*spacing[0],j*spacing[1]]) + origin - mesh.boundingMin
                                 else:
@@ -1848,7 +1845,7 @@ def GetValueAtPosLinearSymplecticMesh(field,mesh,constantRectilinearMesh):
                                 qcoord = np.linalg.solve(M,rhs)        # coordonnees barycentriques pour evaluer les fct de forme
                                 if (qcoord>=0.).all() == True:
                                     if mesh.GetDimensionality()==2:
-                                        result[i+idelta,j+jdelta] = np.dot(qcoord,field[localNumbering])
+                                        result[i,j] = np.dot(qcoord,field[localNumbering])
                                     else:
                                         result[i,j,k] = np.dot(qcoord,field[localNumbering])
         return result
@@ -1867,7 +1864,6 @@ def CheckIntegrity_GetValueAtPosLinearSymplecticMesh(GUI=False):
     recMesh.SetSpacing([1, 1, 1])
     recMesh.SetOrigin([-1, -1, -1])
         
-    
     #from BasicTools.IO.GeofWriter import WriteMeshToGeof
     #WriteMeshToGeof("mesh.geof", mesh)
     #WriteMeshToGeof("recMesh.geof", recMesh)
