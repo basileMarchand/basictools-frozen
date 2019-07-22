@@ -1,14 +1,23 @@
 # -*- coding: utf-8 -*-
-""" Inp file reader (Abaqus simulation file)
 
+""" Inp file reader (Abaqus simulation file)
 """
 import numpy as np
 
 __author__ = "Felipe Bordeu"
 import BasicTools.Containers.ElementNames as EN
-import BasicTools.FE.ProblemData as ProblemData
 from BasicTools.IO.ReaderBase import ReaderBase
-import BasicTools.Containers.UnstructuredMesh as UM
+
+
+KeywordToIgnore = ["INITIAL CONDITIONS",
+                   "AMPLITUDE",
+                   "EXPANSION",
+                   "DISTRIBUTION TABLE",
+                   "DISTRIBUTION",
+                   "COUPLING",
+                   "SOLID SECTION",
+                   "CONNECTOR SECTION"
+                   ]
 
 InpNumber = {}
 InpNumber['C3D4'] = EN.Tetrahedron_4
@@ -20,6 +29,8 @@ def LineToDic(text):
     res = {}
     for l in csv.reader([text], delimiter=',', quotechar='"'):
         for f in l:
+            if len(f) == 0:
+                continue
             if f[0] == "*":
                 res["KEYWORD"] = f[1:]
             else:
@@ -44,6 +55,15 @@ def ReadLine(string):
            continue
      return l
 
+def DischardTillNextStar(func):
+    while(True):
+        courrentText = func()
+        if courrentText is None:
+            break
+        if len(courrentText) > 1 and courrentText[0] == "*":
+           break
+
+    return  courrentText
 
 def ReadInp(fileName=None,string=None,out=None,**kwargs):
     reader = InpReader()
@@ -59,6 +79,9 @@ class InpReader(ReaderBase):
         self.readFormat = 'r'
 
     def Read(self,fileName=None,string=None, out=None):
+        import BasicTools.FE.ProblemData as ProblemData
+        import BasicTools.Containers.UnstructuredMesh as UM
+
         if fileName is not None:
           self.SetFileName(fileName)
 
@@ -137,7 +160,7 @@ class InpReader(ReaderBase):
                   break
               if l.find("*") > -1 or not l:
                    break
-              s = l.replace(',', '').split()
+              s = l.replace(',', ' ').split()
               conn = [filetointernalid[x] for x in  map(int,s[1:]) ]
               elements = res.GetElementsOfType(nametype)
               oid = int(s[0])
@@ -161,16 +184,23 @@ class InpReader(ReaderBase):
             nsetName = data['NSET']
             l  = self.ReadCleanLine()
             nset = []
-            while(True):
-                if l is None:
-                    break
-                if l.find("*") > -1 or not l:
-                    break
-                s = l.replace(',', '').split()
-                nset.extend(map(int,s))
 
+            if "GENERATE" in ldata and ldata["GENERATE"]:
+                d = LineToList(l)
+                d = (list(map(int,d) ))
+                nset = range(d[0],d[1]+1,d[2])
                 l = self.ReadCleanLine()
-                continue
+            else:
+                while(True):
+                    if l is None:
+                        break
+                    if l.find("*") > -1 or not l:
+                        break
+                    s = l.replace(',', '').split()
+                    nset.extend(map(int,s))
+
+                    l = self.ReadCleanLine()
+                    continue
 
             tag = res.nodesTags.CreateTag(nsetName)
             tag.SetIds([filetointernalid[x] for x in  nset ])
@@ -217,13 +247,18 @@ class InpReader(ReaderBase):
                  l = self.ReadCleanLine()
                  data = LineToDic(l)
                  t = data["KEYWORD"]
-                 if not (t == "ELASTIC" or t == "DENSITY") :
+                 if not (t == "ELASTIC" or t == "DENSITY" or t == "EXPANSION" ) :
                      break
+
+                 if t == "EXPANSION":
+                     mat.AddProperty(t,"ZERO",data["ZERO"])
+
                  if "TYPE" in data:
                     st = data["TYPE"]
                  else:
                      st = None
-                 s = list(map(float, string.readline().strip('\n').lstrip().rstrip().replace(","," ").split() ))
+                 l = self.ReadCleanLine()
+                 s = list(map(float, l.strip('\n').lstrip().rstrip().replace(","," ").split() ))
                  mat.AddProperty(t,st,s)
 
                meta.materials[name] = mat
@@ -231,32 +266,21 @@ class InpReader(ReaderBase):
     #line to delete
     #           break
 
-
-
           if l.find("*ORIENTATION")>-1:
                data = LineToDic(l)
-               orient = ProblemData.Orientation()
+               orient = ProblemData.Transform()
 
                name = data["NAME"]
                orient.system = data["SYSTEM"]
-               #data["DEFINITON"]
-
-               s = list(map(float, self.ReadCleanLine().replace(","," ").split() ))
-               orient.SetFirst(s[0:3])
-               orient.SetSecond(s[3:6])
-               if len(s) >= 9:
-                   orient.SetOffset(s[6:9])
+               if orient.system != "RECTANGULAR":
+                   s = list(map(float, self.ReadCleanLine().replace(","," ").split() ))
+                   orient.SetFirst(s[0:3])
+                   orient.SetSecond(s[3:6])
+                   if len(s) >= 9:
+                       orient.SetOffset(s[6:9])
 
                meta.orientations[name] = orient
-               l = self.ReadCleanLine()
-               while(True):
-                  if l is None:
-                      l = self.ReadCleanLine()
-                  if l.find("*") > -1 or not l:
-                      break
-                  print("ignoring second line in orientation : ")
-                  print(l)
-                  l = self.ReadCleanLine()
+               l = DischardTillNextStar(self.ReadCleanLine )
                continue
 
           if l.find("*SURFACE")>-1:
@@ -275,13 +299,10 @@ class InpReader(ReaderBase):
                    s = l.split(",")
                    originalElemNumber = int(s[0])
                    faceNumber = int(s[1].lstrip().rstrip()[-1])-1
-                   #print(originalElemNumber)
-                   #print(filetointernalidElement[originalElemNumber])
-
                    elements = filetointernalidElement[originalElemNumber][0]
                    cid = filetointernalidElement[originalElemNumber][1]
                    connectivity = elements.connectivity[cid,:]
-                   #print(faceNumber)
+
                    typeAndConnectivity = EN.faces[elements.elementType][faceNumber]
                    faceconn = connectivity[typeAndConnectivity[1]]
 
@@ -299,33 +320,7 @@ class InpReader(ReaderBase):
     #*COUPLING, CONSTRAINT NAME="Coupling-1", REF NODE=239100, SURFACE="Rigid Connection1-1"
     #*KINEMATIC
     #1, 6
-          if l.find("*COUPLING")>-1:
-            data = LineToDic(l)
 
-            l = self.ReadCleanLine()
-            l = self.ReadCleanLine()
-
-            while(True):
-              if l is None:
-                    break
-              if l.find("*") > -1 or not l:
-                  break
-              print("ignoring second line in orientation : ")
-              print(l)
-
-              l = self.ReadCleanLine()
-              continue
-            continue
-
-          if ldata["KEYWORD"] == "SOLID SECTION":
-             l = self.ReadCleanLine()
-             l = self.ReadCleanLine()
-             continue
-          if ldata["KEYWORD"] == "CONNECTOR SECTION":
-             l = self.ReadCleanLine()
-             l = self.ReadCleanLine()
-             l = self.ReadCleanLine()
-             continue
           if ldata["KEYWORD"] == "STEP":
              data = LineToDic(l)
              name = data["NAME"]
@@ -336,7 +331,7 @@ class InpReader(ReaderBase):
              while(True):
                 data = LineToDic(l)
 
-                print(l)
+
                 if "KEYWORD" in data and data["KEYWORD"] == "END STEP":
                    l = self.ReadCleanLine()
                    break
@@ -344,29 +339,20 @@ class InpReader(ReaderBase):
                 if "KEYWORD" in data and data["KEYWORD"] == "STATIC":
                    cs.type = "STATIC"
 
-                if "KEYWORD" in data and data["KEYWORD"] == "BOUNDARY":
-                    #data['OP']
-                    #data['ORIENTATION']
-                    l = self.ReadCleanLine()
-                    print(LineToList(l))
-
-
-
-                l = self.ReadCleanLine()
+                l = self.DischardTillNextStar()
              continue
 
 
+          if ldata["KEYWORD"] in KeywordToIgnore:
+              l = DischardTillNextStar(self.ReadCleanLine )
+              continue
          ##  ----------------------------------------
 
-          if len(l) >= 2:
-              ##comment
-              if l[0:2] == "**":
-                  l = self.ReadCleanLine()
-                  continue
-          #case not treated
+          print(l)
+          print(ldata)
           print(("line starting with <<"+l[:20]+">> not considered in the reader"))
           l = self.ReadCleanLine()
-          break
+          raise
           continue
 
         self.EndReading()
@@ -380,6 +366,18 @@ from BasicTools.IO.IOFactory import RegisterReaderClass
 RegisterReaderClass(".inp",InpReader)
 
 def CheckIntegrity():
+
+    #  [?23/?05/?2019 14:45] CASENAVE Fabien (SAFRAN):
+    #    /scratch/fcasenave/partage/ToFelipe/INP_Abaqus/trans_cold_AC_lente_v17
+    #  $ abaqus job=ICASGT1_SOLID_cold_AC_lente_v17.inp inter
+
+     #res = ReadInp(fileName="/scratch/fcasenave/partage/ToFelipe/INP_Abaqus/trans_cold_AC_lente_v17/ICASGT1_SOLID_cold_AC_lente_v17.inp")
+     #print(res[1])
+     #print(res[0])
+     return "OK"
+
+
+def CheckIntegrityReal():
     res1 = LineToDic('*NSET, NSET="Fixed Displacement1", KEY2=5')
     if res1['KEY2'] != '5':
         return "not ok"

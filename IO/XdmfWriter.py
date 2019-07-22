@@ -187,6 +187,11 @@ class XdmfWriter(WriterBase):
         self.__printTimeInsideEachGrid = True
 
         self.SetFileName(fileName)
+        self.pointfieldsStorage = {}
+        self.cellfieldsStorage = {}
+        self.gridfieldsStorage = {}
+        self.iptorage = {}
+
 
     def __str__(self):
         res  = 'XdmfWriter : \n'
@@ -645,7 +650,7 @@ class XdmfWriter(WriterBase):
         for i, name in enumerate(names):
             data = datas[i]
             self.filePointer.write('    <Information Name="IPF" Value="'+str(name)+'" > \n')#
-            datas[i] = self.__WriteDataItem(data.ravel(),[data.size])
+            self.iptorage[name] = self.__WriteDataItem(data.ravel(),[data.size])
             self.filePointer.write('</Information> \n')#
 
     def NextDomain(self):
@@ -708,6 +713,11 @@ class XdmfWriter(WriterBase):
          if IntegrationPointDataNames is None:
             IntegrationPointDataNames  = [];
 
+         self.pointfieldsStorage = {}
+         self.cellfieldsStorage = {}
+         self.gridfieldsStorage = {}
+         self.iptorage = {}
+
          if not self.isOpen() :
             if self.automaticOpen:
                 self.Open()
@@ -764,19 +774,19 @@ class XdmfWriter(WriterBase):
 
              self.__WriteAttribute(np.array(res), name, "Cell", baseMeshObject)
 
+
          for i in range(len(PointFields)):
            name = 'PField'+str(i)
            if len(PointFields)  == len(PointFieldsNames):
                name = PointFieldsNames[i]
-
-           PointFields[i] = self.__WriteAttribute(np.array(PointFields[i]), name, "Node",baseMeshObject)
+           self.pointfieldsStorage[name] = self.__WriteAttribute(np.array(PointFields[i]), name, "Node",baseMeshObject)
 
          for i in range(len(CellFields)):
            name = 'CField'+str(i)
            if len(CellFields) == len(CellFieldsNames):
                name = CellFieldsNames[i]
 
-           CellFields[i] = self.__WriteAttribute(np.array(CellFields[i]), name, "Cell",baseMeshObject)
+           self.cellfieldsStorage[name] = self.__WriteAttribute(np.array(CellFields[i]), name, "Cell",baseMeshObject)
 
          for i in range(len(GridFields)):
 
@@ -784,7 +794,7 @@ class XdmfWriter(WriterBase):
            if len(GridFields) == len(GridFieldsNames):
                name = GridFieldsNames[i]
 
-           GridFields[i] = self.__WriteAttribute(np.array(GridFields[i]), name, "Grid",baseMeshObject)
+           self.gridfieldsStorage[name] = self.__WriteAttribute(np.array(GridFields[i]), name, "Grid",baseMeshObject)
 
          self.WriteIntegrationsPoints(IntegrationRule)
          self.WriteIntegrationsPointDatas(IntegrationPointDataNames,IntegrationPointData)
@@ -1136,7 +1146,7 @@ def CheckIntegrity(GUI=False):
                  IntegrationPointDataNames=["IPId_0"])
 
     print(IntegrationPointDatas)
-    IntegrationPointDatas[0].UpdateHeavyStorage(IntegrationPointData+10)
+    writer.iptorage["IPId_0"].UpdateHeavyStorage(IntegrationPointData+10)
 
     writer.Write(mesh1D, CellFields = [np.arange(mesh1D.GetNumberOfElements())+0.1 ], CellFieldsNames=["IPId_0"])
     writer.Write(mesh3D, CellFields = [np.arange(mesh3D.GetNumberOfElements())+0.1 ], CellFieldsNames=["IPId_0"])

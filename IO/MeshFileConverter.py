@@ -12,6 +12,7 @@ def PrintHelp():
   print( '       -h    this help')
   print( '       -t    time to read (if the input file can handle time) (default last time step is writen)')
   print( '       -p    print availables time to read ')
+  print( '       -v    more verbose output ')
   IOF.InitAllReaders()
   print("Available Readers : ", IOF.GetAvailableReaders())
 
@@ -101,7 +102,7 @@ if __name__ == '__main__' :
         sys.exit()
     else:
       try:
-          opts, args = getopt.getopt(sys.argv[1:],"pht:i:o:")
+          opts, args = getopt.getopt(sys.argv[1:],"vpht:i:o:")
       except getopt.GetoptError:
           PrintHelp()
           sys.exit(2)
@@ -124,9 +125,11 @@ if __name__ == '__main__' :
             #raise
          elif opt in ("-p"):
             ops["printTimes"] = bool(True)
+         elif opt in ("-v"):
+            from BasicTools.Helpers.BaseOutputObject import BaseOutputObject as BOO
+            BOO.SetGlobalDebugMode(True)
          elif opt in ("-c"):
             print(CheckIntegrity(GUI=True))
             exit(0)
-
 
     Convert(inputfilename,outputfilename,ops )
