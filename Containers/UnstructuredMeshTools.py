@@ -1820,8 +1820,8 @@ def GetValueAtPosLinearSymplecticMesh(field,mesh,constantRectilinearMesh):
                     
                     numbering = ComputeDofNumbering(mesh, LagrangeSpaceGeo,fromConnectivity = True)
 
-                    imin, imax = math.floor((localBoundingMin[0]-origin[0])/spacing[0]),math.floor((localBoundingMax[0]-origin[0])/spacing[0])+1
-                    jmin, jmax = math.floor((localBoundingMin[1]-origin[1])/spacing[1]),math.floor((localBoundingMax[1]-origin[1])/spacing[1])+1
+                    imin, imax = int(math.floor((localBoundingMin[0]-origin[0])/spacing[0])),int(math.floor((localBoundingMax[0]-origin[0])/spacing[0])+1)
+                    jmin, jmax = int(math.floor((localBoundingMin[1]-origin[1])/spacing[1])),int(math.floor((localBoundingMax[1]-origin[1])/spacing[1])+1)
                     
                     if mesh.GetDimensionality()>2:
                         kmin, kmax = math.floor((localBoundingMin[2]-origin[2])/spacing[2]),math.floor((localBoundingMax[2]-origin[2])/spacing[2])+1
