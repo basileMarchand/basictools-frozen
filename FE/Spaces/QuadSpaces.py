@@ -52,6 +52,54 @@ class Quad_P1_Lagrange(SymSpaceBase):
                                ]
         self.Create()
 
+class Quad8_P2_Lagrange(SymSpaceBase):
+    def __init__(self):
+        super(Quad8_P2_Lagrange,self).__init__()
+        self.geoSupport = EN.GeoQuad
+
+        xi = self.xi
+        x1 = 1-xi
+        x2 = xi
+
+        eta = self.eta
+        e1 = 1-eta
+        e2 = eta
+
+        XI = 2*xi-1
+        ETA = 2*eta-1
+
+        self.symN = Matrix([x1*e1*(+1-2*xi-2*eta), # linear part # (1-XI)*(1-ETA)*(-1-XI-ETA)/4
+                            x2*e1*(-1+2*xi-2*eta),               # (1+XI)*(1-ETA)*(-1+XI-ETA)/4
+                            x2*e2*(-3+2*xi+2*eta),               # ...
+                            x1*e2*(-1-2*xi+2*eta),
+
+                            (1-ETA   )*(1-XI**2)/2, #edges of base
+                            (1-ETA**2)*(1+XI)/2,
+                            (1+ETA   )*(1-XI**2)/2,
+                            (1-ETA**2)*(1-XI)/2,
+
+                            ])
+        self.posN = np.array([[ 0, 0],
+                              [ 1, 0],
+                              [ 1, 1],
+                              [ 0, 1],
+                              [ 0.5, 0 ],
+                              [ 1.0, 0.5],
+                              [ 0.5, 1.],
+                              [ 0, 0.5],
+                              ])
+        self.dofAttachments = [("P",0,None),
+                               ("P",1,None),
+                               ("P",2,None),
+                               ("P",3,None),
+                               ("F",0,None),
+                               ("F",1,None),
+                               ("F",2,None),
+                               ("F",3,None),
+                               ]
+        self.Create()
+
+
 class Quad_P2_Lagrange(SymSpaceBase):
     def __init__(self):
         super(Quad_P2_Lagrange,self).__init__()
@@ -183,7 +231,9 @@ def plot2DSquare(Space):
 
 def CheckIntegrity(GUI=False):
     if GUI:
+       plot2DSquare(Quad_P1_Lagrange())
        plot2DSquare(Quad_P2_Lagrange())
+       plot2DSquare(Quad8_P2_Lagrange())
     return "ok"
 
 if __name__ == '__main__':
