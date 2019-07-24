@@ -294,7 +294,7 @@ class XdmfWriter(WriterBase):
                 raise(Exception("Unable Open file in append mode "))
             else:
                mpi = MPI()
-               if mpi.IsParallel:
+               if mpi.IsParallel():
                    self.__keepXmlFileInSaneState = False
                    if mpi.rank > 0:
                        self.filePointer = inmemoryfile(self.filePointer)
@@ -803,6 +803,9 @@ class XdmfWriter(WriterBase):
 
          if(self.__keepXmlFileInSaneState):
              self.WriteTail()
+
+         self.filePointer.flush()
+
          if self.isBinary() :# pragma: no cover
            self.__binaryFilePointer.flush()
 
