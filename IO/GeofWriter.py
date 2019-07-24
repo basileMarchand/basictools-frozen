@@ -88,7 +88,7 @@ class GeofWriter(WriterBase):
         self.filePointer.write("***geometry\n");
         self.filePointer.write("  **node\n");
         numberofpoints = meshObject.GetNumberOfNodes()
-        self.filePointer.write("{} {} \n".format(numberofpoints,3) )
+        self.filePointer.write("{} {} \n".format(numberofpoints,meshObject.GetDimensionality()) )
         #
         posn = meshObject.GetPosOfNodes()
         if useOriginalId:
