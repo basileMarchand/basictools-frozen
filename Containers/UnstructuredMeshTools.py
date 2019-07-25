@@ -40,7 +40,7 @@ def CreateMeshOf(points,connectivity,elemName = None,out=None):
 
     return res
 
-def CreateSquare(dimensions=[2,2], origin=[-1.0,-1.0], spacing=[1.,1.], ofTetras=False):
+def CreateSquare(dimensions=[2,2], origin=[-1.0,-1.0], spacing=[1.,1.], ofTris=False):
     spacing = np.array(spacing,dtype=float)
     origin = np.array(origin,dtype=float)
     from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearMesh
@@ -68,11 +68,13 @@ def CreateSquare(dimensions=[2,2], origin=[-1.0,-1.0], spacing=[1.,1.], ofTetras
         myMesh.nodesTags.CreateTag(name,False).SetIds([idx])
 
 
-    mesh = CreateMeshFromConstantRectilinearMesh(myMesh,ofTetras=ofTetras)
+    mesh = CreateMeshFromConstantRectilinearMesh(myMesh,ofTetras=ofTris)
     skin = ComputeSkin(mesh)
+    for name,data in skin.elements.items():
+        mesh.GetElementsOfType(name).Merge(data)
     #print(skin)
 
-    if ofTetras:
+    if ofTris:
         tris = mesh.GetElementsOfType(EN.Triangle_3)
         tris.GetTag("2D").SetIds(range(tris.GetNumberOfElements()))
     else:
@@ -89,10 +91,7 @@ def CreateSquare(dimensions=[2,2], origin=[-1.0,-1.0], spacing=[1.,1.], ofTetras
     skin.GetTag("X1").SetIds( np.where(np.sum(np.abs(x - (origin[0]+d[0]*s[0]))<tol,axis=1) == skin.GetNumberOfNodesPerElement())[0])
     skin.GetTag("Y0").SetIds( np.where(np.sum(np.abs(y - origin[1]          )<tol,axis=1) == skin.GetNumberOfNodesPerElement())[0])
     skin.GetTag("Y1").SetIds( np.where(np.sum(np.abs(y - (origin[1]+d[1]*s[1]))<tol,axis=1) == skin.GetNumberOfNodesPerElement())[0])
-    skin.PrepareForOutput()
 
-    for name,data in skin.elements.items():
-        mesh.GetElementsOfType(name).Merge(data)
 
     mesh.PrepareForOutput()
 
@@ -186,51 +185,58 @@ def CreateMeshFromConstantRectilinearMesh(CRM, ofTetras= False,out=None):
         else:
             elementtype = ElementNames.Hexaedron_8
     else:
-        if ofTetras:# pragma: no cover
-            raise
-
-        elementtype = ElementNames.Quadrangle_4
+        if ofTetras:
+            elementtype = ElementNames.Triangle_3
+            nbelements = CRM.GetNumberOfElements()*2
+        else:
+            elementtype = ElementNames.Quadrangle_4
 
     elements = res.GetElementsOfType(elementtype)
     elements.connectivity = np.zeros((nbelements,ElementNames.numberOfNodes[elementtype]),dtype=np.int)
     elements.cpt = nbelements
 
     if ofTetras:
-        p0 = np.array([0,1,2,3,4,5,6,7])
-        p1=  np.array([1,2,3,0,5,6,7,4])
-        p2=  np.array([3,0,1,2,7,4,5,6])
-        p3=  np.array([2,3,0,1,6,7,4,5])
+        if(CRM.GetDimensionality() == 3):
+            p0 = np.array([0,1,2,3,4,5,6,7])
+            p1=  np.array([1,2,3,0,5,6,7,4])
+            p2=  np.array([3,0,1,2,7,4,5,6])
+            p3=  np.array([2,3,0,1,6,7,4,5])
 
-        for elem in range(CRM.GetNumberOfElements()):
+            for elem in range(CRM.GetNumberOfElements()):
 
-            index = CRM.GetMultiIndexOfElement(elem)
-            idx = index[0]%2+ 2*(index[1]%2)+4*(index[2]%2)
-            if idx == 0:
-                per = p0
-            elif idx == 1:
-                per = p1
-            elif idx == 2:
-                per = p2
-            elif idx == 3:
-                per = p3
-            elif idx == 4:
-                per = p3
-            elif idx == 5:
-                per = p2
-            elif idx == 6:
-                per = p1
-            elif idx == 7:
-                per = p0
-            else:
-                raise # pragma: no cover
+                index = CRM.GetMultiIndexOfElement(elem)
+                idx = index[0]%2+ 2*(index[1]%2)+4*(index[2]%2)
+                if idx == 0:
+                    per = p0
+                elif idx == 1:
+                    per = p1
+                elif idx == 2:
+                    per = p2
+                elif idx == 3:
+                    per = p3
+                elif idx == 4:
+                    per = p3
+                elif idx == 5:
+                    per = p2
+                elif idx == 6:
+                    per = p1
+                elif idx == 7:
+                    per = p0
+                else:
+                    raise # pragma: no cover
 
-            conn = CRM.GetConnectivityForElement(elem)
-            elements.connectivity[elem*6+0,:] = conn[per[[0,6,5,1]]];
-            elements.connectivity[elem*6+1,:] = conn[per[[0,6,1,2]]];
-            elements.connectivity[elem*6+2,:] = conn[per[[0,6,2,3]]];
-            elements.connectivity[elem*6+3,:] = conn[per[[0,6,3,7]]];
-            elements.connectivity[elem*6+4,:] = conn[per[[0,6,7,4]]];
-            elements.connectivity[elem*6+5,:] = conn[per[[0,6,4,5]]];
+                conn = CRM.GetConnectivityForElement(elem)
+                elements.connectivity[elem*6+0,:] = conn[per[[0,6,5,1]]];
+                elements.connectivity[elem*6+1,:] = conn[per[[0,6,1,2]]];
+                elements.connectivity[elem*6+2,:] = conn[per[[0,6,2,3]]];
+                elements.connectivity[elem*6+3,:] = conn[per[[0,6,3,7]]];
+                elements.connectivity[elem*6+4,:] = conn[per[[0,6,7,4]]];
+                elements.connectivity[elem*6+5,:] = conn[per[[0,6,4,5]]];
+        else:
+            for elem in range(CRM.GetNumberOfElements()):
+                conn = CRM.GetConnectivityForElement(elem)
+                elements.connectivity[elem*2+0,:] = conn[[0, 1, 2]];
+                elements.connectivity[elem*2+1,:] = conn[[0, 2, 3]];
 
     else:
         elements.connectivity = CRM.GenerateFullConnectivity()
@@ -1482,8 +1488,8 @@ def Morphing(mesh,BC,bord_tot,rayon=None,tridim=False,IDW=False):
           ab=np.linalg.lstsq(op,rhs,cond=10**(9))
       del(op)
       alpha=ab
-      ds=np.zeros((nb_nodes,3))
-      s=np.zeros((nb_nodes,3))
+      ds=np.zeros((nb_nodes,mesh.GetDimensionality()))
+      s=np.zeros((nb_nodes,mesh.GetDimensionality()))
     #        pbar=ProgressBar()
       #print('Building RBF displacement field (shape {})'.format((nb_nodes,np.shape(border_nodes)[0])))
       for j in range(np.shape(border_nodes)[0]):
@@ -1613,6 +1619,13 @@ def CheckIntegrity_CreateCube(GUI = False):
     mesh = CreateCube(dimensions=[20,21,22],spacing=[2.,2.,2.],ofTetras=False)
     mesh = CreateCube(dimensions=[20,21,22],spacing=[2.,2.,2.],ofTetras=True)
     return "ok"
+
+
+def CheckIntegrity_CreateSquare(GUI = False):
+    mesh = CreateSquare(dimensions=[20,21],spacing=[2.,2.],ofTris=False)
+    mesh = CreateSquare(dimensions=[20,21],spacing=[2.,2.],ofTris=True)
+    return "ok"
+
 
 def CheckIntegrity_Morphing(GUI = False):
 
@@ -1776,6 +1789,13 @@ def CheckIntegrity_DeleteInternalFaces(GUI=False):
     return "ok"
 
 
+def LowerNodesDimension(mesh):
+    newDim = mesh.GetDimensionality() - 1
+    newNodes = np.empty((mesh.GetNumberOfNodes(),newDim))
+    for i in range(mesh.GetNumberOfNodes()):
+        newNodes[i,:] = mesh.nodes[i,0:newDim]
+    mesh.nodes = newNodes
+    return mesh
 
 
 def GetValueAtPosLinearSymplecticMesh(field,mesh,constantRectilinearMesh):
@@ -1804,6 +1824,10 @@ def GetValueAtPosLinearSymplecticMesh(field,mesh,constantRectilinearMesh):
         result = np.zeros(tuple(dimensions))
         
         for name, data in mesh.elements.items():
+            #print("name =", name)
+            #print("ElementNames.dimension[name] =", ElementNames.dimension[name])
+            #print("mesh.GetDimensionality() =", mesh.GetDimensionality())
+            #print("ElementNames.linear[name] =", ElementNames.linear[name])
             if (ElementNames.dimension[name] == mesh.GetDimensionality() and ElementNames.linear[name] == True):
 
                 for el in range(data.GetNumberOfElements()):
@@ -1822,6 +1846,8 @@ def GetValueAtPosLinearSymplecticMesh(field,mesh,constantRectilinearMesh):
 
                     imin, imax = int(math.floor((localBoundingMin[0]-origin[0])/spacing[0])),int(math.floor((localBoundingMax[0]-origin[0])/spacing[0])+1)
                     jmin, jmax = int(math.floor((localBoundingMin[1]-origin[1])/spacing[1])),int(math.floor((localBoundingMax[1]-origin[1])/spacing[1])+1)
+                    #print("imin, imax =", imin, imax)
+                    #print("jmin, jmax =", jmin, jmax)
                     
                     if mesh.GetDimensionality()>2:
                         kmin, kmax = int(math.floor((localBoundingMin[2]-origin[2])/spacing[2])),int(math.floor((localBoundingMax[2]-origin[2])/spacing[2])+1)
@@ -1843,7 +1869,8 @@ def GetValueAtPosLinearSymplecticMesh(field,mesh,constantRectilinearMesh):
                                 rhs = np.hstack((point,np.asarray([1.])))
                                 M = np.vstack((nodesCoords.T,np.ones(ElementNames.numberOfNodes[name])))
                                 qcoord = np.linalg.solve(M,rhs)        # coordonnees barycentriques pour evaluer les fct de forme
-                                if (qcoord>=0.).all() == True:
+                                #print(point, rhs, qcoord)
+                                if (qcoord>=-1.e-12).all() == True:
                                     if mesh.GetDimensionality()==2:
                                         result[i,j] = np.dot(qcoord,field[localNumbering])
                                     else:
@@ -2074,6 +2101,7 @@ def CheckIntegrity(GUI=False):
     CheckIntegrity_GetValueAtPosLinearSymplecticMesh,
     CheckIntegrity_CreateUniformMeshOfBars,
     CheckIntegrity_CreateCube,
+    CheckIntegrity_CreateSquare,
     CheckIntegrity_EnsureUniquenessElements,
     CheckIntegrity_Morphing,
     CheckIntegrity_PointToCellData,
