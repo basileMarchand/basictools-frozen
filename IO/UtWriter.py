@@ -85,7 +85,7 @@ class UtWriter(WriterBase):
         else:
           OW = GW.GeofWriter()
           OW.Open(self.GetFolder()+self.fileName+".geof")
-          OW.Write(self.mesh, useOriginalId=True, lowerDimElementsAsSets=True)
+          OW.Write(self.mesh, useOriginalId=True, lowerDimElementsAsElsets=False)
           OW.Close()
 
 
