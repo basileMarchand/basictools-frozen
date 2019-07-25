@@ -48,17 +48,17 @@ GeofName[EN.Hexaedron_20] = "c3d20"
 
 GeofName[EN.Wedge_6] = "c3d6"
 
-def WriteMeshToGeof(filename,mesh, useOriginalId=False,lowerDimElementsAsSets=False):
+def WriteMeshToGeof(filename,mesh, useOriginalId=False,lowerDimElementsAsElsets=False):
     OW = GeofWriter()
     OW.Open(filename)
-    OW.SetWriteLowerDimElementsAsSets(lowerDimElementsAsSets)
+    OW.SetWriteLowerDimElementsAsSets(lowerDimElementsAsElsets)
     OW.Write(mesh,useOriginalId = useOriginalId)
     OW.Close()
 
 class GeofWriter(WriterBase):
     def __init__(self):
         super(GeofWriter,self).__init__()
-        self.lowerDimElementsAsSets= False
+        self.lowerDimElementsAsElsets= False
 
     def __str__(self):
         res  = 'GeofWriter : \n'
@@ -67,9 +67,9 @@ class GeofWriter(WriterBase):
 
     def SetWriteLowerDimElementsAsSets(self,val):
         if val is not None:
-            self.lowerDimElementsAsSets= bool(val)
+            self.lowerDimElementsAsElsets= bool(val)
 
-    def Write(self,meshObject,useOriginalId=False,lowerDimElementsAsSets=None,PointFieldsNames=None,PointFields=None,CellFieldsNames=None,CellFields=None):
+    def Write(self,meshObject,useOriginalId=False,lowerDimElementsAsElsets=None,PointFieldsNames=None,PointFields=None,CellFieldsNames=None,CellFields=None):
 
         if PointFieldsNames is not None or \
            PointFields      is not None or \
@@ -77,7 +77,7 @@ class GeofWriter(WriterBase):
            CellFields       is not None:
                print("warning GeofWriter only canr write the mesh, fields are ignored")
 
-        self.SetWriteLowerDimElementsAsSets(lowerDimElementsAsSets)
+        self.SetWriteLowerDimElementsAsSets(lowerDimElementsAsElsets)
 
         meshObject.PrepareForOutput()
 
@@ -110,7 +110,7 @@ class GeofWriter(WriterBase):
             maxDimensionalityOfelements = max(EN.dimension[ntype],maxDimensionalityOfelements)
 
         for ntype,elems in meshObject.elements.items():
-            if EN.dimension[ntype] == maxDimensionalityOfelements or  False == self.lowerDimElementsAsSets :
+            if EN.dimension[ntype] == maxDimensionalityOfelements or self.lowerDimElementsAsElsets == True:
                 nbElements += elems.GetNumberOfElements()
 
 
@@ -121,7 +121,7 @@ class GeofWriter(WriterBase):
         cpt =0;
         for ntype, data in meshObject.elements.items():
             elemtype = GeofName[ntype]
-            if EN.dimension[ntype] != maxDimensionalityOfelements and self.lowerDimElementsAsSets:
+            if EN.dimension[ntype] != maxDimensionalityOfelements and self.lowerDimElementsAsElsets == False:
                 continue
             #npe = data.GetNumberOfNodesPerElement()
             #if elemtype!="c2d3":
@@ -154,7 +154,7 @@ class GeofWriter(WriterBase):
 
         meshObject.PrepareForOutput();
 
-        if self.lowerDimElementsAsSets :
+        if self.lowerDimElementsAsElsets == False :
             celtags = meshObject.GetNamesOfElemTags()
             for tagname in celtags:
 
@@ -195,7 +195,7 @@ class GeofWriter(WriterBase):
                 self.filePointer.write("\n")
 
         # Dotsets, lisets, facets
-        if self.lowerDimElementsAsSets:
+        if self.lowerDimElementsAsElsets == False:
             for dimToTreat in range(maxDimensionalityOfelements):
 
                 celtags = meshObject.GetNamesOfElemTags()
@@ -302,7 +302,7 @@ def CheckIntegrity():
     OW.Close()
 
     WriteMeshToGeof(tempdir+"Test_GeoWriter_II.geof", mymesh,useOriginalId=False )
-    WriteMeshToGeof(tempdir+"Test_GeoWriter_III.geof", mymesh,useOriginalId=False,lowerDimElementsAsSets=True )
+    WriteMeshToGeof(tempdir+"Test_GeoWriter_III.geof", mymesh,useOriginalId=False,lowerDimElementsAsElsets=True )
     return "ok"
 
 if __name__ == '__main__':
