@@ -1798,7 +1798,7 @@ def LowerNodesDimension(mesh):
     return mesh
 
 
-def GetValueAtPosLinearSymplecticMesh(field,mesh,constantRectilinearMesh):
+def GetValueAtPosLinearSymplecticMesh(fields,mesh,constantRectilinearMesh):
         """
         Works only for linear symplectic meshes
         """
@@ -1821,7 +1821,10 @@ def GetValueAtPosLinearSymplecticMesh(field,mesh,constantRectilinearMesh):
         
         kmin, kmax = 0, 1
         
-        result = np.zeros(tuple(dimensions))
+        shapeRes = [fields.shape[0]]
+        for d in dimensions:
+            shapeRes.append(d)
+        result = np.zeros(tuple(shapeRes))
         
         for name, data in mesh.elements.items():
             #print("name =", name)
@@ -1844,13 +1847,13 @@ def GetValueAtPosLinearSymplecticMesh(field,mesh,constantRectilinearMesh):
                     
                     numbering = ComputeDofNumbering(mesh, LagrangeSpaceGeo,fromConnectivity = True)
 
-                    imin, imax = int(math.floor((localBoundingMin[0]-origin[0])/spacing[0])),int(math.floor((localBoundingMax[0]-origin[0])/spacing[0])+1)
-                    jmin, jmax = int(math.floor((localBoundingMin[1]-origin[1])/spacing[1])),int(math.floor((localBoundingMax[1]-origin[1])/spacing[1])+1)
+                    imin, imax = max(int(math.floor((localBoundingMin[0]-origin[0])/spacing[0])),0),min(int(math.floor((localBoundingMax[0]-origin[0])/spacing[0])+1),dimensions[0])
+                    jmin, jmax = max(int(math.floor((localBoundingMin[1]-origin[1])/spacing[1])),0),min(int(math.floor((localBoundingMax[1]-origin[1])/spacing[1])+1),dimensions[1])
                     #print("imin, imax =", imin, imax)
                     #print("jmin, jmax =", jmin, jmax)
                     
                     if mesh.GetDimensionality()>2:
-                        kmin, kmax = int(math.floor((localBoundingMin[2]-origin[2])/spacing[2])),int(math.floor((localBoundingMax[2]-origin[2])/spacing[2])+1)
+                        kmin, kmax = min(int(math.floor((localBoundingMin[2]-origin[2])/spacing[2])),0),max(int(math.floor((localBoundingMax[2]-origin[2])/spacing[2])+1),dimensions[2])
                         
                     """imin, imax = math.floor((localBoundingMin[0])/spacing[0]),math.floor((localBoundingMax[0])/spacing[0])+1
                     jmin, jmax = math.floor((localBoundingMin[1])/spacing[1]),math.floor((localBoundingMax[1])/spacing[1])+1
@@ -1872,9 +1875,11 @@ def GetValueAtPosLinearSymplecticMesh(field,mesh,constantRectilinearMesh):
                                 #print(point, rhs, qcoord)
                                 if (qcoord>=-1.e-12).all() == True:
                                     if mesh.GetDimensionality()==2:
-                                        result[i,j] = np.dot(qcoord,field[localNumbering])
+                                        for l in range(fields.shape[0]):
+                                          result[l,i,j] = np.dot(qcoord,fields[l][localNumbering])
                                     else:
-                                        result[i,j,k] = np.dot(qcoord,field[localNumbering])
+                                        for l in range(fields.shape[0]):
+                                          result[l,i,j,k] = np.dot(qcoord,fields[l][localNumbering])
         return result
                 
 
@@ -1895,7 +1900,7 @@ def CheckIntegrity_GetValueAtPosLinearSymplecticMesh(GUI=False):
     #WriteMeshToGeof("mesh.geof", mesh)
     #WriteMeshToGeof("recMesh.geof", recMesh)
     
-    res = GetValueAtPosLinearSymplecticMesh(np.arange(mesh.GetNumberOfNodes()),mesh,recMesh)
+    res = GetValueAtPosLinearSymplecticMesh(np.array([np.arange(mesh.GetNumberOfNodes())]),mesh,recMesh)
     """import matplotlib
     import matplotlib.pyplot as plt
     fig = plt.figure(figsize=(6, 3.2))
