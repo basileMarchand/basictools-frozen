@@ -17,13 +17,15 @@ class ReaderBase(BaseOutputObject):
         self.elementsFields = {}
         self.readFormat = 'r'
         self.binary = False
-        self.output = None
         self.string = None
         self.commentChar = None
         self.filePointer = None
         self.lineCounter = 0
         self.pipe = False
         self.canHandleTemporal = False
+
+        self.output = None
+        self.extraOutput = None
 
     def SetBinary(self,binary=True):
         self.binary = binary
