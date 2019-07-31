@@ -754,17 +754,21 @@ class XdmfWriter(WriterBase):
          self.__WriteGeoAndTopo(baseMeshObject)
 
          for tag in baseMeshObject.nodesTags:
+             if tag.name in PointFieldsNames:
                  name = "Tag_" + tag.name
-                 data = np.zeros((baseMeshObject.GetNumberOfNodes(),1),dtype=np.int8)
-                 data[baseMeshObject.nodesTags[tag.name].GetIds()] = 1;
-                 self.__WriteAttribute(np.array(data), name, "Node",baseMeshObject)
+             else:
+                 name = tag.name
+
+             data = np.zeros((baseMeshObject.GetNumberOfNodes(),1),dtype=np.int8)
+             data[baseMeshObject.nodesTags[tag.name].GetIds()] = 1;
+             self.__WriteAttribute(np.array(data), name, "Node",baseMeshObject)
 
          #Cell Tags
          baseMeshObject.PrepareForOutput();
 
          celtags = baseMeshObject.GetNamesOfElemTags()
          for tagname in celtags:
-             if tagname in PointFieldsNames:
+             if tagname in CellFieldsNames:
                  name = "Tag_" + tagname
              else:
                  name = tagname
