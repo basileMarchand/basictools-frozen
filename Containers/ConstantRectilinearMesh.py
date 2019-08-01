@@ -215,7 +215,10 @@ class ConstantRectilinearMesh(MeshBase):
             y = np.arange(self.__dimensions[1])*self.__spacing[1]+self.__origin[1]
             if self.GetDimensionality() == 2:
               xv, yv = np.meshgrid(x, y,indexing='ij')
-              return np.array([xv.ravel(),yv.ravel()]).T
+              self.nodes = np.empty((self.GetNumberOfNodes(),2))
+              self.nodes[:,0] = xv.ravel()
+              self.nodes[:,1] = yv.ravel()
+              return self.nodes
 
             z = np.arange(self.__dimensions[2])*self.__spacing[2]+self.__origin[2]
             xv, yv, zv = np.meshgrid(x, y,z,indexing='ij')
@@ -393,6 +396,13 @@ class ConstantRectilinearMesh(MeshBase):
         for name,data in self.elements.items():
             if data.GetNumberOfElements():
                 res += " ({}:{})".format(name,data.GetNumberOfElements())
+        res += "\n"
+        res += "  Node Tags          : " + str(self.nodesTags) + "\n"
+        res += "  Cell Tags          : " + str([x for x in self.GetNamesOfElemTags()])+ "\n"
+        if len(self.nodeFields.keys()):
+            res += "  nodeFields         : " + str(list(self.nodeFields.keys())) + "\n"
+        if len(self.elemFields.keys()):
+            res += "  elemFields         : " + str(list(self.elemFields.keys())) + "\n"
         return res
 
 
