@@ -189,7 +189,7 @@ class Transform(BaseOutputObject):
             first /= np.linalg.norm(first)
         self.RMatrix[0,:] = first
         self.SetSecond(self.RMatrix[1,:])
-        self.SetThird(self.RMatrix[2,:])
+        self.SetThird()
 
     def SetSecond(self,data):
         # this point define the y coordinate (direction) with respect to the new origin
@@ -200,7 +200,7 @@ class Transform(BaseOutputObject):
         if self.keepNormalised :
             second /= np.linalg.norm(second)
         self.RMatrix[1,:] = second
-        self.SetThird(self.RMatrix[2,:])
+        self.SetThird()
 
     def SetThird(self,data=None):
         first = self.RMatrix[0,:]
