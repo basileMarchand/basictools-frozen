@@ -339,7 +339,7 @@ class InpReader(ReaderBase):
                 if "KEYWORD" in data and data["KEYWORD"] == "STATIC":
                    cs.type = "STATIC"
 
-                l = self.DischardTillNextStar()
+                l = DischardTillNextStar(self.ReadCleanLine)
              continue
 
 
