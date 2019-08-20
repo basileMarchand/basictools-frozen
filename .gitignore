@@ -51,6 +51,7 @@ docs/_build/*
 docs/_source/*
 *~
 .spyproject/*
+public/
 
 # Zebulon generated files #
 ###########################
