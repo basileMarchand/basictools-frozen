@@ -43,6 +43,7 @@ class ElementsContainer(BaseOutputObject):
 
         self.originalIds = np.empty((0,),dtype=np.int)
         self.originalOffset = 0
+        self.mutable = True
 
     def GetNumberOfElements(self):
         """
@@ -165,10 +166,9 @@ class ElementsContainer(BaseOutputObject):
             return 0
 
     def __str__(self):
-        res  = "ElementsContainer \n"
-        res += "  elementType    : {}\n".format(self.elementType)
-        res += "  Number Of Elements : {}\n".format(self.GetNumberOfElements())
-        res += "  Tags          : " + str([x.name for x in self.tags]) + "\n"
+        res  = "    ElementsContainer, "
+        res += "  Type : ({},{}), ".format(self.elementType,self.GetNumberOfElements())
+        res += "  Tags : " + " ".join([ ("("+x.name+":"+str(len(x)) +")") for x in self.tags]) + "\n"
         return res
 
 class AllElements(object):
@@ -427,14 +427,12 @@ class UnstructuredMesh(MeshBase):
 
     def __str__(self):
         res  = "UnstructuredMesh \n"
-        res += "  Number Of Nodes    : {}\n".format(self.GetNumberOfNodes())
-        res += "  Number Of Elements : {}".format(self.GetNumberOfElements())
+        res += "  Number Of Nodes    : {} \n".format(self.GetNumberOfNodes())
+        res += "    Tags : " + " ".join( ["("+x.name+":"+str(len(x))+")" for x in  self.nodesTags ]) + "\n"
+
+        res += "  Number Of Elements : {} \n".format(self.GetNumberOfElements())
         for name,data in self.elements.items():
-            if data.GetNumberOfElements():
-                res += " ({}:{})".format(name,data.GetNumberOfElements())
-        res += "\n"
-        res += "  Node Tags          : " + str(self.nodesTags) + "\n"
-        res += "  Cell Tags          : " + str([x for x in self.GetNamesOfElemTags()])+ "\n"
+            res += str(data)
         if len(self.nodeFields.keys()):
             res += "  nodeFields         : " + str(list(self.nodeFields.keys())) + "\n"
         if len(self.elemFields.keys()):

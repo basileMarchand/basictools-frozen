@@ -1328,7 +1328,7 @@ def ComputeFeatures(inputmesh,FeatureAngle=90,skin=None):
 
 
     edgemesh = type(inputmesh)()
-    edgemesh.nodes = inputmesh.nodes
+    numberOfNodes = inputmesh.GetNumberOfNodes()
 
     for name in surf:
         data = edgemesh.GetElementsOfType(name)
@@ -1351,9 +1351,9 @@ def ComputeFeatures(inputmesh,FeatureAngle=90,skin=None):
     Now we compute the corners
 
     The corner are the points:
-        where 3 Ridges meet
-        touched by only one Ridge
-        the angle of 2 ridges is bigger than the FeatureAngle
+        1) where 3 Ridges meet
+        2) or touched by only one Ridge
+        3) or the angle of 2 ridges is bigger than the FeatureAngle
     """
 
     extractedBars = edgemesh.GetElementsOfType(ElementNames.Bar_2)
@@ -1363,17 +1363,13 @@ def ComputeFeatures(inputmesh,FeatureAngle=90,skin=None):
     originalBars.tighten()
 
     #corners
-    mask = np.zeros((edgemesh.GetNumberOfNodes()), dtype=bool )
+    mask = np.zeros((numberOfNodes), dtype=bool )
 
     almanac = {}
     for bars in [originalBars,extractedBars]:
-        # working form to do the operation (Please read the documentation)
-        # mask[bars.connectivity.ravel()] += 1
-
-        intmask = np.zeros((edgemesh.GetNumberOfNodes()), dtype=int )
+        intmask = np.zeros((numberOfNodes), dtype=int )
 
         np.add.at(intmask, bars.connectivity.ravel(),1)
-
 
         mask[intmask > 2 ] = True
         mask[intmask == 1 ] = True
@@ -1808,24 +1804,24 @@ def GetValueAtPosLinearSymplecticMesh(fields,mesh,constantRectilinearMesh):
         from BasicTools.FE.DofNumbering import ComputeDofNumbering
 
         numbering = ComputeDofNumbering(mesh,LagrangeSpaceGeo,fromConnectivity =True)
-                
+
         mesh.ComputeBoundingBox()
-        
+
         origin = constantRectilinearMesh.GetOrigin()
         spacing = constantRectilinearMesh.GetSpacing()
         dimensions = constantRectilinearMesh.GetDimensions()
-        
+
         #print("origin =", origin)
         #print("spacing =", spacing)
         #print("dimensions =", dimensions)
-        
+
         kmin, kmax = 0, 1
-        
+
         shapeRes = [fields.shape[0]]
         for d in dimensions:
             shapeRes.append(d)
         result = np.zeros(tuple(shapeRes))
-        
+
         for name, data in mesh.elements.items():
             #print("name =", name)
             #print("ElementNames.dimension[name] =", ElementNames.dimension[name])
@@ -1834,30 +1830,30 @@ def GetValueAtPosLinearSymplecticMesh(fields,mesh,constantRectilinearMesh):
             if (ElementNames.dimension[name] == mesh.GetDimensionality() and ElementNames.linear[name] == True):
 
                 for el in range(data.GetNumberOfElements()):
-                    
+
                     localNumbering = numbering[name][el,:]
-                    
+
                     localNodes = mesh.nodes[data.connectivity[el,:]]
-                    nodesCoords = localNodes - mesh.boundingMin          
+                    nodesCoords = localNodes - mesh.boundingMin
                     localBoundingMin = np.amin(localNodes, axis=0)
                     localBoundingMax = np.amax(localNodes, axis=0)
                     #print("nodesCoords =", nodesCoords)
                     #print("localBoundingMin =", localBoundingMin)
                     #print("localBoundingMax =", localBoundingMax)
-                    
+
                     numbering = ComputeDofNumbering(mesh, LagrangeSpaceGeo,fromConnectivity = True)
 
                     imin, imax = max(int(math.floor((localBoundingMin[0]-origin[0])/spacing[0])),0),min(int(math.floor((localBoundingMax[0]-origin[0])/spacing[0])+1),dimensions[0])
                     jmin, jmax = max(int(math.floor((localBoundingMin[1]-origin[1])/spacing[1])),0),min(int(math.floor((localBoundingMax[1]-origin[1])/spacing[1])+1),dimensions[1])
                     #print("imin, imax =", imin, imax)
                     #print("jmin, jmax =", jmin, jmax)
-                    
+
                     if mesh.GetDimensionality()>2:
                         kmin, kmax = min(int(math.floor((localBoundingMin[2]-origin[2])/spacing[2])),0),max(int(math.floor((localBoundingMax[2]-origin[2])/spacing[2])+1),dimensions[2])
-                        
+
                     """imin, imax = math.floor((localBoundingMin[0])/spacing[0]),math.floor((localBoundingMax[0])/spacing[0])+1
                     jmin, jmax = math.floor((localBoundingMin[1])/spacing[1]),math.floor((localBoundingMax[1])/spacing[1])+1
-                    
+
                     if mesh.GetDimensionality()>2:
                         kmin, kmax = math.floor((localBoundingMin[2])/spacing[2]),math.floor((localBoundingMax[2])/spacing[2])+1"""
 
@@ -1868,7 +1864,7 @@ def GetValueAtPosLinearSymplecticMesh(fields,mesh,constantRectilinearMesh):
                                     point = np.asarray([i*spacing[0],j*spacing[1]]) + origin - mesh.boundingMin
                                 else:
                                     point = np.asarray([i*spacing[0],j*spacing[1],k*spacing[2]]) + origin - mesh.boundingMin
-                                
+
                                 rhs = np.hstack((point,np.asarray([1.])))
                                 M = np.vstack((nodesCoords.T,np.ones(ElementNames.numberOfNodes[name])))
                                 qcoord = np.linalg.solve(M,rhs)        # coordonnees barycentriques pour evaluer les fct de forme
@@ -1881,7 +1877,7 @@ def GetValueAtPosLinearSymplecticMesh(fields,mesh,constantRectilinearMesh):
                                         for l in range(fields.shape[0]):
                                           result[l,i,j,k] = np.dot(qcoord,fields[l][localNumbering])
         return result
-                
+
 
 
 def CheckIntegrity_GetValueAtPosLinearSymplecticMesh(GUI=False):
@@ -1890,16 +1886,16 @@ def CheckIntegrity_GetValueAtPosLinearSymplecticMesh(GUI=False):
     points = [[-0.5,-0.5,-0.5],[2.5,-0.5,-0.5],[-0.5,2.5,-0.5],[-0.5,-0.5,2.5],[2.5,2.5,2.5]]
     tets = [[0,1,2,3]]
     mesh = CreateMeshOf(points,tets,ElementNames.Tetrahedron_4)
-    
+
     recMesh = ConstantRectilinearMesh()
     recMesh.SetDimensions([5,5,5])
     recMesh.SetSpacing([1, 1, 1])
     recMesh.SetOrigin([-1, -1, -1])
-        
+
     #from BasicTools.IO.GeofWriter import WriteMeshToGeof
     #WriteMeshToGeof("mesh.geof", mesh)
     #WriteMeshToGeof("recMesh.geof", recMesh)
-    
+
     res = GetValueAtPosLinearSymplecticMesh(np.array([np.arange(mesh.GetNumberOfNodes())]),mesh,recMesh)
     """import matplotlib
     import matplotlib.pyplot as plt

@@ -17,7 +17,7 @@ class ConstantRectilinearElementContainer(BaseOutputObject):
     def __init__(self,caller):
         super(ConstantRectilinearElementContainer,self).__init__(None)
         self.caller = caller
-        self.tags = self.caller.elemTags
+        self.tags = Tags()
         self._connectivity = None
 
         if caller.GetDimensionality() == 3:
@@ -26,6 +26,8 @@ class ConstantRectilinearElementContainer(BaseOutputObject):
             self.elementType = ElementNames.Quadrangle_4
         else:
              raise(Exception("cant build a mesh of this dimensionality"))
+
+        self.mutable = False
 
     @property
     def connectivity(self):
@@ -47,6 +49,11 @@ class ConstantRectilinearElementContainer(BaseOutputObject):
         if the tag does not exist a new tag is created
         """
         return self.tags.CreateTag(tagName,False)
+    def __str__(self):
+        res  = "    ConstantRectilinearElementContainer, "
+        res += "  Type : ({},{}), ".format(self.elementType,self.GetNumberOfElements())
+        res += "  Tags : " + " ".join([ ("("+x.name+":"+str(len(x)) +")") for x in self.tags]) + "\n"
+        return res
 
 class ConstantRectilinearMesh(MeshBase):
 
@@ -59,17 +66,30 @@ class ConstantRectilinearMesh(MeshBase):
         self.__dimensions = np.ones((dim,),dtype=int)*2;
         self.__origin = np.zeros((dim,) )
         self.__spacing = np.ones((dim,))
-        self.elemTags = Tags()
         self.nodes = None
         self.elements = AllElements()
         structElements = ConstantRectilinearElementContainer(self)
         self.elements[structElements.elementType] = structElements
 
     def GetNamesOfElemTags(self):
-        return self.elemTags.keys()
+        """
+        return a list containing all the element tags present in the mehs
+        """
+        res = set()
+        for ntype, data in self.elements.items():
+            for tag in data.tags:
+                res.add(tag.name)
+
+        return list(res)
+
 
     def GetElementsInTag(self,tagname):
-        return self.elemTags[tagname].GetIds()
+        if self.GetDimensionality() == 2 and tagname in self.elements[ElementNames.Quadrangle_4].tags :
+            return self.elements[ElementNames.Quadrangle_4].tags[tagname].GetIds()
+        elif self.GetDimensionality() == 3 and tagname in self.elements[ElementNames.Hexaedron_8].tags :
+            return self.elements[ElementNames.Hexaedron_8].tags[tagname].GetIds()
+        else:
+            return np.empty(0,dtype=int)
 
     def SetDimensions(self,data):
         self.__dimensions = np.array(data,int);
@@ -389,13 +409,14 @@ class ConstantRectilinearMesh(MeshBase):
         res = ''
         res  = "ConstantRectilinearMesh \n"
         res = res + "  Number of Nodes    : "+str(self.GetNumberOfNodes()) + "\n"
+        res += "    Tags : " + " ".join( ["("+x.name+":"+str(len(x))+")" for x in  self.nodesTags ]) + "\n"
+
         res = res + "  Number of Elements : "+str(self.GetNumberOfElements()) + "\n"
         res = res + "  dimensions         : "+str(self.__dimensions )         + "\n"
         res = res + "  origin             : "+str(self.__origin) + "\n"
         res = res + "  spacing            : "+str(self.__spacing) + "\n"
         for name,data in self.elements.items():
-            if data.GetNumberOfElements():
-                res += " ({}:{})".format(name,data.GetNumberOfElements())
+            res += str(data)
         res += "\n"
         res += "  Node Tags          : " + str(self.nodesTags) + "\n"
         res += "  Cell Tags          : " + str([x for x in self.GetNamesOfElemTags()])+ "\n"
@@ -450,7 +471,7 @@ def CheckIntegrity():
     print(myMesh.GetElementAtPos([0,0.5,1.5]))
     print(myMesh.GetElementAtPos([0,0.5,1.5],MultiIndex=True))
 
-    myMesh.elemTags.CreateTag("TestTag",False).SetIds([0,1])
+    myMesh.elements[ElementNames.Hexaedron_8].tags.CreateTag("TestTag",False).SetIds([0,1])
 
     if len(myMesh.GetElementsInTag("TestTag")) != 2 :
         raise(Exception("Tag system not working corretly") )# pragma: no cover
