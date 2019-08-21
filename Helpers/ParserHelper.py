@@ -108,30 +108,42 @@ def ReadVectorPhiThetaMag(string,normalised=False):
     return res*mag
 
 
-def ReadProperties(data, props ,obj,typeConversion=True):
+def ReadProperties(data, props ,obj_or_dic,typeConversion=True):
     if props is None:
-        props = getattr( obj, "_parseProps", None)
+        if type(obj_or_dic) == dict:
+            props = obj_or_dic.get("_parseProps", None)
+        else:
+            props = getattr( obj_or_dic, "_parseProps", None)
+
     if props is None:
         return
     try:
       for prop in props:
         if prop in data:
 
-           theSetter = getattr( obj, "Set"+prop[0].upper()+ str(prop[1:]), None)
+           theSetter = getattr( obj_or_dic, "Set"+prop[0].upper()+ str(prop[1:]), None)
            if theSetter is None:
               #print(obj.__dict__)
               #conversion only if the target type is different of None
-              try:
-                  if typeConversion and (obj.__dict__[prop] is not None) :
-                      obj.__dict__[prop] = Read(data[prop],obj.__dict__[prop])
+              #try:
+
+                  if type(obj_or_dic) == dict:
+                     if typeConversion and (obj_or_dic[prop] is not None) :
+                         obj_or_dic[prop] = Read(data[prop],obj_or_dic[prop])
+                     else:
+                         obj_or_dic[prop] = data[prop]
                   else:
-                      obj.__dict__[prop] = data[prop]
-              except:
-                  raise (ValueError("Error setting  '"+str(prop)+"'  to object of type " + str(type(obj)) ) )
+                     if typeConversion and (obj_or_dic.__dict__[prop] is not None) :
+                         obj_or_dic.__dict__[prop] = Read(data[prop],obj_or_dic.__dict__[prop])
+                     else:
+                         obj_or_dic.__dict__[prop] = data[prop]
+
+              #except:
+              #    raise (ValueError("Error setting  '"+str(prop)+"'  to object of type " + str(type(obj_or_dic)) ) )
            else:
               theSetter(data[prop])
     except KeyError as e:
-        print(" object of type " +str(type(obj)) + " does not have atribute {0}: ".format( str(e) ))
+        print(" object of type " +str(type(obj_or_dic)) + " does not have atribute {0}: ".format( str(e) ))
         raise
 
 
@@ -182,6 +194,32 @@ def CheckIntegrity():
         raise # pragma: no cover
     except:
         pass
+
+    #### Reading data into a class of dictionary with type conversion
+    data = {"monint":"2.2","monfloat":"3.14159"}
+
+    class Options():
+        def __init__(self):
+            self.monint = 1
+            self.monfloat = 0.1
+        def SetMonfloat(self,data):
+            self.monfloat = ReadFloat(data)
+
+
+    ops = Options()
+    ReadProperties(data,data.keys(),ops)
+    if type(ops.monint) != int or  ops.monint != 2:
+        raise
+    if type(ops.monfloat) != float or  ops.monfloat != 3.14159:
+        raise
+
+    outputdata = {"monint":00,"monfloat":00.00}
+    ReadProperties(data,data.keys(),outputdata)
+
+    if type(outputdata['monint']) != int or  outputdata['monint'] != 2:
+        raise
+    if type(outputdata['monfloat']) != float or  outputdata['monfloat'] != 3.14159:
+        raise
 
     return "ok"
 
