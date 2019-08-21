@@ -35,7 +35,7 @@ keysToIgnore = [ "CORD1R",
                 "GPSTRESS(H3D,",
                 "SPCFORCE(SPARSE)",
                 "STRESS",
-                "",
+                "OUTPUT,",
                 "",
                 ]
 
@@ -44,7 +44,9 @@ keysToIgnoreSubcase = [ "",
 
 keysToIgnoreBulk = [ "PSOLID",
                 "DOPTPRM",
+                "DOPTPRM,",
                 "GAPPRM",
+                "GAPPRM,",
                 "DCONADD",
                 "CBUSH",
                 "PBUSH",
@@ -52,7 +54,8 @@ keysToIgnoreBulk = [ "PSOLID",
                 "LOAD",
                 "SPCADD",
                 "LOADADD",
-                "MAT1"
+                "MAT1",
+                "OUTPUT,",
                 ]
 
 
@@ -183,7 +186,7 @@ class FemReader(ReaderBase):
         while(True):
             if need_to_read :
                 line = self.ReadCleanLine()
-                need_to_read = True
+            need_to_read = True
             if line is None:
                 break
 
