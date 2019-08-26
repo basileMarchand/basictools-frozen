@@ -1328,6 +1328,7 @@ def ComputeFeatures(inputmesh,FeatureAngle=90,skin=None):
 
 
     edgemesh = type(inputmesh)()
+    edgemesh.nodes = inputmesh.nodes
     numberOfNodes = inputmesh.GetNumberOfNodes()
 
     for name in surf:
@@ -1697,14 +1698,21 @@ def CheckIntegrity_ComputeFeatures(GUI =False):
     myMesh.SetDimensions([2,3,4]);
     myMesh.SetOrigin([-1.0,-1.0,-1.0]);
     myMesh.SetSpacing([2., 2.,2]/myMesh.GetDimensions());
+    print("ConstantRectilinearMesh")
     print(myMesh)
     res2 = CreateMeshFromConstantRectilinearMesh(myMesh,ofTetras=True)
+    print("UnstructuredMesh")
     print(res2)
 
 
-    edges,skin = ComputeFeatures(res2,FeatureAngle=80)
+    edges, skin = ComputeFeatures(res2,FeatureAngle=80)
+    print("edges mesh")
+    print(edges)
+    print("SkinMesh")
+    print(skin)
     if GUI :
         from BasicTools.Actions.OpenInParaView import OpenInParaView
+
         OpenInParaView(mesh=edges,filename="edges.xmf")
         OpenInParaView(mesh=skin,filename="skin.xmf")
 

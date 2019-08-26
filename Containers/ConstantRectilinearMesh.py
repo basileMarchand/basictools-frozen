@@ -14,34 +14,113 @@ from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 
 
 class ConstantRectilinearElementContainer(BaseOutputObject):
-    def __init__(self,caller):
+    def __init__(self,__dimensions):
         super(ConstantRectilinearElementContainer,self).__init__(None)
-        self.caller = caller
+        #self.caller = caller
+        self.__dimensions = None
+        self.SetDimensions(__dimensions)
         self.tags = Tags()
         self._connectivity = None
-
-        if caller.GetDimensionality() == 3:
-            self.elementType = ElementNames.Hexaedron_8
-        elif caller.GetDimensionality() == 2 :
-            self.elementType = ElementNames.Quadrangle_4
-        else:
-             raise(Exception("cant build a mesh of this dimensionality"))
-
         self.mutable = False
 
     @property
     def connectivity(self):
         if(self._connectivity is None):
-            self._connectivity = np.empty((self.caller.GetNumberOfElements(),2**self.caller.GetDimensionality() ), dtype=np.int)
-            for i in range(self.caller.GetNumberOfElements()):
-                self._connectivity[i,:] = self.caller.GetConnectivityForElement(i)
+            self._connectivity = np.empty((self.GetNumberOfElements(),self.GetNumberOfNodesPerElement() ), dtype=np.int)
+            for i in range(self.GetNumberOfElements()):
+                self._connectivity[i,:] = self.GetConnectivityForElement(i)
         return self._connectivity
 
-    def GetNumberOfElements(self):
-        return self.caller.GetNumberOfElements()
+    def SetDimensions(self,data):
+        if self.__dimensions is None:
+            self.__dimensions = np.array(data,int);
+        else:
+            if len(self.__dimensions) != len(data):
+                raise(Exception("Cant change the dimensionality after creation "))
+            else:
+                self.__dimensions = np.array(data,int);
+
+        if len(self.__dimensions)  == 3:
+            self.elementType = ElementNames.Hexaedron_8
+        elif len(self.__dimensions) == 2 :
+            self.elementType = ElementNames.Quadrangle_4
+        else:
+             raise(Exception("cant build a mesh of this dimensionality"))
+
+
+    def GetDimensionality(self):
+        return len(self.__dimensions)
+
+
+    def GetConnectivityForElement(self, index):
+        exyz = self.GetMultiIndexOfElement(index)
+
+        if self.GetDimensionality() == 3:
+            res = np.empty(8,dtype=int)
+            #n0
+            res[0] = exyz[0]*self.__dimensions[1]*self.__dimensions[2] +exyz[1]*self.__dimensions[2] + exyz[2]
+            #n1
+            res[1]= res[0] + self.__dimensions[1]*self.__dimensions[2]
+            res[2] = res[1] + self.__dimensions[2]
+            res[3] = res[0] + self.__dimensions[2]
+
+            res[4:8] = res[0:4] + 1
+            #n5 = n1 + 1
+            #n6 = n2 + 1
+            #n7 = n3 + 1
+
+            ##u0,u1,u3
+            return res
+            #np.array([n0, n1, n2, n3, n4, n5, n6, n7])
+        else:
+            n0 = exyz[0]*self.__dimensions[1] +exyz[1]
+            n1 = n0 + self.__dimensions[1]
+            n2 = n1 + 1
+            n3 = n0 + 1
+            ##u0,u1,u3
+            return np.array([n0, n1, n2, n3])
+
+    def GetMultiIndexOfElement(self,index):
+        index = int(index)
+        if self.GetDimensionality() == 3:
+            planesize = (self.__dimensions[1]-1) *(self.__dimensions[2]-1)
+
+            res = np.empty(3,dtype=int)
+            res[0] = index // planesize
+            resyz = index - res[0]*(planesize)
+            res[1] = resyz //(self.__dimensions[2]-1)
+            res[2] =  resyz - res[1]*(self.__dimensions[2]-1)
+            return res
+
+        else:
+            planesize = (self.__dimensions[1]-1)
+            nx = index // planesize
+            ny = index - nx*(planesize)
+            return np.array([nx,ny])
+
+    def GetNumberOfElements(self,dim=None):
+        if dim is None:
+            dim = len(self.__dimensions)
+
+        res = 1;
+
+        if self.__dimensions[0] >= 1:
+            res = res * (self.__dimensions[0]-1)
+
+        if self.__dimensions[1] >= 1:
+            res = res * (self.__dimensions[1]-1)
+
+        if dim == 2:
+            return res
+
+        if self.__dimensions[2] >= 1:
+            res = res * (self.__dimensions[2]-1)
+
+        if dim == 3:
+            return  res
 
     def GetNumberOfNodesPerElement(self):
-        return 2*self.caller.GetDimensionality()
+        return 2**len(self.__dimensions)
 
     def GetTag(self, tagName):
         """
@@ -68,35 +147,22 @@ class ConstantRectilinearMesh(MeshBase):
         self.__spacing = np.ones((dim,))
         self.nodes = None
         self.elements = AllElements()
-        structElements = ConstantRectilinearElementContainer(self)
-        self.elements[structElements.elementType] = structElements
+        self.structElements = ConstantRectilinearElementContainer(self.__dimensions)
+        self.elements[self.structElements.elementType] = self.structElements
 
-    def GetNamesOfElemTags(self):
-        """
-        return a list containing all the element tags present in the mehs
-        """
-        res = set()
-        for ntype, data in self.elements.items():
-            for tag in data.tags:
-                res.add(tag.name)
+    def GetNamesOfElemTagsBulk(self):
+        return [ tag.name for tag in self.structElements.tags]
 
-        return list(res)
-
-
-    def GetElementsInTag(self,tagname):
-        if self.GetDimensionality() == 2 and tagname in self.elements[ElementNames.Quadrangle_4].tags :
-            return self.elements[ElementNames.Quadrangle_4].tags[tagname].GetIds()
-        elif self.GetDimensionality() == 3 and tagname in self.elements[ElementNames.Hexaedron_8].tags :
-            return self.elements[ElementNames.Hexaedron_8].tags[tagname].GetIds()
-        else:
-            return np.empty(0,dtype=int)
+    def GetElementsInTagBulk(self,tagname):
+        return self.structElements.tags[tagname].GetIds()
 
     def SetDimensions(self,data):
         self.__dimensions = np.array(data,int);
+        self.structElements.SetDimensions(self.__dimensions)
         self.nodes = None
 
     def GetDimensions(self):
-        return self.__dimensions ;
+        return np.array(self.__dimensions)
 
     def SetSpacing(self,data):
         self.__spacing = np.array(data, "float");
@@ -128,25 +194,10 @@ class ConstantRectilinearMesh(MeshBase):
         return np.prod(self.__dimensions)
 
     def GetNumberOfElements(self,dim=None):
-        if dim is None:
-            dim = self.GetDimensionality()
+        return self.structElements.GetNumberOfElements()
 
-        res = 1;
-
-        if self.__dimensions[0] >= 1:
-            res = res * (self.__dimensions[0]-1)
-
-        if self.__dimensions[1] >= 1:
-            res = res * (self.__dimensions[1]-1)
-
-        if dim == 2:
-            return res
-
-        if self.__dimensions[2] >= 1:
-            res = res * (self.__dimensions[2]-1)
-
-        if dim == 3:
-            return  res
+    def GetMultiIndexOfElement(self,index):
+        return self.structElements.GetMultiIndexOfElement(index)
 
     def GetDimensionality(self):
         return len(self.__dimensions)
@@ -182,24 +233,6 @@ class ConstantRectilinearMesh(MeshBase):
         else:
             planesize = self.__dimensions[1]
             return planesize*indexs[:,0]+indexs[:,1]
-
-    def GetMultiIndexOfElement(self,index):
-        index = int(index)
-        if self.GetDimensionality() == 3:
-            planesize = (self.__dimensions[1]-1) *(self.__dimensions[2]-1)
-
-            res = np.empty(3,dtype=int)
-            res[0] = index // planesize
-            resyz = index - res[0]*(planesize)
-            res[1] = resyz //(self.__dimensions[2]-1)
-            res[2] =  resyz - res[1]*(self.__dimensions[2]-1)
-            return res
-
-        else:
-            planesize = (self.__dimensions[1]-1)
-            nx = index // planesize
-            ny = index - nx*(planesize)
-            return np.array([nx,ny])
 
     def GetMonoIndexOfElement(self,indexs):
         if self.GetDimensionality() == 3:
@@ -369,41 +402,10 @@ class ConstantRectilinearMesh(MeshBase):
         return field[coon].dot(xiChiEta.T)
 
     def GetConnectivityForElement(self, index):
-        exyz = self.GetMultiIndexOfElement(index)
-
-        if self.GetDimensionality() == 3:
-            res = np.empty(8,dtype=int)
-            #n0
-            res[0] = exyz[0]*self.__dimensions[1]*self.__dimensions[2] +exyz[1]*self.__dimensions[2] + exyz[2]
-            #n1
-            res[1]= res[0] + self.__dimensions[1]*self.__dimensions[2]
-            res[2] = res[1] + self.__dimensions[2]
-            res[3] = res[0] + self.__dimensions[2]
-
-            res[4:8] = res[0:4] + 1
-            #n5 = n1 + 1
-            #n6 = n2 + 1
-            #n7 = n3 + 1
-
-            ##u0,u1,u3
-            return res
-            #np.array([n0, n1, n2, n3, n4, n5, n6, n7])
-        else:
-            n0 = exyz[0]*self.__dimensions[1] +exyz[1]
-            n1 = n0 + self.__dimensions[1]
-            n2 = n1 + 1
-            n3 = n0 + 1
-            ##u0,u1,u3
-            return np.array([n0, n1, n2, n3])
+        return self.structElements.GetConnectivityForElement(index)
 
     def GenerateFullConnectivity(self):
-        import BasicTools.Containers.ElementNames as ElementNames
-
-        if self.GetDimensionality() == 3:
-            return self.elements[ElementNames.Hexaedron_8 ].connectivity
-        elif self.GetDimensionality() == 2:
-            return self.elements[ElementNames.Quadrangle_4].connectivity
-        raise(Exception("Invalid dimensionality : " + str(self.GetDimensionality())) )# pragma: no cover
+        return self.structElements.connectivity
 
     def __str__(self):
         res = ''
@@ -473,7 +475,7 @@ def CheckIntegrity():
 
     myMesh.elements[ElementNames.Hexaedron_8].tags.CreateTag("TestTag",False).SetIds([0,1])
 
-    if len(myMesh.GetElementsInTag("TestTag")) != 2 :
+    if len(myMesh.GetElementsInTagBulk("TestTag")) != 2 :
         raise(Exception("Tag system not working corretly") )# pragma: no cover
 
 
@@ -495,7 +497,7 @@ def CheckIntegrity():
 
 
     print("-----------------2D const rectilinear mesh------------------------")
-    myMesh = ConstantRectilinearMesh()
+    myMesh = ConstantRectilinearMesh(dim=2)
     myMesh.SetDimensions([3,3]);
     myMesh.SetSpacing([1, 1]);
     myMesh.SetOrigin([0.,0.]);
