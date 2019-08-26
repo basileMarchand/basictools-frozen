@@ -142,7 +142,6 @@ class MecaPhysics(Physics):
             direction = Matrix([direction]).T
 
         wflux = f*direction.T*ut
-        print(wflux)
         wfp = SymWeakToNumWeak(wflux)
         return wfp
 

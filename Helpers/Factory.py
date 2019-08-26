@@ -62,6 +62,8 @@ class Factory(BaseOutputObject):
                if propertiesAssign:
                    PH.ReadProperties(ops, ops, res)
            else:
+               if ops is None:
+                   return classType()
                res = classConstructor(ops)
            return res
 

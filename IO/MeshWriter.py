@@ -486,7 +486,10 @@ class MeshWriter(WriterBase):
             if elementContainer.GetNumberOfElements() == 0:
                 continue
 
-            elemtype = ASCIIName[name]
+            elemtype = ASCIIName.get(name,None)
+            if elemtype is None:
+                print("(MeshWriter) skiping this type of elements : " + name )
+                continue
 
             if meshObject.IsConstantRectilinear():
                 #hack to make the constantrectilinear api as the unstructured #TODO clean me
