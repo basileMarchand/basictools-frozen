@@ -1829,7 +1829,7 @@ def GetValueAtPosLinearSymplecticMesh(fields,mesh,constantRectilinearMesh):
         for d in dimensions:
             shapeRes.append(d)
         result = np.zeros(tuple(shapeRes))
-
+        mask = np.zeros(tuple(dimensions))
         for name, data in mesh.elements.items():
             #print("name =", name)
             #print("ElementNames.dimension[name] =", ElementNames.dimension[name])
@@ -1879,14 +1879,14 @@ def GetValueAtPosLinearSymplecticMesh(fields,mesh,constantRectilinearMesh):
                                 #print(point, rhs, qcoord)
                                 if (qcoord>=-1.e-12).all() == True:
                                     if mesh.GetDimensionality()==2:
+                                        mask[i,j] = 1.
                                         for l in range(fields.shape[0]):
                                           result[l,i,j] = np.dot(qcoord,fields[l][localNumbering])
                                     else:
+                                        mask[i,j,k] = 1.
                                         for l in range(fields.shape[0]):
                                           result[l,i,j,k] = np.dot(qcoord,fields[l][localNumbering])
-        return result
-
-
+        return result, mask
 
 def CheckIntegrity_GetValueAtPosLinearSymplecticMesh(GUI=False):
     from BasicTools.Containers.UnstructuredMeshTools import CreateMeshOf
