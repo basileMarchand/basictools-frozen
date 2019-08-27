@@ -71,10 +71,14 @@ def IntegrateGeneral( mesh, wform, constants, fields, unkownFields,testFields=No
     integrator.SetConstants(constants)
     integrator.SetIntegrationRule(integrationRuleName)
 
-    numberOfVIJ = integrator.ComputeNumberOfVIJ(mesh,tag)
+    if tag in mesh.GetNamesOfElemTags() or tag == "ALL":
+        numberOfVIJ = integrator.ComputeNumberOfVIJ(mesh,tag)
+    else:
+        numberOfVIJ =  len(mesh.nodesTags[tag].GetIds())
 
     if numberOfVIJ == 0:
         print("Warning!!! System with zero dofs")
+        raise(Exception("Error!!! System with zero dofs"))
 
     vK = np.zeros(numberOfVIJ,dtype=np.float)
     iK = np.empty(numberOfVIJ,dtype=np.int)
@@ -84,6 +88,7 @@ def IntegrateGeneral( mesh, wform, constants, fields, unkownFields,testFields=No
 
     integrator.PrepareFastIntegration(mesh,wform,vK,iK,jK,0,F)
 
+    tagFound = False
     for name, data in mesh.elements.items():
 
         if data.GetNumberOfElements() == 0:
@@ -98,9 +103,29 @@ def IntegrateGeneral( mesh, wform, constants, fields, unkownFields,testFields=No
         else:
             continue
 
+        tagFound = True
+
         integrator.ActivateElementType(data)
 
         integrator.Integrate(wform,idstotreat)
+
+    # in the case the tag does not exist for the elements we try to find in the
+    # nodes and do an integration my points
+    if tagFound == False:
+        if tag in mesh.nodesTags:
+            from BasicTools.Containers.UnstructuredMesh import ElementsContainer
+            import BasicTools.Containers.ElementNames as EN
+            data = ElementsContainer(EN.Point_1)
+            ids = mesh.nodesTags[tag].GetIds()
+            for i,idd in enumerate(ids):
+                data.AddNewElement([idd],i)
+            data.tighten()
+            integrator.ActivateElementType(data)
+            integrator.Integrate(wform,np.arange(len(ids)) )
+        else:
+            raise(Exception("Tag not found to do the integration"))
+
+
 
     numberOfUsedvij = integrator.GetNumberOfUsedIvij()
     data = (vK[0:numberOfUsedvij], (iK[0:numberOfUsedvij],jK[0:numberOfUsedvij]))

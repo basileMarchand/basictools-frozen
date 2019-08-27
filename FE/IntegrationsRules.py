@@ -24,6 +24,9 @@ ElementCenter[EN.GeoBar] = ( 1./2.*np.array([[1.] ]),
 
 LagrangeP1 = {}
 
+LagrangeP1[EN.GeoPoint] = ( np.array([[0] ]),
+                          np.array([1.]))
+
 LagrangeP1[EN.GeoTri] = ( 1./6.*np.array([[1., 1.] ,[4., 1.],[ 1. ,4.] ]),
                                   1./6.*np.array([1. , 1. , 1]))
 
@@ -95,6 +98,7 @@ LagrangeP1[EN.GeoHex]  = TensorProductPoints(dim=3,npoints=2)
 
 LagrangeP2 = {}
 
+LagrangeP2[EN.GeoPoint] = ( np.array([[0] ]), np.array([1.]))
 LagrangeP2[EN.GeoBar]  = TensorProductPoints(dim=1,npoints=3)
 LagrangeP2[EN.GeoQuad] = TensorProductPoints(dim=2,npoints=3)
 LagrangeP2[EN.GeoHex]  = TensorProductPoints(dim=3,npoints=3)
