@@ -4,8 +4,6 @@
 """
 import numpy as np
 
-__author__ = "Felipe Bordeu"
-
 import BasicTools.Containers.ElementNames as EN
 
 from BasicTools.IO.ReaderBase import ReaderBase

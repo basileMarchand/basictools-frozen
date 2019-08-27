@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 
-__author__ = "Felipe Bordeu"
 from BasicTools.Helpers.TextFormatHelper import TFormat
 from BasicTools.IO.XdmfTools import FieldNotFound
 

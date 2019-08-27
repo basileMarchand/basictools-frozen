@@ -2,8 +2,6 @@
 """Class to format output
 
 """
-__author__ = "Felipe Bordeu"
-
 import sys
 import os
 

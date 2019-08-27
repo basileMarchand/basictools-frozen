@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-__author__ = "Felipe Bordeu"
-
 import numpy as np
 
 from BasicTools.Containers.MeshBase import MeshBase
@@ -381,14 +379,14 @@ class ConstantRectilinearMesh(MeshBase):
     def GetValueAtPos(self,field,pos):
         el = self.GetElementAtPos(pos)
         coon = self.GetConnectivityForElement(el)
-        xiChiEta = self.GetElementShapeFunctionsAtPos(el,pos)        
+        xiChiEta = self.GetElementShapeFunctionsAtPos(el,pos)
         return field[coon].dot(xiChiEta)
 
     def GetValueAtPosMultipleField(self,fields,pos):
         res = []
         el = self.GetElementAtPos(pos)
         coon = self.GetConnectivityForElement(el)
-        xiChiEta = self.GetElementShapeFunctionsAtPos(el,pos)        
+        xiChiEta = self.GetElementShapeFunctionsAtPos(el,pos)
         for i in range(fields.shape[0]):
             locFfield = fields[i][coon]
             nans = np.argwhere(np.isnan(locFfield))

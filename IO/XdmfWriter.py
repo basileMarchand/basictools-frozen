@@ -2,8 +2,6 @@
 import numpy as np
 import os
 
-__author__ = "Felipe Bordeu"
-
 from BasicTools.Helpers.TextFormatHelper import TFormat
 
 import BasicTools.Containers.ElementNames as EN

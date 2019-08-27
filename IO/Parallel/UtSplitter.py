@@ -5,7 +5,6 @@ from __future__ import print_function
 
 import numpy as np
 import os
-__author__ = "Fabien Casenave"
 
 from BasicTools.IO.WriterBase import WriterBase as WriterBase
 import BasicTools.IO.GeofWriter as GW

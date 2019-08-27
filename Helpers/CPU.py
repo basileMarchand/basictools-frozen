@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-__author__ = "Felipe Bordeu"
-
 import os
 import BasicTools.Helpers.ParserHelper as PH
 

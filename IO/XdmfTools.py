@@ -1,9 +1,6 @@
 # -*- coding: utf-8 -*-
 import BasicTools.Containers.ElementNames as EN
 
-__author__ = "Felipe Bordeu"
-
-
 XdmfName = {}
 XdmfName[EN.Point_1] = 'Polyvertex'
 XdmfName[EN.Bar_2] = 'Polyline'

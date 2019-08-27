@@ -2,7 +2,6 @@
 """Geof file writer (Zset mesh files)
 
 """
-__author__ = "Felipe Bordeu"
 
 import numpy as np
 

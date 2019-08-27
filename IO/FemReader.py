@@ -5,7 +5,6 @@
 
 import numpy as np
 
-__author__ = "Felipe Bordeu"
 import BasicTools.Containers.UnstructuredMesh as UM
 import BasicTools.Containers.ElementNames as ElementNames
 

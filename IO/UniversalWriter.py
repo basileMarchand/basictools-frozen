@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 
-__author__ = "Felipe Bordeu"
-
 #externalWriters = {}
 #
 #def WriterFactory(nameOrFilename,ops={"default":"xmf"}):

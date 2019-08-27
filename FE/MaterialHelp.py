@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-__author__ = "Felipe Bordeu"
-
 import numpy as np
 
 def HookeIso(E,nu, dim = 3, planeStress = True):

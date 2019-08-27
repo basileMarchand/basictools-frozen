@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 
-__author__ = "Felipe Bordeu"
 import BasicTools.Containers.ElementNames as EN
 from BasicTools.IO.ReaderBase import ReaderBase
 from BasicTools.Containers.vtkBridge import VtkToMesh

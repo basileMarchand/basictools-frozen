@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-__author__ = "Felipe Bordeu"
 
 class GeoSupport(object):
     def __init__(self,data):

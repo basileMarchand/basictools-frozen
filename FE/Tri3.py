@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-__author__ = "Felipe Bordeu"
-
 import numpy as np
 import numpy.linalg as linalg
 

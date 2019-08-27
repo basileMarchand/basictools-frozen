@@ -2,7 +2,6 @@
 """ Gcode file reader
 
 """
-__author__ = "Felipe Bordeu"
 
 import numpy as np
 

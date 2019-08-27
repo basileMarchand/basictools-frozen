@@ -2,7 +2,6 @@
 """ Class to treat Constants Rectilinear Finit Element Problems
 
 """
-__author__ = "Felipe Bordeu"
 
 import numpy as np
 from scipy.sparse import coo_matrix

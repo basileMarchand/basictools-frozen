@@ -2,7 +2,6 @@
 
 import struct
 import numpy as np
-__author__ = "Felipe Bordeu"
 
 from BasicTools.Containers.MeshBase import Tag as Tag
 from BasicTools.IO.WriterBase import WriterBase as WriterBase

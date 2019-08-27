@@ -5,7 +5,6 @@
 
 #for python 2.6+ compatibility
 from __future__ import print_function
-__author__ = "Felipe Bordeu"
 
 import traceback
 import time

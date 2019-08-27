@@ -2,8 +2,6 @@
 
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 from BasicTools.Helpers.TextFormatHelper import TFormat as TFormat
-__author__ = "Felipe Bordeu"
-
 class WriterBase(BaseOutputObject):
     def __init__(self, fileName = None):
         super(WriterBase,self).__init__()

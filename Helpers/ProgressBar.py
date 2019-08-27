@@ -1,10 +1,5 @@
 # -*- coding: utf-8 -*-
-"""printProgressBar
-
-"""
 from __future__ import print_function
-
-__author__ = "stackoverflow"
 """
 you can filter the output to "reinterpret" the control chars using :
 

@@ -3,8 +3,6 @@
 
 """
 import numpy as np
-__author__ = "Felipe Bordeu"
-
 import BasicTools.Containers.ElementNames as EN
 
 from BasicTools.Containers.MeshBase import Tag as Tag

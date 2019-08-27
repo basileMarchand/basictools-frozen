@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-__author__ = "Felipe Bordeu"
-
 
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 

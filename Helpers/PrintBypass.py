@@ -8,9 +8,6 @@ from __future__ import print_function
 import re
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 
-__author__ = "Felipe Bordeu"
-
-
 import sys
 import os
 

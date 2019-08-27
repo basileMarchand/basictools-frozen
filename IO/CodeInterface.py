@@ -4,7 +4,6 @@
 
 import subprocess
 import os
-__author__ = "Felipe Bordeu, Fabien Casenave"
 
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 

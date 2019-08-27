@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 import pickle as __pickle
 
-__author__ = "Felipe Bordeu"
-
 class IOHelper:
     """helper Class that represent the data from a file  """
 

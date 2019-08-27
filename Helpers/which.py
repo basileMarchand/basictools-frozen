@@ -4,8 +4,6 @@
 insperated from:
     https://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
 """
-__author__ = "Felipe Bordeu"
-
 def which(program):
     import os
     def is_exe(fpath):

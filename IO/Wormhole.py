@@ -4,7 +4,6 @@ import socket
 import signal
 
 
-__author__ = "Felipe Bordeu"
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 
 """Backport of importlib.import_module from 3.x."""

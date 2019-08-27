@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import numpy as np
-__author__ = "Felipe Bordeu"
 
 from BasicTools.IO.WriterBase import WriterBase as WriterBase
 import BasicTools.Containers.ElementNames as EN

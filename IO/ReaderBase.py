@@ -4,7 +4,6 @@ import struct
 
 import numpy as np
 
-__author__ = "Felipe Bordeu"
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 
 class ReaderBase(BaseOutputObject):

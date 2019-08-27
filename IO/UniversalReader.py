@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-__author__ = "Felipe Bordeu"
 import BasicTools.Containers.ElementNames as ElementNames
 
 def ReadMesh(filename,out=None,timeToRead=-1):# pragma: no cover
