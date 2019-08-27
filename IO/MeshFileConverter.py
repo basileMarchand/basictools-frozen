@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from BasicTools.Helpers.TextFormatHelper import TFormat as TF
 from BasicTools.IO.UniversalReader import ReadMesh
 from BasicTools.IO.UniversalWriter import WriteMesh
 import  BasicTools.IO.IOFactory as IOF
@@ -50,7 +51,15 @@ def Convert(inputfilename,outputfilename,ops):
                   exit(0)
 
           mesh = ReadMesh(inputfilename,timeToRead = ops["timeToRead"])
-          print(mesh)
+
+          if len(outputfilename) == 0:
+              PrintMeshInformation(mesh)
+              print("No output file name")
+              print("Done")
+              return
+          else:
+              print(mesh)
+
           print("Start Writing to "+  str(outputfilename))
           writer = None
 
@@ -63,6 +72,46 @@ def Convert(inputfilename,outputfilename,ops):
           WriteMesh(outputfilename,mesh,writer=writer)
           print("DONE")
 
+def PrintMeshInformation(mesh):
+
+      def L25(text):
+          return TF.Left(text ,fill=" ",width=25)
+      def L15(text):
+          return TF.Left(text ,fill=" ",width=15)
+
+      print(TF.Center("check the integrity of the mesh"))
+      print(L25("nodes.shape:") , str(mesh.nodes.shape) )
+      mesh.ComputeBoundingBox()
+      print(L25("boundingMin:") + str(mesh.boundingMin) )
+      print(L25("boundingMax:") + str(mesh.boundingMax) )
+      print(L25("originalIDNodes.shape:") , str(mesh.originalIDNodes.shape) )
+      print(L25("min(originalIDNodes):") , str(min(mesh.originalIDNodes) )  )
+      print(L25("max(originalIDNodes):") , str(max(mesh.originalIDNodes) )  )
+      print("---- node tags ---- " )
+      print(mesh.nodesTags)
+      for tag in mesh.nodesTags:
+          res = L15(tag.name) + L15(" size:"+ str(len(tag)))
+          if len(tag):
+              res +=L15(" min:"+str(min(tag.GetIds()) ) )+ "  max:"+str(max(tag.GetIds()) )
+          print(res)
+
+
+      print("---- Elements ---- " )
+      for name,data in mesh.elements.items():
+          res = L25(str(type(data)).split("'")[1].split(".")[-1]+ " " + name+" ")
+          res += L15("size:" + str(data.GetNumberOfElements()))
+          res += L25("min(connectivity):" + str(min(data.connectivity.ravel())))
+          res += L25("max(connectivity):" +  str(max(data.connectivity.ravel())))
+          print(res)
+          #if len(data.tags):
+          #    print("  ---- Element tags for "+name+" ---- " )
+          for tag in data.tags:
+              res = L15(tag.name) + L15(" size:"+ str(len(tag)))
+              if len(tag):
+                  res +=L15(" min:"+str(min(tag.GetIds()) ) )+ "  max:"+str(max(tag.GetIds()) )
+              print("  Tag: " +res)
+
+      print(TF.Center("check the integrity of the mesh DONE"))
 
 def CheckIntegrity(GUI=False):
     from BasicTools.Helpers.Tests import TestTempDir
