@@ -23,7 +23,7 @@ __all__ = [
 'ProcastResultReader',
 'ProxyWriter',
 'ReaderBase',
-'Samcefreader',
+'SamcefReader',
 'StlReader',
 'StlWriter',
 'UniversalReader',
