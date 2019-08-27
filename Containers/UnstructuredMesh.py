@@ -215,6 +215,12 @@ class AllElements(object):
             self[typename] = ElementsContainer(typename)
         return self[typename]
 
+    def __str__(self):
+        res = ""
+        for name,data in self.storage.items():
+            res += str(data)
+        return res
+
 class UnstructuredMesh(MeshBase):
     """
     class to store a UnstructuredMesh:
@@ -353,17 +359,6 @@ class UnstructuredMesh(MeshBase):
         """
         return self.nodes
 
-    def GetNamesOfElemTags(self):
-        """
-        return a list containing all the element tags present in the mehs
-        """
-        res = set()
-        for ntype, data in self.elements.items():
-            for tag in data.tags:
-                res.add(tag.name)
-
-        return list(res)
-
     def GetElementsOriginalIDs(self,dim = None):
         """
         return a single list with all the originalid concatenated
@@ -389,8 +384,8 @@ class UnstructuredMesh(MeshBase):
     def GetElementsInTag(self,tagname,useOriginalId=False) :
         """
         return a list with the ids of the elements in a tag
+        The user must compute the globaloffset first to make this function work
         """
-        self.ComputeGlobalOffset();
         ne = self.GetNumberOfElements()
         res = np.zeros((ne,),dtype=np.int)
         cpt =0

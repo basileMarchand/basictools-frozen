@@ -182,6 +182,16 @@ class MeshBase(BaseOutputObject):
         """
         return self.elements.GetElementsOfType(typename)
 
+    def GetNamesOfElemTags(self):
+        """
+        return a list containing all the element tags present in the mehs
+        """
+        res = set()
+        for ntype, data in self.elements.items():
+            for tag in data.tags:
+                res.add(tag.name)
+
+        return list(res)
 
     def CopyProperties(self,other):
         import copy
