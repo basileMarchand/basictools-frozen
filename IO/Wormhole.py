@@ -373,10 +373,10 @@ def CheckIntegrityPipe():
 
 
 def GetAnFreePortNumber():
-    import socket;
-    s=socket.socket();
-    s.bind(("", 0));
-    portNumber = s.getsockname()[1];
+    import socket
+    s=socket.socket()
+    s.bind(("", 0))
+    portNumber = s.getsockname()[1]
     s.close()
     return portNumber
 

@@ -58,11 +58,11 @@ class ReaderBase(BaseOutputObject):
             else:
                 #python2 test
                 if sys.version_info >= (3,0):
-                    import io
+                    import io # Python3
                     self.filePointer =  io.StringIO(self.string)
 
                 else:
-                    import cStringIO
+                    import cStringIO # Python2
                     self.filePointer =  cStringIO.StringIO(self.string)
 
                 self.text_stream = self.filePointer

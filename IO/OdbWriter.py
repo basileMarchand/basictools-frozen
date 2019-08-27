@@ -104,7 +104,7 @@ class OdbWriter(object):
 
         try :
             import abaqusConstants as AC
-            import odbAccess
+            import odbAccess as OA
         except :
             if self.__insubprocess :
                 print("Error Loading libraries in the subprocess")
@@ -178,7 +178,7 @@ WormholeServer(""" +str(port) +""",dry=False)
         mesh.PrepareForOutput()
 
         odbName = self.filename.split("/")[-1]
-        pOdb = odbAccess.Odb(name=odbName,analysisTitle='MyFirstAnalisys',path=self.filename,description='1D beam')
+        pOdb = OA.Odb(name=odbName,analysisTitle='MyFirstAnalisys',path=self.filename,description='1D beam')
         pOdb.save()
 
         WriteMaterial(pOdb,None)

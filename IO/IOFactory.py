@@ -18,11 +18,8 @@ def GetAvailableReaders():
     return list(ReaderFactory._Catalog.keys())
 
 def InitAllReaders():
-    try:
-        import BasicTools.IO.InpReader as InpReader
-    except:
-        pass
 
+    import BasicTools.IO.InpReader as InpReader
     import BasicTools.IO.AscReader as AscReader
     import BasicTools.IO.GeofReader as GeofReader
     import BasicTools.IO.GeoReader as GeoReader
@@ -36,11 +33,11 @@ def InitAllReaders():
     from BasicTools.IO.OdbReader import OdbReader
     from BasicTools.IO.UtReader import UtReader
     from BasicTools.IO.VtuReader import VtuReader
+    from BasicTools.IO.SamcefReader import DatReader
 
 
 
 def InitAllWriters():
-
     from BasicTools.IO.GeofWriter import GeofWriter
     from BasicTools.IO.GmshWriter import GmshWriter
     from BasicTools.IO.MeshWriter import MeshWriter
