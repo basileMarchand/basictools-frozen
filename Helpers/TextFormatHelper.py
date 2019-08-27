@@ -149,6 +149,11 @@ class TFormat(object):
 
 
     @staticmethod
+    def Left(text,fill= "*",width=60):
+        return text+ fill*(width-len(text))
+
+
+    @staticmethod
     def Center(text,fill= "*",width=60):
 
         if fill != " ":
