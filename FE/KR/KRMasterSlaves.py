@@ -26,7 +26,7 @@ class KRMasterSlaves(KRBase):
     def GenerateEquations(self,mesh,fields,CH=None):
 
         if CH is None:
-            from BasicTools.FE.ConstraintsHolder import ConstraintsHolder
+            from BasicTools.Linalg.ConstraintsHolder import ConstraintsHolder
             CH = ConstraintsHolder()
 
         # for the moment the aproximation spaces of a vector must be homogenious
