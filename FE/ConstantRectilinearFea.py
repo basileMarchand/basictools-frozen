@@ -268,9 +268,9 @@ class Fea(FeaBase.FeaBase):
 
         if K.nnz > 0 :
           if self.linearSolver == "Direct":
-            self.u[self.free, 0] = linalg.spsolve(K, self.f[self.free, 0]-rhsfixed[self.free, 0])
+            self.u[self.free, 0] = linalg.spsolve(K, rhs)
           elif self.linearSolver == "DirectDense":
-            self.u[self.free, 0] = denselinalg.solve(K.toarray(), self.f[self.free, 0]-rhsfixed[self.free, 0],sym_pos=True,overwrite_a=True)
+            self.u[self.free, 0] = denselinalg.solve(K.toarray(), rhs,sym_pos=True,overwrite_a=True)
           elif self.linearSolver == "CG":
             # Preconditioning
             M = sps.dia_matrix((1./K.diagonal(),0), shape=K.shape)
@@ -301,11 +301,20 @@ class Fea(FeaBase.FeaBase):
             self.u[self.free, 0] = res
           elif self.linearSolver == "cholesky":# pragma: no cover
             from sksparse.cholmod import cholesky
-            self.u[self.free, 0] = cholesky(K)(self.f[self.free, 0]-rhsfixed[self.free, 0] )
+            self.u[self.free, 0] = cholesky(K)(rhs )
+
           else :
-            print("'"+self.linearSolver + "' is not a valid linear solver")#pragma: no cover
-            print('Please set a type of linear solver')#pragma: no cover
-            raise Exception()#pragma: no cover
+            from BasicTools.Linalg.LinearSolver import LinearProblem
+            linSol = LinearProblem()
+            linSol.tol = self.tol
+            linSol.SetAlgo(self.linearSolver)
+            linSol.SetOp(K)
+            self.u[self.free, 0] = linSol.Solve(rhs)
+          #else :
+
+            #print("'"+self.linearSolver + "' is not a valid linear solver")#pragma: no cover
+            #print('Please set a type of linear solver')#pragma: no cover
+            #raise Exception()#pragma: no cover
 
         self.PrintDebug('Post Process')
         self.u = self.u + self.fixedValues
