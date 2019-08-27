@@ -7,9 +7,6 @@
       <Documentation long_help="Use the BasicTools library to write a file"
                      short_help="Use the BasicTools library to write a file">
                      </Documentation>
-
-
-
       <StringVectorProperty
         name="FileName"
         command="SetParameter"
@@ -34,7 +31,7 @@
              <DataType value="vtkDataSet"/>
            </DataTypeDomain>
       </InputProperty>
-	  
+
                <IntVectorProperty command="SetOutputDataSetType"
                          default_values="4"
                          name="OutputDataSetType"
@@ -143,7 +140,7 @@
                             name="PythonPath"
                             number_of_elements="1"
                             panel_visibility="advanced"
-                            default_values="'/softs/python/CamLibs/'">
+                            default_values="KEY3">
 
         <Documentation>A semi-colon (;) separated list of directories to add to
         the python library search path.</Documentation>
@@ -155,19 +152,10 @@
         <Documentation>Available timestep values.</Documentation>
       </DoubleVectorProperty>
 
-  <Hints>
+      <Hints>
        <WriterFactory extensions="KEY2" file_description="UniversalWriter (native)(KEY2)" />
-  </Hints>
-
-
-
+      </Hints>
     </SourceProxy>
-
-
-
-
-
-
   </ProxyGroup>
 </ServerManagerConfiguration>
 

@@ -459,7 +459,7 @@ class FemReader(ReaderBase):
                         continue
 
                     if l[0] == 'SPC' :
-                        ##https://knowledge.autodesk.com/support/nastran/learn-explore/caas/CloudHelp/cloudhelp/2018/ENU/NSTRN-Reference/files/GUID-942678EC-4197-4D05-8CEC-6D61961444B0-htm.html?st=SPC
+                        ##https://knowledge.autodesk.com/support/nastran/learn-explore/caas/CloudHelp/cloudhelp/2018/ENU/NSTRN-Reference/files/GUID-942678EC-4197-4D05-8CEC-6D61961444B0-htm.html
                         NLP.structured = True
                         SID = int(line[8:8*2])
                         tag = res.GetNodalTag("SPC"+str(SID))

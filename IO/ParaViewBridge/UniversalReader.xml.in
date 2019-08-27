@@ -130,7 +130,7 @@
                             name="PythonPath"
                             number_of_elements="1"
                             panel_visibility="advanced"
-                            default_values="'/softs/python/CamLibs/'">
+                            default_values="KEY4">
 
         <Documentation>A semi-colon (;) separated list of directories to add to
         the python library search path.</Documentation>

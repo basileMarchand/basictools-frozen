@@ -385,7 +385,7 @@ def CheckIntegrity(GUI = False):
     # no .odb in the database for test for the moment
     return "ok"
 
-    reader.SetFileName("/home/fbordeu-weld/test/odbReader/Job-1.odb")
+    reader.SetFileName("path/Job-1.odb")
 
     time, stepData = reader.ReadMetaData()
     print("time")
