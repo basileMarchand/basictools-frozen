@@ -443,8 +443,6 @@ class MeshWriter(WriterBase):
 
     def WriteASCII(self,meshObject,PointFields=None, solutionOnOwnFile= False, nodalRefNumber = None,elemRefNumber=None):
 
-        #self.filePointer.write("# This file has been writen by the python routine MmgWriter of the BasicTools package\n")
-        #self.filePointer.write("# For any question about this routine, please contact SAFRAN TECH Pole M&S - CAM Team\n")
         meshObject.ComputeGlobalOffset()
         self.filePointer.write("MeshVersionFormatted 2 \n")
         #
@@ -551,8 +549,7 @@ class MeshWriter(WriterBase):
             self.Close();
             self.filePointer = open(".".join(self.fileName.split(".")[0:-1])+".sol" , 'w',0)
             self._isOpen = True
-            self.filePointer.write("# This file has been writen by the python routine MmgWriter of the BasicTools package\n")
-            self.filePointer.write("# For any question about this routine, please contact SAFRAN TECH Pole M&S - CAM Team \n")
+            self.filePointer.write("#Written by BasicTools package\n")
 
             self.filePointer.write("MeshVersionFormatted\n2 \n")
             #

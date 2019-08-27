@@ -364,19 +364,8 @@ class InpReader(ReaderBase):
 from BasicTools.IO.IOFactory import RegisterReaderClass
 RegisterReaderClass(".inp",InpReader)
 
+
 def CheckIntegrity():
-
-    #  [?23/?05/?2019 14:45] CASENAVE Fabien (SAFRAN):
-    #    /scratch/fcasenave/partage/ToFelipe/INP_Abaqus/trans_cold_AC_lente_v17
-    #  $ abaqus job=ICASGT1_SOLID_cold_AC_lente_v17.inp inter
-
-     #res = ReadInp(fileName="/scratch/fcasenave/partage/ToFelipe/INP_Abaqus/trans_cold_AC_lente_v17/ICASGT1_SOLID_cold_AC_lente_v17.inp")
-     #print(res[1])
-     #print(res[0])
-     return "OK"
-
-
-def CheckIntegrityReal():
     res1 = LineToDic('*NSET, NSET="Fixed Displacement1", KEY2=5')
     if res1['KEY2'] != '5':
         return "not ok"
