@@ -251,14 +251,14 @@ autosummary_generate = False
 pass
 
 def run_apidoc(_):
-    from sphinx.apidoc import main
+    import sphinx.ext.apidoc
     import os
     import sys
     sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
     cur_dir = os.path.abspath(os.path.dirname(__file__))
     target_dir = os.path.join(cur_dir, '_source')
     module = os.path.join(cur_dir, '..')
-    main([None, '-T', '-M', '-e', '-f', '-o', target_dir, module])
+    sphinx.ext.apidoc.main(['-T', '-M', '-e', '-f', '-o', target_dir, module])
 
 def setup(app):
     app.connect('builder-inited', run_apidoc)
