@@ -487,7 +487,7 @@ def CheckIntegrityold():
 
 def CheckIntegrityDep2D():
 
-    import BasicTools.FE.ConstantRectilinearMesh as CRM
+    import BasicTools.Containers.ConstantRectilinearMesh as CRM
     import BasicTools.IO.XdmfWriter  as XdmfWriter
     import time
     from BasicTools.Helpers.Tests import TestTempDir

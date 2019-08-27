@@ -136,7 +136,7 @@ def __RunAndCheck(lis,bp,stopAtFirstError,dryrun,profiling):# pragma: no cover
                     import cProfile, pstats
                     #for python2
                     try:
-                        from StringIO import StringIO
+                        from StringIO import StringIO #Python2
                     except:
                         #python3
                         from io import StringIO

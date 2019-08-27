@@ -190,7 +190,7 @@ def GetMecaElasticProblem(name="u",dim=3,K=None,planeStress=True):
     u = GetField("u",dim)
     ut = GetTestField("u",dim)
     if K is None:
-        from MaterialHelp import HookeIso
+        from BasicTools.FE.MaterialHelp import HookeIso
         K = HookeIso(1,0.3,dim, planeStress)
     ener = ToVoigtEpsilon(Strain(u,dim)).T*K*ToVoigtEpsilon(Strain(ut,dim))
     return ener
