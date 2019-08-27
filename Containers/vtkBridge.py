@@ -144,17 +144,9 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
     # From www.vtk;org/wp-content/updloads/2015/04/file-formats.pdf
 
     try:
-        from paraview.vtk import vtkPolyData as vtkPolyData
-        from paraview.vtk import vtkUnstructuredGrid as vtkUnstructuredGrid
-        from paraview.vtk import vtkPoints
-        from paraview.vtk import vtkIdList
-        from paraview.vtk import vtkImageData
+        from paraview.vtk import vtkPolyData, vtkUnstructuredGrid, vtkPoints,vtkIdList, vtkImageData
     except :
-        from vtk import vtkPolyData
-        from vtk import vtkUnstructuredGrid
-        from vtk import vtkPoints
-        from vtk import vtkIdList
-        from vtk import vtkImageData
+        from vtk import vtkPolyData, vtkUnstructuredGrid, vtkPoints, vtkIdList, vtkImageData
 
     isimagedata = False
     if vtkobject is None:
