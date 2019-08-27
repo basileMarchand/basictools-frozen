@@ -407,8 +407,6 @@ class XdmfWriter(WriterBase):
             self.filePointer.write('    <Geometry Type="ORIGIN_DXDYDZ">\n')
             #else:
             #    self.filePointer.write('    <Geometry Type="ORIGIN_DXDY">\n')
-
-
             self.filePointer.write('      <DataItem DataType="Float" Dimensions="'+str(dimensionality)+'" Format="XML" Precision="8">'+ArrayToString(reversed(origin)) +'</DataItem>\n')
             self.filePointer.write('      <DataItem DataType="Float" Dimensions="'+str(dimensionality)+'" Format="XML" Precision="8">'+ArrayToString(reversed(spacing)) +'</DataItem>\n')
             self.filePointer.write('    </Geometry>\n')
@@ -746,38 +744,55 @@ class XdmfWriter(WriterBase):
              else:
                sufix += "_D" + str(self.ddmCpt)
 
-         self.filePointer.write('    <Grid Name="Grid_'+sufix+'">\n')
+         #if we have a constantRectilinear mesh with more than only "bulk"
+         # elements, we add a collection to add all the rest of the elements
 
-         if self.IsTemporalOutput() and self.__printTimeInsideEachGrid and (self.IsMultidomainOutput() == False) :
-             self.filePointer.write('    <Time Value="'+str(self.currentTime)+'" /> \n')
+         if baseMeshObject.IsConstantRectilinear() and len(baseMeshObject.elements) > 1:
+             self.filePointer.write('<Grid Name="Grid_S'+sufix+'" GridType="Collection" CollectionType="Spatial" >\n')
+             if self.IsTemporalOutput() and self.__printTimeInsideEachGrid and (self.IsMultidomainOutput() == False) :
+                self.filePointer.write('    <Time Value="'+str(self.currentTime)+'" /> \n')
+             self.filePointer.write('    <Grid Name="Bulk">\n')
+         else:
+             self.filePointer.write('    <Grid Name="Grid_'+sufix+'">\n')
+             if self.IsTemporalOutput() and self.__printTimeInsideEachGrid and (self.IsMultidomainOutput() == False) :
+                 self.filePointer.write('    <Time Value="'+str(self.currentTime)+'" /> \n')
 
          self.__WriteGeoAndTopo(baseMeshObject)
+         self.__WriteNodesTagsElementsTags(baseMeshObject,PointFieldsNames,CellFieldsNames)
+         self.__WriteNodesFieldsElementsFieldsGridFields(baseMeshObject,
+                                                   PointFieldsNames,PointFields,
+                                                   CellFieldsNames,CellFields,
+                                                   GridFieldsNames,GridFields)
 
-         for tag in baseMeshObject.nodesTags:
-             if tag.name in PointFieldsNames:
-                 name = "Tag_" + tag.name
-             else:
-                 name = tag.name
+         self.WriteIntegrationsPoints(IntegrationRule)
+         self.WriteIntegrationsPointDatas(IntegrationPointDataNames,IntegrationPointData)
 
-             data = np.zeros((baseMeshObject.GetNumberOfNodes(),1),dtype=np.int8)
-             data[baseMeshObject.nodesTags[tag.name].GetIds()] = 1;
-             self.__WriteAttribute(np.array(data), name, "Node",baseMeshObject)
+         if baseMeshObject.IsConstantRectilinear() and len(baseMeshObject.elements) > 1:
+             self.filePointer.write('    </Grid>\n')
+             from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
+             tempmesh = UnstructuredMesh()
+             tempmesh.nodes = baseMeshObject.nodes
+             for name,data in baseMeshObject.elements.items():
+                 if data.mutable :
+                     tempmesh.elements[name] =  data
+             self.filePointer.write('    <Grid Name="Sets">\n')
+             self.__WriteGeoAndTopo(tempmesh)
+             self.__WriteNodesTagsElementsTags(tempmesh,[],[])
+             self.filePointer.write('    </Grid>\n')
 
-         #Cell Tags
-         baseMeshObject.PrepareForOutput();
+         self.filePointer.write('    </Grid>\n')
 
-         celtags = baseMeshObject.GetNamesOfElemTags()
-         for tagname in celtags:
-             if tagname in CellFieldsNames:
-                 name = "Tag_" + tagname
-             else:
-                 name = tagname
-             data = baseMeshObject.GetElementsInTag(tagname)
-             res = np.zeros((baseMeshObject.GetNumberOfElements(),1),dtype=np.int8)
-             res[data] = 1;
+         if(self.__keepXmlFileInSaneState):
+             self.WriteTail()
 
-             self.__WriteAttribute(np.array(res), name, "Cell", baseMeshObject)
+         self.filePointer.flush()
 
+         if self.isBinary() :# pragma: no cover
+           self.__binaryFilePointer.flush()
+    def __WriteNodesFieldsElementsFieldsGridFields(self,baseMeshObject,
+                                                   PointFieldsNames,PointFields,
+                                                   CellFieldsNames,CellFields,
+                                                   GridFieldsNames,GridFields):
 
          for i in range(len(PointFields)):
            name = 'PField'+str(i)
@@ -800,18 +815,37 @@ class XdmfWriter(WriterBase):
 
            self.gridfieldsStorage[name] = self.__WriteAttribute(np.array(GridFields[i]), name, "Grid",baseMeshObject)
 
-         self.WriteIntegrationsPoints(IntegrationRule)
-         self.WriteIntegrationsPointDatas(IntegrationPointDataNames,IntegrationPointData)
+    def __WriteNodesTagsElementsTags(self,baseMeshObject,PointFieldsNames,CellFieldsNames):
+         for tag in baseMeshObject.nodesTags:
+             if tag.name in PointFieldsNames:
+                 name = "Tag_" + tag.name
+             else:
+                 name = tag.name
 
-         self.filePointer.write('    </Grid>\n')
+             data = np.zeros((baseMeshObject.GetNumberOfNodes(),1),dtype=np.int8)
+             data[baseMeshObject.nodesTags[tag.name].GetIds()] = 1;
+             self.__WriteAttribute(np.array(data), name, "Node",baseMeshObject)
 
-         if(self.__keepXmlFileInSaneState):
-             self.WriteTail()
+         #Cell Tags
+         baseMeshObject.PrepareForOutput();
 
-         self.filePointer.flush()
+         if baseMeshObject.IsConstantRectilinear():
+             celtags = baseMeshObject.GetNamesOfElemTagsBulk()
+             GetElementsInTag = baseMeshObject.GetElementsInTagBulk
+         else:
+             celtags = baseMeshObject.GetNamesOfElemTags()
+             GetElementsInTag = baseMeshObject.GetElementsInTag
 
-         if self.isBinary() :# pragma: no cover
-           self.__binaryFilePointer.flush()
+         for tagname in celtags:
+             if tagname in CellFieldsNames:
+                 name = "Tag_" + tagname
+             else:
+                 name = tagname
+             data = GetElementsInTag(tagname)
+             res = np.zeros((baseMeshObject.GetNumberOfElements(),1),dtype=np.int8)
+             res[data] = 1;
+
+             self.__WriteAttribute(np.array(res), name, "Cell", baseMeshObject)
 
     def __WriteTime(self):
         """ this function is called by the WriteTail, this function must NOT change
@@ -904,6 +938,9 @@ def WriteTest(tempdir,Temporal, Binary):
 
     myMesh = ConstantRectilinearMesh()
     myMesh.SetDimensions([2,3,4]);
+    print(" a  ",myMesh.GetDimensions())
+    print(" b  ",myMesh.structElements.GetNumberOfElements())
+    print(myMesh.GetNumberOfElements())
     myMesh.SetSpacing([0.1, 0.1, 0.1]);
     myMesh.SetOrigin([-2.5,-1.2,-1.5]);
 
