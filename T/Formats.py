@@ -2,6 +2,7 @@
 
 import numpy as np
 
+from BasicTools.Helpers.TextFormatHelper import TFormat
 # name comp is reserved for the u_comp = [u_1 u_2 u_3] = [u v w]
 
 class BaseTensor(object):
