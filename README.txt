@@ -47,7 +47,7 @@
 4) TESTING INFRASTRUCTURE
 
     Every module must have a function called "CheckIntegrity" that takes no
-    argument and returns the string "OK" if and only if the test was successful.
+    argument and returns the string "ok" if and only if the test was successful.
 
     The __init__.py must have a variable named __all__ listing all submodules
     so that the test infrastructure works as intended.
