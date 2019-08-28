@@ -1,25 +1,40 @@
 1) DEPENDENCIES
 
-    Numpy
-    Scipy
-    Qt
-    Vtk
+    PYTHON OPEN-SOURCE DEPENDENCIES
+    numpy
+    scipy
+    scikit-sparse
+    matplotlib
+    vtk
+    sympy
+    pyamg
+    h5py
+    pyparsing
     Cython
-    Eigen
+    sphinx
+    coverage
+
+    C++ OPEN-SOURCE DEPENDENCIES
+    Eigen (http://eigen.tuxfamily.org)
+
+    THIRD-PARTY PROPRIETARY DEPENDENCIES
+    odbAccess
+    abaqusConstants
 
 2) INSTALLATION
 
-    to compile the c++ sources run command in the parent directory of BasicTools
+    To compile the c++ sources, run the following command in the parent
+    directory of BasicTools :
 
      > python BasicTools/setup.py build_ext --inplace
 
 3) NOTES FOR CONTRIBUTORS
 
-    Please Read the following page before contributing code :
+    Please read the following page before contributing code :
 
         https://www.python.org/dev/peps/pep-0008/
 
-    For the moment the only differences from PEP 0008 are :
+    The only deviations from PEP 8 are the following :
 
       Function Names: "CamelCase"
 
@@ -31,32 +46,36 @@
 
 4) TESTING INFRASTRUCTURE
 
-    Every module must have a function called "CheckIntegrity", this function has
-    no arguments and must return the string "OK" if the test was successful.
+    Every module must have a function called "CheckIntegrity" that takes no
+    argument and returns the string "OK" if and only if the test was successful.
 
-    The __init__.py must have a variable named __all__ contanig the list of all
-    the submodules for the test infrastructure to work.
+    The __init__.py must have a variable named __all__ listing all submodules
+    so that the test infrastructure works as intended.
 
-    Two functions are avilable to help writing test:
+    Two functions are available to help writing tests :
 
-    -   GetTestDataPath() : Function to get the path of the data directory
-    -   TestTempDir(): Function to get a temporary directory (to store temp data)
+    -   GetTestDataPath() : Returns the path of the data directory
+    -   TestTempDir(): Returns a directory to hold temporary data
 
-    To test the library the function TestAll() is used (see doc of this function
-    for more information).
+    The function TestAll() is used to test the library (see documentation of
+    this function for more information).
 
-    COVERAGE:  If you want to tell coverage.py to ignore some part of the code,
-               use the "#pragma : no cover" comment. More information about
-               coverage http://coverage.readthedocs.org/en/coverage-4.0.3/excluding.html
+    COVERAGE :
+
+    If you want to tell coverage.py to ignore some part of the code, use the
+    "#pragma : no cover" comment. See also :
+    http://coverage.readthedocs.org/en/coverage-4.0.3/excluding.html
 
     DISABLING TESTS :
 
-    Some tests can be disabled using an enviroment variable. For Example in the case
-    the test needs an external program not available in the current system.
+    Some tests can be disabled using an environment variable. A typical use
+    case arises when a test relies on an external dependency that may not be
+    available.
 
-    The idea is to use a non empty enviroment variable in the form of :
+    The feature relies on the definition of non-empty enviromennt variables of
+    the form :
 
         "appsname_NO_FAIL"
 
-    Please look at the file BasicTools/FE/ZmatFemProblem.py at the beginning of
-    the CheckIntegrity() function for an example.
+    An example is available in the file BasicTools/FE/ZmatFemProblem.py at the
+    beginning of the CheckIntegrity() function.
