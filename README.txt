@@ -1,26 +1,4 @@
-
-1) NOTES FOR ALL PEOPLE
-
-Please configure your git before doing anything!!!!!!
-
-  git config --global user.name "Billy Everyteen"
-  git config --global user.email "your_email@example.com"
-
-To clone this repository :
-
-  git -c http.sslVerify=false clone https://dXXXXXX@sc-crt-1.safran/git-ms/BasicTools
-  XXXXX to be replaced with your safran number
-
-To configure the tools :
-
-For Python : Add the python directory to your PYTHONPATH
-
-The page for the bug repports and more:
-
-	https://sc-crt-1.safran/redmine/
-	Project OTTools
-
-2) DEPENDENCIES
+1) DEPENDENCIES
 
     Numpy
     Scipy
@@ -29,23 +7,13 @@ The page for the bug repports and more:
     Cython
     Eigen
 
-3) INSTALLATION
+2) INSTALLATION
 
     to compile the c++ sources run command in the parent directory of BasicTools
 
      > python BasicTools/setup.py build_ext --inplace
 
-     or for Python 3
-
-     > python3 BasicTools/setup.py build_ext --inplace
-
-
-4) NOTES FOR CONTRIBUTORS
-
-    We recomend to use the "simple"  behavior for pushing :
-
-       git config --global push.default simple
-
+3) NOTES FOR CONTRIBUTORS
 
     Please Read the following page before contributing code :
 
@@ -61,13 +29,7 @@ The page for the bug repports and more:
 
         camelCase starting with lowercase
 
-    For the moment you must bypass the ssl certificate verification, use the
-    following command to push your changes:
-
-        git -c http.sslVerify=false push
-
-
-5) TESTING INFRASTRUCTURE
+4) TESTING INFRASTRUCTURE
 
     Every module must have a function called "CheckIntegrity", this function has
     no arguments and must return the string "OK" if the test was successful.
@@ -83,14 +45,11 @@ The page for the bug repports and more:
     To test the library the function TestAll() is used (see doc of this function
     for more information).
 
-
     COVERAGE:  If you want to tell coverage.py to ignore some part of the code,
                use the "#pragma : no cover" comment. More information about
                coverage http://coverage.readthedocs.org/en/coverage-4.0.3/excluding.html
 
-
     DISABLING TESTS :
-
 
     Some tests can be disabled using an enviroment variable. For Example in the case
     the test needs an external program not available in the current system.
@@ -101,4 +60,3 @@ The page for the bug repports and more:
 
     Please look at the file BasicTools/FE/ZmatFemProblem.py at the beginning of
     the CheckIntegrity() function for an example.
-
