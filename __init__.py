@@ -1,6 +1,6 @@
 #
 
-__all__ = ["Helpers","IO","FE","T","Containers","Actions","Linalg"];
+__all__ = ["Helpers","IO","FE","TensorTools","Containers","Actions","Linalg"];
 
 __cython_src__ =  ["FE/CythonIntegration.pyx",
                    "FE/EigenSolver.pyx",

@@ -693,7 +693,7 @@ def GetTensorRepOfField(domain,fieldname):
     Get The tensor representation of a field in a xdmf domain, for the moment
     works for Cannonic and Train Tensor formats
     """
-    import BasicTools.T.Formats as st
+    import BasicTools.TensorTools.Formats as st
     # we check the nature of the field (info in the parent domain)
     fieldtype = 'CP'
     for info in domain.informations:
