@@ -21,7 +21,7 @@ x0y0z1 U1 0.0
 **pressure 
 y1 file pressure.node pressure
 **centrifugal
-ALL_ELEMENT (3.5 -20 1.5) d3 0.3e4 rotation #masvol 8.9e-9 0.6e4
+ALL_ELEMENT (3.5 -20 1.5) d3 1.e0 rotation 
 **pressure
 y2 file pressure2.node pressure2
 

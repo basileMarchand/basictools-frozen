@@ -62,7 +62,7 @@ x1 U1 1. tabunit
      young 1.
      poisson 0.3
 #  **coefficient
-#     masvol 8.1e-9
+#     masvol 8e-9
 ***return
 
 

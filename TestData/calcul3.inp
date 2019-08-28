@@ -15,10 +15,10 @@
 
 ***bc
   **radiation
-  y0   3.9683e-8 20.0  ptab    %(5.669E-8*0.7)
-  x0   3.9683e-8 20.0  ptab    %(5.669E-8*0.7)
+  y0   1.e-8 20.0  ptab  
+  x0   1.e-8 20.0  ptab  
  **convection_heat_flux
- y1   h 537.1283436721764 Te 1. ptab2
+ y1   h 1. Te 1. ptab2
 
 ***table
  **name ptab
