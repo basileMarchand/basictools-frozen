@@ -36,6 +36,8 @@ def ReadMeshAndUt(fileName):
             mesh.nodeFields[nf] = reader.Read(fieldname=nf,time=-1)
         return mesh
 
+    
+
 class UtReader(ReaderBase):
     def __init__(self):
         super(UtReader,self).__init__()
@@ -126,10 +128,6 @@ class UtReader(ReaderBase):
 
         GR.SetFileName(self.filePath +self.meshfile )
         self.meshMetadata = GR.ReadMetaData()
-
-
-    def ReadBinaryFile(self,fileName):
-        return np.fromfile(fileName, dtype=np.float32).byteswap()
 
 
     def Read(self):

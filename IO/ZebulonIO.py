@@ -445,23 +445,21 @@ def GetInputTimeSequence(data):
 
 
 
-def GetTables(data, cycle = False):
+def GetTables(data):
     """
     returns a dictionary containing the infos of an inp file "data" read by ReadInp2()
     concerning all the infos respecting ****calcul, ***table and **name or **cycle
     """
 
-    if cycle == True:
-      tableData = GetFromInp(data,{'4':['calcul'], '3':['table'], '2':['cycle']})
-    else:
-      tableData = GetFromInp(data,{'4':['calcul'], '3':['table'], '2':['name']})
+    cyclicTableData = GetFromInp(data,{'4':['calcul'], '3':['table'], '2':['cycle']})
+    noncyclicTableData = GetFromInp(data,{'4':['calcul'], '3':['table'], '2':['name']})
     
     tables = {}
+    tableData = cyclicTableData
     for t in range(int(len(tableData)/3)):
       tables[tableData[3*t][0][1]] = {}
-      if cycle == True:
-        tables[tableData[3*t][0][1]]['tInit'] = tableData[3*t][0][2]
-        tables[tableData[3*t][0][1]]['tEnd']  = tableData[3*t][0][3]
+      tables[tableData[3*t][0][1]]['tInit'] = tableData[3*t][0][2]
+      tables[tableData[3*t][0][1]]['tEnd']  = tableData[3*t][0][3]
       tempTime = []
       for i in range(1, len(tableData[3*t+1])):
         tempTime += tableData[3*t+1][i]
@@ -473,7 +471,24 @@ def GetTables(data, cycle = False):
 
       if len(tempTime) != len(tempValue):
         print("WARNING ! length of time table and value table for "+ tableData[3*t][0][1] + "are different")
+        
+    tableData = noncyclicTableData        
+    for t in range(int(len(tableData)/3)):
+      tables[tableData[3*t][0][1]] = {}
+      tempTime = []
+      for i in range(1, len(tableData[3*t+1])):
+        tempTime += tableData[3*t+1][i]
+      tempValue = []
+      for i in range(1, len(tableData[3*t+2])):
+        tempValue += tableData[3*t+2][i]
+      tables[tableData[3*t][0][1]]['time']  = np.array(tempTime, dtype = float)
+      tables[tableData[3*t][0][1]]['value'] = np.array(tempValue, dtype = float)
+
+      if len(tempTime) != len(tempValue):
+        print("WARNING ! length of time table and value table for "+ tableData[3*t][0][1] + " are different")        
+    
     return tables
+
 
 
 
@@ -540,6 +555,9 @@ def GetParameterFiles(data, parameterName = None):
     return parameterFiles
 
 
+def ReadBinaryFile(fileName):
+    return np.fromfile(fileName, dtype=np.float32).byteswap()
+
 
 def CheckIntegrity():
     import BasicTools.IO.ZebulonIO as ZIO
@@ -564,7 +582,7 @@ def CheckIntegrity():
     GetFromInp(res,{'4':['calcul'], '3':['parameter'], '2':['file', 'temperature']})
     GetFromInp(res,{'4':['calcul'], '2':['impose_nodal_dof']})
     GetFromInp(res,{'4':['calcul'], '3':['linear_solver']})
-    GetTables(res, cycle = True)
+    GetTables(res)
     GetBoundaryConditions(res)
     GetParameterFiles(res, parameterName = 'temperature')
     GetInputTimeSequence(res)
@@ -578,6 +596,8 @@ def CheckIntegrity():
     res = ReadInp2(T2.GetTestDataPath() + 'mat', startingNstar=3)
     GetFromInp(res,{'3':['behavior', 'thermal'], '2':['conductivity', 'isotropic']})
     GetFromInp(res,{'3':['behavior', 'thermal'], '2':['coefficient']})
+    
+    ReadBinaryFile(T2.GetTestDataPath() + 'UtExample/cube.node')
     return 'ok'
 
 
