@@ -385,7 +385,7 @@ def CheckIntegrityKF(edim, sdim,testCase):
     if permut is not None:
         KK = KK[:,permut][permut,:]
 
-    error = np.sum(abs(KK-KValidation))/(np.sum(abs(KK))  )
+    error = np.sum(abs(KK-KValidation))/(np.sum(abs(KValidation))  )
 
     if error > 1e-14 or error is np.nan:
 
@@ -484,7 +484,7 @@ def CheckIntegrity(GUI=False):
             return "not ok python "
         else :
             print(" --- python  integration -- OK ")
-        print(" --- cpp integration --")
+        print(" --- cpp integration --",(ed,sd,m ))
         UseCpp = True
         if CheckIntegrityKF(edim=ed,sdim = sd,testCase=m).lower() !=  "ok":
             return "not ok cpp"

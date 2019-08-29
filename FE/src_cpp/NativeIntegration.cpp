@@ -152,7 +152,7 @@ void GetJackAndDet(MapMatrixDDD& valdphidxi,
               m(1,0) = der1;
               m.col(1) = Normal;
 
-              Jinv = m.inverse();
+              Jinv = m.inverse().transpose().col(0) ;
               return;
               break;
            } case (3):{
@@ -211,10 +211,10 @@ void GetJackAndDet(MapMatrixDDD& valdphidxi,
 
 
             MatrixD33 m;
-            m.col(0) = Jack.row(0);
-            m.col(1) = Jack.row(1);
-            m.col(2) = Normal;
-            Jinv = m.inverse();
+            m.row(0) = Jack.row(0);
+            m.row(1) = Jack.row(1);
+            m.row(2) = Normal;
+            Jinv = m.inverse().block<3,2>(0,0);
 
             return;
             break;
