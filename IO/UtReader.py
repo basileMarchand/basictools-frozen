@@ -3,39 +3,15 @@ import numpy as np
 
 from BasicTools.IO.ReaderBase import ReaderBase
 
-def ReadFieldFromUt(fileName=None,fieldname=None,time=None,string=None,atIntegrationPoints=False):
+def ReadFieldFromUt(fileName=None, fieldname=None, time=None, timeIndex=None, string=None, atIntegrationPoints=False):
     reader = UtReader()
     reader.SetFileName(fileName)
     reader.SetStringToRead(string)
     reader.atIntegrationPoints = atIntegrationPoints
     reader.ReadMetaData()
     reader.SetFieldNameToRead(fieldname)
-    reader.SetTimeToRead(time)
+    reader.SetTimeToRead(time=time, timeIndex=timeIndex)
     return reader.ReadField()
-
-def ReadUt(fileName=None,fieldname=None,time=None,string=None):
-    reader = UtReader()
-    reader.SetFileName(fileName)
-    reader.SetStringToRead(string)
-    reader.ReadMetaData()
-    reader.SetFieldNameToRead(fieldname)
-    reader.SetTimeToRead(time)
-    return reader.Read()
-
-def ReadMeshAndUt(fileName):
-        reader = UtReader()
-        reader.SetFileName(fileName=fileName)
-        reader.ReadMetaData()
-        import BasicTools.IO.GeofReader as GeofReader
-        mesh = GeofReader.ReadGeof(reader.meshfile)
-
-        #mesh.nodeFields = {}
-        nodesfields = reader.node
-        nodesfields.extend(reader.integ)
-        for nf in nodesfields:
-            mesh.nodeFields[nf] = reader.Read(fieldname=nf,time=-1)
-        return mesh
-
     
 
 class UtReader(ReaderBase):
@@ -68,9 +44,25 @@ class UtReader(ReaderBase):
         if fieldname is not None:
             self.fieldNameToRead = fieldname
 
-    def SetTimeToRead(self,time):
-        if time is not None:
+    def SetTimeToRead(self, time, timeIndex):
+        
+        if (time is None) and (timeIndex is None):
+            if self.timeToRead == -1:
+                self.timeToRead = self.time[-1][4]
+                return len(self.time)-1
+            else:
+                return [data[4]for data in self.time].index(self.timeToRead)
+        
+        if (time is not None) and (timeIndex is not None):
+            raise(Exception("Cannot specify both time and timeIndex"))
+
+        if time is None:
+            self.timeToRead = self.time[timeIndex][4]
+            return timeIndex
+        else:
             self.timeToRead = time
+            return [data[4]for data in self.time].index(self.timeToRead)
+
 
     def GetAvilableTimes(self):
            return self.time[:,4]
@@ -80,7 +72,6 @@ class UtReader(ReaderBase):
         self.StartReading()
 
         self.Reset()
-
 
         while(True):
             line = self.ReadCleanLine()
@@ -128,39 +119,7 @@ class UtReader(ReaderBase):
 
         GR.SetFileName(self.filePath +self.meshfile )
         self.meshMetadata = GR.ReadMetaData()
-
-
-    def Read(self):
-        self.ReadMetaData()
-
-
-        if self.meshfile[-5:] == ".geof":
-            from BasicTools.IO.GeofReader import GeofReader
-            GR = GeofReader()
-        else:
-            from BasicTools.IO.GeoReader import GeoReader
-            GR = GeoReader()
-
-        GR.SetFileName(self.filePath +self.meshfile )
-
-        res = GR.Read()
-
-        if self.fieldNameToRead is None:
-            # loop over the fields
-            for name in self.node:
-                data = self.ReadField(name,time=self.timeToRead)
-                res.nodeFields[name] = data
-            for name in self.element:
-                data = self.ReadField(name,time=self.timeToRead)
-                res.elemFields[name] = data
-            self.fieldNameToRead = None
-        else:
-            data = self.ReadField(time=self.timeToRead)
-            if self.fieldNameToRead in self.node:
-                res.nodeFields[self.fieldNameToRead] = data
-            elif self.fieldNameToRead in self.element:
-                res.elemFields[self.fieldNameToRead] = data
-        return res
+    
 
     def ReadField(self,fieldname=None,time=None,timeIndex=None):
         self.ReadMetaData()
@@ -169,20 +128,7 @@ class UtReader(ReaderBase):
             postfix = "p"
 
         self.SetFieldNameToRead(fieldname)
-
-        if time is None:
-          if timeIndex is None:
-            timeIndex = len(self.time)-1
-          else:
-            timeIndex = timeIndex
-        else:
-          self.SetTimeToRead(time)
-
-          # find the time
-          if self.timeToRead == -1 :
-            timeIndex = len(self.time)-1
-          else:
-            timeIndex = [data[4]for data in self.time].index(self.timeToRead)
+        timeIndex = self.SetTimeToRead(time, timeIndex)
 
         if timeIndex != self.oldtimeindex:
             self.cache = None
@@ -266,7 +212,6 @@ class UtReader(ReaderBase):
                     ffn = basename + ".ctnod"
                 except:
                     raise(Exception("unable to find field " +str(self.fieldNameToRead) + "in file " + self.fileName))
-
 
             self.PrintVerbose("Opening file : " + str(ffn) )
             res = None
@@ -393,11 +338,10 @@ def CheckIntegrity():
             cpt +=1
 
 
-    #res = ReadUt(string=__teststring,fieldname="U1")
 
-    ReadUt(tempfileName,fieldname="U1",time=0)
+    ReadFieldFromUt(tempfileName,fieldname="U1",time=0.)
 
-    return "OK"
+    return "ok"
 
 
 
