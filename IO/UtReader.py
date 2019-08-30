@@ -12,6 +12,20 @@ def ReadFieldFromUt(fileName=None, fieldname=None, time=None, timeIndex=None, st
     reader.SetFieldNameToRead(fieldname)
     reader.SetTimeToRead(time=time, timeIndex=timeIndex)
     return reader.ReadField()
+
+
+def ReadUTMetaData(fileName):
+    reader = UtReader()
+    reader.SetFileName(fileName)
+    reader.ReadUTMetaData()
+    metaData = {}
+    metaData["meshFile"] = reader.meshfile
+    metaData["node"]     = reader.node
+    metaData["integ"]    = reader.integ
+    metaData["element"]  = reader.element
+    metaData["time"]     = reader.time
+    return metaData
+
     
 
 class UtReader(ReaderBase):
@@ -66,9 +80,8 @@ class UtReader(ReaderBase):
 
     def GetAvilableTimes(self):
            return self.time[:,4]
-
-    def ReadMetaData(self):
-        if self.meshMetadata is not None : return self.meshMetadata
+       
+    def ReadUTMetaData(self):
         self.StartReading()
 
         self.Reset()
@@ -107,8 +120,12 @@ class UtReader(ReaderBase):
 
             self.time.append( [b(a) for a,b in zip(s,[int, int, int, int, float] )])
         self.time = np.array(self.time)
-        self.EndReading()
+        self.EndReading()        
 
+    def ReadMetaData(self):
+        if self.meshMetadata is not None : return self.meshMetadata
+
+        self.ReadUTMetaData()
 
         if self.meshfile[-5:] == ".geof":
             from BasicTools.IO.GeofReader import GeofReader
@@ -340,6 +357,7 @@ def CheckIntegrity():
 
 
     ReadFieldFromUt(tempfileName,fieldname="U1",time=0.)
+    ReadUTMetaData(tempfileName)
 
     return "ok"
 
