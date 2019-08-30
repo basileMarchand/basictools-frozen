@@ -94,7 +94,7 @@ class GeofReader(ReaderBase):
         s       = l.split()
         nbNodes = int(s[0])
         dim     = int(s[1])
-        print("Reading "+str(nbNodes)+ " Nodes in dimension "+str(dim))
+        self.PrintDebug("Reading "+str(nbNodes)+ " Nodes in dimension "+str(dim))
         res.nodes = np.empty((nbNodes,dim))
         res.originalIDNodes= np.empty((nbNodes,),dtype=np.int)
         cpt = 0
@@ -133,7 +133,7 @@ class GeofReader(ReaderBase):
 
       if l.find("**nset")>-1:
         nsetname = l.split()[1]
-        print( "nset {}".format(nsetname) )
+        self.PrintDebug( "nset {}".format(nsetname) )
 
         tag = res.GetNodalTag(nsetname)
 
@@ -148,7 +148,7 @@ class GeofReader(ReaderBase):
 
       if l.find("**elset")>-1:
         elsetname = l.split()[1]
-        print( "elset {}".format(elsetname) )
+        self.PrintDebug( "elset {}".format(elsetname) )
 
         while(True):
           l  = self.ReadCleanLine()
@@ -164,7 +164,7 @@ class GeofReader(ReaderBase):
 
       if l.find("**faset")>-1 or l.find("**liset")>-1:
         fasetName = l[8:]
-        print("Reading Group " + fasetName)
+        self.PrintDebug("Reading Group " + fasetName)
         while(True):
           l  = self.ReadCleanLine()
           if l.find("**") > -1 or readFaset == False:
@@ -182,7 +182,7 @@ class GeofReader(ReaderBase):
         continue
 
       if l.find("***return")>-1:
-        print("End file")
+        self.PrintDebug("End file")
         break
 
       if l.find("***geometry")>-1 or l.find("***group")>-1:
@@ -191,7 +191,7 @@ class GeofReader(ReaderBase):
 
       #case not treated
       if printNotRead == True:
-        print("line starting with <<"+l[:20]+">> not considered in the reader")
+        self.PrintDebug("line starting with <<"+l[:20]+">> not considered in the reader")
       l = self.ReadCleanLine()
       continue
 

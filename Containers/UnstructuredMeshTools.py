@@ -2006,7 +2006,7 @@ def CheckIntegrity_GetVolume(GUI=False):
     mesh = CreateMeshOf(points,tets,ElementNames.Tetrahedron_4)
     vol = GetVolume(mesh)
     if vol != (1./6.):
-        raise Exception('Error en the calculation of the volumen')# pragma: no cover
+        raise Exception('Error en the calculation of the volume')# pragma: no cover
 
     from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearMesh
     myMesh = ConstantRectilinearMesh()
@@ -2015,7 +2015,7 @@ def CheckIntegrity_GetVolume(GUI=False):
     print(myMesh)
     vol  = GetVolume(CreateMeshFromConstantRectilinearMesh(myMesh))
     if abs(vol-1.) > 1e-8 :
-        raise Exception('Error en the calculation of the volumen')# pragma: no cover
+        raise Exception('Error en the calculation of the volume')# pragma: no cover
 
     return "ok"
 
