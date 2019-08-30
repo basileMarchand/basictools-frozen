@@ -6,9 +6,7 @@ __all__ = [
 'FElement',
 'FemHelp',
 'Hexa8Cuboid',
-
 'MaterialHelp',
-
 'Quad4Rectangle',
 'StructuredMesh',
 'Tri3',
@@ -16,7 +14,6 @@ __all__ = [
 'UnstructuredFeaSym',
 "Spaces",
 "Fields",
-"Behaviours",
 "DofNumbering",
 "IntegrationsRules",
 "ZmatFemProblem",
