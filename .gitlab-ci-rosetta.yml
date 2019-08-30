@@ -19,7 +19,7 @@ doc:
         - MSBasicTools
     script:
         - module load PISCO/Python2Dev eigen/3.3.4 mkl zset/8.6.9
-        - export PYTHONPATH=$PWD:$PYTHONPATH
+        - export PYTHONPATH=$PWD/..:$PYTHONPATH
         - mkdir public
         - cd docs
         - make html
