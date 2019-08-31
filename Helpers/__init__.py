@@ -15,7 +15,8 @@ __all__ = [
 "Factory",
 "ProgressBar",
 "Timer",
-"MPIInterface"
+"MPIInterface",
+"GlobalFunctions"
  ]
 
 
