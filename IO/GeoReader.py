@@ -70,6 +70,7 @@ class GeoReader(ReaderBase):
                nbNodes = self.readInt32()
                metadata["nbNodes"] = int(nbNodes)
                dims = self.readInt32()
+               metadata["dimensionality"] = int(dims)
 
                if onlyMeta :
                    self.filePointer.seek((dims*8+4)*nbNodes,1 )

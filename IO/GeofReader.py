@@ -45,6 +45,7 @@ class GeofReader(ReaderBase):
         l       = self.ReadCleanLine()
         s       = l.split()
         res["nbNodes"] = int(s[0])
+        res["dimensionality"] = int(s[1])
       elif l.find("**element")>-1:
         l  = self.ReadCleanLine()
         res['nbElements'] = int(l.split()[0])
