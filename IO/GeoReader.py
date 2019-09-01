@@ -18,6 +18,13 @@ def ReadGeo(fileName=None,out=None,readElset=True,readFaset=True):
     reader.Read(fileName=fileName, out=out,readElset=readElset,readFaset=readFaset)
     return reader.output
 
+
+def ReadMetaData(fileName=None):
+    reader = GeoReader()
+    reader.SetFileName(fileName)
+    return reader.ReadMetaData()
+
+
 class GeoReader(ReaderBase):
    def __init__(self):
         super(GeoReader,self).__init__()
@@ -215,8 +222,9 @@ def CheckIntegrity():
     reader = GeoReader()
     reader.SetFileName(fileName)
     print(reader.ReadMetaData())
-    res = ReadGeo(fileName=fileName)
-    print(res)
+    ReadGeo(fileName=fileName)
+    
+    print(ReadMetaData(fileName=fileName))
     return 'ok'
 
 

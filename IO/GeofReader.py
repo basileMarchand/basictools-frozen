@@ -17,6 +17,13 @@ def ReadGeof(fileName=None,string=None,out=None,readElset=True,readFaset=True,pr
     reader.Read(fileName=fileName, string=string,out=out,readElset=readElset,readFaset=readFaset,printNotRead=printNotRead)
     return reader.output
 
+
+def ReadMetaData(fileName=None,string=None):
+    reader = GeofReader()
+    reader.SetFileName(fileName)
+    reader.SetStringToRead(string)
+    return reader.ReadMetaData()
+
 class GeofReader(ReaderBase):
   def __init__(self):
         super(GeofReader,self).__init__()
@@ -241,8 +248,8 @@ def CheckIntegrity():
 
 
     import BasicTools.Containers.UnstructuredMesh as UM
-    res = ReadGeof(fileName=newFileName,out = UM.UnstructuredMesh())
-    print(res)
+    ReadGeof(fileName=newFileName,out = UM.UnstructuredMesh())
+    print(ReadMetaData(fileName=newFileName))
     return 'ok'
 
 if __name__ == '__main__':
