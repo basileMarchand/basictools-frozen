@@ -1804,6 +1804,16 @@ def LowerNodesDimension(mesh):
     return mesh
 
 
+def QuadFieldToLinField(quadMesh, quadField, linMesh = None):
+    
+    if linMesh == None:
+        linMesh = QuadToLin(quadMesh)
+    
+    extractIndices = np.arange(quadMesh.GetNumberOfNodes())[linMesh.originalIDNodes]
+    
+    return(quadField[extractIndices])
+
+
 def GetValueAtPosLinearSymplecticMesh(fields,mesh,constantRectilinearMesh):
         """
         Works only for linear symplectic meshes
@@ -1966,9 +1976,13 @@ def CheckIntegrity_QuadToLin(GUI=False):
     print(myMesh)
 
     print("-----")
-    print(QuadToLin(myMesh,divideQuadElements=False))
+    linMesh = QuadToLin(myMesh,divideQuadElements=False)
+    print(linMesh)
     print(QuadToLin(myMesh,divideQuadElements=True))
     print(QuadToLin(myMesh,divideQuadElements=True,lineariseMiddlePoints=True))
+    
+    QuadFieldToLinField(myMesh, np.arange(myMesh.GetNumberOfNodes()))
+    QuadFieldToLinField(myMesh, np.arange(myMesh.GetNumberOfNodes()), linMesh)
     return "ok"
 
 def CheckIntegrity_CleanDoubleNodes(GUI=False):
