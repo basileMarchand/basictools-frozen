@@ -625,6 +625,8 @@ def CleanLonelyNodes(res,out=None):
             outelements.connectivity = NewIndex[elements.connectivity]
 
             outelements.tags = copy.deepcopy(elements.tags)
+            
+    return usedNodes
 
 def MirrorMesh(inmesh,x=None,y=None,z=None) :
     nbpoints = inmesh.GetNumberOfNodes()
