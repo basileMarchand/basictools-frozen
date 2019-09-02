@@ -39,7 +39,7 @@ def GetElementaryMatrixForFormulation(elemName,wform,unknownNames,space = Lagran
     return M
 
 
-def ComputeMassMatrix(mesh):
+def ComputeMecaMassMatrix(mesh):
 
     from scipy.sparse import coo_matrix
     from BasicTools.FE.IntegrationsRules import Lagrange as Lagrange
@@ -109,7 +109,7 @@ def CheckIntegrity(GUI=False):
     import BasicTools.TestData as BasicToolsTestData
     from BasicTools.IO import GeofReader as GR
     mesh = GR.ReadGeof(BasicToolsTestData.GetTestDataPath()+"cube2.geof")
-    ComputeMassMatrix(mesh)
+    ComputeMecaMassMatrix(mesh)
     
     return "ok"
 
