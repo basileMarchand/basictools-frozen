@@ -384,8 +384,20 @@ def element_averaged_node_field(node_field,support):
         result += field[1:  , 1:  ,1:  ]
 
         return result/8
+    elif ndims == 2:
+        result = np.zeros((nnodes[0]-1,nnodes[1]-1))
+
+        field  = node_field.view()
+        field.shape = tuple(x for x in support.GetDimensions())
+
+        result += field[0:-1, 0:-1]
+        result += field[0:-1, 1:  ]
+        result += field[1:  , 0:-1]
+        result += field[1:  , 1:  ]
+
+        return result/4
     else :
-        raise(Exception("only implemented for dim = 3"))
+        raise(Exception("only implemented for dim = 3 or 2"))
 
 def node_averaged_element_field(element_field,support):
     nnodes = support.GetDimensions()
