@@ -2,8 +2,6 @@
 """ Base object to Help output
 
 """
-#for python 2.6+ compatibility
-from __future__ import print_function
 
 import time
 from functools import wraps

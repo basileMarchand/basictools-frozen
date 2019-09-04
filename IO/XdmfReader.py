@@ -566,9 +566,8 @@ class XdmfDataItem(Xdmfbase):
         return self.Data
 
 
-#Python2 hack the object parent class in not needed in python3
 import xml.sax
-class XdmfReader(xml.sax.ContentHandler,object):
+class XdmfReader(xml.sax.ContentHandler):
 
     def __init__(self,filename=''):
         super(XdmfReader,self).__init__()

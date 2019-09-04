@@ -3,8 +3,6 @@
 
 """
 
-#for python 2.6+ compatibility
-from __future__ import print_function
 
 import traceback
 import time
@@ -133,12 +131,7 @@ def __RunAndCheck(lis,bp,stopAtFirstError,dryrun,profiling):# pragma: no cover
 
                 if profiling :
                     import cProfile, pstats
-                    #for python2
-                    try:
-                        from StringIO import StringIO #Python2
-                    except:
-                        #python3
-                        from io import StringIO
+                    from io import StringIO
                     pr = cProfile.Profile()
                     pr.enable()
                     r = lis[name]()
@@ -158,17 +151,10 @@ def __RunAndCheck(lis,bp,stopAtFirstError,dryrun,profiling):# pragma: no cover
             sys.stderr.flush()
             stop_time = time.time()
             res[name] = r
-            #Python 2
-            if sys.version_info >= (3,0):
-                if not isinstance(r,str):
-                    bp.Print(TFormat.InRed( TFormat().GetIndent() + "Please add a correct return statement in the CheckIntegrity of the module" + name))
-                    #raise Exception()
-                    r = 'Not OK'
-            else:
-                if not (isinstance(r,str) or isinstance(r,unicode) ):
-                    bp.Print(TFormat.InRed( TFormat().GetIndent() + "Please add a correct return statement in the CheckIntegrity of the module" + name))
-                    #raise Exception()
-                    r = 'Not OK'
+            if not isinstance(r,str):
+                bp.Print(TFormat.InRed( TFormat().GetIndent() + "Please add a correct return statement in the CheckIntegrity of the module" + name))
+                #raise Exception()
+                r = 'Not OK'
 
         except UserWarning as e :
             sys.stdout.flush()

@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
 
-#for python 2.6+ compatibility
-from __future__ import print_function
-
 import numpy as np
 
 import BasicTools.Containers.ElementNames as EN

@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import print_function
 """
 you can filter the output to "reinterpret" the control chars using :
 

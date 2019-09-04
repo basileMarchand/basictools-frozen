@@ -17,10 +17,6 @@ class GeoSupport(object):
             return self.name == other.name
         return False
 
-    def __ne__(self, other):
-        """Overrides the default implementation (unnecessary in Python 3)"""
-        return not self.__eq__(other)
-
     def __hash__(self):
         return id(self.name)
 

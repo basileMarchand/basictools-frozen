@@ -186,13 +186,8 @@ ddsddeNew = pyumat.umat(stress=stress,statev=statev,ddsdde=ddsdde,sse=sse,spd=sp
 
         import sys
         print('Running zset to get info ')
-        if sys.version_info[0] == 2:
-            # hack for python2
-            from subprocess import check_output
-            out = check_output([sys.executable, "materialtest.py"])
-        else:
-            import subprocess
-            out = subprocess.run([sys.executable, "materialtest.py"], stdout=subprocess.PIPE).stdout.decode("utf-8")
+        import subprocess
+        out = subprocess.run([sys.executable, "materialtest.py"], stdout=subprocess.PIPE).stdout.decode("utf-8")
 
         print('Running zset to get info DONE')
         outlines = out.split(u"\n")
@@ -611,15 +606,15 @@ def CheckIntegrity(GUI=False):
         nz= 10
         mesh = CreateCube([nx,ny,nz],[0,0,0],[1./(nx-1) ,1./(ny-1) ,1./(nz-1)])
 
-        from BasicTools.FE.Behaviours.ZMatLinearMaterials import GetMaterial
+        #from BasicTools.FE.Behaviours.ZMatLinearMaterials import GetMaterial
 
         props = {"YOUNG":4.e5,"POISSON":0.3}
-        matstring = GetMaterial('Elastic',props)
+        #matstring = GetMaterial('Elastic',props)
         matstring = """
 ***behavior gen_evp
  **elasticity isotropic
-   young 2.1e5
-   poisson 0.3
+   young {YOUNG}
+   poisson {POISSON}
 # **potential gen_evp ep
 #  *criterion mises
 #  *flow plasticity
@@ -627,7 +622,7 @@ def CheckIntegrity(GUI=False):
 #   R0 180.
 #   Q  360.
 #   b   30.
-***return"""
+***return""".format(**props)
         prob = UMatFemProblem()
         print("init mesh")
         prob.SetMesh(mesh)

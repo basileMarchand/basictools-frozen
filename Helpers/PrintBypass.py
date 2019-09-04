@@ -3,8 +3,7 @@
 
 Also the output can be duplicated to a file
 """
-#for python 2.6+ compatibility
-from __future__ import print_function
+
 import re
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 

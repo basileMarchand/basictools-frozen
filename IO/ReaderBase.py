@@ -48,21 +48,12 @@ class ReaderBase(BaseOutputObject):
             if self.readFormat.find('b') > -1 :
 
                 from io import BytesIO
-                if sys.version_info >= (3,0):
-                    self.filePointer =  BytesIO(bytearray(self.string,"ascii"))
-                else:
-                    self.filePointer =  BytesIO(str(self.string))
+                self.filePointer =  BytesIO(bytearray(self.string,"ascii"))
 
                 self.text_stream = self.filePointer
             else:
-                #python2 test
-                if sys.version_info >= (3,0):
-                    import io # Python3
-                    self.filePointer =  io.StringIO(self.string)
-
-                else:
-                    import cStringIO # Python2
-                    self.filePointer =  cStringIO.StringIO(self.string)
+                import io # Python3
+                self.filePointer =  io.StringIO(self.string)
 
                 self.text_stream = self.filePointer
         elif self.pipe:
@@ -121,16 +112,7 @@ class ReaderBase(BaseOutputObject):
 
     def ReadCleanLine(self,withError=False):
         while(True):
-            import sys
-            if sys.version_info[0] == 2:
-                string = self.filePointer.readline().decode("utf-8", "replace")
-            else:
-                string = self.filePointer.readline()
-            #print(string)
-            #import codecs
-            #string = codecs.getreader("utf-8")(self.filePointer).readline()
-            #
-            # old code working only in python 2
+            string = self.filePointer.readline()
 
             self.lineCounter +=1
             #end of file
