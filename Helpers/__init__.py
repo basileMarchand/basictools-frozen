@@ -16,7 +16,6 @@ __all__ = [
 "ProgressBar",
 "Timer",
 "MPIInterface",
-"GlobalFunctions"
  ]
 
 
