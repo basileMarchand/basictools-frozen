@@ -39,7 +39,7 @@ def GetElementaryMatrixForFormulation(elemName,wform,unknownNames,space = Lagran
     return M
 
 
-def ComputeMecaMassMatrix(mesh):
+def ComputeL2ScalarProducMatrix(mesh, numberOfCOmponents):
 
     from scipy.sparse import coo_matrix
     from BasicTools.FE.IntegrationsRules import Lagrange as Lagrange
@@ -55,7 +55,7 @@ def ComputeMecaMassMatrix(mesh):
         spaces[name].SetIntegrationRule(p,w)
       
     numbering = ComputeDofNumbering(mesh,LagrangeSpaceGeo,fromConnectivity=True)
-    numberings = [numbering]*dim
+    numberings = [numbering]*numberOfCOmponents
     
     offset = []
     totaldofs = 0
@@ -80,7 +80,7 @@ def ComputeMecaMassMatrix(mesh):
 
             for ip in range(len(w)):
                 Jack, Jdet, Jinv = spaces[name].GetJackAndDetI(ip,xcoor)
-                for j in range(dim):
+                for j in range(numberOfCOmponents):
                     leftNumbering = numberings[j][name][el,:] + offset[j]
                     left = spaces[name].valN[ip]
                     ev.extend(((w[ip]*Jdet)*np.outer(left, left)).ravel())
@@ -88,7 +88,7 @@ def ComputeMecaMassMatrix(mesh):
                         ei.extend(i*ones)
                         ej.extend(leftNumbering.ravel())
 
-    return coo_matrix((ev, (ei,ej)), shape=(dim*nbNodes,dim*nbNodes)).tocsr()
+    return coo_matrix((ev, (ei,ej)), shape=(numberOfCOmponents*nbNodes,numberOfCOmponents*nbNodes)).tocsr()
 
 
 
@@ -109,7 +109,8 @@ def CheckIntegrity(GUI=False):
     import BasicTools.TestData as BasicToolsTestData
     from BasicTools.IO import GeofReader as GR
     mesh = GR.ReadGeof(BasicToolsTestData.GetTestDataPath()+"cube2.geof")
-    ComputeMecaMassMatrix(mesh)
+    ComputeL2ScalarProducMatrix(mesh, 1)
+    ComputeL2ScalarProducMatrix(mesh, 3)
     
     return "ok"
 
