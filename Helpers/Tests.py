@@ -291,7 +291,7 @@ def TestAll(modulestotreat=['ALL'], fulloutput=False, stopAtFirstError= False, e
         else:
             tempdir = TestTempDir.GetTempPath()
 
-        ss = [ ("*"+k.split(".")[-1]+"*") for k in tocheck ]
+        ss = [ ("*"+os.sep.join(k.split("."))+"*") for k in tocheck ]
         cov.html_report(directory = tempdir, include=ss  ,title="Coverage report of "+ " and ".join(extraToolsBoxs) )
         print('Coverage Report in : ' + tempdir +"index.html")
         if coverage["lauchBrowser"]:

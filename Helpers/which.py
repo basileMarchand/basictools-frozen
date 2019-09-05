@@ -23,6 +23,8 @@ def which(program):
     return None
 
 def CheckIntegrity():
+    print(which("ls"))
+    print(which("dir"))
     return "OK"
 
 if __name__ == '__main__':
