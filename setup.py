@@ -25,7 +25,6 @@ for m in modules:
     m.include_dirs = [ numpy.get_include(),os.environ['EIGEN_INC'],"BasicTools" ]
     m.extra_compile_args=compile_args
     if enable_MKL:
-        m.extra_link_args.append("-L/softs/python/miniconda2/pkgs/mkl-2017.0.3-0/lib/")
         m.extra_link_args.append("-lmkl_core")
         m.extra_link_args.append("-lmkl_avx")
         m.extra_link_args.append("-lmkl_intel_lp64")

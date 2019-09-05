@@ -23,8 +23,15 @@
 
 2) INSTALLATION
 
-    To compile the c++ sources, run the following command in the parent
-    directory of BasicTools :
+    SETUP:
+
+    An environement variable with the path to the EIGEN library must be defined:
+
+     > export EIGEN_INC=/Path/To/Eigen/Library
+
+    COMPILATION:,
+
+    Run the following command in the parent directory of BasicTools :
 
      > python BasicTools/setup.py build_ext --inplace
 
