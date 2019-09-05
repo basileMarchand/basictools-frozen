@@ -294,6 +294,7 @@ def TestAll(modulestotreat=['ALL'], fulloutput=False, stopAtFirstError= False, e
         ss = [ ("*"+os.sep.join(k.split("."))+"*") for k in tocheck ]
         cov.html_report(directory = tempdir, include=ss  ,title="Coverage report of "+ " and ".join(extraToolsBoxs) )
         print('Coverage Report in : ' + tempdir +"index.html")
+        cov.report( include=ss )
         if coverage["lauchBrowser"]:
           import webbrowser
           webbrowser.open(tempdir+"index.html")
