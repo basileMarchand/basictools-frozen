@@ -3,19 +3,23 @@ from Cython.Build import cythonize
 import numpy,os
 
 enable_MKL = True
-Debug = True
+Debug = False
+force = True # to force recompilation
+annotate = Debug # to generate annotation (html files )
+
 if Debug:
     compile_args = ['-g','-O', '-std=c++11']
 else:
-    compile_args = ['-O3', '-std=c++11']#
+    compile_args = ['-O2', '-std=c++11']
 
 
 if enable_MKL:
     #compile_args.append("-DEIGEN_USE_MKL_ALL")
     compile_args.append("-DMKL_DIRECT_CALL")
-    compile_args.append("-I/softs/python/miniconda2/include/")
 
-modules = cythonize("BasicTools/FE/*.pyx", gdb_debug=True,annotate=True, include_path = [numpy.get_include(),os.environ['EIGEN_INC'] ]  )
+include_path = [numpy.get_include(),os.environ['EIGEN_INC'] ]
+
+modules = cythonize("BasicTools/FE/*.pyx", gdb_debug=True,annotate = annotate, include_path = include_path, force=force  )
 
 for m in modules:
     m.include_dirs = [ numpy.get_include(),os.environ['EIGEN_INC'],"BasicTools" ]
