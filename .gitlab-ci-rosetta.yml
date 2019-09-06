@@ -66,10 +66,14 @@ pages:
         - pwd
         - echo "Trigger TopoTools tests Pipeline"
         - "curl -k -X POST -F token=2f8781bddd013486f19b36ac3903d4 -F ref=master https://gitlab.safrantech.safran/api/v4/projects/82/trigger/pipeline"
+        - echo "Trigger genericROM tests Pipeline"
+        - "curl -k -X POST -F token=5306d10b62e5a3a0607c491a05ce6b -F ref=master https://gitlab.safrantech.safran/api/v4/projects/275/trigger/pipeline"
         - echo "Trigger niROM tests Pipeline"
         - "curl -k -X POST -F token=fbf3bfaa27a78b2cdc7caf3c5780bb -F ref=master https://gitlab.safrantech.safran/api/v4/projects/138/trigger/pipeline"
         - echo "Trigger pyROMaNN tests Pipeline"
         - "curl -k -X POST -F token=ac9f98231903c38cf63bb2288a663d -F ref=master https://gitlab.safrantech.safran/api/v4/projects/199/trigger/pipeline"
+        
+        
 
     artifacts:
         name: "WebSite"
