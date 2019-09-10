@@ -11,6 +11,23 @@ stages:
     - debug
     - deploy
 
+
+doc:
+    stage: doc
+    tags:
+        - MSBasicTools
+    script:
+        - module load PISCO/Python3Dev eigen/3.3.4 mkl zset/8.6.9
+        - export PYTHONPATH=$PWD/src:$PYTHONPATH
+        - mkdir public
+        - cd docs
+        - make html
+        - mv _build/html ../public/doc
+    artifacts:
+        name: "Documentation"
+        paths:
+          - public/doc
+
 build_Python3:
     stage: build
     tags:
