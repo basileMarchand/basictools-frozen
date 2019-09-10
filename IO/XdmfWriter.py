@@ -616,7 +616,12 @@ class XdmfWriter(WriterBase):
            raise Exception                                                                                    # pragma: no cover
        self.filePointer.write('    <Attribute Center="'+center+'" Name="'+name+'" Type="'+attype+'">\n')#
        #self.PrintDebug("Writing field '"+name +"' at '"+center+ "' of type " + attype )
-       self.__WriteDataItem(data.ravel(),shape)
+       try:
+           self.__WriteDataItem(data.ravel(),shape)
+       except:
+           print("Error Writing heavy data of field: " + str(name))
+           raise
+
 
        self.filePointer.write('    </Attribute>\n')
 
