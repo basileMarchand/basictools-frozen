@@ -46,6 +46,16 @@ class Factory(BaseOutputObject):
         cls._Catalog[name] = (classtype,constructor)
 
     @classmethod
+    def GetClass(cls,name):
+        classType, classConstructor = cls._Catalog[name]
+        return classType
+
+    @classmethod
+    def GetConstructor(cls,name):
+        classType, classConstructor = cls._Catalog[name]
+        return classConstructor
+
+    @classmethod
     def Create(cls,name,ops=None,propertiesAssign=True):
 
         res = None
