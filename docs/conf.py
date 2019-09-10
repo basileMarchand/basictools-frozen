@@ -259,10 +259,10 @@ def run_apidoc(_):
     import sphinx.ext.apidoc
     import os
     import sys
-    sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+    sys.path.append(os.path.join(os.path.dirname(__file__), '../src/BasicTools'))
     cur_dir = os.path.abspath(os.path.dirname(__file__))
     target_dir = os.path.join(cur_dir, '_source')
-    module = os.path.join(cur_dir, '..')
+    module = os.path.join(cur_dir, '../src/BasicTools')
     sphinx.ext.apidoc.main(['-T', '-M', '-e', '-f', '-o', target_dir, module])
 
 def setup(app):

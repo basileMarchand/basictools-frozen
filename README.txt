@@ -31,9 +31,9 @@
 
     COMPILATION:,
 
-    Run the following command in the parent directory of BasicTools :
+    Run the following command in the root directory :
 
-     > python BasicTools/setup.py build_ext --inplace
+     > python setup.py build_ext --inplace
 
 3) NOTES FOR CONTRIBUTORS
 
