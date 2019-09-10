@@ -13,6 +13,7 @@
     Cython
     sphinx
     coverage
+    setuptools
 
     C++ OPEN-SOURCE DEPENDENCIES
     Eigen (http://eigen.tuxfamily.org)
