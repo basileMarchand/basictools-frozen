@@ -7,6 +7,11 @@ from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceP1
 from BasicTools.FE.Fields.FEField import FEField
 from BasicTools.FE.DofNumbering import ComputeDofNumbering
 
+from scipy.sparse import coo_matrix
+from BasicTools.FE.IntegrationsRules import Lagrange as Lagrange
+from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
+from BasicTools.Containers import Filters
+
 def GetElementaryMatrixForFormulation(elemName,wform,unknownNames,space = LagrangeSpaceP1):
 
     from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
@@ -39,12 +44,9 @@ def GetElementaryMatrixForFormulation(elemName,wform,unknownNames,space = Lagran
     return M
 
 
+
 def ComputeL2ScalarProducMatrix(mesh, numberOfCOmponents):
 
-    from scipy.sparse import coo_matrix
-    from BasicTools.FE.IntegrationsRules import Lagrange as Lagrange
-    from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
-    from BasicTools.Containers import Filters
 
     nbNodes = mesh.GetNumberOfNodes()
     dim     = mesh.GetDimensionality()
@@ -92,6 +94,66 @@ def ComputeL2ScalarProducMatrix(mesh, numberOfCOmponents):
 
 
 
+
+def ComputeH10ScalarProductMatrix(mesh, numberOfCOmponents):
+
+    nbNodes = mesh.GetNumberOfNodes()
+    dim     = mesh.GetDimensionality()
+    
+    spaces = LagrangeSpaceGeo
+    for name, data in mesh.elements.items():
+        p,w =  Lagrange(name)
+        spaces[name].SetIntegrationRule(p,w)
+      
+    numbering = ComputeDofNumbering(mesh,LagrangeSpaceGeo,fromConnectivity=True)
+    numberings = [numbering]*numberOfCOmponents
+    
+    offset = []
+    totaldofs = 0
+    for n in numberings:
+        offset.append(totaldofs)
+        totaldofs += n["size"]  
+
+    ev = []
+    ei = []
+    ej = []
+    
+    ff = Filters.ElementFilter(mesh)
+    ff.SetDimensionality(dim)
+    
+    for name,data,ids in ff:
+        p,w =  Lagrange(name)
+        
+        lenNumbering = len(numberings[0][name][0,:])
+        ones = np.ones(lenNumbering,dtype=int)
+
+        for el in ids:
+            
+            xcoor = mesh.nodes[data.connectivity[el],:]
+            leftNumberings = [numberings[j][name][el,:]+offset[j] for j in range(numberOfCOmponents)]
+            
+            for ip in range(len(w)):
+                Jack, Jdet, Jinv = spaces[name].GetJackAndDetI(ip,xcoor)
+                BxByBzI = Jinv(spaces[name].valdphidxi[ip])
+                
+                for j in range(numberOfCOmponents):
+                    ev.extend((w[ip]*Jdet)*np.tensordot(BxByBzI,BxByBzI, axes=(0,0)).ravel())
+                    
+                    for i in leftNumberings[j]:
+                        ei.extend(i*ones)
+                        ej.extend(leftNumberings[j].ravel())
+                    
+
+    mat = coo_matrix((ev, (ei,ej)), shape=(numberOfCOmponents*nbNodes,numberOfCOmponents*nbNodes)).tocsr()
+    print("CHECK ZERO =", np.dot(np.ones(numberOfCOmponents*nbNodes),mat.dot(np.ones(numberOfCOmponents*nbNodes))))
+
+    return mat
+
+
+
+
+
+
 def CheckIntegrity(GUI=False):
     from BasicTools.FE.SymPhysics import MecaPhysics
 
@@ -111,6 +173,8 @@ def CheckIntegrity(GUI=False):
     mesh = GR.ReadGeof(BasicToolsTestData.GetTestDataPath()+"cube2.geof")
     ComputeL2ScalarProducMatrix(mesh, 1)
     ComputeL2ScalarProducMatrix(mesh, 3)
+    ComputeH10ScalarProductMatrix(mesh, 1)
+    ComputeH10ScalarProductMatrix(mesh, 3)
     
     return "ok"
 
