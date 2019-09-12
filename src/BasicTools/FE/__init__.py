@@ -22,5 +22,6 @@ __all__ = [
 "ProblemData",
 "PythonIntegration",
 "SymPhysics",
-"KR"]
+"KR",
+"FETools"]
 

@@ -145,7 +145,6 @@ def ComputeH10ScalarProductMatrix(mesh, numberOfCOmponents):
                     
 
     mat = coo_matrix((ev, (ei,ej)), shape=(numberOfCOmponents*nbNodes,numberOfCOmponents*nbNodes)).tocsr()
-    print("CHECK ZERO =", np.dot(np.ones(numberOfCOmponents*nbNodes),mat.dot(np.ones(numberOfCOmponents*nbNodes))))
 
     return mat
 
