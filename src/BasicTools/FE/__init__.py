@@ -16,7 +16,6 @@ __all__ = [
 "Fields",
 "DofNumbering",
 "IntegrationsRules",
-"ZmatFemProblem",
 "Integration",
 "WeakForm",
 "ProblemData",
