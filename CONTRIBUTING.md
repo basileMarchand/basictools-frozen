@@ -27,18 +27,18 @@ c). Unitary tests are in Containers classes and functional tests in files
 containing more advanced classes. The latter also serve as exemples and
 client code for the library.
 
-f). Each file should at most one class (even if there are already some
+d). Each file should at most one class (even if there are already some
 deviations...).
 
-g). CheckIntegrities must be local (as litte imports as possible), aiming to test
-    only the functions defined in the file, as much a spossible. All functions
+e). CheckIntegrities must be local (as litte imports as possible), aiming to test
+only the functions defined in the file, as much a spossible. All functions
 in the file must be tested, if possible. Please limit the use of functions
-    from other file to reach that goal, and use small and simple data, otherwise
-    changes will be painful to propagate if many CheckIntegrities must be updated
-    as well.
+from other file to reach that goal, and use small and simple data, otherwise
+changes will be painful to propagate if many CheckIntegrities must be updated
+as well.
 
-i). Coverage must be kept higher than 80%. 
+f). Coverage must be kept higher than 80%. 
 
-j). Favor imports at the beginning of files (to be available for CheckIntegrities
+g). Favor imports at the beginning of files (to be available for CheckIntegrities
 as well without repeat).
     
