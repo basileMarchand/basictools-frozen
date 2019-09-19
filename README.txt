@@ -13,6 +13,7 @@
     Cython
     sphinx
     coverage
+    setuptools
 
     C++ OPEN-SOURCE DEPENDENCIES
     Eigen (http://eigen.tuxfamily.org)
@@ -20,6 +21,7 @@
     THIRD-PARTY PROPRIETARY DEPENDENCIES
     odbAccess
     abaqusConstants
+
 
 2) INSTALLATION
 
@@ -35,23 +37,8 @@
 
      > python setup.py build_ext --inplace
 
-3) NOTES FOR CONTRIBUTORS
 
-    Please read the following page before contributing code :
-
-        https://www.python.org/dev/peps/pep-0008/
-
-    The only deviations from PEP 8 are the following :
-
-      Function Names: "CamelCase"
-
-        CamelCase starting with uppercase
-
-      Variables Names: "camelCase"
-
-        camelCase starting with lowercase
-
-4) TESTING INFRASTRUCTURE
+3) TESTING INFRASTRUCTURE
 
     Every module must have a function called "CheckIntegrity" that takes no
     argument and returns the string "ok" if and only if the test was successful.

@@ -1,4 +1,4 @@
-from distutils.core import setup, Extension
+from setuptools import setup, find_packages
 from Cython.Build import cythonize
 import numpy, os
 
@@ -29,4 +29,7 @@ for m in modules:
         m.extra_link_args.append("-lmkl_sequential")
         m.extra_link_args.append("-lmkl_def")
 
-setup(ext_modules=modules, package_dir={'': 'src'})
+setup(name='BasicTools',
+      packages=find_packages('src'),
+      ext_modules=modules,
+      package_dir={'': 'src'})
