@@ -216,18 +216,8 @@ struct MonoElementsIntegralCpp{
      //int test2 = (*this->lnumbering[i])(n-1,m-1);
    }
   //////////////////////////////////////////
-  void SetNumberOfValues(int i){
-      for(unsigned int i=0; i < this->values.size() ; ++i){
-        delete this->values[i];
-      }
-      this->values.resize(i,0);
-  };
-  //
-  void SetValueI(int i, int n, int m, double* dp){
-      if(this->values[i]) delete this->values[i];
-      this->values[i] = new MapMatrixDD1(dp,n,m);
-   }
-
+  void SetNumberOfValues(int i);
+  void SetValueI(int i, int n, int m, double* dp);
   ///////////////  Unkown Fields  ///////////////////////////////////////
   void SetNumberOfUnkownFields(const int& n);
   void SetUnkownOffset(const int& n, const int& s);
@@ -242,26 +232,13 @@ struct MonoElementsIntegralCpp{
   //////////////// Working Memory ///////////////////////////////
   void AllocateWorkingElementVIJ(int size);
   ///////// PrepareFastIntegration /////////////////////////////
-    void SetComputeNormal(const bool& val);
+  void SetComputeNormal(const bool& val);
   ///////////////// Integration ///////////////////////////////////
-  void SetNumberOfIntegrationPoints(const int& n){
-         this->ip.resize(n,3);
-         this->iw.resize(n,1);
-  }
-  void SetIntegrationPointI(const int& n,const double& w,const double& p0,const double& p1,const double& p2){
-      this->iw(n,0) = w;
-      this->ip(n,0) = p0;
-      this->ip(n,1) = p1;
-      this->ip(n,2) = p2;
-  }
+  void SetNumberOfIntegrationPoints(const int& n);
+  void SetIntegrationPointI(const int& n,const double& w,const double& p0,const double& p1,const double& p2);
   void SetPoints(double* pd, const int& rows, const int& columns);
-  //
   void SetConnectivity(INT_TYPE* pd, const int& rows, const int& columns);
-
-  void ProcessWeakForm(WeakForm* wform){
-    std::vector<std::vector<WeakForm> > sortedWeakForm;
-    assert(0);
-  }
+  void ProcessWeakForm(WeakForm* wform);
   void Integrate( WeakForm* wform, std::vector<int>& idstotreat);
 
 };

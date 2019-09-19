@@ -15,6 +15,18 @@ MonoElementsIntegralCpp::MonoElementsIntegralCpp (): nodes(0),connectivity(0),ln
   this->onlyUpper = false;
 
 }
+//////////////////////////////////////////
+void  MonoElementsIntegralCpp::SetNumberOfValues(int i){
+    for(unsigned int i=0; i < this->values.size() ; ++i){
+      delete this->values[i];
+    }
+    this->values.resize(i,0);
+};
+//
+void  MonoElementsIntegralCpp::SetValueI(int i, int n, int m, double* dp){
+    if(this->values[i]) delete this->values[i];
+    this->values[i] = new MapMatrixDD1(dp,n,m);
+}
 ////////////////////  Unkown Fields  ///////////////////////////////////
 void MonoElementsIntegralCpp::SetNumberOfUnkownFields(const int& n){
      this->unkownDofsOffset.resize(n,1);
@@ -64,20 +76,33 @@ void MonoElementsIntegralCpp::SetComputeNormal(const bool& val){
     this->hasnormal = val;
 }
 //
+void MonoElementsIntegralCpp::SetNumberOfIntegrationPoints(const int& n){
+     this->ip.resize(n,3);
+     this->iw.resize(n,1);
+}
+//
+void MonoElementsIntegralCpp::SetIntegrationPointI(const int& n,const double& w,const double& p0,const double& p1,const double& p2){
+     this->iw(n,0) = w;
+     this->ip(n,0) = p0;
+     this->ip(n,1) = p1;
+     this->ip(n,2) = p2;
+}
+//
 void MonoElementsIntegralCpp::SetPoints(double* pd, const int& rows, const int& columns){
     if(this->nodes) delete this->nodes;
     this->nodes = new MapMatrixDDD(pd,rows,columns);
 }
-
-
-
-
+//
 void MonoElementsIntegralCpp::SetConnectivity( INT_TYPE* pd, const int& rows, const int& columns){
     if(this->connectivity) delete this->connectivity;
     this->connectivity = new MapMatrixIDD(pd,rows,columns);
 }
 //
-
+void MonoElementsIntegralCpp::ProcessWeakForm(WeakForm* wform){
+    std::vector<std::vector<WeakForm> > sortedWeakForm;
+    assert(0);
+}
+//
 template<typename T>
 MatrixDDD solve(T& Jinv,MapMatrixDDD &valdphidxi){
    return Jinv.solve(valdphidxi);
