@@ -97,14 +97,13 @@ struct NativeEigenSolvers {
             std::cout << "Solver type " << i << " not avilable " << std::endl;
         }
     };
-    void SetOp(const int& size, std::vector<FLOAT_TYPE>& ev, std::vector<int>& ei, std::vector<int>& ej){
-        int m = ev.size();
+    void SetOp(const int& size,const int& ev_size ,FLOAT_TYPE* ev, int* ei, int* ej){
         this->A = new SpMatD(size,size);
         container cont;
-        cont.ev = &ev[0];
-        cont.ei = &ei[0];
-        cont.ej = &ej[0];
-        cont.size = m;
+        cont.ev = ev;
+        cont.ei = ei;
+        cont.ej = ej;
+        cont.size = ev_size;
         this->A->setFromTriplets(cont.begin(), cont.end());
         this->A->makeCompressed ();
 
