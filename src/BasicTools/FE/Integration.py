@@ -110,18 +110,48 @@ def IntegrateGeneral( mesh, wform, constants, fields, unkownFields,testFields=No
         integrator.Integrate(wform,idstotreat)
 
     # in the case the tag does not exist for the elements we try to find in the
-    # nodes and do an integration my points
+    # nodes and do an integration by points
+    # for now only work on rhs terms with no external field
     if tagFound == False:
         if tag in mesh.nodesTags:
-            from BasicTools.Containers.UnstructuredMesh import ElementsContainer
-            import BasicTools.Containers.ElementNames as EN
-            data = ElementsContainer(EN.Point_1)
             ids = mesh.nodesTags[tag].GetIds()
-            for i,idd in enumerate(ids):
-                data.AddNewElement([idd],i)
-            data.tighten()
-            integrator.ActivateElementType(data)
-            integrator.Integrate(wform,np.arange(len(ids)) )
+            #do the integration manually
+            from BasicTools.FE.WeakForm import testcharacter
+
+            if testFields is None:
+               testFields = []
+               for f in unkownFields:
+                  testFields.append(FEField(name=f.name+testcharacter,mesh=f.mesh,space=f.space,numbering=f.numbering,data=f.data) )
+
+            for monom in wform:
+                factor = monom.prefactor
+                for term in monom:
+                    if term.internalType == 0 :
+                        raise(Exception("no normal"))
+                    elif  term.internalType == 1 :
+                        raise(Exception("no constant numerical"))
+                    elif  term.internalType == 2 :
+                        raise(Exception("no right unknown"))
+                    elif  term.internalType == 3 :
+                        if term.derDegree == 1:
+                            raise(Exception("No derivative"))
+                        offset = 0
+                        for tf in testFields:
+                            if tf.name == term.fieldName:
+                                break
+                            offset += tf.numbering["size"]
+                        #idx = testFields.find(lambda x:x.name == term.fieldName)
+                        for x in ids:
+                            leftNumbering = tf.numbering["almanac"][("P",x,None)] + offset
+                        continue
+                    else:
+                        print("type " + str(term.internalType) + "Not coded yet")
+                        raise(Exception("not coded yet"))
+
+                F[leftNumbering] += factor
+
+            #integrator.Integrate(wform,idstotreat )
+
         else:
             raise(Exception("Tag not found to do the integration"))
 
