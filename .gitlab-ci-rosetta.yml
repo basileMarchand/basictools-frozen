@@ -100,7 +100,7 @@ deploy:
     - MSBasicTools
   script:
     - echo "Deploy..."
-    - rsync -av --delete-after --cvs-exclude --exclude='.gitlab*' --omit-dir-times --no-perms ./src/BasicTools/. $PREFIX
+    - rsync -av --delete-after --cvs-exclude --include=FE/*36*.so --omit-dir-times --no-perms ./src/BasicTools/. $PREFIX
     - $ACLSCRIPT $PREFIX/../.acl $PREFIX
   environment:
     name: deploy_to_softs
