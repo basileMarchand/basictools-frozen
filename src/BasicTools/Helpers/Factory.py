@@ -79,6 +79,30 @@ class Factory(BaseOutputObject):
 
         raise(Exception("Unable to create object of type " + str(name) +"\n Possible object are :"+ str(list(cls._Catalog.keys()))  ))# pragma: no cover
 
+    @classmethod
+    def PrintAvailable(cls,fullDetails=False):
+        def PrintDoctring(name, obj,doc_or_type="doc",indent=0):
+
+
+            if doc_or_type == "doc":
+                doc = obj.__doc__
+                if doc is None:
+                    print(" "*indent,name, ": ")
+                else:
+                    print(" "*indent,name," : ", doc)
+            else:
+                print(" "*indent + name+ " : (", type(obj) + ")")
+
+        for name,data in cls._Catalog.items():
+            obj = data[0]()
+            PrintDoctring(name,obj,indent=0)
+            if fullDetails:
+                for propName in obj:
+                    if propName[0] == "_" : continue
+                    PrintDoctring(propName,obj.__dict__[propName],"type",6)
+
+
+
 def CheckIntegrity(GUI=False):
     fact = Factory()
     return "ok"
