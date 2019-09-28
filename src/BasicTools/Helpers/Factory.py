@@ -82,8 +82,6 @@ class Factory(BaseOutputObject):
     @classmethod
     def PrintAvailable(cls,fullDetails=False):
         def PrintDoctring(name, obj,doc_or_type="doc",indent=0):
-
-
             if doc_or_type == "doc":
                 doc = obj.__doc__
                 if doc is None:
@@ -94,7 +92,14 @@ class Factory(BaseOutputObject):
                 print(" "*indent + name+ " : (", type(obj) + ")")
 
         for name,data in cls._Catalog.items():
-            obj = data[0]()
+            if data[1] is not None:
+                if data[1].__doc__ is not None:
+                    obj = data[1]
+                else:
+                    obj = data[0]()
+            else:
+                obj = data[0]()
+
             PrintDoctring(name,obj,indent=0)
             if fullDetails:
                 for propName in obj:
