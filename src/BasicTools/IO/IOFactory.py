@@ -65,7 +65,7 @@ def GetAvailableWriter():
 
 
 def CheckIntegrity():
-    from BasicTools.IO.IOFactory import WriterFactory
+    from BasicTools.IO.IOFactory import WriterFactory,ReaderFactory
     from BasicTools.IO.IOFactory import GetAvailableReaders
     from BasicTools.IO.IOFactory import GetAvailableWriter
     ##
@@ -75,6 +75,10 @@ def CheckIntegrity():
     InitAllWriters()
     print("Available Writers : ", GetAvailableWriter())
 
+    print("---------------------")
+    ReaderFactory.PrintAvailable()
+    print("---------------------")
+    WriterFactory.PrintAvailable()
     return "ok"
 
 
