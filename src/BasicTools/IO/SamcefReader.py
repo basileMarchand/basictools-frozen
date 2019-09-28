@@ -46,24 +46,24 @@ def LineToDic(text,res = None):
         res["KEYWORD"] = None
 
 #    ignored = []
-#    while(cpt < len(fields)):
-#        k = fields[cpt]
-#        if k in res.keys():
-#            cpt +=1
-#            if type(res[k]) == bool:
-#                data = True
-#            else:
-#                if type(res[k]).__module__ == np.__name__:
-#                    l = len(res[k])
-#                    data = PH.Read(fields[cpt:cpt+l],res[k])
-#                    cpt += l
-#                else:
-#                    data = PH.Read(fields[cpt],res[k])
-#                    cpt +=1
-#            res[k] = data
-#        else:
+    while(cpt < len(fields)):
+        k = fields[cpt]
+        if k in res.keys():
+            cpt +=1
+            if type(res[k]) == bool:
+                data = True
+            else:
+                if type(res[k]).__module__ == np.__name__:
+                    l = len(res[k])
+                    data = PH.Read(fields[cpt:cpt+l],res[k])
+                    cpt += l
+                else:
+                    data = PH.Read(fields[cpt],res[k])
+                    cpt +=1
+            res[k] = data
+        else:
 #            ignored.append(k)
-#            cpt +=1
+            cpt +=1
 
     #if len(ignored):
     #    print("Ignoring : " + str(ignored) )
@@ -133,12 +133,12 @@ class DatReader(ReaderBase):
 
 
             if ldata["KEYWORD"] in KeywordToIgnore:
-              print("Ignoring: " + ldata["KEYWORD"] )
+              self.PrintVerbose("Ignoring: " + ldata["KEYWORD"] )
               l = DischardTillNextSection(self.ReadCleanLine )
               continue
 
             if ldata["KEYWORD"] == "NOE":
-                print('Reading Nodes')
+                self.PrintVerbose('Reading Nodes')
                 cpt = 0
                 while(True):
                     l = self.ReadCleanLine()
@@ -161,20 +161,22 @@ class DatReader(ReaderBase):
                 continue
 
             if ldata["KEYWORD"] == "CLM":
-                print('Reading CLM')
+                self.PrintVerbose('Reading CLM')
                 cpt = 0
                 while(True):
                     l = self.ReadCleanLine()
+                    if l is None: break
                     if l[0] == ".":
                         break
-                    data = {"FIX":False,"NOEUD":False,"I":0,"C":np.zeros(3),"COMP":0,"NC":0.0,"V":0.0}
+                    data = {"FIX":False,"NOEUD":False,"I":0,"C":np.zeros(3,dtype=int),"COMP":0,"NC":0.0,"V":0.0}
 
                     data = LineToDic(l,data)
-                    #print(data)
                     if data["NOEUD"]:
-                        res.nodesTags.CreateTag("FIX",False).AddToTag(filetointernalid[ data["I"]])
+                        name = "FIX_" + "".join([str(x) for x in data["C"]])
+                        res.nodesTags.CreateTag(name,False).AddToTag(filetointernalid[ data["I"]])
                     elif data["COMP"] > 0 and data["V"] != 0 :
-                        res.nodesTags.CreateTag("Force"+str(data["COMP"] ),False).AddToTag(filetointernalid[data["I"]])
+                        name = "Force"+str(data["COMP"])
+                        res.nodesTags.CreateTag(name,False).AddToTag(filetointernalid[data["I"]])
                 continue
 
             if ldata["KEYWORD"] == "SEL":
@@ -236,7 +238,7 @@ class DatReader(ReaderBase):
                 continue
 
             if ldata["KEYWORD"] == "MAI":
-                print('Reading Elements')
+                self.PrintVerbose('Reading Elements')
                 #"I 1 N 55175 65855 57080 0 58679"
 
                 cpt = 0
@@ -277,7 +279,7 @@ class DatReader(ReaderBase):
                                     p.append(int(fields[fcpt]) )
                                     fcpt += 1
                                 p2.append(p)
-                            #print(p2)
+                            #self.PrintVerbose(p2)
                             if len(p2) == 2:
                                 if len(p2[0]) == 3 and len(p2[1]) == 1 :
                                     #tetra
@@ -294,7 +296,7 @@ class DatReader(ReaderBase):
                                 cid = elements.AddNewElement(conn,oid)
                                 filetointernalidElement[oid] = (elements,cid-1)
                 continue
-            print(l)
+            self.PrintVerbose(l)
             raise
 
         res.nodes = np.array([xs,ys,zs],dtype=np.float).T
@@ -327,6 +329,11 @@ MODE IMPRES 0 LECT 132 MOUCHARD 1 ECHO 1
  I 1
 .SEL GROUP 2 MAILLES TOUT NOM "ALL_ELEMENTS"
 .SEL GROUP 3 NOEUD TOUT NOM "ALL_NODES"
+.CLM
+!*********** Fixed Supports ***********
+  FIX NOEUD I 1 C 1 2 3
+  FIX NOEUD I 3 C 1 2 3
+
 """
 
     res = DatReader().Read(string=data)
