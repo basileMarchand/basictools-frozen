@@ -99,41 +99,66 @@ class Fea(FeaBase.FeaBase):
         self.writer = None
         self.minthreshold = 0.9e-3
         self.tol = 1.e-6
+        self.dofpernode = 1
+        self.init = False
+        self.dirichlet_bcs=None
+        self.neumann_bcs=None
+        self.neumann_nodal=None
 
-    def BuildProblem(self,support, dofpernode = 1, dirichlet_bcs = None, neumann_bcs= None, KOperator= None, MOperator= None,  neumann_nodal= None):
+    def BuildProblem(self,support=None, dofpernode = None, dirichlet_bcs = None, neumann_bcs= None, KOperator= None, MOperator= None, neumann_nodal= None):
+        if self.init == True:
+            return
 
-        if support.IsConstantRectilinear() == False :
+        self.init = True
+
+        if support is not None:
+            self.support = support ;
+
+        if self.support.IsConstantRectilinear() == False :
             raise Exception("Must be a ConstantRectilinear mesh type ") #pragma: no cover
 
         self.outer_v = []
 
-        self.support = support ;
+        if dofpernode is not None:
+            self.dofpernode = dofpernode
 
-        self.dofpernode = dofpernode
+        if dirichlet_bcs is not None:
+            self.dirichlet_bcs = dirichlet_bcs
+
+        if neumann_bcs is not None:
+            self.neumann_bcs = neumann_bcs
+
+        if neumann_bcs is not None:
+            self.neumann_bcs = neumann_bcs
+
+        if neumann_nodal is not None:
+            self.neumann_nodal = neumann_nodal
+
+
         self.nodesPerElement = 2**self.support.GetDimensionality()
 
         if KOperator is not None:
             self.KE    = KOperator
             self.ME    = MOperator
         else:
-            if support.GetDimensionality() == 3:
+            if self.support.GetDimensionality() == 3:
                 self.myElem = Hexa8Cuboid()
             else:
                self.myElem = Quad4Rectangle()
-            self.myElem.delta = support.GetSpacing()
+            self.myElem.delta = self.support.GetSpacing()
             self.KE = self.myElem.GetIsotropDispK(1.,0.3);
             self.ME = self.myElem.GetIsotropDispM(1.);
 
         # dofs:
-        self.ndof = dofpernode * support.GetNumberOfNodes()
+        self.ndof = self.dofpernode * self.support.GetNumberOfNodes()
 
         # FE: Build the index vectors for the for coo matrix format
         self.PrintDebug("Building Connectivity matrix")
-        self.edofMat = np.zeros((support.GetNumberOfElements(), self.nodesPerElement*dofpernode), dtype=np.int_)
+        self.edofMat = np.zeros((self.support.GetNumberOfElements(), self.nodesPerElement*self.dofpernode), dtype=np.int_)
         self.PrintDebug("Building Connectivity matrix 2")
-        for i in  range(support.GetNumberOfElements()):
-            coon = support.GetConnectivityForElement(i)
-            self.edofMat[i, :] = np.array([(coon*dofpernode+y) for y in range(dofpernode)]).ravel('F')
+        for i in  range(self.support.GetNumberOfElements()):
+            coon = self.support.GetConnectivityForElement(i)
+            self.edofMat[i, :] = np.array([(coon*self.dofpernode+y) for y in range(self.dofpernode)]).ravel('F')
 
         self.PrintDebug("Building Connectivity matrix Done")
 
@@ -145,14 +170,14 @@ class Fea(FeaBase.FeaBase):
         self.PrintDebug("Treating Dirichlet 1/4")
 
         self.fixed = np.zeros(self.ndof, dtype=np.bool)
-        if dirichlet_bcs is not None :
-            dirichlet_bcs.tighten()
-            dirichlet_bcs.eliminate_double()
-            indexs = support.GetMonoIndexOfNode(dirichlet_bcs.nodes)
-            indexs *= dofpernode
-            indexs += dirichlet_bcs.dofs
+        if self.dirichlet_bcs is not None :
+            self.dirichlet_bcs.tighten()
+            self.dirichlet_bcs.eliminate_double()
+            indexs = self.support.GetMonoIndexOfNode(self.dirichlet_bcs.nodes)
+            indexs *= self.dofpernode
+            indexs += self.dirichlet_bcs.dofs
             self.fixed[indexs] = True
-            self.fixedValues[self.fixed.T,0:] = dirichlet_bcs.vals
+            self.fixedValues[self.fixed.T,0:] = self.dirichlet_bcs.vals
 
         self.free = np.ones(self.ndof, dtype=np.bool)
         self.free[self.fixed] = False
@@ -164,29 +189,29 @@ class Fea(FeaBase.FeaBase):
         self.PrintDebug("Treating Neumann")
 
             # Set load
-        if  neumann_bcs is not  None:
+        if  self.neumann_bcs is not  None:
 
-            neumann_bcs.tighten()
-            if neumann_bcs.cpt:
+            self.neumann_bcs.tighten()
+            if self.neumann_bcs.cpt:
               self.support.GenerateFullConnectivity()
               z = np.zeros((self.support.GetNumberOfNodes(),))
-              z[support.GetMonoIndexOfNode(neumann_bcs.nodes)] +=  1.;
+              z[self.support.GetMonoIndexOfNode(self.neumann_bcs.nodes)] +=  1.;
               eff = np.clip((np.sum(z[self.support.GenerateFullConnectivity()],axis=1) ),0, 1)
 
               MassMatrix = self.BuildMassMatrix(eff)
-              self.f[support.GetMonoIndexOfNode(neumann_bcs.nodes)*dofpernode + neumann_bcs.dofs] += neumann_bcs.vals
+              self.f[self.support.GetMonoIndexOfNode(self.neumann_bcs.nodes)*self.dofpernode + self.neumann_bcs.dofs] += self.neumann_bcs.vals
               self.f[:,0] = MassMatrix*self.f[:,0]
 
-        if  neumann_nodal is not  None:
-            neumann_nodal.tighten()
+        if  self.neumann_nodal is not  None:
+            self.neumann_nodal.tighten()
 
             nodal_f = np.zeros((self.ndof, 1), dtype=np.double)
 
-            nodal_f[support.GetMonoIndexOfNode(neumann_nodal.nodes)*dofpernode + neumann_nodal.dofs] += neumann_nodal.vals
+            nodal_f[self.support.GetMonoIndexOfNode(self.neumann_nodal.nodes)*self.dofpernode + self.neumann_nodal.dofs] += self.neumann_nodal.vals
             self.f[:,0] += nodal_f[:,0]
         self.PrintDebug("Treating Neumann Done")
 
-        self.eed = np.zeros(support.GetNumberOfElements())
+        self.eed = np.zeros(self.support.GetNumberOfElements())
 
     def BuildMassMatrix(self, Eeff = None):
 
