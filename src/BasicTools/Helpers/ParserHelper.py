@@ -4,6 +4,17 @@
 import numpy as np
 import math
 
+globalDict = {}
+
+def AddToGlobalDictionary(key,value):
+    globalDict[str(key)] = str(value)
+
+def ApplyGlobalDictionary(string):
+    if type(string) != str: return string
+    for key,value in globalDict.items():
+        string= string.replace("{"+key+"}",value)
+    return string
+
 def Read(inputData, inout):
     if type(inout).__module__ == np.__name__:
         return ReadVector(inputData, inout.dtype.type)
@@ -14,7 +25,7 @@ def Read(inputData, inout):
             return ReadScalar(inputData, type(inout) )
 
 def ReadScalar(inputData,inputtype):
-
+    inputData = ApplyGlobalDictionary(inputData)
     if inputtype is bool:
         return ReadBool(inputData)
 
@@ -35,7 +46,10 @@ def ReadVector(string,dtype):
         tmp = string.lstrip().rstrip()
         return np.array([ ReadScalar(x,dtype) for x in tmp.split()] ,dtype=dtype )
 
-def ReadString(string):
+def ReadString(string,d=None):
+    if d is not None:
+         string = string.replace(d)
+    string = ApplyGlobalDictionary(string)
     return str(string)
 
 def ReadStrings(string):
@@ -56,6 +70,8 @@ def ReadInts(string):
 def ReadBool(string):
     if type(string) is bool:
         return bool(string)
+
+    string = ApplyGlobalDictionary(string)
 
     tmp = string.lstrip().rstrip().lower()
     if tmp == "false" or tmp == "no":
@@ -219,6 +235,11 @@ def CheckIntegrity():
     if type(outputdata['monfloat']) != float or  outputdata['monfloat'] != 3.14159:
         raise
 
+
+    AddToGlobalDictionary("FILENAME","toto.xml")
+
+    print(ReadString("my FILENAME is '{FILENAME}' "))
+    globalDict.pop("FILENAME")
     return "ok"
 
 
