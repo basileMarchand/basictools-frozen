@@ -625,7 +625,7 @@ def CleanLonelyNodes(res,out=None):
             outelements.connectivity = NewIndex[elements.connectivity]
 
             outelements.tags = copy.deepcopy(elements.tags)
-            
+
     return usedNodes
 
 def MirrorMesh(inmesh,x=None,y=None,z=None) :
@@ -1589,7 +1589,44 @@ def MeshQualityAspectRatioBeta(mesh):
 
         else:
             raise
+def ComputeMeshMinMaxLengthScale(mesh):
+    (resMin,resMax) = (None,None)
+    for name,data in mesh.elements.items():
+        if data.GetNumberOfNodesPerElement() < 2: continue
+        posx = mesh.nodes[data.connectivity,0]
+        posy = mesh.nodes[data.connectivity,1]
+        posz = mesh.nodes[data.connectivity,2]
+        meanx = np.sum(posx,axis=1)/data.GetNumberOfNodesPerElement()
+        meany = np.sum(posy,axis=1)/data.GetNumberOfNodesPerElement()
+        meanz = np.sum(posz,axis=1)/data.GetNumberOfNodesPerElement()
+        meanx.shape = (len(meanx),1)
+        meany.shape = (len(meanx),1)
+        meanz.shape = (len(meanx),1)
+
+        posx-meanx
+        distToBaricenter = np.sqrt((posx-meanx)**2 +
+        (posy-meany)**2 +
+        (posz-meanz)**2)
+        mmin = np.min(distToBaricenter)
+        mmax = np.max(distToBaricenter)
+        if resMin is None:
+            resMin = mmin
+        else:
+            resMin = min(resMin,mmin)
+
+        if resMax is None:
+            resMax = mmax
+        else:
+            resMax = min(resMax,mmax)
+    return (2*resMin,2*resMax)
 ###############################################################################
+def CheckIntegrity_ComputeMeshMinMaxLengthScale(GUI=False):
+    points = [[0,0,0],[1,0,0],[0,1,0],[0,0,1] ]
+    tets = [[0,1,2,3],[3,1,0,2]]
+    mesh = CreateMeshOf(points,tets,ElementNames.Tetrahedron_4)
+    print(ComputeMeshMinMaxLengthScale(mesh))
+    return "ok"
+
 def CheckIntegrity_CreateUniformMeshOfBars(GUI=False):
     print(CreateUniformMeshOfBars(0,8,10))
     return "ok"
@@ -1805,12 +1842,12 @@ def LowerNodesDimension(mesh):
 
 
 def QuadFieldToLinField(quadMesh, quadField, linMesh = None):
-    
+
     if linMesh == None:
         linMesh = QuadToLin(quadMesh)
-    
+
     extractIndices = np.arange(quadMesh.GetNumberOfNodes())[linMesh.originalIDNodes]
-    
+
     return(quadField[extractIndices])
 
 
@@ -1980,7 +2017,7 @@ def CheckIntegrity_QuadToLin(GUI=False):
     print(linMesh)
     print(QuadToLin(myMesh,divideQuadElements=True))
     print(QuadToLin(myMesh,divideQuadElements=True,lineariseMiddlePoints=True))
-    
+
     QuadFieldToLinField(myMesh, np.arange(myMesh.GetNumberOfNodes()))
     QuadFieldToLinField(myMesh, np.arange(myMesh.GetNumberOfNodes()), linMesh)
     return "ok"
@@ -2146,6 +2183,7 @@ def CheckIntegrity(GUI=False):
     CheckIntegrity_CleanEmptyTags,
     CheckIntegrity_AddTagPerBody,
     CheckIntegrity_GetDualGraph,
+    CheckIntegrity_ComputeMeshMinMaxLengthScale,
     ]
     for f in totest:
         print("running test : " + str(f))
