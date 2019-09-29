@@ -104,6 +104,8 @@ class Fea(FeaBase.FeaBase):
         self.dirichlet_bcs=None
         self.neumann_bcs=None
         self.neumann_nodal=None
+        self.young = 1.
+        self.poisson = 0.3
 
     def BuildProblem(self,support=None, dofpernode = None, dirichlet_bcs = None, neumann_bcs= None, KOperator= None, MOperator= None, neumann_nodal= None):
         if self.init == True:
@@ -146,7 +148,7 @@ class Fea(FeaBase.FeaBase):
             else:
                self.myElem = Quad4Rectangle()
             self.myElem.delta = self.support.GetSpacing()
-            self.KE = self.myElem.GetIsotropDispK(1.,0.3);
+            self.KE = self.myElem.GetIsotropDispK(self.young,self.poisson);
             self.ME = self.myElem.GetIsotropDispM(1.);
 
         # dofs:
