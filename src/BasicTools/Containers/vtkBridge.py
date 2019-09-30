@@ -303,9 +303,15 @@ def VtkToMesh(vtkmesh, meshobject=None, TagsAsFields=False):
         #polyline case
         # we have to be careful because we potentialy change the number of
         # elements in the mesh if we have polylines
-        if ct ==4:
+        if ct == 4:
             for j in range(nps-1):
                 out.GetElementsOfType(et).AddNewElement([cell.GetPointId(j),cell.GetPointId(j+1) ] ,i)
+        elif ct ==  11:
+            # 11 is a voxel and the numbering is not the same as the hexahedron
+            #https://vtk.org/wp-content/uploads/2015/04/file-formats.pdf
+            original_coonectivity = [cell.GetPointId(j) for j in range(nps)]
+            connectivity = original_coonectivity[[0,1,3,24,5,7,6]]
+            out.GetElementsOfType(et).AddNewElement(connectivity  ,i)
         else:
             out.GetElementsOfType(et).AddNewElement([cell.GetPointId(j) for j in range(nps)] ,i)
     out.PrepareForOutput()
