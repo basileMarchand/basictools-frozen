@@ -137,6 +137,22 @@ class AnsysReader(ReaderBase):
                         t.AddElementToTag(r, tag_name)
                 continue
 
+            # Ugly hack to handle nodal forces
+            if line.startswith('type,'):
+                tokens = line.split(',')
+                element_type_id = element_type_ids[int(tokens[1])]
+                if element_type_id == '201':
+                    # FOLLW201 is a one-node 3d element used to apply nodal forces
+                    line = self.ReadCleanLine()
+                    tokens = line.split(',')
+                    assert(len(tokens) == 3 and tokens[0] == 'en')
+                    node_id = int(tokens[2])
+                    # Figure out a nodal tag name from the element id
+                    tag_name = 'AtElem_' + tokens[1]
+                    tag = res.nodesTags.CreateTag(tag_name)
+                    tag.SetIds([node_rank_from_id[node_id]])
+                continue
+
         self.EndReading()
         res.PrepareForOutput()
         self.output = res
