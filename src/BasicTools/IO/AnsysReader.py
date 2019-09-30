@@ -31,6 +31,7 @@ class AnsysReader(ReaderBase):
         res = UM.UnstructuredMesh() if out is None else out
 
         node_rank_from_id = {}
+        element_type_and_rank_from_id = {}
         tagsNames = []
         element_type_ids = dict() # Local to global element type numbering
 
@@ -99,9 +100,41 @@ class AnsysReader(ReaderBase):
                             ansys_element_types[element_type_id](nodes)
                     connectivity = [node_rank_from_id[n] for n in unique_nodes]
                     elements = res.GetElementsOfType(internal_element_type)
-                    elements.AddNewElement(connectivity, element_id)
-
+                    internal_count = elements.AddNewElement(connectivity, element_id)
+                    internal_rank = internal_count - 1
+                    element_type_and_rank_from_id[element_id] = \
+                            (internal_element_type, internal_rank)
                     element_rank += 1
+                continue
+
+            if line.startswith('CMBLOCK'):
+                tokens = line.split(',')
+                tag_name = tokens[1]
+                kind = tokens[2]
+                item_count = int(tokens[3])
+
+                items_per_line = 8
+                full_line_count = item_count // items_per_line
+                remainder = item_count % items_per_line
+                line_count = full_line_count if remainder == 0 \
+                        else full_line_count + 1
+
+                # Skip Format line
+                line = self.ReadCleanLine()
+
+                items = list()
+                for i in range(line_count):
+                    line = self.ReadCleanLine()
+                    items.extend((int(t) for t in line.split()))
+
+                if kind == 'NODE':
+                    tag = res.nodesTags.CreateTag(tag_name)
+                    tag.SetIds([node_rank_from_id[n] for n in items])
+                else:
+                    assert(kind == 'ELEMENT')
+                    for e in items:
+                        t, r = element_type_and_rank_from_id[e]
+                        t.AddElementToTag(r, tag_name)
                 continue
 
         self.EndReading()
@@ -162,6 +195,9 @@ eblock,19,solid,,340744
         1        1        1        1        0        0        0        0        8        0        2    37816    37856    62174    62174    39901    39901    39901    39901
         1        1        1        1        0        0        0        0        8        0        3    32654    62174    37816    37816    37856    37856    37856    37856
 -1
+CMBLOCK,FewNodes,NODE,      2
+(8i10)
+     37856     37816
 """
     res = ReadAnsys(string=__teststring)
 
@@ -169,6 +205,8 @@ eblock,19,solid,,340744
     print(res.nodes)
     print(res.originalIDNodes)
     print(res.GetElementsOfType('tet4').connectivity)
+    print(res.GetNodalTag('FewNodes'))
+    print(res.GetNodalTag('FewNodes').GetIds())
 
     return 'ok'
 
