@@ -1593,6 +1593,7 @@ def ComputeMeshMinMaxLengthScale(mesh):
     (resMin,resMax) = (None,None)
     for name,data in mesh.elements.items():
         if data.GetNumberOfNodesPerElement() < 2: continue
+        if data.GetNumberOfElements() == 0: continue
         posx = mesh.nodes[data.connectivity,0]
         posy = mesh.nodes[data.connectivity,1]
         posz = mesh.nodes[data.connectivity,2]
