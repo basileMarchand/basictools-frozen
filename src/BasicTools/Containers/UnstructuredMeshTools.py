@@ -468,11 +468,11 @@ def QuadToLin(inputmesh, divideQuadElements=True,lineariseMiddlePoints=False):
 
         res.ComputeGlobalOffset()
 
+    res.PrepareForOutput()
 
     if divideQuadElements == False:
         CleanLonelyNodes(res)
 
-    res.PrepareForOutput()
     return res
 
 def CleanDoubleNodes(res, tol = None, nodesToTestMask= None):
@@ -581,9 +581,8 @@ def CleanDoubleNodes(res, tol = None, nodesToTestMask= None):
 def CleanLonelyNodes(res,out=None):
 
     usedNodes = np.zeros(res.GetNumberOfNodes(),dtype=np.bool )
-    for elementName in res.elements:
-        elements = res.elements[elementName]
-        usedNodes[elements.connectivity.ravel()] = True;
+    for name, data in res.elements.items():
+        usedNodes[data.connectivity.ravel()] = True;
 
     cpt = 0 ;
     NewIndex =  np.zeros(res.GetNumberOfNodes(),dtype=np.int )-1
@@ -605,7 +604,7 @@ def CleanLonelyNodes(res,out=None):
         for tag in res.nodesTags :
             tag.SetIds(NewIndex[np.extract(usedNodes[tag.GetIds()],tag.GetIds() )])
 
-                #renumbering the connectivity matrix
+        #renumbering the connectivity matrix
         for elementName in res.elements:
             elements = res.elements[elementName]
             elements.connectivity = NewIndex[elements.connectivity]
