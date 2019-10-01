@@ -116,7 +116,7 @@ class AnsysReader(ReaderBase):
                     assert(kind == 'ELEMENT')
                     for e in items:
                         t, r = element_type_and_rank_from_id[e]
-                        t.AddElementToTag(r, tag_name)
+                        res.AddElementToTag(r, tag_name)
                 continue
 
             # Ugly hack to handle nodal forces
