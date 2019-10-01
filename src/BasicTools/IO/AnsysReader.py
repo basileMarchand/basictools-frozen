@@ -76,7 +76,7 @@ class AnsysReader(ReaderBase):
             if line.startswith('eblock'):
                 # eblock, NUM_NODES, Solkey[,,count]
                 tokens = line.split(',')
-                # entry_count = int(tokens[1])
+                entry_count = int(tokens[1])
                 solid_key = tokens[2]
                 max_element_count = int(tokens[4])
 
@@ -95,10 +95,13 @@ class AnsysReader(ReaderBase):
                     material_id = values[0]
                     element_id = values[10]
                     element_node_count = values[8]
+                    if element_node_count > 8:
+                        overflow = self.ReadCleanLine()
+                        values.extend((int (t) for t in overflow.split()))
                     nodes = values[11:11+element_node_count]
                     element_type_id = element_type_ids[values[1]]
                     internal_element_type, unique_nodes = \
-                            ansys_element_types[element_type_id](nodes)
+                            internal_element_type_from_ansys[element_type_id](nodes)
                     connectivity = [node_rank_from_id[n] for n in unique_nodes]
                     elements = res.GetElementsOfType(internal_element_type)
                     internal_count = elements.AddNewElement(connectivity, element_id)
@@ -159,14 +162,15 @@ class AnsysReader(ReaderBase):
         self.output = res
         return res
 
+
 def discriminate_solid185(nodes):
+    # SOLID185: EN.Hexaedron_8
+    # May degenerate to EN.Wedge_6, EN.Pyramid_5 or EN_Tetrahedron_4
     # Node numbering: ijklmnop
     repeated_kl = nodes[2] == nodes[3]
     repeated_mn = nodes[4] == nodes[5]
     repeated_op = nodes[6] == nodes[7]
-
     from itertools import compress
-
     if repeated_op:
         if repeated_mn:
             if repeated_kl:
@@ -181,23 +185,51 @@ def discriminate_solid185(nodes):
     else:
         internal_element_type = EN.Hexaedron_8
         unique_nodes = nodes
-
     return internal_element_type, list(unique_nodes)
 
-#Ansys Element types:
-# SOLID185: EN.Hexaedron_8, may degenerate to EN.Wedge_6, EN.Pyramid_5 or EN_Tetrahedron_4
-# SOLID186: EN.Hexaedron_20, may degenerate to wedge, pyramid or tetrahedron
-# SOLID187: EN.Tetrahedron_10
-ansys_element_types = {'185': discriminate_solid185}
+def discriminate_solid186(nodes):
+    # SOLID186: EN.Hexaedron_20
+    # May degenerate to wedge, pyramid or tetrahedron
+    implemented = False
+    assert(implemented)
+
+def discriminate_solid187(nodes):
+    # SOLID187: EN.Tetrahedron_10
+    return EN.Tetrahedron_10, nodes
+
+
+internal_element_type_from_ansys = {
+        '185': discriminate_solid185,
+        '187': discriminate_solid187
+        }
+
 
 from BasicTools.IO.IOFactory import RegisterReaderClass
 RegisterReaderClass(".ansys", AnsysReader)
 
-def CheckIntegrity():
 
+def CheckIntegrity():
     __teststring = u"""
-nblock,3,,6
+nblock,3,,24
 (1i9,3e20.9e3)
+      551     7.784032421E-02     6.661491953E-02     2.000000000E-01
+     1691     8.991484887E-02     6.820190681E-02     1.903279204E-01
+     1944     7.455965603E-02     6.107661302E-02     1.906569403E-01
+     2111     9.395317480E-02     5.598013490E-02     1.886333684E-01
+     2218     8.604121057E-02     6.526570146E-02     1.798559428E-01
+     2233     8.587154519E-02     5.451195787E-02     1.957137802E-01
+     4975     8.387758654E-02     6.740841317E-02     1.951639602E-01
+     4976     7.619999012E-02     6.384576627E-02     1.953284701E-01
+     4978     8.185593470E-02     6.056343870E-02     1.978568901E-01
+    11353     8.223725245E-02     6.463925992E-02     1.904924303E-01
+    11355     9.193401184E-02     6.209102085E-02     1.894806444E-01
+    11357     8.797802972E-02     6.673380414E-02     1.850919316E-01
+    11358     8.789319703E-02     6.135693234E-02     1.930208503E-01
+    12938     8.030043330E-02     6.317115724E-02     1.852564415E-01
+    12939     8.021560061E-02     5.779428544E-02     1.931853602E-01
+    13639     8.999719269E-02     6.062291818E-02     1.842446556E-01
+    13640     8.991236000E-02     5.524604638E-02     1.921735743E-01
+    13703     8.595637788E-02     5.988882967E-02     1.877848615E-01
     32654    -1.274217310E+01     3.840702614E+01    -1.612452772E+01
     37816    -1.334739993E+01     3.905933630E+01    -1.603912279E+01
     37856    -1.364793556E+01     3.797073871E+01    -1.607483826E+01
@@ -215,15 +247,26 @@ eblock,19,solid,,340744
 CMBLOCK,FewNodes,NODE,      2
 (8i10)
      37856     37816
+et,2,187
+eblock,19,solid,,7564
+(19i9)
+        1        2        1        1        0        0        0        0       10        0        1     1691     2233     1944     2218    11358    12939    11353    11357
+    13703    12938
+        1        2        1        1        0        0        0        0       10        0        2     1691     2111     2233     2218    11355    13640    11358    11357
+    13639    13703
+        1        2        1        1        0        0        0        0       10        0        3      551     1691     2233     1944     4975    11358     4978     4976
+    11353    12939
+-1
 """
     res = ReadAnsys(string=__teststring)
 
     print("----")
-    print(res.nodes)
-    print(res.originalIDNodes)
-    print(res.GetElementsOfType('tet4').connectivity)
-    print(res.GetNodalTag('FewNodes'))
-    print(res.GetNodalTag('FewNodes').GetIds())
+    print('coords: {}'.format(res.nodes))
+    print('node ids: {}'.format(res.originalIDNodes))
+    print('tet4: {}'.format((res.GetElementsOfType('tet4').connectivity)))
+    print('tet10: {}'.format((res.GetElementsOfType('tet10').connectivity)))
+    print('node tags: {}'.format(res.GetNodalTag('FewNodes')))
+    print('node sets: {}'.format(res.GetNodalTag('FewNodes').GetIds()))
 
     return 'ok'
 
