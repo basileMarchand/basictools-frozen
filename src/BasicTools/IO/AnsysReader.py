@@ -76,39 +76,15 @@ class AnsysReader(ReaderBase):
             if line.startswith('eblock'):
                 # eblock, NUM_NODES, Solkey[,,count]
                 tokens = line.split(',')
-                entry_count = int(tokens[1])
+                # int(tokens[1]) -> num_nodes: Cannot be trusted
                 solid_key = tokens[2]
                 max_element_count = int(tokens[4])
 
-                assert(solid_key == 'solid')
                 # Skip Format line
                 line = self.ReadCleanLine()
 
-                element_rank = 0
-                while True:
-                    line = self.ReadCleanLine()
-                    if line.startswith('-1'):
-                        break
-                    assert(element_rank < max_element_count)
-                    tokens = line.split()
-                    values = [int(t) for t in tokens]
-                    material_id = values[0]
-                    element_id = values[10]
-                    element_node_count = values[8]
-                    if element_node_count > 8:
-                        overflow = self.ReadCleanLine()
-                        values.extend((int (t) for t in overflow.split()))
-                    nodes = values[11:11+element_node_count]
-                    element_type_id = element_type_ids[values[1]]
-                    internal_element_type, unique_nodes = \
-                            internal_element_type_from_ansys[element_type_id](nodes)
-                    connectivity = [node_rank_from_id[n] for n in unique_nodes]
-                    elements = res.GetElementsOfType(internal_element_type)
-                    internal_count = elements.AddNewElement(connectivity, element_id)
-                    internal_rank = internal_count - 1
-                    element_type_and_rank_from_id[element_id] = \
-                            (internal_element_type, internal_rank)
-                    element_rank += 1
+                assert(solid_key == 'solid')
+                self.ReadSolidEblock(res, element_type_ids, node_rank_from_id, element_type_and_rank_from_id, max_element_count)
                 continue
 
             if line.startswith('CMBLOCK'):
@@ -161,6 +137,33 @@ class AnsysReader(ReaderBase):
         res.PrepareForOutput()
         self.output = res
         return res
+
+    def ReadSolidEblock(self, res, element_type_ids, node_rank_from_id, element_type_and_rank_from_id, max_element_count):
+        element_rank = 0
+        while True:
+            line = self.ReadCleanLine()
+            if line.startswith('-1'):
+                break
+            assert(element_rank < max_element_count)
+            tokens = line.split()
+            values = [int(t) for t in tokens]
+            material_id = values[0]
+            element_id = values[10]
+            element_node_count = values[8]
+            if element_node_count > 8:
+                overflow = self.ReadCleanLine()
+                values.extend((int (t) for t in overflow.split()))
+            nodes = values[11:11+element_node_count]
+            element_type_id = element_type_ids[values[1]]
+            internal_element_type, unique_nodes = \
+                    internal_element_type_from_ansys[element_type_id](nodes)
+            connectivity = [node_rank_from_id[n] for n in unique_nodes]
+            elements = res.GetElementsOfType(internal_element_type)
+            internal_count = elements.AddNewElement(connectivity, element_id)
+            internal_rank = internal_count - 1
+            element_type_and_rank_from_id[element_id] = \
+                    (internal_element_type, internal_rank)
+            element_rank += 1
 
 
 def discriminate_solid185(nodes):
