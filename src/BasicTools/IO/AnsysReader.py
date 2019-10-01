@@ -165,6 +165,8 @@ class AnsysReader(ReaderBase):
             internal_rank = internal_count - 1
             element_type_and_rank_from_id[element_id] = \
                     (internal_element_type, internal_rank)
+            auto_tag = 'eblock_{}'.format(values[1])
+            res.AddElementToTagUsingOriginalId(element_id, auto_tag)
             element_rank += 1
 
     def ReadNonSolidEblock(self, res, element_type_ids, node_rank_from_id, element_type_and_rank_from_id, max_element_count):
@@ -190,6 +192,8 @@ class AnsysReader(ReaderBase):
             internal_rank = internal_count - 1
             element_type_and_rank_from_id[element_id] = \
                     (internal_element_type, internal_rank)
+            auto_tag = 'eblock_{}'.format(element_properties[0])
+            res.AddElementToTagUsingOriginalId(element_id, auto_tag)
             element_rank += 1
 
 
