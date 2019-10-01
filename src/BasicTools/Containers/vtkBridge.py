@@ -136,7 +136,10 @@ def NumpyFieldToVtkField(support,fielddata,fieldname):
     VTK_data.SetName(fieldname)
     return VTK_data
 
-
+def ApplyVtkPipeline(mesh,op):
+    vtkMesh = MeshToVtk(mesh)
+    vtkOuputMesh = op(vtkMesh)
+    return VtkToMesh(vtkOuputMesh)
 
 def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
 
