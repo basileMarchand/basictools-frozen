@@ -47,7 +47,6 @@ keysToIgnoreBulk = [ "PSOLID",
                 "GAPPRM",
                 "GAPPRM,",
                 "DCONADD",
-                "CBUSH",
                 "PBUSH",
                 "DCONSTR",
                 "LOAD",
@@ -78,28 +77,31 @@ class NastranLineParcer(object):
             line = file.getLine()
             self.ContinueParsing(line)
 
+    def GetFields(self,line,fn,ffn):
+        return (self.GetField(line,x) for x in range(fn,ffn) )
+
     def GetField(self,line,fn):
-      if self.structured:
-        if (fn+1)*8 > len(line):
-            line += (8*(fn+1) - len(line))*" "
+        if self.structured:
+            if (fn+1)*8 > len(line):
+                line += (8*(fn+1) - len(line))*" "
+            return line[8*fn:8*(fn+1)].lstrip().rstrip()
+        else:
+           return line.split()[fn]
 
-        return line[8*fn:8*(fn+1)].lstrip().rstrip()
-      else:
-        return line.split()[fn]
 
-    def ParseTypes(self,line,ts):
+    def ParseTypes(self,field,ts):
         if type(ts) == tuple:
             for t in ts:
                 try:
-                    res = self.ParseTypes(line, t)
+                    res = self.ParseTypes(field, t)
                     return res
                 except:
                     pass
 
         elif ts == float:
-            return self.ParseFloat(line)
+            return self.ParseFloat(field)
         else:
-            return ts(line)
+            return ts(field)
 
     def ParseFloat(self,line):
             line += (8-len(line))*' '
@@ -335,6 +337,45 @@ class FemReader(ReaderBase):
                             if line[0] != " ":
                                 break
                         need_to_read = True
+                        continue
+
+
+                    if key == "PBUSH":
+                        #PBUSH is in the keysToIgnoreBulk list
+                        #https://knowledge.autodesk.com/support/nastran/learn-explore/caas/CloudHelp/cloudhelp/2018/ENU/NSTRN-Reference/files/GUID-47AAEE71-02F5-4DB2-9817-39F5EE1B0CE8-htm.html
+                        NLP.structured = True
+
+                        PID,K  = NLP.GetFields(line,1,3)
+                        if K != "K" :
+                            print("--",K,"--")
+                            raise
+
+                        (K1,K2,K3) = NLP.GetFields(line,3,6)
+                        print( (K1,K2,K3) )
+                        need_to_read = True
+
+                        continue
+
+                    if key == "CBUSH":
+                        #https://knowledge.autodesk.com/support/nastran/learn-explore/caas/CloudHelp/cloudhelp/2018/ENU/NSTRN-Reference/files/GUID-86B41C9D-41DB-4664-AE0D-B4B55981F183-htm.html
+                        NLP.structured = True
+
+                        EID,PID,GA,GB  = NLP.GetFields(line,1,5)
+                        GA = int(GA)
+                        GB = int(GB)
+
+                        #for the moment the CBUSH are converted to ntags
+                        #elements = res.GetElementsOfType(ElementNames.Bar_2)
+                        #conn = [filetointernalid[xx] for xx in  [GA, GB] ]
+                        #localid = elements.AddNewElement(conn,EID)
+                        #filetointernalidElement[EID] = (elements,localid-1)
+                        need_to_read = True
+
+                        tagGA = res.GetNodalTag("CBUSH_"+PID+"_GA")
+                        tagGB = res.GetNodalTag("CBUSH_"+PID+"_GB")
+                        tagGA.AddToTag(filetointernalid[GA])
+                        tagGB.AddToTag(filetointernalid[GB])
+
                         continue
 
                     if key == 'DRESP1' :
