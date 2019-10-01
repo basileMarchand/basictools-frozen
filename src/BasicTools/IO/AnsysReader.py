@@ -59,6 +59,7 @@ class AnsysReader(ReaderBase):
                     line = self.ReadCleanLine()
                     if line.startswith('-1'):
                         break
+                    assert(node_rank < max_node_count)
                     tokens = line.split()
                     node_id = int(tokens[0])
                     node_rank_from_id[node_id] = node_rank
