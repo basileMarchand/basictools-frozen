@@ -51,7 +51,7 @@ class AnsysReader(ReaderBase):
                 res.originalIDNodes = np.empty((max_node_count,), dtype=np.int)
 
                 assert(solid_key == '')
-                # Skip Format line
+                # Skip format line
                 line = self.ReadCleanLine()
 
                 node_rank = 0
@@ -80,7 +80,7 @@ class AnsysReader(ReaderBase):
                 solid_key = tokens[2]
                 max_element_count = int(tokens[4])
 
-                # Skip Format line
+                # Skip format line
                 line = self.ReadCleanLine()
 
                 if solid_key == 'solid':
@@ -101,7 +101,7 @@ class AnsysReader(ReaderBase):
                 line_count = full_line_count if remainder == 0 \
                         else full_line_count + 1
 
-                # Skip Format line
+                # Skip format line
                 line = self.ReadCleanLine()
 
                 items = list()
