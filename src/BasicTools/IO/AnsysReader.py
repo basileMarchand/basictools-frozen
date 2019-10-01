@@ -114,24 +114,33 @@ class AnsysReader(ReaderBase):
                     tag.SetIds([node_rank_from_id[n] for n in items])
                 else:
                     assert(kind == 'ELEMENT')
-                    for e in items:
-                        t, r = element_type_and_rank_from_id[e]
-                        res.AddElementToTag(r, tag_name)
+                    for element_id in items:
+                        element_type, rank = element_type_and_rank_from_id[element_id]
+                        container = res.GetElementsOfType(element_type)
+                        container.AddElementToTag(rank, tag_name)
                 continue
 
             # Ugly hack to handle nodal forces
             if line.startswith('type,'):
                 tokens = line.split(',')
-                element_type_id = element_type_ids[int(tokens[1])]
+                et = int(tokens[1])
+                element_type_id = element_type_ids[et]
                 if element_type_id == '201':
                     # FOLLW201 is a one-node 3d element used to apply nodal forces
                     line = self.ReadCleanLine()
                     tokens = line.split(',')
                     assert(len(tokens) == 3 and tokens[0] == 'en')
+                    element_id = int(tokens[1])
                     node_id = int(tokens[2])
+                    node_rank = node_rank_from_id[node_id]
+                    elements = res.GetElementsOfType(EN.Point_1)
+                    internal_count = elements.AddNewElement([node_rank], element_id)
+                    internal_rank = internal_count - 1
+                    auto_etag = 'et_{}'.format(et)
+                    elements.AddElementToTag(internal_rank, auto_etag)
                     # Figure out a nodal tag name from the element id
-                    tag_name = 'AtElem_' + tokens[1]
-                    tag = res.nodesTags.CreateTag(tag_name)
+                    auto_ntag = 'elem_{}'.format(element_id)
+                    tag = res.nodesTags.CreateTag(auto_ntag)
                     tag.SetIds([node_rank_from_id[node_id]])
                 continue
 
@@ -150,13 +159,14 @@ class AnsysReader(ReaderBase):
             tokens = line.split()
             values = [int(t) for t in tokens]
             material_id = values[0] # unused
+            et = values[1]
             element_id = values[10]
             element_node_count = values[8]
             if element_node_count > 8:
                 overflow = self.ReadCleanLine()
                 values.extend((int (t) for t in overflow.split()))
             nodes = values[11:11+element_node_count]
-            element_type_id = element_type_ids[values[1]]
+            element_type_id = element_type_ids[et]
             internal_element_type, unique_nodes = \
                     internal_element_type_from_ansys[element_type_id](nodes)
             connectivity = [node_rank_from_id[n] for n in unique_nodes]
@@ -165,8 +175,8 @@ class AnsysReader(ReaderBase):
             internal_rank = internal_count - 1
             element_type_and_rank_from_id[element_id] = \
                     (internal_element_type, internal_rank)
-            auto_tag = 'eblock_{}'.format(values[1])
-            res.AddElementToTagUsingOriginalId(element_id, auto_tag)
+            auto_etag = 'et_{}'.format(et)
+            elements.AddElementToTag(internal_rank, auto_etag)
             element_rank += 1
 
     def ReadNonSolidEblock(self, res, element_type_ids, node_rank_from_id, element_type_and_rank_from_id, max_element_count):
@@ -182,7 +192,8 @@ class AnsysReader(ReaderBase):
             element_properties = values[1:4]
             # Ensure that all 3 properties are identical
             assert(element_properties[:-1] == element_properties[1:])
-            element_type_id = element_type_ids[element_properties[0]]
+            et = element_properties[0]
+            element_type_id = element_type_ids[et]
             nodes = values[5:]
             internal_element_type, unique_nodes = \
                     internal_element_type_from_ansys[element_type_id](nodes)
@@ -192,8 +203,8 @@ class AnsysReader(ReaderBase):
             internal_rank = internal_count - 1
             element_type_and_rank_from_id[element_id] = \
                     (internal_element_type, internal_rank)
-            auto_tag = 'eblock_{}'.format(element_properties[0])
-            res.AddElementToTagUsingOriginalId(element_id, auto_tag)
+            auto_etag = 'et_{}'.format(et)
+            elements.AddElementToTag(internal_rank, auto_etag)
             element_rank += 1
 
 
@@ -332,8 +343,10 @@ eblock,10,,,2
     print('tet4: {}'.format((res.GetElementsOfType('tet4').connectivity)))
     print('tet10: {}'.format((res.GetElementsOfType('tet10').connectivity)))
     print('tri6: {}'.format((res.GetElementsOfType('tri6').connectivity)))
-    print('node tags: {}'.format(res.GetNodalTag('FewNodes')))
-    print('node sets: {}'.format(res.GetNodalTag('FewNodes').GetIds()))
+    node_tag = res.GetNodalTag('FewNodes')
+    print('node set {}: {}'.format(node_tag, node_tag.GetIds()))
+    for t in ('et_1', 'et_2', 'et_3'):
+        print('element set {}: {}'.format(t, res.GetElementsInTag(t)))
 
     return 'ok'
 
