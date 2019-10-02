@@ -91,7 +91,7 @@ class AnsysReader(ReaderBase):
 
             if line.startswith('CMBLOCK'):
                 tokens = line.split(',')
-                tag_name = tokens[1]
+                tag_name = tokens[1].strip()
                 kind = tokens[2]
                 item_count = int(tokens[3])
 
