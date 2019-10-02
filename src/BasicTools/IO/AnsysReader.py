@@ -207,6 +207,16 @@ class AnsysReader(ReaderBase):
             elements.AddElementToTag(internal_rank, auto_etag)
             element_rank += 1
 
+def discriminate_tri_or_quad(nodes):
+    # Node numbering: ijkl
+    repeated_kl = nodes[2] == nodes[3]
+    if repeated_kl:
+        internal_element_type = EN.Triangle_3
+        unique_nodes = nodes[:-1]
+    else:
+        internal_element_type = EN.Quadrangle_4
+        unique_nodes = nodes
+    return internal_element_type, unique_nodes
 
 def discriminate_surf154(nodes):
     # SURF154: EN.Quadrangle_4 or EN.Quadrangle_9
@@ -268,6 +278,8 @@ def discriminate_solid187(nodes):
 
 
 internal_element_type_from_ansys = {
+        '170': discriminate_tri_or_quad,
+        '174': discriminate_tri_or_quad,
         '154': discriminate_surf154,
         '185': discriminate_solid185,
         '187': discriminate_solid187
