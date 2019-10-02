@@ -51,7 +51,7 @@ class AnsysReader(ReaderBase):
                 res.originalIDNodes = np.empty((max_node_count,), dtype=np.int)
 
                 assert(solid_key == '')
-                # Skip Format line
+                # Skip format line
                 line = self.ReadCleanLine()
 
                 node_rank = 0
@@ -59,6 +59,7 @@ class AnsysReader(ReaderBase):
                     line = self.ReadCleanLine()
                     if line.startswith('-1'):
                         break
+                    assert(node_rank < max_node_count)
                     tokens = line.split()
                     node_id = int(tokens[0])
                     node_rank_from_id[node_id] = node_rank
@@ -75,36 +76,17 @@ class AnsysReader(ReaderBase):
             if line.startswith('eblock'):
                 # eblock, NUM_NODES, Solkey[,,count]
                 tokens = line.split(',')
-                # entry_count = int(tokens[1])
+                # int(tokens[1]) -> num_nodes: Cannot be trusted
                 solid_key = tokens[2]
                 max_element_count = int(tokens[4])
 
-                assert(solid_key == 'solid')
-                # Skip Format line
+                # Skip format line
                 line = self.ReadCleanLine()
 
-                element_rank = 0
-                while True:
-                    line = self.ReadCleanLine()
-                    if line.startswith('-1'):
-                        break
-                    assert(element_rank < max_element_count)
-                    tokens = line.split()
-                    values = [int(t) for t in tokens]
-                    material_id = values[0]
-                    element_id = values[10]
-                    element_node_count = values[8]
-                    nodes = values[11:11+element_node_count]
-                    element_type_id = element_type_ids[values[1]]
-                    internal_element_type, unique_nodes = \
-                            ansys_element_types[element_type_id](nodes)
-                    connectivity = [node_rank_from_id[n] for n in unique_nodes]
-                    elements = res.GetElementsOfType(internal_element_type)
-                    internal_count = elements.AddNewElement(connectivity, element_id)
-                    internal_rank = internal_count - 1
-                    element_type_and_rank_from_id[element_id] = \
-                            (internal_element_type, internal_rank)
-                    element_rank += 1
+                if solid_key == 'solid':
+                    self.ReadSolidEblock(res, element_type_ids, node_rank_from_id, element_type_and_rank_from_id, max_element_count)
+                else:
+                    self.ReadNonSolidEblock(res, element_type_ids, node_rank_from_id, element_type_and_rank_from_id, max_element_count)
                 continue
 
             if line.startswith('CMBLOCK'):
@@ -119,7 +101,7 @@ class AnsysReader(ReaderBase):
                 line_count = full_line_count if remainder == 0 \
                         else full_line_count + 1
 
-                # Skip Format line
+                # Skip format line
                 line = self.ReadCleanLine()
 
                 items = list()
@@ -132,24 +114,33 @@ class AnsysReader(ReaderBase):
                     tag.SetIds([node_rank_from_id[n] for n in items])
                 else:
                     assert(kind == 'ELEMENT')
-                    for e in items:
-                        t, r = element_type_and_rank_from_id[e]
-                        t.AddElementToTag(r, tag_name)
+                    for element_id in items:
+                        element_type, rank = element_type_and_rank_from_id[element_id]
+                        container = res.GetElementsOfType(element_type)
+                        container.AddElementToTag(rank, tag_name)
                 continue
 
             # Ugly hack to handle nodal forces
             if line.startswith('type,'):
                 tokens = line.split(',')
-                element_type_id = element_type_ids[int(tokens[1])]
+                et = int(tokens[1])
+                element_type_id = element_type_ids[et]
                 if element_type_id == '201':
                     # FOLLW201 is a one-node 3d element used to apply nodal forces
                     line = self.ReadCleanLine()
                     tokens = line.split(',')
                     assert(len(tokens) == 3 and tokens[0] == 'en')
+                    element_id = int(tokens[1])
                     node_id = int(tokens[2])
+                    node_rank = node_rank_from_id[node_id]
+                    elements = res.GetElementsOfType(EN.Point_1)
+                    internal_count = elements.AddNewElement([node_rank], element_id)
+                    internal_rank = internal_count - 1
+                    auto_etag = 'et_{}'.format(et)
+                    elements.AddElementToTag(internal_rank, auto_etag)
                     # Figure out a nodal tag name from the element id
-                    tag_name = 'AtElem_' + tokens[1]
-                    tag = res.nodesTags.CreateTag(tag_name)
+                    auto_ntag = 'elem_{}'.format(element_id)
+                    tag = res.nodesTags.CreateTag(auto_ntag)
                     tag.SetIds([node_rank_from_id[node_id]])
                 continue
 
@@ -158,14 +149,97 @@ class AnsysReader(ReaderBase):
         self.output = res
         return res
 
+    def ReadSolidEblock(self, res, element_type_ids, node_rank_from_id, element_type_and_rank_from_id, max_element_count):
+        element_rank = 0
+        while True:
+            line = self.ReadCleanLine()
+            if line.startswith('-1'):
+                break
+            assert(element_rank < max_element_count)
+            tokens = line.split()
+            values = [int(t) for t in tokens]
+            material_id = values[0] # unused
+            et = values[1]
+            element_id = values[10]
+            element_node_count = values[8]
+            if element_node_count > 8:
+                overflow = self.ReadCleanLine()
+                values.extend((int (t) for t in overflow.split()))
+            nodes = values[11:11+element_node_count]
+            element_type_id = element_type_ids[et]
+            internal_element_type, unique_nodes = \
+                    internal_element_type_from_ansys[element_type_id](nodes)
+            connectivity = [node_rank_from_id[n] for n in unique_nodes]
+            elements = res.GetElementsOfType(internal_element_type)
+            internal_count = elements.AddNewElement(connectivity, element_id)
+            internal_rank = internal_count - 1
+            element_type_and_rank_from_id[element_id] = \
+                    (internal_element_type, internal_rank)
+            auto_etag = 'et_{}'.format(et)
+            elements.AddElementToTag(internal_rank, auto_etag)
+            element_rank += 1
+
+    def ReadNonSolidEblock(self, res, element_type_ids, node_rank_from_id, element_type_and_rank_from_id, max_element_count):
+        element_rank = 0
+        while True:
+            line = self.ReadCleanLine()
+            if line.startswith('-1'):
+                break
+            assert(element_rank < max_element_count)
+            tokens = line.split()
+            values = [int(t) for t in tokens]
+            element_id = values[0]
+            element_properties = values[1:4]
+            # Ensure that all 3 properties are identical
+            assert(element_properties[:-1] == element_properties[1:])
+            et = element_properties[0]
+            element_type_id = element_type_ids[et]
+            nodes = values[5:]
+            internal_element_type, unique_nodes = \
+                    internal_element_type_from_ansys[element_type_id](nodes)
+            connectivity = [node_rank_from_id[n] for n in unique_nodes]
+            elements = res.GetElementsOfType(internal_element_type)
+            internal_count = elements.AddNewElement(connectivity, element_id)
+            internal_rank = internal_count - 1
+            element_type_and_rank_from_id[element_id] = \
+                    (internal_element_type, internal_rank)
+            auto_etag = 'et_{}'.format(et)
+            elements.AddElementToTag(internal_rank, auto_etag)
+            element_rank += 1
+
+
+def discriminate_surf154(nodes):
+    # SURF154: EN.Quadrangle_4 or EN.Quadrangle_9
+    # May degenerate to EN.Triangle_3 or EN.Triangle_6
+    # Node numbering: ijklmnop
+    repeated_kl = nodes[2] == nodes[3]
+    from itertools import compress
+    if len(nodes) == 4:
+        if repeated_kl:
+            internal_element_type = EN.Triangle_3
+            unique_nodes = nodes[:-1]
+        else:
+            internal_element_type = EN.Quadrangle_4
+            unique_nodes = nodes
+    else:
+        assert(len(nodes) == 8)
+        if repeated_kl:
+            assert(nodes[2] == nodes[6])
+            internal_element_type = EN.Triangle_6
+            unique_nodes = list(compress(nodes, (1, 1, 1, 0, 1, 1, 0, 1)))
+        else:
+            internal_element_type = EN.Quadrangle_8
+            unique_nodes = nodes
+    return internal_element_type, unique_nodes
+
 def discriminate_solid185(nodes):
+    # SOLID185: EN.Hexaedron_8
+    # May degenerate to EN.Wedge_6, EN.Pyramid_5 or EN_Tetrahedron_4
     # Node numbering: ijklmnop
     repeated_kl = nodes[2] == nodes[3]
     repeated_mn = nodes[4] == nodes[5]
     repeated_op = nodes[6] == nodes[7]
-
     from itertools import compress
-
     if repeated_op:
         if repeated_mn:
             if repeated_kl:
@@ -180,23 +254,52 @@ def discriminate_solid185(nodes):
     else:
         internal_element_type = EN.Hexaedron_8
         unique_nodes = nodes
-
     return internal_element_type, list(unique_nodes)
 
-#Ansys Element types:
-# SOLID185: EN.Hexaedron_8, may degenerate to EN.Wedge_6, EN.Pyramid_5 or EN_Tetrahedron_4
-# SOLID186: EN.Hexaedron_20, may degenerate to wedge, pyramid or tetrahedron
-# SOLID187: EN.Tetrahedron_10
-ansys_element_types = {'185': discriminate_solid185}
+def discriminate_solid186(nodes):
+    # SOLID186: EN.Hexaedron_20
+    # May degenerate to wedge, pyramid or tetrahedron
+    implemented = False
+    assert(implemented)
+
+def discriminate_solid187(nodes):
+    # SOLID187: EN.Tetrahedron_10
+    return EN.Tetrahedron_10, nodes
+
+
+internal_element_type_from_ansys = {
+        '154': discriminate_surf154,
+        '185': discriminate_solid185,
+        '187': discriminate_solid187
+        }
+
 
 from BasicTools.IO.IOFactory import RegisterReaderClass
 RegisterReaderClass(".ansys", AnsysReader)
 
-def CheckIntegrity():
 
+def CheckIntegrity():
     __teststring = u"""
-nblock,3,,6
+nblock,3,,24
 (1i9,3e20.9e3)
+      551     7.784032421E-02     6.661491953E-02     2.000000000E-01
+     1691     8.991484887E-02     6.820190681E-02     1.903279204E-01
+     1944     7.455965603E-02     6.107661302E-02     1.906569403E-01
+     2111     9.395317480E-02     5.598013490E-02     1.886333684E-01
+     2218     8.604121057E-02     6.526570146E-02     1.798559428E-01
+     2233     8.587154519E-02     5.451195787E-02     1.957137802E-01
+     4975     8.387758654E-02     6.740841317E-02     1.951639602E-01
+     4976     7.619999012E-02     6.384576627E-02     1.953284701E-01
+     4978     8.185593470E-02     6.056343870E-02     1.978568901E-01
+    11353     8.223725245E-02     6.463925992E-02     1.904924303E-01
+    11355     9.193401184E-02     6.209102085E-02     1.894806444E-01
+    11357     8.797802972E-02     6.673380414E-02     1.850919316E-01
+    11358     8.789319703E-02     6.135693234E-02     1.930208503E-01
+    12938     8.030043330E-02     6.317115724E-02     1.852564415E-01
+    12939     8.021560061E-02     5.779428544E-02     1.931853602E-01
+    13639     8.999719269E-02     6.062291818E-02     1.842446556E-01
+    13640     8.991236000E-02     5.524604638E-02     1.921735743E-01
+    13703     8.595637788E-02     5.988882967E-02     1.877848615E-01
     32654    -1.274217310E+01     3.840702614E+01    -1.612452772E+01
     37816    -1.334739993E+01     3.905933630E+01    -1.603912279E+01
     37856    -1.364793556E+01     3.797073871E+01    -1.607483826E+01
@@ -214,15 +317,36 @@ eblock,19,solid,,340744
 CMBLOCK,FewNodes,NODE,      2
 (8i10)
      37856     37816
+et,2,187
+eblock,19,solid,,3
+(19i9)
+        1        2        1        1        0        0        0        0       10        0        1     1691     2233     1944     2218    11358    12939    11353    11357
+    13703    12938
+        1        2        1        1        0        0        0        0       10        0        2     1691     2111     2233     2218    11355    13640    11358    11357
+    13639    13703
+        1        2        1        1        0        0        0        0       10        0        3      551     1691     2233     1944     4975    11358     4978     4976
+    11353    12939
+-1
+et,3,154
+eblock,10,,,2
+(15i9)
+    10915        3        3        3       12      551     1691     2233     2233     4975    11358     2233     4976
+    10916        3        3        3       12     1691     2233     1944     1944    11358    12939     1944    11357
+-1
 """
+
     res = ReadAnsys(string=__teststring)
 
     print("----")
-    print(res.nodes)
-    print(res.originalIDNodes)
-    print(res.GetElementsOfType('tet4').connectivity)
-    print(res.GetNodalTag('FewNodes'))
-    print(res.GetNodalTag('FewNodes').GetIds())
+    print('coords: {}'.format(res.nodes))
+    print('node ids: {}'.format(res.originalIDNodes))
+    print('tet4: {}'.format((res.GetElementsOfType('tet4').connectivity)))
+    print('tet10: {}'.format((res.GetElementsOfType('tet10').connectivity)))
+    print('tri6: {}'.format((res.GetElementsOfType('tri6').connectivity)))
+    node_tag = res.GetNodalTag('FewNodes')
+    print('node set {}: {}'.format(node_tag, node_tag.GetIds()))
+    for t in ('et_1', 'et_2', 'et_3'):
+        print('element set {}: {}'.format(t, res.GetElementsInTag(t)))
 
     return 'ok'
 

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 __all__ = [
+'AnsysReader',
 'AscReader',
 'CodeInterface',
 'CsvWriter',
@@ -43,7 +44,6 @@ __all__ = [
 "PipeIO",
 "ZsetTools",
 "VtuReader",
-
 ]
 
 __author__ = "Felipe Bordeu"
