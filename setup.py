@@ -6,11 +6,15 @@ enable_MKL = True
 debug = False
 force = True # to force recompilation
 annotate = debug # to generate annotation (html files )
+useOpenmp = True
 
 if debug:
     compile_args = ['-g','-O', '-std=c++11']
 else:
     compile_args = ['-O2', '-std=c++11']
+
+if useOpenmp:
+    compile_args.append("-openmp")
 
 if enable_MKL:
     #compile_args.append("-DEIGEN_USE_MKL_ALL")
