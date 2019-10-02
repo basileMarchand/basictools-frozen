@@ -20,6 +20,7 @@ def Read(inputData, inout):
         return ReadVector(inputData, inout.dtype.type)
     else:
         if inout is None:
+            inputData = ApplyGlobalDictionary(inputData)
             return inputData
         else:
             return ReadScalar(inputData, type(inout) )
@@ -136,26 +137,28 @@ def ReadProperties(data, props ,obj_or_dic,typeConversion=True):
         if prop in data:
 
            theSetter = getattr( obj_or_dic, "Set"+prop[0].upper()+ str(prop[1:]), None)
+           inputData = ApplyGlobalDictionary(data[prop])
            if theSetter is None:
               #print(obj.__dict__)
               #conversion only if the target type is different of None
               #try:
 
+
                   if type(obj_or_dic) == dict:
                      if typeConversion and (obj_or_dic[prop] is not None) :
-                         obj_or_dic[prop] = Read(data[prop],obj_or_dic[prop])
+                         obj_or_dic[prop] = Read(inputData,obj_or_dic[prop])
                      else:
-                         obj_or_dic[prop] = data[prop]
+                         obj_or_dic[prop] = inputData
                   else:
                      if typeConversion and (obj_or_dic.__dict__[prop] is not None) :
-                         obj_or_dic.__dict__[prop] = Read(data[prop],obj_or_dic.__dict__[prop])
+                         obj_or_dic.__dict__[prop] = Read(inputData,obj_or_dic.__dict__[prop])
                      else:
-                         obj_or_dic.__dict__[prop] = data[prop]
+                         obj_or_dic.__dict__[prop] = inputData
 
               #except:
               #    raise (ValueError("Error setting  '"+str(prop)+"'  to object of type " + str(type(obj_or_dic)) ) )
            else:
-              theSetter(data[prop])
+              theSetter(inputData)
     except KeyError as e:
         print(" object of type " +str(type(obj_or_dic)) + " does not have atribute {0}: ".format( str(e) ))
         raise
