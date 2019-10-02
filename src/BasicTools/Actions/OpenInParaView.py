@@ -6,6 +6,10 @@ from BasicTools.IO.PathControler import PathControler as PC
 paraviewExec= "paraview"
 def OpenInParaView( mesh=None,filename=None, run=True):
     from subprocess import Popen
+    from BasicTools.Helpers.which import which
+
+    if which(paraviewExec) is None:
+        print("App " + str( paraviewExec) + " Not Found" )
 
     if filename is None and mesh is None and run:
         Popen([paraviewExec])
