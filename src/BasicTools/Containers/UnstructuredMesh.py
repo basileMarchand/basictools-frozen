@@ -241,8 +241,8 @@ class UnstructuredMesh(MeshBase):
         self.nodes = np.empty((0,3),dtype=np.double)
         self.originalIDNodes = np.empty((0,),dtype=np.int)
         self.elements = AllElements();
-        self.boundingMin = [0,0,0];
-        self.boundingMax = [0,0,0];
+        self.boundingMin = np.array([0.,0,0]);
+        self.boundingMax = np.array([0.,0,0]);
 
     def GetNumberOfNodes(self):
         """
