@@ -116,7 +116,7 @@ class XdmfGrid(Xdmfbase):
             res.nodes = self.geometry.GetNodes()
 
             res.elements = self.topology.GetConnectivity()
-            print(self.topology)
+            #print(self.topology)
 
 
             #res.SetOrigin(self.geometry.GetOrigin())
@@ -327,8 +327,8 @@ class XdmfTopology(Xdmfbase):
             cpt = 0
             elcpt = 0
             while(cpt < ts):
-                print(rawdata)
-                print(XdmfNumberToEN)
+                #print(rawdata)
+                #print(XdmfNumberToEN)
                 EN = XdmfNumberToEN[rawdata[cpt]]
                 if rawdata[cpt] == 0x2 or rawdata[cpt] == 0x1 :
                    cpt += 1
