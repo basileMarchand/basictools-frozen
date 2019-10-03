@@ -8,9 +8,9 @@ from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 
 
 class LocalVariables(BaseOutputObject):
-    def __init__(self):
+    def __init__(self, prePostChars=("{","}")):
         super(LocalVariables,self).__init__()
-        self.prePostChars = ("{","}")
+        self.prePostChars = prePostChars
         self.variables = {}
 
     def SetVariable(self,key,value):
@@ -32,7 +32,6 @@ def AddToGlobalDictionary(key,value):
 
 def RemoveFromGlobalDictionary(key):
     globalDict.UnsetVariable(key)
-
 
 def ApplyGlobalDictionary(string):
     return globalDict.Apply(string)
