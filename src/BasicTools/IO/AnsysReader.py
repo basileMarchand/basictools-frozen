@@ -138,12 +138,12 @@ class AnsysReader(ReaderBase):
             if line.startswith('type,'):
                 tokens = line.split(',')
                 et = int(substitutions.Apply(tokens[1]))
-                current_element_type = element_type_ids[et]
+                current_element_type = et
                 continue
 
             if line.startswith('en,'):
                 et = current_element_type
-                assert(et in ('170', '201'))
+                assert(element_type_ids[et] in ('170', '201'))
                 tokens = line.split(',')
                 assert(len(tokens) == 3 and tokens[0] == 'en')
                 element_id = int(tokens[1])
