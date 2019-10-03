@@ -7,6 +7,7 @@ import numpy as np
 import BasicTools.Containers.ElementNames as EN
 import BasicTools.Containers.UnstructuredMesh as UM
 from BasicTools.IO.ReaderBase import ReaderBase
+from BasicTools.Helpers.ParserHelper import LocalVariables
 
 
 def ReadAnsys(fileName=None, string=None, out=None, **kwargs):
@@ -15,6 +16,7 @@ def ReadAnsys(fileName=None, string=None, out=None, **kwargs):
     reader.SetStringToRead(string)
     reader.Read(fileName=fileName, string=string, out=out, **kwargs)
     return reader.output
+
 
 class AnsysReader(ReaderBase):
     def __init__(self):
@@ -34,11 +36,17 @@ class AnsysReader(ReaderBase):
         element_type_and_rank_from_id = {}
         tagsNames = []
         element_type_ids = dict() # Local to global element type numbering
+        substitutions = LocalVariables(prePostChars=('',''))
 
         while(True):
             line = self.ReadCleanLine()
             if not line:
                 break
+
+            if line.startswith('*set'):
+                tokens = line.split(',')
+                substitutions.SetVariable(tokens[1], tokens[2])
+                continue
 
             if line.startswith('nblock'):
                 # nblock, NUMFIELD, Solkey, NDMAX[, NDSEL]
@@ -70,7 +78,8 @@ class AnsysReader(ReaderBase):
 
             if line.startswith('et,'):
                 tokens = line.split(',')
-                element_type_ids[int(tokens[1])] = tokens[2]
+                et = int(substitutions.Apply(tokens[1]))
+                element_type_ids[et] = tokens[2]
                 continue
 
             if line.startswith('eblock'):
@@ -338,7 +347,8 @@ eblock,19,solid,,3
         1        2        1        1        0        0        0        0       10        0        3      551     1691     2233     1944     4975    11358     4978     4976
     11353    12939
 -1
-et,3,154
+*set,tid,3
+et,tid,154
 eblock,10,,,2
 (15i9)
     10915        3        3        3       12      551     1691     2233     2233     4975    11358     2233     4976
