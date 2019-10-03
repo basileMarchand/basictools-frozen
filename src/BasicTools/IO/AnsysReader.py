@@ -190,8 +190,7 @@ class AnsysReader(ReaderBase):
             values = [int(t) for t in tokens]
             element_id = values[0]
             element_properties = values[1:4]
-            # Ensure that all 3 properties are identical
-            assert(element_properties[:-1] == element_properties[1:])
+            # Ignore entries 3 and 4 for the moment
             et = element_properties[0]
             element_type_id = element_type_ids[et]
             nodes = values[5:]
