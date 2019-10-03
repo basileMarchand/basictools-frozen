@@ -49,11 +49,11 @@ class AnsysReader(ReaderBase):
                 continue
 
             if line.startswith('nblock'):
-                # nblock, NUMFIELD, Solkey, NDMAX[, NDSEL]
+                # nblock, NUMFIELD, [Solkey, NDMAX[, NDSEL]]
                 tokens = line.split(',')
                 field_count = int(tokens[1])
-                solid_key = tokens[2]
-                max_node_count = int(tokens[3])
+                solid_key = tokens[2] if len(tokens) > 2 else ''
+                max_node_count = int(tokens[3]) if len(tokens) > 3 else 1
 
                 res.nodes = np.empty((max_node_count, field_count))
                 res.originalIDNodes = np.empty((max_node_count,), dtype=np.int)
