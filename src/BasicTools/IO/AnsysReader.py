@@ -137,7 +137,7 @@ class AnsysReader(ReaderBase):
             # Ugly hack to handle nodal forces
             if line.startswith('type,'):
                 tokens = line.split(',')
-                et = int(tokens[1])
+                et = int(substitutions.Apply(tokens[1]))
                 element_type_id = element_type_ids[et]
                 if element_type_id == '201':
                     # FOLLW201 is a one-node 3d element used to apply nodal forces
