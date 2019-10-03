@@ -139,6 +139,7 @@ class AnsysReader(ReaderBase):
                 tokens = line.split(',')
                 et = int(substitutions.Apply(tokens[1]))
                 element_type_id = element_type_ids[et]
+                assert(element_type_id == '201')
                 if element_type_id == '201':
                     # FOLLW201 is a one-node 3d element used to apply nodal forces
                     line = self.ReadCleanLine()
