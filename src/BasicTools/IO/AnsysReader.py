@@ -40,6 +40,7 @@ class AnsysReader(ReaderBase):
         tagsNames = []
         element_type_ids = dict() # Local to global element type numbering
         substitutions = LocalVariables(prePostChars=('',''))
+        current_element_type = None
         node_count = 0
 
         while(True):
@@ -134,29 +135,30 @@ class AnsysReader(ReaderBase):
                         container.AddElementToTag(rank, tag_name)
                 continue
 
-            # Ugly hack to handle nodal forces
             if line.startswith('type,'):
                 tokens = line.split(',')
                 et = int(substitutions.Apply(tokens[1]))
-                element_type_id = element_type_ids[et]
-                assert(element_type_id == '201')
-                if element_type_id == '201':
-                    # FOLLW201 is a one-node 3d element used to apply nodal forces
-                    line = self.ReadCleanLine()
-                    tokens = line.split(',')
-                    assert(len(tokens) == 3 and tokens[0] == 'en')
-                    element_id = int(tokens[1])
-                    node_id = int(tokens[2])
-                    node_rank = node_rank_from_id[node_id]
-                    elements = res.GetElementsOfType(EN.Point_1)
-                    internal_count = elements.AddNewElement([node_rank], element_id)
-                    internal_rank = internal_count - 1
-                    auto_etag = 'et_{}'.format(et)
-                    elements.AddElementToTag(internal_rank, auto_etag)
-                    # Figure out a nodal tag name from the element id
-                    auto_ntag = 'elem_{}'.format(element_id)
-                    tag = res.nodesTags.CreateTag(auto_ntag)
-                    tag.SetIds([node_rank_from_id[node_id]])
+                current_element_type = element_type_ids[et]
+                continue
+
+            if line.startswith('en,'):
+                et = current_element_type
+                assert(et == '201')
+                # FOLLW201 is a one-node 3d element used to apply nodal forces
+                tokens = line.split(',')
+                assert(len(tokens) == 3 and tokens[0] == 'en')
+                element_id = int(tokens[1])
+                node_id = int(tokens[2])
+                node_rank = node_rank_from_id[node_id]
+                elements = res.GetElementsOfType(EN.Point_1)
+                internal_count = elements.AddNewElement([node_rank], element_id)
+                internal_rank = internal_count - 1
+                auto_etag = 'et_{}'.format(et)
+                elements.AddElementToTag(internal_rank, auto_etag)
+                # Figure out a nodal tag name from the element id
+                auto_ntag = 'elem_{}'.format(element_id)
+                tag = res.nodesTags.CreateTag(auto_ntag)
+                tag.SetIds([node_rank_from_id[node_id]])
                 continue
 
         self.EndReading()
