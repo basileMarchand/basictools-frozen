@@ -4,16 +4,39 @@
 import numpy as np
 import math
 
-globalDict = {}
+from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
+
+
+class LocalVariables(BaseOutputObject):
+    def __init__(self):
+        super(LocalVariables,self).__init__()
+        self.prePostChars = ("{","}")
+        self.variables = {}
+
+    def SetVariable(self,key,value):
+        self.variables[str(key)] = str(value)
+
+    def UnsetVariable(self,key):
+        self.variables.pop(str(key))
+
+    def Apply(self,string):
+        if type(string) != str: return string
+        for key,value in self.variables.items():
+            string= string.replace(self.prePostChars[0]+key+self.prePostChars[1],value)
+        return string
+
+globalDict = LocalVariables()
 
 def AddToGlobalDictionary(key,value):
-    globalDict[str(key)] = str(value)
+    globalDict.SetVariable(key,value)
+
+def RemoveFromGlobalDictionary(key):
+    globalDict.UnsetVariable(key)
+
 
 def ApplyGlobalDictionary(string):
-    if type(string) != str: return string
-    for key,value in globalDict.items():
-        string= string.replace("{"+key+"}",value)
-    return string
+    return globalDict.Apply(string)
+
 
 def Read(inputData, inout):
     if type(inout).__module__ == np.__name__:
@@ -242,7 +265,7 @@ def CheckIntegrity():
     AddToGlobalDictionary("FILENAME","toto.xml")
 
     print(ReadString("my FILENAME is '{FILENAME}' "))
-    globalDict.pop("FILENAME")
+    RemoveFromGlobalDictionary("FILENAME")
     return "ok"
 
 
