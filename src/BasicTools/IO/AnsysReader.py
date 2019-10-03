@@ -143,8 +143,7 @@ class AnsysReader(ReaderBase):
 
             if line.startswith('en,'):
                 et = current_element_type
-                assert(et == '201')
-                # FOLLW201 is a one-node 3d element used to apply nodal forces
+                assert(et in ('170', '201'))
                 tokens = line.split(',')
                 assert(len(tokens) == 3 and tokens[0] == 'en')
                 element_id = int(tokens[1])
@@ -282,6 +281,7 @@ def discriminate_solid187(nodes):
     # SOLID187: EN.Tetrahedron_10
     return EN.Tetrahedron_10, nodes
 
+# FOLLW201 is a one-node 3d element used to apply nodal forces
 
 internal_element_type_from_ansys = {
         '170': discriminate_tri_or_quad,
