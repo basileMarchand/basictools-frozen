@@ -32,11 +32,15 @@ class AnsysReader(ReaderBase):
         self.StartReading()
         res = UM.UnstructuredMesh() if out is None else out
 
+        res.nodes = np.empty((0, 3))
+        res.originalIDNodes = np.empty((0,), dtype=np.int)
+
         node_rank_from_id = {}
         element_type_and_rank_from_id = {}
         tagsNames = []
         element_type_ids = dict() # Local to global element type numbering
         substitutions = LocalVariables(prePostChars=('',''))
+        node_count = 0
 
         while(True):
             line = self.ReadCleanLine()
@@ -53,27 +57,28 @@ class AnsysReader(ReaderBase):
                 tokens = line.split(',')
                 field_count = int(tokens[1])
                 solid_key = tokens[2] if len(tokens) > 2 else ''
-                max_node_count = int(tokens[3]) if len(tokens) > 3 else 1
+                max_new_node_count = int(tokens[3]) if len(tokens) > 3 else 1
 
-                res.nodes = np.empty((max_node_count, field_count))
-                res.originalIDNodes = np.empty((max_node_count,), dtype=np.int)
-
+                assert(field_count == 3)
                 assert(solid_key == '')
+
+                expected_node_count = node_count + max_new_node_count
+                res.nodes.resize((expected_node_count, 3))
+                res.originalIDNodes.resize((expected_node_count,))
+
                 # Skip format line
                 line = self.ReadCleanLine()
 
-                node_rank = 0
                 while True:
                     line = self.ReadCleanLine()
                     if line.startswith('-1'):
                         break
-                    assert(node_rank < max_node_count)
                     tokens = line.split()
                     node_id = int(tokens[0])
-                    node_rank_from_id[node_id] = node_rank
-                    res.originalIDNodes[node_rank] = node_id
-                    res.nodes[node_rank, :] = [float(t) for t in tokens[1:]]
-                    node_rank += 1
+                    node_rank_from_id[node_id] = node_count
+                    res.originalIDNodes[node_count] = node_id
+                    res.nodes[node_count, :] = [float(t) for t in tokens[1:]]
+                    node_count += 1
                 continue
 
             if line.startswith('et,'):
