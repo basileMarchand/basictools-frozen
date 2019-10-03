@@ -147,7 +147,7 @@ class AnsysReader(ReaderBase):
                 tokens = line.split(',')
                 assert(len(tokens) == 3 and tokens[0] == 'en')
                 element_id = int(tokens[1])
-                node_id = int(tokens[2])
+                node_id = int(substitutions.Apply(tokens[2]))
                 node_rank = node_rank_from_id[node_id]
                 elements = res.GetElementsOfType(EN.Point_1)
                 internal_count = elements.AddNewElement([node_rank], element_id)
