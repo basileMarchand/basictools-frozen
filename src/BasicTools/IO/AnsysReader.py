@@ -29,146 +29,161 @@ class AnsysReader(ReaderBase):
             self.SetFileName(fileName)
         if string is not None:
             self.SetStringToRead(string)
+
         self.StartReading()
-        res = UM.UnstructuredMesh() if out is None else out
-
-        res.nodes = np.empty((0, 3))
-        res.originalIDNodes = np.empty((0,), dtype=np.int)
-
-        node_rank_from_id = {}
-        element_type_and_rank_from_id = {}
-        tagsNames = []
-        element_type_ids = dict() # Local to global element type numbering
-        substitutions = LocalVariables(prePostChars=('',''))
-        current_element_type = None
-        node_count = 0
-
-        while(True):
-            line = self.ReadCleanLine()
-            if not line:
-                break
-
-            if line.startswith('*set'):
-                tokens = line.split(',')
-                substitutions.SetVariable(tokens[1], tokens[2])
-                continue
-
-            if line.startswith('nblock'):
-                # nblock, NUMFIELD, [Solkey, NDMAX[, NDSEL]]
-                tokens = line.split(',')
-                field_count = int(tokens[1])
-                solid_key = tokens[2] if len(tokens) > 2 else ''
-                max_new_node_count = int(tokens[3]) if len(tokens) > 3 else 1
-
-                assert(field_count == 3)
-                assert(solid_key == '')
-
-                expected_node_count = node_count + max_new_node_count
-                res.nodes.resize((expected_node_count, 3))
-                res.originalIDNodes.resize((expected_node_count,))
-
-                # Skip format line
-                line = self.ReadCleanLine()
-
-                while True:
-                    line = self.ReadCleanLine()
-                    if line.startswith('-1'):
-                        break
-                    tokens = line.split()
-                    node_id = int(tokens[0])
-                    node_rank_from_id[node_id] = node_count
-                    res.originalIDNodes[node_count] = node_id
-                    res.nodes[node_count, :] = [float(t) for t in tokens[1:]]
-                    node_count += 1
-                continue
-
-            if line.startswith('et,'):
-                tokens = line.split(',')
-                et = int(substitutions.Apply(tokens[1]))
-                element_type_ids[et] = tokens[2]
-                continue
-
-            if line.startswith('eblock'):
-                # eblock, NUM_NODES, Solkey[,,count]
-                tokens = line.split(',')
-                # int(tokens[1]) -> num_nodes: Cannot be trusted
-                solid_key = tokens[2]
-                max_element_count = int(tokens[4])
-
-                # Skip format line
-                line = self.ReadCleanLine()
-
-                if solid_key == 'solid':
-                    self.ReadSolidEblock(res, element_type_ids, node_rank_from_id, element_type_and_rank_from_id, max_element_count)
-                else:
-                    self.ReadNonSolidEblock(res, element_type_ids, node_rank_from_id, element_type_and_rank_from_id, max_element_count)
-                continue
-
-            if line.startswith('CMBLOCK'):
-                tokens = line.split(',')
-                tag_name = tokens[1].strip()
-                kind = tokens[2]
-                item_count = int(tokens[3])
-
-                items_per_line = 8
-                full_line_count = item_count // items_per_line
-                remainder = item_count % items_per_line
-                line_count = full_line_count if remainder == 0 \
-                        else full_line_count + 1
-
-                # Skip format line
-                line = self.ReadCleanLine()
-
-                items = list()
-                for i in range(line_count):
-                    line = self.ReadCleanLine()
-                    items.extend((int(t) for t in line.split()))
-
-                if kind == 'NODE':
-                    tag = res.nodesTags.CreateTag(tag_name)
-                    tag.SetIds([node_rank_from_id[n] for n in items])
-                else:
-                    assert(kind == 'ELEMENT')
-                    for element_id in items:
-                        element_type, rank = element_type_and_rank_from_id[element_id]
-                        container = res.GetElementsOfType(element_type)
-                        container.AddElementToTag(rank, tag_name)
-                continue
-
-            if line.startswith('type,'):
-                tokens = line.split(',')
-                et = int(substitutions.Apply(tokens[1]))
-                current_element_type = et
-                continue
-
-            if line.startswith('en,'):
-                et = current_element_type
-                assert(element_type_ids[et] in ('170', '201'))
-                tokens = line.split(',')
-                assert(len(tokens) == 3 and tokens[0] == 'en')
-                element_id = int(tokens[1])
-                node_id = int(substitutions.Apply(tokens[2]))
-                node_rank = node_rank_from_id[node_id]
-                elements = res.GetElementsOfType(EN.Point_1)
-                internal_count = elements.AddNewElement([node_rank], element_id)
-                internal_rank = internal_count - 1
-                auto_etag = 'et_{}'.format(et)
-                elements.AddElementToTag(internal_rank, auto_etag)
-                # Figure out a nodal tag name from the element id
-                auto_ntag = 'elem_{}'.format(element_id)
-                tag = res.nodesTags.CreateTag(auto_ntag)
-                tag.SetIds([node_rank_from_id[node_id]])
-                continue
-
+        session = Session(self, out)
         self.EndReading()
-        res.PrepareForOutput()
-        self.output = res
-        return res
 
-    def ReadSolidEblock(self, res, element_type_ids, node_rank_from_id, element_type_and_rank_from_id, max_element_count):
+        result = session.GetMesh()
+        result.PrepareForOutput()
+        self.output = result
+        return result
+
+
+class Session:
+    def __init__(self, parent, out=None):
+        self.parent = parent
+        self.result = UM.UnstructuredMesh() if out is None else out
+
+        # Nodes
+        self.result.nodes = np.empty((0, 3), dtype=np.double)
+        self.result.originalIDNodes = np.empty((0,), dtype=np.int)
+        self.node_count = 0
+        self.node_rank_from_id = dict()
+
+        # Elements
+        self.element_type_and_rank_from_id = dict()
+        self.element_type_ids = dict() # Local to global element type numbering
+        self.current_element_type = None
+
+        # Variables
+        self.substitutions = LocalVariables(prePostChars=('',''))
+
+        actions = {
+                '*set': self.ParseAssignment,
+                'nblock': self.ParseNodeBlock,
+                'eblock': self.ParseElementBlock,
+                'en': self.ParseUnblockedElement,
+                'et': self.ParseElementTypeDefinition,
+                'type': self.ParseElementTypeSelection,
+                'CMBLOCK': self.ParseTagDefinition
+                }
+
+        def Pass(args): pass
+
+        while True:
+            line = self.parent.ReadCleanLine()
+            if not line: break
+            tokens = line.split(',')
+            keyword = tokens[0]
+            arguments = tokens[1:]
+            actions.get(keyword, Pass)(arguments)
+
+    def ParseAssignment(self, args):
+        self.substitutions.SetVariable(args[0], args[1])
+
+    def ParseNodeBlock(self, args):
+        # Arguments: NUMFIELD,[Solkey,NDMAX[,NDSEL]]
+        field_count = int(args[0])
+        solid_key = args[1] if len(args) > 1 else ''
+        max_new_node_count = int(args[2]) if len(args) > 2 else 1
+
+        assert(field_count == 3)
+        assert(solid_key == '')
+
+        expected_node_count = self.node_count + max_new_node_count
+        self.result.nodes.resize((expected_node_count, 3))
+        self.result.originalIDNodes.resize((expected_node_count,))
+
+        # Skip format line
+        line = self.parent.ReadCleanLine()
+
+        while True:
+            line = self.parent.ReadCleanLine()
+            if line.startswith('-1'):
+                break
+            tokens = line.split()
+            node_id = int(tokens[0])
+            self.node_rank_from_id[node_id] = self.node_count
+            self.result.originalIDNodes[self.node_count] = node_id
+            self.result.nodes[self.node_count, :] = [float(t) for t in tokens[1:]]
+            self.node_count += 1
+
+    def ParseElementBlock(self, args):
+        # Arguments: NUM_NODES,Solkey[,,count]
+        # int(args[0]) -> num_nodes: Cannot be trusted
+        solid_key = args[1]
+        max_element_count = int(args[3])
+
+        # Skip format line
+        line = self.parent.ReadCleanLine()
+
+        if solid_key == 'solid':
+            self.ReadSolidEblock(max_element_count)
+        else:
+            self.ReadNonSolidEblock(max_element_count)
+
+    def ParseUnblockedElement(self, args):
+        et = self.current_element_type
+        assert(self.element_type_ids[et] in ('170', '201'))
+        element_id = int(args[0])
+        node_id = int(self.substitutions.Apply(args[1]))
+        node_rank = self.node_rank_from_id[node_id]
+        elements = self.result.GetElementsOfType(EN.Point_1)
+        internal_count = elements.AddNewElement([node_rank], element_id)
+        internal_rank = internal_count - 1
+        auto_etag = 'et_{}'.format(et)
+        elements.AddElementToTag(internal_rank, auto_etag)
+        # Figure out a nodal tag name from the element id
+        auto_ntag = 'elem_{}'.format(element_id)
+        tag = self.result.nodesTags.CreateTag(auto_ntag)
+        tag.SetIds([self.node_rank_from_id[node_id]])
+
+    def ParseElementTypeDefinition(self, args):
+        et = int(self.substitutions.Apply(args[0]))
+        self.element_type_ids[et] = args[1]
+
+    def ParseElementTypeSelection(self, args):
+        et = int(self.substitutions.Apply(args[0]))
+        self.current_element_type = et
+
+    def ParseTagDefinition(self, args):
+        tag_name = args[0].strip()
+        kind = args[1]
+        item_count = int(args[2])
+
+        items_per_line = 8
+        full_line_count = item_count // items_per_line
+        remainder = item_count % items_per_line
+        line_count = full_line_count if remainder == 0 \
+                else full_line_count + 1
+
+        # Skip format line
+        line = self.parent.ReadCleanLine()
+
+        items = list()
+        for i in range(line_count):
+            line = self.parent.ReadCleanLine()
+            items.extend((int(t) for t in line.split()))
+
+        if kind == 'NODE':
+            tag = self.result.nodesTags.CreateTag(tag_name)
+            tag.SetIds([self.node_rank_from_id[n] for n in items])
+        else:
+            assert(kind == 'ELEMENT')
+            for element_id in items:
+                element_type, rank = self.element_type_and_rank_from_id[element_id]
+                container = self.result.GetElementsOfType(element_type)
+                container.AddElementToTag(rank, tag_name)
+
+
+    def GetMesh(self):
+        return self.result
+
+    def ReadSolidEblock(self, max_element_count):
         element_rank = 0
         while True:
-            line = self.ReadCleanLine()
+            line = self.parent.ReadCleanLine()
             if line.startswith('-1'):
                 break
             assert(element_rank < max_element_count)
@@ -179,26 +194,26 @@ class AnsysReader(ReaderBase):
             element_id = values[10]
             element_node_count = values[8]
             if element_node_count > 8:
-                overflow = self.ReadCleanLine()
+                overflow = self.parent.ReadCleanLine()
                 values.extend((int (t) for t in overflow.split()))
             nodes = values[11:11+element_node_count]
-            element_type_id = element_type_ids[et]
+            element_type_id = self.element_type_ids[et]
             internal_element_type, unique_nodes = \
                     internal_element_type_from_ansys[element_type_id](nodes)
-            connectivity = [node_rank_from_id[n] for n in unique_nodes]
-            elements = res.GetElementsOfType(internal_element_type)
+            connectivity = [self.node_rank_from_id[n] for n in unique_nodes]
+            elements = self.result.GetElementsOfType(internal_element_type)
             internal_count = elements.AddNewElement(connectivity, element_id)
             internal_rank = internal_count - 1
-            element_type_and_rank_from_id[element_id] = \
+            self.element_type_and_rank_from_id[element_id] = \
                     (internal_element_type, internal_rank)
             auto_etag = 'et_{}'.format(et)
             elements.AddElementToTag(internal_rank, auto_etag)
             element_rank += 1
 
-    def ReadNonSolidEblock(self, res, element_type_ids, node_rank_from_id, element_type_and_rank_from_id, max_element_count):
+    def ReadNonSolidEblock(self, max_element_count):
         element_rank = 0
         while True:
-            line = self.ReadCleanLine()
+            line = self.parent.ReadCleanLine()
             if line.startswith('-1'):
                 break
             assert(element_rank < max_element_count)
@@ -208,15 +223,15 @@ class AnsysReader(ReaderBase):
             element_properties = values[1:4]
             # Ignore entries 3 and 4 for the moment
             et = element_properties[0]
-            element_type_id = element_type_ids[et]
+            element_type_id = self.element_type_ids[et]
             nodes = values[5:]
             internal_element_type, unique_nodes = \
                     internal_element_type_from_ansys[element_type_id](nodes)
-            connectivity = [node_rank_from_id[n] for n in unique_nodes]
-            elements = res.GetElementsOfType(internal_element_type)
+            connectivity = [self.node_rank_from_id[n] for n in unique_nodes]
+            elements = self.result.GetElementsOfType(internal_element_type)
             internal_count = elements.AddNewElement(connectivity, element_id)
             internal_rank = internal_count - 1
-            element_type_and_rank_from_id[element_id] = \
+            self.element_type_and_rank_from_id[element_id] = \
                     (internal_element_type, internal_rank)
             auto_etag = 'et_{}'.format(et)
             elements.AddElementToTag(internal_rank, auto_etag)
