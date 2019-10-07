@@ -35,19 +35,48 @@ class AnsysReader(ReaderBase):
         if string is not None:
             self.SetStringToRead(string)
 
-        self.StartReading()
-        session = Session(self, out)
-        self.EndReading()
+        with self.GetIterator() as iterator:
+            session = Session(iterator, out)
 
         result = session.GetMesh()
         result.PrepareForOutput()
         self.output = result
         return result
 
+    def GetIterator(self):
+        return InputContextManager(self)
+
+
+class InputContextManager:
+    def __init__(self, reader):
+        self.reader = reader
+
+    def __enter__(self):
+        self.reader.StartReading()
+        return InputIterator(self.reader)
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.reader.EndReading()
+        return False
+
+
+class InputIterator:
+    def __init__(self, reader):
+        self.reader = reader
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        line = self.reader.ReadCleanLine()
+        if not line:
+            raise StopIteration()
+        return line
+
 
 class Session:
-    def __init__(self, parent, out=None):
-        self.parent = parent
+    def __init__(self, iterator, out=None):
+        self.iterator = iterator
         self.result = UM.UnstructuredMesh() if out is None else out
         self.blockcount = 0
 
@@ -77,9 +106,7 @@ class Session:
 
         def Pass(args): pass
 
-        while True:
-            line = self.parent.ReadCleanLine()
-            if not line: break
+        for line in self.iterator:
             tokens = line.split(',')
             keyword = tokens[0]
             arguments = tokens[1:]
@@ -102,10 +129,10 @@ class Session:
         self.result.originalIDNodes.resize((expected_node_count,))
 
         # Skip format line
-        line = self.parent.ReadCleanLine()
+        line = next(self.iterator)
 
         while True:
-            line = self.parent.ReadCleanLine()
+            line = next(self.iterator)
             if line.startswith('-1'):
                 break
             tokens = line.split()
@@ -122,7 +149,7 @@ class Session:
         max_element_count = int(args[3])
 
         # Skip format line
-        line = self.parent.ReadCleanLine()
+        line = next(self.iterator)
 
         if solid_key == 'solid':
             self.ReadSolidEblock(max_element_count)
@@ -165,11 +192,11 @@ class Session:
                 else full_line_count + 1
 
         # Skip format line
-        line = self.parent.ReadCleanLine()
+        line = next(self.iterator)
 
         items = list()
         for i in range(line_count):
-            line = self.parent.ReadCleanLine()
+            line = next(self.iterator)
             items.extend((int(t) for t in line.split()))
 
         if kind == 'NODE':
@@ -189,7 +216,7 @@ class Session:
     def ReadSolidEblock(self, max_element_count):
         element_rank = 0
         while True:
-            line = self.parent.ReadCleanLine()
+            line = next(self.iterator)
             if line.startswith('-1'):
                 break
             assert(element_rank < max_element_count)
@@ -200,7 +227,7 @@ class Session:
             element_id = values[10]
             element_node_count = values[8]
             if element_node_count > 8:
-                overflow = self.parent.ReadCleanLine()
+                overflow = next(self.iterator)
                 values.extend((int (t) for t in overflow.split()))
             nodes = values[11:11+element_node_count]
             element_type_id = self.element_type_ids[et]
@@ -221,7 +248,7 @@ class Session:
     def ReadNonSolidEblock(self, max_element_count):
         element_rank = 0
         while True:
-            line = self.parent.ReadCleanLine()
+            line = next(self.iterator)
             if line.startswith('-1'):
                 break
             assert(element_rank < max_element_count)
