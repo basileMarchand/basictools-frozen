@@ -65,7 +65,7 @@ class Session:
         # Variables
         self.substitutions = LocalVariables(prePostChars=('',''))
 
-        actions = {
+        commands = {
                 '*set': self.ParseAssignment,
                 'nblock': self.ParseNodeBlock,
                 'eblock': self.ParseElementBlock,
@@ -83,7 +83,7 @@ class Session:
             tokens = line.split(',')
             keyword = tokens[0]
             arguments = tokens[1:]
-            actions.get(keyword, Pass)(arguments)
+            commands.get(keyword, Pass)(arguments)
 
     def ParseAssignment(self, args):
         self.substitutions.SetVariable(args[0], args[1])
