@@ -1,3 +1,7 @@
+#
+# This file is subject to the terms and conditions defined in
+# file 'LICENSE.txt', which is part of this source code package.
+#
 # to deal with time
 # https://blog.kitware.com/defining-time-varying-sources-with-paraviews-programmable-source/
 

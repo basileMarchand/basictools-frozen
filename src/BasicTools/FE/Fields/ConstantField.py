@@ -1,3 +1,7 @@
+#
+# This file is subject to the terms and conditions defined in
+# file 'LICENSE.txt', which is part of this source code package.
+#
 # -*- coding: utf-8 -*-
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 

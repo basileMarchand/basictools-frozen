@@ -1,4 +1,8 @@
 #
+# This file is subject to the terms and conditions defined in
+# file 'LICENSE.txt', which is part of this source code package.
+#
+#
 
 __all__ = ["Helpers","IO","FE","TensorTools","Containers","Actions","Linalg"];
 

@@ -1,3 +1,7 @@
+#
+# This file is subject to the terms and conditions defined in
+# file 'LICENSE.txt', which is part of this source code package.
+#
 # -*- coding: utf-8 -*-
 """ Send all the print statements to a file or to the sink os ...
 
