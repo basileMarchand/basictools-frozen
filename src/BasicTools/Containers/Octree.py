@@ -1,9 +1,10 @@
+# -*- coding: utf-8 -*-
 #
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
 
-# -*- coding: utf-8 -*-
+                       
 #python octree implementation
 # Code © Spencer Krum June 2011
 # Released underl GPLv3 See LICENSE file in this repository

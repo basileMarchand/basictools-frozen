@@ -1,8 +1,9 @@
+# -*- coding: utf-8 -*-
 #
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-# -*- coding: utf-8 -*-
+                       
 
 from BasicTools.Helpers.Tests import TestTempDir
 from BasicTools.IO.PathControler import PathControler as PC
