@@ -383,17 +383,49 @@ class ConstantRectilinearMesh(MeshBase):
         return field[coon].dot(xiChiEta)
 
     def GetValueAtPosMultipleField(self,fields,pos):
-        res = []
-        el = self.GetElementAtPos(pos)
-        coon = self.GetConnectivityForElement(el)
-        xiChiEta = self.GetElementShapeFunctionsAtPos(el,pos)
-        for i in range(fields.shape[0]):
-            locFfield = fields[i][coon]
+        """
+        All fields must have same mask (i.e. NaN values outside the support)
+        """
+        
+        alPos = [pos]
+
+        dim = len(self.__dimensions)
+        for i in range(2**dim):
+            tempPos = 1.*pos
+            res0 = ""
+            for j in range(dim-len(bin(i)[2:])):
+              res0 += "0"
+            res0 += bin(i)[2:]
+            for j,b in enumerate(res0):
+                if b=="0":
+                    tempPos[j] -= self.__spacing[j]
+                else:
+                    tempPos[j] += self.__spacing[j]
+            alPos.append(tempPos)
+
+        acceptableSolution = False
+        
+        count = 0
+        while acceptableSolution == False:
+            pos = alPos[count]
+            res = []
+            el = self.GetElementAtPos(pos)
+            coon = self.GetConnectivityForElement(el)
+            xiChiEta = self.GetElementShapeFunctionsAtPos(el,pos)
+            
+            locFfield = fields[0][coon]
             nans = np.argwhere(np.isnan(locFfield))
             notNans = np.argwhere(~np.isnan(locFfield))
-            locFfield[nans] = np.mean(locFfield[notNans])
-            res.append(locFfield.dot(xiChiEta))
+
+            if notNans.shape[0] != 0:
+                acceptableSolution = True            
+                for i in range(fields.shape[0]):
+                    locFfield = fields[i][coon]
+                    locFfield[nans] = np.mean(locFfield[notNans])
+                    res.append(locFfield.dot(xiChiEta))
+            count += 1
         return res
+    
 
     def GetElementShapeFunctionsDerAtPos(self, el,pos):
         coon = self.GetConnectivityForElement(el)
