@@ -1,5 +1,7 @@
 1) DEPENDENCIES
 
+    python minimal version: 3.6
+
     PYTHON OPEN-SOURCE DEPENDENCIES
     numpy
     scipy
