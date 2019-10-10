@@ -56,7 +56,7 @@ class UtWriter(WriterBase):
         else:
           if len(self.data_node_names):
               self.Nnode            = data_node[self.data_node_names[0]].shape[0]
-              print("warning empty self.dat_node_names")
+              #print("warning empty self.dat_node_names")
 
         if Nint is not None:
           self.Nint = Nint
