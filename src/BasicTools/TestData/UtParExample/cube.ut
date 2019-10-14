@@ -1,0 +1,8 @@
+**meshfile cube.geof
+**node U1 U2 U3 RU1 RU2 RU3
+**integ eto11 eto22 eto33 eto12 eto23 eto31 sig11 sig22 sig33 sig12 sig23 sig31 ein11 ein22 ein33 ein12 ein23 ein31 evi11 evi22 evi33 evi12 evi23 evi31 gamev1 gamev2 gamev3 gamev4 gamev5 gamev6 gamev7 gamev8 gamev9 gamev10 gamev11 gamev12 evcum1 evcum2 evcum3 evcum4 evcum5 evcum6 evcum7 evcum8 evcum9 evcum10 evcum11 evcum12 evgeq lambda cui11 cui22 cui33 cui12 cui23 cui31 gamcu1 gamcu2 gamcu3 gamcu4 gamcu5 gamcu6 cucum1 cucum2 cucum3 cucum4 cucum5 cucum6 cugeq
+**element
+1 1 1 0 0.000000000000000e+00
+2 1 1 1 1.000000000000000e-01
+3 1 2 1 1.500000000000000e-01
+4 1 2 2 2.000000000000000e-01

@@ -1,0 +1,8 @@
+***behavior thermal
+**conductivity isotropic 
+k 1.
+**coefficient
+capacity 2.  
+rho      3.0E+00 
+***return
+
