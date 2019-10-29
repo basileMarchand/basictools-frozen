@@ -258,6 +258,7 @@ class Transform(BaseOutputObject):
     def ApplyTransform(self,point):
         # we apply inverse of the transformation
         #p = point+self.offset
+        point = np.array(point)
         if len(point.shape) == 1:
             return np.dot(self.RMatrix,point-self.offset)
         else:
