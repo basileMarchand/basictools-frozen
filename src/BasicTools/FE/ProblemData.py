@@ -220,8 +220,13 @@ class Transform(BaseOutputObject):
         if self.keepNormalised :
             self.RMatrix[2,:] /= np.linalg.norm(self.RMatrix[2,:])
 
+    def SetOpUsingThird(self,third):
+        self.SetFirst(third)
+        self.SetOperator(op=np.roll(self.RMatrix, -1, axis=0))
+
+
     def SetOperator(self, first=None, second=None, third=None, op=None)    :
-        if op in None:
+        if op is None:
             self.SetFirst(first)
             self.SetSecond(second)
             self.SetThird(third)
@@ -242,10 +247,28 @@ class Transform(BaseOutputObject):
         else:
             return np.dot(self.RMatrix.T,point)+self.offset
 
+    def ApplyInvTransformDirection(self,point):
+        # we apply inverse of the transformation
+        #p = point+self.offset
+        if self.keepNormalised == False:
+            return np.dot(np.linalg.inv(self.RMatrix),point)
+        else:
+            return np.dot(self.RMatrix.T,point)
+
     def ApplyTransform(self,point):
         # we apply inverse of the transformation
         #p = point+self.offset
-        return np.dot(self.RMatrix,point-self.offset)
+        if len(point.shape) == 1:
+            return np.dot(self.RMatrix,point-self.offset)
+        else:
+            res = np.empty_like(point)
+            for i in range(point.shape[0]):
+                res[i,:] = self.ApplyTransform(point[i,:])
+            return res
+
+    def ApplyTransformDirection(self,point):
+        return np.dot(self.RMatrix,point)
+
 
     def GetOrthoNormalBase(self):
         return Transform(self.offset, self.RMatrix[0,:], self.RMatrix[1,:])

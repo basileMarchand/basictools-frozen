@@ -72,63 +72,67 @@ def ComputeDofNumbering(mesh,Space,dofs=None,tag=AllElements,sign=1,fromConnecti
         dofs = {}
         dofs["size"] = mesh.GetNumberOfNodes()
         dofs["dirichelet"] = -1
-        dofs["almanac"] = {}
         dofs["doftopointLeft"] = slice(mesh.GetNumberOfNodes())
         dofs["doftopointRight"] = dofs["doftopointLeft"]
         for name,data in mesh.elements.items():
             dofs[name] = data.connectivity
 
-        return dofs
-
-    if dofs is None:
-        dofs = {}
-        dofs["size"] = 0
-        dofs["dirichelet"] = -1
-        dofs["almanac"] = {}
-        dofs["Hash"] = Hash
-        if sign == 1:
-            cpt = 0
-        else:
-            cpt = -1
+        cpt = dofs["size"]
+        almanac = {}
+        for i in range(cpt):
+            almanac[('P', i, None)] = i
+        dofs["almanac"] = almanac
 
     else:
-        if sign == 1:
-          cpt= dofs["size"]
+        if dofs is None:
+            dofs = {}
+            dofs["size"] = 0
+            dofs["dirichelet"] = -1
+            dofs["almanac"] = {}
+            dofs["Hash"] = Hash
+            if sign == 1:
+                cpt = 0
+            else:
+                cpt = -1
+
         else:
-          cpt = dofs["dirichelet"]
+            if sign == 1:
+              cpt= dofs["size"]
+            else:
+              cpt = dofs["dirichelet"]
 
-    almanac = dofs["almanac"]
+        almanac = dofs["almanac"]
 
-    for name,data in mesh.elements.items():
-        sp = Space[name]
+        for name,data in mesh.elements.items():
+            sp = Space[name]
 
-        if name in dofs:
-            dof = dofs[name]
-        else:
-            dof = np.zeros((data.GetNumberOfElements(),sp.GetNumberOfShapeFunctions()), dtype=np.int_) -1
+            if name in dofs:
+                dof = dofs[name]
+            else:
+                dof = np.zeros((data.GetNumberOfElements(),sp.GetNumberOfShapeFunctions()), dtype=np.int_) -1
 
-        if tag is AllElements:
-            fil = range(data.GetNumberOfElements())
-        elif tag in data.tags:
-            fil = data.GetTag(tag).GetIds()
-        else:
-            continue
+            if tag is AllElements:
+                fil = range(data.GetNumberOfElements())
+            elif tag in data.tags:
+                fil = data.GetTag(tag).GetIds()
+            else:
+                continue
 
-        numberOfShapeFunctions = sp.GetNumberOfShapeFunctions()
-        for i in fil:
-            conn = data.connectivity[i,:]
-            for j in range(numberOfShapeFunctions):
-                h = Hash(sp,j,conn,name,i)
+            numberOfShapeFunctions = sp.GetNumberOfShapeFunctions()
+            for i in fil:
+                conn = data.connectivity[i,:]
+                for j in range(numberOfShapeFunctions):
+                    h = Hash(sp,j,conn,name,i)
 
-                if h in almanac:
-                    d = almanac[h]
-                else:
-                    d = cpt
-                    almanac[h] = d
-                    cpt += 1*sign
-                dof[i,j] = d
+                    if h in almanac:
+                        d = almanac[h]
+                    else:
+                        d = cpt
+                        almanac[h] = d
+                        cpt += 1*sign
+                    dof[i,j] = d
 
-        dofs[name] = dof
+            dofs[name] = dof
 
     if sign ==1:
         dofs["size"] = cpt
