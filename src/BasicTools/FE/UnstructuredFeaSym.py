@@ -34,14 +34,14 @@ class UnstructuredFeaSym(FeaBase):
         for phy in self.physics:
             phy.Reset()
 
-    def ComputeDofNumbering(self,tagsToKeep=None):
+    def ComputeDofNumbering(self,tagsToKeep=None,fromConnectivity=False):
 
         self.spaces = []
         self.numberings = []
 
         for phy in self.physics:
             self.spaces.extend(phy.spaces)
-            phy.ComputeDofNumbering(self.mesh,tagsToKeep)
+            phy.ComputeDofNumbering(self.mesh,tagsToKeep,fromConnectivity=fromConnectivity)
             self.numberings.extend(phy.numberings)
 
         self.totalNumberOfDof = 0
