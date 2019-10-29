@@ -133,25 +133,49 @@ class inmemoryfile():
 
 class BinaryStorage(object):
 
-    def __init__(self):
+    def __init__(self,data=None, filePointer=None):
         self.filename = ""
         self.offset = 0
         self.type = None
         self.itemsize = 0
         self.vectorsize = 0
+        self.usedByNInstances = 0
+        if data is not None:
+            self.usedByNInstances += 1
+            self.type = data.dtype
+            self.itemsize = data.dtype.itemsize
+            self.vectorsize = data.size
+
+        if filePointer is not None:
+            self.filename = filePointer.name
+            self.offset = filePointer.tell()
+
+    def __disp__(self):
+        return str(self.vectorsize) +":"+str(self.usedByNInstances)
 
     def ChangePathOfBinaryStorage(self,newpath):
         import os
         self.filename = newpath + os.sep + os.path.basename(self.filename)
 
-    def UpdateHeavyStorage(self,data):
-       if data.size != self.vectorsize:
-           raise(Exception("Size of data and storage not compatible"))
-
-       f = open(self.filename,'r+b')
+    def GetData(self):
+       f = open(self.filename,'rb')
        f.seek(self.offset,0)
-       data.astype(self.type).ravel().tofile(f)
+       data = np.fromfile(f,self.type,self.vectorsize,sep="")
        f.close()
+       return data
+
+    def UpdateHeavyStorage(self,data):
+        if self.usedByNInstances > 1:
+            raise(Exception("This pointer is used for more than 1 field please (overright or setup the writer with the option maxStorageSize=0"))
+
+        if data.size != self.vectorsize:
+            raise(Exception("Size of data and storage not compatible"))
+        f = open(self.filename,'r+b')
+        f.seek(self.offset,0)
+        data.astype(self.type).ravel().tofile(f)
+        f.close()
+
+
 
 
 class XdmfWriter(WriterBase):
@@ -162,6 +186,8 @@ class XdmfWriter(WriterBase):
         - transient solution (the mesh changes in time)
         - solution written in parafac format (monolitic or in ddm mpi)
     """
+
+
     def __init__(self, fileName = None):
         super(XdmfWriter,self).__init__()
         self.canHandleTemporal = True
@@ -194,7 +220,8 @@ class XdmfWriter(WriterBase):
         self.cellfieldsStorage = {}
         self.gridfieldsStorage = {}
         self.iptorage = {}
-
+        self.globalStorage = {}
+        self.maxStorageSize = 50
 
     def __str__(self):
         res  = 'XdmfWriter : \n'
@@ -384,7 +411,7 @@ class XdmfWriter(WriterBase):
             # to the file for a new time step
             self.filePointer.seek(filepos)
 
-    def __WriteGeoAndTopo(self,baseMeshObject):
+    def __WriteGeoAndTopo(self,baseMeshObject,name=None):
 
         if self.__isParafacFormat:
             if "ParafacDims" in baseMeshObject.props:
@@ -422,7 +449,7 @@ class XdmfWriter(WriterBase):
             dims = baseMeshObject.GetDimensions() ## number of nodes per
 
             self.filePointer.write('    <Geometry Type="XYZ">\n')
-            self.__WriteDataItem(baseMeshObject.GetPosOfNodes().ravel(), (baseMeshObject.GetNumberOfNodes(),3)  )
+            self.__WriteDataItem(baseMeshObject.GetPosOfNodes().ravel(), (baseMeshObject.GetNumberOfNodes(),3) , name="GEO_S_"+str(name) )
             self.filePointer.write('    </Geometry>\n')
             self.filePointer.write('    <Topology Dimensions="'+ArrayToString(reversed(dims))  +'" Type="'+str(dimensionality)+'DSMesh"/>\n')
         elif baseMeshObject.IsUnstructured() :
@@ -430,9 +457,9 @@ class XdmfWriter(WriterBase):
             if ( baseMeshObject.GetDimensionality()  == 2 ):
                 nodes = baseMeshObject.GetPosOfNodes()
                 nodes = np.concatenate((nodes,np.zeros((baseMeshObject.GetNumberOfNodes(),1))), axis=1 );
-                self.__WriteDataItem(nodes.ravel(), (baseMeshObject.GetNumberOfNodes(),3)  )
+                self.__WriteDataItem(nodes.ravel(), (baseMeshObject.GetNumberOfNodes(),3)  , name="GEO_U_"+str(name) )
             else:
-                self.__WriteDataItem(baseMeshObject.GetPosOfNodes().ravel(), (baseMeshObject.GetNumberOfNodes(),3)  )
+                self.__WriteDataItem(baseMeshObject.GetPosOfNodes().ravel(), (baseMeshObject.GetNumberOfNodes(),3)  , name="GEO_U_"+str(name) )
 
             self.filePointer.write('    </Geometry>\n')
             if len(baseMeshObject.elements) > 1:
@@ -468,7 +495,7 @@ class XdmfWriter(WriterBase):
                 self.PrintDebug("Number Of Entries {}".format(ntotalentries))
                 self.PrintDebug("counter {}".format(cpt))
 
-                self.__WriteDataItem(dataarray)
+                self.__WriteDataItem(dataarray, name="Topo_U_"+str(name) )
             elif len(baseMeshObject.elements):
                 elements = list(baseMeshObject.elements.keys())[0]
                 elementType = XdmfName[elements]
@@ -478,7 +505,7 @@ class XdmfWriter(WriterBase):
                 if XdmfNumber[elements] == 0x1:
                     self.filePointer.write('NodesPerElement="1"  ')
                 self.filePointer.write(' >\n')
-                self.__WriteDataItem(baseMeshObject.elements[elements].connectivity.ravel())
+                self.__WriteDataItem(baseMeshObject.elements[elements].connectivity.ravel(), name="Topo_U_"+str(name) )
             else:
                 self.filePointer.write('    <Topology TopologyType="mixed" NumberOfElements="0"  >\n')
 
@@ -622,7 +649,7 @@ class XdmfWriter(WriterBase):
        self.filePointer.write('    <Attribute Center="'+center+'" Name="'+name+'" Type="'+attype+'">\n')#
        #self.PrintDebug("Writing field '"+name +"' at '"+center+ "' of type " + attype )
        try:
-           self.__WriteDataItem(data.ravel(),shape)
+           self.__WriteDataItem(data.ravel(),shape,name=name)
        except:
            print("Error Writing heavy data of field: " + str(name))
            raise
@@ -649,14 +676,14 @@ class XdmfWriter(WriterBase):
 
             self.filePointer.write(str(nip) + '" > \n')
 
-            self.__WriteDataItem(npdata.ravel(),[npdata.size])
+            self.__WriteDataItem(npdata.ravel(),[npdata.size],name="ip")
             self.filePointer.write('</Information> \n')#
 
     def WriteIntegrationsPointDatas(self,names,datas):
         for i, name in enumerate(names):
             data = datas[i]
             self.filePointer.write('    <Information Name="IPF" Value="'+str(name)+'" > \n')#
-            self.iptorage[name] = self.__WriteDataItem(data.ravel(),[data.size])
+            self.iptorage[name] = self.__WriteDataItem(data.ravel(),[data.size],name='IPD_'+name)
             self.filePointer.write('</Information> \n')#
 
     def NextDomain(self):
@@ -765,7 +792,7 @@ class XdmfWriter(WriterBase):
              if self.IsTemporalOutput() and self.__printTimeInsideEachGrid and (self.IsMultidomainOutput() == False) :
                  self.filePointer.write('    <Time Value="'+str(self.currentTime)+'" /> \n')
 
-         self.__WriteGeoAndTopo(baseMeshObject)
+         self.__WriteGeoAndTopo(baseMeshObject,name=sufix)
          self.__WriteNodesTagsElementsTags(baseMeshObject,PointFieldsNames,CellFieldsNames)
          self.__WriteNodesFieldsElementsFieldsGridFields(baseMeshObject,
                                                    PointFieldsNames,PointFields,
@@ -864,7 +891,7 @@ class XdmfWriter(WriterBase):
             #self.filePointer.write('</Time>\n')
             self.filePointer.write('<Time Value="'+ (" ".join(str(x) for x in self.timeSteps)) +'"/>\n')
 
-    def __WriteDataItem(self,_data, _shape= None):
+    def __WriteDataItem(self,_data, _shape= None,name=None):
 
 
 
@@ -895,36 +922,58 @@ class XdmfWriter(WriterBase):
 
             dimension = ArrayToString(shape)
 
-            # to test this feature a big file must be created (so we dont test it)
+
             if self.isBinary() and len(data) > self.__XmlSizeLimit:# pragma: no cover
+
+                # to test this feature a big file must be created (so we dont test it)
                 if self.__binarycpt > (2**30) :
                     self.__binaryFilePointer.close()
                     self.NewBinaryFilename()
                     self.__binaryFilePointer = open (self.__binFileName, "wb")
                     self.__binarycpt = 0
 
-                #bindata = bytearray(data.ravel())
+                gsdata,gsstorage = self.globalStorage.get(str(name),(None,None))
 
-                #self.__binaryFilePointer.write(bindata)
-                res = BinaryStorage()
-                res.filename = self.__binaryFilePointer.name
-                res.offset = self.__binaryFilePointer.tell()
-                res.type = data.dtype
-                res.itemsize = s
-                res.vectorsize = data.size
+                datatowrite = data.ravel()
+                if np.array_equal(gsdata,datatowrite):
+                    binaryfile = gsstorage.filenameOnly
+                    seek = gsstorage.offset
+                    gsstorage.usedByNInstances += 1
+                    self.globalStorage[str(name)] = (gsdata,gsstorage)
+                    res = gsstorage
+                else:
+                    res = BinaryStorage(data=data,filePointer=self.__binaryFilePointer)
+                    res.filenameOnly = self.__binFileNameOnly
+                    binaryfile = self.__binFileNameOnly
+                    seek = self.__binarycpt
+                    data.ravel().tofile(self.__binaryFilePointer)
+                    self.__binarycpt += s*len(datatowrite)
+                    if len(self.globalStorage) > self.maxStorageSize-1:
+                        usage = [x[1].usedByNInstances for x in self.globalStorage.values()]
+                        print(usage)
+                        minUsage = min(usage)
+                        newGlobalStorage = {}
+                        GT = len(self.globalStorage)
+                        for i,d in self.globalStorage.items():
+                            if d[1].usedByNInstances == minUsage:
+                                GT -= 1
+                                if GT < self.maxStorageSize-1:
+                                    break
+                                continue
+                            newGlobalStorage[i]=d
+                        self.globalStorage = newGlobalStorage
+                    self.globalStorage[str(name)] = (datatowrite,res)
 
-                data.ravel().tofile(self.__binaryFilePointer)
 
                 self.filePointer.write(' <DataItem Format="Binary"'+
                 ' NumberType="'+typename+'"'+
                 ' Dimensions="'+dimension+'" '+
-                ' Seek="'+str(self.__binarycpt)+'" '+
+                ' Seek="'+str(seek)+'" '+
                 ' Endian="Native" '+
                 ' Precision="'+str(s)+'" '+
 
                 ' Compression="Raw" >')
-                self.filePointer.write(self.__binFileNameOnly)
-                self.__binarycpt += s*len(data)
+                self.filePointer.write(binaryfile)
                 self.filePointer.write('</DataItem>\n')
 
                 return res
@@ -1288,6 +1337,10 @@ def CheckIntegrityDDM(GUI=False):
         mesh1D.nodes[:,0] += 1
         mesh1D.props['ParafacDim0'] = "D1_P1"
         writer.Write(mesh1D, CellFields = [np.arange(mesh1D.GetNumberOfElements())+0.1 ], CellFieldsNames=["IPId_0"])
+        print(writer.globalStorage.keys())
+
+        for i in range(60):
+            writer.Write(mesh1D, CellFields = [np.arange(mesh1D.GetNumberOfElements())+0.1 ], CellFieldsNames=["IPId_0"])
 
     writer.Close()
     return "ok"
