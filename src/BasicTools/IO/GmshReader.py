@@ -102,7 +102,6 @@ class GmshReader(ReaderBase):
             if l.find("$PhysicalNames")>-1 :
                 l = self.ReadCleanLine()
                 numberOfTags = int(l)
-                print(numberOfTags)
                 if l.find("$EndPhysicalNames") > -1:
                     continue
 
@@ -111,6 +110,7 @@ class GmshReader(ReaderBase):
                     l = self.ReadCleanLine()
                     if l.find("$EndPhysicalNames") > -1:
                         break
+                    l = l.split()
 
                     dimensionality = int(l[0])
                     tagNumber = l[1]
@@ -168,13 +168,10 @@ class GmshReader(ReaderBase):
 
         ## apply tags names
         for dim,number,newName in tagsNames:
-            print("*** chaning tag form '" + str("PhyTag"+number) + "' to " + str(newName)+  " of dim " + str(  dim) )
             for name,data in res.elements.items():
-                print(dim)
-                print(EN.dimension[name])
                 if EN.dimension[name] != dim :
                     continue
-                print("chaning tag form " + str("PhyTag"+number) + " to " + str(newName))
+                print("chaning tag form '" + str("PhyTag"+number) + "' to '" + str(newName)+"'")
                 data.tags.RenameTag("PhyTag"+number,newName,noError=True)
 
         self.EndReading()
