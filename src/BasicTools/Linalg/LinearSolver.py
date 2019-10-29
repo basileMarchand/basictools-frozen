@@ -140,9 +140,7 @@ class LinearProblem(BOO):
 
         if self.HasConstraints():
             res = np.empty(self.constraints.nbdof, dtype=float)
-            res[self.constraints.masters] = self.u
-            res[self.constraints.slaves] = self.constraints.slaveValues
-            self.u = res
+            self.u = self.constraints.ExpandSolution(self.u)
 
         return self.u
 
