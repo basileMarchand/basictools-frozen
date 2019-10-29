@@ -27,7 +27,7 @@ class node():
         self.Zlowerlimit = Zlowerlimit
         self.Xcenter = (self.Xupperlimit + self.Xlowerlimit)/2.
         self.Ycenter = (self.Yupperlimit + self.Ylowerlimit)/2.
-        self.Zcenter = (self.Zupperlimit + self.Xlowerlimit)/2.
+        self.Zcenter = (self.Zupperlimit + self.Zlowerlimit)/2.
 
         self.feather = [[[None,None],[None,None]],[[None,None],[None,None]]]
         self.value = None
