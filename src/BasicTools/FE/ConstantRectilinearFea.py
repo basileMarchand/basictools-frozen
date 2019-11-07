@@ -100,7 +100,7 @@ class Fea(FeaBase.FeaBase):
 
     def __init__(self):
         super(Fea,self).__init__()
-        self.linearSolver = "CG"
+        self.linearSolver = "EigenCG"
         self.writer = None
         self.minthreshold = 0.9e-3
         self.tol = 1.e-6
