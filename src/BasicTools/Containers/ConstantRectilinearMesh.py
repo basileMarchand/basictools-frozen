@@ -456,6 +456,19 @@ class ConstantRectilinearMesh(MeshBase):
     def GenerateFullConnectivity(self):
         return self.structElements.connectivity
 
+    def ComputeGlobalOffset(self):
+        """
+        Recompute the Global Offset,
+        This is necessary for some operation.
+        Recomendation : Call it after changing the topology
+        """
+
+        cpt = 0
+        for type, data in self.elements.items():
+            data.globaloffset = cpt
+            n = data.GetNumberOfElements()
+            cpt = cpt + n
+
     def __str__(self):
         res = ''
         res  = "ConstantRectilinearMesh \n"
