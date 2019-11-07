@@ -40,7 +40,7 @@ class LinearProblem(BOO):
         print("Number Of dofs" , ndofs)
 
         self.constraints.SetNumberOfDofs(ndofs)
-        self.constraints.ComputeProjector()
+        self.constraints.UpdateCSystem()
         self.constraints.SetOp( self.originalOp   )
         print("Number Of dofs " , self.originalOp.shape)
         self.op = self.constraints.GetReducedOp()
@@ -55,8 +55,8 @@ class LinearProblem(BOO):
             self.PrintVerbose('With constraints (' +str(self.constraints.numberOfEquations) + ')')
             self.constraints.SetNumberOfDofs(op.shape[1])
             self.constraints.SetOp( op  )
-            self.constraints.ComputeProjector()
-            op = self.constraints.GetReducedOp()
+            self.constraints.UpdateCSystem()
+            op = self.constraints.GetCOp()
             self.PrintVerbose('Constraints treatememnt Done ')
 
         self.op = op
@@ -104,7 +104,7 @@ class LinearProblem(BOO):
 
     def Solve(self, rhs):
         if self.HasConstraints():
-            rhs = self.constraints.GetReducedRhs(rhs)
+            rhs = self.constraints.GetCRhs(rhs)
 
         self.PrintDebug('In LinearProblem Solve')
         if self.type == "Direct":
@@ -140,7 +140,7 @@ class LinearProblem(BOO):
 
         if self.HasConstraints():
             res = np.empty(self.constraints.nbdof, dtype=float)
-            self.u = self.constraints.ExpandSolution(self.u)
+            self.u = self.constraints.RestoreSolution(self.u)
 
         return self.u
 
