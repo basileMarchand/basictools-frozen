@@ -56,12 +56,19 @@ class PathControler(BaseOutputObject):
 
 
     @staticmethod
-    def GetFullFilenameCurrentDirectory(filename):
+    def GetFullFilenameCurrentDirectory(filename,onpath=None):
         if os.path.isabs(filename):
             return filename
         else:
-            return path.abspath(PathControler.currentDirectory +filename)
+            if onpath is None:
+                return path.abspath(PathControler.currentDirectory +filename)
+            else:
+                return path.abspath(onpath +filename)
 
+    @staticmethod
+    def GetFullPathInCurrentDirectoryUsingFile(filename):
+        file = PathControler.GetFullFilenameCurrentDirectory(filename)
+        return path.abspath(path.dirname(path.expanduser(file)) )+os.sep
 
     @staticmethod
     def GetFullPathnameOnWorkingDirectory(pathname):
