@@ -65,7 +65,8 @@ class PrintBypass():
                 # to clean the colors
                 filteredData = COLOR_REGEX_FILTER.sub('', data)
                 if len(filteredData):
-                    self.Fdout.write(("[%f] " % BaseOutputObject().GetDiffTime()))
+                    if filteredData != "\n":
+                        self.Fdout.write(("[%f] " % BaseOutputObject().GetDiffTime()))
                     self.Fdout.write(filteredData)
                 self.sysout.write(data)
 
