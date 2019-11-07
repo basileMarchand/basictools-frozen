@@ -11,6 +11,7 @@ import BasicTools.Helpers.BaseOutputObject as BaseOutputObject
 
 from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
 import BasicTools.Containers.ElementNames as ElementNames
+from BasicTools.Containers.Filters import ElementFilter
 
 def CreateUniformMeshOfBars(pmin,pmax,npoints):
     points = np.zeros((npoints,3))
@@ -1204,7 +1205,6 @@ def ComputeSkin(mesh, md=None ,inplace=False):
         md = mesh.GetDimensionality()
 
     # first we add the 2D element to the skin almanac
-    from BasicTools.Containers.Filters import ElementFilter
 
     surf = {}
 
@@ -1272,7 +1272,6 @@ def ComputeSkin(mesh, md=None ,inplace=False):
 
 def ComputeFeatures(inputmesh,FeatureAngle=90,skin=None):
 
-    from BasicTools.Containers.Filters import ElementFilter
     import copy
 
     if skin is None:
@@ -1414,20 +1413,32 @@ def ComputeFeatures(inputmesh,FeatureAngle=90,skin=None):
     skinmesh.PrepareForOutput()
     return (edgemesh,skinmeshSave)
 
-def PointToCellData(mesh,pointfield):
+def PointToCellData(mesh,pointfield,dim=None):
+
+
+    nbelemtns = 0
+    filt = ElementFilter(mesh,dimensionality=dim)
+    for name,data,ids in filt:
+        nbelemtns +=  len(ids)
 
     if len(pointfield.shape) == 2:
         ncols = pointfield.shape[1]
+        res = np.zeros((nbelemtns,ncols),dtype=float)
     else:
         ncols  = 1
+        res = np.zeros((nbelemtns),dtype=float)
 
-    res = np.zeros((mesh.GetNumberOfElements(),ncols),dtype=float)
-    mesh.ComputeGlobalOffset()
-
-    for name,data in mesh.elements.items():
-        for i in range(ncols):
-            res[data.globaloffset:data.globaloffset+data.GetNumberOfElements(),i] = (np.sum(pointfield[data.connectivity,i],axis=1)/data.connectivity.shape[1]).flatten()
-
+    filt = ElementFilter(mesh,dimensionality=dim)
+    cpt = 0
+    for name,data,ids in filt:
+        if len(pointfield.shape) == 1:
+            valAtCenter = (np.sum(pointfield[data.connectivity],axis=1)/data.connectivity.shape[1]).flatten()
+            res[cpt:cpt+data.GetNumberOfElements()] = valAtCenter
+        else:
+            for i in range(ncols):
+                valAtCenter = (np.sum(pointfield[data.connectivity,i],axis=1)/data.connectivity.shape[1]).flatten()
+                res[cpt:cpt+data.GetNumberOfElements(),i] = valAtCenter
+        cpt += len(ids)
     return res
 
 def Morphing(mesh,BC,bord_tot,rayon=None,tridim=False,IDW=False):
