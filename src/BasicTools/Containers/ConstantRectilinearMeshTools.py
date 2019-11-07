@@ -80,6 +80,58 @@ def GetElementTrasfertMatrix(inputmesh, destinationmesh):
 
 
 #------------------------------------------------------------------------------
+def CreateSquare(dimensions=[2,2], origin=[-1.0,-1.0], spacing=[1.,1.]):
+    spacing = np.array(spacing,dtype=float)
+    origin = np.array(origin,dtype=float)
+    from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearMesh
+    from BasicTools.Containers.UnstructuredMeshTools import ComputeSkin
+    import BasicTools.Containers.ElementNames as EN
+
+    myMesh = ConstantRectilinearMesh(dim=2)
+    myMesh.SetDimensions(dimensions);
+    myMesh.SetOrigin(origin);
+    myMesh.SetSpacing(spacing);
+
+    # coorners
+    d = np.array(dimensions)-1
+    s = spacing
+    indexs = [[   0,   0,   0],
+              [d[0],   0,   0],
+              [   0,d[1],   0],
+              [d[0],d[1],   0]]
+
+    for n in indexs:
+        idx = myMesh.GetMonoIndexOfNode(n)
+        name = "x"  + ("0" if n[0]== 0 else "1" )
+        name += "y" + ("0" if n[1]== 0 else "1" )
+        myMesh.nodesTags.CreateTag(name,False).SetIds([idx])
+
+
+    skin = ComputeSkin(myMesh)
+    for name,data in skin.elements.items():
+        myMesh.GetElementsOfType(name).Merge(data)
+    #print(skin)
+
+    quads = myMesh.GetElementsOfType(EN.Quadrangle_4)
+    quads.GetTag("2D").SetIds(range(quads.GetNumberOfElements()))
+
+    skin = myMesh.GetElementsOfType(EN.Bar_2)
+    #face tags
+
+    x = myMesh.GetPosOfNodes()[skin.connectivity,0]
+    y = myMesh.GetPosOfNodes()[skin.connectivity,1]
+    tol = np.min(spacing)/10
+
+    skin.GetTag("X0").SetIds( np.where(np.sum(np.abs(x - origin[0]          )<tol,axis=1) == skin.GetNumberOfNodesPerElement())[0])
+    skin.GetTag("X1").SetIds( np.where(np.sum(np.abs(x - (origin[0]+d[0]*s[0]))<tol,axis=1) == skin.GetNumberOfNodesPerElement())[0])
+    skin.GetTag("Y0").SetIds( np.where(np.sum(np.abs(y - origin[1]          )<tol,axis=1) == skin.GetNumberOfNodesPerElement())[0])
+    skin.GetTag("Y1").SetIds( np.where(np.sum(np.abs(y - (origin[1]+d[1]*s[1]))<tol,axis=1) == skin.GetNumberOfNodesPerElement())[0])
+
+
+    myMesh.PrepareForOutput()
+    return myMesh
+
+
 def CreateMesh(dim):
     myMesh = ConstantRectilinearMesh(dim)
     myMesh.SetDimensions([2,]*dim);
@@ -107,6 +159,7 @@ def CheckIntegrity(GUI=False):
         CheckIntegrity_GetSubSuperMesh(dim)
         CheckIntegrity_GetNodeTrasfertMatrix(dim)
         CheckIntegrity_GetElementTrasfertMatrix(dim)
+    CreateSquare()
     return  "ok"
 
 if __name__ == '__main__':# pragma: no cover
