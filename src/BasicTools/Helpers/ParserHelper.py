@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 """ Functions to parse text into different types
 """
 import numpy as np
@@ -68,7 +68,7 @@ def ReadScalar(inputData,inputtype):
 
 def ReadVector(string,dtype):
 
-    if isinstance(string,list) or  isinstance(string,np.ndarray):
+    if isinstance(string,(list,tuple,np.ndarray)) :
         return np.array([ ReadScalar(x,dtype) for x in string] ,dtype=dtype )
     else:
         tmp = string.lstrip().rstrip()
