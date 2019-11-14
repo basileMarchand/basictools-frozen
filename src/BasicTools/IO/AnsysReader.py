@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 """ Ansys Workbench Mechanical input file reader
 
 """
@@ -49,6 +49,7 @@ class Session:
     def __init__(self, parent, out=None):
         self.parent = parent
         self.result = UM.UnstructuredMesh() if out is None else out
+        self.blockcount = 0
 
         # Nodes
         self.result.nodes = np.empty((0, 3), dtype=np.double)
@@ -213,7 +214,9 @@ class Session:
                     (internal_element_type, internal_rank)
             auto_etag = 'et_{}'.format(et)
             elements.AddElementToTag(internal_rank, auto_etag)
+            elements.AddElementToTag(internal_rank, "EB_"+str(self.blockcount) )
             element_rank += 1
+        self.blockcount += 1
 
     def ReadNonSolidEblock(self, max_element_count):
         element_rank = 0
@@ -240,8 +243,9 @@ class Session:
                     (internal_element_type, internal_rank)
             auto_etag = 'et_{}'.format(et)
             elements.AddElementToTag(internal_rank, auto_etag)
+            elements.AddElementToTag(internal_rank, "EB_"+str(self.blockcount) )
             element_rank += 1
-
+        self.blockcount += 1
 
 def discriminate_tri_or_quad(nodes):
     # SURF154/TARGE170/CONTA174: EN.Quadrangle_4 or EN.Quadrangle_9
