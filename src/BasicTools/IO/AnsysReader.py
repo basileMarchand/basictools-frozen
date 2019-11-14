@@ -156,6 +156,8 @@ class Session:
         else:
             self.ReadNonSolidEblock(max_element_count)
 
+        self.block_count += 1
+
     def ParseUnblockedElement(self, args):
         et = self.current_element_type
         assert(self.element_type_ids[et] in ('170', '201'))
@@ -212,7 +214,7 @@ class Session:
     def GetMesh(self):
         return self.result
 
-    def ReadSolidEblock(self, max_element_count):
+    def ReadEblock(self, data_parser, max_element_count):
         element_rank = 0
         while True:
             line = next(self.iterator)
@@ -221,65 +223,52 @@ class Session:
             assert(element_rank < max_element_count)
             tokens = line.split()
             values = [int(t) for t in tokens]
-            material_id = values[0] # unused
+
+            element_id, et, real_constant, _, nodes = \
+                    data_parser(values, self.iterator)
+
+            element_type_id = self.element_type_ids[et]
+            internal_element_type, unique_nodes = \
+                    internal_element_type_from_ansys[element_type_id](nodes)
+            connectivity = [self.node_rank_from_id[n] for n in unique_nodes]
+            elements = self.result.GetElementsOfType(internal_element_type)
+            internal_count = elements.AddNewElement(connectivity, element_id)
+            internal_rank = internal_count - 1
+            self.element_type_and_rank_from_id[element_id] = \
+                    (internal_element_type, internal_rank)
+            auto_etags = (
+                    'et_{}'.format(et),
+                    'rc_{}'.format(real_constant),
+                    'EB_{}'.format(self.block_count))
+            for t in auto_etags:
+                elements.AddElementToTag(internal_rank, t)
+            element_rank += 1
+
+    def ReadSolidEblock(self, max_element_count):
+        def SolidDataParser(values, it):
+            material_id = values[0]
             et = values[1]
             real_constant = values[2]
             element_id = values[10]
             element_node_count = values[8]
             if element_node_count > 8:
-                overflow = next(self.iterator)
+                overflow = next(it)
                 values.extend((int (t) for t in overflow.split()))
             nodes = values[11:11+element_node_count]
-            element_type_id = self.element_type_ids[et]
-            internal_element_type, unique_nodes = \
-                    internal_element_type_from_ansys[element_type_id](nodes)
-            connectivity = [self.node_rank_from_id[n] for n in unique_nodes]
-            elements = self.result.GetElementsOfType(internal_element_type)
-            internal_count = elements.AddNewElement(connectivity, element_id)
-            internal_rank = internal_count - 1
-            self.element_type_and_rank_from_id[element_id] = \
-                    (internal_element_type, internal_rank)
-            auto_etags = (
-                    'et_{}'.format(et),
-                    'rc_{}'.format(real_constant),
-                    'EB_{}'.format(self.block_count))
-            for t in auto_etags:
-                elements.AddElementToTag(internal_rank, t)
-            element_rank += 1
-        self.block_count += 1
+            return (element_id, et, real_constant, material_id, nodes)
+
+        self.ReadEblock(SolidDataParser, max_element_count)
 
     def ReadNonSolidEblock(self, max_element_count):
-        element_rank = 0
-        while True:
-            line = next(self.iterator)
-            if line.startswith('-1'):
-                break
-            assert(element_rank < max_element_count)
-            tokens = line.split()
-            values = [int(t) for t in tokens]
+        def NonSolidDataParser(values, _):
             element_id = values[0]
-            element_properties = values[1:4]
-            et = element_properties[0]
-            real_constant = element_properties[1]
-            # Ignore entry 4 (material number) for the moment
-            element_type_id = self.element_type_ids[et]
+            et = values[1]
+            real_constant = values[2]
+            material_id = values[3]
             nodes = values[5:]
-            internal_element_type, unique_nodes = \
-                    internal_element_type_from_ansys[element_type_id](nodes)
-            connectivity = [self.node_rank_from_id[n] for n in unique_nodes]
-            elements = self.result.GetElementsOfType(internal_element_type)
-            internal_count = elements.AddNewElement(connectivity, element_id)
-            internal_rank = internal_count - 1
-            self.element_type_and_rank_from_id[element_id] = \
-                    (internal_element_type, internal_rank)
-            auto_etags = (
-                    'et_{}'.format(et),
-                    'rc_{}'.format(real_constant),
-                    'EB_{}'.format(self.block_count))
-            for t in auto_etags:
-                elements.AddElementToTag(internal_rank, t)
-            element_rank += 1
-        self.block_count += 1
+            return (element_id, et, real_constant, material_id, nodes)
+
+        self.ReadEblock(NonSolidDataParser, max_element_count)
 
 def discriminate_tri_or_quad(nodes):
     # SURF154/TARGE170/CONTA174: EN.Quadrangle_4 or EN.Quadrangle_9
