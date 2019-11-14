@@ -78,7 +78,7 @@ class Session:
     def __init__(self, iterator, out=None):
         self.iterator = iterator
         self.result = UM.UnstructuredMesh() if out is None else out
-        self.blockcount = 0
+        self.block_count = 0
 
         # Nodes
         self.result.nodes = np.empty((0, 3), dtype=np.double)
@@ -209,7 +209,6 @@ class Session:
                 container = self.result.GetElementsOfType(element_type)
                 container.AddElementToTag(rank, tag_name)
 
-
     def GetMesh(self):
         return self.result
 
@@ -224,6 +223,7 @@ class Session:
             values = [int(t) for t in tokens]
             material_id = values[0] # unused
             et = values[1]
+            real_constant = values[2]
             element_id = values[10]
             element_node_count = values[8]
             if element_node_count > 8:
@@ -239,11 +239,14 @@ class Session:
             internal_rank = internal_count - 1
             self.element_type_and_rank_from_id[element_id] = \
                     (internal_element_type, internal_rank)
-            auto_etag = 'et_{}'.format(et)
-            elements.AddElementToTag(internal_rank, auto_etag)
-            elements.AddElementToTag(internal_rank, "EB_"+str(self.blockcount) )
+            auto_etags = (
+                    'et_{}'.format(et),
+                    'rc_{}'.format(real_constant),
+                    'EB_{}'.format(self.block_count))
+            for t in auto_etags:
+                elements.AddElementToTag(internal_rank, t)
             element_rank += 1
-        self.blockcount += 1
+        self.block_count += 1
 
     def ReadNonSolidEblock(self, max_element_count):
         element_rank = 0
@@ -256,8 +259,9 @@ class Session:
             values = [int(t) for t in tokens]
             element_id = values[0]
             element_properties = values[1:4]
-            # Ignore entries 3 and 4 for the moment
             et = element_properties[0]
+            real_constant = element_properties[1]
+            # Ignore entry 4 (material number) for the moment
             element_type_id = self.element_type_ids[et]
             nodes = values[5:]
             internal_element_type, unique_nodes = \
@@ -268,11 +272,14 @@ class Session:
             internal_rank = internal_count - 1
             self.element_type_and_rank_from_id[element_id] = \
                     (internal_element_type, internal_rank)
-            auto_etag = 'et_{}'.format(et)
-            elements.AddElementToTag(internal_rank, auto_etag)
-            elements.AddElementToTag(internal_rank, "EB_"+str(self.blockcount) )
+            auto_etags = (
+                    'et_{}'.format(et),
+                    'rc_{}'.format(real_constant),
+                    'EB_{}'.format(self.block_count))
+            for t in auto_etags:
+                elements.AddElementToTag(internal_rank, t)
             element_rank += 1
-        self.blockcount += 1
+        self.block_count += 1
 
 def discriminate_tri_or_quad(nodes):
     # SURF154/TARGE170/CONTA174: EN.Quadrangle_4 or EN.Quadrangle_9
