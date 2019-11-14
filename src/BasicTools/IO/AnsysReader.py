@@ -407,8 +407,8 @@ eblock,19,solid,,3
 et,tid,154
 eblock,10,,,2
 (15i9)
-    10915        3        3        3       12      551     1691     2233     2233     4975    11358     2233     4976
-    10916        3        3        3       12     1691     2233     1944     1944    11358    12939     1944    11357
+    10915        3        4        3       12      551     1691     2233     2233     4975    11358     2233     4976
+    10916        3        5        3       12     1691     2233     1944     1944    11358    12939     1944    11357
 -1
 """
 
@@ -422,7 +422,7 @@ eblock,10,,,2
     print('tri6: {}'.format((res.GetElementsOfType('tri6').connectivity)))
     node_tag = res.GetNodalTag('FewNodes')
     print('node set {}: {}'.format(node_tag, node_tag.GetIds()))
-    for t in ('et_1', 'et_2', 'et_3'):
+    for t in ('et_1', 'et_2', 'et_3', 'rc_4', 'rc_5', 'EB_0', 'EB_1', 'EB_2'):
         print('element set {}: {}'.format(t, res.GetElementsInTag(t)))
 
     return 'ok'
