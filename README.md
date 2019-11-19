@@ -14,6 +14,7 @@
     pyparsing
     Cython
     sphinx
+    pytest
     coverage
     setuptools
 
