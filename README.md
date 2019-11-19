@@ -15,7 +15,7 @@
     Cython
     sphinx
     pytest
-    coverage
+    pytest-cov
     setuptools
 
     C++ OPEN-SOURCE DEPENDENCIES
