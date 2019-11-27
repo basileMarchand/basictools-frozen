@@ -3,11 +3,13 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 import numpy as np
 
 from BasicTools.Helpers.TextFormatHelper import TFormat
 from BasicTools.IO.XdmfTools import FieldNotFound
+
+import BasicTools.Containers.ElementNames as ElementNames
 
 
 def ReadXdmf(fileName):
@@ -353,10 +355,12 @@ class XdmfTopology(Xdmfbase):
             #m.GenerateFullConnectivity()
             return m.elements
         else :
-            EN = XdmfNameToEN[self.Type]
-            data = ElementsContainer(EN)
-            data.connectivity = self.dataitems[0].GetData()
-            res[EN] = data
+            en = XdmfNameToEN[self.Type]
+            data = ElementsContainer(en)
+            data.connectivity = self.dataitems[0].GetData().ravel()
+            size = (ElementNames.numberOfNodes[en], len(data.connectivity)//ElementNames.numberOfNodes[en])
+            data.connectivity.shape = size
+            res[en] = data
             return res
 
 
