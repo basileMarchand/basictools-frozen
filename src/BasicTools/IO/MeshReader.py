@@ -474,6 +474,8 @@ class MeshReader(ReaderBase):
              cpt += val.GetNumberOfElements()
          res.elemFields['refs'] = elemRefs
 
+      res.PrepareForOutput()
+
       self.EndReading()
       return res
 
