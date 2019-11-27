@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 
 __author__ = "Felipe Bordeu"
 
@@ -22,7 +22,7 @@ class LinearProblem(BOO):
         super(LinearProblem,self).__init__()
         self.op = None   # the operator to solve
         self.solver = None
-        self.type = "CG"
+        self.type = "EigenCG"
         self.u = None
         self.tol = 1.e-6
 
