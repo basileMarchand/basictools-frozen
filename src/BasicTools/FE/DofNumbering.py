@@ -157,8 +157,8 @@ def ComputeDofNumbering(mesh,Space,dofs=None,tag=AllElements,sign=1,fromConnecti
                 extractorRightSide[tmpcpt] = v
                 tmpcpt += 1
 
-        extractorLeftSide.resize(tmpcpt)
-        extractorRightSide.resize(tmpcpt)
+        extractorLeftSide = np.resize(extractorLeftSide, (tmpcpt,))
+        extractorRightSide = np.resize(extractorRightSide, (tmpcpt,))
         dofs["doftopointLeft"] =   extractorLeftSide
         dofs["doftopointRight"] =  extractorRightSide
 
@@ -187,8 +187,9 @@ def ComputeDofNumbering(mesh,Space,dofs=None,tag=AllElements,sign=1,fromConnecti
                     extractorRightSide[tmpcpt] = v
                     tmpcpt += 1
 
-        extractorLeftSide.resize(tmpcpt)
-        extractorRightSide.resize(tmpcpt)
+        extractorLeftSide = np.resize(extractorLeftSide, (tmpcpt,))
+        extractorRightSide = np.resize(extractorRightSide, (tmpcpt,))
+
         dofs["doftocellLeft"] =   extractorLeftSide
         dofs["doftocellRight"] =  extractorRightSide
 

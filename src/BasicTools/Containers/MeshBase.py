@@ -18,13 +18,13 @@ class Tag(object):
 
     def AddToTag(self,tid):
         if type(tid).__module__ == np.__name__:
-            self._id.resize(self.cpt+tid.size)
+            self._id = np.resize(self._id, (self.cpt+tid.size,))
             self._id[self.cpt:] = tid
 
             self.cpt += tid.size
         else:
             if len(self._id) <= self.cpt:
-                self._id.resize(self.cpt*2+1)
+                self._id = np.resize(self._id, (self.cpt*2+1,))
 
             self._id[self.cpt] = tid
             self.cpt += 1
