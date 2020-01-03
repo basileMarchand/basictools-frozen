@@ -416,6 +416,9 @@ def IntegrateVectorNormalComponentOnSurface(mesh, set, vector):
   
 def IntegrateCentrifugalEffect(mesh, density, rotationAxis, rotationCenter):
 
+    """
+    density: dictionary with keys: elementSet and value: float
+    """
 
     nbNodes = mesh.GetNumberOfNodes()
     dimension = mesh.GetDimensionality()
@@ -498,8 +501,7 @@ def CheckIntegrity(GUI=False):
     ComputeIntegrationPointsTags(mesh, 3)
     vector = np.ones(len(mesh.elements["quad4"].tags["x0"].GetIds()))
     IntegrateVectorNormalComponentOnSurface(mesh, "x0", vector)
-    IntegrateCentrifugalEffect(mesh, np.array([1.,0.,0.]), np.array([0.,0.,0.]))
-    
+    IntegrateCentrifugalEffect(mesh, {'ALLELEMENT':1.}, np.array([1.,0.,0.]), np.array([0.,0.,0.]))
     
     """#mesh = GR.ReadGeof("/gpfs/home/fcasenave/ViscoPlastic/cube.geof")
     mesh = GR.ReadGeof("/gpfs/home/fcasenave/NIROMTestData/Zset/testSequentiel/cube.geof")
