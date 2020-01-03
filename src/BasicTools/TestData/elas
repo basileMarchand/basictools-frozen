@@ -1,0 +1,7 @@
+  ***behavior  linear_elastic
+   **elasticity isotropic
+     young 300000.
+     poisson  0.3
+   **coefficient
+     masvol 1E-08
+***return 

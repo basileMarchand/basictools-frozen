@@ -950,7 +950,7 @@ class XdmfWriter(WriterBase):
                     self.__binarycpt += s*len(datatowrite)
                     if len(self.globalStorage) > self.maxStorageSize-1:
                         usage = [x[1].usedByNInstances for x in self.globalStorage.values()]
-                        print(usage)
+                        #print(usage)
                         minUsage = min(usage)
                         newGlobalStorage = {}
                         GT = len(self.globalStorage)

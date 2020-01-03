@@ -513,13 +513,35 @@ def GetBoundaryConditions(data):
     return bcs
 
 
+
+def GetLoadings(data):
+    """
+    returns a dictionary containing the infos of an inp file "data" read by ReadInp2()
+    concerning all the infos respecting bc and temperature
+    """
+    loadings = GetBoundaryConditions(data)
+          
+    temperatureLoading = GetParameterFiles(data, parameterName = 'temperature')
+    if temperatureLoading:
+        loadings['temperature'] = [[["ALLNODE", temperatureLoading]]]
+        
+    initData = GetInitDofValues(data)
+    loadings['initialCondition'] = [[["ALLNODE", initData]]]
+    
+    return loadings
+
+
+
 def GetInitDofValues(data):
     """
     returns a dictionary containing the infos of an inp file "data" read by ReadInp2()
     concerning all the infos respecting ****calcul, ***init_dof_value
     """
     initData = GetFromInp(data,{'4':['calcul'], '3':['init_dof_value']})
-    return initData[0][0][1:]
+    if initData == []:
+        return 0.
+    else:
+        return initData[0][0][3]
 
 
 def GetParameterFiles(data, parameterName = None):
@@ -560,8 +582,48 @@ def GetParameterFiles(data, parameterName = None):
     return parameterFiles
 
 
+def GetMaterialFiles(data):
+
+    matList = {}
+    
+    tempMatList = GetFromInp(data,{'3':['material'], '2':['elset']})
+
+    if tempMatList == []:
+        matList['ALLELEMENT'] = GetFromInp(data,{'3':['material'], '1':['file']})[0][0][1]
+    else:
+        tempData = GetFromInp(data,{'3':['material'], '2':['elset']})
+        for data in tempData:
+            if data[0][0] == 'elset':
+               curElSet = data[0][1]
+            elif data[0][0] == 'file':
+                matList[curElSet] = data[0][1]
+                
+    return matList
+
+
+
+def GetProblemType(data):
+
+    calcul = GetFromInp(data,{'4':['calcul']})[0][0]
+    if len(calcul) > 1:
+        return calcul[1]
+    else:
+        return "mechanical"
+
+
 def ReadBinaryFile(fileName):
     return np.fromfile(fileName, dtype=np.float32).byteswap()
+
+
+
+def GetDensity(materialFileName):
+    res = ReadInp2(materialFileName, startingNstar=3)
+    return float(GetFromInp(res,{'3':['behavior'], '2':['coefficient']})[0][1][1])
+
+
+def GetBehavior(materialFileName):
+    res = ReadInp2(materialFileName, startingNstar=3)
+    return GetFromInp(res,{'3':['behavior']})[0][0][1]
 
 
 def CheckIntegrity():
@@ -587,20 +649,30 @@ def CheckIntegrity():
     GetFromInp(res,{'4':['calcul'], '3':['parameter'], '2':['file', 'temperature']})
     GetFromInp(res,{'4':['calcul'], '2':['impose_nodal_dof']})
     GetFromInp(res,{'4':['calcul'], '3':['linear_solver']})
+    GetProblemType(res)
+    
     GetTables(res)
     GetBoundaryConditions(res)
     GetParameterFiles(res, parameterName = 'temperature')
     GetInputTimeSequence(res)
+    print(GetMaterialFiles(res))
 
     res = ReadInp2(T2.GetTestDataPath() + 'calcul3.inp')
     GetTables(res)
     GetBoundaryConditions(res)
+    GetLoadings(res)
     GetInputTimeSequence(res)
     print(GetInitDofValues(res))
+    GetMaterialFiles(res)
+    print(GetDensity(T2.GetTestDataPath() + 'elas'))
+    print(GetBehavior(T2.GetTestDataPath() + 'elas'))
+    GetProblemType(res)
 
     res = ReadInp2(T2.GetTestDataPath() + 'mat', startingNstar=3)
     GetFromInp(res,{'3':['behavior', 'thermal'], '2':['conductivity', 'isotropic']})
     GetFromInp(res,{'3':['behavior', 'thermal'], '2':['coefficient']})
+    
+    
     
     ReadBinaryFile(T2.GetTestDataPath() + 'UtExample/cube.node')
     return 'ok'
