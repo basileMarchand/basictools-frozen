@@ -449,7 +449,9 @@ def IntegrateCentrifugalEffect(mesh, density, rotationAxis, rotationCenter):
         p,w =  Lagrange(name)
         for el in ids:
 
-            localTags = elementTags[el] + ["ALLELEMENT"]
+            localTags = elementTags[el]
+            if not localTags:
+                localTags.append("ALLELEMENT")
             if len(localTags) > 1:
                 raise("more than one behavior law associate with element "+str(el))
             localDensity = density[localTags[0]]
