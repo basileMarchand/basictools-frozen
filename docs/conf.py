@@ -13,8 +13,8 @@
 
 import sys, os
 from BasicTools import __name__ as BasicTools__name__
-from BasicTools import __author__ as BasicTools__author__
 from BasicTools import __copyright__ as BasicTools__copyright__
+from BasicTools import __copyright_holder__ as BasicTools__copyright_holder__
 from BasicTools import __license__ as BasicTools__license__
 from BasicTools import __version__ as BasicTools__version__
 
@@ -189,7 +189,7 @@ latex_elements = {
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
   ('index', 'BasicTools.tex', u'BasicTools Documentation',
-   BasicTools__author__, 'manual'),
+   BasicTools__copyright_holder__, 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -219,7 +219,7 @@ latex_documents = [
 # (source start file, name, description, authors, manual section).
 man_pages = [
     ('index', 'basictools', u'BasicTools Documentation',
-     [BasicTools__author__], 1)
+     [BasicTools__copyright_holder__], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -233,8 +233,9 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
   ('index', 'BasicTools', u'BasicTools Documentation',
-   BasicTools__author__, 'BasicTools', 'One line description of project.',
-   'Miscellaneous'),
+   BasicTools__copyright_holder__, BasicTools__name__,
+   'Tools for finite element computations.',
+   'Engineering'),
 ]
 
 # Documents to append as an appendix to all manuals.

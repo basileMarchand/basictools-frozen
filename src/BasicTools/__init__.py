@@ -15,14 +15,15 @@ __cython_src__ =  ["FE/CythonIntegration.pyx",
 __cpp_src__ = ["./FE/src_cpp/NativeIntegration.cpp"]
 
 __name__ = "BasicTools"
-__author__ = "<copyright holder>"
-__copyright__ = "Copyright (c) <year>, <copyright holder>"
-__license__ = "New BSD License"
+__copyright_holder__ = "Safran"
+__copyright_years__ = "2016-2020"
+__copyright__ = f"{__copyright_years__}, {__copyright_holder__}"
+__license__ = "BSD 3-Clause License"
 __version__ = "1.0"
 
 if __name__ == '__main__':# pragma: no cover
-    print(" Cam Tools Python Modules.")
-    print(" Safran All Right Reserved. 2016")
+    print(f" {__name__} version {__version__}")
+    print(f" Copyright (c) {__copyright__}")
     print("")
 
     import BasicTools.Helpers.Tests
