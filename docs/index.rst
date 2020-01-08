@@ -13,7 +13,7 @@ Contents:
 
    _source/BasicTools
 
-.. literalinclude:: ../README.txt
+.. literalinclude:: ../README.md
 
 
 
