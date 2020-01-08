@@ -18,8 +18,13 @@ from BasicTools.FE.IntegrationsRules import Lagrange as Lagrange
 from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
 from BasicTools.Containers import Filters
 
-def GetElementaryMatrixForFormulation(elemName,wform,unknownNames,space = LagrangeSpaceP1):
-
+def GetElementaryMatrixForFormulation(elemName, wform, unknownNames, space=LagrangeSpaceP1):
+    # Explicitly specify signature to cleanly display default argument values
+    # in sphinx autodoc generated documentation
+    """
+    GetElementaryMatrixForFormulation(elemName, wform, unknownNames, \
+            space=BasicTools.FE.Spaces.FESpaces.LagrangeSpaceP1)
+    """
     from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
     mesh = UnstructuredMesh()
 
