@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 
 import numpy as np
 
@@ -52,33 +52,33 @@ def GetElementaryMatrixForFormulation(elemName,wform,unknownNames,space = Lagran
 
 
 def PrepareFEComputation(mesh, elementFilter = None, numberOfCOmponents = None):
-    
-    
+
+
     dim = mesh.GetDimensionality()
     if elementFilter == None:
         elementFilter = Filters.ElementFilter(mesh)
         elementFilter.SetDimensionality(dim)
-    
+
     if numberOfCOmponents == None:
         numberOfCOmponents = dim
-    
+
     NGauss = 0
     spaces = LagrangeSpaceGeo
-    
+
     for name,data,ids in elementFilter:
         p,w =  Lagrange(name)
-        spaces[name].SetIntegrationRule(p,w)   
+        spaces[name].SetIntegrationRule(p,w)
         NGauss += data.GetNumberOfElements()*len(w)
-        
+
     numbering = ComputeDofNumbering(mesh,LagrangeSpaceGeo,fromConnectivity=True)
     numberings = [numbering]*numberOfCOmponents
-    
+
     offset = []
     totaldofs = 0
     for n in numberings:
         offset.append(totaldofs)
-        totaldofs += n["size"] 
-        
+        totaldofs += n["size"]
+
     return spaces, numberings, offset, NGauss
 
 
@@ -87,16 +87,16 @@ def ComputeL2ScalarProducMatrix(mesh, numberOfCOmponents):
 
     nbNodes = mesh.GetNumberOfNodes()
     dim     = mesh.GetDimensionality()
-    
+
     ff = Filters.ElementFilter(mesh)
     ff.SetDimensionality(dim)
-    
+
     spaces, numberings, offset, NGauss = PrepareFEComputation(mesh, ff, numberOfCOmponents)
-       
+
     ev = []
     ei = []
     ej = []
-    
+
     for name,data,ids in ff:
         p,w =  Lagrange(name)
         lenNumbering = len(numberings[0][name][0,:])
@@ -125,41 +125,41 @@ def ComputeH10ScalarProductMatrix(mesh, numberOfCOmponents):
 
     nbNodes = mesh.GetNumberOfNodes()
     dim     = mesh.GetDimensionality()
-    
+
     ff = Filters.ElementFilter(mesh)
     ff.SetDimensionality(dim)
-    
+
     spaces, numberings, offset, NGauss = PrepareFEComputation(mesh, ff, numberOfCOmponents)
-    
+
     ev = []
     ei = []
     ej = []
-    
+
     ff = Filters.ElementFilter(mesh)
     ff.SetDimensionality(dim)
-    
+
     for name,data,ids in ff:
         p,w =  Lagrange(name)
-        
+
         lenNumbering = len(numberings[0][name][0,:])
         ones = np.ones(lenNumbering,dtype=int)
 
         for el in ids:
-            
+
             xcoor = mesh.nodes[data.connectivity[el],:]
             leftNumberings = [numberings[j][name][el,:]+offset[j] for j in range(numberOfCOmponents)]
-            
+
             for ip in range(len(w)):
                 Jack, Jdet, Jinv = spaces[name].GetJackAndDetI(ip,xcoor)
                 BxByBzI = Jinv(spaces[name].valdphidxi[ip])
-                
+
                 for j in range(numberOfCOmponents):
                     ev.extend((w[ip]*Jdet)*np.tensordot(BxByBzI,BxByBzI, axes=(0,0)).ravel())
-                    
+
                     for i in leftNumberings[j]:
                         ei.extend(i*ones)
                         ej.extend(leftNumberings[j].ravel())
-                    
+
     mat = coo_matrix((ev, (ei,ej)), shape=(numberOfCOmponents*nbNodes,numberOfCOmponents*nbNodes)).tocsr()
 
     return mat
@@ -170,16 +170,16 @@ def ComputeFEInterpMatAtGaussPoint(mesh):
 
     nbNodes = mesh.GetNumberOfNodes()
     dim = mesh.GetDimensionality()
-    
+
     spaces, _, _, NGauss0 = PrepareFEComputation(mesh)
-    
+
     ff = Filters.ElementFilter(mesh)
     ff.SetDimensionality(dim)
-        
+
     FEInterpAtIntegPointIndices = []
     FEInterpAtIntegPointMatrix = []
-    row = []    
-    
+    row = []
+
     countElementType = 0
     for name,data,ids in ff:
 
@@ -188,7 +188,7 @@ def ComputeFEInterpMatAtGaussPoint(mesh):
         NGaussperEl = len(w)
         NGauss = data.GetNumberOfElements()*NGaussperEl
         nbElements = data.GetNumberOfElements()
-        
+
         FEInterpAtIntegPointIndices.append(np.zeros((NGauss,NnodeperEl),dtype=np.int32))
         FEInterpAtIntegPointMatrix.append(np.zeros((NGauss,NnodeperEl)))
 
@@ -204,18 +204,18 @@ def ComputeFEInterpMatAtGaussPoint(mesh):
             FEInterpAtIntegPointMatrix[countElementType][count,:] = spaces[name].valN[j]
 
             count += 1
-            
+
         row.append(np.concatenate([[i for j in range(NnodeperEl)] for i in range(NGauss)]))
-            
+
         countElementType += 1
 
     FEInterpAtIntegPointIndices = np.concatenate([ind.flatten() for ind in FEInterpAtIntegPointIndices])
     FEInterpAtIntegPointMatrix = np.concatenate([ind.flatten() for ind in FEInterpAtIntegPointMatrix])
 
     row = np.concatenate(row)
-    
+
     FEInterpAtIntegPointMatrix = coo_matrix((FEInterpAtIntegPointMatrix, (row, FEInterpAtIntegPointIndices)), shape=(NGauss0, nbNodes))
-    
+
     return FEInterpAtIntegPointMatrix
 
 
@@ -223,16 +223,16 @@ def ComputeFEInterpGradMatAtGaussPoint(mesh):
 
     nbNodes = mesh.GetNumberOfNodes()
     dim = mesh.GetDimensionality()
-    
+
     spaces, _, _, NGauss0 = PrepareFEComputation(mesh)
-    
+
     ff = Filters.ElementFilter(mesh)
     ff.SetDimensionality(dim)
-        
+
     FEInterpAtIntegPointIndices = []
     FEInterpAtIntegPointGradMatrix = [[] for i in range(dim)]
     row = []
-    
+
     countElementType = 0
     for name,data,ids in ff:
 
@@ -241,7 +241,7 @@ def ComputeFEInterpGradMatAtGaussPoint(mesh):
         NGaussperEl = len(w)
         NGauss = data.GetNumberOfElements()*NGaussperEl
         nbElements = data.GetNumberOfElements()
-        
+
         FEInterpAtIntegPointIndices.append(np.zeros((NGauss,NnodeperEl),dtype=np.int32))
         for i in range(dim):
             FEInterpAtIntegPointGradMatrix[i].append(np.zeros((NGauss,NnodeperEl)))
@@ -259,35 +259,35 @@ def ComputeFEInterpGradMatAtGaussPoint(mesh):
                 FEInterpAtIntegPointGradMatrix[k][countElementType][count,:] = BxByBzI[k]
 
             count += 1
-            
+
         row.append(np.concatenate([[i for j in range(NnodeperEl)] for i in range(NGauss)]))
-            
+
         countElementType += 1
 
     FEInterpAtIntegPointIndices = np.concatenate([ind.flatten() for ind in FEInterpAtIntegPointIndices])
     FEInterpAtIntegPointGradMatrix  = [np.concatenate([mat.flatten() for mat in FEInterpAtIntegPointGradMatrix[k]]) for k in range(dim)]
 
     row = np.concatenate(row)
-    
+
     FEInterpAtIntegPointGradMatrix = [coo_matrix((FEInterpAtIntegPointGradMatrix[k], (row, FEInterpAtIntegPointIndices)), shape=(NGauss0, nbNodes)) for k in range(dim)]
-    
+
     return FEInterpAtIntegPointGradMatrix
 
 
 
 def ComputeMecaIntegrator(mesh, elementSet = "ALLELEMENT"):
     #elementSet must tag element of same dimensionality as mesh
-    
+
     nbNodes = mesh.GetNumberOfNodes()
     dimension = mesh.GetDimensionality()
-    
+
     ff = Filters.ElementFilter(mesh)
     ff.SetDimensionality(dimension)
     if elementSet != "ALLELEMENT":
         ff.AddTag(elementSet)
-        
-    spaces, numberings, offset, NGauss = PrepareFEComputation(mesh, ff, dimension)              
-        
+
+    spaces, numberings, offset, NGauss = PrepareFEComputation(mesh, ff, dimension)
+
     integrationWeights = np.zeros(NGauss)
 
     convInd = {1:[0], 2:[0, 2, 2, 1], 3:[0, 3, 4, 3, 1, 5, 4, 5, 2]}
@@ -296,34 +296,34 @@ def ComputeMecaIntegrator(mesh, elementSet = "ALLELEMENT"):
     row = []
     col = []
     dat = []
-    
+
     count = 0
     for name,data,ids in ff:
         p,w =  Lagrange(name)
 
         nbsf = spaces[name].GetNumberOfShapeFunctions()
         ones = np.ones(dimension*nbsf,dtype=int)
-        
+
         #lenNumbering = len(numberings[0][name][0,:])
         #print("lenNumbering =", lenNumbering)
         #print("nbsf =", nbsf)
         B = np.zeros((dimension*nbsf, nbeInd[dimension]), dtype=np.float)
-        
+
         #print("B.shape =", B.shape)
 
         for el in ids:
-            
+
             xcoor = mesh.nodes[data.connectivity[el],:]
             leftNumbering = np.concatenate([numberings[j][name][el,:]+offset[j] for j in range(dimension)])
-            
+
             for ip in range(len(w)):
                 Jack, Jdet, Jinv = spaces[name].GetJackAndDetI(ip,xcoor)
                 BxByBzI = Jinv(spaces[name].valdphidxi[ip])
                 #if el == ids[0] and ip == 0:
                 #    print("BxByBzI.shape =", BxByBzI.shape) # dimension x nbsf
-                
+
                 integrationWeights[count] = w[ip]*Jdet
-                
+
                 for i in range(nbsf):
                     for k in range(dimension):
                         for l in range(dimension):
@@ -339,7 +339,7 @@ def ComputeMecaIntegrator(mesh, elementSet = "ALLELEMENT"):
     dat = np.array(dat)
     row = np.array(row)
     col = np.array(col)
-    
+
     #print(dat.shape)
     #print(row.shape)
     #print(col.shape)
@@ -354,13 +354,13 @@ def ComputeIntegrationPointsTags(mesh, dimension):
 
     ff = Filters.ElementFilter(mesh)
     ff.SetDimensionality(dimension)
-        
-    _, _, _, NGauss = PrepareFEComputation(mesh, ff, dimension)  
+
+    _, _, _, NGauss = PrepareFEComputation(mesh, ff, dimension)
 
     idTags = {}
 
     listOfTags = [[] for i in range(NGauss)]
-    
+
     totalIntPointOffset = 0
     elementOffset = 0
     for name,data,ids in ff:
@@ -370,10 +370,10 @@ def ComputeIntegrationPointsTags(mesh, dimension):
             for id in tag.GetIds():
                 for intPoint in range((id - elementOffset)*elNbeOfIntPoints,(id - elementOffset + 1)*elNbeOfIntPoints):
                     listOfTags[intPoint].append(tag.name)
-            
+
         totalIntPointOffset += elNbeOfIntPoints*data.GetNumberOfElements()
         elementOffset += data.GetNumberOfElements()
-        
+
     return listOfTags
 
 
@@ -385,18 +385,18 @@ def IntegrateVectorNormalComponentOnSurface(mesh, set, vector):
 
     res = np.zeros(dimension*nbNodes)
 
-    
+
     ff = Filters.ElementFilter(mesh)
     ff.SetDimensionality(dimension-1)
     ff.AddTag(set)
-        
-    spaces, numberings, offset, _ = PrepareFEComputation(mesh, ff, dimension)       
+
+    spaces, numberings, offset, _ = PrepareFEComputation(mesh, ff, dimension)
 
     count = 0
     for name,data,ids in ff:
 
         p,w = Lagrange(name)
-        
+
         for el in ids:
             pressureValue = vector[count]; count += 1
             xcoor = mesh.nodes[data.connectivity[el],:]
@@ -409,11 +409,11 @@ def IntegrateVectorNormalComponentOnSurface(mesh, set, vector):
                 cartesian_product = np.dot(normal.reshape((normal.shape[0],1)),left.reshape((1,left.shape[0])))
 
                 res[leftNumbering] += ((w[ip]*Jdet*pressureValue)*cartesian_product).ravel()
-            
+
     return res
 
 
-  
+
 def IntegrateCentrifugalEffect(mesh, density, rotationAxis, rotationCenter):
 
     """
@@ -424,28 +424,28 @@ def IntegrateCentrifugalEffect(mesh, density, rotationAxis, rotationCenter):
     dimension = mesh.GetDimensionality()
 
     res = np.zeros(dimension*nbNodes)
-    
+
     ff = Filters.ElementFilter(mesh)
     ff.SetDimensionality(dimension)
-        
-    spaces, numberings, offset, NGauss = PrepareFEComputation(mesh, ff, dimension)    
+
+    spaces, numberings, offset, NGauss = PrepareFEComputation(mesh, ff, dimension)
 
     FEInterpAtIntegPointMatrix = ComputeFEInterpMatAtGaussPoint(mesh)
 
     integrationPointsPosition = FEInterpAtIntegPointMatrix.dot(mesh.nodes)
-    
+
     densityTags = set(list(density.keys()))
-    
+
     count = 0
     for name,data,ids in ff:
-        
+
         elementTags = {}
         for el in ids:
             elementTags[el] = []
         for tag in densityTags:
             for el in mesh.GetElementsInTag(tag):
                 elementTags[el].append(tag)
-        
+
         p,w =  Lagrange(name)
         for el in ids:
 
@@ -458,12 +458,12 @@ def IntegrateCentrifugalEffect(mesh, density, rotationAxis, rotationCenter):
 
             xcoor = mesh.nodes[data.connectivity[el],:]
             leftNumbering = np.concatenate([numberings[j][name][el,:]+offset[j] for j in range(dimension)])
-            
+
             for ip in range(len(w)):
                 ipPositionFromRotationCenter = integrationPointsPosition[count,:] - rotationCenter
 
                 count += 1
-                
+
                 length = np.vdot(ipPositionFromRotationCenter,rotationAxis)
                 ipProjectionFromRotationCenter = length*rotationAxis
                 r = ipPositionFromRotationCenter - ipProjectionFromRotationCenter
@@ -489,7 +489,7 @@ def CheckIntegrity(GUI=False):
 
     """for line in res.toarray().tolist():
         print(line)"""
-        
+
     import BasicTools.TestData as BasicToolsTestData
     from BasicTools.IO import GeofReader as GR
     mesh = GR.ReadGeof(BasicToolsTestData.GetTestDataPath()+"cube2.geof")
@@ -504,17 +504,17 @@ def CheckIntegrity(GUI=False):
     vector = np.ones(len(mesh.elements["quad4"].tags["x0"].GetIds()))
     IntegrateVectorNormalComponentOnSurface(mesh, "x0", vector)
     IntegrateCentrifugalEffect(mesh, {'ALLELEMENT':1.}, np.array([1.,0.,0.]), np.array([0.,0.,0.]))
-    
+
     """#mesh = GR.ReadGeof("/gpfs/home/fcasenave/ViscoPlastic/cube.geof")
     mesh = GR.ReadGeof("/gpfs/home/fcasenave/NIROMTestData/Zset/testSequentiel/cube.geof")
     ComputeMecaIntegrator(mesh)
     ComputeMecaIntegrator(mesh, "EVP")
-    
-    mesh = GR.ReadGeof("/gpfs/home/fcasenave/RaidSAE/Zset_radiation_only/cube.geof")    
+
+    mesh = GR.ReadGeof("/gpfs/home/fcasenave/RaidSAE/Zset_radiation_only/cube.geof")
     ComputeMecaIntegrator(mesh)
     ComputeMecaIntegrator(mesh, "E_ICASGT1_MAT_SHAFT")"""
-    
-    
+
+
     return "ok"
 
 
