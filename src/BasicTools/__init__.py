@@ -21,10 +21,13 @@ __copyright__ = f"{__copyright_years__}, {__copyright_holder__}"
 __license__ = "BSD 3-Clause License"
 __version__ = "1.0"
 
-if __name__ == '__main__':# pragma: no cover
+
+def main():
     print(f" {__name__} version {__version__}")
     print(f" Copyright (c) {__copyright__}")
     print("")
 
     import BasicTools.Helpers.Tests
-    BasicTools.Helpers.Tests.TestAll(extraToolsBoxs= ["BasicTools"])
+    BasicTools.Helpers.Tests.TestAll( \
+            extraToolsBoxs=["BasicTools"],
+            coverage={"active": False})
