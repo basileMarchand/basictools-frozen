@@ -539,9 +539,9 @@ def GetInitDofValues(data):
     """
     initData = GetFromInp(data,{'4':['calcul'], '3':['init_dof_value']})
     if initData == []:
-        return 0.
+        return ('uniform', 0.)
     else:
-        return initData[0][0][3]
+        return (initData[0][0][2], initData[0][0][3])
 
 
 def GetParameterFiles(data, parameterName = None):
