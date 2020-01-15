@@ -175,8 +175,8 @@ def CheckIntegrityFlexion(P,tetra,GUI=False):
     problem.physics.append(mecaPhysics)
 
     # the boundary conditions
-    from BasicTools.FE.KR.KRBlock import KRBlock
-    dirichlet = KRBlock()
+    from BasicTools.FE.KR.KRBlock import KRBlockVector
+    dirichlet = KRBlockVector()
     dirichlet.AddArg("u").On('Z0').Fix0().Fix1().Fix2().To(offset=[1,2,3],first=[1,0,1] )
     dirichlet.constraintDiretions= "Global"
 

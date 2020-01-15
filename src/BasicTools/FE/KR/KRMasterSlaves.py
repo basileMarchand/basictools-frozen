@@ -3,113 +3,112 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
 
 import numpy as np
-from BasicTools.FE.KR.KRBase import KRBase
 
-class KRMasterSlaves(KRBase):
+from BasicTools.FE.KR.KRBase import KRBaseScalar, KRBaseVector
+from BasicTools.Containers.Filters import ElementFilter
+
+
+class KRMasterNodeToSlaveScalar(KRBaseScalar):
     def __init__(self):
-        super(KRMasterSlaves,self).__init__()
-        self.type = "KRMasterSlaves"
-        from BasicTools.FE.ProblemData import Transform
-#        self.OriginSystem = Transform()
-        self.FinalSystem = Transform()
-        self.constraintDiretions = "Final" # ["Global","Local","Original","Final"]
+        super(KRMasterNodeToSlaveScalar,self).__init__()
+        self.type = "KRMasterNodeToSlaveScalar"
 
     def MasterNode(self,tag=None):
         self.master = tag
 
-
-    def To(self,offset=None,first=None):
-        if offset is not None:
-            self.FinalSystem.SetOffset(offset)
-        if first is not None:
-            self.FinalSystem.SetFirst(first)
-        return self
-
     def GenerateEquations(self,mesh,fields,CH=None):
-
-        if CH is None:
-            from BasicTools.Linalg.ConstraintsHolder import ConstraintsHolder
-            CH = ConstraintsHolder()
-
-        # for the moment the aproximation spaces of a vector must be homogenious
-        # (the same in every direction)
-
-        #compute the ofsets
-        offsets = []
-        cpt = 0
+        CH = self._GetConstraintHolder(CH)
+        offsets, fieldOffsets  = self._ComputeOffsets(fields)
 
         fieldDic = {f.name:f for f in fields }
-        fieldOffsets = { }
 
-        for field in fields:
-            offsets.append(cpt)
-            cpt += field.numbering["size"]
-            offsets.append(cpt)
-            fieldOffsets[field.name] = cpt
-
-        #recover the dofs of the master no de
-        self.master
-        nids = mesh.nodestags[self.master].GetIds()
+        nids = mesh.nodesTags[self.master].GetIds()
         if len(nids) > 1 :
             raise Exception("master tag has more than 1 nodes")
 
-        initPos = mesh.nodes[nids[0],:]
+        if len(self.args) > 1:
+            raise(Exception("Cant treat only cases with one arg"))
 
+        fieldname = self.args[0]
+        field = fieldDic[fieldname]
+
+        masterDofs = np.array([ field.numbering['almanac'][('P',x,None)] for x in nids])+fieldOffsets[fieldname]
+
+        ef = ElementFilter(mesh=mesh, tags=self.on )
+        for name, data, elids in ef:
+            numbering = np.unique(field.numbering[name][elids,:].flatten())
+            dofs = numbering+fieldOffsets[fieldname]
+            for dof in dofs :
+                if dof == masterDofs :
+                    continue
+                CH.AddFactor(dof,1)
+                CH.AddFactor(masterDofs[0],-1)
+                CH.NextEquation()
+
+        return CH
+
+class KRMasterNodeToSlaveVector(KRBaseVector):
+    def __init__(self):
+        super(KRMasterNodeToSlaveVector,self).__init__()
+        self.type = "KRMasterNodeToSlaveVector"
+
+    def MasterNode(self,tag=None):
+        self.master = tag
+
+    def GenerateEquations(self,mesh,fields,CH=None):
+        CH = self._GetConstraintHolder(CH)
+        offsets, fieldOffsets  = self._ComputeOffsets(fields)
+
+        fieldDic = {f.name:f for f in fields }
+
+        nids = mesh.nodesTags[self.master].GetIds()
+        if len(nids) > 1 :
+            raise Exception("master tag has more than 1 nodes")
+
+        if len(self.args) > 1:
+            raise(Exception("Cant treat only cases with one arg"))
+
+        fieldname = self.args[0]
+
+        masterDofs = []
         usedFields = []
 
-        if self.master in fieldDic.keys() :
-            # we have a scalar field (like temperature)
-            masterDofs = [ np.array([ fieldDic[self.master].numbering['almanac'][('P',x,None)] for x in nids])+fieldOffsets[self.master] ]
-            usedFields = [ fieldDic[self.master] ]
-        else :
-            # we work with a tensor quantity (displacement
-            masterDofs = []
-            for sufix in ["_0", "_1" ,"_2" ]:
-                if self.master + sufix in fieldDic.keys() :
-                    masterDofs.append([ np.array([ fieldDic[self.master + sufix].numbering['almanac'][('P',x,None)] for x in nids])+fieldOffsets[self.master + sufix] ] )
-                    usedFields.append(fieldDic[self.master + sufix])
-                    if usedFields[0] != usedFields[-1]:
-                        raise Exception("Cant treat kinematic Relation using different approximation spaces")
-                else:
-                    break
+        for sufix in range(3):
+            cfieldname = fieldname + "_"+ str(sufix)
 
-        #from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
-        #geoSpace = LagrangeSpaceGeo
+            masterDofs.append( fieldDic[cfieldname].numbering['almanac'][('P',nids[0],None)] + fieldOffsets[cfieldname]  )
 
-        dim = len(usedFields)
-        for zone in self.on:
-          for name,data in mesh.elements.items():
-            for arg in self.args:
-              field = usedFields[0]
-              sp = field.space[name]
-              nbsf = sp.GetNumberOfShapeFunctions()
+            usedFields.append(fieldDic[cfieldname])
 
-              if zone in data.tags:
-                elids = data.tags[zone].GetIds()
-                for elid in elids:
-                    for i in range(nbsf):
 
-                        dofid = field.numbering[name][elid,i]
+        initPos = mesh.nodes[nids[0],:]
 
-                        if dim == 1:
-                            CH.AddFactor(dofid+offsets[0],1)
-                            CH.AddFactor(masterDofs[0],-1)
-                            CH.NextEquation()
-                        else:
-                            # the posicion of
-                            pos = sp.GetPosOfShapeFunction(i,mesh.nodes[data.connectivity[elid,:],:] )
-                            # vector from the master to the final point
-                            disp = pos - initPos
-                            dirToBlock = self.GetConstrainedDirections(pos,disp)
-                            for dtb in dirToBlock:
-                                for d in range(dim):
-                                    CH.AddFactor(dofid+offsets[d],dtb[d])
-                                    CH.AddFactor(masterDofs[d],-dtb[d])
-                                CH.NextEquation()
-                            cpt+=1
+        ef = ElementFilter(mesh=mesh, tags=self.on )
+
+        field = usedFields[0]
+        print(masterDofs)
+        for name, data, elids in ef:
+            print(name)
+            sp = field.space[name]
+            nbsf = sp.GetNumberOfShapeFunctions()
+            nu = [x.numbering[name] for x in usedFields]
+            for elid in elids:
+                print(elid)
+                for i in range(nbsf):
+                    dofids = [x[elid,i] for x in nu]
+
+                    # the posicion of
+                    pos = sp.GetPosOfShapeFunction(i,mesh.nodes[data.connectivity[elid,:],:] )
+                    # vector from the master to the final point
+                    disp = pos - initPos
+                    dirToBlock = self.GetConstrainedDirections(pos,disp)
+                    for dtb in dirToBlock:
+                        for d in range(3):
+                            CH.AddFactor(dofids[d]+offsets[d],dtb[d])
+                            CH.AddFactor(masterDofs[d],-dtb[d])
+                        CH.NextEquation()
         return CH
 
 
@@ -126,9 +125,71 @@ class KRMasterSlaves(KRBase):
 
         return res
 
+def CheckIntegrityKRMasterNodeToSlaveScalar(GUI=False):
+    from BasicTools.Containers.UnstructuredMeshCreationTools import CreateSquare
+    from BasicTools.FE.FETools import PrepareFEComputation
+
+    mesh = CreateSquare()
+    space, numberings, offset, _ = PrepareFEComputation(mesh, numberOfComponents=1)
+
+    obj = KRMasterNodeToSlaveScalar()
+    obj.MasterNode("x0y0")
+    obj.AddArg("temp")
+    obj.On("X1")
+
+
+    from BasicTools.FE.Fields.FEField import FEField
+    temp = FEField("temp",mesh=mesh,space=space, numbering=numberings[0])
+
+    CH = obj.GenerateEquations(mesh,[temp])
+    CH.SetNumberOfDofs(numberings[0]["size"])
+    mat, dofs = CH.ToSparse()
+    print(dofs)
+    print(mat.toarray())
+
+    #obj.AddArg("u").On("Z0").Fix0().Fix1(False).Fix2(True)
+
+    return "ok"
+
+def CheckIntegrityKRMasterNodeToSlaveVector(GUI=False):
+    from BasicTools.Containers.UnstructuredMeshCreationTools import CreateSquare
+    from BasicTools.FE.FETools import PrepareFEComputation
+
+    mesh = CreateSquare()
+    space, numberings, offset, _ = PrepareFEComputation(mesh, numberOfComponents=3)
+
+    obj = KRMasterNodeToSlaveVector()
+    obj.MasterNode("x0y0")
+    obj.AddArg("temp")
+    obj.On("X1").Fix0()
+
+
+    from BasicTools.FE.Fields.FEField import FEField
+    fields =  []
+    for x in range(3):
+        fields.append(FEField("temp_"+str(x),mesh=mesh,space=space, numbering=numberings[x]) )
+
+    CH = obj.GenerateEquations(mesh,fields)
+    CH.SetNumberOfDofs(numberings[0]["size"]*3)
+    mat, dofs = CH.ToSparse()
+    #print(CH.cols)
+    #print(CH.rows)
+    #print(CH.vals)
+    print(dofs)
+    print(mat.toarray())
+
+
+    return "ok"
+
 def CheckIntegrity(GUI=False):
-    obj = KRMasterSlaves()
-    obj.AddArg("u").On("Z0").Fix0().Fix1(False).Fix2(True)
+    totest = [CheckIntegrityKRMasterNodeToSlaveScalar,
+              CheckIntegrityKRMasterNodeToSlaveVector]
+
+    for f in totest:
+        print(str(f))
+        res = f(GUI)
+        if res.lower() != "ok":
+            return res
 
     return "ok"
 

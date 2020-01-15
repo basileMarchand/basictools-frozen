@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 
 import numpy as np
 from scipy import sparse
@@ -102,6 +102,9 @@ class ConstraintsHolder(BOO):
         mask = np.zeros(self.nbdof+1,dtype=float)
 
         usedDofs = np.sort(np.unique(self.cols))
+        if len(usedDofs) == 0:
+            return coo_matrix(([], ([], [])), shape=((0, 0 )), copy= True ), usedDofs
+
         if usedDofs[-1] != self.nbdof:
         	#we add the independent term
             usedDofs= np.append(usedDofs, [self.nbdof])
