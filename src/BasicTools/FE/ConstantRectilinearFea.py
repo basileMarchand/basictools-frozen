@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 """ Class to treat Constants Rectilinear Finit Element Problems
 
 """
@@ -220,33 +220,35 @@ class Fea(FeaBase.FeaBase):
 
         self.eed = np.zeros(self.support.GetNumberOfElements())
 
-    def BuildMassMatrix(self, Eeff = None):
-
-        self.PrintDebug("BuildMassMatrix")
+    def AssemblyMatrix(self,Op, Eeff = None):
         if Eeff is None:
-            self.PrintDebug(" Eeff is None")
             Eeff = np.ones(self.support.GetNumberOfElements())
-            sM = ((self.ME.flatten()[np.newaxis]).T * Eeff.ravel()).flatten(order='F')
+            sM = ((Op.flatten()[np.newaxis]).T * Eeff.ravel()).flatten(order='F')
             self.GenerateIJs()
-            self.PrintDebug("Asm")
             M = coo_matrix((sM, (self.iK, self.jK)), shape=(self.ndof, self.ndof),dtype=float)
-            self.PrintDebug("BuildMassMatrix Done")
-            return  M.tocsr()#(self.dofpernode,self.dofpernode))
         else:
             self.PrintDebug(" Eeff is known")
             bool_Eeff = (Eeff>=self.minthreshold)
             nEeff = Eeff[bool_Eeff]
-            sM = ((self.ME.flatten()[np.newaxis]).T * nEeff.ravel()).flatten(order='F')
-
+            sM = ((Op.flatten()[np.newaxis]).T * nEeff.ravel()).flatten(order='F')
             one = np.ones((self.nodesPerElement*self.dofpernode, 1), dtype=np.int_)
             local_iK = np.kron(self.edofMat[bool_Eeff,:], one).flatten()
             one.shape = (1,self.nodesPerElement*self.dofpernode)
             local_jK = np.kron(self.edofMat[bool_Eeff,:], one).flatten()
-            self.PrintDebug("Asm")
             M = coo_matrix((sM, (local_iK, local_jK)), shape=(self.ndof, self.ndof),dtype=float).tocsr()
+        return M.tocsr()
 
-            self.PrintDebug("BuildMassMatrix Done")
-            return M
+    def BuildTangentMatrix(self, Eeff = None):
+        self.PrintDebug("BuildTangentMatrix")
+        res = self.AssemblyMatrix(self.KE, Eeff)
+        self.PrintDebug("BuildTangentMatrix Done")
+        return res
+
+    def BuildMassMatrix(self, Eeff = None):
+        self.PrintDebug("BuildMassMatrix")
+        res = self.AssemblyMatrix(self.ME, Eeff)
+        self.PrintDebug("BuildMassMatrix Done")
+        return res
 
 
     def Solve(self, Eeff=None):
@@ -267,20 +269,8 @@ class Fea(FeaBase.FeaBase):
             self.mecaPhysics = None
 
         self.PrintDebug("Construction of the tangent matrix")
-        if Eeff is None:
-            Eeff = np.ones(self.support.GetNumberOfElements())
-            sK = ((self.KE.flatten()[np.newaxis]).T * Eeff.ravel()).flatten(order='F')
-            self.GenerateIJs()
-            K = coo_matrix((sK, (self.iK, self.jK)), shape=(self.ndof, self.ndof)).tocsr()#(self.dofpernode,self.dofpernode))
-        else:
-            bool_Eeff = Eeff>self.minthreshold
-            nEeff = Eeff[bool_Eeff]
-            sK = ((self.KE.flatten()[np.newaxis]).T * nEeff.ravel()).flatten(order='F')
-            one = np.ones((self.nodesPerElement*self.dofpernode, 1), dtype=np.int_)
-            local_iK = np.kron(self.edofMat[bool_Eeff,:],one).flatten()
-            one.shape = (1,self.nodesPerElement*self.dofpernode)
-            local_jK = np.kron(self.edofMat[bool_Eeff,:], one).flatten()
-            K = coo_matrix((sK, (local_iK, local_jK)), shape=(self.ndof, self.ndof)).tocsr()#(self.dofpernode,self.dofpernode))
+
+        K = self.BuildTangentMatrix(Eeff)
 
         zerosdof = np.where(K.diagonal()== 0 )[0]
 
