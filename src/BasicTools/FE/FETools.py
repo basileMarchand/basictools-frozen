@@ -492,9 +492,6 @@ def CheckIntegrity(GUI=False):
 
     res = GetElementaryMatrixForFormulation(EN.Hexaedron_8,wform, unknownNames =mecaPhysics.GetPrimalNames() )
 
-    """for line in res.toarray().tolist():
-        print(line)"""
-
     import BasicTools.TestData as BasicToolsTestData
     from BasicTools.IO import GeofReader as GR
     mesh = GR.ReadGeof(BasicToolsTestData.GetTestDataPath()+"cube2.geof")
@@ -510,14 +507,6 @@ def CheckIntegrity(GUI=False):
     IntegrateVectorNormalComponentOnSurface(mesh, "x0", vector)
     IntegrateCentrifugalEffect(mesh, {'ALLELEMENT':1.}, np.array([1.,0.,0.]), np.array([0.,0.,0.]))
 
-    """#mesh = GR.ReadGeof("/gpfs/home/fcasenave/ViscoPlastic/cube.geof")
-    mesh = GR.ReadGeof("/gpfs/home/fcasenave/NIROMTestData/Zset/testSequentiel/cube.geof")
-    ComputeMecaIntegrator(mesh)
-    ComputeMecaIntegrator(mesh, "EVP")
-
-    mesh = GR.ReadGeof("/gpfs/home/fcasenave/RaidSAE/Zset_radiation_only/cube.geof")
-    ComputeMecaIntegrator(mesh)
-    ComputeMecaIntegrator(mesh, "E_ICASGT1_MAT_SHAFT")"""
 
 
     return "ok"
