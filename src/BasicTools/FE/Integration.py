@@ -113,14 +113,21 @@ def IntegrateGeneral( mesh, wform, constants, fields, unkownFields, testFields=N
     integrator.PrepareFastIntegration(mesh,wform,vK,iK,jK,0,F)
 
     tagFound = False
+    from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearElementContainer
     for name,data,idstotreat in elementFilter:
 
         if data.GetNumberOfElements() == 0:
             continue
         tagFound = True
-        integrator.ActivateElementType(data)
-        ids = np.array(idstotreat,dtype=int,copy=False)
-        integrator.Integrate(wform,ids)
+        if isinstance(data, ConstantRectilinearElementContainer):
+            #TODO : Generate the elementary matrix
+            #
+            raise
+        else:
+
+            integrator.ActivateElementType(data)
+            ids = np.array(idstotreat,dtype=int,copy=False)
+            integrator.Integrate(wform,ids)
 
     # in the case the tag does not exist for the elements we try to find in the
     # nodes and do an integration by points
