@@ -54,6 +54,7 @@ def InitAllWriters():
     from BasicTools.IO.PipeIO import PipeWriter
     from BasicTools.IO.CsvWriter import CsvWriter
     import BasicTools.IO.PickleTools
+    import BasicTools.IO.Catalyst
 
 def RegisterWriterClass(name, classtype, constructor=None, withError = True):
     WriterFactory.RegisterClass(name,classtype, constructor=constructor, withError = withError )

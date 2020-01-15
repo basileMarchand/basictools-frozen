@@ -8,6 +8,7 @@
 _test = [
 'AnsysReader',
 'AscReader',
+'Catalyst',
 'CodeInterface',
 'CsvWriter',
 'FemReader',
