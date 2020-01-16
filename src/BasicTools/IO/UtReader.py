@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 import numpy as np
 
 from BasicTools.IO.ReaderBase import ReaderBase
@@ -31,7 +31,7 @@ def ReadUTMetaData(fileName):
     metaData["time"]     = reader.time
     return metaData
 
-    
+
 
 class UtReader(ReaderBase):
     def __init__(self):
@@ -64,14 +64,14 @@ class UtReader(ReaderBase):
             self.fieldNameToRead = fieldname
 
     def SetTimeToRead(self, time, timeIndex):
-        
+
         if (time is None) and (timeIndex is None):
             if self.timeToRead == -1:
                 self.timeToRead = self.time[-1][4]
                 return len(self.time)-1
             else:
                 return [data[4]for data in self.time].index(self.timeToRead)
-        
+
         if (time is not None) and (timeIndex is not None):
             raise(Exception("Cannot specify both time and timeIndex"))
 
@@ -85,7 +85,7 @@ class UtReader(ReaderBase):
 
     def GetAvilableTimes(self):
            return self.time[:,4]
-       
+
     def ReadUTMetaData(self):
         self.StartReading()
 
@@ -125,7 +125,7 @@ class UtReader(ReaderBase):
 
             self.time.append( [b(a) for a,b in zip(s,[int, int, int, int, float] )])
         self.time = np.array(self.time)
-        self.EndReading()        
+        self.EndReading()
 
     def ReadMetaData(self):
         if self.meshMetadata is not None : return self.meshMetadata
@@ -141,7 +141,24 @@ class UtReader(ReaderBase):
 
         GR.SetFileName(self.filePath +self.meshfile )
         self.meshMetadata = GR.ReadMetaData()
-    
+
+
+    def Read(self):
+        if self.meshfile[-5:] == ".geof":
+            from BasicTools.IO.GeofReader import GeofReader
+            GR = GeofReader()
+        else:
+            from BasicTools.IO.GeoReader import GeoReader
+            GR = GeoReader()
+
+        GR.SetFileName(self.filePath +self.meshfile )
+
+        mesh = GR.Read()
+        for nodefield in self.node:
+            mesh.nodeFields[nodefield] = self.ReadField(fieldname= nodefield)
+
+        return mesh
+
 
     def ReadField(self,fieldname=None,time=None,timeIndex=None):
         self.ReadMetaData()
