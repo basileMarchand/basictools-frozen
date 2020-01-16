@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 import numpy as np
 
 import BasicTools.Containers.ElementNames as EN
@@ -101,6 +101,8 @@ class StlReader(ReaderBase):
         elements.cpt = nbTriangles
         resUM.elemFields["normals"] = normals
         self.EndReading()
+        resUM.GenerateManufacturedOriginalIDs()
+        resUM.PrepareForOutput()
 
         return resUM
 
@@ -151,10 +153,12 @@ class StlReader(ReaderBase):
         elements = resUM.GetElementsOfType(EN.Triangle_3)
         elements.connectivity = np.array(range(resUM.GetNumberOfNodes()),dtype=np.int)
         elements.connectivity.shape = (resUM.GetNumberOfNodes()//3,3)
-        #elements.connectivity = elements.connectivity.T
         elements.originalIds = np.arange(resUM.GetNumberOfNodes()/3,dtype=np.int )
         elements.cpt = elements.connectivity.shape[0]
         resUM.elemFields["normals"] = normals
+        resUM.GenerateManufacturedOriginalIDs()
+        resUM.PrepareForOutput()
+
         return resUM
 
 
