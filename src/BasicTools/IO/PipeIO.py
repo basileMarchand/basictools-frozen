@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 import sys
 
 from BasicTools.IO.IOFactory import RegisterWriterClass,RegisterReaderClass
@@ -41,6 +41,7 @@ class PipeWriter(object):
     def __init__(self):
        super(PipeWriter,self).__init__()
        self.outbuffer = None
+       self.canHandleBinaryChange = False
 
     def SetFileName(self,val):
         pass

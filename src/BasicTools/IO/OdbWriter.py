@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 
 import numpy as np
 
@@ -58,6 +58,7 @@ class OdbWriter(object):
         self.abaqusExec=None
         self.__insubprocess = False
         self.filename = ""
+        self.canHandleBinaryChange = False
 
     def SetBinary(self,val):
         pass

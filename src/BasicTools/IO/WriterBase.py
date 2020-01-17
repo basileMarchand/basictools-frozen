@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 from BasicTools.Helpers.TextFormatHelper import TFormat as TFormat
@@ -16,6 +16,7 @@ class WriterBase(BaseOutputObject):
         self._isBinary = False
         self.canHandleTemporal = False
         self.canHandleMultidomain = False
+        self.canHandleBinaryChange = True
         self.__isTemporalOutput = False
         self.__isMultidomainOutput = False
 
@@ -65,7 +66,11 @@ class WriterBase(BaseOutputObject):
         if self._isOpen :
             print(TFormat.InRed("Please SetBinary before opening"))
             raise Exception("Please SetBinary before opening")
-        self._isBinary = val
+
+        if self.canHandleBinaryChange:
+            self._isBinary = val
+        else:
+            print('cant change the binary mode.')
 
     def isBinary(self):
         return self._isBinary

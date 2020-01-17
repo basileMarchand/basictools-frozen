@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 """Geof file writer (Zset mesh files)
 
 """
@@ -63,6 +63,7 @@ class GeofWriter(WriterBase):
     def __init__(self):
         super(GeofWriter,self).__init__()
         self.lowerDimElementsAsElsets= False
+        self.canHandleBinaryChange = False
 
     def __str__(self):
         res  = 'GeofWriter : \n'
