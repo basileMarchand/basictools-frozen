@@ -25,6 +25,12 @@
     odbAccess
     abaqusConstants
 
+    FOR WINDOWS:
+      install Microsoft Visual C++ Build Tools to use eigen,
+      scikit-sparse package not available in anaconda for windows, should be able to compile it for windows following https://github.com/xmlyqing00/Cholmod-Scikit-Sparse-Windows,
+      tested on windows10: 99 tests OK, 3 tests not OK (Linalg.LinearSolver, IO.Wormhole (SIGALARM not supported on windows), IO.CodeInterface
+      
+
 
 2) INSTALLATION
 
