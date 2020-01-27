@@ -399,9 +399,8 @@ class ElementFilter(Filter):
 
 def CheckIntegrity( GUI=False):
     """
-    .. literalinclude:: ../../Containers/Filters.py
+    .. literalinclude:: ../../src/BasicTools/Containers/Filters.py
        :pyobject: CheckIntegrity
-
     """
     from BasicTools.Containers.UnstructuredMeshTools import CreateCube
     nx = 11; ny = 12; nz = 13;
