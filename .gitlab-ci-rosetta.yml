@@ -102,9 +102,12 @@ deploy:
   tags:
     - MSBasicTools
   script:
-    - echo "Deploy..."
+    - echo "Deploy... on $PREFIX"
     - rsync -av --delete-after --cvs-exclude --include=FE/*36*.so --omit-dir-times --no-perms ./src/BasicTools/. $PREFIX
     - $ACLSCRIPT $PREFIX/../.acl $PREFIX
+    - echo "Deploy... using $PREFIXII"
+    - $PREFIXII
+    - $ACLSCRIPT $PREFIX/../.acl $PREFIXII_INSTALL
   environment:
     name: deploy_to_softs
   only:
