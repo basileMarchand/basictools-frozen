@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 """ Read Zebulon sparse matrices and vectors
 """
 
@@ -187,7 +187,7 @@ def ReadInp(fileName=None,string=None):
             cobj = pobj[-1]
             #if data[0] not in cobj:
             cobj[data[0]] = OD()
-            
+
             pobj.append(cobj[data[0]])
             cobj = pobj[-1]
             plevel.append(sublevel)
@@ -271,7 +271,7 @@ def StringReader(inputString, folder):
         continue
       for ll in l:
         appendedString += ll
-      appendedString += '\n'    
+      appendedString += '\n'
 
     return appendedString
 
@@ -323,7 +323,7 @@ def WriteInp2(data,output= None):
             output.write(Nstar(i, j, k, l)+ValueToString(data[i][j][k][l])+'\n')
 
     output.write('****return\n')
-            
+
 
 
 
@@ -331,8 +331,8 @@ def GetFromInp(data,dic):
     """
     returns a list of lists containing the elements of each line of the inp file "data" read by ReadInp2()
     respecting the conditions in dic: for example, for dic = {'4':['calcul'], '2':['file', 'temperature']},
-    the function returns all the lines being in a **** section starting by "simulate" and a ** section 
-    starting by "file temperature" (robust with respect to the number of spaces between 'file' and 'temperature')  
+    the function returns all the lines being in a **** section starting by "simulate" and a ** section
+    starting by "file temperature" (robust with respect to the number of spaces between 'file' and 'temperature')
     """
 
     res = []
@@ -405,7 +405,7 @@ def GetInputTimeSequence(data):
         for t in line:
           if count > 0:
             timeSequence.append(float(t))
-          count += 1 
+          count += 1
 
     if len(dataDtime) > 0:
       if len(dataTime) > 0:
@@ -443,7 +443,7 @@ def GetInputTimeSequence(data):
       for i in range(lt-1):
         for j in range(incrementSequence[i]):
           #print(i, j, len(timeSequence), len(incrementSequence))
-          reconstructedTimeSequence.append(timeSequence[i]+(j+1)*(timeSequence[i+1]-timeSequence[i])/incrementSequence[i])     
+          reconstructedTimeSequence.append(timeSequence[i]+(j+1)*(timeSequence[i+1]-timeSequence[i])/incrementSequence[i])
 
 
     return reconstructedTimeSequence
@@ -458,7 +458,7 @@ def GetTables(data):
 
     cyclicTableData = GetFromInp(data,{'4':['calcul'], '3':['table'], '2':['cycle']})
     noncyclicTableData = GetFromInp(data,{'4':['calcul'], '3':['table'], '2':['name']})
-    
+
     tables = {}
     tableData = cyclicTableData
     for t in range(int(len(tableData)/3)):
@@ -476,8 +476,8 @@ def GetTables(data):
 
       if len(tempTime) != len(tempValue):
         print("WARNING ! length of time table and value table for "+ tableData[3*t][0][1] + "are different")
-        
-    tableData = noncyclicTableData        
+
+    tableData = noncyclicTableData
     for t in range(int(len(tableData)/3)):
       tables[tableData[3*t][0][1]] = {}
       tempTime = []
@@ -490,8 +490,8 @@ def GetTables(data):
       tables[tableData[3*t][0][1]]['value'] = np.array(tempValue, dtype = float)
 
       if len(tempTime) != len(tempValue):
-        print("WARNING ! length of time table and value table for "+ tableData[3*t][0][1] + " are different")        
-    
+        print("WARNING ! length of time table and value table for "+ tableData[3*t][0][1] + " are different")
+
     return tables
 
 
@@ -520,14 +520,14 @@ def GetLoadings(data):
     concerning all the infos respecting bc and temperature
     """
     loadings = GetBoundaryConditions(data)
-          
+
     temperatureLoading = GetParameterFiles(data, parameterName = 'temperature')
     if temperatureLoading:
         loadings['temperature'] = [[["ALLNODE", temperatureLoading]]]
-        
+
     initData = GetInitDofValues(data)
     loadings['initialCondition'] = [[["ALLNODE", initData]]]
-    
+
     return loadings
 
 
@@ -549,7 +549,7 @@ def GetParameterFiles(data, parameterName = None):
     returns a dictionary containing the infos of an inp file "data" read by ReadInp2()
     concerning all the infos respecting ****calcul, ***parameter, **file
     !! only with 'cycle_conversion' time table
-    
+
     extract floats from string: solution from https://stackoverflow.com/questions/4703390/how-to-extract-a-floating-number-from-a-string
     """
     if parameterName == None:
@@ -557,7 +557,7 @@ def GetParameterFiles(data, parameterName = None):
       paraFilesData = GetFromInp(data,{'4':['calcul'], '3':['parameter'], '2':['file']})
     else:
       paraFilesData = GetFromInp(data,{'4':['calcul'], '3':['parameter'], '2':['file', parameterName]})
-    
+
     import re
     numeric_const_pattern = '[-+]? (?: (?: \d* \. \d+ ) | (?: \d+ \.? ) )(?: [Ee] [+-]? \d+ ) ?'
     rx = re.compile(numeric_const_pattern, re.VERBOSE)
@@ -585,7 +585,7 @@ def GetParameterFiles(data, parameterName = None):
 def GetMaterialFiles(data):
 
     matList = {}
-    
+
     tempMatList = GetFromInp(data,{'3':['material'], '2':['elset']})
 
     if tempMatList == []:
@@ -597,7 +597,7 @@ def GetMaterialFiles(data):
                curElSet = data[0][1]
             elif data[0][0] == 'file':
                 matList[curElSet] = data[0][1]
-                
+
     return matList
 
 
@@ -650,7 +650,7 @@ def CheckIntegrity():
     GetFromInp(res,{'4':['calcul'], '2':['impose_nodal_dof']})
     GetFromInp(res,{'4':['calcul'], '3':['linear_solver']})
     GetProblemType(res)
-    
+
     GetTables(res)
     GetBoundaryConditions(res)
     GetParameterFiles(res, parameterName = 'temperature')
@@ -671,9 +671,9 @@ def CheckIntegrity():
     res = ReadInp2(T2.GetTestDataPath() + 'mat', startingNstar=3)
     GetFromInp(res,{'3':['behavior', 'thermal'], '2':['conductivity', 'isotropic']})
     GetFromInp(res,{'3':['behavior', 'thermal'], '2':['coefficient']})
-    
-    
-    
+
+
+
     ReadBinaryFile(T2.GetTestDataPath() + 'UtExample/cube.node')
     return 'ok'
 
