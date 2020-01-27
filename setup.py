@@ -21,7 +21,7 @@ else:
     compile_args = ['-O2', '-std=c++11']
 
 if useOpenmp:
-    compile_args.append("-openmp")
+    compile_args.append("-qopenmp")
 
 if enable_MKL:
     #compile_args.append("-DEIGEN_USE_MKL_ALL")
