@@ -17,17 +17,13 @@ class Filter(BOO):
     """
     Base class to construct node and element filters
 
+    :param UnstructuredMesh mesh: the mesh to filter
+    :param list(Callable) zones: a list zone to treat
+    :param Callable zone: a zone to treat
+    :param List(str) tags: the list of tag names to treat
+    :param str tag: a tag name to add to the list
     """
     def __init__(self,mesh = None, zones = None, tags = None, zone = None, tag = None):
-        """
-        Constructor
-
-        :param UnstructuredMesh mesh: the mesh to filter
-        :param list(Callable) zones: a list zone to treat
-        :param Callable zone: a zone to treat
-        :param List(str) tags: the list of tag names to treat
-        :param str tag: a tag name to add to the list
-        """
         super(Filter,self).__init__()
 
         self.tags = list()
@@ -101,12 +97,10 @@ class Filter(BOO):
         Function to generate an intersection of two vectors (like np.intersect1d)
         but with the particularity of treat the case where the inputs can be None
 
-
         :param list(int)/np.array(int)/None first:  first vector of indices
         :param list(int)/np.array(int)/None second:  second vector of indices
         :return: The intersection of two list
         :rtype: Union[list(int),None]
-
         """
         if first is None:
             if second is None:
