@@ -490,12 +490,11 @@ def CheckIntegrity( GUI=False):
     print("Number of Element in tag ZZ0 {}".format(op.cpt))
     print(mesh)
 
-    if GUI :# pragma: no cover
+    if GUI: # pragma: no cover
         from BasicTools.Actions.OpenInParaView import OpenInParaView
         OpenInParaView(mesh=mesh)
 
     return "ok"
+
 if __name__ == '__main__':
-
-    print(CheckIntegrity( GUI=True))# pragma: no cover
-
+    print(CheckIntegrity(GUI=True)) # pragma: no cover
