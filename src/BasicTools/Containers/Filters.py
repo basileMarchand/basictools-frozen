@@ -81,7 +81,7 @@ class Filter(BOO):
         :param int numberOfObjects: the total number of object (number of points,
              or number of element in the current element container)
 
-        :return list(int) or None:
+        :rtype: list(int) or None
         """
         if len(self.tags) == 0:
             return None
@@ -167,7 +167,8 @@ class NodeFilter(Filter):
         """
         Main function of this class
 
-        :return list(int): the filtered ids
+        :return: the filtered ids
+        :rtype: list(int)
         """
         if len(self.etags):
             ff =ElementFilter(self.mesh,tags=self.etags)
@@ -249,9 +250,10 @@ class ElementFilter(Filter):
         """
         Set the dimensionality of the elements to be treated
 
-        :param int or None dimensionality: the dimensionality filter, [-3 -2 -1 0 1 2 3 or None]
+        :param dimensionality: the dimensionality filter, [-3 -2 -1 0 1 2 3 or None]
             the - sign is for the complementary part (-2 = all non 2D elements).
             Set to None to reset (not to apply dimensionality as a criteria)
+        :type dimensionality: int or None
         """
         self.dimensionality = dim
 
@@ -264,7 +266,7 @@ class ElementFilter(Filter):
         :return: True, if the elements must be treated
                               False, otherwise
                               None, dimensionality criteria not active
-        :rtype  bool/None:
+        :rtype: Bool/None
         """
 
         if self.dimensionality is None:
@@ -286,8 +288,8 @@ class ElementFilter(Filter):
         on the zones.
 
         :param ElementsContainer elements: Elements to treat
-        :return list(int) or None: list of element to treat
-                                   None, if all the elements must be treated
+        :return list of element to treat (None, if all the elements must be treated)
+        :rtype: linst(int) or None
         """
         if len(self.zones) == 0:
             return None
