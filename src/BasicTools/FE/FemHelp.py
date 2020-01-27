@@ -13,20 +13,16 @@ import BasicTools.Containers.ElementNames as ElementsNames
 
 def Integral(E,Bop,elem,ndofs,pos=None):
     """
-    Function to calculate the integral of E(u)*Bop*E(u) over an element:
+    Function to calculate the integral of E(u)*Bop*E(u) over an element
 
-    inputes:
-        linear operators E : matrix line
-        Bop operator : Bop(integration point coordinates in element space, the coordinates of the nodes of the element )
-            must return the B operator and the determinant of the jacobian.
-       elem: the element
-       ndofs: the number of dofs (E.shape[0])
-       pos, the positions of the nodes of the element (if needed by Bop).
-
-    # for the moment this is not a nice implementation
+    Inputs:
+        * linear operators E : matrix line
+        * Bop operator : Bop(integration point coordinates in element space, the coordinates of the nodes of the element )
+          must return the B operator and the determinant of the jacobian.
+        * elem: the element
+        * ndofs: the number of dofs (E.shape[0])
+        * pos: the positions of the nodes of the element (if needed by Bop).
     """
-
-
     res = np.zeros((ndofs,ndofs),float)
 
     ## from http://www.colorado.edu/engineering/CAS/courses.d/AFEM.d/AFEM.Ch11.d/AFEM.Ch11.pdf
