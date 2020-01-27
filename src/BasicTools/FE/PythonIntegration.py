@@ -23,30 +23,30 @@ class MonoElementsIntegral(BOO):
     """
     Class to assembly a formulation (weak form) into a matrix or a vector
 
-    unkownDofsOffset : offset for the unkowns dofs
-    __ufs__          : unkown fields
-    testDofsOffset   : offset for the test dofs
-    __tfs__          : unkown dofs
+    * unkownDofsOffset : offset for the unkowns dofs
+    * __ufs__          : unkown fields
+    * testDofsOffset   : offset for the test dofs
+    * __tfs__          : unkown dofs
 
-    totalTestDofs    : Total number fo test dofs    (computed Automaticaly)
-    totalUnkownDofs  : Total number fo unkown dofs  (computed Automaticaly)
-    geoSpace         : Geometry aproximation space  (computed Automaticaly)
+    * totalTestDofs    : Total number fo test dofs    (computed Automaticaly)
+    * totalUnkownDofs  : Total number fo unkown dofs  (computed Automaticaly)
+    * geoSpace         : Geometry aproximation space  (computed Automaticaly)
 
-    __efs__          : Extra Fields
-    __cfs__          : (dic(str:float) ) Constants
-    integrationRule  : integration rule for the integratoin
-    onlyEvaluation   : To force the integrator to not multiply by the detJac
+    * __efs__          : Extra Fields
+    * __cfs__          : (dic(str:float) ) Constants
+    * integrationRule  : integration rule for the integratoin
+    * onlyEvaluation   : To force the integrator to not multiply by the detJac
 
-    numberOfVIJ = 0
-    F                : rhs vector
-    vK, iK, jK       : Vectors containing the values and indices for the entries
-                       of the operator
-    totalvijcpt      : Number of non zero entries in the self.vK iK ant jK vector
-    maxNumberOfTerms : maximal number of terms in a monom (computed Automaticaly)
-    maxNumberOfElementVIJ : (computed Automaticaly)
-    hasnormal        : (computed Automaticaly)
-    __usedSpaces__
-    geoSpaceNumber
+    * numberOfVIJ = 0
+    * F                : rhs vector
+    * vK, iK, jK       : Vectors containing the values and indices for the entries
+                         of the operator
+    * totalvijcpt      : Number of non zero entries in the self.vK iK ant jK vector
+    * maxNumberOfTerms : maximal number of terms in a monom (computed Automaticaly)
+    * maxNumberOfElementVIJ : (computed Automaticaly)
+    * hasnormal        : (computed Automaticaly)
+    * __usedSpaces__
+    * geoSpaceNumber
     """
     def __init__(self):
         super(MonoElementsIntegral,self).__init__()
