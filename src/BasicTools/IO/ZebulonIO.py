@@ -329,10 +329,12 @@ def WriteInp2(data,output= None):
 
 def GetFromInp(data,dic):
     """
-    returns a list of lists containing the elements of each line of the inp file "data" read by ReadInp2()
-    respecting the conditions in dic: for example, for dic = {'4':['calcul'], '2':['file', 'temperature']},
-    the function returns all the lines being in a **** section starting by "simulate" and a ** section
-    starting by "file temperature" (robust with respect to the number of spaces between 'file' and 'temperature')
+    Returns a list of lists containing the elements of each line of the inp
+    file "data" read by ReadInp2() respecting the conditions in dic: for
+    example, for dic = {'4':['calcul'], '2':['file', 'temperature']}, the
+    function returns all the lines being in a ``****`` section starting by
+    "simulate" and a ``**`` section starting by "file temperature" (robust with
+    respect to the number of spaces between 'file' and 'temperature')
     """
 
     res = []
@@ -452,8 +454,9 @@ def GetInputTimeSequence(data):
 
 def GetTables(data):
     """
-    returns a dictionary containing the infos of an inp file "data" read by ReadInp2()
-    concerning all the infos respecting ****calcul, ***table and **name or **cycle
+    Returns a dictionary containing the infos of an inp file "data" read by
+    ReadInp2() concerning all the infos respecting ``****calcul``, ``***table``
+    and ``**name`` or ``**cycle``.
     """
 
     cyclicTableData = GetFromInp(data,{'4':['calcul'], '3':['table'], '2':['cycle']})
@@ -499,8 +502,8 @@ def GetTables(data):
 
 def GetBoundaryConditions(data):
     """
-    returns a dictionary containing the infos of an inp file "data" read by ReadInp2()
-    concerning all the infos respecting ****calcul, ***bc
+    Returns a dictionary containing the infos of an inp file "data" read by ReadInp2()
+    concerning all the infos respecting ``****calcul``, ``***bc``
     """
     bcData = GetFromInp(data,{'4':['calcul'], '3':['bc']})
     bcs = {}
@@ -535,7 +538,7 @@ def GetLoadings(data):
 def GetInitDofValues(data):
     """
     returns a dictionary containing the infos of an inp file "data" read by ReadInp2()
-    concerning all the infos respecting ****calcul, ***init_dof_value
+    concerning all the infos respecting ``****calcul``, ``***init_dof_value``
     """
     initData = GetFromInp(data,{'4':['calcul'], '3':['init_dof_value']})
     if initData == []:
@@ -547,7 +550,7 @@ def GetInitDofValues(data):
 def GetParameterFiles(data, parameterName = None):
     """
     returns a dictionary containing the infos of an inp file "data" read by ReadInp2()
-    concerning all the infos respecting ****calcul, ***parameter, **file
+    concerning all the infos respecting ``****calcul``, ``***parameter``, ``**file``
     !! only with 'cycle_conversion' time table
 
     extract floats from string: solution from https://stackoverflow.com/questions/4703390/how-to-extract-a-floating-number-from-a-string
