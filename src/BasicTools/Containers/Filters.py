@@ -27,7 +27,6 @@ class Filter(BOO):
         :param Callable zone: a zone to treat
         :param List(str) tags: the list of tag names to treat
         :param str tag: a tag name to add to the list
-
         """
         super(Filter,self).__init__()
 
@@ -50,7 +49,6 @@ class Filter(BOO):
         Set the tag list name to treate
 
         :param list(str) tagNames: list of tag names
-
         """
         self.tags = list(tagNames)
 
@@ -67,7 +65,6 @@ class Filter(BOO):
         Set the zone list to treate
 
         :param list(callable) zonesList: list of zone
-
         """
         self.zones = zonesList
 
@@ -76,7 +73,7 @@ class Filter(BOO):
         Add a zone to the list of zone to be treated by the filter
 
         :param callable zone: a callable object it takes one argument with the
-        points positions
+            points positions
         """
         self.zones.append(zone)
 
@@ -86,10 +83,9 @@ class Filter(BOO):
 
         :param Tags tags: The tags container
         :param int numberOfObjects: the total number of object (number of points,
-           or number of element in the current element container)
+             or number of element in the current element container)
 
         :return list(int) or None:
-
         """
         if len(self.tags) == 0:
             return None
@@ -125,14 +121,11 @@ class Filter(BOO):
 
 class NodeFilter(Filter):
     """
-
        Specialized class for node filtering zone and tag
-
     """
     def __init__(self,mesh, etags = None, etag = None, **kwargs):
         """
         Constructor: all the parammeter are passed to the base class
-
         """
         self.etags = list()
         if etags is not None:
@@ -147,7 +140,6 @@ class NodeFilter(Filter):
         Set the tag list name to treate
 
         :param list(str) tagNames: list of tag names
-
         """
         self.etags = list(tagNames)
 
@@ -182,7 +174,6 @@ class NodeFilter(Filter):
         Main function of this class
 
         :return list(int): the filtered ids
-
         """
         if len(self.etags):
             ff =ElementFilter(self.mesh,tags=self.etags)
@@ -215,11 +206,9 @@ class NodeFilter(Filter):
         Function to apply filter using an operator
 
         :param callable op: An instance of a callable object, the object can have
-        the PreCondition function and/or the Postcondition function. Theses
-        functions are called (if exist) (with the mesh as the first argument)
-        before and after the main call ( op(mesh,nodes,ids) )
-
-
+            the PreCondition function and/or the Postcondition function. Theses
+            functions are called (if exist) (with the mesh as the first argument)
+            before and after the main call ( op(mesh,nodes,ids) )
         """
 
         pc = getattr(op,"PreCondition",None)
@@ -305,7 +294,6 @@ class ElementFilter(Filter):
         :param ElementsContainer elements: Elements to treat
         :return list(int) or None: list of element to treat
                                    None, if all the elements must be treated
-
         """
         if len(self.zones) == 0:
             return None
@@ -368,7 +356,6 @@ class ElementFilter(Filter):
                 print("This function is called only for 2D elements")
 
                 print("Number of 2D element of type " + str(name)+ " is : "  + str(len(ids) )
-
         """
         for name,data in self.mesh.elements.items():
             ids = self.GetIdsToTreat(data)
