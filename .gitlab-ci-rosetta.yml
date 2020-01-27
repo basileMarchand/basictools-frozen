@@ -2,8 +2,8 @@ variables:
     MYPROJECT : 'BasicTools'
 
 stages:
-    - doc
     - build
+    - doc
     - test
     - debug
     - deploy
