@@ -15,14 +15,23 @@ you can filter the output to "reinterpret" the control chars using :
 def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '¦'):
     """
     Call in a loop to create terminal progress bar
-    @params:
-        iteration   - Required  : current iteration (Int)
-        total       - Required  : total iterations (Int)
-        prefix      - Optional  : prefix string (Str)
-        suffix      - Optional  : suffix string (Str)
-        decimals    - Optional  : positive number of decimals in percent complete (Int)
-        length      - Optional  : character length of bar (Int)
-        fill        - Optional  : bar fill character (Str)
+
+    Parameters
+    ----------
+    iteration : int
+        Current iteration
+    total : int
+        Total iterations
+    prefix : str, optional
+        Prefix string
+    suffix : str, optional
+        Suffix string
+    decimals : int, optional
+        Positive number of decimals in percent complete
+    length : str, optional
+        Character length of bar
+    fill : str, optional
+        Bar fill character
     """
     percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
     filledLength = int(length * iteration // total)
