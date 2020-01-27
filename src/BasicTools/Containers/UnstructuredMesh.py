@@ -21,22 +21,20 @@ class ElementsContainer(BaseOutputObject):
     """
     Class to hold a list of element of the same type
 
-    elementType : a string form BasicTools.Containers.ElementNames
-    connectivity : the connectivity matrix starting form 0
-    tags : the tags holder class
+    * elementType : a string form BasicTools.Containers.ElementNames
+    * connectivity : the connectivity matrix starting form 0
+    * tags : the tags holder class
+    * originalIds : the id or number from the previous mesh/file
+    * originalOffset : the offset from the previous mesh/file
 
-    originalIds : the id or number from the previous mesh/file
-    originalOffset : the offset from the previous mesh/file
-    the user cans use this data to find the mapping from the inintial mesh/file
-    to the currect mesh (self)
+    The user can use this data to find the mapping from the inintial mesh/file
+    to the currect mesh (self).
 
+    * self.globaloffset  : this value is calculate automaticaly by the mesh
+    * self.cpt : an internal counter to do efficient add of elements one by one
 
-    self.globaloffset  : this value is calculate automaticaly by the mesh
-    self.cpt : an internal counter to do efficient add of elements one by one
-
-    the user is responsible to call self.tighten() to compact the connectivity
+    The user is responsible to call self.tighten() to compact the connectivity
     matrix after the population ( calls AddNewElement(...) or allocate(...))
-
     """
     def __init__(self,elementType):
         super(ElementsContainer,self).__init__()
@@ -228,15 +226,15 @@ class AllElements(object):
 
 class UnstructuredMesh(MeshBase):
     """
-    class to store a UnstructuredMesh:
-        self.nodes : the points positions
-        self.orignilaIdNodes : the ids of the previous mesh/file
-        self.elements : the list of all the elememnt in the mesh
-        self.boundingMin/Max : the bounding box of the mesh (use ComputeBoundingBox
-         to compute it)
+    Class storing an unstructured (i.e. general) mesh:
 
-        the manual construction of this class must always end with a call to the
-        function
+    * self.nodes : the points positions
+    * self.orignilaIdNodes : the ids of the previous mesh/file
+    * self.elements : the list of all the elememnt in the mesh
+    * self.boundingMin/Max : the bounding box of the mesh (use ComputeBoundingBox to compute it)
+
+    The manual construction of this class must always end with a call to the
+    function.
     """
     def IsUnstructured(self):
         return True
