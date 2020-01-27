@@ -10,7 +10,7 @@ from  BasicTools.Containers.UnstructuredMesh import AllElements
 
 def Hash(space,j,lconn,name=None,i=None):
     """
-    Fucntion to create a unique tuple for a given shape function (dof) this
+    Function to create a unique tuple for a given shape function (dof) this
     tuple must be independent of the element that use this shape function ( an
     exception is the discontinues galerkin approximation).
 
@@ -52,17 +52,17 @@ def Hash(space,j,lconn,name=None,i=None):
 
 
 def ComputeDofNumbering(mesh,Space,dofs=None,tag=AllElements,sign=1,fromConnectivity=False):
-
     """
     Function to compute a unique numbering of dofs. The user must provide:
-        mesh : (UnstructuredMesh), discretisation
-        space : (from FESpaces.py for example) aproximation space
-        dofs : () previous dofNumbering computation
-        tag : (str) tag name to treat
-        sign : (default 1) user can give (-1) to use negative numbering
-        fromConnectivity : (defautl False) for fast computation of isoparametric
-            numbering for all element (space, dofs,tag,sign are ignored). All
-            Elements are treated
+
+    * mesh : (UnstructuredMesh), discretisation
+    * space : (from FESpaces.py for example) approximation space
+    * dofs : () previous dofNumbering computation
+    * tag : (str) tag name to treat
+    * sign : (default 1) user can give (-1) to use negative numbering
+    * fromConnectivity : (default False) for fast computation of isoparametric
+      numbering for all element (space, dofs,tag,sign are ignored). All Elements
+      are treated.
     """
     if tag is None:
         raise(ValueError())
