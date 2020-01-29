@@ -22,10 +22,12 @@ else:
 
 if useOpenmp:
     compile_args.append("-qopenmp")
+    compile_args.append("-inline-forceinline")
 
 if enable_MKL:
     #compile_args.append("-DEIGEN_USE_MKL_ALL")
     compile_args.append("-DMKL_DIRECT_CALL")
+    compile_args.append("-DEIGEN_USE_MKL_VML")
 
 include_path = [numpy.get_include(), os.environ['EIGEN_INC']]
 modules = cythonize("src/BasicTools/FE/*.pyx", gdb_debug=debug, annotate=annotate, include_path=include_path, force=force)
