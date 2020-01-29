@@ -124,7 +124,7 @@ void inv33(MatrixDDD& m,MatrixDDD &minv,double& det ){
                m(0, 2) * (m(1, 0) * m(2, 1) - m(1, 1) * m(2, 0));
 
         //std::cout << "det   ->   " << det  << std::endl;
-        const double invdet = 1 / det;
+        const double invdet = 1. / det;
         //std::cout << "invdet   ->   " << invdet  << std::endl;
         //std::cout << "minv   ->   " << minv  << std::endl;
         minv(0, 0) = (m(1, 1) * m(2, 2) - m(2, 1) * m(1, 2)) * invdet;
@@ -181,7 +181,7 @@ void GetJackAndDet(MapMatrixDDD& valdphidxi,
               m(1,0) = der1;
               m.col(1) = Normal;
 
-              Jinv = m.inverse().transpose().col(0) ;
+              Jinv.noalias() = m.inverse().transpose().col(0) ;
               return;
               break;
            } case (3):{
@@ -191,24 +191,23 @@ void GetJackAndDet(MapMatrixDDD& valdphidxi,
               Jdet = std::sqrt(der0*der0+der1*der1+der2*der2);
               MatrixD31 N0;
               MatrixD31 N1;
-              if(der0 == 0 && der1 ==0){
-                 N0 <<  1, 0,0.;
-                 N1 <<  0, 1,0.;
+              if(der0 == 0 && der1 == 0){
+                 N0 <<  1., 0., 0.;
+                 N1 <<  0., 1., 0.;
               } else {
                   N0 <<  der1, -der0,0.;
                   N1 <<  -der2, 0., der0;
               }
-              N0 /= N0.norm();
-              N1 /= N1.norm();
+              N0 *= 1./N0.norm();
+              N1 *= 1./N1.norm();
 
-              MatrixDDD m;
+              MatrixD33 m;
               m.resize(3,3),
               m.col(0) = Jack.row(0);
               m.col(1) = N0;
               m.col(2) = N1;
 
-
-              Jinv = m.inverse().transpose().col(0) ;
+              Jinv.noalias() = m.inverse().transpose().col(0) ;
               return ;
               break;
            }
@@ -243,7 +242,7 @@ void GetJackAndDet(MapMatrixDDD& valdphidxi,
             m.row(0) = Jack.row(0);
             m.row(1) = Jack.row(1);
             m.row(2) = Normal;
-            Jinv = m.inverse().block<3,2>(0,0);
+            Jinv.noalias() = m.inverse().block<3,2>(0,0);
 
             return;
             break;
