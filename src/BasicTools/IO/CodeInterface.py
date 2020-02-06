@@ -9,6 +9,7 @@
 
 import subprocess
 import os
+import platform
 
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 
@@ -107,9 +108,11 @@ class Interface(BaseOutputObject):
             out = stdout
 
         # Commande execution
+        shell = False
+        if platform.system() == "Windows":
+            shell = True
 
         if self.openExternalWindows:
-            import platform
             if platform.system() == "Windows":
                 if self.keepExternalWindows:
                    cmd.insert(0,"/K")
@@ -126,7 +129,7 @@ class Interface(BaseOutputObject):
 
         self.lastCommandExecuted = cmd
         print(cmd)
-        proc = subprocess.Popen(cmd , cwd=self.processDirectory , stdout=out, shell=False)
+        proc = subprocess.Popen(cmd , cwd=self.processDirectory , stdout=out, shell=shell)
 
         return proc
 
@@ -138,7 +141,12 @@ class Interface(BaseOutputObject):
         self.lastCommandExecuted = cmd;
         self.PrintVerbose(self.processDirectory)
         self.PrintVerbose(cmd)
-        out = subprocess.check_output(cmd, cwd=self.processDirectory, shell=False ).decode("utf-8","ignore")
+
+        shell = False
+        if platform.system() == "Windows":
+            shell = True
+
+        out = subprocess.check_output(cmd, cwd=self.processDirectory, shell=shell ).decode("utf-8","ignore")
 
         return out
 
