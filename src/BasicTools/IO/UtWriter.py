@@ -122,7 +122,11 @@ class UtWriter(WriterBase):
           f.write(__string)
         f.close()
 
-        os.system("rm -rf "+self.GetFolder()+self.GetBaseName()+".node "+self.GetFolder()+self.GetBaseName()+".ctnod "+self.GetFolder()+self.GetBaseName()+".integ")
+        for ff in [".node",".ctnod",".integ"]:
+          try:
+            os.remove(self.GetFolder()+self.GetBaseName()+ff)
+          except OSError:
+            pass
 
         nodeFile = open(self.GetFolder()+self.GetBaseName()+".node", "a")
         if skipCtnod == False:
