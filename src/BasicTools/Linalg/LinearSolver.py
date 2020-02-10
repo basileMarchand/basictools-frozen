@@ -27,6 +27,7 @@ class LinearProblem(BOO):
         self.tol = 1.e-6
 
         self.constraints = ConstraintsHolder()
+        self.SetAlgo(self.type)
 
     def HasConstraints(self):
         return self.constraints.numberOfEquations > 0
@@ -96,11 +97,23 @@ class LinearProblem(BOO):
 
         self.PrintDebug('In SetOp Done')
 
-    def SetAlgo(self, algoType):
+    def SetAlgo(self, algoType, withErrorIfNotFound=False):
         if algoType in  ["Direct" ,"CG", "lstsq","cholesky" ,"EigenCG","EigenLU","gmres"] :
             self.type = algoType
         else:
             raise(ValueError(TF.InRed("Error : ") + "Type not allowed ("+algoType+")"  ) )#pragma: no cover
+
+        if len(self.type) >= 5 and  self.type[0:5] == "Eigen":
+            try:
+                import BasicTools.FE.EigenSolver as EigenSolver
+            except:
+                if withErrorIfNotFound:
+                    raise
+                defaultIfError = "CG"
+                print("Error Loading EIGEN solver, using solver: " + str(defaultIfError) )
+                self.SetAlgo(defaultIfError)
+
+
 
     def Solve(self, rhs):
         if self.HasConstraints():
@@ -167,8 +180,12 @@ def CheckIntegrity(GUI=False):
     if sol[0] != 2. : raise Exception()
     if sol[1] != 2. : raise Exception()
 
-    LS.SetAlgo("cholesky")
+    import platform
+    if platform.system() == "Windows":
+        print("Skiping the rest of the test on windows test on windows")
+        return "OK"
 
+    LS.SetAlgo("cholesky")
     LS.SetOp(sps.csc_matrix(np.array([[0.5,0],[0,1]])))
     sol = LS.Solve(np.array([[1],[2]]))
     if sol[0] != 2. : raise Exception()
