@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 """Testing infrastructure for BasicTools extra modules
 
 """
@@ -288,10 +288,11 @@ def TestAll(modulestotreat=['ALL'], fulloutput=False, stopAtFirstError= False, e
         cov.stop()
         cov.save()
 
+        import os
+
         # create a temp file
         if coverage["localhtml"]:
             #tempdir = "./"
-            import os
             tempdir = os.getcwd() + os.sep
         else:
             tempdir = TestTempDir.GetTempPath()
