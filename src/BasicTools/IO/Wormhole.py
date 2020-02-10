@@ -6,8 +6,10 @@
                        
 import pickle as pickle
 import socket
-import signal
-
+#import signal
+import sys
+import os
+import threading
 
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 
@@ -16,7 +18,7 @@ from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 # code compatible with Python 2.3.
 #code to make work the import_module in abaqus python 2.6
 # if python of abaqus gets updated please erase this function
-import sys
+
 
 def _resolve_name(name, package, level):
     """Return the absolute name of the module to be imported."""
@@ -52,6 +54,10 @@ def import_module(name, package=None):
     __import__(name)
     return sys.modules[name]
 ####################################
+# solution for time out form https://stackoverflow.com/questions/492519/timeout-on-a-function-call
+def TimeOutHandler():
+    print("Connection TimeOut")
+    exit(1)
 
 class WormholeBase(BaseOutputObject):
     def __init__(self,timeout=3600):
@@ -62,16 +68,10 @@ class WormholeBase(BaseOutputObject):
         self.proto = 0
         self.timeout = timeout
 
-        # solution for time out form https://stackoverflow.com/questions/492519/timeout-on-a-function-call
-        def TimeOutHandler(signum, frame):
-           print("Connection TimeOut")
-           exit(1)
-        if not (timeout is None):
-            signal.signal(signal.SIGALRM, TimeOutHandler)
-
     def Receive(self):
       if not (self.timeout is None):
-          signal.alarm(self.timeout)
+          alarm = threading.Timer(self.timeout, TimeOutHandler)
+          alarm.start()
 
       try:
           sizestream = ""
@@ -97,10 +97,12 @@ class WormholeBase(BaseOutputObject):
               data = pickle.loads(datastream,encoding = 'latin1')
           else:
               data = pickle.loads(datastream,)
-          return data
       except Exception:
           exit(1)
 
+      if not (self.timeout is None):
+          alarm.cancel()
+      return data
 
     def Send(self,data):
         print("Sending data")
@@ -336,10 +338,10 @@ def GetPipeWrormholeScript():
     return """
 from BasicTools.IO.Wormhole import WormholeServer
 from BasicTools.Helpers.Tests import TestTempDir
-TestTempDir.SetTempPath("{0}")
+TestTempDir.SetTempPath(r"{0}")
 a = WormholeServer(cmd="")
 exit()
-""".format(TestTempDir.GetTempPath())
+""".format(TestTempDir.GetTempPath().replace("\\","/"))
 
 def CheckIntegrityPipe():
 
