@@ -52,7 +52,10 @@ class build_ext_compiler_check(build_ext):
         build_ext.build_extensions(self)
 
 
-include_path = [numpy.get_include(), os.environ['EIGEN_INC']]
+include_path = [numpy.get_include(), os.environ['EIGEN_INC'] ]
+if "CONDA_PREFIX" in os.environ:
+    include_path.append(os.environ["CONDA_PREFIX"]+"/include/")
+
 modules = cythonize("src/BasicTools/FE/*.pyx", gdb_debug=debug, annotate=annotate, include_path=include_path, force=force)
 
 for m in modules:
