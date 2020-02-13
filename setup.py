@@ -22,7 +22,7 @@ else:
 
 if useOpenmp:
     compile_args.append("-fopenmp")
-    compile_args.append("-inline-forceinline")
+    compile_args.append("-finline-forceinline")
 
 if enable_MKL:
     #compile_args.append("-DEIGEN_USE_MKL_ALL")
