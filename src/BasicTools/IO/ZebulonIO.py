@@ -528,10 +528,9 @@ def GetLoadings(data):
     if temperatureLoading:
         loadings['temperature'] = [[["ALLNODE", temperatureLoading]]]
 
-    initData = GetInitDofValues(data)
-    loadings['initialCondition'] = [[["ALLNODE", initData]]]
 
     return loadings
+
 
 
 
