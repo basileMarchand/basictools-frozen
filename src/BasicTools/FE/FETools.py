@@ -13,7 +13,7 @@ from BasicTools.FE.Fields.FEField import FEField
 from BasicTools.FE.DofNumbering import ComputeDofNumbering
 import BasicTools.Containers.ElementNames as EN
 
-from scipy.sparse import coo_matrix
+from scipy.sparse import coo_matrix, csr_matrix
 from BasicTools.FE.IntegrationsRules import Lagrange as Lagrange
 from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
 from BasicTools.Containers import Filters
@@ -140,8 +140,6 @@ def ComputeH10ScalarProductMatrix(mesh, numberOfCOmponents):
     ei = []
     ej = []
 
-    ff = Filters.ElementFilter(mesh)
-    ff.SetDimensionality(dim)
 
     for name,data,ids in ff:
         p,w =  Lagrange(name)
@@ -168,6 +166,8 @@ def ComputeH10ScalarProductMatrix(mesh, numberOfCOmponents):
     mat = coo_matrix((ev, (ei,ej)), shape=(numberOfCOmponents*nbNodes,numberOfCOmponents*nbNodes)).tocsr()
 
     return mat
+
+
 
 
 
@@ -354,6 +354,116 @@ def ComputeMecaIntegrator(mesh, elementSet = "ALLELEMENT"):
     return integrationWeights, integrator
 
 
+def ComputeNodeToIntegThermalOperatorRadiation(mesh, elementSets):
+    #elementSet must tag element of one less dimensionality than mesh
+
+    nbNodes = mesh.GetNumberOfNodes()
+    dimension = mesh.GetDimensionality()
+
+    ff = Filters.ElementFilter(mesh)
+    ff.SetDimensionality(dimension-1)
+    for set in elementSets:
+        ff.AddTag(set)
+
+    spaces, numberings, offset, NGauss = PrepareFEComputation(mesh, ff, dimension-1)
+
+    integrationWeightsRadiation = np.zeros(NGauss)
+
+    if len(elementSets) > 0:
+
+        row = []
+        col = []
+        dat = []
+
+        count = 0
+        for name,data,ids in ff:
+            p,w =  Lagrange(name)
+
+            lenNumbering = len(numberings[0][name][0,:])
+            ones = np.ones(lenNumbering,dtype=int)
+
+            for el in ids:
+                xcoor = mesh.nodes[data.connectivity[el],:]
+                leftNumbering = numberings[0][name][el,:] + offset[0]
+
+                for ip in range(len(w)):
+                    Jack, Jdet, Jinv = spaces[name].GetJackAndDetI(ip,xcoor)
+                    integrationWeightsRadiation[count] = w[ip]*Jdet
+
+                    left = spaces[name].valN[ip]
+                    dat.extend(left.ravel())
+
+                    row.extend(leftNumbering.ravel())
+                    col.extend(ones*count)
+
+                    count += 1
+
+        dat = np.array(dat)
+        row = np.array(row)
+        col = np.array(col)
+
+        nodeToIntegThermalRadiationOperator = coo_matrix((dat, (row, col)), shape=(nbNodes,NGauss)).tocsr()
+
+    else:
+
+        nodeToIntegThermalRadiationOperator = csr_matrix((nbNodes, NGauss), dtype=float)
+
+    return integrationWeightsRadiation, nodeToIntegThermalRadiationOperator
+
+
+
+def ComputeNodeToIntegThermalOperator(mesh, elementSet = "ALLELEMENT"):
+
+    nbNodes = mesh.GetNumberOfNodes()
+    dimension = mesh.GetDimensionality()
+
+    ff = Filters.ElementFilter(mesh)
+    ff.SetDimensionality(dimension)
+    if elementSet != "ALLELEMENT":
+        ff.AddTag(elementSet)
+
+    spaces, numberings, offset, NGauss = PrepareFEComputation(mesh, ff, dimension)
+
+    integrationWeights = np.zeros(NGauss)
+
+    row = []
+    col = []
+    dat = []
+
+    count = 0
+    for name,data,ids in ff:
+        p,w =  Lagrange(name)
+
+        lenNumbering = len(numberings[0][name][0,:])
+        ones = np.ones(lenNumbering,dtype=int)
+
+        for el in ids:
+            xcoor = mesh.nodes[data.connectivity[el],:]
+            leftNumbering = numberings[0][name][el,:] + offset[0]
+
+            for ip in range(len(w)):
+                Jack, Jdet, Jinv = spaces[name].GetJackAndDetI(ip,xcoor)
+                integrationWeights[count] = w[ip]*Jdet
+
+                left = spaces[name].valN[ip]
+                dat.extend(left.ravel())
+
+                row.extend(leftNumbering.ravel())
+                col.extend(ones*count)
+
+                count += 1
+
+    dat = np.array(dat)
+    row = np.array(row)
+    col = np.array(col)
+
+    nodeToIntegThermalOperator = coo_matrix((dat, (row, col)), shape=(nbNodes,NGauss)).tocsr()
+
+
+    return integrationWeights, nodeToIntegThermalOperator
+
+
+
 
 def ComputeIntegrationPointsTags(mesh, dimension):
 
@@ -383,7 +493,9 @@ def ComputeIntegrationPointsTags(mesh, dimension):
 
 
 def IntegrateVectorNormalComponentOnSurface(mesh, set, vector):
-
+    """
+    vector is the size of the number of nodes of "set"
+    """
 
     nbNodes = mesh.GetNumberOfNodes()
     dimension = mesh.GetDimensionality()
@@ -414,6 +526,95 @@ def IntegrateVectorNormalComponentOnSurface(mesh, set, vector):
                 cartesian_product = np.dot(normal.reshape((normal.shape[0],1)),left.reshape((1,left.shape[0])))
 
                 res[leftNumbering] += ((w[ip]*Jdet*pressureValue)*cartesian_product).ravel()
+
+    return res
+
+
+
+
+
+def IntegrateOrderOneTensorOnSurface(mesh, set, scalarFields):
+    """
+    scalarFields is of size (nbe of fields, number of dofs of the mesh)
+    """
+
+
+    dimension = mesh.GetDimensionality()
+
+    nFields = scalarFields.shape[0]
+
+    res = np.zeros(nFields)
+
+
+    ff = Filters.ElementFilter(mesh)
+    ff.SetDimensionality(dimension-1)
+    ff.AddTag(set)
+
+    spaces, numberings, offset, _ = PrepareFEComputation(mesh, ff, dimension)
+
+    count = 0
+    for name,data,ids in ff:
+        p,w = Lagrange(name)
+
+        for el in ids:
+
+            xcoor = mesh.nodes[data.connectivity[el],:]
+            leftNumbering = numberings[0][name][el,:] + offset[0]
+
+            for ip in range(len(w)):
+                Jack, Jdet, Jinv = spaces[name].GetJackAndDetI(ip,xcoor)
+                left = spaces[name].valN[ip]
+
+                res += w[ip]*Jdet*np.dot(scalarFields[:,leftNumbering],left)
+                #contrib = (w[ip]*Jdet)
+                #for i in range(nFields):
+                #  res[i] += contrib*np.dot(scalarFields[i][leftNumbering],left)
+
+    return res
+
+
+
+def IntegrateOrderTwoTensorOnSurface(mesh, set, scalarFields):
+    """
+    scalarFields is of size (nbe of fields, number of dofs of the mesh)
+    """
+
+
+    dimension = mesh.GetDimensionality()
+
+    nFields = scalarFields.shape[0]
+
+    res = np.zeros((nFields,nFields))
+
+
+    ff = Filters.ElementFilter(mesh)
+    ff.SetDimensionality(dimension-1)
+    ff.AddTag(set)
+
+    spaces, numberings, offset, _ = PrepareFEComputation(mesh, ff, dimension)
+
+    count = 0
+    for name,data,ids in ff:
+        p,w = Lagrange(name)
+
+        for el in ids:
+
+            xcoor = mesh.nodes[data.connectivity[el],:]
+            leftNumbering = numberings[0][name][el,:] + offset[0]
+
+            for ip in range(len(w)):
+                Jack, Jdet, Jinv = spaces[name].GetJackAndDetI(ip,xcoor)
+                left = spaces[name].valN[ip]
+
+
+                tempt = np.dot(scalarFields[:,leftNumbering],left)
+                res += w[ip]*Jdet*np.outer(tempt, tempt)
+
+                """contrib = w[ip]*Jdet
+                for i in range(nFields):
+                    contribI = contrib*np.dot(scalarFields[i][leftNumbering],left)
+                    for j in range(nFields):
+                        res[i,j] += contribI*np.dot(scalarFields[j][leftNumbering],left)"""
 
     return res
 
@@ -505,6 +706,9 @@ def CheckIntegrity(GUI=False):
     ComputeIntegrationPointsTags(mesh, 3)
     vector = np.ones(len(mesh.elements["quad4"].tags["x0"].GetIds()))
     IntegrateVectorNormalComponentOnSurface(mesh, "x0", vector)
+    scalarFields = np.ones((3,mesh.GetNumberOfNodes()))
+    IntegrateOrderOneTensorOnSurface(mesh, "x0", scalarFields)
+    IntegrateOrderTwoTensorOnSurface(mesh, "x0", scalarFields)
     IntegrateCentrifugalEffect(mesh, {'ALLELEMENT':1.}, np.array([1.,0.,0.]), np.array([0.,0.,0.]))
 
 
