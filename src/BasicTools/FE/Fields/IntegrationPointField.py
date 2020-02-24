@@ -35,7 +35,7 @@ class IntegrationPointField(BaseOutputObject):
         self.rules = IntegrationRulesAlmanac[ruleName]
     
     def GetRuleFor(self,elemtype):
-        return self.rules[EN.geoSupport[elemtype])
+        return self.rules[EN.geoSupport[elemtype]]
         
     def GetFieldFor(self,elemtype):
             return self.data[elemtype]
