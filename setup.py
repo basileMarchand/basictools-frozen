@@ -8,14 +8,17 @@
 import os, sys
 from setuptools.command.build_ext import build_ext
 from setuptools import setup, Extension
-
+from setuptools.config import read_configuration
+import configparser 
 
 # Compilation options
 enable_MKL = "BASICTOOLS_DISABLE_MKL" not in os.environ
-debug = False
-force = True # to force recompilation
-annotate = debug # to generate annotation (HTML files)
+annotate = False # to generate annotation (HTML files)
 useOpenmp = "BASICTOOLS_DISABLE_OPENMP" not in os.environ
+__config = configparser.ConfigParser()
+__config.read('setup.cfg')
+debug = True if __config["build_ext"]["debug"].lower()  in ["1","true"] else False 
+force = True if __config["build_ext"]["force"].lower()  in ["1","true"] else False 
 
 #Cpp sources (relative to the cpp_src folder)
 cpp_src = ("LinAlg/EigenTools.cpp",
