@@ -56,7 +56,7 @@ def GetElementaryMatrixForFormulation(elemName, wform, unknownNames, space=Lagra
 
 
 
-def PrepareFEComputation(mesh, elementFilter = None, numberOfCOmponents = None):
+def PrepareFEComputation(mesh, elementFilter = None, numberOfComponents = None):
 
 
     dim = mesh.GetDimensionality()
@@ -64,8 +64,8 @@ def PrepareFEComputation(mesh, elementFilter = None, numberOfCOmponents = None):
         elementFilter = Filters.ElementFilter(mesh)
         elementFilter.SetDimensionality(dim)
 
-    if numberOfCOmponents == None:
-        numberOfCOmponents = dim
+    if numberOfComponents == None:
+        numberOfComponents = dim
 
     NGauss = 0
     spaces = LagrangeSpaceGeo
@@ -76,7 +76,7 @@ def PrepareFEComputation(mesh, elementFilter = None, numberOfCOmponents = None):
         NGauss += data.GetNumberOfElements()*len(w)
 
     numbering = ComputeDofNumbering(mesh,LagrangeSpaceGeo,fromConnectivity=True)
-    numberings = [numbering]*numberOfCOmponents
+    numberings = [numbering]*numberOfComponents
 
     offset = []
     totaldofs = 0
@@ -87,7 +87,7 @@ def PrepareFEComputation(mesh, elementFilter = None, numberOfCOmponents = None):
     return spaces, numberings, offset, NGauss
 
 
-def ComputeL2ScalarProducMatrix(mesh, numberOfCOmponents):
+def ComputeL2ScalarProducMatrix(mesh, numberOfComponents):
 
 
     nbNodes = mesh.GetNumberOfNodes()
@@ -96,7 +96,7 @@ def ComputeL2ScalarProducMatrix(mesh, numberOfCOmponents):
     ff = Filters.ElementFilter(mesh)
     ff.SetDimensionality(dim)
 
-    spaces, numberings, offset, NGauss = PrepareFEComputation(mesh, ff, numberOfCOmponents)
+    spaces, numberings, offset, NGauss = PrepareFEComputation(mesh, ff, numberOfComponents)
 
     ev = []
     ei = []
@@ -113,7 +113,7 @@ def ComputeL2ScalarProducMatrix(mesh, numberOfCOmponents):
 
             for ip in range(len(w)):
                 Jack, Jdet, Jinv = spaces[name].GetJackAndDetI(ip,xcoor)
-                for j in range(numberOfCOmponents):
+                for j in range(numberOfComponents):
                     leftNumbering = numberings[j][name][el,:] + offset[j]
                     left = spaces[name].valN[ip]
                     ev.extend(((w[ip]*Jdet)*np.outer(left, left)).ravel())
@@ -121,12 +121,12 @@ def ComputeL2ScalarProducMatrix(mesh, numberOfCOmponents):
                         ei.extend(i*ones)
                         ej.extend(leftNumbering.ravel())
 
-    return coo_matrix((ev, (ei,ej)), shape=(numberOfCOmponents*nbNodes,numberOfCOmponents*nbNodes)).tocsr()
+    return coo_matrix((ev, (ei,ej)), shape=(numberOfComponents*nbNodes,numberOfComponents*nbNodes)).tocsr()
 
 
 
 
-def ComputeH10ScalarProductMatrix(mesh, numberOfCOmponents):
+def ComputeH10ScalarProductMatrix(mesh, numberOfComponents):
 
     nbNodes = mesh.GetNumberOfNodes()
     dim     = mesh.GetDimensionality()
@@ -134,7 +134,7 @@ def ComputeH10ScalarProductMatrix(mesh, numberOfCOmponents):
     ff = Filters.ElementFilter(mesh)
     ff.SetDimensionality(dim)
 
-    spaces, numberings, offset, NGauss = PrepareFEComputation(mesh, ff, numberOfCOmponents)
+    spaces, numberings, offset, NGauss = PrepareFEComputation(mesh, ff, numberOfComponents)
 
     ev = []
     ei = []
@@ -150,20 +150,20 @@ def ComputeH10ScalarProductMatrix(mesh, numberOfCOmponents):
         for el in ids:
 
             xcoor = mesh.nodes[data.connectivity[el],:]
-            leftNumberings = [numberings[j][name][el,:]+offset[j] for j in range(numberOfCOmponents)]
+            leftNumberings = [numberings[j][name][el,:]+offset[j] for j in range(numberOfComponents)]
 
             for ip in range(len(w)):
                 Jack, Jdet, Jinv = spaces[name].GetJackAndDetI(ip,xcoor)
                 BxByBzI = Jinv(spaces[name].valdphidxi[ip])
 
-                for j in range(numberOfCOmponents):
+                for j in range(numberOfComponents):
                     ev.extend((w[ip]*Jdet)*np.tensordot(BxByBzI,BxByBzI, axes=(0,0)).ravel())
 
                     for i in leftNumberings[j]:
                         ei.extend(i*ones)
                         ej.extend(leftNumberings[j].ravel())
 
-    mat = coo_matrix((ev, (ei,ej)), shape=(numberOfCOmponents*nbNodes,numberOfCOmponents*nbNodes)).tocsr()
+    mat = coo_matrix((ev, (ei,ej)), shape=(numberOfComponents*nbNodes,numberOfComponents*nbNodes)).tocsr()
 
     return mat
 
