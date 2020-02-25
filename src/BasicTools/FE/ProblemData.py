@@ -3,14 +3,11 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 import numpy as np
 from BasicTools.Helpers.TextFormatHelper import TFormat
 
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
-from BasicTools.FE.Fields.ConstantField import ConstantField
-from BasicTools.FE.Fields.FEField import FEField
-from BasicTools.FE.Fields.IntegrationPointField import IntegrationPointField
 
 class Loading(object):
   def __init__(self):
