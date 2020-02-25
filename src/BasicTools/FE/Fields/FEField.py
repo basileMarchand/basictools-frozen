@@ -3,17 +3,16 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 import numpy as np
 from BasicTools.Helpers.TextFormatHelper import TFormat
+from BasicTools.FE.Fields.FieldBase import FieldBase
 
 
-class FEField(object):
+class FEField(FieldBase):
     def __init__(self,name=None,mesh=None,space=None,numbering=None,data=None):
-        super(FEField,self).__init__()
-        self.name = name
+        super(FEField,self).__init__(name=name,mesh = mesh)
         self.data = data
-        self.mesh = mesh
         self.space = space
         self.numbering = numbering
 
@@ -23,13 +22,10 @@ class FEField(object):
         else:
             self.data = np.ones(self.numbering["size"],dtype=np.float)*val
 
-#    def GetValueAt(self,id):
-#        return self.data[id]
-
-    def GetValueAtIP(self,elemtype,el,ip):
-        sp = self.space[elemtype]
-        num = self.numbering[elemtype][el,:]
-        return sp.Eval_FieldI(ip,self.data[num],None,None,der=-1)
+#    def GetValueAtIP(self,elemtype,el,ip):
+#        sp = self.space[elemtype]
+#        num = self.numbering[elemtype][el,:]
+#        return sp.Eval_FieldI(ip,self.data[num],None,None,der=-1)
 
     def __str__(self):
         TFormat.II()
@@ -58,10 +54,62 @@ class FEField(object):
 
         self.data[self.numbering["doftopointRight"]] = userdata[self.numbering["doftopointLeft"]]
 
-    def __repr__(self):
-        res = "FEField " + self.name
+    def CheckCompatiblility(self,B):
+        if isinstance(B,type(self)):
+            if id(self.mesh) != id(B.mesh):
+                raise (Exception("The support of the fields are not the same"))
+            if id(self.space) != id(B.space):
+                raise (Exception("The space of the fields are not the same"))
+            if id(self.numbering) != id(B.numbering):
+                raise (Exception("The numbering of the fields are not the same"))
+
+    def unaryOp(self,op):
+        res = type(self)(name = None,mesh=self.mesh,space=self.space, numbering = self.numbering )
+        res.data = op(self.data)
         return res
 
-def CheckIntegrity():
-    obj = FEField("temp")
+    def binaryOp(self,other,op):
+        self.CheckCompatiblility(other)
+        res = type(self)(name = None,mesh=self.mesh,space=self.space, numbering = self.numbering )
+        if isinstance(other,type(self)):
+            res.data = op(self.data,other.data)
+        else:
+            res.data = op(self.data,other)
+        return res
+
+def CheckIntegrity(GUI=False):
+    from BasicTools.Containers.UnstructuredMeshTools import CreateCube
+    mesh = CreateCube([2.,3.,4.],[-1.0,-1.0,-1.0],[2./10, 2./10,2./10])
+
+    from BasicTools.FE.FETools import PrepareFEComputation
+    spaces,numberings,offset, NGauss = PrepareFEComputation(mesh,numberOfComponents=1)
+
+    sig11 = FEField(name = "temp",mesh=mesh,space=spaces,numbering=numberings[0])
+    sig11.Allocate()
+    print(sig11)
+
+    sig22 = sig11+0.707107
+    sig12 = 2*(-sig22)*5
+
+    A = sig11**2
+    B = sig11*sig22
+    C = sig22**2
+    D = 1.5*sig12*2
+    E = A-B+C+(D)**2
+    vonMises = np.sqrt(E)
+
+    print(vonMises.data)
+    print(np.linalg.norm([sig22, sig22 ] ).data )
+    print(A/C)
+
+    dummyField = FEField()
+    dummyField.data = np.arange(3)+1
+
+    print("dummyField")
+    print(dummyField*dummyField-dummyField**2/dummyField)
+
     return "ok"
+
+
+if __name__ == '__main__':
+    print(CheckIntegrity(True))# pragma: no cover
