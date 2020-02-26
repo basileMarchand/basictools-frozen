@@ -10,6 +10,14 @@
 
 typedef Eigen::SparseMatrix<double> SpMat; // declares a column-major sparse matrix type of double
 
+const int EnumError = -1;
+const int EnumNormal = 0;
+const int EnumConstant = 1;
+const int EnumUnknownField = 2;
+const int EnumTestField = 3;
+const int EnumExtraField = 4;
+const int EnumExtraIPField = 5;
+
 MonoElementsIntegralCpp::MonoElementsIntegralCpp (): nodes(0),connectivity(0),lnumbering() {
   this->totalTestDofs = 0;
   this->totalUnkownDofs = 0;

@@ -15,6 +15,13 @@ from WeakFormNumericalWrapper cimport WeakForm
 
 
 cdef class PyWeakTerm:
+    EnumError = -1
+    EnumNormal = 0
+    EnumConstant = 1
+    EnumUnknownField = 2
+    EnumTestField = 3
+    EnumExtraField = 4
+    EnumExtraIPField = 5
 
     def __cinit__(self):
        self._c_WeakTerm = new WeakFormNumericalWrapper.WeakTerm()

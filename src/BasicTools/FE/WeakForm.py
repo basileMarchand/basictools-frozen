@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 
 import numpy as np
 from sympy.matrices import Matrix
@@ -97,14 +97,28 @@ except:
             return iter(self.prod)
 
     class PyWeakTerm(object):
+        EnumError = -1
+        EnumNormal = 0
+        EnumConstant = 1
+        EnumUnknownField = 2
+        EnumTestField = 3
+        EnumExtraField = 4
+        EnumExtraIPField = 5
+
         def __init__(self):
             super(PyWeakTerm,self).__init__()
             self.fieldName = ""
             self.derCoordName = ""
-            self.derCoordIndex = 0
             self.derDegree = -1
             self.constant = False
             self.normal = False
+
+            # internal data repr for integration
+            self.internalType = PyWeakTerm.EnumError
+            self.spaceIndex_ = None
+            self.numberingIndex_ = None
+            self.valuesIndex_ = None
+            self.derCoordIndex_ = None
         def __str__(self):
             res = ""
             if self.derDegree > 0 and self.normal == 0 :
@@ -371,12 +385,10 @@ def CheckIntegrity(GUI=False):
 
     print([str(wf.GetMonom(i)) for i in range(wf.GetNumberOfTerms())])
 
-
     unknames = ["u_0", "u_1", "u_2"]
 
     rwf = wf.GetRightPart(unknames )
     print(rwf)
-
 
     lwf = wf.GetLeftPart(unknames)
     print(lwf)
