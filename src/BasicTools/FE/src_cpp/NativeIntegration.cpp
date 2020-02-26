@@ -35,10 +35,24 @@ void  MonoElementsIntegralCpp::SetNumberOfValues(int i){
     this->values.resize(i,0);
 };
 //
+void  MonoElementsIntegralCpp::SetNumberOfIPValues(int i){
+    for(unsigned int i=0; i < this->ipvalues.size() ; ++i){
+      delete this->ipvalues[i];
+    }
+    this->ipvalues.resize(i,0);
+};
+
+//
 void  MonoElementsIntegralCpp::SetValueI(int i, int n, int m, double* dp){
     if(this->values[i]) delete this->values[i];
     this->values[i] = new MapMatrixDD1(dp,n,m);
 }
+//
+void  MonoElementsIntegralCpp::SetIPValueI(int i, int n, int m, double* dp){
+    if(this->ipvalues[i]) delete this->ipvalues[i];
+    this->ipvalues[i] = new MapMatrixDDD(dp,n,m);
+}
+
 ////////////////////  Unkown Fields  ///////////////////////////////////
 void MonoElementsIntegralCpp::SetNumberOfUnkownFields(const int& n){
      this->unkownDofsOffset.resize(n,1);
@@ -424,13 +438,13 @@ void MonoElementsIntegralCpp::Integrate( WeakForm* wform, std::vector<int>& idst
 	                //    std::cout << " working on term : " << term << std::endl;
                	    //}
 
-                    if(term.internalType == 0){
+                    if(term.internalType == EnumNormal){
                         factor *= normal(term.derDegree,0);
                         continue;
-                    } else if( term.internalType == 1){
+                    } else if( term.internalType == EnumConstant){
                         factor *= this->constants(term.valuesIndex_,0);
                         continue;
-                    } else if( term.internalType == 2){
+                    } else if( term.internalType == EnumUnknownField){
                         LocalSpace& cs = this->lspaces[term.spaceIndex_];
                         if(term.derDegree == 1){
                             right = cs.GetBxByBz().row(term.derCoordIndex_);
@@ -443,7 +457,7 @@ void MonoElementsIntegralCpp::Integrate( WeakForm* wform, std::vector<int>& idst
                         l2 = this->lspaces[term.spaceIndex_].numberOfShapeFunctions;
                         rightIndex = term.valuesIndex_;
                         continue;
-                    } else if( term.internalType == 3){
+                    } else if( term.internalType == EnumTestField){
                         LocalSpace& cs = this->lspaces[term.spaceIndex_];
                         if(term.derDegree == 1){
                             left = cs.GetBxByBz().row(term.derCoordIndex_);
@@ -455,7 +469,7 @@ void MonoElementsIntegralCpp::Integrate( WeakForm* wform, std::vector<int>& idst
                         l1 = this->lspaces[term.spaceIndex_].numberOfShapeFunctions;
                         leftIndex = term.valuesIndex_;
                         continue;
-                    } else if( term.internalType == 4){
+                    } else if( term.internalType == EnumExtraField){
                         LocalSpace& cs = this->lspaces[term.spaceIndex_];
                         if(term.derDegree == 1){
                             center = cs.GetBxByBz().row(term.derCoordIndex_);
@@ -470,6 +484,12 @@ void MonoElementsIntegralCpp::Integrate( WeakForm* wform, std::vector<int>& idst
                         }
 
                         factor *= center.dot(vals);
+                        continue;
+                    } else if( term.internalType == EnumExtraIPField){
+                        if(term.derDegree == 1){
+                            std::cout << "Cant compute a derivative on Integration Point Fields" << term.fieldName << std::endl;
+                        }
+                        factor *= (*(this->ipvalues[term.valuesIndex_]))(n,ip);
                         continue;
                     } else {
                         std::cout << "Cant treat term " << term.fieldName << std::endl;

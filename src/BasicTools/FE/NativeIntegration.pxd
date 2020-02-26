@@ -60,6 +60,9 @@ cdef extern from "src_cpp/NativeIntegration.h" :
         void SetNumberOfValues(int i)
         void SetValueI(int i, int n, int m, double* dp)
 
+        void SetNumberOfIPValues(int i)
+        void SetIPValueI(int i, int n, int m, double* dp)
+
         void SetLocalOffsets(int, vector[double]&,vector[int]&,int, vector[double]&,vector[int]&)
         void Integrate(WFNW.WeakForm*, vector[int])
         double* vK

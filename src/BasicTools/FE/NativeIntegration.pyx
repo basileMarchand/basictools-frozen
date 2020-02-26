@@ -32,6 +32,7 @@ cdef class PyMonoElementsIntegralCpp():
     cdef list __ufs__
     cdef list __tfs__
     cdef list __efs__
+    cdef list __ipefs__
     cdef dict __cfs__
     cdef list constantsNames
 
@@ -63,6 +64,7 @@ cdef class PyMonoElementsIntegralCpp():
     cdef np.ndarray __jK
     cdef np.ndarray __F
     cdef list __values
+    cdef list __ipvalues
     cdef np.ndarray __nodes
     cdef np.ndarray __localUnkownDofsOffset
     cdef np.ndarray __localtTestDofsOffset
@@ -77,6 +79,7 @@ cdef class PyMonoElementsIntegralCpp():
         self.__ufs__ = list()
         self.__tfs__ = list()
         self.__efs__ = list()
+        self.__ipefs__ = list()
         self.maxNumberOfElementVIJ = 0
         self.BOO = BaseOutputObject()
 
@@ -113,7 +116,13 @@ cdef class PyMonoElementsIntegralCpp():
       self.NativeIntegrator.SetTotalTestDofs(totalTestDofs);
 
     def SetExtraFields(self,efs): #ok
-        self.__efs__ = efs
+        self.__efs__ = []
+        self.__ipefs__ = []
+        for ef in efs:
+            if isinstance(ef,FEField):
+                self.__efs__.append(ef)
+            else:
+                self.__ipefs__.append(ef)
 
     def SetConstants(self,cfs):
         self.__cfs__ = cfs
@@ -257,39 +266,46 @@ cdef class PyMonoElementsIntegralCpp():
       for monom in wform:
         for term in monom:
             if "Normal" in term.fieldName :
-                term.internalType = 0
+                term.internalType = term.EnumNormal
+
             elif term.constant:
                 try:
                     term.valuesIndex_ = self.constantsNames.index(term.fieldName)
-                    term.internalType = 1
+                    term.internalType = term.EnumConstant
+
                 except:
                     #print("Warning: constant '" +str(term.fieldName) + "'  not found in constants ")
                     #print("searching extra fields")
                     term.spaceIndex_= spacesNames[term.fieldName]
                     term.numberingIndex_= numberingNames[term.fieldName]
                     term.valuesIndex_= valuesNames[term.fieldName]
-                    term.internalType = 4
+                    term.internalType = term.EnumExtrafield
 
             elif term.fieldName in [f.name for f in self.__ufs__] :
                 term.spaceIndex_= spacesNames[term.fieldName]
                 term.numberingIndex_= numberingNames[term.fieldName]
                 #used for the offset
                 term.valuesIndex_= [uf.name for uf in  self.__ufs__ ].index(term.fieldName)
+                term.internalType = term.EnumUnknownField
 
-                term.internalType = 2
             elif term.fieldName in [f.name for f in self.__tfs__]:
                 term.spaceIndex_= spacesNames[term.fieldName]
                 term.numberingIndex_= numberingNames[term.fieldName]
                 term.valuesIndex_= [uf.name for uf in  self.__tfs__ ].index(term.fieldName)
+                term.internalType = term.EnumTestField
 
-                term.internalType = 3
             elif term.fieldName in [f.name for f in self.__efs__]:
                 term.spaceIndex_= spacesNames[term.fieldName]
                 term.numberingIndex_= numberingNames[term.fieldName]
                 term.valuesIndex_= valuesNames[term.fieldName]
-                term.internalType = 4
+                term.internalType = term.EnumExtraField
+
+            elif term.fieldName in [f.name for f in self.__ipefs__]:
+                term.valuesIndex_= [ipef.name for ipef in  self.__ipefs__ ].index(term.fieldName)
+                term.internalType = term.EnumExtraIPField
+
             else :
-                term.internalType = -1
+                term.internalType = term.EnumError
                 raise(Exception("Term " +str(term.fieldName) + " not found in the database " ))
 
       #self.SetPoints(np.ascontiguousarray(mesh.nodes))
@@ -299,6 +315,7 @@ cdef class PyMonoElementsIntegralCpp():
       ########### sending values  ################################
       self.NativeIntegrator.SetNumberOfValues(len(self.__usedValues__))
       self.__values = [None]*len(self.__usedValues__)
+      self.__ipvalues = [None]*len(self.__ipefs__)
       cdef np.ndarray[float_DTYPE_t, ndim=1, mode = 'c' ] vdata
       for i in range(len(self.__usedValues__)):
           try:
@@ -313,6 +330,10 @@ cdef class PyMonoElementsIntegralCpp():
     def SetValues(self,int i,np.ndarray[float_DTYPE_t, ndim=1,mode="c"] vdata not None):
           self.__values[i] = vdata
           self.NativeIntegrator.SetValueI(i,vdata.shape[0],vdata.shape[1], &vdata[0])
+
+    def SetIPValues(self,int i,np.ndarray[float_DTYPE_t, ndim=2,mode="c"] vdata not None):
+          self.__ipvalues[i] = vdata
+          self.NativeIntegrator.SetIPValueI(i,vdata.shape[0],vdata.shape[1], &vdata[0,0])
 
     #@cython.boundscheck(False)
     #@cython.wraparound(False)
@@ -424,6 +445,9 @@ cdef class PyMonoElementsIntegralCpp():
           self.__numbering[i] = ndata
           self.NativeIntegrator.SetNumberingI(i,ndata.shape[0],ndata.shape[1], &ndata[0,0])
 
+      self.NativeIntegrator.SetNumberOfIPValues(len(self.__ipefs__));
+      for i in range(len(self.__ipefs__)):
+          self.SetIPValues(i,self.__ipefs__[i].data[domain.elementType] )
 
     def Integrate(self,WFN.PyWeakForm wform,
                   np.ndarray[int_DTYPE_t, ndim=1, mode="c"] idstotreat not None ):

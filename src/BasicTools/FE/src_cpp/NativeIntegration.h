@@ -161,6 +161,7 @@ struct MonoElementsIntegralCpp{
   std::vector<LocalSpace> lspaces;
   std::vector<MapMatrixIDD* >  lnumbering;
   std::vector<MapMatrixDD1*>  values;
+  std::vector<MapMatrixDDD*>  ipvalues;
 
   void SetLocalOffsets(const int& maxSizeUDof,
                        const std::vector<double>& ludof,
@@ -222,6 +223,8 @@ struct MonoElementsIntegralCpp{
   //////////////////////////////////////////
   void SetNumberOfValues(int i);
   void SetValueI(int i, int n, int m, double* dp);
+  void SetNumberOfIPValues(int i);
+  void SetIPValueI(int i, int n, int m, double* dp);
   ///////////////  Unkown Fields  ///////////////////////////////////////
   void SetNumberOfUnkownFields(const int& n);
   void SetUnkownOffset(const int& n, const int& s);
