@@ -36,11 +36,11 @@ class IPField(FieldBase):
     def GetFieldFor(self,elemtype):
             return self.data[elemtype]
 
-    def Allocate(self):
+    def Allocate(self,val=0):
         for name,data in self.mesh.elements.items():
             nbItegPoints = len(self.GetRuleFor(name)[1])
             nbElements = data.GetNumberOfElements()
-            self.data[name] = np.zeros((nbElements,nbItegPoints), dtype=np.float)
+            self.data[name] = np.zeros((nbElements,nbItegPoints), dtype=np.float)+val
 
     def CheckCompatiblility(self,B):
         if isinstance(B,type(self)):
