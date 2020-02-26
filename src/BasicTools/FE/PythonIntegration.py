@@ -60,6 +60,7 @@ class MonoElementsIntegral(BOO):
         self.totalUnkownDofs= 0
         self.geoSpace = None
         self.__efs__ = None
+        self.__ipefs__ = None
         self.__cfs__ = {}
         self.integrationRule = None
         self.onlyEvaluation = False
@@ -81,6 +82,7 @@ class MonoElementsIntegral(BOO):
         self.__usedSpaces__ = None
         self.__usedNumbering__ = None
         self.__usedValues__ = None
+        self.__usedValuesAtIP__ = None
         self.geoSpaceNumber = 0
 
         # internal variables dependent on the courrent element type been treatd
@@ -135,10 +137,16 @@ class MonoElementsIntegral(BOO):
         """
         Set the extra fields used in the weak formulation
 
-        efs : list(FEField) list of fields
+        efs : list(FEField or IPField) list of fields
 
         """
-        self.__efs__ = efs
+        self.__efs__ = []
+        self.__ipefs__ = []
+        for ef in efs:
+            if isinstance(ef,FEField):
+                self.__efs__.append(ef)
+            else:
+                self.__ipefs__.append(ef)
 
     def SetConstants(self,cfs):
         """
@@ -273,18 +281,18 @@ class MonoElementsIntegral(BOO):
         self.maxNumberOfTerms = max(self.maxNumberOfTerms, monom.GetNumberOfProds())
         for term in monom:
             if "Normal" in term.fieldName :
-                term.internalType = 0
+                term.internalType = term.EnumNormal
             elif term.constant:
                 try:
                     term.valuesIndex_ = constantNames.index(term.fieldName)
-                    term.internalType = 1
+                    term.internalType = term.EnumConstant
                 except:
                     print("Warning: constant '" +str(term.fieldName) + "'  not found in constants ")
                     print("searching extra fields")
                     term.spaceIndex_= spacesNames[term.fieldName]
                     term.numberingIndex_= numberingNames[term.fieldName]
                     term.valuesIndex_= valuesNames[term.fieldName]
-                    term.internalType = 4
+                    term.internalType = term.EnumExtrafield
 
             elif term.fieldName in [f.name for f in self.__ufs__] :
                 term.spaceIndex_= spacesNames[term.fieldName]
@@ -292,21 +300,24 @@ class MonoElementsIntegral(BOO):
                 #used for the offset
                 term.valuesIndex_= [uf.name for uf in  self.__ufs__ ].index(term.fieldName)
 
-                term.internalType = 2
+                term.internalType = term.EnumUnknownField
             elif term.fieldName in [f.name for f in self.__tfs__]:
                 term.spaceIndex_= spacesNames[term.fieldName]
                 term.numberingIndex_= numberingNames[term.fieldName]
                 #term.valuesIndex_= valuesNames[term.fieldName]
                 term.valuesIndex_= [uf.name for uf in  self.__tfs__ ].index(term.fieldName)
 
-                term.internalType = 3
+                term.internalType = term.EnumTestField
             elif term.fieldName in [f.name for f in self.__efs__]:
                 term.spaceIndex_= spacesNames[term.fieldName]
                 term.numberingIndex_= numberingNames[term.fieldName]
                 term.valuesIndex_= valuesNames[term.fieldName]
-                term.internalType = 4
+                term.internalType = term.EnumExtraField
+            elif term.fieldName in [f.name for f in self.__ipefs__]:
+                term.valuesIndex_= [ef.name for ef in  self.__ipefs__ ].index(term.fieldName)
+                term.internalType = term.EnumExtraIPField
             else :
-                term.internalType = -1
+                term.internalType = term.EnumError
                 raise(Exception("Term " +str(term.fieldName) + " not found in the database " ))
 
       self.SetPoints(mesh.nodes)
@@ -368,6 +379,8 @@ class MonoElementsIntegral(BOO):
 
         self.connectivity = domain.connectivity
 
+        self.__usedValuesAtIP__ = [ipef.data[domain.elementType] for ipef in self.__ipefs__ ]
+
     def Integrate(self,wform,idstotreat):
         """
         Main function to execute the integration
@@ -426,13 +439,13 @@ class MonoElementsIntegral(BOO):
 
                     for term in monom:
 
-                        if term.internalType == 0 :
+                        if term.internalType == term.EnumNormal :
                             factor *= normal[term.derDegree]
                             continue
-                        elif  term.internalType == 1 :
+                        elif  term.internalType == term.EnumConstant :
                             factor *= constantsNumerical[term.valuesIndex_]
                             continue
-                        elif  term.internalType == 2 :
+                        elif  term.internalType == term.EnumUnknownField :
                             if term.derDegree == 1:
                                 right = BxByBzI[term.spaceIndex_][[term.derCoordIndex_],:]
                             else:
@@ -441,7 +454,7 @@ class MonoElementsIntegral(BOO):
                             hasright = True
                             l2 = self.NumberOfShapeFunctionForEachSpace[term.spaceIndex_]
                             continue
-                        elif  term.internalType == 3 :
+                        elif  term.internalType == term.EnumTestField :
                             if term.derDegree == 1:
                                 left = BxByBzI[term.spaceIndex_][term.derCoordIndex_]
                             else:
@@ -449,7 +462,7 @@ class MonoElementsIntegral(BOO):
                             leftNumbering = self.localNumbering[term.numberingIndex_][n,:] + self.testDofsOffset[term.valuesIndex_]
                             l1 = self.NumberOfShapeFunctionForEachSpace[term.spaceIndex_]
                             continue
-                        elif  term.internalType == 4 :
+                        elif term.internalType == term.EnumExtraField :
 
                             if term.derDegree == 1:
                                 func = BxByBzI[term.spaceIndex_][term.derCoordIndex_]
@@ -460,6 +473,11 @@ class MonoElementsIntegral(BOO):
                             factor *= np.dot(func,vals)
 
                             continue
+                        elif term.internalType == term.EnumExtraIPField :
+                            if term.derDegree == 1:
+                                raise(Exception("Integration point field cant be derivated"))
+                            val = self.__usedValuesAtIP__[term.valuesIndex_][n,ip]
+                            factor *= val
                         else :
                             raise(Exception("Cant treat term " + str(term.fieldName)))
 

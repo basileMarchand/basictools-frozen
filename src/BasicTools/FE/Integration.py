@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 import numpy as np
 
 from scipy.sparse import coo_matrix
@@ -131,13 +131,13 @@ def IntegrateGeneral( mesh, wform, constants, fields, unkownFields,testFields=No
             for monom in wform:
                 factor = monom.prefactor
                 for term in monom:
-                    if term.internalType == 0 :
+                    if term.internalType == term.EnumNormal :
                         raise(Exception("no normal"))
-                    elif  term.internalType == 1 :
+                    elif  term.internalType == term.EnumConstant :
                         raise(Exception("no constant numerical"))
-                    elif  term.internalType == 2 :
+                    elif  term.internalType == term.EnumUnknownField :
                         raise(Exception("no right unknown"))
-                    elif  term.internalType == 3 :
+                    elif  term.internalType == term.EnumTestField :
                         if term.derDegree == 1:
                             raise(Exception("No derivative"))
                         offset = 0
@@ -483,6 +483,60 @@ def CompureVolume(mesh):
         print(volk-volf)
         raise
 
+def CheckIntegrityIntegrationWithIntegratiopnPointField(GUI=False):
+    from BasicTools.FE.IntegrationsRules import LagrangeP1
+    #from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
+
+    from BasicTools.Containers.UnstructuredMeshTools import CreateCube
+    mesh = CreateCube([2.,3.,4.],[-1.0,-1.0,-1.0],[2./10, 2./10,2./10])
+
+    from BasicTools.FE.FETools import PrepareFEComputation
+    space, numberings, offset, NGauss = PrepareFEComputation(mesh,numberOfComponents=1)
+    from BasicTools.FE.Fields.IPField import IPField
+
+    rho_field = IPField("rho",mesh=mesh,rule=LagrangeP1)
+    factor = .1
+    rho_field.Allocate(factor)
+
+    from BasicTools.FE.Fields.FEField import FEField
+
+
+
+    from BasicTools.FE.WeakForm import GetField
+    from BasicTools.FE.WeakForm import GetTestField
+    T = GetField("T",1)
+    rho = GetField("rho",1)
+    Tt = GetTestField("T",1)
+
+    wf = T.T*Tt + rho.T*Tt
+
+
+    constants = {}
+    fields  = {}
+    fields = [ rho_field]
+    unkownFields = [FEField("T",mesh=mesh,space=space,numbering=numberings[0]) ]
+    import time
+    startt = time.time()
+
+    K,F = IntegrateGeneral(mesh=mesh,
+                    wform=wf,
+                    tag="3D",
+                    constants=constants,
+                    fields=fields,
+                    unkownFields=unkownFields,
+                    integrationRuleName="LagrangeP1")
+
+    stopt = time.time() - startt
+    volk = np.sum(K)
+    print("volume (k): " + str(volk))
+    volf = np.sum(F)
+    print("volume (f): " + str(volf))
+    if volk*factor - volf <   volf/100000000:
+        return "ok"
+
+    return "KO"
+
+
 
 def CheckIntegrity(GUI=False):
     global UseCpp
@@ -490,9 +544,14 @@ def CheckIntegrity(GUI=False):
     UseCpp = False
     if CheckIntegrityNormalFlux(GUI).lower() != "ok":
         return "Not ok in the Normal Calculation"
+    if CheckIntegrityIntegrationWithIntegratiopnPointField() != "ok":
+        return "Not ok in the integration with IPField"
+
     UseCpp = True
     if CheckIntegrityNormalFlux(GUI).lower() != "ok":
         return "Not ok in the Normal Calculation"
+    if CheckIntegrityIntegrationWithIntegratiopnPointField() != "ok":
+        return "Not ok in the integration with IPField"
 
     print("Normal Calculation OK")
 
