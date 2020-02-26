@@ -555,6 +555,9 @@ def CheckIntegrity(GUI=False):
 
     print("Normal Calculation OK")
 
+
+    print("Integration with IPField OK")
+
     problems = [ (1,1,"A bars 1D"),
                  (1,2,"A bars 2D"),
                  (1,3,"A bars 3D"),
