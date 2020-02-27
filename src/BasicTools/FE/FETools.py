@@ -170,7 +170,6 @@ def ComputeH10ScalarProductMatrix(mesh, numberOfComponents):
 
 
 
-
 def ComputeFEInterpMatAtGaussPoint(mesh):
 
     nbNodes = mesh.GetNumberOfNodes()
@@ -345,10 +344,6 @@ def ComputeMecaIntegrator(mesh, elementSet = "ALLELEMENT"):
     row = np.array(row)
     col = np.array(col)
 
-    #print(dat.shape)
-    #print(row.shape)
-    #print(col.shape)
-
     integrator = coo_matrix((dat, (row, col)), shape=(dimension*nbNodes,nbeInd[dimension]*NGauss)).tocsr()
 
     return integrationWeights, integrator
@@ -412,15 +407,14 @@ def ComputeNodeToIntegThermalOperatorRadiation(mesh, elementSets):
 
 
 
-def ComputeNodeToIntegThermalOperator(mesh, elementSet = "ALLELEMENT"):
+
+def ComputeNodeToIntegThermalOperator(mesh):
 
     nbNodes = mesh.GetNumberOfNodes()
     dimension = mesh.GetDimensionality()
 
     ff = Filters.ElementFilter(mesh)
     ff.SetDimensionality(dimension)
-    if elementSet != "ALLELEMENT":
-        ff.AddTag(elementSet)
 
     spaces, numberings, offset, NGauss = PrepareFEComputation(mesh, ff, dimension)
 
@@ -430,6 +424,10 @@ def ComputeNodeToIntegThermalOperator(mesh, elementSet = "ALLELEMENT"):
     col = []
     dat = []
 
+    row2 = []
+    col2 = []
+    dat2 = []
+
     count = 0
     for name,data,ids in ff:
         p,w =  Lagrange(name)
@@ -437,19 +435,30 @@ def ComputeNodeToIntegThermalOperator(mesh, elementSet = "ALLELEMENT"):
         lenNumbering = len(numberings[0][name][0,:])
         ones = np.ones(lenNumbering,dtype=int)
 
+        nbsf = spaces[name].GetNumberOfShapeFunctions()
+        ones2 = np.ones(dimension*nbsf,dtype=int)
+
         for el in ids:
             xcoor = mesh.nodes[data.connectivity[el],:]
-            leftNumbering = numberings[0][name][el,:] + offset[0]
+            leftNumbering = numberings[0][name][el,:]
 
             for ip in range(len(w)):
                 Jack, Jdet, Jinv = spaces[name].GetJackAndDetI(ip,xcoor)
+                BxByBzI = Jinv(spaces[name].valdphidxi[ip])
+
                 integrationWeights[count] = w[ip]*Jdet
 
                 left = spaces[name].valN[ip]
-                dat.extend(left.ravel())
+                #prod = np.tensordot(BxByBzI,BxByBzI, axes=(0,0))
 
+                dat.extend(left.ravel())
                 row.extend(leftNumbering.ravel())
                 col.extend(ones*count)
+
+                for i in range(dimension):
+                    dat2.extend(BxByBzI[i,:])
+                    row2.extend(leftNumbering)
+                    col2.extend(ones*(dimension*count+i))
 
                 count += 1
 
@@ -457,10 +466,16 @@ def ComputeNodeToIntegThermalOperator(mesh, elementSet = "ALLELEMENT"):
     row = np.array(row)
     col = np.array(col)
 
+    dat2 = np.array(dat2)
+    row2 = np.array(row2)
+    col2 = np.array(col2)
+
     nodeToIntegThermalOperator = coo_matrix((dat, (row, col)), shape=(nbNodes,NGauss)).tocsr()
+    nodeToIntegGradThermalOperator = coo_matrix((dat2, (row2, col2)), shape=(nbNodes,NGauss*dimension)).tocsr()
 
 
-    return integrationWeights, nodeToIntegThermalOperator
+    return integrationWeights, nodeToIntegThermalOperator, nodeToIntegGradThermalOperator
+
 
 
 
