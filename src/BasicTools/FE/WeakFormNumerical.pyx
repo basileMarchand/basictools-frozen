@@ -1,5 +1,5 @@
 # distutils: language = c++
-
+#cython: language_level=3
 
 import cython
 import numpy as np
@@ -8,21 +8,13 @@ from cython.operator cimport dereference as deref
 
 testcharacter = "'"
 
-cimport WeakFormNumericalWrapper
-from WeakFormNumericalWrapper cimport WeakTerm
-from WeakFormNumericalWrapper cimport WeakMonom
-from WeakFormNumericalWrapper cimport WeakForm
+cimport BasicTools.FE.WeakFormNumericalWrapper as WeakFormNumericalWrapper
+from BasicTools.FE.WeakFormNumericalWrapper cimport WeakTerm
+from BasicTools.FE.WeakFormNumericalWrapper cimport WeakMonom
+from BasicTools.FE.WeakFormNumericalWrapper cimport WeakForm
 
 
 cdef class PyWeakTerm:
-    EnumError = -1
-    EnumNormal = 0
-    EnumConstant = 1
-    EnumUnknownField = 2
-    EnumTestField = 3
-    EnumExtraField = 4
-    EnumExtraIPField = 5
-
     def __cinit__(self):
        self._c_WeakTerm = new WeakFormNumericalWrapper.WeakTerm()
        self.pointerOwner = True
@@ -140,6 +132,37 @@ cdef class PyWeakTerm:
         else:
             res += self.fieldName
         return res
+
+    @property
+    def EnumError(self):
+        return -1
+
+    @property
+    def EnumNormal(self):
+        return 0
+
+    @property
+    def EnumConstant(self):
+        return 1
+
+    @property
+    def EnumUnknownField(self):
+        return 2
+
+    @property
+    def EnumTestField(self):
+        return 3
+
+    @property
+    def EnumExtraField(self):
+        return 4
+       # return WeakFormNumericalWrapper.EnumExtraField
+
+    @property
+    def EnumExtraIPField(self):
+        return 5
+
+
 
 cdef class PyWeakMonom:
     def __cinit__(self):

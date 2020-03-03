@@ -1,4 +1,5 @@
 # distutils: language = c++
+#cython: language_level=3
 
 ##https://stackoverflow.com/questions/21851985/difference-between-np-int-np-int-int-and-np-int-t-in-cython
 import numpy as np
@@ -279,7 +280,7 @@ cdef class PyMonoElementsIntegralCpp():
                     term.spaceIndex_= spacesNames[term.fieldName]
                     term.numberingIndex_= numberingNames[term.fieldName]
                     term.valuesIndex_= valuesNames[term.fieldName]
-                    term.internalType = term.EnumExtrafield
+                    term.internalType = term.EnumExtraField
 
             elif term.fieldName in [f.name for f in self.__ufs__] :
                 term.spaceIndex_= spacesNames[term.fieldName]

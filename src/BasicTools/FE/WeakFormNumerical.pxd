@@ -1,13 +1,14 @@
 # distutils: language = c++
+#cython: language_level=3
 
 cimport numpy as np
 from libcpp.string cimport string
 from libcpp.vector cimport vector
 
-cimport WeakFormNumericalWrapper
-from WeakFormNumericalWrapper cimport WeakTerm
-from WeakFormNumericalWrapper cimport WeakMonom
-from WeakFormNumericalWrapper cimport WeakForm
+cimport BasicTools.FE.WeakFormNumericalWrapper as WeakFormNumericalWrapper
+from BasicTools.FE.WeakFormNumericalWrapper cimport WeakTerm
+from BasicTools.FE.WeakFormNumericalWrapper cimport WeakMonom
+from BasicTools.FE.WeakFormNumericalWrapper cimport WeakForm
 
 #cdef extern from "string" namespace "std":
 #    cdef cppclass string:
