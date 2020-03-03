@@ -47,7 +47,6 @@ def GetElementaryMatrixForFormulation(elemName, wform, unknownNames, space=Lagra
 
     unkownFields = []
     for name in unknownNames:
-        print(name)
         unkownFields.append(FEField(name,mesh,space,numbering))
 
     M,f = IntegrateGeneral(mesh=mesh,wform=wform, unkownFields= unkownFields,constants={},fields=[])
