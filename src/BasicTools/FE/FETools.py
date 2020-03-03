@@ -18,7 +18,7 @@ from BasicTools.FE.IntegrationsRules import Lagrange as Lagrange
 from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
 from BasicTools.Containers import Filters
 
-def GetElementaryMatrixForFormulation(elemName, wform, unknownNames, space=LagrangeSpaceP1):
+def GetElementaryMatrixForFormulation(elemName, wform, unknownNames, space=LagrangeSpaceP1,geoFactor=None):
     # Explicitly specify signature to cleanly display default argument values
     # in sphinx autodoc generated documentation
     """
@@ -29,6 +29,8 @@ def GetElementaryMatrixForFormulation(elemName, wform, unknownNames, space=Lagra
     mesh = UnstructuredMesh()
 
     mesh.nodes = np.asarray(space[elemName].posN,dtype=float)
+    if geoFactor is not None:
+        mesh.nodes = mesh.nodes*geoFactor
     mesh.originalIDNodes = np.arange(0,mesh.GetNumberOfNodes(),dtype=np.int)
 
     elements = mesh.GetElementsOfType(elemName)
@@ -41,7 +43,6 @@ def GetElementaryMatrixForFormulation(elemName, wform, unknownNames, space=Lagra
     elements.cpt = elements.connectivity.shape[0]
 
     mesh.PrepareForOutput()
-    print(mesh)
     numbering = ComputeDofNumbering(mesh,space,)
 
     unkownFields = []
@@ -49,12 +50,9 @@ def GetElementaryMatrixForFormulation(elemName, wform, unknownNames, space=Lagra
         print(name)
         unkownFields.append(FEField(name,mesh,space,numbering))
 
-
     M,f = IntegrateGeneral(mesh=mesh,wform=wform, unkownFields= unkownFields,constants={},fields=[])
 
     return M
-
-
 
 def PrepareFEComputation(mesh, elementFilter = None, numberOfComponents = None):
 

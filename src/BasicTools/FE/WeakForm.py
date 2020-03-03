@@ -205,6 +205,12 @@ def ToVoigtSigma(arg):
         return Matrix([arg[0,0]])
     raise()
 
+def GetMassWeakForm(name="u",dim=3):
+    u = GetField(name,dim)
+    ut = GetTestField(name,dim)
+    ener = u.T*ut
+    return ener
+
 def GetMecaElasticProblem(name="u",dim=3,K=None,planeStress=True):
     u = GetField("u",dim)
     ut = GetTestField("u",dim)

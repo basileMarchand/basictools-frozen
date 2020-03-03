@@ -14,8 +14,7 @@ import scipy.sparse.linalg as linalg
 import scipy.linalg as denselinalg
 import  scipy.sparse as sps
 
-from BasicTools.FE.Hexa8Cuboid import Hexa8Cuboid
-from BasicTools.FE.Quad4Rectangle import  Quad4Rectangle
+import BasicTools.Containers.ElementNames as EN
 import BasicTools.FE.FeaBase as FeaBase
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 from BasicTools.Linalg.MatOperations import deleterowcol
@@ -96,6 +95,53 @@ class BundaryCondition(BaseOutputObject):
            i +=1
        return res
 
+class ElementaryMatrix():
+    def __init__(self,dim=3, physics="disp"):
+        self.dim = dim
+        self.geoFactor = [1,1,1]
+        self.physics = physics
+        self.young = 1
+        self.poisson = 0.3
+        self.rho = 1
+        self.thermalK = 1
+
+    def GetMassMatrix(self):
+        from BasicTools.FE.WeakForm import GetMassWeakForm
+        if self.physics == "disp":
+            wform = GetMassWeakForm("u",self.dim)
+            return self.Integrate(["u_"+str(x) for x in range(self.dim)],wform)
+        elif self.physics == "thermal":
+            wform = GetMassWeakForm("t",1)
+            return self.Integrate(["t"],wform)
+
+    def GetTangetMatrix(self):
+        from BasicTools.FE.SymPhysics import MecaPhysics,ThermalPhysics
+
+        if self.physics == "disp":
+            physics = MecaPhysics(dim=self.dim)
+            wform = physics.GetBulkFormulation(self.young,self.poisson)
+        elif self.physics == "thermal":
+            physics = ThermalPhysics()
+            physics.spaceDimension = self.dim
+            wform = physics.GetBulkFormulation(alpha=self.thermalK)
+        else:
+            raise(Exception("Physics not suppported"))
+        return self.Integrate(physics.GetPrimalNames() ,wform)
+
+    def Integrate(self,primalNames,wform):
+        from BasicTools.FE.FETools import GetElementaryMatrixForFormulation
+        if self.dim == 3:
+            el = EN.Hexaedron_8
+        else:
+            el = EN.Quadrangle_4
+
+        KGeneric = GetElementaryMatrixForFormulation(el,wform, unknownNames = primalNames, geoFactor= self.geoFactor)
+        n = len(primalNames)
+        permutation = np.array([x*EN.numberOfNodes[el]+y for y in range(EN.numberOfNodes[el]) for x in range(n)])
+        KGeneric = KGeneric[permutation,:]
+        KGeneric = KGeneric[:,permutation]
+        return KGeneric.toarray()
+
 class Fea(FeaBase.FeaBase):
 
     def __init__(self):
@@ -148,13 +194,12 @@ class Fea(FeaBase.FeaBase):
             self.KE    = KOperator
             self.ME    = MOperator
         else:
-            if self.support.GetDimensionality() == 3:
-                self.myElem = Hexa8Cuboid()
-            else:
-               self.myElem = Quad4Rectangle()
-            self.myElem.delta = self.support.GetSpacing()
-            self.KE = self.myElem.GetIsotropDispK(self.young,self.poisson);
-            self.ME = self.myElem.GetIsotropDispM(1.);
+            self.myElem = ElementaryMatrix(dim = self.support.GetDimensionality())
+            self.myElem.young = self.young
+            self.myElem.poisson = self.poisson
+            self.myElem.geoFactor = self.support.GetSpacing()
+            self.KE = self.myElem.GetTangetMatrix()
+            self.ME = self.myElem.GetMassMatrix()
 
         # dofs:
         self.ndof = self.dofpernode * self.support.GetNumberOfNodes()
@@ -474,7 +519,6 @@ def node_averaged_element_field(element_field,support):
 def CheckIntegrityThermal3D():
     print('----------------------------  Thermal3D -------------------------------------------------')
 
-    from BasicTools.FE.Hexa8Cuboid import Hexa8Cuboid
     import BasicTools.Containers.ConstantRectilinearMesh as CRM
     import BasicTools.IO.XdmfWriter  as XdmfWriter
     import time
@@ -511,13 +555,14 @@ def CheckIntegrityThermal3D():
     neumann_bcs.eliminate_double()
 
     starttime = time.time()
-    myElement = Hexa8Cuboid()
-    myElement.delta =  myMesh.GetSpacing()
+    myElement = ElementaryMatrix()
+    myElement.physics = "thermal"
+    myElement.geoFactor = myMesh.GetSpacing()
 
     myProblem = Fea()
     myProblem.BuildProblem(myMesh, dofpernode = 1,
-        KOperator = myElement.GetIsotropLaplaceK(1.),
-        MOperator = myElement.GetIsotropLaplaceM(1.),
+        KOperator = myElement.GetTangetMatrix(),
+        MOperator = myElement.GetMassMatrix(),
         dirichlet_bcs = dirichlet_bcs,
         neumann_bcs = neumann_bcs)
 
@@ -630,7 +675,6 @@ def CheckIntegrityDep3D():
 
 def CheckIntegrityThermal2D():
     import BasicTools.Containers.ConstantRectilinearMesh as CRM
-    from BasicTools.FE.Quad4Rectangle import Quad4Rectangle
     import BasicTools.IO.XdmfWriter  as XdmfWriter
     import time
     from BasicTools.Helpers.Tests import TestTempDir
@@ -659,13 +703,13 @@ def CheckIntegrityThermal2D():
 
 
     starttime = time.time()
-    myElement = Quad4Rectangle()
-    myElement.delta =  myMesh.GetSpacing()
+    myElement = ElementaryMatrix(dim=2,physics="thermal")
+    myElement.geoFactor = myMesh.GetSpacing()
 
     myProblem = Fea()
     myProblem.BuildProblem(myMesh, dofpernode = 1,
-        KOperator = myElement.GetIsotropLaplaceK(1.),
-        MOperator = myElement.GetIsotropLaplaceM(1.),
+        KOperator = myElement.GetTangetMatrix(),
+        MOperator = myElement.GetMassMatrix(),
         dirichlet_bcs = dirichlet_bcs,
         neumann_bcs = neumann_bcs)
 

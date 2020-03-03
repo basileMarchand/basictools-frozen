@@ -89,13 +89,6 @@ def Integral(E,Bop,elem,ndofs,pos=None):
         return res
 
 def CheckIntegrity():
-    from BasicTools.FE.Hexa8Cuboid import Hexa8Cuboid
-    from BasicTools.FE.Quad4Rectangle import  Quad4Rectangle
-    from BasicTools.FE.Tri3 import  Tri3
-
-    Hexa8Cuboid().GetIsotropDispK(1.,0.3);
-    Quad4Rectangle().GetIsotropDispK(1.,0.3);
-    Tri3().GetIsotropDispK(1.,0.3,np.array([ [0,0], [1,0] , [0,1] ]));
     return 'ok'
 
 if __name__ == '__main__':

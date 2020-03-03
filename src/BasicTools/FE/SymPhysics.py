@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 
 
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject as BOO
@@ -94,25 +94,27 @@ class Physics(BOO):
 
 
 class MecaPhysics(Physics):
-    def __init__(self):
+    def __init__(self,dim=3):
         super(MecaPhysics,self).__init__()
-        self.mecaPrimalName = ("u",3)
+        self.dim = dim
+
+        self.mecaPrimalName = ("u",self.dim)
         self.pressureName = ("p",1)
         self.mecaSpace = None
 
         self.young = 1.
         self.poisson = 0.3
-
+        self.planeStress = True
 
     def SetMecaPrimalName(self,name):
-        self.mecaPrimalName = (name,3)
+        self.mecaPrimalName = (name,self.dim)
 
     def GetPrimalNames(self):
         return self.ExpandNames(self.mecaPrimalName)
 
     def GetBulkFormulation(self,young=None, poisson=None,factor=None ):
         from BasicTools.FE.WeakForm import GetMecaElasticProblem
-        from BasicTools.FE.MaterialHelp import HookeIso
+        from BasicTools.FE.MaterialHelp import HookeLaw
 
         if young is None:
             young = self.young
@@ -121,7 +123,9 @@ class MecaPhysics(Physics):
         if factor is not None:
             young *=factor
 
-        self.HookeLocalOperator = HookeIso(young,poisson,dim=self.mecaPrimalName[1])
+        op = HookeLaw()
+        op.Read({"E":young, "nu":poisson})
+        self.HookeLocalOperator = op.HookeIso(dim=self.dim,planeStress=self.planeStress)
         Symwfb = GetMecaElasticProblem(self.mecaPrimalName[0],dim=self.mecaPrimalName[1],K=self.HookeLocalOperator)
         return Symwfb
 
@@ -241,14 +245,19 @@ class ThermalPhysics(Physics):
     def SetThermalPrimalName(self,name):
         self.thermalPrimalName = name
 
-    def GetBulkFormulation(self,alpha=1 ):
+    def GetBulkFormulation(self, alpha=1. ):
         from BasicTools.FE.WeakForm import Gradient
         from BasicTools.FE.WeakForm import GetField,GetTestField
         #from sympy import Identity
 
         t  = GetField(self.thermalPrimalName[0],1)
         tt = GetTestField(self.thermalPrimalName[0],1)
-        Symwfb = Gradient(t,self.spaceDimension).T*(alpha)*Gradient(tt,self.spaceDimension)
+        if hasattr(alpha, '__iter__'):
+            from sympy import diag
+            K = diag(*alpha)
+            Symwfb = Gradient(t,self.spaceDimension).T*K*Gradient(tt,self.spaceDimension)
+        else:
+            Symwfb = Gradient(t,self.spaceDimension).T*(alpha)*Gradient(tt,self.spaceDimension)
         #wfb = SymWeakToNumWeak(Symwfb)
         return Symwfb
 

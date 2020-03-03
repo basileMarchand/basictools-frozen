@@ -3,13 +3,11 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 import numpy as np
 
 
 from BasicTools.Containers.MeshBase import MeshBase
-from BasicTools.FE.Hexa8Cuboid import Hexa8Cuboid
-from BasicTools.FE.Quad4Rectangle import Quad4Rectangle
 from BasicTools.Containers.MeshBase import Tags
 from BasicTools.Containers.UnstructuredMesh import ElementsContainer as ElementsContainer
 from BasicTools.Containers.UnstructuredMesh import AllElements as AllElements
@@ -26,7 +24,7 @@ class ConstantRectilinearElementContainer(BaseOutputObject):
         self.tags = Tags()
         self._connectivity = None
         self.mutable = False
-
+        self.space = None
     @property
     def connectivity(self):
         if(self._connectivity is None):
@@ -46,15 +44,17 @@ class ConstantRectilinearElementContainer(BaseOutputObject):
 
         if len(self.__dimensions)  == 3:
             self.elementType = ElementNames.Hexaedron_8
+            from BasicTools.FE.Spaces.HexaSpaces import Hexa_P1_Lagrange
+            self.space = Hexa_P1_Lagrange()
         elif len(self.__dimensions) == 2 :
             self.elementType = ElementNames.Quadrangle_4
+            from BasicTools.FE.Spaces.QuadSpaces import Quad_P1_Lagrange
+            self.space = Quad_P1_Lagrange()
         else:
              raise(Exception("cant build a mesh of this dimensionality"))
 
-
     def GetDimensionality(self):
         return len(self.__dimensions)
-
 
     def GetConnectivityForElement(self, index):
         exyz = self.GetMultiIndexOfElement(index)
@@ -374,13 +374,7 @@ class ConstantRectilinearMesh(MeshBase):
         p0 = self.GetPosOfNode(coon[0])
         n0 = (pos-p0)*2./self.__spacing - 1.
 
-        if self.GetDimensionality() == 3:
-            myElem = Hexa8Cuboid()
-        else:
-            myElem = Quad4Rectangle()
-
-        myElem.delta = self.__spacing
-        return myElem.GetShapeFunc(n0)
+        return self.structElements.space.GetShapeFunc(n0)
 
     def GetValueAtPos(self,field,pos):
         el = self.GetElementAtPos(pos)
@@ -392,7 +386,7 @@ class ConstantRectilinearMesh(MeshBase):
         """
         All fields must have same mask (i.e. NaN values outside the support)
         """
-        
+
         alPos = [pos]
 
         dim = len(self.__dimensions)
@@ -410,7 +404,7 @@ class ConstantRectilinearMesh(MeshBase):
             alPos.append(tempPos)
 
         acceptableSolution = False
-        
+
         count = 0
         while acceptableSolution == False:
             pos = alPos[count]
@@ -418,31 +412,26 @@ class ConstantRectilinearMesh(MeshBase):
             el = self.GetElementAtPos(pos)
             coon = self.GetConnectivityForElement(el)
             xiChiEta = self.GetElementShapeFunctionsAtPos(el,pos)
-            
+
             locFfield = fields[0][coon]
             nans = np.argwhere(np.isnan(locFfield))
             notNans = np.argwhere(~np.isnan(locFfield))
 
             if notNans.shape[0] != 0:
-                acceptableSolution = True            
+                acceptableSolution = True
                 for i in range(fields.shape[0]):
                     locFfield = fields[i][coon]
                     locFfield[nans] = np.mean(locFfield[notNans])
                     res.append(locFfield.dot(xiChiEta))
             count += 1
         return res
-    
 
     def GetElementShapeFunctionsDerAtPos(self, el,pos):
         coon = self.GetConnectivityForElement(el)
         p0 = self.GetPosOfNode(coon[0])
         n0 = (pos-p0)*2./self.__spacing - 1.
-        if self.GetDimensionality() ==3:
-            myElem = Hexa8Cuboid()
-        else:
-            myElem = Quad4Rectangle()
-        myElem.delta = self.__spacing
-        return myElem.ShapeFuncDer(n0)
+        f = 2./self.__spacing
+        return f[:,np.newaxis]*self.structElements.space.GetShapeFuncDer(n0)
 
     def GetDefValueAtPos(self,field,pos):
         el = self.GetElementAtPos(pos)
