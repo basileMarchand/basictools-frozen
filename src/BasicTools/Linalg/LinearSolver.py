@@ -17,6 +17,15 @@ from BasicTools.Helpers.TextFormatHelper import TFormat as TF
 from BasicTools.Linalg.ConstraintsHolder import ConstraintsHolder
 
 
+def _available_algorithms():
+    result = ["Direct", "CG", "lstsq", "EigenCG", "EigenLU", "gmres"]
+    try:
+        import sksparse.cholmod
+        result.append("cholesky")
+    except ModuleNotFoundError:
+        pass
+    return tuple(result)
+
 class LinearProblem(BOO):
     def __init__(self):
         super(LinearProblem,self).__init__()
@@ -62,7 +71,6 @@ class LinearProblem(BOO):
 
         self.op = op
 
-
         if self.type == "Direct":
             self.PrintDebug('Starting Factorisaton')
             self.solver = sps.linalg.factorized(op)
@@ -98,7 +106,7 @@ class LinearProblem(BOO):
         self.PrintDebug('In SetOp Done')
 
     def SetAlgo(self, algoType, withErrorIfNotFound=False):
-        if algoType in  ["Direct" ,"CG", "lstsq","cholesky" ,"EigenCG","EigenLU","gmres"] :
+        if algoType in self.GetAvailableAlgorithms():
             self.type = algoType
         else:
             raise(ValueError(TF.InRed("Error : ") + "Type not allowed ("+algoType+")"  ) )#pragma: no cover
@@ -112,8 +120,6 @@ class LinearProblem(BOO):
                 defaultIfError = "CG"
                 print("Error Loading EIGEN solver, using solver: " + str(defaultIfError) )
                 self.SetAlgo(defaultIfError)
-
-
 
     def Solve(self, rhs):
         if self.HasConstraints():
@@ -157,6 +163,13 @@ class LinearProblem(BOO):
 
         return self.u
 
+    __available_algorithms = _available_algorithms()
+
+    @classmethod
+    def GetAvailableAlgorithms(cls):
+        return cls.__available_algorithms
+
+
 def CheckIntegrity(GUI=False):
 
     LS = LinearProblem ()
@@ -185,12 +198,13 @@ def CheckIntegrity(GUI=False):
         print("Skiping the rest of the test on windows test on windows")
         return "OK"
 
-    LS.SetAlgo("cholesky")
-    LS.SetOp(sps.csc_matrix(np.array([[0.5,0],[0,1]])))
-    sol = LS.Solve(np.array([[1],[2]]))
-    if sol[0] != 2. : raise Exception()
-    if sol[1] != 2. : raise Exception()
-
+    algorithm = "cholesky"
+    if algorithm in LS.GetAvailableAlgorithms():
+        LS.SetAlgo(algorithm)
+        LS.SetOp(sps.csc_matrix(np.array([[0.5,0],[0,1]])))
+        sol = LS.Solve(np.array([[1],[2]]))
+        if sol[0] != 2. : raise Exception()
+        if sol[1] != 2. : raise Exception()
 
     b = np.array([1.,2.])
     matrix = sps.csc_matrix(np.array([[0.5,0],[0,1.]]))
