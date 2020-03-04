@@ -441,6 +441,10 @@ def CheckIntegrity( GUI=False):
     for name,data,ids in ff:
         data.tags.CreateTag("ZZ0").SetIds(ids)
 
+    ## to check if a filter can be used 2 times
+    for name,data,ids in ff:
+        data.tags.CreateTag("ZZ0O").SetIds(ids)
+
 
     # example of counting the number of element in the eTag ZZ0
 
