@@ -199,7 +199,6 @@ def ComputeFEInterpMatAtGaussPoint(mesh):
           for j in range(NGaussperEl):
 
             Jack, Jdet, Jinv = spaces[name].GetJackAndDetI(j,xcoor)
-            BxByBzI = Jinv(spaces[name].valdphidxi[j])
 
             FEInterpAtIntegPointIndices[countElementType][count,:] = data.connectivity[i,:]
             FEInterpAtIntegPointMatrix[countElementType][count,:] = spaces[name].valN[j]
@@ -291,7 +290,8 @@ def ComputeMecaIntegrator(mesh, elementSet = "ALLELEMENT"):
 
     integrationWeights = np.zeros(NGauss)
 
-    convInd = {1:[0], 2:[0, 2, 2, 1], 3:[0, 3, 4, 3, 1, 5, 4, 5, 2]}
+    #convInd = {1:[0], 2:[0, 2, 2, 1], 3:[0, 3, 4, 3, 1, 5, 4, 5, 2]}
+    convInd = {1:[0], 2:[0, 2, 2, 1], 3:[0, 3, 5, 3, 1, 4, 5, 4, 2]}
     nbeInd  = {1:1, 2:3, 3:6}
 
     row = []
@@ -305,12 +305,7 @@ def ComputeMecaIntegrator(mesh, elementSet = "ALLELEMENT"):
         nbsf = spaces[name].GetNumberOfShapeFunctions()
         ones = np.ones(dimension*nbsf,dtype=int)
 
-        #lenNumbering = len(numberings[0][name][0,:])
-        #print("lenNumbering =", lenNumbering)
-        #print("nbsf =", nbsf)
         B = np.zeros((dimension*nbsf, nbeInd[dimension]), dtype=np.float)
-
-        #print("B.shape =", B.shape)
 
         for el in ids:
 
@@ -320,8 +315,6 @@ def ComputeMecaIntegrator(mesh, elementSet = "ALLELEMENT"):
             for ip in range(len(w)):
                 Jack, Jdet, Jinv = spaces[name].GetJackAndDetI(ip,xcoor)
                 BxByBzI = Jinv(spaces[name].valdphidxi[ip])
-                #if el == ids[0] and ip == 0:
-                #    print("BxByBzI.shape =", BxByBzI.shape) # dimension x nbsf
 
                 integrationWeights[count] = w[ip]*Jdet
 
