@@ -71,12 +71,14 @@ class build_ext_compiler_check(build_ext):
         build_ext.build_extensions(self)
 
 
-requirements = ["numpy", "sympy"]
+requirements = ['numpy>=1.15', 'scipy>=1.1', 'sympy>=1.2', 'pyparsing>=2.2', 'vtk>=8.0.1', 'h5py>=2.8']
 
 setup(name='BasicTools',
+      version='1.2',
       packages=find_packages('src'),
       ext_modules=modules,
       package_data={'BasicTools': ['TestData/*', 'TestData/*/*', 'TestData/*/*/*']},
+      python_requires='>=3.6',
       install_requires=requirements,
       package_dir={'': 'src'},
       cmdclass={'build_ext': build_ext_compiler_check})
