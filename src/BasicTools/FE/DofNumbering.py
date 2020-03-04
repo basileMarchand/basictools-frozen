@@ -6,7 +6,7 @@
 
 import numpy as np
 import BasicTools.Containers.ElementNames as EN
-from  BasicTools.Containers.UnstructuredMesh import AllElements
+from  BasicTools.Containers.MeshBase import allElements
 
 def Hash(space,j,lconn,name=None,i=None):
     """
@@ -28,7 +28,7 @@ def Hash(space,j,lconn,name=None,i=None):
     elif T == "C":
         """C is for cell"""
         T = name
-        n = tuple(np.sort(lconn))
+        return (T,tuple(np.sort(lconn)),n)
     elif T == "F" :
         """is for face  (face for a 3D element, edge for a 2D element """
         edge = EN.faces[name][n]
@@ -51,7 +51,7 @@ def Hash(space,j,lconn,name=None,i=None):
     return (T,n,h)
 
 
-def ComputeDofNumbering(mesh,Space,dofs=None,tag=AllElements,sign=1,fromConnectivity=False):
+def ComputeDofNumbering(mesh,Space,dofs=None,tag=None,sign=1,fromConnectivity=False,elementFilter=None):
     """
     Function to compute a unique numbering of dofs. The user must provide:
 
@@ -64,11 +64,17 @@ def ComputeDofNumbering(mesh,Space,dofs=None,tag=AllElements,sign=1,fromConnecti
       numbering for all element (space, dofs,tag,sign are ignored). All Elements
       are treated.
     """
-    if tag is None:
-        raise(ValueError())
+
+    if tag is not None and elementFilter is not None:
+        raise(Exception("Need a tag or a filter not boths"))
+
+    if tag is None and elementFilter is None and fromConnectivity==False:
+        tag = allElements
+
+
     if fromConnectivity:
-        if dofs is not None or tag != AllElements or sign != 1:
-            raise(Exception("cant take dofs tag or sign different from the default values"))
+        if dofs is not None or tag is not None or sign != 1 or elementFilter is not None:
+            raise(Exception("cant take dofs tag sign or elementFilter different from the default values"))
         dofs = {}
         dofs["size"] = mesh.GetNumberOfNodes()
         dofs["dirichelet"] = -1
@@ -84,6 +90,12 @@ def ComputeDofNumbering(mesh,Space,dofs=None,tag=AllElements,sign=1,fromConnecti
         dofs["almanac"] = almanac
 
     else:
+
+        from BasicTools.Containers import Filters
+        elementFilter = Filters.ElementFilter(mesh)
+        if tag is not allElements:
+            elementFilter.SetTags([tag])
+
         if dofs is None:
             dofs = {}
             dofs["size"] = 0
@@ -103,7 +115,10 @@ def ComputeDofNumbering(mesh,Space,dofs=None,tag=AllElements,sign=1,fromConnecti
 
         almanac = dofs["almanac"]
 
-        for name,data in mesh.elements.items():
+        for name,data,fil in elementFilter:
+            if len(fil) == 0:
+                continue
+
             sp = Space[name]
 
             if name in dofs:
@@ -111,12 +126,6 @@ def ComputeDofNumbering(mesh,Space,dofs=None,tag=AllElements,sign=1,fromConnecti
             else:
                 dof = np.zeros((data.GetNumberOfElements(),sp.GetNumberOfShapeFunctions()), dtype=np.int_) -1
 
-            if tag is AllElements:
-                fil = range(data.GetNumberOfElements())
-            elif tag in data.tags:
-                fil = data.GetTag(tag).GetIds()
-            else:
-                continue
 
             numberOfShapeFunctions = sp.GetNumberOfShapeFunctions()
             for i in fil:

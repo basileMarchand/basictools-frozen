@@ -3,11 +3,16 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 
 import numpy as np
 
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
+
+allElements = object()
+bulkElements = object() # element of dimensionality for meshdim (Tetra in 3D, Tri in 2D)
+borderElements = object() # element of dimensionality for meshdim-1 (Tri in 3D, Edge in 2D)
+borderborderElements = object() # element of dimensionality for meshdim-2 (Edge in 3D, Point in 2D)
 
 class Tag(object):
     def __init__(self,tagname):

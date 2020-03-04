@@ -14,9 +14,6 @@ from BasicTools.Containers.MeshBase import Tags
 
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject,froze_it
 
-
-AllElements = object()
-
 class ElementsContainer(BaseOutputObject):
     """
     Class to hold a list of element of the same type
