@@ -18,13 +18,19 @@ from BasicTools.Linalg.ConstraintsHolder import ConstraintsHolder
 
 
 def _available_algorithms():
-    result = ["Direct", "CG", "lstsq", "EigenCG", "EigenLU", "gmres"]
+    result = ["Direct", "CG", "lstsq", "gmres"]
     try:
         import sksparse.cholmod
         result.append("cholesky")
-    except ModuleNotFoundError:
+    except ImportError:
+        pass
+    try:
+        import BasicTools.FE.EigenSolver
+        result.extend(("EigenCG", "EigenLU"))
+    except ImportError:
         pass
     return tuple(result)
+
 
 class LinearProblem(BOO):
     def __init__(self):
@@ -109,16 +115,11 @@ class LinearProblem(BOO):
         if algoType in self.GetAvailableAlgorithms():
             self.type = algoType
         else:
-            raise(ValueError(TF.InRed("Error : ") + "Type not allowed ("+algoType+")"  ) )#pragma: no cover
-
-        if len(self.type) >= 5 and  self.type[0:5] == "Eigen":
-            try:
-                import BasicTools.FE.EigenSolver as EigenSolver
-            except:
-                if withErrorIfNotFound:
-                    raise
+            if withErrorIfNotFound:
+                raise ValueError(TF.InRed("Error : ") + "Type not allowed ("+algoType+")") #pragma: no cover
+            else:
                 defaultIfError = "CG"
-                print("Error Loading EIGEN solver, using solver: " + str(defaultIfError) )
+                print(f"Solver {algoType} unavailable, falling back to solver {defaultIfError} instead.")
                 self.SetAlgo(defaultIfError)
 
     def Solve(self, rhs):
