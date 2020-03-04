@@ -76,6 +76,7 @@ requirements = ["numpy", "sympy"]
 setup(name='BasicTools',
       packages=find_packages('src'),
       ext_modules=modules,
+      package_data={'BasicTools': ['TestData/*', 'TestData/*/*', 'TestData/*/*/*']},
       install_requires=requirements,
       package_dir={'': 'src'},
       cmdclass={'build_ext': build_ext_compiler_check})
