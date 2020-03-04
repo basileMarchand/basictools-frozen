@@ -15,7 +15,7 @@ from BasicTools.Helpers.BaseOutputObject import BaseOutputObject as BOO
 from BasicTools.Helpers.TextFormatHelper import TFormat as TF
 
 from BasicTools.Linalg.ConstraintsHolder import ConstraintsHolder
-# you must set SetAlgo before setting the Op
+
 
 class LinearProblem(BOO):
     def __init__(self):
@@ -46,7 +46,7 @@ class LinearProblem(BOO):
         print("Number Of dofs " , self.originalOp.shape)
         self.op = self.constraints.GetReducedOp()
 
-
+    # you must set SetAlgo before setting the Op
     def SetOp(self, op):
         self.PrintVerbose('In SetOp (type:' +str(self.type) + ')')
 
