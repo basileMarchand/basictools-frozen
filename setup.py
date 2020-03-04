@@ -6,8 +6,8 @@
 #
 
 import os, sys
-import numpy
-import setuptools
+from setuptools.command.build_ext import build_ext
+from setuptools import setup, find_packages
 
 
 # Compilation options
@@ -40,6 +40,7 @@ try:
 
         BUILD_ARGS[compiler] = compile_args
 
+    import numpy
     include_path = [numpy.get_include(), os.environ['EIGEN_INC']]
     if "CONDA_PREFIX" in os.environ:
         include_path.append(os.environ["CONDA_PREFIX"] + "/include/")
@@ -58,7 +59,6 @@ except ImportError as e:
     print(f"Compilation disabled since {e.name} package is missing")
     modules = []
 
-from setuptools.command.build_ext import build_ext
 
 class build_ext_compiler_check(build_ext):
     def build_extensions(self):
@@ -70,7 +70,7 @@ class build_ext_compiler_check(build_ext):
             ext.extra_compile_args = args
         build_ext.build_extensions(self)
 
-from setuptools import setup, find_packages
+
 requirements = ["numpy", "sympy"]
 
 setup(name='BasicTools',
