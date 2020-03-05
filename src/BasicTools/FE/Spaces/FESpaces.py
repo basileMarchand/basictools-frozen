@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 import BasicTools.Containers.ElementNames as EN
 import BasicTools.FE.Spaces.PointSpaces as PointSpaces
 import BasicTools.FE.Spaces.BarSpaces as BarSpaces

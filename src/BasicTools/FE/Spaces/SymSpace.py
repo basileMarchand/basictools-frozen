@@ -3,9 +3,9 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 from BasicTools.FE.FElement import FElement
-from sympy import Symbol
+from sympy import Symbol, DiracDelta
 import numpy as np
 
 
@@ -93,8 +93,10 @@ class SymSpaceBase(SpaceBase):
            self.valdphidxi[pp] = self.GetShapeFuncDer(point)
 
     def GetShapeFunc(self,qcoor):
-        res = np.array([self.fct_N[i](qcoor) for i in range(self.GetNumberOfShapeFunctions()) ], dtype=np.float)
-        return res
+        res = []
+        for i in range(self.GetNumberOfShapeFunctions()):
+            res.append(self.fct_N[i](qcoor).subs(DiracDelta(0),1.))
+        return  np.array(res, dtype=np.float)
 
     def GetPosOfShapeFunction(self,i,Xi):
         valN = self.GetShapeFunc(self.posN[i,:])
@@ -108,7 +110,8 @@ class SymSpaceBase(SpaceBase):
         for fct in range(nsf):
             for direc in range(dim):
                 #print self.fct_dNdxi[fct]
-                res[direc,fct]   = self.fct_dNdxi[fct][direc](qcoor)
+                # no derivative for DiracDelta
+                res[direc,fct]   = self.fct_dNdxi[fct][direc](qcoor).subs(DiracDelta(0,1),0).subs(DiracDelta(0),1.)
         return res
 
     def GetNormal(self,Jack):
@@ -201,7 +204,6 @@ class SymSpaceBase(SpaceBase):
 
              B[5,i+nbsf] =   BxByBzI[2,i]
              B[5,i+2*nbsf] =   BxByBzI[1,i]
-
 
 def CheckIntegrity():
     return "ok"

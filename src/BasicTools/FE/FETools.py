@@ -165,7 +165,39 @@ def ComputeH10ScalarProductMatrix(mesh, numberOfComponents):
     return mat
 
 
+def ComputeInterpolationMatrix_FE_GaussPoint(mesh, feSpace, integrationRule,feNumbering=None,ipNumbering=None, elementFilter=None):
 
+    if elementFilter is None:
+        elementFilter = Filters.ElementFilter(mesh)
+        dim = mesh.GetDimensionality()
+        elementFilter.SetDimensionality(dim)
+    else:
+        pass
+
+    if feNumbering is None:
+        numberingLeft = ComputeDofNumbering(mesh,Space=feSpace,elementFilter=elementFilter)
+    else:
+        numberingLeft  = feNumbering
+
+    leftField = FEField(name="P1",numbering=numberingLeft,mesh=mesh,space=feSpace)
+
+    from BasicTools.FE.Spaces.IPSpaces import GenerateSpaceForIntegrationPointInterpolation
+    gaussSpace = GenerateSpaceForIntegrationPointInterpolation(integrationRule)
+    if ipNumbering is None:
+        numberingRight = ComputeDofNumbering(mesh,Space=gaussSpace,elementFilter=elementFilter)
+    else:
+        numberingRight = ipNumbering
+
+    rightField = FEField(name="Gauss'",numbering=numberingRight,mesh=mesh,space=gaussSpace)
+
+    from BasicTools.FE.WeakForm import GetField,GetTestField
+    LF = GetField("P1",1)
+    RF = GetTestField("Gauss",1)
+
+    symForm = LF.T*RF
+
+    interpMatrixMatrix,_ = IntegrateGeneral(mesh=mesh,constants={},fields=[],wform=symForm, unkownFields= [leftField],testFields=[rightField],onlyEvaluation=True,integrationRuleName=integrationRule)
+    return interpMatrixMatrix
 
 def ComputeFEInterpMatAtGaussPoint(mesh):
 
@@ -692,10 +724,8 @@ def IntegrateCentrifugalEffect(mesh, density, rotationAxis, rotationCenter):
 def CheckIntegrity(GUI=False):
     from BasicTools.FE.SymPhysics import MecaPhysics
 
-
     mecaPhysics = MecaPhysics()
     wform = mecaPhysics.GetBulkFormulation(1.0,0.3)
-
     res = GetElementaryMatrixForFormulation(EN.Hexaedron_8,wform, unknownNames =mecaPhysics.GetPrimalNames() )
 
     import BasicTools.TestData as BasicToolsTestData
@@ -716,7 +746,12 @@ def CheckIntegrity(GUI=False):
     IntegrateOrderTwoTensorOnSurface(mesh, "x0", scalarFields)
     IntegrateCentrifugalEffect(mesh, {'ALLELEMENT':1.}, np.array([1.,0.,0.]), np.array([0.,0.,0.]))
 
+    from BasicTools.FE.IntegrationsRules import LagrangeP2,LagrangeP1
+    mesh.elements["hex8"].tags.CreateTag("Transfert").SetIds([0,1] )
+    elementFilter = Filters.ElementFilter(mesh,tag="Transfert")
+    data = ComputeInterpolationMatrix_FE_GaussPoint(mesh,LagrangeSpaceP1,LagrangeP1,elementFilter)
 
+    print(np.dot(data.toarray(),np.arange(12)))
 
     return "ok"
 
