@@ -35,7 +35,9 @@ build_Python3:
         - python setup.py build_ext --inplace
     artifacts:
         paths:
-          - src/BasicTools/FE/*36*.so
+          - src/BasicTools/FE/*/*36*.so*
+          - src/BasicTools/Linalg/*36*.so*
+
         expire_in: 600 minutes
 
 test_with_pytest_and_coverage:
@@ -103,7 +105,7 @@ deploy:
     - MSBasicTools
   script:
     - echo "Deploy... on $PREFIX"
-    - rsync -av --delete-after --cvs-exclude --include=FE/*36*.so --omit-dir-times --no-perms ./src/BasicTools/. $PREFIX
+    - rsync -av --delete-after --cvs-exclude --include=FE/*/*36*.so --include=Linalg/*36*.so --omit-dir-times --no-perms ./src/BasicTools/. $PREFIX
     - $ACLSCRIPT $PREFIX/../.acl $PREFIX
     - echo "Deploy... using $PREFIXII"
     - $PREFIXII
