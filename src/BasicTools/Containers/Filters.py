@@ -113,11 +113,23 @@ class Filter(BOO):
             else:
                 return np.intersect1d(first,second,assume_unique=True)
 
+class FilterOP(BOO):
+    """
+      Specialized class to compute the operation over filters
+    """
+    def __init__(self,mesh=None,filters=None):
+        super(FilterOP,self).__init__()
+        self.mesh = mesh
+        if filters is not None:
+            self.filters = filters
+        else:
+            self.filters = []
+
 class NodeFilter(Filter):
     """
        Specialized class for node filtering zone and tag
     """
-    def __init__(self,mesh, etags = None, etag = None, **kwargs):
+    def __init__(self,mesh=None, etags = None, etag = None, **kwargs):
         """
         Constructor: all the parammeter are passed to the base class
         """
@@ -127,7 +139,7 @@ class NodeFilter(Filter):
         if etag is not None:
             self.AddETag(etag)
 
-        super(NodeFilter,self).__init__(mesh,**kwargs)
+        super(NodeFilter,self).__init__(mesh=mesh,**kwargs)
 
     def SetETags(self,tagNames):
         """
@@ -218,6 +230,61 @@ class NodeFilter(Filter):
             pc(self.mesh)
 
 
+class UnionElementFilter(FilterOP):
+    """
+      Specialized class to compute the union of filter (add)
+    """
+    def __init__(self,mesh=None,filters=None):
+        super(UnionElementFilter,self).__init__(mesh=mesh,filters=filters)
+
+    def __iter__(self):
+        """
+        Iteration interface to ease the use of the filter
+
+        :example:
+
+            myFilter = UnionElementFilter(myMesh)
+            myFilter.filters.append(myOtherFilter1)
+            myFilter.filters.append(myOtherFilter2)
+
+            for name,elements,ids in myFilter:
+
+                print("This function is called on the union of the 2 filters")
+
+                print("Number of element of type " + str(name)+ " is : "  + str(len(ids) )
+        """
+        for name,data in self.mesh.elements.items():
+            ids = self.GetIdsToTreat(data)
+            if len(ids) == 0: continue
+            yield name, data, ids
+
+    def GetIdsToTreat(self, data):
+        ids = set()
+        for ff in self.filters:
+            ids.update(ff.GetIdsToTreat(data))
+        return list(ids)
+
+    def ApplyOnElements(self,op):
+        """
+        Function to apply the filter  using an operator
+
+        :param callable op: An instance of a callable object, the object can have
+            the PreCondition function and/or the Postcondition function. Theses
+            functions are called (if exist) (with the mesh as the first argument)
+            before and after the main call ( op(name,elements,ids) )
+        """
+        pc = getattr(op,"PreCondition",None)
+
+        if callable(pc):
+            pc(self.mesh)
+
+        for name,elements,ids in self:
+            op(name,elements,ids)
+
+        pc = getattr(op,"PostCondition",None)
+        if callable(pc):
+            pc(self.mesh)
+
 class ElementFilter(Filter):
     """
        Specialized class for element filtering by dimensionality, zone and tag
@@ -229,7 +296,7 @@ class ElementFilter(Filter):
 
     """
 
-    def __init__(self,mesh,dimensionality=None,**kwargs):
+    def __init__(self,mesh=None,dimensionality=None,**kwargs):
         """
         constructor : the dimensionality parameter can be used to select a type
         of element based in the dimension (tris are 2D, tetras are 3D...). All
@@ -241,7 +308,7 @@ class ElementFilter(Filter):
 
 
         """
-        super(ElementFilter,self).__init__(mesh,**kwargs)
+        super(ElementFilter,self).__init__(mesh=mesh,**kwargs)
         self.dimensionality = dimensionality
 
         self.zoneTreatment = "center" # "center", "allnodes", "leastonenode"
@@ -467,6 +534,7 @@ def CheckIntegrity( GUI=False):
     ff.ApplyOnElements(op)
     ff.zoneTreatment = "leastonenode"
     ff.ApplyOnElements(op)
+
 
 
     cpt = 0
