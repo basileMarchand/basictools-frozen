@@ -5,7 +5,7 @@
 #
 
 
-
+from BasicTools.Containers.Filters import ElementFilter
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject as BOO
 from BasicTools.FE.WeakForms.NumericalWeakForm import SymWeakToNumWeak
 from BasicTools.FE.SymWeakForm import Gradient,Divergence, GetField,GetTestField
@@ -53,11 +53,24 @@ class Physics(BOO):
 
         self.spaces = [space]*len(self.GetPrimalNames())
 
-    def AddBFormulation(self, zone, data ) :
-        self.bilinearWeakFormulations.append((zone,data) )
+    def AddBFormulation(self, zoneOrElementFilter, data ) :
 
-    def AddLFormulation(self, zone, data ) :
-        self.linearWeakFormulations.append((zone,data) )
+        if type(zoneOrElementFilter) == str:
+            ef = ElementFilter(tag=zoneOrElementFilter)
+        else:
+            ef  = zoneOrElementFilter
+
+        self.bilinearWeakFormulations.append((ef,data) )
+
+    def AddLFormulation(self, zoneOrElementFilter, data ) :
+
+
+        if type(zoneOrElementFilter) == str:
+            ef = ElementFilter(tag=zoneOrElementFilter)
+        else:
+            ef  = zoneOrElementFilter
+
+        self.linearWeakFormulations.append((ef,data) )
 
     def GetNumberOfUnkownFields(self):
         return len(self.GetPrimalNames())
@@ -69,21 +82,19 @@ class Physics(BOO):
         else:
             return
 
-        from BasicTools.Containers.Filters import ElementFilter
-        ff = ElementFilter(mesh)
-        if tagsToKeep is not None:
-            ttk = tagsToKeep[:] # copy
-        else:
-            ttk = []
-        ttk.extend( [tag for tag, form in self.linearWeakFormulations] )
-        ttk.extend( [tag for tag, form in self.bilinearWeakFormulations] )
-        ff.SetTags(ttk)
+        from BasicTools.Containers.Filters import ElementFilter,UnionElementFilter
+        allFilters = UnionElementFilter(mesh)
+
+        ff = ElementFilter(mesh,tags=tagsToKeep)
+        allFilters.filters.append(ff)
+        allFilters.filters.extend([f for f, form in self.linearWeakFormulations] )
+        allFilters.filters.extend([f for f, form in self.bilinearWeakFormulations] )
 
         for d in range(self.GetNumberOfUnkownFields()):
             if fromConnectivity:
                 self.numberings[d] = ComputeDofNumbering(mesh,self.spaces[d],fromConnectivity = True ,dofs=self.numberings[d])
             else:
-                self.numberings[d] = ComputeDofNumbering(mesh,self.spaces[d],fromConnectivity =False,elementFilter=ff,dofs=self.numberings[d])
+                self.numberings[d] = ComputeDofNumbering(mesh,self.spaces[d],fromConnectivity =False,elementFilter=allFilters,dofs=self.numberings[d])
 
 #            if tagsToKeep is not None:
 #                for tag in tagsToKeep:

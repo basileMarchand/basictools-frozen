@@ -68,12 +68,11 @@ class UnstructuredFeaSym(FeaBase):
         if lform is not None:
             if unkownFields is None:
                unkownFields =  self.unkownFields
-            for zone,form in lform:
+            for ff,form in lform:
                 if form is None:
                     continue
-                self.PrintDebug("integration of lform "+ str(zone) )
+                self.PrintDebug("integration of lform "+ str(ff) )
                 #self.PrintDebug("integration of lform "+ str(form) )
-                ff = ElementFilter(mesh=self.mesh, tag=zone)
                 _,f = IntegrateGeneral(mesh=self.mesh,
                                        wform=form,
                                        constants=self.constants,
@@ -89,15 +88,13 @@ class UnstructuredFeaSym(FeaBase):
         if bform is not None:
             if unkownFields is None:
                unkownFields =  self.unkownFields
-            for zone,form in bform:
+            for ff,form in bform:
                 if form is None:
                     continue
-                self.PrintDebug("integration of bform " + str(zone) )
+                self.PrintDebug("integration of bform " + str(ff) )
                 #self.PrintDebug("integration of bform " + str(form) )
-                ff = ElementFilter(mesh=self.mesh, tag=zone)
                 k,f = IntegrateGeneral(mesh=self.mesh,
                                        wform=form,
-                                       tag=zone,
                                        constants=self.constants,
                                        fields=list(self.fields.values()),
                                        unkownFields= unkownFields,
@@ -119,11 +116,10 @@ class UnstructuredFeaSym(FeaBase):
           for phy in self.physics:
               linearWeakFormulations = phy.linearWeakFormulations
 
-              for zone,form in linearWeakFormulations:
+              for ff,form in linearWeakFormulations:
                 if form is None:
                     continue
-                self.PrintDebug("integration of f "+ str(zone) )
-                ff = ElementFilter(mesh=self.mesh, tag=zone)
+                self.PrintDebug("integration of f "+ str(ff) )
                 _,f = IntegrateGeneral(mesh=self.mesh,wform=form,  constants=self.constants, fields=list(self.fields.values()),unkownFields= self.unkownFields,
                                 integrationRuleName=phy.integrationRule,elementFilter=ff)
                 if rhsRes is None:
@@ -136,12 +132,10 @@ class UnstructuredFeaSym(FeaBase):
           for phy in self.physics:
               bilinearWeakFormulations = phy.bilinearWeakFormulations
 
-              for zone,form in bilinearWeakFormulations:
+              for ff,form in bilinearWeakFormulations:
                 if form is None:
                     continue
-                self.PrintDebug("Integration of bilinear formulation on : " + str(zone))
-                print(self.mesh)
-                ff = ElementFilter(mesh=self.mesh, tag=zone)
+                self.PrintDebug("Integration of bilinear formulation on : " + str(ff))
                 k,f = IntegrateGeneral(mesh=self.mesh,wform=form,  constants=self.constants, fields=list(self.fields.values()), unkownFields= self.unkownFields,
                                 integrationRuleName=phy.integrationRule,elementFilter=ff)
                 if not (f is None):
