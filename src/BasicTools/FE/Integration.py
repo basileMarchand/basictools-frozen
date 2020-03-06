@@ -49,9 +49,10 @@ def IntegrateGeneral( mesh, wform, constants, fields, unkownFields, testFields=N
         # if no filter the the integral is over the bulk element
         # 3D elements if the mesh is 3D
         # 2D elements if the mesh is 2D
-        elementFilter = ElementFilter(mesh)
+        elementFilter = ElementFilter()
         elementFilter.SetDimensionality(mesh.GetDimensionality())
 
+    elementFilter.mesh = mesh
     import BasicTools.FE.WeakForms.NumericalWeakForm as WeakForm
     if wform is None :
         return
