@@ -33,6 +33,7 @@ class FEField(FieldBase):
         if self.name is not None:
           res += TFormat.GetIndent()
           res += TFormat.InGreen("Name : ") + self.name
+        TFormat.DI()
         return res
 
     def GetPointRepresentation(self,fillvalue=0.):
