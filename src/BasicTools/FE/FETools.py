@@ -190,13 +190,12 @@ def ComputeInterpolationMatrix_FE_GaussPoint(mesh, feSpace, integrationRule,feNu
 
     rightField = FEField(name="Gauss'",numbering=numberingRight,mesh=mesh,space=gaussSpace)
 
-    from BasicTools.FE.WeakForm import GetField,GetTestField
+    from BasicTools.FE.SymWeakForm import GetField,GetTestField
     LF = GetField("P1",1)
     RF = GetTestField("Gauss",1)
 
     symForm = LF.T*RF
-
-    interpMatrixMatrix,_ = IntegrateGeneral(mesh=mesh,constants={},fields=[],wform=symForm, unkownFields= [leftField],testFields=[rightField],onlyEvaluation=True,integrationRuleName=integrationRule)
+    interpMatrixMatrix,_ = IntegrateGeneral(mesh=mesh,constants={},fields=[],wform=symForm, unkownFields= [leftField],testFields=[rightField],onlyEvaluation=True,integrationRuleName=integrationRule,elementFilter=elementFilter)
     return interpMatrixMatrix
 
 def ComputeFEInterpMatAtGaussPoint(mesh):
@@ -749,7 +748,7 @@ def CheckIntegrity(GUI=False):
     from BasicTools.FE.IntegrationsRules import LagrangeP2,LagrangeP1
     mesh.elements["hex8"].tags.CreateTag("Transfert").SetIds([0,1] )
     elementFilter = Filters.ElementFilter(mesh,tag="Transfert")
-    data = ComputeInterpolationMatrix_FE_GaussPoint(mesh,LagrangeSpaceP1,LagrangeP1,elementFilter)
+    data = ComputeInterpolationMatrix_FE_GaussPoint(mesh=mesh,feSpace=LagrangeSpaceP1,integrationRule=LagrangeP1,elementFilter=elementFilter)
 
     print(np.dot(data.toarray(),np.arange(12)))
 
