@@ -26,6 +26,7 @@ options :
     -p    Activate profiling
     -v    Activate maximal level of verbosity
     -y    Generate .pyc when inporting modules (default False)
+    -k    skip test base on string
 
 """
 
@@ -62,16 +63,23 @@ class TestTempDir(object):
 
     path = None
     prefix = "BasicTools_Test_Directory_"
+    createdOnRam = False
     @classmethod
-    def GetTempPath(cls, onRam=False):
-        if cls.path is not None:
+    def GetTempPath(cls, onRam=None):
+        if cls.path is not None and (onRam is None or onRam == cls.createdOnRam):
             return cls.path
         import tempfile
         import os
+
+        if onRam is None:
+            onRam = False
+
         if onRam:
             cls.path = tempfile.mkdtemp(prefix=cls.prefix,suffix="_safe_to_delete",dir="/dev/shm/") + os.sep
+            cls.createdOnRam = True
         else:
             cls.path = tempfile.mkdtemp(prefix=cls.prefix,suffix="_safe_to_delete") + os.sep
+            cls.createdOnRam = False
 
         cls.__saveTempPath()
         return TestTempDir.path
@@ -231,10 +239,11 @@ def __tryImport(noduleName,bp,stopAtFirstError):# pragma: no cover
     return tocheck
 
 
-def TestAll(modulestotreat=['ALL'], fulloutput=False, stopAtFirstError= False, extraToolsBoxs= None,dryrun=False,profiling=False,coverage=None) :# pragma: no cover
+def TestAll(modulestotreat=['ALL'],modulestoskip=[], fulloutput=False, stopAtFirstError= False, extraToolsBoxs= None,dryrun=False,profiling=False,coverage=None) :# pragma: no cover
 
     print("")
     print("modulestotreat   : " + str(modulestotreat))
+    print("modulestoskip    : " + str(modulestoskip))
     print("fulloutput       : " + str(fulloutput) )
     print("stopAtFirstError : " + str(stopAtFirstError))
     print("coverage         : " + str(coverage))
@@ -273,9 +282,11 @@ def TestAll(modulestotreat=['ALL'], fulloutput=False, stopAtFirstError= False, e
 
 
         if modulestotreat[0] is not  'ALL':
-            #bp.Print(str(modulestotreat))
-            filtered =  dict((k, v) for k, v in tocheck.items() if all(s in k for s in modulestotreat ) )
-            #bp.Print(str(filtered))
+            filtered =  dict((k, v) for k, v in tocheck.items() if any(s in k for s in modulestotreat ) )
+            tocheck = filtered
+
+        if len(modulestoskip):
+            filtered =  dict((k, v) for k, v in tocheck.items() if not any(s in k for s in modulestoskip ) )
             tocheck = filtered
 
         res = __RunAndCheck(tocheck,bp,stopAtFirstError,dryrun,profiling);
@@ -381,7 +392,7 @@ if __name__ == '__main__':# pragma: no cover
         res = TestAll(modulestotreat=['ALL'],extraToolsBoxs= ["BasicTools"], fulloutput=False,coverage={"active":False})# pragma: no cover
     else:
       try:
-          opts, args = getopt.getopt(sys.argv[1:],"hcblfsdpvye:m:")
+          opts, args = getopt.getopt(sys.argv[1:],"hcblfsdpvye:m:k:")
       except getopt.GetoptError as e:
           print(e)
           print(Test_Help_String)
@@ -392,6 +403,7 @@ if __name__ == '__main__':# pragma: no cover
       stopAtFirstError = False
       extraToolsBoxs = []
       modulestotreat=[]
+      modulestoskip=[]
       dryrun = False
       profiling = False
       browser = False
@@ -430,11 +442,14 @@ if __name__ == '__main__':# pragma: no cover
             extraToolsBoxs.append(arg)
          elif opt in ("-m"):
             modulestotreat.append(arg)
+         elif opt in ("-k"):
+            modulestoskip.append(arg)
          elif opt in ("-p"):
             print('Setting temp output directory to ' + arg)
             TestTempDir.SetTempPath(arg)
          elif opt in ("-y"):
              sys.dont_write_bytecode = False
+
 
 
 
@@ -446,6 +461,7 @@ if __name__ == '__main__':# pragma: no cover
          extraToolsBoxs.append("BasicTools")
 
       res = TestAll(  modulestotreat=modulestotreat,
+                    modulestoskip=modulestoskip,
                 coverage={"active":coverage,"localhtml":localhtml,"lauchBrowser": browser},
                 fulloutput=fulloutput,
                 stopAtFirstError= stopAtFirstError,
