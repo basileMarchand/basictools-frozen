@@ -9,9 +9,9 @@ __all__ = ["Helpers","IO","FE","TensorTools","Containers","Actions","Linalg"];
 
 __cython_src__ =  ["Linalg/EigenSolver.pyx",
                    "FE/Integrators/NativeIntegration.pyx",
-                   "FE/WeakForms/WeakFormNumerical.pyx"]
+                   "FE/WeakForms/NativeNumericalWeakForm.pyx"]
 
-__cpp_src__ = ["./FE/src_cpp/NativeIntegration.cpp"]
+__cpp_src__ = ["./FE/Integrators/src_cpp/NativeIntegration.cpp"]
 
 __name__ = "BasicTools"
 __copyright_holder__ = "Safran"
