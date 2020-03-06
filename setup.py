@@ -7,7 +7,7 @@
 
 import os, sys
 from setuptools.command.build_ext import build_ext
-from setuptools import setup, find_packages
+from setuptools import setup
 
 
 # Compilation options
@@ -70,16 +70,6 @@ class build_ext_compiler_check(build_ext):
             ext.extra_compile_args = args
         build_ext.build_extensions(self)
 
-
-requirements = ['numpy>=1.15', 'scipy>=1.1', 'sympy>=1.2', 'pyparsing>=2.2', 'vtk>=8.0.1', 'h5py>=2.8']
-
-setup(name='BasicTools',
-      version='1.2',
-      packages=find_packages('src'),
+setup(
       ext_modules=modules,
-      package_data={'BasicTools': ['TestData/*', 'TestData/*/*', 'TestData/*/*/*']},
-      entry_points={'console_scripts': ['meshfileconvert = BasicTools.IO.MeshFileConverter:Main']},
-      python_requires='>=3.6',
-      install_requires=requirements,
-      package_dir={'': 'src'},
       cmdclass={'build_ext': build_ext_compiler_check})
