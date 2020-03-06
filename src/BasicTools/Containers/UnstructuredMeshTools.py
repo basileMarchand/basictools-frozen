@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 import numpy as np
 import math
 
@@ -1635,7 +1635,41 @@ def ComputeMeshMinMaxLengthScale(mesh):
         else:
             resMax = min(resMax,mmax)
     return (2*resMin,2*resMax)
+
+def NodesPermutation(mesh,per):
+    """
+    Function to do a permutation of the nodes in a mesh (inplace)
+
+    mesh : (UnstructuredMesh) mesh to be modified
+    per : the permutation vector ([1,0,2,3] to permute first an secod node)
+    """
+    nnodes = mesh.nodes[per,:]
+
+    perII =np.argsort(per)
+
+    mesh.nodes = nnodes
+    for tag in mesh.nodesTags:
+        ids = tag.GetIds()
+        nids = perII[ids]
+        tag.SetIds(nids)
+
+    for name,data in mesh.elements.items():
+        data.connectivity = perII[data.connectivity]
+
 ###############################################################################
+def CheckIntegrity_NodesPermutation(GUI=False):
+    points = [[1,2,3],[4,5,6],[0,1,0],[0,0,1] ]
+    tets = [[0,1,2,3],[3,1,0,2]]
+    mesh = CreateMeshOf(points,tets,ElementNames.Tetrahedron_4)
+    NodesPermutation(mesh, [1,0,2,3])
+
+    print( mesh.nodes[0,:] )
+    if np.any( mesh.nodes[0,:]-[4,5,6] ):
+        raise(Exception("error in the pertmutation"))
+
+    return "ok"
+
+
 def CheckIntegrity_ComputeMeshMinMaxLengthScale(GUI=False):
     points = [[0,0,0],[1,0,0],[0,1,0],[0,0,1] ]
     tets = [[0,1,2,3],[3,1,0,2]]
@@ -2176,6 +2210,7 @@ def CheckIntegrity_GetDualGraph(GUI=False):
 
 def CheckIntegrity(GUI=False):
     totest= [
+    CheckIntegrity_NodesPermutation,
     CheckIntegrity_GetValueAtPosLinearSymplecticMesh,
     CheckIntegrity_CreateUniformMeshOfBars,
     CheckIntegrity_CreateCube,
