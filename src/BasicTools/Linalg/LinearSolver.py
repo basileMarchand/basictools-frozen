@@ -95,7 +95,7 @@ class LinearProblem(BOO):
         elif len(self.type) >= 5 and  self.type[0:5] == "Eigen":
             self.PrintVerbose('Loading Eigensolver ')
 
-            import BasicTools.FE.EigenSolver as EigenSolver
+            import BasicTools.Linalg.EigenSolver as EigenSolver
             self.PrintVerbose('Loading Eigensolver Done')
             self.solver = EigenSolver.EigenSolvers()
             #print(self.type[5:])

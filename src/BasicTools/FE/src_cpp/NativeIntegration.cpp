@@ -421,9 +421,9 @@ void MonoElementsIntegralCpp::Integrate( WeakForm* wform, std::vector<int>& idst
 //                    # also the user can use a discontinues field to generate element surface stress (for example)
                 } else {
                     factor *= Jdet;
+                    factor *= iw(ip,0);
                 }
                 hasright = false;
-
 
                 const int numberOfProds = monom.prod.size();
                 //if(elem_counter==0 && ip == 0){
@@ -498,7 +498,7 @@ void MonoElementsIntegralCpp::Integrate( WeakForm* wform, std::vector<int>& idst
                 }
                 if(factor == 0) continue;
 
-                factor *= iw(ip,0);
+
 
                 if(hasright){
 

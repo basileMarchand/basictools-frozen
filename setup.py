@@ -44,7 +44,8 @@ try:
     include_path = [numpy.get_include(), os.environ['EIGEN_INC']]
     if "CONDA_PREFIX" in os.environ:
         include_path.append(os.environ["CONDA_PREFIX"] + "/include/")
-        modules = cythonize("src/BasicTools/FE/*.pyx", gdb_debug=debug, annotate=annotate, include_path=include_path, force=force)
+        from BasicTools import __cython_src__
+        modules = cythonize(["src/BasicTools/" + src for src in __cython_src__], gdb_debug=debug, annotate=annotate, include_path=include_path, force=force)
         for m in modules:
             m.include_dirs = include_path + ["src/BasicTools"]
             m.extra_compile_args = compile_args

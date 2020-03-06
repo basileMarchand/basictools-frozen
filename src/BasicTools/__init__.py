@@ -7,10 +7,9 @@
 
 __all__ = ["Helpers","IO","FE","TensorTools","Containers","Actions","Linalg"];
 
-__cython_src__ =  ["FE/CythonIntegration.pyx",
-                   "FE/EigenSolver.pyx",
-                   "FE/NativeIntegration.pyx",
-                   "FE/WeakFormNumerical.pyx"]
+__cython_src__ =  ["Linalg/EigenSolver.pyx",
+                   "FE/Integrators/NativeIntegration.pyx",
+                   "FE/WeakForms/WeakFormNumerical.pyx"]
 
 __cpp_src__ = ["./FE/src_cpp/NativeIntegration.cpp"]
 

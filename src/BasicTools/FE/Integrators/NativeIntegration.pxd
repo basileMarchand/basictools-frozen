@@ -8,17 +8,17 @@ cimport numpy as np
 #ctypedef np.int_t     int_DTYPE_t
 #ctypedef np.float_t float_DTYPE_t
 
-cimport BasicTools.FE.WeakFormNumerical as WFN
-cimport BasicTools.FE.WeakFormNumericalWrapper as WFNW
+cimport BasicTools.FE.WeakForms.WeakFormNumerical as WFN
+cimport BasicTools.FE.WeakForms.WeakFormNumericalWrapper as WFNW
 
 
 
-cdef extern from "src_cpp/NativeIntegration.cpp":
+cdef extern from "../src_cpp/NativeIntegration.cpp":
     pass
 
 # Decalre the class with cdef
 
-cdef extern from "src_cpp/NativeIntegration.h" :
+cdef extern from "../src_cpp/NativeIntegration.h" :
     cdef cppclass MonoElementsIntegralCpp:
         MonoElementsIntegralCpp() except +
         void SetNumberOfUnkownFields(int)

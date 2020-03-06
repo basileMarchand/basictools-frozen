@@ -5,11 +5,11 @@
 import numpy as np
 
 from BasicTools.FE.Fields.FEField import FEField
-from BasicTools.FE.WeakForm import testcharacter
+from BasicTools.FE.SymWeakForm import testcharacter
 import BasicTools.Containers.ElementNames as EN
 #from BasicTools.FE.WeakFormNumerical cimport PyWeakForm
-cimport BasicTools.FE.WeakFormNumerical as WFN
-cimport BasicTools.FE.WeakFormNumericalWrapper as WFNW
+cimport BasicTools.FE.WeakForms.WeakFormNumerical as WFN
+cimport BasicTools.FE.WeakForms.WeakFormNumericalWrapper as WFNW
 from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 
@@ -137,17 +137,16 @@ cdef class PyMonoElementsIntegralCpp():
             self.constantsNames.append(name)
             self.NativeIntegrator.SetConstants(cpt,value)
 
-    def ComputeNumberOfVIJ(self,mesh,tag): # OK
-       #Total number of ikv calculated
+    def ComputeNumberOfVIJ(self,mesh,elementFilter): # OK
+       """
+        Compute and return the number triplets to be calculated during integration
+       """
        self.numberOfVIJ = 0
        self.maxNumberOfElementVIJ = 0
-       for name,data in mesh.elements.items():
-          if tag == "ALL":
-             numberOfUsedElements = data.GetNumberOfElements()
-          elif tag in data.tags:
-             numberOfUsedElements = len(data.tags[tag])
-          else:
-             continue
+       for name,data,ids in elementFilter:
+          if len(ids) == 0:
+              continue
+          numberOfUsedElements = len(ids)
 
           us = np.sum([f.space[name].GetNumberOfShapeFunctions() for f in self.__ufs__] )
           ts = np.sum([f.space[name].GetNumberOfShapeFunctions() for f in self.__tfs__ ] )
@@ -465,4 +464,6 @@ cdef class PyMonoElementsIntegralCpp():
         return self.NativeIntegrator.totalvijcpt
 
 def CheckIntegrity(GUI=False):
+    obj = PyMonoElementsIntegralCpp()
+    print(obj)
     return "OK"

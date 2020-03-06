@@ -15,7 +15,7 @@ from BasicTools.Helpers.BaseOutputObject import BaseOutputObject as BOO,froze_it
 import BasicTools.Containers.ElementNames as EN
 
 from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
-from BasicTools.FE.WeakForm import testcharacter
+from BasicTools.FE.SymWeakForm import testcharacter
 from BasicTools.FE.Fields.FEField import FEField
 
 @froze_it
@@ -156,24 +156,21 @@ class MonoElementsIntegral(BOO):
         """
         self.__cfs__ = cfs
 
-    def ComputeNumberOfVIJ(self,mesh,tag):
+    def ComputeNumberOfVIJ(self,mesh,elementFilter):
         """
         Compute and return the number triplets to be calculated during integration
         """
         self.numberOfVIJ = 0
         self.maxNumberOfElementVIJ = 0
-        for name,data in mesh.elements.items():
-            if tag == "ALL":
-                numberOfUsedElements = data.GetNumberOfElements()
-            elif tag in data.tags:
-                numberOfUsedElements = len(data.tags[tag])
-            else:
+        for name,data,ids in elementFilter:
+            if len(ids) == 0:
                 continue
+            numberOfUsedElements = len(ids)
 
             us = np.sum([f.space[name].GetNumberOfShapeFunctions() for f in self.__ufs__] )
             ts = np.sum([f.space[name].GetNumberOfShapeFunctions() for f in self.__tfs__ ] )
 
-            self.maxNumberOfElementVIJ = max(self.maxNumberOfElementVIJ,(us*ts))
+            self.maxNumberOfElementVIJ = max(self.maxNumberOfElementVIJ,numberOfUsedElements*(us*ts))
             self.numberOfVIJ += numberOfUsedElements*(us*ts)
         return self.numberOfVIJ
 
@@ -292,7 +289,7 @@ class MonoElementsIntegral(BOO):
                     term.spaceIndex_= spacesNames[term.fieldName]
                     term.numberingIndex_= numberingNames[term.fieldName]
                     term.valuesIndex_= valuesNames[term.fieldName]
-                    term.internalType = term.EnumExtrafield
+                    term.internalType = term.EnumExtraField
 
             elif term.fieldName in [f.name for f in self.__ufs__] :
                 term.spaceIndex_= spacesNames[term.fieldName]
@@ -434,6 +431,7 @@ class MonoElementsIntegral(BOO):
                     else:
                         # for the integration we multiply by the deteminant of the jac
                         factor *= Jdet
+                        factor *= self.w[ip]
 
                     hasright = False
 
@@ -484,7 +482,7 @@ class MonoElementsIntegral(BOO):
                     if factor == 0:
                         continue
 
-                    factor *= self.w[ip]
+
 
                     if hasright:
                         l = l1*l2
@@ -544,10 +542,18 @@ class MonoElementsIntegral(BOO):
 
 def CheckIntegrity():
     import BasicTools.FE.Integration as Integration
-    Integration.UseCpp = False
-    from BasicTools.FE.UnstructuredFeaSym import CheckIntegrity
+    backup  = Integration.UseCpp
 
-    return CheckIntegrity()
+    Integration.UseCpp = False
+    res = "ok"
+    try:
+        from BasicTools.FE.UnstructuredFeaSym import CheckIntegrity as CI
+        res = CI()
+    except:
+        Integration.UseCpp = backup
+        raise
+    Integration.UseCpp = backup
+    return res
 
 if __name__ == '__main__':# pragma: no cover
     print(CheckIntegrity())

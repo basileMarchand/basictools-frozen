@@ -8,10 +8,10 @@ from cython.operator cimport dereference as deref
 
 testcharacter = "'"
 
-cimport BasicTools.FE.WeakFormNumericalWrapper as WeakFormNumericalWrapper
-from BasicTools.FE.WeakFormNumericalWrapper cimport WeakTerm
-from BasicTools.FE.WeakFormNumericalWrapper cimport WeakMonom
-from BasicTools.FE.WeakFormNumericalWrapper cimport WeakForm
+cimport BasicTools.FE.WeakForms.WeakFormNumericalWrapper as WeakFormNumericalWrapper
+from BasicTools.FE.WeakForms.WeakFormNumericalWrapper cimport WeakTerm
+from BasicTools.FE.WeakForms.WeakFormNumericalWrapper cimport WeakMonom
+from BasicTools.FE.WeakForms.WeakFormNumericalWrapper cimport WeakForm
 
 
 cdef class PyWeakTerm:
@@ -248,9 +248,6 @@ cdef class PyWeakForm:
 
     def GetRightPart(self,list unknownvars):
         res = PyWeakForm()
-#        res.pointerOwner
-#        #res.OnTag = self.OnTag
-#        cdef WeakMonom p ;
         for p in self:
             for uv in unknownvars:
                 if p.hasVariable(uv):
@@ -261,7 +258,6 @@ cdef class PyWeakForm:
 
     def  GetLeftPart(self,list unknownvars):
         res = PyWeakForm()
-#        #res.OnTag = self.OnTag
         for p in self:
             tocopy = False
             for uv in unknownvars:
@@ -321,6 +317,7 @@ def CheckIntegrity(GUI=False):
     F = PyWeakForm()
     M = PyWeakMonom()
     T = PyWeakTerm()
+    T.fieldName = "u"
     M.AddProd(T)
     F.AddTerm(M)
 
@@ -329,120 +326,3 @@ def CheckIntegrity(GUI=False):
 
     return 'OK'
 
-#@cython.final
-#cdef class Weakterm(object):
-#    #cdef CWeakterm *ptr
-#    #cdef bint allocated
-#    def __cinit__(self,CWeakterm ptr ):
-#        if ptr is None:
-#            self.ptr = new CWeakterm()
-#            self.allocated = True
-#        else:
-#            self.ptr = prt
-#            self.allocated = False
-#
-#    def __dealloc__(self):
-#        if self.allocated:
-#            del self.ptr
-#cdef class Weakterm:
-##    cdef public char* fieldName
-##    cdef public char* derCoordName
-##    cdef public int derDegree
-##    cdef public bint constant
-##    cdef public bint normal
-#
-##    cdef public int spaceIndex_
-##    cdef public int derCoordIndex_
-##    cdef public int numberingIndex_
-##    cdef public int valuesIndex_
-##    cdef public int internalType
-#
-#    def __init__(self):
-#        self.fieldName = ""
-#        self.derCoordName = ""
-#        self.derDegree = -1
-#        self.constant = False
-#        self.normal = False
-#
-#        self.spaceIndex_ = 0
-#        self.derCoordIndex_ = 0
-#        self.numberingIndex_ = 0
-#        self.valuesIndex_ = 0
-#        self.internalType = 0
-#        # 0 normal
-#        # 1 constant
-#        # 2 unkown
-#        # 3 test
-#        # 4 extra
-#
-#        # 5 Funciton ([x,y,x]) experimental
-#
-#
-
-#
-#
-#@cython.final
-#cdef public class WeakMonom[object CWeakMonom, type CWeakMonomType ]:
-##    cdef DTYPEfloat_t prefactor
-##    cdef public list prod
-#
-#    @property
-#    def prefactor(self):
-#        return self.prefactor
-#
-#    @prefactor.setter
-#    def prefactor(self, value):
-#        self.prefactor = value
-#
-#
-#    def __init__(self):
-#        self.prefactor = 1.
-#        self.prod = []
-#
-#
-#    cpdef bint hasTestFunc(self):
-#        for p in self.prod :
-#            if p.fieldName[-1] == testcharacter:
-#                return True
-#        return False
-#
-#    cpdef bint hasVariable(self,str var):
-#        for m in self.prod :
-#            if m.fieldName == str(var):
-#                return True
-#
-#        return False
-#
-#
-#@cython.final
-#@cython.nonecheck(False)  # turn off negative index wrapping for entire function
-#cdef public  class WeakForm[object CWeakForm, type CWeakFormType ]:
-##    cdef public str OnTag
-##    cdef public list form
-#
-#    def __init__(self):
-#        #self.OnTag = ""
-#        self.form = []
-#
-#
-#
-#    def __str__(self):
-#        res = "Weak Form:\n"
-#        res += "  Nb Terms : " + str(len(self.form)) +"\n"
-#        fields = set()
-#        const = set()
-#        coords = set()
-#        for p in self.form:
-#            for f in p.prod:
-#                if f.constant  :
-#                    const.add(f.fieldName)
-#                    continue
-#                fields.add(f.fieldName)
-#                if f.derDegree > 0:
-#                    coords.add(f.derCoordName)
-#        res += "  Constants : " + " ".join(const) + "\n"
-#        res += "  Fields : " + " ".join(fields) + "\n"
-#        res += "  Coordinates used : " + " ".join(coords) + "\n"
-#        for p in self.form:
-#            res += str(p) + "\n"
-#        return res

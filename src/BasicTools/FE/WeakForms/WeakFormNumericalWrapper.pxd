@@ -4,7 +4,7 @@
 from libcpp.string cimport string
 from libcpp.vector cimport vector
 
-cdef extern from "src_cpp/NativeIntegration.h" :
+cdef extern from "../src_cpp/NativeIntegration.h" :
     cdef cppclass WeakTerm:
         WeakTerm() except     +
         string fieldName
@@ -19,13 +19,13 @@ cdef extern from "src_cpp/NativeIntegration.h" :
         int internalType
         int spaceIndex_
 
-cdef extern from "src_cpp/NativeIntegration.h" :
+cdef extern from "../src_cpp/NativeIntegration.h" :
     cdef cppclass WeakMonom:
         WeakMonom() except     +
         double prefactor;
         vector[WeakTerm] prod
 
-cdef extern from "src_cpp/NativeIntegration.h" :
+cdef extern from "../src_cpp/NativeIntegration.h" :
     cdef cppclass WeakForm:
         WeakForm() except     +
         vector[WeakMonom] form
