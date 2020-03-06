@@ -5,16 +5,43 @@ cimport numpy as np
 from libcpp.string cimport string
 from libcpp.vector cimport vector
 
-cimport BasicTools.FE.WeakForms.WeakFormNumericalWrapper as WeakFormNumericalWrapper
-from BasicTools.FE.WeakForms.WeakFormNumericalWrapper cimport WeakTerm
-from BasicTools.FE.WeakForms.WeakFormNumericalWrapper cimport WeakMonom
-from BasicTools.FE.WeakForms.WeakFormNumericalWrapper cimport WeakForm
+from libcpp.string cimport string
+from libcpp.vector cimport vector
+
+cdef extern from "../WeakForms/src_cpp/NativeNumericalWeakForm.h" :
+    cdef cppclass WeakTerm:
+        WeakTerm() except     +
+        string fieldName
+        string derCoordName
+        int derDegree
+        bint constant
+        bint normal
+        int spaceIndex_
+        int derCoordIndex_
+        int numberingIndex_
+        int valuesIndex_
+        int internalType
+        int spaceIndex_
+
+cdef extern from "../WeakForms/src_cpp/NativeNumericalWeakForm.h" :
+    cdef cppclass WeakMonom:
+        WeakMonom() except     +
+        double prefactor;
+        vector[WeakTerm] prod
+
+cdef extern from "../WeakForms/src_cpp/NativeNumericalWeakForm.h" :
+    cdef cppclass WeakForm:
+        WeakForm() except     +
+        vector[WeakMonom] form
+        int GetNumberOfTerms()
+
+
 
 
 cdef class PyWeakTerm:
-    cdef WeakFormNumericalWrapper.WeakTerm* _c_WeakTerm
+    cdef WeakTerm* _c_WeakTerm
     cdef bint pointerOwner
-    cdef WeakFormNumericalWrapper.WeakTerm* GetCppObject(self)
+    cdef WeakTerm* GetCppObject(self)
     @staticmethod
     cdef PyWeakTerm create(WeakTerm* )
 
@@ -33,7 +60,7 @@ cdef class PyWeakMonom:
 
 
 cdef class PyWeakForm:
-    cdef WeakFormNumericalWrapper.WeakForm* _c_WeakForm
+    cdef WeakForm* _c_WeakForm
     cdef bint pointerOwner
     cpdef int GetNumberOfTerms(self)
     cpdef PyWeakMonom GetMonom(self, int n)

@@ -15,13 +15,13 @@ from BasicTools.FE.SymWeakForm import GetNormal
 
 UseCpp = False
 try:
-    from BasicTools.FE.WeakForms.WeakFormNumerical import PyWeakTerm as PyWeakTerm
-    from BasicTools.FE.WeakForms.WeakFormNumerical import PyWeakMonom as PyWeakMonom
-    from BasicTools.FE.WeakForms.WeakFormNumerical import PyWeakForm as PyWeakForm
+    from BasicTools.FE.WeakForms.NativeNumericalWeakForm import PyWeakTerm as PyWeakTerm
+    from BasicTools.FE.WeakForms.NativeNumericalWeakForm import PyWeakMonom as PyWeakMonom
+    from BasicTools.FE.WeakForms.NativeNumericalWeakForm import PyWeakForm as PyWeakForm
     UseCpp = True
 except:
     UseCpp = False
-    print("Waring WeakFormNumerical (cpp) not avilable, using python variant")
+    print("Waring NativeNumericalWeakForm (cpp) not avilable, using python variant")
 
     class PyWeakForm(object):
         def __init__(self):

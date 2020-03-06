@@ -5,20 +5,15 @@ from libcpp.vector cimport vector
 
 cimport numpy as np
 
-#ctypedef np.int_t     int_DTYPE_t
-#ctypedef np.float_t float_DTYPE_t
 
-cimport BasicTools.FE.WeakForms.WeakFormNumerical as WFN
-cimport BasicTools.FE.WeakForms.WeakFormNumericalWrapper as WFNW
+cimport BasicTools.FE.WeakForms.NativeNumericalWeakForm as NNWF
 
-
-
-cdef extern from "../src_cpp/NativeIntegration.cpp":
+cdef extern from "src_cpp/NativeIntegration.cpp":
     pass
 
 # Decalre the class with cdef
 
-cdef extern from "../src_cpp/NativeIntegration.h" :
+cdef extern from "src_cpp/NativeIntegration.h" :
     cdef cppclass MonoElementsIntegralCpp:
         MonoElementsIntegralCpp() except +
         void SetNumberOfUnkownFields(int)
@@ -65,7 +60,7 @@ cdef extern from "../src_cpp/NativeIntegration.h" :
         void SetIPValueI(int i, int n, int m, double* dp)
 
         void SetLocalOffsets(int, vector[double]&,vector[int]&,int, vector[double]&,vector[int]&)
-        void Integrate(WFNW.WeakForm*, vector[int])
+        void Integrate(NNWF.WeakForm*, vector[int])
         double* vK
         np.int_t* iK
         np.int_t* jK

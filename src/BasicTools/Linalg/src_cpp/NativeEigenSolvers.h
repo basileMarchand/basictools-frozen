@@ -6,10 +6,11 @@
 #include <iostream>
 
 
-#include <FE/src_cpp/Eigentype.h>
+
 #include <Eigen/IterativeLinearSolvers>
 #include <Eigen/SparseLU>
 
+#include <Linalg/src_cpp/Eigentype.h>
 
 using Eigen::Success;
 using Eigen::Upper;

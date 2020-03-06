@@ -8,15 +8,12 @@ from cython.operator cimport dereference as deref
 
 testcharacter = "'"
 
-cimport BasicTools.FE.WeakForms.WeakFormNumericalWrapper as WeakFormNumericalWrapper
-from BasicTools.FE.WeakForms.WeakFormNumericalWrapper cimport WeakTerm
-from BasicTools.FE.WeakForms.WeakFormNumericalWrapper cimport WeakMonom
-from BasicTools.FE.WeakForms.WeakFormNumericalWrapper cimport WeakForm
+cimport BasicTools.FE.WeakForms.NativeNumericalWeakForm as NNWF
 
 
 cdef class PyWeakTerm:
     def __cinit__(self):
-       self._c_WeakTerm = new WeakFormNumericalWrapper.WeakTerm()
+       self._c_WeakTerm = new NNWF.WeakTerm()
        self.pointerOwner = True
        if self._c_WeakTerm is NULL:
             raise MemoryError()
@@ -25,7 +22,7 @@ cdef class PyWeakTerm:
         if self._c_WeakTerm is not NULL and self.pointerOwner == True:
             del self._c_WeakTerm
 
-    cdef WeakFormNumericalWrapper.WeakTerm* GetCppObject(self):
+    cdef NNWF.WeakTerm* GetCppObject(self):
         return self._c_WeakTerm
 
     @staticmethod
@@ -156,7 +153,6 @@ cdef class PyWeakTerm:
     @property
     def EnumExtraField(self):
         return 4
-       # return WeakFormNumericalWrapper.EnumExtraField
 
     @property
     def EnumExtraIPField(self):
@@ -167,7 +163,7 @@ cdef class PyWeakTerm:
 cdef class PyWeakMonom:
     def __cinit__(self):
         self.pointerOwner = True
-        self._c_WeakMonom = new WeakFormNumericalWrapper.WeakMonom()
+        self._c_WeakMonom = new NNWF.WeakMonom()
         if self._c_WeakMonom is NULL:
             raise MemoryError()
 
@@ -192,7 +188,7 @@ cdef class PyWeakMonom:
         cdef WeakTerm* res = &self._c_WeakMonom.prod[n]
         return PyWeakTerm.create(res)
 
-    cdef WeakFormNumericalWrapper.WeakMonom* GetCppObject(self):
+    cdef NNWF.WeakMonom* GetCppObject(self):
         return self._c_WeakMonom
 
     @staticmethod

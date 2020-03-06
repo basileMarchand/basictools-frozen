@@ -2,7 +2,11 @@
 // This file is subject to the terms and conditions defined in
 // file 'LICENSE.txt', which is part of this source code package.
 //
-
+#ifndef __NativeNumericalWeakForm_H_
+#define __NativeNumericalWeakForm_H_
+#include <string>
+#include <ostream>
+#include <vector>
 
 struct WeakTerm {
     WeakTerm ():fieldName("None"),derCoordName("None"),derDegree(0),constant(false),normal(false){};
@@ -33,6 +37,7 @@ struct WeakForm{
     std::vector<WeakMonom> form;
     int GetNumberOfTerms(){return this->form.size();}
 };
+
 std::ostream& operator <<(std::ostream& stream, const WeakTerm& term) {
 
     if (term.derDegree){
@@ -57,3 +62,4 @@ std::ostream& operator <<(std::ostream& stream, const WeakMonom& monom) {
 
     return stream;
 }
+#endif

@@ -7,9 +7,7 @@ import numpy as np
 from BasicTools.FE.Fields.FEField import FEField
 from BasicTools.FE.SymWeakForm import testcharacter
 import BasicTools.Containers.ElementNames as EN
-#from BasicTools.FE.WeakFormNumerical cimport PyWeakForm
-cimport BasicTools.FE.WeakForms.WeakFormNumerical as WFN
-cimport BasicTools.FE.WeakForms.WeakFormNumericalWrapper as WFNW
+cimport BasicTools.FE.WeakForms.NativeNumericalWeakForm as NNWF
 from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 
@@ -42,7 +40,6 @@ cdef class PyMonoElementsIntegralCpp():
     cdef int numberOfVIJ
     cdef int maxNumberOfElementVIJ
 
-#    cdef object mesh
     cdef np.ndarray nodes
     cdef dict geoSpace
     cdef int geoSpaceNumber
@@ -449,10 +446,10 @@ cdef class PyMonoElementsIntegralCpp():
       for i in range(len(self.__ipefs__)):
           self.SetIPValues(i,self.__ipefs__[i].data[domain.elementType] )
 
-    def Integrate(self,WFN.PyWeakForm wform,
+    def Integrate(self,NNWF.PyWeakForm wform,
                   np.ndarray[int_DTYPE_t, ndim=1, mode="c"] idstotreat not None ):
 
-        self.NativeIntegrator.Integrate(<WFNW.WeakForm*> wform.GetCppObject(), idstotreat)
+        self.NativeIntegrator.Integrate(<NNWF.WeakForm*> wform.GetCppObject(), idstotreat)
 
     def GetTotalTestDofs(self):
       return self.NativeIntegrator.totalTestDofs

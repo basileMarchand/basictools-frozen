@@ -8,8 +8,8 @@
 #include <iostream>
 #include <vector>
 
-#include <FE/src_cpp/WeakFormNumerical.h>
-#include <FE/src_cpp/Eigentype.h>
+#include <FE/WeakForms/src_cpp/NativeNumericalWeakForm.h>
+#include <Linalg/src_cpp/Eigentype.h>
 
 #define IN_DEBUG
 #ifdef IN_DEBUG
