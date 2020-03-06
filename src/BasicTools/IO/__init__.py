@@ -22,6 +22,7 @@ __all__ = [
 'JsonReader',
 'MeshReader',
 'MeshWriter',
+'MeshFileConverter',
 #'OdbWriter',
 'PathControler',
 'PickleTools',

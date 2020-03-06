@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 
 from BasicTools.Helpers.TextFormatHelper import TFormat as TF
 from BasicTools.IO.UniversalReader import ReadMesh
@@ -24,7 +24,6 @@ def PrintHelp():
 
   IOF.InitAllWriters()
   print("Available Writers : ", IOF.GetAvailableWriter())
-  sys.exit(2)
 
 #MeshFileConverter -i meshfile.meshb -o .PIPE > toto
 
@@ -53,7 +52,8 @@ def Convert(inputfilename,outputfilename,ops):
                   reader.ReadMetaData()
                   print("Available Times in files:")
                   print(reader.GetAvilableTimes())
-                  exit(0)
+                  import sys
+                  sys.exit(0)
 
           mesh = ReadMesh(inputfilename,timeToRead = ops["timeToRead"])
 
@@ -149,7 +149,7 @@ def CheckIntegrity(GUI=False):
 
     return "ok"
 
-if __name__ == '__main__' :
+def Main():
     import sys, getopt
     if len(sys.argv) == 1:
         PrintHelp()
@@ -184,6 +184,9 @@ if __name__ == '__main__' :
             BOO.SetGlobalDebugMode(True)
          elif opt in ("-c"):
             print(CheckIntegrity(GUI=True))
-            exit(0)
+            sys.exit(0)
 
     Convert(inputfilename,outputfilename,ops )
+
+if __name__ == '__main__' :
+    Main()
