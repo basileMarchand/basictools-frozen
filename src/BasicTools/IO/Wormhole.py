@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 import pickle as pickle
 import socket
 #import signal
@@ -127,20 +127,30 @@ class WormholeBase(BaseOutputObject):
         self.otherSideR.close()
 
 class WormholeServer(BaseOutputObject):
-    def __init__(self,port = None, cmd=None ,dry=False,timeout=3600):
+    def __init__(self,port = None, cmd=None ,dry=False,timeout=3600,autoStart=True):
        super(WormholeServer,self).__init__()
        self.globals = {}
+       self.ready = False
 
        # no code is executes only print it
        self.drymode = dry
-       if port is not None:
-           self.communicator = WormholeBase(timeout=timeout)
-           self.ListenUsingPort(port)
+
+       self.port = port
+       self.cmd= cmd
+       self.timeout = timeout
+       if autoStart:
+           self.Start()
+
+    def Start(self):
+       if self.port is not None:
+           self.communicator = WormholeBase(timeout=self.timeout)
+           self.ListenUsingPort(self.port)
            self.MainLoop()
            self.communicator.socket.close()
-       elif cmd is not None:
+           self.ready = False
+       elif self.cmd is not None:
            #from BasicTools.IO.Proxy import ServerProxy
-           self.communicator = WormholeBase(timeout=timeout)
+           self.communicator = WormholeBase(timeout=self.timeout)
            from BasicTools.Helpers.PrintBypass import PrintBypass
            self.printBypass = PrintBypass()
            from BasicTools.Helpers.Tests import GetUniqueTempFile
@@ -150,6 +160,7 @@ class WormholeServer(BaseOutputObject):
            #self.printBypass.ToSink()
            self.StartUsingPipe()
            self.MainLoop()
+           self.ready = False
            self.printBypass.Restore()
 
     def StartUsingPipe(self):
@@ -159,6 +170,7 @@ class WormholeServer(BaseOutputObject):
         else:
             self.communicator.otherSideR = self.printBypass.stdin_
             self.communicator.otherSideS = self.printBypass.stdout_
+        self.ready = True
 
     def ListenUsingPort(self,port=None):
         if port is None:
@@ -167,6 +179,7 @@ class WormholeServer(BaseOutputObject):
         self.communicator.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.communicator.socket.bind(('', port))
         self.communicator.socket.listen(0)
+        self.ready = True
         self.communicator.otherSideR, address = self.communicator.socket.accept()
         self.communicator.otherSideS = self.communicator.otherSideR
         print("(s) {0} connected".format( address ))
@@ -309,13 +322,27 @@ def CheckIntegrityNetWork():
    import threading
    #try:
    if True:
+     data = {"server":None}
      def runServer():
          print("(s) Starting Server Side ",testport)
-         WormholeServer(testport,dry=False,timeout=None)
-     TT = threading.Thread(target=runServer )
+         data["server"] = WormholeServer(testport,dry=False,timeout=None,autoStart=False)
+         data["server"].Start()
+     from functools import partial
 
+     TT = threading.Thread(target=runServer )
      TT.start()
-     time.sleep(3.)
+     cpt = 0
+     while True:
+         server = data.get("server",None)
+         if server is not None:
+             print(server.ready)
+             if server.ready:
+                 break
+         time.sleep(0.01)
+         if cpt > 50:
+             break
+         cpt +=1
+
      print("(c) Starting Client Side ",testport)
      client = WormholeClient(testport)
      client.SendData("Hola",5)
@@ -360,7 +387,7 @@ def CheckIntegrityPipe():
 
      proc = runServerPipe(sys.executable)
      print("(c) Starting Client Side")
-     time.sleep(1.)
+     time.sleep(0.1)
 
      client = WormholeClient(proc=proc)
      client.SendData("Hola",5)
