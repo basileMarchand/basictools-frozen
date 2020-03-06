@@ -93,7 +93,6 @@ class UtReader(ReaderBase):
 
         while(True):
             line = self.ReadCleanLine()
-            self.PrintVerbose(line)
             if line == None :
                 break
             if line.find("**meshfile")>-1 :
@@ -285,19 +284,23 @@ def CheckIntegrity():
 
     __teststring = u"""
 **meshfile cube.geof
-**node U1 U2 U3 RU1 RU2 RU3
-**integ sig11 sig22 sig33 sig12 sig23 sig31 eto11 eto22 eto33 eto12 eto23 eto31
+**node U1 U2 U3
+**integ sig11 sig22 sig33 sig12 sig23 sig31
 **element
 1 1 1 1 0.000000000000000e+00
 1 1 1 1 1.000000000000000e+00
 """
-
+    numberOfnodeVariables = 3
+    numberOfIntegVariables = 6
     from BasicTools.Helpers.Tests import WriteTempFile
+    from BasicTools.Helpers.Tests import TestTempDir
+
+    # to work on ramdisk
+    #TestTempDir.GetTempPath(onRam=True)
+
     tempfileName = WriteTempFile("UtReaderTest.ut",content=__teststring)
 
-
     import BasicTools.TestData as BasicToolsTestData
-    from BasicTools.Helpers.Tests import TestTempDir
 
     import shutil
 
@@ -310,58 +313,52 @@ def CheckIntegrity():
     nbIP = reader.meshMetadata['nbIntegrationPoints']
     nbElements = reader.meshMetadata['nbElements']
     IPPerElement = reader.meshMetadata['IPPerElement']
+    np.arange(nbNodes*numberOfnodeVariables*2, dtype=np.float32).byteswap().tofile(TestTempDir.GetTempPath() + "UtReaderTest.node")
+    off1 = nbNodes*numberOfnodeVariables*2
+    (np.arange(nbNodes*numberOfIntegVariables*2, dtype=np.float32)+off1).byteswap().tofile(TestTempDir.GetTempPath() + "UtReaderTest.ctnod")
+    off2 = (nbNodes*numberOfnodeVariables*2+nbNodes*numberOfIntegVariables*2)
 
-    np.arange(nbNodes*6*2, dtype=np.float32).byteswap().tofile(TestTempDir.GetTempPath() + "UtReaderTest.node")
-    off1 = nbNodes*6*2
-    (np.arange(nbNodes*12*2, dtype=np.float32)+off1).byteswap().tofile(TestTempDir.GetTempPath() + "UtReaderTest.ctnod")
-    off2 = (nbNodes*6*2+nbNodes*12*2)
-
-    ipdata = np.empty((nbElements,12,27)  ,dtype=int)
+    ipdata = np.empty((nbElements,numberOfIntegVariables,27)  ,dtype=int)
     for el in range(nbElements):
          nip = IPPerElement[el]
-         for sv in range(12):
+         for sv in range(numberOfIntegVariables):
             for ip in range(nip):
                      ipdata[el,sv,ip] = el*10000+ sv*100+ip
-#                    res[cpt] = np.fromfile(datafile ,count=1, dtype=np.float32).byteswap()
 
     #print(ipdata[:,0,:] )
     #ipdata.astype(np.float32).byteswap().tofile(TestTempDir.GetTempPath() + "UtReaderTest.integ")
 
-    #(np.arange(216*12*27*2, dtype=np.float32)+off2).byteswap().tofile(TestTempDir.GetTempPath() + "UtReaderTest.integ")
+    #(np.arange(216*numberOfIntegVariables*27*2, dtype=np.float32)+off2).byteswap().tofile(TestTempDir.GetTempPath() + "UtReaderTest.integ")
 
 
     with open(TestTempDir.GetTempPath() + "UtReaderTest.integ","wb") as datafile:
       for i in range(2):
         for el in range(nbElements):
             nip = IPPerElement[el]
-            for sv in range(12):
+            for sv in range(numberOfIntegVariables):
                 for ip in range(nip):
                     np.array(ipdata[el,sv,ip] + i *1000000).astype(np.float32).byteswap().tofile(datafile)
-#                    res[cpt] = np.fromfile(datafile ,count=1, dtype=np.float32).byteswap()
-#
-#
 
     offset = 0
     for t in [0., 1.]:
-        for f in ["U1","U2","U3","RU1","RU2","RU3"]:
+        for f in ["U1","U2","U3"]:
             if np.any (reader.ReadField(fieldname=f,time=t) != np.arange(offset, offset+nbNodes, dtype=np.float32) ):
                 raise(Exception("Error Reading field " + f ))
             offset += nbNodes
 
     offset = 0
     for t in [0., 1.]:
-        for f in ["sig11","sig22","sig33","sig12","sig23","sig31","eto11","eto22","eto33","eto12","eto23","eto31"]:
+        for f in ["sig11","sig22","sig33","sig12","sig23","sig31"]:
             data = reader.ReadField(fieldname=f,time=t)
             if np.any (data !=  np.arange(offset, offset+nbNodes, dtype=np.float32)+off1 ):
                 raise(Exception("Error Reading field " + f ))
             offset += nbNodes
 
     reader.atIntegrationPoints = True
-
     offset = 0
     for t in [0., 1.]:
         cpt =0
-        for f in ["sig11","sig22","sig33","sig12","sig23","sig31","eto11","eto22","eto33","eto12","eto23","eto31"]:
+        for f in ["sig11","sig22","sig33","sig12","sig23","sig31"]:
 
             data = reader.ReadField(fieldname=f,time=t)
             if np.any (data != ipdata[:,cpt,:].ravel()+ t *1000000 ):
@@ -376,15 +373,10 @@ def CheckIntegrity():
             offset += nbIP
             cpt +=1
 
-
-
     ReadFieldFromUt(tempfileName,fieldname="U1",time=0.)
     ReadUTMetaData(tempfileName)
 
     return "ok"
-
-
-
 
 if __name__ == '__main__':# pragma: no cover
     #from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
@@ -393,3 +385,4 @@ if __name__ == '__main__':# pragma: no cover
     a =  time.time()
     print(CheckIntegrity())# pragma: no cover
     print(time.time() -a)
+
