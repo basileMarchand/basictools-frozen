@@ -6,21 +6,20 @@
 
 
 __all__ = [
+"Integrators",
+"WeakForms",
 'ConstantRectilinearFea',
 'FeaBase',
 'FElement',
-'FemHelp',
 'MaterialHelp',
-'StructuredMesh',
 'UnstructuredFeaSym',
 "Spaces",
+"SymWeakForm",
 "Fields",
 "DofNumbering",
 "IntegrationsRules",
 "Integration",
-"WeakForm",
 "ProblemData",
-"PythonIntegration",
 "SymPhysics",
 "KR",
 "FETools"]
