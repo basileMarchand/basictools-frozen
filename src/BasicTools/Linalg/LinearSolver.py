@@ -25,7 +25,7 @@ def _available_algorithms():
     except ImportError:
         pass
     try:
-        import BasicTools.FE.EigenSolver
+        import BasicTools.Linalg.EigenSolver
         result.extend(("EigenCG", "EigenLU"))
     except ImportError:
         pass
