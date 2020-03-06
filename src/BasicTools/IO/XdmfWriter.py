@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 import numpy as np
 import os
 
@@ -392,6 +392,8 @@ class XdmfWriter(WriterBase):
     def WriteTail(self):
         if self.isOpen():
 
+            filepos = self.filePointer.tell()
+
             if self.IsParafacOutput():
                 self.filePointer.write('</Grid> <!-- Parafac grid -->\n')
 
@@ -400,7 +402,7 @@ class XdmfWriter(WriterBase):
             if self.IsMultidomainOutput() :
                 self.filePointer.write('</Grid> <!-- collection grid -->\n')
 
-            filepos = self.filePointer.tell()
+
 
             if self.IsTemporalOutput():
                 self.__WriteTime()
