@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 
 import numpy as np
 from sympy.matrices import Matrix
@@ -34,9 +34,6 @@ class Bar_P0_Lagrange(BarSpaceBase):
         self.dofAttachments = [("C",0,None) ]
         self.Create()
 
-class Bar_P0_Legendre(Bar_P0_Lagrange):
-    def __init__(self):
-        super(Bar_P0_Legendre,self).__init__()
 
 class Bar_P1_Lagrange(BarSpaceBase):
     def __init__(self):

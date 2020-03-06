@@ -39,29 +39,22 @@ class FeaBase(BaseOutputObject):
         """
         self.mesh = mesh
 
-    def ComputeDofNumbering(self,tag=None,elementFilter=None):
+    def ComputeDofNumbering(self, elementFilter=None):
         """
         This fuction must be eliminated (it uses self.space).
         """
 
-        if tag is None and elementFilter is None:
-            tag = allElements
-
-        from BasicTools.Containers import Filters
-        elementFilter = Filters.ElementFilter(self.mesh)
-        if tag is not allElements:
-            elementFilter.SetTags([tag])
 
         from BasicTools.FE.DofNumbering import ComputeDofNumbering
         from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
 
-        if self.space is  LagrangeSpaceGeo and tag is None:
+        if self.space is  LagrangeSpaceGeo and elementFilter is None:
             # fast generation of the numbering based on the physical Geo space
             # warning !!!!!!
             # will add numbering for lonely nodes also
             self.numbering = ComputeDofNumbering(self.mesh,self.space,fromConnectivity =True,dofs=self.numbering)
         else :
-            self.numbering = ComputeDofNumbering(self.mesh,self.space,fromConnectivity =False,dofs=self.numbering)
+            self.numbering = ComputeDofNumbering(self.mesh,self.space,fromConnectivity =False,dofs=self.numbering,elementFilter=elementFilter)
 
     def Reset(self):
         """

@@ -6,21 +6,16 @@
 
 import numpy as np
 import BasicTools.Containers.ElementNames as EN
-from  BasicTools.Containers.MeshBase import allElements
+from BasicTools.Containers import Filters
 
-def Hash(space,j,lconn,name=None,i=None):
+def Hash(dofAttachment,lconn,name=None,i=None,discontinuous=False):
     """
     Function to create a unique tuple for a given shape function (dof) this
     tuple must be independent of the element that use this shape function ( an
     exception is the discontinues galerkin approximation).
 
     """
-    T,n,h = space.dofAttachments[j]
-    if h is not None :
-        h = Hash(h,lconn[n])
-        raise
-
-
+    T,n,h = dofAttachment
     if T == "P":
         """P is for point"""
         T = "P"
@@ -28,30 +23,41 @@ def Hash(space,j,lconn,name=None,i=None):
     elif T == "C":
         """C is for cell"""
         T = name
+        if h is not None:
+            T2, n2, h2 = h
+            h2 = Hash(h,lconn=lconn)
+            return (T,tuple(np.sort(lconn)),h2)
         return (T,tuple(np.sort(lconn)),n)
+
     elif T == "F" :
         """is for face  (face for a 3D element, edge for a 2D element """
         edge = EN.faces[name][n]
         T = edge[0]
         n = tuple(np.sort(lconn[edge[1]]))
+        h = 0
+
     elif T == "F2":
         """is for face second level (edge for a 3D element, point for a 2D element """
         edge = EN.faces2[name][n]
         T = edge[0]
         n = tuple(np.sort(lconn[edge[1]]))
+        h = 0
 
     elif T == "G":
         """G is for global """
         return (T,0,h)
+
+    elif T == "IP":
+        return (T,tuple(lconn),i)
+
     else:
         raise(Exception(" type of dof unknown : " + str(T) ) )
 
-    T += ("_"+ str(i)) if space.classification.discontinuous else ""
-    #print (T,n,h),
+    T += ("_"+ str(i)) if discontinuous else ""
     return (T,n,h)
 
 
-def ComputeDofNumbering(mesh,Space,dofs=None,tag=None,sign=1,fromConnectivity=False,elementFilter=None):
+def ComputeDofNumbering(mesh,Space,dofs=None,sign=1,fromConnectivity=False,elementFilter=None):
     """
     Function to compute a unique numbering of dofs. The user must provide:
 
@@ -65,15 +71,8 @@ def ComputeDofNumbering(mesh,Space,dofs=None,tag=None,sign=1,fromConnectivity=Fa
       are treated.
     """
 
-    if tag is not None and elementFilter is not None:
-        raise(Exception("Need a tag or a filter not boths"))
-
-    if tag is None and elementFilter is None and fromConnectivity==False:
-        tag = allElements
-
-
     if fromConnectivity:
-        if dofs is not None or tag is not None or sign != 1 or elementFilter is not None:
+        if dofs is not None or sign != 1 or elementFilter is not None:
             raise(Exception("cant take dofs tag sign or elementFilter different from the default values"))
         dofs = {}
         dofs["size"] = mesh.GetNumberOfNodes()
@@ -88,13 +87,10 @@ def ComputeDofNumbering(mesh,Space,dofs=None,tag=None,sign=1,fromConnectivity=Fa
         for i in range(cpt):
             almanac[('P', i, None)] = i
         dofs["almanac"] = almanac
-
     else:
 
-        from BasicTools.Containers import Filters
-        elementFilter = Filters.ElementFilter(mesh)
-        if tag is not allElements:
-            elementFilter.SetTags([tag])
+        if elementFilter is None:
+            elementFilter = Filters.ElementFilter(mesh)
 
         if dofs is None:
             dofs = {}
@@ -131,7 +127,7 @@ def ComputeDofNumbering(mesh,Space,dofs=None,tag=None,sign=1,fromConnectivity=Fa
             for i in fil:
                 conn = data.connectivity[i,:]
                 for j in range(numberOfShapeFunctions):
-                    h = Hash(sp,j,conn,name,i)
+                    h = Hash(sp.dofAttachments[j],lconn=conn,name=name,i=i,discontinuous = sp.classification.discontinuous)
 
                     if h in almanac:
                         d = almanac[h]
@@ -206,28 +202,6 @@ def ComputeDofNumbering(mesh,Space,dofs=None,tag=None,sign=1,fromConnectivity=Fa
         dofs["dirichelet"] = cpt
 
     return dofs
-
-def NodesPermutation(mesh,per):
-    """
-    Function to do a permutation of the nodes in a mesh (inplace)
-    TODO: This function must be in the UnstructuredMesh.py file
-
-    mesh : (UnstructuredMesh) mesh to be modified
-    per : the permutation vector ([1,0,2,3] to permute first an secod node)
-    """
-    nnodes = mesh.nodes[per,:]
-
-    perII =np.argsort(per)
-
-    mesh.nodes = nnodes
-    for tag in mesh.nodesTags:
-        ids = tag.GetIds()
-        nids = perII[ids]
-        tag.SetIds(nids)
-
-    for name,data in mesh.elements.items():
-        data.connectivity = perII[data.connectivity]
-
 
 def CheckIntegrity(GUI=False):
     from BasicTools.Containers.UnstructuredMeshTools import CreateCube

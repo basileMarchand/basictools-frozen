@@ -3,14 +3,13 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
 
-import numpy as np
 
 from BasicTools.FE.FeaBase import FeaBase
+from BasicTools.Containers.Filters import ElementFilter
 
-from BasicTools.FE.WeakForm import SymWeakToNumWeak
-import BasicTools.FE.WeakForm as wf
+from BasicTools.FE.WeakForms.NumericalWeakForm import SymWeakToNumWeak
+import BasicTools.FE.SymWeakForm as SWF
 
 from BasicTools.FE.Integration import IntegrateGeneral
 from BasicTools.FE.Integration import Integrate
@@ -74,8 +73,13 @@ class UnstructuredFeaSym(FeaBase):
                     continue
                 self.PrintDebug("integration of lform "+ str(zone) )
                 #self.PrintDebug("integration of lform "+ str(form) )
-
-                _,f = IntegrateGeneral(mesh=self.mesh,wform=form, tag=zone, constants=self.constants, fields=list(self.fields.values()),unkownFields= unkownFields)
+                ff = ElementFilter(mesh=self.mesh, tag=zone)
+                _,f = IntegrateGeneral(mesh=self.mesh,
+                                       wform=form,
+                                       constants=self.constants,
+                                       fields=list(self.fields.values()),
+                                       unkownFields= unkownFields,
+                                       elementFilter=ff)
                 if rhsRes is None:
                     rhsRes = f
                 else:
@@ -90,8 +94,14 @@ class UnstructuredFeaSym(FeaBase):
                     continue
                 self.PrintDebug("integration of bform " + str(zone) )
                 #self.PrintDebug("integration of bform " + str(form) )
-
-                k,f = IntegrateGeneral(mesh=self.mesh,wform=form, tag=zone, constants=self.constants, fields=list(self.fields.values()),unkownFields= unkownFields)
+                ff = ElementFilter(mesh=self.mesh, tag=zone)
+                k,f = IntegrateGeneral(mesh=self.mesh,
+                                       wform=form,
+                                       tag=zone,
+                                       constants=self.constants,
+                                       fields=list(self.fields.values()),
+                                       unkownFields= unkownFields,
+                                       elementFilter=ff)
                 if rhsRes is None:
                     rhsRes = f
                 else:
@@ -113,8 +123,9 @@ class UnstructuredFeaSym(FeaBase):
                 if form is None:
                     continue
                 self.PrintDebug("integration of f "+ str(zone) )
-                _,f = IntegrateGeneral(mesh=self.mesh,wform=form, tag=zone, constants=self.constants, fields=list(self.fields.values()),unkownFields= self.unkownFields,
-                                integrationRuleName=phy.integrationRule)
+                ff = ElementFilter(mesh=self.mesh, tag=zone)
+                _,f = IntegrateGeneral(mesh=self.mesh,wform=form,  constants=self.constants, fields=list(self.fields.values()),unkownFields= self.unkownFields,
+                                integrationRuleName=phy.integrationRule,elementFilter=ff)
                 if rhsRes is None:
                     rhsRes = f
                 else:
@@ -129,8 +140,10 @@ class UnstructuredFeaSym(FeaBase):
                 if form is None:
                     continue
                 self.PrintDebug("Integration of bilinear formulation on : " + str(zone))
-                k,f = IntegrateGeneral(mesh=self.mesh,wform=form, tag=zone, constants=self.constants, fields=list(self.fields.values()), unkownFields= self.unkownFields,
-                                integrationRuleName=phy.integrationRule)
+                print(self.mesh)
+                ff = ElementFilter(mesh=self.mesh, tag=zone)
+                k,f = IntegrateGeneral(mesh=self.mesh,wform=form,  constants=self.constants, fields=list(self.fields.values()), unkownFields= self.unkownFields,
+                                integrationRuleName=phy.integrationRule,elementFilter=ff)
                 if not (f is None):
                     if rhsRes is None:
                         rhsRes = f
@@ -191,7 +204,6 @@ def CheckIntegrityFlexion(P,tetra,GUI=False):
     problem.ComputeDofNumbering()
     #print(mecaPhysics.numberings[0])
 
-
     from BasicTools.Helpers.Timer import Timer
     with Timer("Assembly "):
         k,f = problem.GetLinearProblem()
@@ -203,8 +215,8 @@ def CheckIntegrityFlexion(P,tetra,GUI=False):
 
     problem.solver.SetAlgo("Direct")
     problem.ComputeConstraintsEquations()
-    print("k.shape", k.shape)
-    print("f.shape",f.shape)
+    problem.Print("k.shape " + str(k.shape) )
+    problem.Print("f.shape "+ str(f.shape))
 
     with Timer("Solve"):
         problem.Solve(k,f)
@@ -213,17 +225,17 @@ def CheckIntegrityFlexion(P,tetra,GUI=False):
 
     print("done solve")
 
-    symdep = wf.GetField("u",3)
+    symdep = SWF.GetField("u",3)
     from BasicTools.FE.MaterialHelp import HookeIso
     K = HookeIso(1,0.3,dim=3)
-    symCellData = wf.GetField("cellData",1)
-    symCellDataT = wf.GetTestField("cellData",1)
+    symCellData = SWF.GetField("cellData",1)
+    symCellDataT = SWF.GetTestField("cellData",1)
 
     print("Post process")
 
-    EnerForm = wf.ToVoigtEpsilon(wf.Strain(symdep)).T*K*wf.ToVoigtEpsilon(wf.Strain(symdep))*symCellDataT + symCellData.T*symCellDataT
+    EnerForm = SWF.ToVoigtEpsilon(SWF.Strain(symdep)).T*K*SWF.ToVoigtEpsilon(SWF.Strain(symdep))*symCellDataT + symCellData.T*symCellDataT
 
-    symEner = wf.ToVoigtEpsilon(wf.Strain(symdep))[0,0]*symCellDataT + symCellData.T*symCellDataT
+    symEner = SWF.ToVoigtEpsilon(SWF.Strain(symdep))[0,0]*symCellDataT + symCellData.T*symCellDataT
 
     #from BasicTools.Actions.OpenInParaView import OpenInParaView
     #problem.PushVectorToMesh(True,f,"normalFlux")
@@ -231,22 +243,26 @@ def CheckIntegrityFlexion(P,tetra,GUI=False):
     #OpenInParaView(mesh)
     #return()
     print("Post process Eval")
+    ff = ElementFilter(mesh=problem.mesh, tag="3D")
 
-    m,energyDensity = Integrate(mesh=problem.mesh, wform=EnerForm, tag="3D", constants={},
+    m,energyDensity = Integrate(mesh=problem.mesh, wform=EnerForm,  constants={},
                         fields={f.name:f for f in problem.unkownFields}, dofs=["cellData"], spaces=[problem.spaces[0] ],
                         numbering=[problem.numberings[0]], integrationRuleName="NodalEvalP"+str(P),
-                        onlyEvaluation=True)
+                        onlyEvaluation=True,
+                        elementFilter=ff)
     print("energyDensity",energyDensity)
     energyDensity /= m.diagonal()
 
     from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceP0
     from BasicTools.FE.DofNumbering import ComputeDofNumbering
-    P0Numbering = ComputeDofNumbering(mesh,LagrangeSpaceP0,tag="3D")
 
-    m,P0energyDensity = Integrate(mesh=problem.mesh, wform=EnerForm, tag="3D", constants={},
+    P0Numbering = ComputeDofNumbering(mesh,LagrangeSpaceP0,elementFilter=ElementFilter(mesh=mesh,dimensionality=mesh.GetDimensionality()))
+
+    m,P0energyDensity = Integrate(mesh=problem.mesh, wform=EnerForm, constants={},
                         fields={f.name:f for f in problem.unkownFields}, dofs=["cellData"], spaces=[LagrangeSpaceP0 ],
                         numbering=[P0Numbering], integrationRuleName="ElementEvalGeo",
-                        onlyEvaluation=True)
+                        onlyEvaluation=True,
+                        elementFilter=ff)
 
     P0energyDensity /= m.diagonal()
 

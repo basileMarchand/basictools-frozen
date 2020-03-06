@@ -106,7 +106,7 @@ class ElementaryMatrix():
         self.thermalK = 1
 
     def GetMassMatrix(self):
-        from BasicTools.FE.WeakForm import GetMassWeakForm
+        from BasicTools.FE.SymWeakForm import GetMassWeakForm
         if self.physics == "disp":
             wform = GetMassWeakForm("u",self.dim)
             return self.Integrate(["u_"+str(x) for x in range(self.dim)],wform)

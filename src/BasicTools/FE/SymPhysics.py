@@ -7,9 +7,8 @@
 
 
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject as BOO
-from BasicTools.FE.WeakForm import SymWeakToNumWeak
-from BasicTools.FE.WeakForm import Gradient,Divergence
-from BasicTools.FE.WeakForm import GetField,GetTestField
+from BasicTools.FE.WeakForms.NumericalWeakForm import SymWeakToNumWeak
+from BasicTools.FE.SymWeakForm import Gradient,Divergence, GetField,GetTestField
 from sympy import Symbol
 
 class Physics(BOO):
@@ -70,27 +69,34 @@ class Physics(BOO):
         else:
             return
 
+        from BasicTools.Containers.Filters import ElementFilter
+        ff = ElementFilter(mesh)
+        if tagsToKeep is not None:
+            ttk = tagsToKeep[:] # copy
+        else:
+            ttk = []
+        ttk.extend( [tag for tag, form in self.linearWeakFormulations] )
+        ttk.extend( [tag for tag, form in self.bilinearWeakFormulations] )
+        ff.SetTags(ttk)
+
         for d in range(self.GetNumberOfUnkownFields()):
             if fromConnectivity:
                 self.numberings[d] = ComputeDofNumbering(mesh,self.spaces[d],fromConnectivity = True ,dofs=self.numberings[d])
-                continue
-            if tagsToKeep is not None:
-                for tag in tagsToKeep:
-                    self.numberings[d] = ComputeDofNumbering(mesh,self.spaces[d],fromConnectivity =False,tag=tag,dofs=self.numberings[d])
-            for tag,form in self.linearWeakFormulations:
-                self.numberings[d] = ComputeDofNumbering(mesh,self.spaces[d],fromConnectivity =False ,tag=tag,dofs=self.numberings[d])
-            for tag,form in self.bilinearWeakFormulations:
-                self.numberings[d] = ComputeDofNumbering(mesh,self.spaces[d],fromConnectivity =False ,tag=tag,dofs=self.numberings[d])
+            else:
+                self.numberings[d] = ComputeDofNumbering(mesh,self.spaces[d],fromConnectivity =False,elementFilter=ff,dofs=self.numberings[d])
+
+#            if tagsToKeep is not None:
+#                for tag in tagsToKeep:
+#                    self.numberings[d] = ComputeDofNumbering(mesh,self.spaces[d],fromConnectivity =False,tag=tag,dofs=self.numberings[d])
+#            for tag,form in self.linearWeakFormulations:
+#                self.numberings[d] = ComputeDofNumbering(mesh,self.spaces[d],fromConnectivity =False ,tag=tag,dofs=self.numberings[d])
+#            for tag,form in self.bilinearWeakFormulations:
+#                self.numberings[d] = ComputeDofNumbering(mesh,self.spaces[d],fromConnectivity =False ,tag=tag,dofs=self.numberings[d])
             #print("size of numbering", len(self.numberings))
             #print("(mesh.elements['quad4'].connectivity[0,:]", mesh.elements["quad4"].connectivity[0,:])
             #return
     def ComputeDofNumberingFromConnectivity(self,mesh):
-        from BasicTools.FE.DofNumbering import ComputeDofNumbering
-        if self.numberings is None:
-            self.numberings = [None]*self.GetNumberOfUnkownFields()
-
-        for d in range(self.GetNumberOfUnkownFields()):
-            self.numberings[d] = ComputeDofNumbering(mesh,self.spaces[d],fromConnectivity = True,dofs=self.numberings[d])
+        self.ComputeDofNumbering(mesh, fromConnectivity=True)
 
 
 class MecaPhysics(Physics):
@@ -113,7 +119,7 @@ class MecaPhysics(Physics):
         return self.ExpandNames(self.mecaPrimalName)
 
     def GetBulkFormulation(self,young=None, poisson=None,factor=None ):
-        from BasicTools.FE.WeakForm import GetMecaElasticProblem
+        from BasicTools.FE.SymWeakForm import GetMecaElasticProblem
         from BasicTools.FE.MaterialHelp import HookeLaw
 
         if young is None:
@@ -130,7 +136,7 @@ class MecaPhysics(Physics):
         return Symwfb
 
     def GetPressureFormulation(self,pressureName):
-        from BasicTools.FE.WeakForm import GetMecaNormalPressure
+        from BasicTools.FE.SymWeakForm import GetMecaNormalPressure
         if pressureName is None:
             pressureName = self.pressureName
         Symwfp = GetMecaNormalPressure(self.pressureName[0],name=self.mecaPrimalName[0])
@@ -138,7 +144,7 @@ class MecaPhysics(Physics):
         return wfp
 
     def GetForceFormulation(self,direction,flux="f"):
-        from BasicTools.FE.WeakForm import GetTestField
+        from BasicTools.FE.SymWeakForm import GetTestField
 
         ut = GetTestField(self.mecaPrimalName[0],self.mecaPrimalName[1])
         if isinstance(flux,str):
@@ -155,7 +161,7 @@ class MecaPhysics(Physics):
         return wfp
 
     def PostTraitementFormulations(self):
-        import BasicTools.FE.WeakForm as wf
+        import BasicTools.FE.SymWeakForm as wf
         symdep = GetField("u",3)
         nodalEnergy = GetField("ElasticEnergy",1)
         nodalEnergyT = GetTestField("ElasticEnergy",1)
@@ -181,7 +187,7 @@ class BasicPhysics(Physics):
         return [self.PrimalNameTrial[1]]
 
     def GetBulkMassFormulation(self,alpha=1):
-        from BasicTools.FE.WeakForm import GetField,GetTestField
+        from BasicTools.FE.SymWeakForm import GetField,GetTestField
         trial  = GetField(*self.PrimalNameTrial)
         test = GetTestField(*self.PrimalNameTest)
 
@@ -194,7 +200,6 @@ class BasicPhysics(Physics):
         return Symwfb
 
     def GetBulkFormulation_dudi_dtdj(self,u=0,t=0,i=0,j=0,alpha=1.):
-        from BasicTools.FE.WeakForm import GetField,GetTestField
 
         trial =    GetField(*self.PrimalNameTrial)
         if self.PrimalNameTrial[1] > 1:
@@ -212,8 +217,8 @@ class BasicPhysics(Physics):
         return Symwfb
 
     def GetBulkLaplacian(self,alpha=1):
-        from BasicTools.FE.WeakForm import Gradient
-        from BasicTools.FE.WeakForm import GetField,GetTestField
+        from BasicTools.FE.SymWeakForm import Gradient
+        from BasicTools.FE.SymWeakForm import GetField,GetTestField
         #from sympy import Identity
 
         t  = GetField(*self.PrimalNameTrial)
@@ -222,7 +227,7 @@ class BasicPhysics(Physics):
         return Symwfb
 
     def GetFlux(self,flux="f"):
-        from BasicTools.FE.WeakForm import GetTestField
+        from BasicTools.FE.SymWeakForm import GetTestField
         from sympy import Symbol
 
         tt = GetTestField(*self.PrimalNameTest)
@@ -246,9 +251,6 @@ class ThermalPhysics(Physics):
         self.thermalPrimalName = name
 
     def GetBulkFormulation(self, alpha=1. ):
-        from BasicTools.FE.WeakForm import Gradient
-        from BasicTools.FE.WeakForm import GetField,GetTestField
-        #from sympy import Identity
 
         t  = GetField(self.thermalPrimalName[0],1)
         tt = GetTestField(self.thermalPrimalName[0],1)
@@ -262,7 +264,7 @@ class ThermalPhysics(Physics):
         return Symwfb
 
     def GetNormalFlux(self,flux="f"):
-        from BasicTools.FE.WeakForm import GetTestField
+        from BasicTools.FE.SymWeakForm import GetTestField
         from sympy import Symbol
 
         tt = GetTestField(self.thermalPrimalName,1)
@@ -296,7 +298,7 @@ class StokesPhysics(Physics):
 
 
     def GetBulkFormulation(self,mu=1.):
-        from BasicTools.FE.WeakForm import GetField,GetTestField
+        from BasicTools.FE.SymWeakForm import GetField,GetTestField
         #from sympy import Identity
 
         v  = GetField(self.velocityPrimalName,self.spaceDimension)

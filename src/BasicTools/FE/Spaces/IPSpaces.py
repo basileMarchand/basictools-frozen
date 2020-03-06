@@ -33,7 +33,7 @@ def GenerateSpaceForIntegrationPointInterpolation(integrationRule):
 
             self.symN = Matrix([ np.prod([DiracDelta(c-x) for x,c in zip(y,coord)]) for y in integrationPoints])
             self.posN = np.array(integrationPoints)
-            self.dofAttachments = [("C",i,None) for i in range(len(integrationPoints)) ]
+            self.dofAttachments = [("IP",i,None) for i in range(len(integrationPoints)) ]
             self.Create()
 
     for name in names:
