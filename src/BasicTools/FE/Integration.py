@@ -114,6 +114,7 @@ def IntegrateGeneral( mesh, wform, constants, fields, unkownFields, testFields=N
 
     tagFound = False
     from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearElementContainer
+
     for name,data,idstotreat in elementFilter:
 
         if data.GetNumberOfElements() == 0:
@@ -122,6 +123,35 @@ def IntegrateGeneral( mesh, wform, constants, fields, unkownFields, testFields=N
         if isinstance(data, ConstantRectilinearElementContainer):
             #TODO : Generate the elementary matrix
             #
+            nodesPerElement = data.nodesPerElement
+            dofpernode = len(unkownFields)
+            nt = nodesPerElement*dofpernode
+
+            offsets = 0
+            for uf in unkownFields:
+                offsets += uf.numbering["size"]
+
+            from BasicTools.FE.FETools import GetElementaryMatrixForFormulation
+            elementaryMatrix = GetElementaryMatrixForFormulation(name,wform, unknownNames = [f.name for f in unkownFields], geoFactor= mesh.GetSpacing())
+            #
+            edofMat = np.concatenate( (f.numbering[name][idstotreat,:]+offset for f,offset in zip(unkownFields,offsets)) ,axis=1)
+
+            Eeff = elementFilter.GetElementsFractionInside(name, data, idstotreat)
+            minthreshold = 0.9e-3
+            bool_Eeff = (Eeff>=minthreshold)
+            nEeff = Eeff[bool_Eeff]
+            #TODO check numbering "f" or "c" ???
+            sM = ((elementaryMatrix.flatten()[np.newaxis]).T * nEeff.ravel()).flatten(order='F')
+            one = np.ones((nt, 1), dtype=np.int_)
+            local_iK = np.kron(edofMat[bool_Eeff,:], one).flatten()
+            one.shape = (1,nt)
+            local_jK = np.kron(edofMat[bool_Eeff,:], one).flatten()
+
+            vK[integrator.totalvijcpt:integrator.totalvijcpt+nt] = sM
+            iK[integrator.totalvijcpt:integrator.totalvijcpt+nt] = local_iK
+            jK[integrator.totalvijcpt:integrator.totalvijcpt+nt] = local_jK
+            integrator.totalvijcpt += nt
+
             raise
         else:
 

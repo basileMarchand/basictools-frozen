@@ -446,6 +446,14 @@ class ElementFilter(Filter):
         if callable(pc):
             pc(self.mesh)
 
+    def GetElementsFractionInside(self, name, elements, ids):
+        if len(self.zones) == 0 or self.zoneTreatment == "allnodes":
+            return np.ones(len(ids))
+        else:
+            print("Warning!!! This fuction is not coded yet")
+            print("BasicTools.Containers.Filters::ElementFilter::GetElementsFractionInside")
+            return np.ones(len(ids))
+
 
 def CheckIntegrity( GUI=False):
     """
