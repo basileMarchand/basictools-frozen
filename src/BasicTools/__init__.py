@@ -5,7 +5,14 @@
 #
 #
 
-__all__ = ["Helpers","IO","FE","TensorTools","Containers","Actions","Linalg"];
+__all__ = ["Actions",
+           "Containers",
+           "FE",
+           "Helpers",
+           'ImplicitGeometry',
+           "IO",
+           "Linalg",
+           "TensorTools"];
 
 
 __name__ = "BasicTools"
