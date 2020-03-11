@@ -3,6 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
+import os
 
 import numpy as np
 
@@ -138,7 +139,10 @@ class UtReader(ReaderBase):
             from BasicTools.IO.GeoReader import GeoReader
             GR = GeoReader()
 
-        GR.SetFileName(self.filePath +self.meshfile )
+        if os.path.isabs(self.meshfile):
+            GR.SetFileName(self.meshfile )
+        else:
+            GR.SetFileName(self.filePath +self.meshfile )
         self.meshMetadata = GR.ReadMetaData()
 
 
