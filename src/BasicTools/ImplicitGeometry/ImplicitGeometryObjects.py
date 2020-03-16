@@ -153,7 +153,7 @@ class ImplicitGeometryAxisAlignBox(ImplicitGeometryBase):
                 self.size = size
 
     def __str__(self):
-        res = "ImplicitGeometryAABox \n"
+        res = "ImplicitGeometryAxisAlignBox \n"
         res += "  origin: " + str(self.origin)+"\n"
         res += "  dimensions: " + str(self.size)+"\n"
         return res
