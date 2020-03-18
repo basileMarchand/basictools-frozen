@@ -46,6 +46,7 @@ XdmfNumber[EN.Pyramid_13] = 0x27
 XdmfNumber[EN.Wedge_15] = 0x28
 XdmfNumber[EN.Wedge_18] = 0x29
 XdmfNumber[EN.Hexaedron_20] = 0x30
+XdmfNumber[EN.Hexaedron_27] = 0x32
 
 XdmfNumberToEN = {v:k for k,v in XdmfNumber.items()}
 XdmfNameToEN = {v:k for k,v in XdmfName.items()}
