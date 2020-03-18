@@ -22,11 +22,15 @@ options :
     -s    Stop at first error
     -e    To test extra Modules (-e can be repeated)
     -m    To filter the output by this string (-m can be repeated)
+    -k    Skip test base on string
     -d    Dry run do not execute anything, only show what will be executed
+    -c    To activate coverage
+    -l    Generation of the coverage (html) report localy (current path)
+    -b    Launch browser after the covarage report generation
     -p    Activate profiling
     -v    Activate maximal level of verbosity
     -y    Generate .pyc when inporting modules (default False)
-    -k    skip test base on string
+    -L    Output Localy, Use the current path for all the outputs
 
 """
 
@@ -393,7 +397,7 @@ if __name__ == '__main__':# pragma: no cover
         res = TestAll(modulestotreat=['ALL'],extraToolsBoxs= ["BasicTools"], fulloutput=False,coverage={"active":False})# pragma: no cover
     else:
       try:
-          opts, args = getopt.getopt(sys.argv[1:],"hcblfsdpvye:m:k:")
+          opts, args = getopt.getopt(sys.argv[1:],"hcblfsdpvyLe:m:k:")
       except getopt.GetoptError as e:
           print(e)
           print(Test_Help_String)
@@ -449,11 +453,12 @@ if __name__ == '__main__':# pragma: no cover
             print('Setting temp output directory to ' + arg)
             TestTempDir.SetTempPath(arg)
          elif opt in ("-y"):
-             sys.dont_write_bytecode = False
-
-
-
-
+            sys.dont_write_bytecode = False
+         elif opt in ("-L"):
+            import os
+            TestTempDir().SetTempPath(os.getcwd())
+            from BasicTools.Helpers.Tests import TestTempDir as TestTempDir2
+            TestTempDir2().SetTempPath(os.getcwd())
 
       if len(modulestotreat) == 0:
          modulestotreat.append("ALL")
