@@ -355,7 +355,7 @@ class MonoElementsIntegral(BOO):
             self.localNumbering.append( numbering.get(domain.elementType,None) )
 
 
-        self.p, self.w = self.integrationRule[EN.geoSupport[domain.elementType]];
+        self.p, self.w = self.integrationRule[domain.elementType];
 
         self.geoSpace = LagrangeSpaceGeo[domain.elementType]
         self.geoSpace.SetIntegrationRule(self.p,self.w)

@@ -254,12 +254,11 @@ def CheckIntegrityFlexion(P,tetra,GUI=False):
 
     m,P0energyDensity = Integrate(mesh=problem.mesh, wform=EnerForm, constants={},
                         fields={f.name:f for f in problem.unkownFields}, dofs=["cellData"], spaces=[LagrangeSpaceP0 ],
-                        numbering=[P0Numbering], integrationRuleName="ElementEvalGeo",
+                        numbering=[P0Numbering], integrationRuleName="ElementCenterEval",
                         onlyEvaluation=True,
                         elementFilter=ff)
 
     P0energyDensity /= m.diagonal()
-
 
     if GUI  :
         from BasicTools.Actions.OpenInParaView import OpenInParaView
@@ -273,8 +272,6 @@ def CheckIntegrityFlexion(P,tetra,GUI=False):
 
     print(Timer())
     return("ok")
-
-
 
 if __name__ == '__main__':
 

@@ -31,7 +31,7 @@ class IPField(FieldBase):
             self.rule = rule
 
     def GetRuleFor(self,elemtype):
-        return self.rule[EN.geoSupport[elemtype]]
+        return self.rule[elemtype]
 
     def GetFieldFor(self,elemtype):
             return self.data[elemtype]
