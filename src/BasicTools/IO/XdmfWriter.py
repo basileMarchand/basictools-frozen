@@ -661,8 +661,9 @@ class XdmfWriter(WriterBase):
 
     def WriteIntegrationsPoints(self,datas):
 
-        for elemName, data in datas:
-            npdata = np.array(data)
+        for elemName, data in datas.items():
+            points, weight = data
+            npdata = np.asarray(points,dtype=float).copy()
             nip = npdata.shape[0]
             if npdata.shape[1] < 3:
                 b = np.zeros((nip,3))
@@ -740,7 +741,7 @@ class XdmfWriter(WriterBase):
             GridFieldsNames  = [];
 
          if IntegrationRule is None:
-            IntegrationRule  = [];
+            IntegrationRule  = {};
 
          if IntegrationPointData is None:
             IntegrationPointData  = [];
@@ -1202,7 +1203,7 @@ def CheckIntegrity(GUI=False):
         from BasicTools.Actions.OpenInParaView import OpenInParaView
         OpenInParaView(filename = tempdir+'testdirectTwoDomainsTwoSteps.xdmf')
 
-
+    ####### work for PXMF 2.0 #################
     writer = XdmfWriter()
     writer.SetFileName(None)
     writer.SetXmlSizeLimit(0)
@@ -1210,49 +1211,38 @@ def CheckIntegrity(GUI=False):
     writer.SetParafac(True)
     writer.Open(filename=tempdir+'parafac.pxdmf');
     from BasicTools.Containers.UnstructuredMeshTools import  CreateMeshFromConstantRectilinearMesh as CMFCRM
-
     from BasicTools.Containers.UnstructuredMeshTools import  CreateUniformMeshOfBars
 
-    mesh1D = CreateUniformMeshOfBars(2,5,10)
-    mesh1D.props['ParafacDims'] = 1
-    mesh1D.props['ParafacDim0'] = "T"
+    mesh1DTime = CreateUniformMeshOfBars(2,5,10)
+    mesh1DTime.props['ParafacDims'] = 1
+    mesh1DTime.props['ParafacDim0'] = "T"
 
     cmesh2D = ConstantRectilinearMesh(2)
     cmesh2D.SetDimensions([4,4])
-    mesh2D = CMFCRM(cmesh2D)
-    mesh2D.props['ParafacDims'] = 2
-    mesh2D.props['ParafacDim0'] = "Px"
-    mesh2D.props['ParafacDim1'] = "Py"
+    mesh2DParametres = CMFCRM(cmesh2D)
+    mesh2DParametres.props['ParafacDims'] = 2
+    mesh2DParametres.props['ParafacDim0'] = "Px"
+    mesh2DParametres.props['ParafacDim1'] = "Py"
 
     cmesh3D = ConstantRectilinearMesh(3)
     cmesh3D.SetDimensions([8,8,8])
-    mesh3D = CMFCRM(cmesh3D)
+    mesh3DSpace = CMFCRM(cmesh3D)
 
+    from BasicTools.FE.IntegrationsRules import LagrangeIsoParam
 
-
-    integrationPoints = [
-            (EN.Triangle_6,[ [0.5, 0.5] ] ),
-            (EN.Tetrahedron_10, [[0.1381966011, 0.1381966011, 0.1381966011],
-                                 [0.5854101966, 0.1381966011, 0.1381966011],
-                                 [0.1381966011, 0.5854101966, 0.1381966011],
-                                 [0.1381966011, 0.1381966011, 0.5854101966]]),
-            (EN.Quadrangle_4, [[0.5,0.5],
-                               [0.25,0.25]] )
-    ]
-
-    IntegrationPointData = np.arange(18)+0.1
+    IntegrationPointData = np.arange(mesh2DParametres.GetNumberOfElements()*len(LagrangeIsoParam[EN.Quadrangle_4][1]) )+0.1
 
     IntegrationPointDatas = [IntegrationPointData]
-    writer.Write(mesh2D,
-                 IntegrationRule=integrationPoints,
+    writer.Write(mesh2DParametres,
+                 IntegrationRule=LagrangeIsoParam,
                  IntegrationPointData=IntegrationPointDatas,
                  IntegrationPointDataNames=["IPId_0"])
 
     print(IntegrationPointDatas)
     writer.iptorage["IPId_0"].UpdateHeavyStorage(IntegrationPointData+10)
 
-    writer.Write(mesh1D, CellFields = [np.arange(mesh1D.GetNumberOfElements())+0.1 ], CellFieldsNames=["IPId_0"])
-    writer.Write(mesh3D, CellFields = [np.arange(mesh3D.GetNumberOfElements())+0.1 ], CellFieldsNames=["IPId_0"])
+    writer.Write(mesh1DTime, CellFields = [np.arange(mesh1DTime.GetNumberOfElements())+0.1 ], CellFieldsNames=["IPId_0"])
+    writer.Write(mesh3DSpace, CellFields = [np.arange(mesh3DSpace.GetNumberOfElements())+0.1 ], CellFieldsNames=["IPId_0"])
     writer.Close()
 
     if GUI :
@@ -1339,10 +1329,6 @@ def CheckIntegrityDDM(GUI=False):
         mesh1D.nodes[:,0] += 1
         mesh1D.props['ParafacDim0'] = "D1_P1"
         writer.Write(mesh1D, CellFields = [np.arange(mesh1D.GetNumberOfElements())+0.1 ], CellFieldsNames=["IPId_0"])
-        print(writer.globalStorage.keys())
-
-        for i in range(60):
-            writer.Write(mesh1D, CellFields = [np.arange(mesh1D.GetNumberOfElements())+0.1 ], CellFieldsNames=["IPId_0"])
 
     writer.Close()
     return "ok"
