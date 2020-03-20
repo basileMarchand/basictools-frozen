@@ -42,6 +42,8 @@ class ConstantRectilinearElementContainer(BaseOutputObject):
             else:
                 self.__dimensions = np.array(data,int);
 
+        self.nodesPerElement = 2**len(self.__dimensions)
+
         if len(self.__dimensions)  == 3:
             self.elementType = ElementNames.Hexaedron_8
             from BasicTools.FE.Spaces.HexaSpaces import Hexa_P1_Lagrange

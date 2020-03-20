@@ -68,7 +68,6 @@ def IntegrateGeneral( mesh, wform, constants, fields, unkownFields, testFields=N
         from BasicTools.FE.WeakForms.NumericalWeakForm import SymWeakToNumWeak
         wform = SymWeakToNumWeak(wform)
 
-
     import time
     st = time.time()
     BaseOutputObject().PrintDebug("Integration ")
@@ -125,18 +124,21 @@ def IntegrateGeneral( mesh, wform, constants, fields, unkownFields, testFields=N
             #
             nodesPerElement = data.nodesPerElement
             dofpernode = len(unkownFields)
-            nt = nodesPerElement*dofpernode
 
-            offsets = 0
+            nt = (nodesPerElement*dofpernode)**2*len(idstotreat)
+
+            offset = 0
+            offsets = []
             for uf in unkownFields:
-                offsets += uf.numbering["size"]
+                offsets.append(offset)
+                offset += uf.numbering["size"]
 
             from BasicTools.FE.FETools import GetElementaryMatrixForFormulation
-            elementaryMatrix = GetElementaryMatrixForFormulation(name,wform, unknownNames = [f.name for f in unkownFields], geoFactor= mesh.GetSpacing())
+            elementaryMatrix = GetElementaryMatrixForFormulation(name,wform, unknownNames = [f.name for f in unkownFields], geoFactor= mesh.GetSpacing()).toarray()
             #
-            edofMat = np.concatenate( (f.numbering[name][idstotreat,:]+offset for f,offset in zip(unkownFields,offsets)) ,axis=1)
+            edofMat = np.concatenate( [f.numbering[name][idstotreat,:]+offset for f,offset in zip(unkownFields,offsets)] ,axis=1)
             from BasicTools.Containers.UnstructuredMeshInspectionTools import GetElementsFractionInside
-            if elementFilter.zoneField is None:
+            if elementFilter.zonesField is None:
                 Eeff = np.ones(len(idstotreat))
             else:
                 Eeff = GetElementsFractionInside(elementFilter.zoneField,mesh.nodes,name,data,idstotreat)
@@ -146,9 +148,10 @@ def IntegrateGeneral( mesh, wform, constants, fields, unkownFields, testFields=N
             nEeff = Eeff[bool_Eeff]
             #TODO check numbering "f" or "c" ???
             sM = ((elementaryMatrix.flatten()[np.newaxis]).T * nEeff.ravel()).flatten(order='F')
-            one = np.ones((nt, 1), dtype=np.int_)
+            nnt = nodesPerElement*dofpernode
+            one = np.ones((nnt, 1), dtype=np.int_)
             local_iK = np.kron(edofMat[bool_Eeff,:], one).flatten()
-            one.shape = (1,nt)
+            one.shape = (1,nnt)
             local_jK = np.kron(edofMat[bool_Eeff,:], one).flatten()
 
             vK[integrator.totalvijcpt:integrator.totalvijcpt+nt] = sM
@@ -271,8 +274,7 @@ def CheckIntegrityNormalFlux(GUI=False):
 def CheckIntegrityKF(edim, sdim,testCase):
     from math import sqrt
     import numpy as np
-    from BasicTools.Containers.UnstructuredMeshTools import CreateMeshOfTriangles
-    from BasicTools.Containers.UnstructuredMeshTools import CreateMeshOf
+    from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshOfTriangles, CreateMeshOf
     import BasicTools.Containers.ElementNames as EN
     from BasicTools.FE.IntegrationsRules import LagrangeP1
 
@@ -646,6 +648,16 @@ def CheckIntegrity(GUI=False):
     print("Total time : ")
     print(stopt)
     print("ALL ok")
+    CheckIntegrityConstantRectilinearIntegration()
+    if CheckIntegrityConstantRectilinearIntegration().lower() !=  "ok":
+        return "CheckIntegrityConstantRectilinearIntegration not ok"
+    else:
+        print(" --- CheckIntegrityConstantRectilinearIntegration -- OK")
+    UseCpp = saveOldeStateOfUseCpp
+
+    return "ok"
+    
+def CheckIntegrityConstantRectilinearIntegration(GUI=False):
     print("Test integrator on Constant rectilinear mesh")
     from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearMesh 
     myCRMesh = ConstantRectilinearMesh(3)
@@ -656,7 +668,7 @@ def CheckIntegrity(GUI=False):
     myCRMesh.SetOrigin([0, 0, 0]);
 
     from BasicTools.FE.FETools import PrepareFEComputation
-    space, numberings, offset, NGauss = PrepareFEComputation(mesh,numberOfComponents=1)
+    space, numberings, offset, NGauss = PrepareFEComputation(myCRMesh,numberOfComponents=1)
     
     from BasicTools.FE.Fields.FEField import FEField
     from BasicTools.FE.SymWeakForm import GetField
@@ -664,7 +676,7 @@ def CheckIntegrity(GUI=False):
     T = GetField("T",1)
     Tt = GetTestField("T",1)
 
-    wf = T.T*Tt + Tt
+    wf = T.T*Tt + 1.2*Tt
 
     constants = {}
     fields = [ ]
@@ -672,6 +684,7 @@ def CheckIntegrity(GUI=False):
     import time
     startt = time.time()
     ff = ElementFilter(myCRMesh)
+    print(startt)
     K,F = IntegrateGeneral(mesh=myCRMesh,
                     wform=wf,
                     constants=constants,
@@ -685,17 +698,9 @@ def CheckIntegrity(GUI=False):
     print("volume (k): " + str(volk))
     volf = np.sum(F)
     print("volume (f): " + str(volf))
-    if volk*factor - volf <   volf/100000000:
+    print(stopt)
+    if volk*1 - volf <   volf/100000000:
         return "ok"
-
-
-    print(myMesh)
-
-    UseCpp = saveOldeStateOfUseCpp
-
-
-
-    return "ok"
 
 if __name__ == '__main__':
     print("Start")# pragma: no cover

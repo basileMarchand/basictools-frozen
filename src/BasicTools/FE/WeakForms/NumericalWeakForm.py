@@ -160,9 +160,12 @@ def SymWeakMonomToNumWeakMono(exp):
             raise
         return res
     else:
-
-        pprint(exp)
-        raise ()
+        #only one term no product
+        res = PyWeakMonom()
+        term = ConverTermToProd(exp)
+        if term is not None:
+            res.AddProd(term)
+        return res
 
 def ConverTermToProd(arg):
     if isinstance(arg,Symbol):
