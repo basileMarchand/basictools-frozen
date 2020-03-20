@@ -79,7 +79,7 @@ class FEField(FieldBase):
         return res
 
 def CheckIntegrity(GUI=False):
-    from BasicTools.Containers.UnstructuredMeshTools import CreateCube
+    from BasicTools.Containers.UnstructuredMeshCreationTools import CreateCube
     mesh = CreateCube([2.,3.,4.],[-1.0,-1.0,-1.0],[2./10, 2./10,2./10])
 
     from BasicTools.FE.FETools import PrepareFEComputation

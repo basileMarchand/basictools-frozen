@@ -1048,7 +1048,7 @@ def CheckIntegrity(GUI=False):
     from BasicTools.Helpers.Tests import TestTempDir
     from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearMesh
     import BasicTools.Containers.UnstructuredMesh as UM
-    from BasicTools.Containers.UnstructuredMeshTools import CreateMeshOfTriangles
+    from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshOfTriangles
 
     tempdir = TestTempDir.GetTempPath()
 
@@ -1210,8 +1210,8 @@ def CheckIntegrity(GUI=False):
     writer.SetBinary(True)
     writer.SetParafac(True)
     writer.Open(filename=tempdir+'parafac.pxdmf');
-    from BasicTools.Containers.UnstructuredMeshTools import  CreateMeshFromConstantRectilinearMesh as CMFCRM
-    from BasicTools.Containers.UnstructuredMeshTools import  CreateUniformMeshOfBars
+    from BasicTools.Containers.UnstructuredMeshCreationTools import  CreateMeshFromConstantRectilinearMesh as CMFCRM
+    from BasicTools.Containers.UnstructuredMeshCreationTools import  CreateUniformMeshOfBars
 
     mesh1DTime = CreateUniformMeshOfBars(2,5,10)
     mesh1DTime.props['ParafacDims'] = 1
@@ -1289,7 +1289,7 @@ def CheckIntegrityDDM(GUI=False):
     tempdir = TestTempDir.GetTempPath()
 
 
-    from BasicTools.Containers.UnstructuredMeshTools import  CreateUniformMeshOfBars
+    from BasicTools.Containers.UnstructuredMeshCreationTools import  CreateUniformMeshOfBars
 
     mesh1D = CreateUniformMeshOfBars(0,5,10)
     mesh1D.props['ParafacDims'] = 1

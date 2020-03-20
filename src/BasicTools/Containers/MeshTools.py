@@ -6,7 +6,7 @@
                        
 import numpy as np
 
-import BasicTools.Containers.UnstructuredMeshTools as UMT
+from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshOfTriangles
 import BasicTools.Containers.ConstantRectilinearMesh as CRM
 import BasicTools.Containers.ElementNames as EN
 
@@ -88,7 +88,7 @@ def GetElementsCenters(mesh=None,nodes=None,elements=None, dim=None):
 
 def CheckIntegrity_GetCellCenters():
 
-    mesh1 = UMT.CreateMeshOfTriangles([[0,0,0],[1,0,0],[0,1,0],[0,0,1] ], [[0,1,2],[0,2,3]])
+    mesh1 = CreateMeshOfTriangles([[0,0,0],[1,0,0],[0,1,0],[0,0,1] ], [[0,1,2],[0,2,3]])
     res = GetElementsCenters(mesh1)
     print(res)
 

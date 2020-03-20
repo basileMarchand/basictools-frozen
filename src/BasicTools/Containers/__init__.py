@@ -7,7 +7,10 @@
 
 __all__ = ["vtkBridge",
            "UnstructuredMesh",
-           'UnstructuredMeshTools',
+           'UnstructuredMeshCreationTools',
+           'UnstructuredMeshFieldOperations',
+           'UnstructuredMeshInspectionTools',
+           'UnstructuredMeshModificationTools',
            'ConstantRectilinearMesh',
            'ConstantRectilinearMeshTools',
            'MeshBase',

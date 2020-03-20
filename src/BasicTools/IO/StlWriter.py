@@ -36,7 +36,7 @@ class StlWriter(WriterBase):
     def Write(self,meshObject,normals=None,Name= None,PointFieldsNames=None,PointFields=None,CellFieldsNames=None,CellFields=None,GridFieldsNames=None,GridFields=None):
 
         if self.extractSkin :
-            from BasicTools.Containers.UnstructuredMeshTools import ComputeSkin, CleanLonelyNodes
+            from BasicTools.Containers.UnstructuredMeshModificationTools import ComputeSkin, CleanLonelyNodes
             skin = ComputeSkin(meshObject)
             #print(skin)
             CleanLonelyNodes(skin)

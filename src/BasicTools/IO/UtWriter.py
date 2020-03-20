@@ -12,7 +12,7 @@ from BasicTools.IO.WriterBase import WriterBase as WriterBase
 import BasicTools.IO.GeofWriter as GW
 from BasicTools.IO.GeofWriter import GeofName as GeofName
 from BasicTools.IO.GeofReader import nbIntegrationsPoints as nbIntegrationsPoints
-import BasicTools.Containers.UnstructuredMeshTools as UnstructuredMeshTools
+from BasicTools.Containers.UnstructuredMeshInspectionTools import ExtractElementByDimensionalityNoCopy
 
 
 class UtWriter(WriterBase):
@@ -160,7 +160,7 @@ class UtWriter(WriterBase):
 
           numberElements = []
           nbPtIntPerElement = []
-          mesh3D = UnstructuredMeshTools.ExtractElementByDimensionalityNoCopy(self.mesh,3)
+          mesh3D = ExtractElementByDimensionalityNoCopy(self.mesh,3)
           for name,data in mesh3D.elements.items():
             numberElements.append(data.GetNumberOfElements())
             nbPtIntPerElement.append(nbIntegrationsPoints[GeofName[name]])
@@ -216,7 +216,7 @@ class UtWriter(WriterBase):
 
           numberElements = []
           nbPtIntPerElement = []
-          mesh3D = UnstructuredMeshTools.ExtractElementByDimensionalityNoCopy(self.mesh,3)
+          mesh3D = ExtractElementByDimensionalityNoCopy(self.mesh,3)
           for name,data in mesh3D.elements.items():
             numberElements.append(data.GetNumberOfElements())
             nbPtIntPerElement.append(nbIntegrationsPoints[GeofName[name]])

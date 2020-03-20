@@ -435,8 +435,8 @@ class UnstructuredMesh(MeshBase):
         return res
 
 def CheckIntegrity():
-    from BasicTools.Containers.UnstructuredMeshTools import CreateMeshOfTriangles
-    from BasicTools.Containers.UnstructuredMeshTools import CreateMeshFromConstantRectilinearMesh
+    from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshOfTriangles
+    from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshFromConstantRectilinearMesh
 
     res = CreateMeshOfTriangles([[0,0,0],[1,2,3],[0,1,0]], [[0,1,2]])
 

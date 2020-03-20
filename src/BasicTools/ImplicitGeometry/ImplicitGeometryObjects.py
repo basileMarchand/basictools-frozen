@@ -111,7 +111,7 @@ class ImplicitGeometryByETag(ImplicitGeometryBase):
         self.offset = 0.
 
     def SetSupportAndZones(self,support, etags):
-        from BasicTools.Containers.UnstructuredMeshTools import ExtractElementByTags
+        from BasicTools.Containers.UnstructuredMeshInspectionTools import ExtractElementByTags
 
         sup = ExtractElementByTags(support, etags)
         self.op.SetSurface(sup)

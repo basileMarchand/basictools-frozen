@@ -204,7 +204,7 @@ def ComputeDofNumbering(mesh,Space,dofs=None,sign=1,fromConnectivity=False,eleme
     return dofs
 
 def CheckIntegrity(GUI=False):
-    from BasicTools.Containers.UnstructuredMeshTools import CreateCube
+    from BasicTools.Containers.UnstructuredMeshCreationTools import CreateCube
 
     #res2 = CreateCube([100.,100.,100.],[-1.0,-1.0,-1.0],[2./46, 2./46,2./46])
     res2 = CreateCube([2.,2.,2.],[-1.0,-1.0,-1.0],[2./46, 2./46,2./46])

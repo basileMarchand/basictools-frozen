@@ -13,7 +13,7 @@ from BasicTools.Containers.UnstructuredMesh import ElementsContainer as Elements
 from BasicTools.Containers.UnstructuredMesh import AllElements as AllElements
 import BasicTools.Containers.ElementNames as ElementNames
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
-
+from BasicTools.Containers.UnstructuredMeshModificationTools import ComputeSkin
 
 class ConstantRectilinearElementContainer(BaseOutputObject):
     def __init__(self,__dimensions):

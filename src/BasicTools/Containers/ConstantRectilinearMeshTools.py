@@ -84,7 +84,7 @@ def CreateSquare(dimensions=[2,2], origin=[-1.0,-1.0], spacing=[1.,1.]):
     spacing = np.array(spacing,dtype=float)
     origin = np.array(origin,dtype=float)
     from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearMesh
-    from BasicTools.Containers.UnstructuredMeshTools import ComputeSkin
+    from BasicTools.Containers.UnstructuredMeshModificationTools import ComputeSkin
     import BasicTools.Containers.ElementNames as EN
 
     myMesh = ConstantRectilinearMesh(dim=2)

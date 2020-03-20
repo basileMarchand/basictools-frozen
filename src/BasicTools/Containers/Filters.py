@@ -400,6 +400,7 @@ class ElementFilter(Filter):
 
         res  = self._CheckTags_(elements.tags,elements.GetNumberOfElements())
         res2 = self._CheckZones_(elements)
+        self.zonesField = res2
         res3 = self.intersect1D(res,res2)
         if res3 is None:
             return range(elements.GetNumberOfElements())
@@ -446,21 +447,12 @@ class ElementFilter(Filter):
         if callable(pc):
             pc(self.mesh)
 
-    def GetElementsFractionInside(self, name, elements, ids):
-        if len(self.zones) == 0 or self.zoneTreatment == "allnodes":
-            return np.ones(len(ids))
-        else:
-            print("Warning!!! This fuction is not coded yet")
-            print("BasicTools.Containers.Filters::ElementFilter::GetElementsFractionInside")
-            return np.ones(len(ids))
-
-
 def CheckIntegrity( GUI=False):
     """
     .. literalinclude:: ../../src/BasicTools/Containers/Filters.py
        :pyobject: CheckIntegrity
     """
-    from BasicTools.Containers.UnstructuredMeshTools import CreateCube
+    from BasicTools.Containers.UnstructuredMeshCreationTools import CreateCube
     nx = 11; ny = 12; nz = 13;
     mesh = CreateCube(dimensions=[nx,ny,nz],origin=[0,0,0.], spacing=[1./(nx-1),1./(ny-1), 10./(nz-1)], ofTetras=True )
     print(mesh)

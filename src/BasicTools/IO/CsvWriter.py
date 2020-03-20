@@ -283,7 +283,7 @@ RegisterWriterClass(".csv",CsvWriter)
 
 def CheckIntegrity(GUI=False):
     from BasicTools.Helpers.Tests import TestTempDir
-    from BasicTools.Containers.UnstructuredMeshTools import CreateMeshOfTriangles
+    from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshOfTriangles
     import BasicTools.Containers.ElementNames as EN
 
     tempdir = TestTempDir.GetTempPath()

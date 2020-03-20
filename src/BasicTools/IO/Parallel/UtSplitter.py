@@ -14,7 +14,6 @@ import BasicTools.IO.GeofReader as GR
 import BasicTools.IO.UtReader as UR
 from BasicTools.IO.GeofWriter import GeofName as GeofName
 from BasicTools.IO.GeofReader import nbIntegrationsPoints as nbIntegrationsPoints
-import BasicTools.Containers.UnstructuredMeshTools as UnstructuredMeshTools
 import BasicTools.Containers.ElementNames as EN
 from BasicTools.FE.IntegrationsRules import Lagrange as Lagrange
 from BasicTools.Helpers.TextFormatHelper import TFormat

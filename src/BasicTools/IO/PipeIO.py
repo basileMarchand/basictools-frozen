@@ -72,7 +72,7 @@ RegisterReaderClass(".PIPE",PipeReader)
 RegisterWriterClass(".PIPE",PipeWriter)
 
 def CheckIntegrity(GUI=False):
-    from BasicTools.Containers.UnstructuredMeshTools import CreateCube
+    from BasicTools.Containers.UnstructuredMeshCreationTools import CreateCube
     mesh = CreateCube()
     print(mesh)
     PipeReader()

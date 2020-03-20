@@ -81,7 +81,7 @@ def CheckIntegrity(GUI=False):
     import BasicTools.Containers.ElementNames as EN
 
 
-    from BasicTools.Containers.UnstructuredMeshTools import CreateCube
+    from BasicTools.Containers.UnstructuredMeshCreationTools import CreateCube
     mesh = CreateCube(dimensions=[10,11,12],spacing=[1.,1.,1.],ofTetras=False)
 
     if np.any(mesh.nodes[:,0]+np.sin(3*3.14159/6.) - obj.GetValue(mesh.nodes)):

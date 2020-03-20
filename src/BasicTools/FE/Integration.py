@@ -135,8 +135,12 @@ def IntegrateGeneral( mesh, wform, constants, fields, unkownFields, testFields=N
             elementaryMatrix = GetElementaryMatrixForFormulation(name,wform, unknownNames = [f.name for f in unkownFields], geoFactor= mesh.GetSpacing())
             #
             edofMat = np.concatenate( (f.numbering[name][idstotreat,:]+offset for f,offset in zip(unkownFields,offsets)) ,axis=1)
+            from BasicTools.Containers.UnstructuredMeshInspectionTools import GetElementsFractionInside
+            if elementFilter.zoneField is None:
+                Eeff = np.ones(len(idstotreat))
+            else:
+                Eeff = GetElementsFractionInside(elementFilter.zoneField,mesh.nodes,name,data,idstotreat)
 
-            Eeff = elementFilter.GetElementsFractionInside(name, data, idstotreat)
             minthreshold = 0.9e-3
             bool_Eeff = (Eeff>=minthreshold)
             nEeff = Eeff[bool_Eeff]
@@ -152,7 +156,6 @@ def IntegrateGeneral( mesh, wform, constants, fields, unkownFields, testFields=N
             jK[integrator.totalvijcpt:integrator.totalvijcpt+nt] = local_jK
             integrator.totalvijcpt += nt
 
-            raise
         else:
 
             integrator.ActivateElementType(data)
@@ -216,7 +219,7 @@ def IntegrateGeneral( mesh, wform, constants, fields, unkownFields, testFields=N
 
 
 def CheckIntegrityNormalFlux(GUI=False):
-    from BasicTools.Containers.UnstructuredMeshTools import CreateMeshOf
+    from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshOf
 
     points = [[0,0,0],[1,0,1],[0,1,1] ]
     mesh = CreateMeshOf(points,[[0,1,2]],EN.Triangle_3)
@@ -534,11 +537,11 @@ def ComputeVolume(mesh):
         print(volk-volf)
         raise
 
-def CheckIntegrityIntegrationWithIntegratiopnPointField(GUI=False):
+def CheckIntegrityIntegrationWithIntegrationPointField(GUI=False):
     from BasicTools.FE.IntegrationsRules import LagrangeP1
     #from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
 
-    from BasicTools.Containers.UnstructuredMeshTools import CreateCube
+    from BasicTools.Containers.UnstructuredMeshCreationTools import CreateCube
     mesh = CreateCube([2.,3.,4.],[-1.0,-1.0,-1.0],[2./10, 2./10,2./10])
 
     from BasicTools.FE.FETools import PrepareFEComputation
@@ -595,13 +598,13 @@ def CheckIntegrity(GUI=False):
     UseCpp = False
     if CheckIntegrityNormalFlux(GUI).lower() != "ok":
         return "Not ok in the Normal Calculation"
-    if CheckIntegrityIntegrationWithIntegratiopnPointField() != "ok":
+    if CheckIntegrityIntegrationWithIntegrationPointField() != "ok":
         return "Not ok in the integration with IPField"
 
     UseCpp = True
     if CheckIntegrityNormalFlux(GUI).lower() != "ok":
         return "Not ok in the Normal Calculation"
-    if CheckIntegrityIntegrationWithIntegratiopnPointField() != "ok":
+    if CheckIntegrityIntegrationWithIntegrationPointField() != "ok":
         return "Not ok in the integration with IPField"
 
     print("Normal Calculation OK")
@@ -643,8 +646,55 @@ def CheckIntegrity(GUI=False):
     print("Total time : ")
     print(stopt)
     print("ALL ok")
+    print("Test integrator on Constant rectilinear mesh")
+    from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearMesh 
+    myCRMesh = ConstantRectilinearMesh(3)
+    nx = 3; ny = 4; nz =5;
+
+    myCRMesh.SetDimensions([nx,ny,nz]);
+    myCRMesh.SetSpacing([1./(nx-1), 1./(ny-1), 1./(nz-1)]);
+    myCRMesh.SetOrigin([0, 0, 0]);
+
+    from BasicTools.FE.FETools import PrepareFEComputation
+    space, numberings, offset, NGauss = PrepareFEComputation(mesh,numberOfComponents=1)
+    
+    from BasicTools.FE.Fields.FEField import FEField
+    from BasicTools.FE.SymWeakForm import GetField
+    from BasicTools.FE.SymWeakForm import GetTestField
+    T = GetField("T",1)
+    Tt = GetTestField("T",1)
+
+    wf = T.T*Tt + Tt
+
+    constants = {}
+    fields = [ ]
+    unkownFields = [FEField("T",mesh=myCRMesh,space=space,numbering=numberings[0]) ]
+    import time
+    startt = time.time()
+    ff = ElementFilter(myCRMesh)
+    K,F = IntegrateGeneral(mesh=myCRMesh,
+                    wform=wf,
+                    constants=constants,
+                    fields=fields,
+                    unkownFields=unkownFields,
+                    integrationRuleName="LagrangeP1",
+                    elementFilter=ff)
+
+    stopt = time.time() - startt
+    volk = np.sum(K)
+    print("volume (k): " + str(volk))
+    volf = np.sum(F)
+    print("volume (f): " + str(volf))
+    if volk*factor - volf <   volf/100000000:
+        return "ok"
+
+
+    print(myMesh)
 
     UseCpp = saveOldeStateOfUseCpp
+
+
+
     return "ok"
 
 if __name__ == '__main__':

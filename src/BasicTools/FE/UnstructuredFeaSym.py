@@ -184,7 +184,7 @@ def CheckIntegrityFlexion(P,tetra,GUI=False):
 
     # the mesh
 
-    from BasicTools.Containers.UnstructuredMeshTools import CreateCube
+    from BasicTools.Containers.UnstructuredMeshCreationTools import CreateCube
 
     nx = 11; ny = 12; nz = 13;
     nx = nx//2
