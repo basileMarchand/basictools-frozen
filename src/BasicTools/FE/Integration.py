@@ -109,6 +109,10 @@ def IntegrateGeneral( mesh, wform, constants, fields, unkownFields, testFields=N
 
     F = np.zeros(integrator.GetTotalTestDofs(),dtype=np.float)
 
+    from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
+    if not isinstance(mesh, UnstructuredMesh):
+        mesh.GetPosOfNodes()
+
     integrator.PrepareFastIntegration(mesh,wform,vK,iK,jK,0,F)
 
     tagFound = False
@@ -134,7 +138,7 @@ def IntegrateGeneral( mesh, wform, constants, fields, unkownFields, testFields=N
                 offset += uf.numbering["size"]
 
             from BasicTools.FE.FETools import GetElementaryMatrixForFormulation
-            elementaryMatrix = GetElementaryMatrixForFormulation(name,wform, unknownNames = [f.name for f in unkownFields], geoFactor= mesh.GetSpacing()).toarray()
+            elementaryMatrix, rhs = GetElementaryMatrixForFormulation(name,wform, unknownNames = [f.name for f in unkownFields], geoFactor= mesh.GetSpacing())
             #
             edofMat = np.concatenate( [f.numbering[name][idstotreat,:]+offset for f,offset in zip(unkownFields,offsets)] ,axis=1)
             from BasicTools.Containers.UnstructuredMeshInspectionTools import GetElementsFractionInside
@@ -148,16 +152,19 @@ def IntegrateGeneral( mesh, wform, constants, fields, unkownFields, testFields=N
             nEeff = Eeff[bool_Eeff]
             #TODO check numbering "f" or "c" ???
             sM = ((elementaryMatrix.flatten()[np.newaxis]).T * nEeff.ravel()).flatten(order='F')
+            sF = ((rhs.flatten()[np.newaxis]).T * nEeff.ravel()).flatten(order='F')
             nnt = nodesPerElement*dofpernode
             one = np.ones((nnt, 1), dtype=np.int_)
             local_iK = np.kron(edofMat[bool_Eeff,:], one).flatten()
             one.shape = (1,nnt)
             local_jK = np.kron(edofMat[bool_Eeff,:], one).flatten()
 
-            vK[integrator.totalvijcpt:integrator.totalvijcpt+nt] = sM
-            iK[integrator.totalvijcpt:integrator.totalvijcpt+nt] = local_iK
-            jK[integrator.totalvijcpt:integrator.totalvijcpt+nt] = local_jK
-            integrator.totalvijcpt += nt
+            totalvijcpt = integrator.GetNumberOfUsedIvij()
+            vK[totalvijcpt:totalvijcpt+nt] = sM
+            iK[totalvijcpt:totalvijcpt+nt] = local_iK
+            jK[totalvijcpt:totalvijcpt+nt] = local_jK
+            np.add.at(F, edofMat.flatten(), sF)
+            integrator.AddToNumbefOfUsedIvij(nt)
 
         else:
 
@@ -656,10 +663,10 @@ def CheckIntegrity(GUI=False):
     UseCpp = saveOldeStateOfUseCpp
 
     return "ok"
-    
+
 def CheckIntegrityConstantRectilinearIntegration(GUI=False):
     print("Test integrator on Constant rectilinear mesh")
-    from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearMesh 
+    from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearMesh
     myCRMesh = ConstantRectilinearMesh(3)
     nx = 3; ny = 4; nz =5;
 
@@ -669,14 +676,14 @@ def CheckIntegrityConstantRectilinearIntegration(GUI=False):
 
     from BasicTools.FE.FETools import PrepareFEComputation
     space, numberings, offset, NGauss = PrepareFEComputation(myCRMesh,numberOfComponents=1)
-    
+
     from BasicTools.FE.Fields.FEField import FEField
     from BasicTools.FE.SymWeakForm import GetField
     from BasicTools.FE.SymWeakForm import GetTestField
     T = GetField("T",1)
     Tt = GetTestField("T",1)
 
-    wf = T.T*Tt + 1.2*Tt
+    wf = T.T*Tt + 1*Tt
 
     constants = {}
     fields = [ ]
@@ -701,7 +708,10 @@ def CheckIntegrityConstantRectilinearIntegration(GUI=False):
     print(stopt)
     if volk*1 - volf <   volf/100000000:
         return "ok"
+    print("volk: "+str(volk))
+    print("volf: "+str(volf))
 
+    return "Not Ok"
 if __name__ == '__main__':
     print("Start")# pragma: no cover
     print(CheckIntegrity(True))# pragma: no cover

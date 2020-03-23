@@ -51,7 +51,7 @@ def GetElementaryMatrixForFormulation(elemName, wform, unknownNames, space=Lagra
 
     M,f = IntegrateGeneral(mesh=mesh,wform=wform, unkownFields= unkownFields,constants={},fields=[])
 
-    return M
+    return M.toarray(), f
 
 def PrepareFEComputation(mesh, elementFilter = None, numberOfComponents = None):
 
@@ -725,7 +725,7 @@ def CheckIntegrity(GUI=False):
 
     mecaPhysics = MecaPhysics()
     wform = mecaPhysics.GetBulkFormulation(1.0,0.3)
-    res = GetElementaryMatrixForFormulation(EN.Hexaedron_8,wform, unknownNames =mecaPhysics.GetPrimalNames() )
+    res,rhs = GetElementaryMatrixForFormulation(EN.Hexaedron_8,wform, unknownNames =mecaPhysics.GetPrimalNames() )
 
     import BasicTools.TestData as BasicToolsTestData
     from BasicTools.IO import GeofReader as GR

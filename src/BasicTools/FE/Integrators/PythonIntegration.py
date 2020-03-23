@@ -526,6 +526,9 @@ class MonoElementsIntegral(BOO):
         """
         return self.totalvijcpt
 
+    def AddToNumbefOfUsedIvij(self,data):
+        self.totalvijcpt += data
+
     def GetTotalTestDofs(self):
         """
         Return the number of dofs of the test space (number of rows of the K matrix)

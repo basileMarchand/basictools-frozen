@@ -61,6 +61,8 @@ cdef extern from "src_cpp/NativeIntegration.h" :
 
         void SetLocalOffsets(int, vector[double]&,vector[int]&,int, vector[double]&,vector[int]&)
         void Integrate(NNWF.WeakForm*, vector[int])
+        int GetNumberOfUsedIvij()
+        int AddToNumbefOfUsedIvij(int)
         double* vK
         np.int_t* iK
         np.int_t* jK

@@ -135,12 +135,14 @@ class ElementaryMatrix():
         else:
             el = EN.Quadrangle_4
 
-        KGeneric = GetElementaryMatrixForFormulation(el,wform, unknownNames = primalNames, geoFactor= self.geoFactor)
+        KGeneric,rhs = GetElementaryMatrixForFormulation(el,wform, unknownNames = primalNames, geoFactor= self.geoFactor)
+
         n = len(primalNames)
         permutation = np.array([x*EN.numberOfNodes[el]+y for y in range(EN.numberOfNodes[el]) for x in range(n)])
+        rhs = rhs[permutation]
         KGeneric = KGeneric[permutation,:]
         KGeneric = KGeneric[:,permutation]
-        return KGeneric.toarray()
+        return KGeneric
 
 class Fea(FeaBase.FeaBase):
 

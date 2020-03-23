@@ -355,7 +355,7 @@ cdef class PyMonoElementsIntegralCpp():
           print("Dont know this element : ", elementType)
 
       if not elementType in self.integrationRule :
-          print("Integration rule incomplete for this type of geo element : ", str(EN.geoSupport[elementType]))
+          print("Integration rule incomplete for this type of geo element : "+  str(elementType) + "  integration rule : "+ str(list(self.integrationrule.keys())))
 
       p, w = self.integrationRule[elementType];
       cdef int numberOfIntegrationPoints = len(w)
@@ -459,6 +459,9 @@ cdef class PyMonoElementsIntegralCpp():
 
     def GetNumberOfUsedIvij(self):
         return self.NativeIntegrator.totalvijcpt
+
+    def AddToNumbefOfUsedIvij(self,data):
+        self.NativeIntegrator.totalvijcpt += data
 
 def CheckIntegrity(GUI=False):
     obj = PyMonoElementsIntegralCpp()
