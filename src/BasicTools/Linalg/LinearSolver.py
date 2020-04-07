@@ -123,10 +123,14 @@ class LinearProblem(BOO):
                 self.SetAlgo(defaultIfError)
 
     def Solve(self, rhs):
+        u0 = None
         if self.HasConstraints():
             rhs = self.constraints.GetCRhs(rhs)
             if self.u is not None:
-                ru =  self.constraints.RestrictSolution(self.u)
+                u0 =  self.constraints.RestrictSolution(self.u)
+        else:
+            u0 = self.u
+
 
         self.PrintDebug('In LinearProblem Solve')
         if self.type == "Direct":
@@ -143,7 +147,7 @@ class LinearProblem(BOO):
             if self.u is None:
                 res = spslin.cg(self.op, rhs/norm, M = M,tol = self.tol)
             else:
-                res = spslin.cg(self.op, rhs/norm, M = M, x0 = ru/norm,tol = self.tol)
+                res = spslin.cg(self.op, rhs/norm, M = M, x0 = u0/norm,tol = self.tol)
             self.u = res[0][np.newaxis].T*norm
             self.u = self.u[:,0]
 
