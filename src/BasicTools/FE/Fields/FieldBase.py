@@ -22,9 +22,15 @@ binaryOps = {"__add__":np.add,
 class FieldBase(BaseOutputObject):
     def __init__(self,name=None,mesh=None):
         super(FieldBase,self).__init__()
-        self.name = name
+        if name is None:
+            self.name = ""
+        else:
+            self.name = name
         self.mesh = mesh
 
+    def GetName(self):
+        return self.name
+    
     def __neg__(self):
         return self.unaryOp(np.negative)
 
@@ -46,9 +52,10 @@ class FieldBase(BaseOutputObject):
         return self.binaryOp(other,binaryOps["__truediv__"])
 
     def __getattr__(self,name):
-        op = getattr(np,name)
+        op = getattr(np,name,None)
         if op is None:
-            return None
+            raise(AttributeError(str(type(self)) + " does not have the '"+str(name)+"' attribute."))
+            return 
         def newfunc():
            res = self.unaryOp(op)
            return res
