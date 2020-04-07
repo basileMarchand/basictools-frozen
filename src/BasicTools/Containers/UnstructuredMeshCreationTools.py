@@ -17,7 +17,17 @@ def CreateUniformMeshOfBars(pmin,pmax,npoints):
     bars = np.empty((npoints-1,2))
     bars[:,0] = np.arange(npoints-1)
     bars[:,1] = np.arange(1,npoints)
-    return CreateMeshOf(points,bars,elemName = ElementNames.Bar_2 )
+    res = CreateMeshOf(points,bars,elemName = ElementNames.Bar_2 )
+
+    elements = res.GetElementsOfType(ElementNames.Point_1)
+
+    elements.connectivity = np.array([[0],[npoints-1]],dtype=np.int)
+    elements.originalIds = np.arange(2,dtype=np.int)
+    elements.cpt = elements.connectivity.shape[0]
+    elements.tags.CreateTag("L",).SetIds([0])
+    elements.tags.CreateTag("H",).SetIds([1])
+    res.PrepareForOutput()
+    return res
 
 def CreateMeshOfTriangles(points,tris):
     return CreateMeshOf(points,tris,elemName = ElementNames.Triangle_3 )
