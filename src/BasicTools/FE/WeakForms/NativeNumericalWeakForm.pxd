@@ -22,6 +22,8 @@ cdef extern from "../WeakForms/src_cpp/NativeNumericalWeakForm.h" :
         int valuesIndex_
         int internalType
         int spaceIndex_
+        int modeIndex_
+
 
 cdef extern from "../WeakForms/src_cpp/NativeNumericalWeakForm.h" :
     cdef cppclass WeakMonom:
@@ -44,6 +46,7 @@ cdef class PyWeakTerm:
     cdef WeakTerm* GetCppObject(self)
     @staticmethod
     cdef PyWeakTerm create(WeakTerm* )
+    cdef PyWeakTerm copy(self)
 
 
 cdef class PyWeakMonom:
@@ -54,6 +57,7 @@ cdef class PyWeakMonom:
     cdef PyWeakTerm GetProd(self, int)
     cdef WeakMonom* GetCppObject(self)
     cpdef hasVariable(self,str)
+    #def PyWeakMonom copy(self)
 
     @staticmethod
     cdef PyWeakMonom create(WeakMonom*)

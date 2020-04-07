@@ -95,6 +95,10 @@ except:
         def __iter__(self):
             return iter(self.prod)
 
+        def copy(self):
+            import copy
+            return copy.deepcopy(self)
+
     class PyWeakTerm(object):
         EnumError = -1
         EnumNormal = 0
@@ -117,15 +121,21 @@ except:
             self.spaceIndex_ = None
             self.numberingIndex_ = None
             self.valuesIndex_ = None
+            self.modeIndex_ = None
             self.derCoordIndex_ = None
+
         def __str__(self):
             res = ""
             if self.derDegree > 0 and self.normal == 0 :
     #            #res += "d" + self.fieldName + "/"  + "d"  + str(self.derCoordName)
-                res += "Derivative("+str(self.fieldName)+", "+str(self.derCoordName)+")"
+                res += "Derivative("+str(self.fieldName)+", "+str(self.derCoordName)+","+str(self.derDegree)+")"
             else:
                 res += self.fieldName
             return res
+
+        def copy(self):
+            import copy
+            return copy.deepcopy(self)
 
 def SymWeakMonomToNumWeakMono(exp):
     from  sympy.core.mul import Mul

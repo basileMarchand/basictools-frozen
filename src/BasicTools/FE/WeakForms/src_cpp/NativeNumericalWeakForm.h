@@ -20,6 +20,7 @@ struct WeakTerm {
     int derCoordIndex_;
     int numberingIndex_;
     int valuesIndex_;
+    int modeIndex_;
     int internalType;
     friend std::ostream& operator<< (std::ostream& stream, const WeakTerm& term);
 

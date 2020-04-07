@@ -25,6 +25,21 @@ cdef class PyWeakTerm:
     cdef NNWF.WeakTerm* GetCppObject(self):
         return self._c_WeakTerm
 
+    cdef PyWeakTerm copy(self):
+        res = PyWeakTerm()
+        res.fieldName = self.fieldName
+        res.derCoordName = self.derCoordName
+        res.derDegree = self.derDegree
+        res.constant = self.constant
+        res.normal = self.normal
+        res.spaceIndex_ = self.spaceIndex_
+        res.derCoordIndex_ = self.derCoordIndex_
+        res.numberingIndex_ = self.numberingIndex_
+        res.valuesIndex_ = self.valuesIndex_
+        res.internalType = self.internalType
+        res.spaceIndex_ = self.spaceIndex_
+        return res        
+
     @staticmethod
     cdef PyWeakTerm create(WeakTerm* ptr):
         obj = <PyWeakTerm>PyWeakTerm.__new__(PyWeakTerm) # create instance without calling __init__
@@ -104,6 +119,13 @@ cdef class PyWeakTerm:
     def valuesIndex_(self, value):
         self._c_WeakTerm.valuesIndex_ = value
 
+    @property
+    def modeIndex_(self):
+        return self._c_WeakTerm.modeIndex_
+
+    @modeIndex_.setter
+    def modeIndex_(self, value):
+        self._c_WeakTerm.modeIndex_ = value
 
     @property
     def numberingIndex_(self):
@@ -171,6 +193,13 @@ cdef class PyWeakMonom:
         if self._c_WeakMonom is not NULL and self.pointerOwner == True:
             del self._c_WeakMonom
 
+    def copy(self):
+        res = PyWeakMonom()
+        res._c_WeakMonom.prefactor = self._c_WeakMonom.prefactor 
+        for i in range(self.GetNumberOfProds()):
+            res._c_WeakMonom.prod.push_back(deref(self.GetProd(i).copy().GetCppObject() ))
+        return res
+        
     cpdef  hasVariable(self,str var):
         for m in self :
             if m.fieldName == str(var):
