@@ -206,6 +206,9 @@ class ConstraintsHolder(BOO):
     def RestoreSolution(self,arg):
         return self.method.RestoreSolution(arg)
 
+    def RestrictSolution(self,arg):
+        return self.method.RestrictSolution(arg)
+
     def __str__(self):
         res = "Constraints Holder: \n"
         res = "   Number of contraints: "+str(self.GetNumberOfConstraints()) +"\n"
@@ -254,6 +257,9 @@ class Penalisation(BOO):
     def RestoreSolution(self,arg):
         return arg
 
+    def RestrictSolution(self,arg):
+        return arg
+
 class Lagrange(BOO):
     def __init__(self):
         super(Lagrange,self).__init__()
@@ -299,6 +305,11 @@ class Lagrange(BOO):
     def RestoreSolution(self,arg):
         return arg[0:self.nbdof]
 
+    def RestrictSolution(self,arg):
+        res = np.zeros(self.GetNumberOfDofs())
+        res[0:self.nbdof] = arg
+        return arg
+
 class Projection(BOO):
 
     def __init__(self):
@@ -338,6 +349,9 @@ class Projection(BOO):
 
     def RestoreSolution(self,arg):
         return self.X.dot(arg) + self.D
+
+    def RestrictSolution(self,arg):
+        return self.X.T.dot(arg)
 
     def UpdateSystem(self,CH):
         self.PrintVerbose('Compute Factorisation')
