@@ -4,12 +4,13 @@
 # file 'LICENSE.txt', which is part of this source code package.
 #
 
+from sympy import Symbol
 
 from BasicTools.Containers.Filters import ElementFilter
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject as BOO
 from BasicTools.FE.WeakForms.NumericalWeakForm import SymWeakToNumWeak
-from BasicTools.FE.SymWeakForm import Gradient,Divergence, GetField,GetTestField
-from sympy import Symbol
+from BasicTools.FE.SymWeakForm import Gradient,Divergence, GetField,GetTestField, GetScalarField
+
 
 class Physics(BOO):
     def __init__(self):
@@ -27,6 +28,15 @@ class Physics(BOO):
         if data[1] == 1:
             return data[0]
         return [ data[0] + "_" +str(d)  for d in range(data[1]) ]
+
+    def GetBulkMassFormulation(self,alpha=1.):
+        u = self.primalUnknown
+        ut = self.primalTest
+
+        a = GetScalarField(alpha)
+
+        ener = u.T*ut*a
+        return ener
 
     def SetSpaceToLagrange(self,P=None,isoParam=None):
         if P is None and isoParam is None:
@@ -96,16 +106,6 @@ class Physics(BOO):
             else:
                 self.numberings[d] = ComputeDofNumbering(mesh,self.spaces[d],fromConnectivity =False,elementFilter=allFilters,dofs=self.numberings[d])
 
-#            if tagsToKeep is not None:
-#                for tag in tagsToKeep:
-#                    self.numberings[d] = ComputeDofNumbering(mesh,self.spaces[d],fromConnectivity =False,tag=tag,dofs=self.numberings[d])
-#            for tag,form in self.linearWeakFormulations:
-#                self.numberings[d] = ComputeDofNumbering(mesh,self.spaces[d],fromConnectivity =False ,tag=tag,dofs=self.numberings[d])
-#            for tag,form in self.bilinearWeakFormulations:
-#                self.numberings[d] = ComputeDofNumbering(mesh,self.spaces[d],fromConnectivity =False ,tag=tag,dofs=self.numberings[d])
-            #print("size of numbering", len(self.numberings))
-            #print("(mesh.elements['quad4'].connectivity[0,:]", mesh.elements["quad4"].connectivity[0,:])
-            #return
     def ComputeDofNumberingFromConnectivity(self,mesh):
         self.ComputeDofNumbering(mesh, fromConnectivity=True)
 
@@ -116,7 +116,8 @@ class MecaPhysics(Physics):
         self.dim = dim
 
         self.mecaPrimalName = ("u",self.dim)
-        self.pressureName = ("p",1)
+        self.SetMecaPrimalName(self.mecaPrimalName[0])
+
         self.mecaSpace = None
 
         self.young = 1.
@@ -125,43 +126,49 @@ class MecaPhysics(Physics):
 
     def SetMecaPrimalName(self,name):
         self.mecaPrimalName = (name,self.dim)
+        self.primalUnknown = GetField(self.mecaPrimalName[0],self.mecaPrimalName[1])
+        self.primalTest = GetTestField(self.mecaPrimalName[0],self.mecaPrimalName[1])
 
     def GetPrimalNames(self):
         return self.ExpandNames(self.mecaPrimalName)
 
-    def GetBulkFormulation(self,young=None, poisson=None,factor=None ):
-        from BasicTools.FE.SymWeakForm import GetMecaElasticProblem
+
+    def GetBulkFormulation(self,young=None, poisson=None,alpha=None ):
+        from BasicTools.FE.SymWeakForm import ToVoigtEpsilon,Strain
         from BasicTools.FE.MaterialHelp import HookeLaw
+
+        u = self.primalUnknown
+        ut = self.primalTest
 
         if young is None:
             young = self.young
         if poisson is None:
             poisson = self.poisson
-        if factor is not None:
-            young *=factor
+
+        young *= GetScalarField(alpha)
 
         op = HookeLaw()
         op.Read({"E":young, "nu":poisson})
         self.HookeLocalOperator = op.HookeIso(dim=self.dim,planeStress=self.planeStress)
-        Symwfb = GetMecaElasticProblem(self.mecaPrimalName[0],dim=self.mecaPrimalName[1],K=self.HookeLocalOperator)
+        Symwfb = ToVoigtEpsilon(Strain(u,self.dim)).T*self.HookeLocalOperator*ToVoigtEpsilon(Strain(ut,self.dim))
         return Symwfb
 
-    def GetPressureFormulation(self,pressureName):
-        from BasicTools.FE.SymWeakForm import GetMecaNormalPressure
-        if pressureName is None:
-            pressureName = self.pressureName
-        Symwfp = GetMecaNormalPressure(self.pressureName[0],name=self.mecaPrimalName[0])
-        wfp = SymWeakToNumWeak(Symwfp)
-        return wfp
+    def GetPressureFormulation(self,pressure):
+        ut = self.primalTest
+
+        p = GetScalarField(pressure)
+
+        from BasicTools.FE.SymWeakForm import GetNormal
+        Normal = GetNormal(self.dim)
+
+        Symwfp = p*Normal.T*ut
+
+        return Symwfp
 
     def GetForceFormulation(self,direction,flux="f"):
-        from BasicTools.FE.SymWeakForm import GetTestField
 
-        ut = GetTestField(self.mecaPrimalName[0],self.mecaPrimalName[1])
-        if isinstance(flux,str):
-            f = Symbol(flux)
-        else:
-            f = float(flux)
+        ut = self.primalTest
+        f = GetScalarField(flux)
 
         from sympy.matrices import Matrix
         if not isinstance(direction,Matrix):
@@ -173,14 +180,14 @@ class MecaPhysics(Physics):
 
     def PostTraitementFormulations(self):
         import BasicTools.FE.SymWeakForm as wf
-        symdep = GetField("u",3)
+        symdep = self.primalUnknown
+
         nodalEnergy = GetField("ElasticEnergy",1)
         nodalEnergyT = GetTestField("ElasticEnergy",1)
         symEner = wf.ToVoigtEpsilon(wf.Strain(symdep)).T*self.HookeLocalOperator*wf.ToVoigtEpsilon(wf.Strain(symdep))*nodalEnergyT
         symMass = nodalEnergy.T*nodalEnergyT
         post1 = ("ElasticEnergy","nodal",symEner + symMass)
         post2 = ("ElasticEnergy","global",symEner )
-        #post3 = ("ElasticEnergy","globalPreCalculated",3.14159 )
 
         return (post1,post2)
 
@@ -190,6 +197,16 @@ class BasicPhysics(Physics):
         self.PrimalNameTrial = ("u",1)
         self.PrimalNameTest = ("u",1)
         self.Space = None
+        self.SetPrimalName(self.PrimalNameTrial[0])
+
+    def SetPrimalName(self,unknowName,testName=None,unknowDim=1,testDim=1):
+        self.PrimalNameTrial = (unknowName,unknowDim)
+        if testName is None:
+            testName = unknowName
+        self.PrimalNameTest = (testName,testDim)
+        self.primalUnknown = GetField(self.PrimalNameTrial[0],self.PrimalNameTrial[1])
+        self.primalTest = GetTestField(self.PrimalNameTest[0],self.PrimalNameTest[1])
+
 
     def GetPrimalNames(self):
         return [self.PrimalNameTrial[0]]
@@ -197,55 +214,38 @@ class BasicPhysics(Physics):
     def GetPrimalDims(self):
         return [self.PrimalNameTrial[1]]
 
-    def GetBulkMassFormulation(self,alpha=1):
-        from BasicTools.FE.SymWeakForm import GetField,GetTestField
-        trial  = GetField(*self.PrimalNameTrial)
-        test = GetTestField(*self.PrimalNameTest)
-
-        if isinstance(alpha,str):
-            a = Symbol(alpha)
-        else:
-            a = float(alpha)
-
-        Symwfb = trial.T*test*a
-        return Symwfb
 
     def GetBulkFormulation_dudi_dtdj(self,u=0,t=0,i=0,j=0,alpha=1.):
 
-        trial =    GetField(*self.PrimalNameTrial)
+        a = GetScalarField(alpha)
+
+        unk = self.primalUnknown
+
         if self.PrimalNameTrial[1] > 1:
-            dtestdj = Gradient(trial,self.spaceDimension)[i,u]
+            dtestdj = Gradient(unk,self.spaceDimension)[i,u]
         else:
-            dtestdj = Gradient(trial,self.spaceDimension)[i]
+            dtestdj = Gradient(unk,self.spaceDimension)[i]
 
-        test  = GetTestField(*self.PrimalNameTest)
+        ut = self.primalTest
         if self.PrimalNameTest[1] > 1:
-            dtrialdi = Gradient(test,self.spaceDimension)[j,t]
+            dtrialdi = Gradient(ut,self.spaceDimension)[j,t]
         else:
-            dtrialdi = Gradient(test,self.spaceDimension)[j]
+            dtrialdi = Gradient(ut,self.spaceDimension)[j]
 
-        Symwfb = dtrialdi*(alpha)*dtestdj
+        Symwfb = dtrialdi*(a)*dtestdj
         return Symwfb
 
     def GetBulkLaplacian(self,alpha=1):
         from BasicTools.FE.SymWeakForm import Gradient
-        from BasicTools.FE.SymWeakForm import GetField,GetTestField
-        #from sympy import Identity
-
-        t  = GetField(*self.PrimalNameTrial)
-        tt = GetTestField(*self.PrimalNameTest)
-        Symwfb = Gradient(t,self.spaceDimension).T*(alpha)*Gradient(tt,self.spaceDimension)
+        a = GetScalarField(alpha)
+        u = self.primalUnknown
+        ut = self.primalTest
+        Symwfb = Gradient(u,self.spaceDimension).T*(a)*Gradient(ut,self.spaceDimension)
         return Symwfb
 
     def GetFlux(self,flux="f"):
-        from BasicTools.FE.SymWeakForm import GetTestField
-        from sympy import Symbol
-
-        tt = GetTestField(*self.PrimalNameTest)
-        if isinstance(flux,str):
-            f = Symbol(flux)
-        else:
-            f = float(flux)
+        tt = self.primalTest
+        f = GetScalarField(flux)
 
         return f*tt
 
@@ -253,36 +253,38 @@ class ThermalPhysics(Physics):
     def __init__(self):
         super(ThermalPhysics,self).__init__()
         self.thermalPrimalName = ("t",1)
+        self.SetPrimalNames(self.thermalPrimalName)
         self.thermalSpace = None
 
     def GetPrimalNames(self):
         return [ self.thermalPrimalName[0]]
 
+    def SetPrimalNames(self,data):
+        self.thermalPrilamName = data
+        self.primalUnknown = GetField(self.thermalPrimalName[0],1)
+        self.primalTest = GetTestField(self.thermalPrimalName[0],1)
+
     def SetThermalPrimalName(self,name):
         self.thermalPrimalName = name
 
     def GetBulkFormulation(self, alpha=1. ):
+        t = self.primalUnknown
+        tt = self.primalTest
 
-        t  = GetField(self.thermalPrimalName[0],1)
-        tt = GetTestField(self.thermalPrimalName[0],1)
         if hasattr(alpha, '__iter__'):
             from sympy import diag
             K = diag(*alpha)
             Symwfb = Gradient(t,self.spaceDimension).T*K*Gradient(tt,self.spaceDimension)
         else:
+            alpha = GetScalarField(alpha)
             Symwfb = Gradient(t,self.spaceDimension).T*(alpha)*Gradient(tt,self.spaceDimension)
-        #wfb = SymWeakToNumWeak(Symwfb)
+
         return Symwfb
 
     def GetNormalFlux(self,flux="f"):
-        from BasicTools.FE.SymWeakForm import GetTestField
-        from sympy import Symbol
 
-        tt = GetTestField(self.thermalPrimalName,1)
-        if isinstance(flux,str):
-            f = Symbol(flux)
-        else:
-            f = float(flux)
+        tt = self.primalTest
+        f = GetScalarField(flux)
 
         wflux = f*tt
         wfp = SymWeakToNumWeak(wflux)
@@ -293,11 +295,22 @@ class StokesPhysics(Physics):
         super(StokesPhysics,self).__init__()
         self.velocityPrimalName = ("v",3)
         self.pressurePrimalName = ("p",1)
+        self.SetPrimalNames(self.velocityPrimalName[0])
+
 
     def GetPrimalNames(self):
         res = [self.velocityPrimalName[0] + "_" + str(c) for c in range(self.velocityPrimalName[1]) ]
         res.append(self.pressurePrimalName)
         return res
+
+    def SetMecaPrimalName(self,vname,pname):
+        self.velocityPrimalName = (vname,self.dim)
+        self.pressurePrimalName = (pname,1)
+        self.primalUnknownV = GetField(self.velocityPrimalName[0],self.velocityPrimalName[1])
+        self.primalUnknownP = GetField(self.pressurePrimalName[0],self.pressurePrimalName[1])
+        self.primalTestV = GetTestField(self.velocityPrimalName[0],self.velocityPrimalName[1])
+        self.primalTestP = GetTestField(self.pressurePrimalName[0],self.pressurePrimalName[1])
+
 
     def SetSpaceToLagrange(self,P=None,isoParam=None):
         from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceP1
@@ -312,10 +325,12 @@ class StokesPhysics(Physics):
         from BasicTools.FE.SymWeakForm import GetField,GetTestField
         #from sympy import Identity
 
-        v  = GetField(self.velocityPrimalName,self.spaceDimension)
-        vt = GetTestField(self.velocityPrimalName,self.spaceDimension)
-        p  = GetField(self.pressurePrimalName,1)
-        pt = GetTestField(self.pressurePrimalName,1)
+        mu = GetScalarField(mu)
+
+        v  = self.primalUnknownV
+        vt = self.primalTestV
+        p  = self.primalUnknownP
+        pt = self.primalTestP
 
         res = Gradient(v,self.spaceDimension).T*mu*Gradient(vt,self.spaceDimension)  -  Divergence(vt,self.spaceDimension)*p + pt*Divergence(v,self.spaceDimension)
 
@@ -335,7 +350,7 @@ class ThermoMecaPhysics(Physics):
         return res
 
     def GetBulkFormulation(self,young=1., poisson=0.3, alpha=1.):
-        res = self.mecaPhys.GetBulkFormulation(young=young, poisson=poisson)
+        res = self.mecaPhys.GetBulkFormulation(young=young, poisson=poisson,alpha=alpha)
         res += self.thermalPhys.GetBulkFormulation(alpha=alpha)
 
         # need to add the clouplig terms
@@ -352,8 +367,10 @@ def CheckIntegrity(GUI=False):
 
     print(BasicPhysics().GetBulkFormulation_dudi_dtdj())
     t = BasicPhysics()
-    t.PrimalNameTrial = ("U",3)
-    t.PrimalNameTest = ("V",3)
+    t.spaceDimension = 3
+    t.SetPrimalName("U","V",3,3)
+    print(t.primalUnknown)
+    print(t.primalTest)
     print(t.GetBulkFormulation_dudi_dtdj(u=0,i=1,t=1,j=2) )
     return "ok"
 

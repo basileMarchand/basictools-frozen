@@ -106,12 +106,14 @@ class ElementaryMatrix():
         self.thermalK = 1
 
     def GetMassMatrix(self):
-        from BasicTools.FE.SymWeakForm import GetMassWeakForm
         if self.physics == "disp":
-            wform = GetMassWeakForm("u",self.dim)
+            from BasicTools.FE.SymPhysics import MecaPhysics
+            phys = MecaPhysics(self.dim)
+            wform = phys.GetBulkMassFormulation()
             return self.Integrate(["u_"+str(x) for x in range(self.dim)],wform)
         elif self.physics == "thermal":
-            wform = GetMassWeakForm("t",1)
+            from BasicTools.FE.SymPhysics import  ThermalPhysics
+            wform = ThermalPhysics().GetBulkMassFormulation()
             return self.Integrate(["t"],wform)
 
     def GetTangetMatrix(self):

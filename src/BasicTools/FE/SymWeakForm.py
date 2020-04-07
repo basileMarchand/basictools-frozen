@@ -23,6 +23,18 @@ def GetConstant(name,size=1):
             res.append(Symbol(name+"_"+str(i)))
         return (Matrix([res])).T
 
+def GetScalarField(alpha):
+
+    if alpha is None:
+        a = 1.
+    elif isinstance(alpha,str):
+        a = GetConstant(alpha)
+    elif isinstance(float,int):
+        a = float(alpha)
+    else:
+        a = alpha
+    return a
+
 def GetTestField(name,size,sdim=3,extraCoordinates=[]):
     return GetField(name,size,star=True,sdim=sdim,extraCoordinates=extraCoordinates)
 
@@ -87,33 +99,6 @@ def ToVoigtSigma(arg):
         return Matrix([arg[0,0]])
     raise()
 
-def GetMassWeakForm(name="u",dim=3):
-    u = GetField(name,dim)
-    ut = GetTestField(name,dim)
-    ener = u.T*ut
-    return ener
-
-def GetMecaElasticProblem(name="u",dim=3,K=None,planeStress=True):
-    u = GetField("u",dim)
-    ut = GetTestField("u",dim)
-    if K is None:
-        from BasicTools.FE.MaterialHelp import HookeIso
-        K = HookeIso(1,0.3,dim, planeStress)
-    ener = ToVoigtEpsilon(Strain(u,dim)).T*K*ToVoigtEpsilon(Strain(ut,dim))
-    return ener
-
-def GetMecaNormalPressure(flux="p",name="u", dim=3):
-    ut = GetTestField(name,dim)
-    if isinstance(flux,str):
-        p = GetConstant(flux)
-    else:
-        p = float(flux)
-
-    from BasicTools.FE.SymWeakForm import GetNormal
-    Normal = GetNormal(dim)
-
-    wflux = p*Normal.T*ut
-    return wflux
 
 def CheckIntegrity(GUI=False):
     from sympy import pprint
