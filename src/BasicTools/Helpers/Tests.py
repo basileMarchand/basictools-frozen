@@ -201,7 +201,7 @@ def __RunAndCheck(lis,bp,stopAtFirstError,dryrun,profiling):# pragma: no cover
 
     return res
 
-def __tryImportRecursive(submod,tocheck,stopAtFirstError):
+def __tryImportRecursive(submod,tocheck,stopAtFirstError,modulestotreat,modulestoskip):
 
 
   import importlib
@@ -213,8 +213,11 @@ def __tryImportRecursive(submod,tocheck,stopAtFirstError):
   else :
      try:
          for subsubmod  in [ submod +'.' + x for x in sm.__all__]:
+             if any([x.lower() in subsubmod.lower() for x in modulestoskip]):
+                 print("skip module :" +str(subsubmod))
+                 continue
              try:
-                 __tryImportRecursive(subsubmod,tocheck,stopAtFirstError)
+                 __tryImportRecursive(subsubmod,tocheck,stopAtFirstError,modulestotreat,modulestoskip)
              except Exception as e:
                  print(e)
                  import os
@@ -226,11 +229,11 @@ def __tryImportRecursive(submod,tocheck,stopAtFirstError):
         if(stopAtFirstError): raise
 
 
-def __tryImport(noduleName,bp,stopAtFirstError):# pragma: no cover
+def __tryImport(noduleName,bp,stopAtFirstError,modulestotreat,modulestoskip):# pragma: no cover
 
     tocheck = {}
     try :
-        __tryImportRecursive(noduleName,tocheck,stopAtFirstError)
+        __tryImportRecursive(noduleName,tocheck,stopAtFirstError,modulestotreat,modulestoskip)
     except:
         print("Error loading module '" + noduleName +"'")
         print("This module will not be tested ")
@@ -277,7 +280,7 @@ def TestAll(modulestotreat=['ALL'],modulestoskip=[], fulloutput=False, stopAtFir
     with PrintBypass() as bp:
         if extraToolsBoxs is not None:
             for tool in extraToolsBoxs:
-                tocheck.update(__tryImport(tool,bp,stopAtFirstError))
+                tocheck.update(__tryImport(tool,bp,stopAtFirstError,modulestotreat,modulestoskip))
 
 
 
