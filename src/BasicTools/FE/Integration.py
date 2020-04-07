@@ -43,7 +43,7 @@ def Integrate( mesh, wform, constants, fields, dofs,spaces,numbering, integratio
                             elementFilter=elementFilter)
 
 
-def IntegrateGeneral( mesh, wform, constants, fields, unkownFields, testFields=None, integrationRuleName=None,onlyEvaluation=False, elementFilter=None):
+def IntegrateGeneral( mesh, wform, constants, fields, unkownFields, testFields=None, integrationRuleName=None,onlyEvaluation=False, elementFilter=None,userIntegrator=None):
 
     if elementFilter is None:
         # if no filter the the integral is over the bulk element
@@ -57,36 +57,39 @@ def IntegrateGeneral( mesh, wform, constants, fields, unkownFields, testFields=N
     if wform is None :
         return
 
-    ttest = [WeakForm.PyWeakForm]
-    try:
-        import BasicTools.FE.WearForms.NativeNumericalWeakForm as NativeNumericalWeakForm
-        ttest.append(NativeNumericalWeakForm.PyWeakForm)
-    except :
-        pass
-
-    if not isinstance(wform, tuple(ttest) ):
-        from BasicTools.FE.WeakForms.NumericalWeakForm import SymWeakToNumWeak
-        wform = SymWeakToNumWeak(wform)
-
-    import time
-    st = time.time()
-    BaseOutputObject().PrintDebug("Integration ")
-
-    try:
-        from BasicTools.FE.WeakForms.NativeNumericalWeakForm import PyWeakForm
-        typeCpp = (type(wform) == PyWeakForm)
-        import BasicTools.FE.Integrators.NativeIntegration
-    except :
-        typeCpp = False
-        print("Warning : Using Python Integration (very slow)")
-
-    if UseCpp and typeCpp:
-        import BasicTools.FE.Integrators.NativeIntegration as NI
-        integrator = NI.PyMonoElementsIntegralCpp()
+    if userIntegrator is None:
+        ttest = [WeakForm.PyWeakForm]
+        try:
+            import BasicTools.FE.WearForms.NativeNumericalWeakForm as NativeNumericalWeakForm
+            ttest.append(NativeNumericalWeakForm.PyWeakForm)
+        except :
+            pass
+    
+        if not isinstance(wform, tuple(ttest) ):
+            from BasicTools.FE.WeakForms.NumericalWeakForm import SymWeakToNumWeak
+            wform = SymWeakToNumWeak(wform)
+    
+        import time
+        st = time.time()
+        BaseOutputObject().PrintDebug("Integration ")
+    
+        try:
+            from BasicTools.FE.WeakForms.NativeNumericalWeakForm import PyWeakForm
+            typeCpp = (type(wform) == PyWeakForm)
+            import BasicTools.FE.Integrators.NativeIntegration
+        except :
+            typeCpp = False
+            print("Warning : Using Python Integration (very slow)")
+    
+        if UseCpp and typeCpp:
+            import BasicTools.FE.Integrators.NativeIntegration as NI
+            integrator = NI.PyMonoElementsIntegralCpp()
+        else:
+            import BasicTools.FE.Integrators.PythonIntegration as PI
+            integrator = PI.MonoElementsIntegral()
     else:
-        import BasicTools.FE.Integrators.PythonIntegration as PI
-        integrator = PI.MonoElementsIntegral()
-
+        integrator = userIntegrator
+        
     integrator.SetOnlyEvaluation(onlyEvaluation)
     integrator.SetUnkownFields(unkownFields)
     integrator.SetTestFields(testFields)
@@ -220,13 +223,14 @@ def IntegrateGeneral( mesh, wform, constants, fields, unkownFields, testFields=N
             raise(Exception("Tag not found to do the integration"))
 
 
-
-    numberOfUsedvij = integrator.GetNumberOfUsedIvij()
-    data = (vK[0:numberOfUsedvij], (iK[0:numberOfUsedvij],jK[0:numberOfUsedvij]))
-    K = coo_matrix(data, shape=(integrator.GetTotalTestDofs(), integrator.GetTotalUnkownDofs())) .tocsr()
-    BaseOutputObject().PrintDebug("Integration Done        " +str(time.time()-st))
-    return K,F
-
+    if userIntegrator is None:
+        numberOfUsedvij = integrator.GetNumberOfUsedIvij()
+        data = (vK[0:numberOfUsedvij], (iK[0:numberOfUsedvij],jK[0:numberOfUsedvij]))
+        K = coo_matrix(data, shape=(integrator.GetTotalTestDofs(), integrator.GetTotalUnkownDofs())) .tocsr()
+        BaseOutputObject().PrintDebug("Integration Done        " +str(time.time()-st))
+        return K,F
+    else:
+        return 
 
 def CheckIntegrityNormalFlux(GUI=False):
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshOf
