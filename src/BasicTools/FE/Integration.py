@@ -171,8 +171,10 @@ def IntegrateGeneral( mesh, wform, constants, fields, unkownFields, testFields=N
 
         else:
 
-            integrator.ActivateElementType(data)
             ids = np.array(idstotreat,dtype=int,copy=False)
+            if len(ids ) == 0:
+                continue
+            integrator.ActivateElementType(data)
             integrator.Integrate(wform,ids)
 
     # in the case the tag does not exist for the elements we try to find in the
