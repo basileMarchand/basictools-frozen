@@ -9,4 +9,5 @@ __all__ =[
 "IPField",
 "FEField",
 "FieldBase",
+"FieldTools",
 ]
