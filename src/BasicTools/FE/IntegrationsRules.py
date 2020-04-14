@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 import numpy as np
 
 import BasicTools.Containers.ElementNames as EN
@@ -44,9 +44,9 @@ IntegrationRulesAlmanac = {}
 
 ### integration Point in the center of the elemetn #####
 ElementCenter = {}
-IntegrationRulesAlmanac["ElementCenterEval"] =ElementCenter 
+IntegrationRulesAlmanac["ElementCenterEval"] = ElementCenter
 
-# 1D elements 
+# 1D elements
 ElementCenter[EN.Bar_2] = ( 1./2.*np.array([[1.] ]),
                                   np.array([1. ]))
 ElementCenter[EN.Bar_3] = ElementCenter[EN.Bar_2]
@@ -58,8 +58,8 @@ ElementCenter[EN.Triangle_6] = ElementCenter[EN.Triangle_3]
 
 ElementCenter[EN.Quadrangle_4] = ( 1./2.*np.array([[1., 1.] ]),
                                   np.array([1. ]))
-ElementCenter[EN.Quadrangle_8] = ElementCenter[EN.Quadrangle_4] 
-ElementCenter[EN.Quadrangle_9] = ElementCenter[EN.Quadrangle_4] 
+ElementCenter[EN.Quadrangle_8] = ElementCenter[EN.Quadrangle_4]
+ElementCenter[EN.Quadrangle_9] = ElementCenter[EN.Quadrangle_4]
 
 # 3D elements
 ElementCenter[EN.Tetrahedron_4] = ( 1./4.*np.array([[1., 1.,1.] ]),
@@ -81,16 +81,17 @@ LagrangeP1[EN.Point_1] = ( np.array([[0] ]),
 
 LagrangeP1[EN.Triangle_3] = ( 1./6.*np.array([[1., 1.] ,[4., 1.],[ 1. ,4.] ]),
                                   1./6.*np.array([1. , 1. , 1]))
-LagrangeP1[EN.Triangle_6] = LagrangeP1[EN.Triangle_3] 
+LagrangeP1[EN.Triangle_6] = LagrangeP1[EN.Triangle_3]
 
+#from https://www.code-aster.org/V2/doc/v13/en/man_r/r3/r3.01.01.pdf
 p0 = 1./4.
 p1 = 1./6.
 p2 = 1./2.
 p=np.array([[p0,p0,p0],
             [p1,p1,p1],
-            [p2,p0,p0],
-            [p0,p2,p0],
-            [p0,p0,p2]]);
+            [p2,p1,p1],
+            [p1,p2,p1],
+            [p1,p1,p2]]);
 w0 = -2./15
 w1 = 3./40
 w= np.array([ w0, w1, w1, w1, w1]);
