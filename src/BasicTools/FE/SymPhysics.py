@@ -4,11 +4,8 @@
 # file 'LICENSE.txt', which is part of this source code package.
 #
 
-from sympy import Symbol
-
 from BasicTools.Containers.Filters import ElementFilter
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject as BOO
-from BasicTools.FE.WeakForms.NumericalWeakForm import SymWeakToNumWeak
 from BasicTools.FE.SymWeakForm import Gradient,Divergence, GetField,GetTestField, GetScalarField
 
 
@@ -122,6 +119,8 @@ class MecaPhysics(Physics):
 
         self.young = 1.
         self.poisson = 0.3
+        self.density = 1.
+
         self.planeStress = True
 
     def SetMecaPrimalName(self,name):
@@ -145,7 +144,7 @@ class MecaPhysics(Physics):
         if poisson is None:
             poisson = self.poisson
 
-        young *= GetScalarField(alpha)
+        young = GetScalarField(young)*GetScalarField(alpha)
 
         op = HookeLaw()
         op.Read({"E":young, "nu":poisson})
@@ -174,22 +173,44 @@ class MecaPhysics(Physics):
         if not isinstance(direction,Matrix):
             direction = Matrix([direction]).T
 
-        wflux = f*direction.T*ut
-        wfp = SymWeakToNumWeak(wflux)
-        return wfp
+        return  f*direction.T*ut
+
+    def GetAccelerationFormulation(self,direction,density=None):
+
+        if density is None:
+            density = self.density
+
+        ut = self.primalTest
+        density = GetScalarField(density)
+        from sympy.matrices import Matrix
+        if not isinstance(direction,Matrix):
+            direction = [GetScalarField(d) for d in direction]
+            direction = Matrix([direction]).T
+
+        return  density*direction.T*ut
+
+
 
     def PostTraitementFormulations(self):
         import BasicTools.FE.SymWeakForm as wf
         symdep = self.primalUnknown
 
-        nodalEnergy = GetField("ElasticEnergy",1)
-        nodalEnergyT = GetTestField("ElasticEnergy",1)
-        symEner = wf.ToVoigtEpsilon(wf.Strain(symdep)).T*self.HookeLocalOperator*wf.ToVoigtEpsilon(wf.Strain(symdep))*nodalEnergyT
-        symMass = nodalEnergy.T*nodalEnergyT
-        post1 = ("ElasticEnergy","nodal",symEner + symMass)
-        post2 = ("ElasticEnergy","global",symEner )
 
-        return (post1,post2)
+        nodalEnergyT = GetTestField("strain_energy",1)
+        symEner = 0.5*wf.ToVoigtEpsilon(wf.Strain(symdep)).T*self.HookeLocalOperator*wf.ToVoigtEpsilon(wf.Strain(symdep))*nodalEnergyT
+
+
+        trStrainT = GetTestField("tr(strain)",1)
+        symTrStrain = wf.Trace(wf.Strain(symdep)).T*trStrainT
+
+        trStressT = GetTestField("tr(stress)",1)
+        symTrStress = wf.Trace(wf.FromVoigtSigma(wf.ToVoigtEpsilon(wf.Strain(symdep)).T*self.HookeLocalOperator))*trStressT
+
+        postQuantities = {"strain_energy" : symEner,
+                          "tr(strain)": symTrStrain,
+                          "tr(stress)": symTrStress }
+
+        return postQuantities
 
 class BasicPhysics(Physics):
     def __init__(self):
@@ -286,9 +307,7 @@ class ThermalPhysics(Physics):
         tt = self.primalTest
         f = GetScalarField(flux)
 
-        wflux = f*tt
-        wfp = SymWeakToNumWeak(wflux)
-        return wfp
+        return f*tt
 
 class StokesPhysics(Physics):
     def __init__(self):
@@ -322,11 +341,8 @@ class StokesPhysics(Physics):
 
 
     def GetBulkFormulation(self,mu=1.):
-        from BasicTools.FE.SymWeakForm import GetField,GetTestField
-        #from sympy import Identity
 
         mu = GetScalarField(mu)
-
         v  = self.primalUnknownV
         vt = self.primalTestV
         p  = self.primalUnknownP
