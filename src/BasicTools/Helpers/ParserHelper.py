@@ -143,6 +143,8 @@ def ReadVectorPhiThetaMag(string,normalised=False):
 
     if normalised:
         mag = 1.
+        if len(res) == 3:
+            print("Warning: mag ignored")
 
     phi = phi*math.pi/180.
     theta = theta*math.pi/180.
