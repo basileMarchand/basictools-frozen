@@ -64,7 +64,11 @@ def ReadScalar(inputData,inputtype):
             return inputtype(inputData)
     except ValueError:
         from BasicTools.Containers.SymExpr import SymExprBase
-        return inputtype(SymExprBase(inputData).GetValue())
+        try:
+            return inputtype(SymExprBase(inputData).GetValue())
+        except TypeError as e:
+            print("Cannot convert expression to  {}, expr : {}".format(inputtype,inputData))
+            raise(e)
 
 def ReadVector(string,dtype):
 
