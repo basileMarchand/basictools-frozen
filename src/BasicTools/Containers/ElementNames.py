@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 
 class GeoSupport(object):
     def __init__(self,data):
@@ -36,7 +36,7 @@ class GeoSupport(object):
 #        GeoSupport(("hex"  ,3 ))]  #7
 
 
-GeoPoint = GeoSupport(("point",1))   #0
+GeoPoint = GeoSupport(("point",0))   #0
 GeoBar   = GeoSupport(("bar"  ,1))   #1
 GeoTri   = GeoSupport(("tri"  ,2))   #2
 GeoQuad  = GeoSupport(("quad" ,2))   #3
