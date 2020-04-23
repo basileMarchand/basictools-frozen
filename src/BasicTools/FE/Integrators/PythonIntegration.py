@@ -280,16 +280,19 @@ class MonoElementsIntegral(BOO):
             if "Normal" in term.fieldName :
                 term.internalType = term.EnumNormal
             elif term.constant:
-                try:
+                if term.fieldName in self.constantsNames:
                     term.valuesIndex_ = constantNames.index(term.fieldName)
                     term.internalType = term.EnumConstant
-                except:
-                    print("Warning: constant '" +str(term.fieldName) + "'  not found in constants ")
-                    print("searching extra fields")
+                elif term.fieldName in [f.name for f in self.__efs__]:
                     term.spaceIndex_= spacesNames[term.fieldName]
                     term.numberingIndex_= numberingNames[term.fieldName]
                     term.valuesIndex_= valuesNames[term.fieldName]
                     term.internalType = term.EnumExtraField
+                elif term.fieldName in [f.name for f in self.__ipefs__]:
+                    term.valuesIndex_= [ef.name for ef in  self.__ipefs__ ].index(term.fieldName)
+                    term.internalType = term.EnumExtraIPField
+                else:
+                    raise(Exception("Field : '{}' not found in Constants nor FEField nor IPFIelds".format(term.fieldName)))
 
             elif term.fieldName in [f.name for f in self.__ufs__] :
                 term.spaceIndex_= spacesNames[term.fieldName]
