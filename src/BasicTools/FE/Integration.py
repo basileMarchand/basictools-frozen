@@ -9,7 +9,7 @@ import numpy as np
 from scipy.sparse import coo_matrix
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 import BasicTools.Containers.ElementNames as EN
-from BasicTools.Containers.Filters import ElementFilter
+from BasicTools.Containers.Filters import ElementFilter, NodeFilter
 
 from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
 from BasicTools.FE.Fields.FEField import FEField
@@ -64,15 +64,15 @@ def IntegrateGeneral( mesh, wform, constants, fields, unkownFields, testFields=N
             ttest.append(NativeNumericalWeakForm.PyWeakForm)
         except :
             pass
-    
+
         if not isinstance(wform, tuple(ttest) ):
             from BasicTools.FE.WeakForms.NumericalWeakForm import SymWeakToNumWeak
             wform = SymWeakToNumWeak(wform)
-    
+
         import time
         st = time.time()
         BaseOutputObject().PrintDebug("Integration ")
-    
+
         try:
             from BasicTools.FE.WeakForms.NativeNumericalWeakForm import PyWeakForm
             typeCpp = (type(wform) == PyWeakForm)
@@ -80,7 +80,7 @@ def IntegrateGeneral( mesh, wform, constants, fields, unkownFields, testFields=N
         except :
             typeCpp = False
             print("Warning : Using Python Integration (very slow)")
-    
+
         if UseCpp and typeCpp:
             import BasicTools.FE.Integrators.NativeIntegration as NI
             integrator = NI.PyMonoElementsIntegralCpp()
@@ -89,7 +89,7 @@ def IntegrateGeneral( mesh, wform, constants, fields, unkownFields, testFields=N
             integrator = PI.MonoElementsIntegral()
     else:
         integrator = userIntegrator
-        
+
     integrator.SetOnlyEvaluation(onlyEvaluation)
     integrator.SetUnkownFields(unkownFields)
     integrator.SetTestFields(testFields)
@@ -97,10 +97,12 @@ def IntegrateGeneral( mesh, wform, constants, fields, unkownFields, testFields=N
     integrator.SetConstants(constants)
     integrator.SetIntegrationRule(integrationRuleName)
 
-    #if tag in mesh.GetNamesOfElemTags() or tag == "ALL":
     numberOfVIJ = integrator.ComputeNumberOfVIJ(mesh,elementFilter)
-    #else:
-    #    numberOfVIJ =  len(mesh.nodesTags[tag].GetIds())
+    if numberOfVIJ == 0:
+        nodalFilter = NodeFilter(mesh=elementFilter.mesh,
+                                  tags=elementFilter.tags,
+                                  zones=elementFilter.zones)
+        numberOfVIJ =  len(nodalFilter.GetIdsToTreat())
 
     if numberOfVIJ == 0:
         print("Warning!!! System with zero dofs")
@@ -177,52 +179,47 @@ def IntegrateGeneral( mesh, wform, constants, fields, unkownFields, testFields=N
             integrator.ActivateElementType(data)
             integrator.Integrate(wform,ids)
 
-    # in the case the tag does not exist for the elements we try to find in the
-    # nodes and do an integration by points
+    # in case we have zero element treated, we try to do integrate an integration
+    # by points
     # for now only work on rhs terms with no external field
     if tagFound == False:
-        raise(Exception("this functionality is disable for the moment, working on a solution"))
-        if tag in mesh.nodesTags:
-            ids = mesh.nodesTags[tag].GetIds()
-            #do the integration manually
-            from BasicTools.FE.SymWeakForm import testcharacter
-
-            if testFields is None:
-               testFields = []
-               for f in unkownFields:
-                  testFields.append(FEField(name=f.name+testcharacter,mesh=f.mesh,space=f.space,numbering=f.numbering,data=f.data) )
-
-            for monom in wform:
-                factor = monom.prefactor
-                for term in monom:
-                    if term.internalType == term.EnumNormal :
-                        raise(Exception("no normal"))
-                    elif  term.internalType == term.EnumConstant :
-                        raise(Exception("no constant numerical"))
-                    elif  term.internalType == term.EnumUnknownField :
-                        raise(Exception("no right unknown"))
-                    elif  term.internalType == term.EnumTestField :
-                        if term.derDegree == 1:
-                            raise(Exception("No derivative"))
-                        offset = 0
-                        for tf in testFields:
-                            if tf.name == term.fieldName:
-                                break
-                            offset += tf.numbering["size"]
-                        #idx = testFields.find(lambda x:x.name == term.fieldName)
-                        for x in ids:
-                            leftNumbering = tf.numbering["almanac"][("P",x,None)] + offset
-                        continue
-                    else:
-                        print("type " + str(term.internalType) + "Not coded yet")
-                        raise(Exception("not coded yet"))
-
-                F[leftNumbering] += factor
-
-            #integrator.Integrate(wform,idstotreat )
-
-        else:
+        ids = nodalFilter.GetIdsToTreat()
+        if len(ids) == 0:
             raise(Exception("Tag not found to do the integration"))
+
+        from BasicTools.FE.SymWeakForm import testcharacter
+
+        if testFields is None:
+           testFields = []
+           for f in unkownFields:
+              testFields.append(FEField(name=f.name+testcharacter,mesh=f.mesh,space=f.space,numbering=f.numbering,data=f.data) )
+
+        for monom in wform:
+            factor = monom.prefactor
+            for term in monom:
+                if term.internalType == term.EnumNormal :
+                    raise(Exception("no normal"))
+                elif  term.internalType == term.EnumConstant :
+                    raise(Exception("no constant numerical"))
+                elif  term.internalType == term.EnumUnknownField :
+                    raise(Exception("no right unknown"))
+                elif  term.internalType == term.EnumTestField :
+                    if term.derDegree == 1:
+                        raise(Exception("No derivative"))
+                    offset = 0
+                    for tf in testFields:
+                        if tf.name == term.fieldName:
+                            break
+                        offset += tf.numbering["size"]
+                    #idx = testFields.find(lambda x:x.name == term.fieldName)
+                    for x in ids:
+                        leftNumbering = tf.numbering["almanac"][("P",x,None)] + offset
+                    continue
+                else:
+                    print("type " + str(term.internalType) + "Not coded yet")
+                    raise(Exception("not coded yet"))
+
+            F[leftNumbering] += factor
 
 
     if userIntegrator is None:
@@ -232,7 +229,7 @@ def IntegrateGeneral( mesh, wform, constants, fields, unkownFields, testFields=N
         BaseOutputObject().PrintDebug("Integration Done        " +str(time.time()-st))
         return K,F
     else:
-        return 
+        return
 
 def CheckIntegrityNormalFlux(GUI=False):
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshOf
