@@ -83,19 +83,7 @@ LagrangeP1[EN.Triangle_3] = ( 1./6.*np.array([[1., 1.] ,[4., 1.],[ 1. ,4.] ]),
                                   1./6.*np.array([1. , 1. , 1]))
 LagrangeP1[EN.Triangle_6] = LagrangeP1[EN.Triangle_3]
 
-#from https://www.code-aster.org/V2/doc/v13/en/man_r/r3/r3.01.01.pdf
-p0 = 1./4.
-p1 = 1./6.
-p2 = 1./2.
-p=np.array([[p0,p0,p0],
-            [p1,p1,p1],
-            [p2,p1,p1],
-            [p1,p2,p1],
-            [p1,p1,p2]]);
-w0 = -2./15
-w1 = 3./40
-w= np.array([ w0, w1, w1, w1, w1]);
-LagrangeP1[EN.Tetrahedron_4] = ( p,w)
+LagrangeP1[EN.Tetrahedron_4] = ( np.array([[1/4,1/4,1/4]]), np.array([ 1./6.]))
 LagrangeP1[EN.Tetrahedron_10] = LagrangeP1[EN.Tetrahedron_4]
 LagrangeP1[EN.Bar_2] = TensorProductPoints(dim=1,npoints=2)
 LagrangeP1[EN.Bar_3] = LagrangeP1[EN.Bar_2]
@@ -120,13 +108,18 @@ LagrangeP2[EN.Hexaedron_8]  = TensorProductPoints(dim=3,npoints=3)
 LagrangeP2[EN.Hexaedron_20] = LagrangeP2[EN.Hexaedron_8]
 LagrangeP2[EN.Hexaedron_27] = LagrangeP2[EN.Hexaedron_8]
 
-p = np.array([[0.1666666667,0.1666666667,0.1666666667],
-[0.5,0.1666666667,0.1666666667],
-[0.1666666667,0.5,0.1666666667],
-[0.1666666667,0.1666666667,0.5],
-[0.25,0.25,0.25]]);
-w = np.array([0.075 ,0.075 ,0.075 ,0.075 ,-0.1333333333]);
-
+#from https://www.code-aster.org/V2/doc/v13/en/man_r/r3/r3.01.01.pdf
+p0 = 1./4.
+p1 = 1./6.
+p2 = 1./2.
+p=np.array([[p0,p0,p0],
+            [p1,p1,p1],
+            [p2,p1,p1],
+            [p1,p2,p1],
+            [p1,p1,p2]]);
+w0 = -2./15
+w1 = 3./40
+w= np.array([ w0, w1, w1, w1, w1]);
 LagrangeP2[EN.Tetrahedron_4] = (p,w)
 LagrangeP2[EN.Tetrahedron_10] = LagrangeP2[EN.Tetrahedron_4]
 
