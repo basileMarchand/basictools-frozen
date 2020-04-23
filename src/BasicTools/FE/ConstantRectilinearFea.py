@@ -102,7 +102,7 @@ class ElementaryMatrix():
         self.physics = physics
         self.young = 1
         self.poisson = 0.3
-        self.rho = 1
+        self.density = 1
         self.thermalK = 1
 
     def GetMassMatrix(self):
@@ -161,6 +161,7 @@ class Fea(FeaBase.FeaBase):
         self.neumann_nodal=None
         self.young = 1.
         self.poisson = 0.3
+        self.density = 1.
 
     def BuildProblem(self,support=None, dofpernode = None, dirichlet_bcs = None, neumann_bcs= None, KOperator= None, MOperator= None, neumann_nodal= None):
         if self.init == True:
