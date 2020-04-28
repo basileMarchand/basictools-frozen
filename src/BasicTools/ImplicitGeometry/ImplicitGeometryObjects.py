@@ -90,6 +90,8 @@ def CreateImplicitGeometryByETag(ops):
          res.SetSupportAndZones(sup,PH.ReadStrings(ops["eTags"] ))
      else:
          raise(Exception('Need a (ls or support) '))
+
+     res.offset = (PH.ReadFloat(ops.get("offset",res.offset)))
      return res
 
 class ImplicitGeometryByETag(ImplicitGeometryBase):
