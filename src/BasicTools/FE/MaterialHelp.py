@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 import numpy as np
 
 def HookeIso(E,nu, dim = 3, planeStress = True):
@@ -66,7 +66,7 @@ class HookeLaw() :
         if not opt is None:
             self.Read(opt)
 
-    def HookeIso(self, dim = 3, planeStress = True):
+    def HookeIso(self, dim = 3, planeStress = True, axisymetric=False):
         """
         Return the isotropic Hooke operator for dimensionality dim
         in the 2D case plane stress (defautl) or plane strain case are available
@@ -75,12 +75,22 @@ class HookeLaw() :
         nu = self.Get("nu")
         if dim == 1:
             return np.array([[E],])
+
         if dim == 2:
             if planeStress:
               return ((E/(1.-nu**2.))*
               np.array([[1. , nu, 0     ],
                         [nu, 1. , 0     ],
                         [0 , 0 , (1.-nu)/2.]]));
+            if axisymetric:
+                k = nu/(1-nu)
+                s = (1-2*nu)/(2*(1-nu) )
+                return ((E*(1-nu)/ ((1.+nu)*(1-2*nu) ) )*
+                np.array([[1., k , k, 0],
+                          [k , 1., k, 0],
+                          [k , k , 1, 0],
+                          [0 , 0 , 0, s]]));
+
             else:
               return  ((E/((1.+nu)*(1-2*nu)))*
               np.array([[1.-nu, nu  , 0 ],

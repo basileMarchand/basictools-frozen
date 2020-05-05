@@ -78,6 +78,20 @@ def Strain(arg ,sdim=3):
     G = Gradient(arg,sdim)
     return (G+G.T)/2
 
+def StrainAxyCol(arg,radius):
+    # strain definition for axisymmetric mechanical problem (work in progress)
+    u = arg[0]
+    v = arg[1]
+    r = space[0]
+    h = space[1]
+    dudr = u.diff(r)
+    dudh = u.diff(h)
+    dvdr = v.diff(r)
+    dvdh = v.diff(h)
+    # E_r, E_z, E_theta, E_rz
+    return Matrix([ dudr, dvdh, u/radius, dudh+dvdr  ])
+
+
 def ToVoigtEpsilon(arg):
     """ we use yamma for shear
 

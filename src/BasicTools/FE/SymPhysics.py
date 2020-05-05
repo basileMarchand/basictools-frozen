@@ -3,6 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
+import math
 
 from BasicTools.Containers.Filters import ElementFilter
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject as BOO
@@ -205,6 +206,73 @@ class MecaPhysics(Physics):
 
         trStressT = GetTestField("tr(stress)",1)
         symTrStress = wf.Trace(wf.FromVoigtSigma(wf.ToVoigtEpsilon(wf.Strain(symdep)).T*self.HookeLocalOperator))*trStressT
+
+        postQuantities = {"strain_energy" : symEner,
+                          "tr(strain)": symTrStrain,
+                          "tr(stress)": symTrStress }
+
+        return postQuantities
+
+
+class MecaPhysicsAxi(MecaPhysics):
+    def __init__(self):
+        super(MecaPhysics,self).__init__(dim=2)
+
+    def GetFieldR(self):
+        return GetScalarField("r")
+
+    def GetBulkFormulation(self,young=None, poisson=None,alpha=None ):
+        from BasicTools.FE.MaterialHelp import HookeLaw
+
+        u = self.primalUnknown
+        ut = self.primalTest
+
+        if young is None:
+            young = self.young
+        if poisson is None:
+            poisson = self.poisson
+
+        young = GetScalarField(young)*GetScalarField(alpha)
+
+        op = HookeLaw()
+        op.Read({"E":young, "nu":poisson})
+        self.HookeLocalOperator = op.HookeIso(dim=self.dim,planeStress=self.planeStress, axisymetric=self.axisymetric)
+
+        r = self.GetFieldR()
+
+        from BasicTools.FE.SymWeakform import StrainAxyCol
+        epsilon_u = StrainAxyCol(u,r)
+        epsilon_ut = StrainAxyCol(ut,r)
+        Symwfb = 2*math.pi*epsilon_u*self.HookeLocalOperator*epsilon_ut*r
+        return Symwfb
+
+    def GetPressureFormulation(self,pressure):
+        return super().GetPressureFormulation(pressure)*self.GetFieldR()
+
+    def GetForceFormulation(self,direction,flux="f"):
+        return super().GetForceFormulation(direction,flux)*self.GetFieldR()
+
+    def GetAccelerationFormulation(self,direction,density=None):
+        return super().GetForceFormulation(direction,density)*self.GetFieldR()
+
+    def PostTraitementFormulations(self):
+        import BasicTools.FE.SymWeakForm as wf
+        symdep = self.primalUnknown
+
+        pir2 = 2*math.pi*self.GetFieldR()
+
+        nodalEnergyT = GetTestField("strain_energy",1)
+        symEner = pir2*0.5*wf.ToVoigtEpsilon(wf.Strain(symdep)).T*self.HookeLocalOperator*wf.ToVoigtEpsilon(wf.Strain(symdep))*nodalEnergyT
+
+        from sympy import prod
+
+        trStrainT = GetTestField("tr(strain)",1)
+        strain = wf.StrainAxyCol(symdep)
+        symTrStrain = prod(strain[0:3]).T*trStrainT
+
+        trStressT = GetTestField("tr(stress)",1)
+        stress = strain*self.HookeLocalOperator
+        symTrStress = prod(stress[0:3]).T*trStressT
 
         postQuantities = {"strain_energy" : symEner,
                           "tr(strain)": symTrStrain,
