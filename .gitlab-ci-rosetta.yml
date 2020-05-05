@@ -1,0 +1,111 @@
+variables:
+    MYPROJECT : 'BasicTools'
+
+stages:
+    - doc
+    - build
+    - test
+    - debug
+    - deploy
+
+
+doc:
+    stage: doc
+    tags:
+        - MSBasicTools
+    script:
+        - module load PISCO/Python3Dev 
+        - export PYTHONPATH=$PWD/src:$PYTHONPATH
+        - mkdir public
+        - cd docs
+        - make html
+        - mv _build/html ../public/doc
+    artifacts:
+        name: "Documentation"
+        paths:
+          - public/doc
+
+build_Python3:
+    stage: build
+    tags:
+        - MSBasicTools
+    script:
+        - module load PISCO/Python3Dev 
+        - export PYTHONPATH=$PWD/src:$PYTHONPATH
+        - python setup.py build_ext --inplace
+    artifacts:
+        paths:
+          - src/BasicTools/FE/*36*.so
+        expire_in: 600 minutes
+
+test_with_pytest_and_coverage:
+    stage: test
+    tags:
+        - MSBasicTools
+    script:
+        - module load PISCO/Python3Dev-pytest
+        - export ABAQUS_NO_FAIL="True"
+        - export ZSET_NO_FAIL="True"
+        - mkdir -p public/coverage
+        - pytest --cov=BasicTools --cov-report=html:public/coverage --ignore=src/BasicTools/IO/ParaViewBridge --ignore=src/BasicTools/IO/Wormhole.py src
+    coverage: '/pc_cov">([0-9]+\.?[0-9]+?%)/'
+    artifacts:
+        name: "Coverage"
+        paths:
+            - public/coverage
+
+test_with_coverage_Python3:
+    stage: test
+    tags:
+        - MSBasicTools
+    script:
+        - module load PISCO/Python3Dev
+        - export ZSET_NO_FAIL="True"
+        - export PYTHONPATH=$PWD/src:$PYTHONPATH
+        - mkdir -p public/coverage3
+        - cd public/coverage3
+        - python ../../src/BasicTools/Helpers/Tests.py -e ${MYPROJECT} -cl
+        - grep pc_cov index.html
+    coverage: '/pc_cov">([0-9]+\.?[0-9]+?%)/'
+    artifacts:
+        name: "Coverage3"
+        paths:
+            - public/coverage3
+
+test_full_output_stop_at_first_error_Python3:
+    stage: debug
+    tags:
+        - MSBasicTools
+    script:
+        - module load PISCO/Python3Dev
+        - export ZSET_NO_FAIL="True"
+        - export PYTHONPATH=$PWD/src:$PYTHONPATH
+        - python src/BasicTools/Helpers/Tests.py -e ${MYPROJECT} -f -s
+    when: on_failure
+    dependencies: [test_with_coverage_Python3]
+
+pages:
+    stage: deploy
+    tags:
+        - MSBasicTools
+    script:
+        - env
+        - $LaunchExternalPipelinesScript
+    artifacts:
+        name: "WebSite"
+        paths:
+            - public
+
+
+deploy:
+  stage: deploy
+  tags:
+    - MSBasicTools
+  script:
+    - echo "Deploy..."
+    - rsync -av --delete-after --cvs-exclude --include=FE/*36*.so --omit-dir-times --no-perms ./src/BasicTools/. $PREFIX
+    - $ACLSCRIPT $PREFIX/../.acl $PREFIX
+  environment:
+    name: deploy_to_softs
+  only:
+  - master
