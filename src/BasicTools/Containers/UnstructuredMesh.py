@@ -327,6 +327,25 @@ class UnstructuredMesh(MeshBase):
         else:
             raise Exception("No element with id " + str(oid)) #pragma: no cover
 
+    def AddElementsToTag(self,globalElemNumbers,tagname):
+        """
+        add elements (using the global element number) to a tag (tagname)
+        # you must compute the globaloffset first to make this function work
+        """
+        elementNotTreated = np.unique(globalElemNumbers)
+        cpt = 0
+        for ntype, data in self.elements.items():
+            cpt2 = data.GetNumberOfElements() +cpt
+            f = elementNotTreated < cpt2
+            dataToTreat = elementNotTreated[f]
+
+            data.tags.CreateTag(tagname,False).AddToTag(dataToTreat-data.globaloffset)
+            elementNotTreated = elementNotTreated[np.logical_not(f)]
+            cpt += data.GetNumberOfElements()
+
+        if len(elementNotTreated):
+            raise Exception("No element found") #pragma: no cover
+
 
     def AddElementToTag(self,globalElemNumber,tagname):
         """
