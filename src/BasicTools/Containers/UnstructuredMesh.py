@@ -338,8 +338,8 @@ class UnstructuredMesh(MeshBase):
             cpt2 = data.GetNumberOfElements() +cpt
             f = elementNotTreated < cpt2
             dataToTreat = elementNotTreated[f]
-
-            data.tags.CreateTag(tagname,False).AddToTag(dataToTreat-data.globaloffset)
+            if len(dataToTreat):
+                data.tags.CreateTag(tagname,False).AddToTag(dataToTreat-data.globaloffset)
             elementNotTreated = elementNotTreated[np.logical_not(f)]
             cpt += data.GetNumberOfElements()
 
