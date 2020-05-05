@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 import struct
 import numpy as np
 
@@ -645,6 +645,8 @@ class MeshSolutionReaderWrapper():
     def SetFileName(self,fileName):
         import os.path
         self.fileName = fileName
+        if fileName is None or fileName == "None":
+            return
         dirname = os.path.dirname(fileName)
         basename,extention = os.path.splitext(os.path.basename(fileName))
 
