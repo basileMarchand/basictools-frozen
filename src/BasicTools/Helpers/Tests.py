@@ -31,7 +31,7 @@ options :
     -v    Activate maximal level of verbosity
     -y    Generate .pyc when inporting modules (default False)
     -L    Output Localy, Use the current path for all the outputs
-
+    -P <dir> Settemp output directory to 
 """
 
 from BasicTools.Helpers.which import which
@@ -452,7 +452,7 @@ if __name__ == '__main__':# pragma: no cover
             modulestotreat.append(arg)
          elif opt in ("-k"):
             modulestoskip.append(arg)
-         elif opt in ("-p"):
+         elif opt in ("-P"):
             print('Setting temp output directory to ' + arg)
             TestTempDir.SetTempPath(arg)
          elif opt in ("-y"):
