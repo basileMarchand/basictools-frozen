@@ -264,7 +264,10 @@ def ComputeFEInterpGradMatAtGaussPoint(mesh):
     FEInterpAtIntegPointGradMatrix = [[] for i in range(dim)]
     row = []
 
+    integrationWeights = np.zeros(NGauss0)
+
     countElementType = 0
+    countTotal = 0
     for name,data,ids in ff:
 
         NnodeperEl = EN.numberOfNodes[name]
@@ -279,17 +282,21 @@ def ComputeFEInterpGradMatAtGaussPoint(mesh):
 
         count = 0
         for i in range(nbElements):
-          xcoor = np.array([mesh.nodes[data.connectivity[i,j]] for j in range(NnodeperEl)])
-          for j in range(NGaussperEl):
+            xcoor = np.array([mesh.nodes[data.connectivity[i,j]] for j in range(NnodeperEl)])
+            for j in range(NGaussperEl):
 
-            Jack, Jdet, Jinv = spaces[name].GetJackAndDetI(j,xcoor)
-            BxByBzI = Jinv(spaces[name].valdphidxi[j])
+                Jack, Jdet, Jinv = spaces[name].GetJackAndDetI(j,xcoor)
+                BxByBzI = Jinv(spaces[name].valdphidxi[j])
 
-            FEInterpAtIntegPointIndices[countElementType][count,:] = data.connectivity[i,:]
-            for k in range(dim):
-                FEInterpAtIntegPointGradMatrix[k][countElementType][count,:] = BxByBzI[k]
+                FEInterpAtIntegPointIndices[countElementType][count,:] = data.connectivity[i,:]
+                for k in range(dim):
+                    FEInterpAtIntegPointGradMatrix[k][countElementType][count,:] = BxByBzI[k]
 
-            count += 1
+                integrationWeights[countTotal] = w[j]*Jdet
+
+                count += 1
+                countTotal += 1
+
 
         row.append(np.concatenate([[i for j in range(NnodeperEl)] for i in range(NGauss)]))
 
@@ -302,7 +309,7 @@ def ComputeFEInterpGradMatAtGaussPoint(mesh):
 
     FEInterpAtIntegPointGradMatrix = [coo_matrix((FEInterpAtIntegPointGradMatrix[k], (row, FEInterpAtIntegPointIndices)), shape=(NGauss0, nbNodes)) for k in range(dim)]
 
-    return FEInterpAtIntegPointGradMatrix
+    return integrationWeights, FEInterpAtIntegPointGradMatrix
 
 
 
