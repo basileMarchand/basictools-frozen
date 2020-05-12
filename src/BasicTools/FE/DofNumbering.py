@@ -79,6 +79,7 @@ def ComputeDofNumbering(mesh,Space,dofs=None,sign=1,fromConnectivity=False,eleme
         dofs["dirichelet"] = -1
         dofs["doftopointLeft"] = slice(mesh.GetNumberOfNodes())
         dofs["doftopointRight"] = dofs["doftopointLeft"]
+        dofs["fromConnectivity"] = True
         for name,data in mesh.elements.items():
             dofs[name] = data.connectivity
 
@@ -98,6 +99,7 @@ def ComputeDofNumbering(mesh,Space,dofs=None,sign=1,fromConnectivity=False,eleme
             dofs["dirichelet"] = -1
             dofs["almanac"] = {}
             dofs["Hash"] = Hash
+            dofs["fromConnectivity"] = False
             if sign == 1:
                 cpt = 0
             else:
