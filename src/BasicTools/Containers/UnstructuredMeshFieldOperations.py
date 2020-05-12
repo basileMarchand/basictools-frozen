@@ -5,10 +5,224 @@
 #
 import numpy as np
 
+from scipy.spatial import cKDTree
+from scipy.sparse import coo_matrix
+
 import BasicTools.Containers.ElementNames as ElementNames
 from BasicTools.Containers.Filters import ElementFilter
 from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
 from BasicTools.Containers.UnstructuredMeshCreationTools import QuadToLin
+from BasicTools.Containers.UnstructuredMeshInspectionTools import  ExtractElementByDimensionalityNoCopy
+
+def GetFieldTransferOp(inputField,targetPoints,method=None,verbose=False):
+    """
+        op : sparcematrix to do the transfer
+        status: vector with the status of the transfer (1:interp, 2: extrap, 3:clamp, 0:nearest)
+        return op, status
+    """
+    possibleMethods =["Interp/Nearest","Nearest/Nearest","Interp/Clamp","Interp/Extrap"]
+
+    if method is None:
+        method = possibleMethods[0]
+    elif method not in possibleMethods:
+        raise(Exception("Method for transfert operator not know '{}' possible options are : {}".format(method,possibleMethods) ))
+
+    imeshdim = 0
+    for i in range(4):
+        if inputField.mesh.GetNumberOfElements(i):
+            imeshdim = i
+
+    imesh = ExtractElementByDimensionalityNoCopy(inputField.mesh,imeshdim)
+    numbering = inputField.numbering
+    inodes = imesh.nodes
+
+    kdt = cKDTree(inodes)
+
+    nbtp = targetPoints.shape[0]
+
+    if method == "Nearest/Nearest" :
+        dist, ids = kdt.query(targetPoints)
+
+        if numbering is None or numbering["fromConnectivity"]:
+            cols = ids
+        else:
+            cols = [ numbering["almanac"][('P',pid,None)] for pid in ids ]
+        row = np.arange(nbtp)
+        data = np.ones(nbtp)
+        return coo_matrix((data, (row, cols)), shape=(nbtp , inodes.shape[0])).toarray(), np.zeros(nbtp)
+
+    # we build de Dual Coonectivity
+    from BasicTools.Containers.UnstructuredMeshInspectionTools import GetDualGraphNodeToElement
+    dualGraph,nused = GetDualGraphNodeToElement(imesh)
+
+    from BasicTools.Containers.MeshTools import  GetElementsCenters
+
+    centers = GetElementsCenters(imesh)
+
+    # 30 to be sure to hold exa27 coefficients
+    cols = np.empty(nbtp*30, dtype=int )
+    rows = np.empty(nbtp*30, dtype=int )
+    datas = np.empty(nbtp*30 )
+    fillcpt = 0
+    cood = [cols,rows,datas, fillcpt]
+
+    def AddToOutput(col,row,dat,cood):
+        l = len(col)
+        fillcpt = cood[3]
+        cood[0][fillcpt:fillcpt+l] = col
+        cood[1][fillcpt:fillcpt+l] = row
+        cood[2][fillcpt:fillcpt+l] = dat
+        cood[3] += l
+
+    def GetElement(imesh,enb):
+        for name,data in imesh.elements.items():
+            if enb < data.GetNumberOfElements():
+                return data, enb
+            else:
+                enb -= data.GetNumberOfElements()
+
+        raise(Exception("Element not found"))
+
+    distTP, idsTP = kdt.query(targetPoints)
+
+    if verbose:
+        from BasicTools.Helpers.ProgressBar import printProgressBar
+        printProgressBar(0, nbtp, prefix = 'Building Transfer '+method+':', suffix = 'Complete', length = 50)
+
+    status = np.zeros(nbtp)
+
+    for p in range(nbtp):
+        if verbose:
+            printProgressBar(p+1, nbtp, prefix = 'Building Transfer '+method+':', suffix = 'Complete', length = 50)
+
+        TP = targetPoints[p,:]
+        CP =  idsTP[p]
+        LPE = nused[CP]
+        potentialElements = dualGraph[CP,0:LPE]
+
+        # compute distance to elements
+        # for the moment we use the distance to the center, this gives a good estimate
+        # of the order to check the elements
+        dist = np.empty(LPE)
+        for cpt,e in enumerate(potentialElements):
+            data, lenb = GetElement(imesh,e)
+            diff = centers[e,:]-TP
+            dist[cpt] = diff.dot(diff)
+
+        # order the element to test, closest element first
+        index = np.argsort(dist)
+        dist = dist[index]
+        potentialElements = potentialElements[index]
+        distmem = 1e10
+
+
+        from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
+        for cpt,e in enumerate(potentialElements):
+            data, lenb = GetElement(imesh,e)
+            localnumbering = numbering[data.elementType]
+            localspace = LagrangeSpaceGeo[data.elementType]
+            coordAtDofs = imesh.nodes[localnumbering [lenb,:],:]
+
+            inside, shapeFunc, shapeFuncClamped = ComputeShapeFunctionsOnElement(coordAtDofs,localspace ,localnumbering,TP)
+            sF =  shapeFunc
+            if inside is None:
+
+                continue
+
+            if inside:
+                #an good element is found
+                status[p] = 1
+                break
+
+            #update the distance**2 with a *exact* distance
+            distElemToTP =  shapeFuncClamped.dot(coordAtDofs) -TP
+            dist[cpt] = distElemToTP.dot(distElemToTP)
+
+            # stor the best elements (closest)
+            if dist[cpt] < distmem:
+                distmem = dist[cpt]
+                memshapeFunc = shapeFunc
+                memshapeFuncClamped =  shapeFuncClamped
+                memdata = data
+                memlenb = lenb
+                memlocalnumbering = localnumbering
+        else:
+            if distmem == 1e10 or method == "Interp/Nearest":
+                col = [CP]
+                row = [p]
+                dat = [1.]
+                AddToOutput(col,row,dat,cood)
+                #status[p] = 0
+                continue
+            elif method == "Interp/Clamp":
+                sF = memshapeFuncClamped
+                status[p] = 3
+            else:
+                # we use the shapeFunction in extrapolation
+                sF = memshapeFunc
+                status[p] = 2
+
+            data = memdata
+            lenb = memlenb
+            localnumbering = memlocalnumbering
+
+        col = localnumbering[lenb,:]
+        row = p*np.ones(len(col))
+        dat = sF
+        AddToOutput(col,row,dat,cood)
+
+    return coo_matrix((cood[2][0:cood[3]], (cood[1][0:cood[3]], cood[0][0:cood[3]])), shape=(nbtp , inodes.shape[0])), status
+
+
+
+
+
+def ComputeShapeFunctionsOnElement(coordAtDofs,localspace,localnumbering,point):
+
+    def df(f,dN):
+        dNX = dN.dot(coordAtDofs)
+        res = 2*f.dot(-dNX.T)
+        return res
+
+    def ddf(xietaphi,point,dN):
+
+        dNX = dN.dot(coordAtDofs)
+        res = 2*dNX.dot(dNX.T)
+
+        # TODO need Check this part not sure is correct
+        ddN = localspace.GetShapeFuncDerDer(xietaphi)
+        for ccpt in range(coordAtDofs.shape[1]):
+            for cpt,fct in enumerate(ddN):
+               c = coordAtDofs[cpt,ccpt]
+               res -= 2*f[ccpt]*(c*fct)
+
+        for i in range(len(res) ):
+            if res[i,i] == 0:
+                res[i,i] = 1
+        return res
+
+    xietaphi = np.array([0.5]*localspace.GetDimensionality())
+
+    N = localspace.GetShapeFunc(xietaphi)
+    for x in range(10):
+        #print("x {} : {} ".format(x,xietaphi) )
+        dN = localspace.GetShapeFuncDer(xietaphi)
+        f = point - N.dot(coordAtDofs)
+        df_num = df(f,dN)
+
+        if df_num.dot(df_num) < 1e-10:
+            break
+        H = ddf(xietaphi,point,dN)
+        xietaphi -= np.linalg.inv(H).dot(df_num)
+        N = localspace.GetShapeFunc(xietaphi)
+    else:
+        return None, None,None
+
+    xichietaClamped = localspace.ClampParamCoorninates(xietaphi)
+    inside = not np.any(xichietaClamped-xietaphi  )
+    return inside, N , localspace.GetShapeFunc(xichietaClamped)
+
+
 
 def PointToCellData(mesh,pointfield,dim=None):
 
@@ -135,6 +349,163 @@ def GetValueAtPosLinearSymplecticMesh(fields,mesh,constantRectilinearMesh):
 
 
 #------------------------- CheckIntegrity ------------------------
+def RunTransfer(inputFEField,data,outmesh):
+    from BasicTools.Helpers.Tests import TestTempDir
+    tempdir = TestTempDir.GetTempPath()
+
+    from BasicTools.IO.XdmfWriter import WriteMeshToXdmf
+    WriteMeshToXdmf(tempdir+"GetFieldTransferOp_Original"+inputFEField.name+".xdmf",
+                    inputFEField.mesh,
+                    PointFields = [data],
+                    PointFieldsNames = ["OriginalData"])
+
+    PointFields = []
+    PointFieldsNames = []
+    for method in ["Interp/Nearest","Nearest/Nearest","Interp/Clamp","Interp/Extrap"]:
+        op,status = GetFieldTransferOp(inputFEField,outmesh.nodes,method = method,verbose=True)
+        newdata = op.dot(data)
+        PointFieldsNames.append(method)
+        PointFields.append(newdata)
+        PointFieldsNames.append(method+"Status")
+        PointFields.append(status)
+
+    WriteMeshToXdmf(tempdir+"GetFieldTransferOp_TargetMesh"+inputFEField.name+".xdmf",
+                    outmesh,
+                    PointFields = PointFields,
+                    PointFieldsNames = PointFieldsNames)
+
+
+def CheckIntegrity1D(GUI=False):
+    from BasicTools.Containers.UnstructuredMeshCreationTools import CreateUniformMeshOfBars
+    inputmesh = CreateUniformMeshOfBars(0,1,10)
+
+    from BasicTools.FE.FETools import PrepareFEComputation
+    space, numberings, _offset, _NGauss = PrepareFEComputation(inputmesh)
+
+    b = CreateUniformMeshOfBars(-0.1,1.1,15)
+
+    from BasicTools.FE.Fields.FEField import FEField
+    inputFEField = FEField(name="",mesh=inputmesh,space=space,numbering=numberings[0])
+
+    #for el,data in inputmesh.elements.items():
+    #    print(data.connectivity)
+    if GUI:
+        import matplotlib.pyplot as plt
+        fig, axs = plt.subplots(nrows=2, ncols=2, constrained_layout=True)
+        axis = axs.flat
+    else:
+        axis = [None]*4
+    data = (inputmesh.nodes[:,0] -0.5)**2
+
+
+    for method,ax in zip(["Interp/Nearest","Nearest/Nearest","Interp/Clamp","Interp/Extrap"],axis):
+
+        op = GetFieldTransferOp(inputFEField,b.nodes,method = method,verbose=True)[0]
+        result = op.dot(data)
+        if GUI:
+            ax.plot(inputmesh.nodes[:,0],data,"X-",label="Original Data")
+            ax.plot(b.nodes[:,0],result,"o:",label=method)
+            legend = ax.legend(loc='upper center', shadow=True, fontsize='x-large')
+
+            ax.set(xlabel='x', ylabel='data', title=method)
+
+    if GUI:
+        fig.savefig("test.png")
+        plt.show()
+
+    return "ok"
+
+def CheckIntegrity2D(GUI=False):
+    from BasicTools.Containers.UnstructuredMeshCreationTools import CreateSquare
+    inputmesh = CreateSquare(dimensions = [5,5],origin=[0,0],spacing=[1./4,1./4.])
+
+    from BasicTools.FE.FETools import PrepareFEComputation
+    space, numberings, _offset, _NGauss = PrepareFEComputation(inputmesh)
+    N = 10
+    b = CreateSquare(dimensions = [N,N],origin=[-0.1,-0.1],spacing=[1.2/(N-1),1.2/(N-1)])
+
+    from BasicTools.FE.Fields.FEField import FEField
+    inputFEField = FEField(name="2DTo2D",mesh=inputmesh,space=space,numbering=numberings[0])
+    x = inputmesh.nodes[:,0]
+    y = inputmesh.nodes[:,1]
+    data = (x -0.5)**2-y*0.5+x*y*0.25
+    RunTransfer(inputFEField,data,b)
+    return "ok"
+
+
+def CheckIntegrity1DTo2D(GUI=False):
+    from BasicTools.Containers.UnstructuredMeshCreationTools import CreateSquare
+
+
+    from BasicTools.Containers.UnstructuredMeshCreationTools import CreateUniformMeshOfBars
+    inputmesh = CreateUniformMeshOfBars(0,1,10)
+    inputmesh.nodes[:,1] = inputmesh.nodes[:,0]**2
+    inputmesh.nodes = inputmesh.nodes[:,0:2]
+
+    from BasicTools.FE.FETools import PrepareFEComputation
+    space, numberings, _offset, _NGauss = PrepareFEComputation(inputmesh)
+    N = 10
+    b = CreateSquare(dimensions = [N,N],origin=[-0.5,-0.5],spacing=[2/(N-1),2/(N-1)])
+
+    from BasicTools.FE.Fields.FEField import FEField
+    inputFEField = FEField(name="1DTo2D",mesh=inputmesh,space=space,numbering=numberings[0])
+
+    x = inputmesh.nodes[:,0]
+    y = inputmesh.nodes[:,1]
+    data = (x -0.5)**2-y*0.5+x*y*0.25
+    RunTransfer(inputFEField,data,b)
+    return "ok"
+
+def CheckIntegrity2DTo3D(GUI=False):
+    from BasicTools.Containers.UnstructuredMeshCreationTools import CreateSquare, CreateCube
+
+    N = 10
+    inputmesh = CreateSquare(dimensions = [N,N],origin=[0,0],spacing=[1/(N-1),1/(N-1)])
+    n  = inputmesh.nodes
+    inputmesh.nodes = np.zeros((n.shape[0],3) )
+    inputmesh.nodes[:,0:2] = n
+    inputmesh.nodes[:,2] = n[:,0]**3
+
+    from BasicTools.FE.FETools import PrepareFEComputation
+    space, numberings, _offset, _NGauss = PrepareFEComputation(inputmesh)
+
+    from BasicTools.FE.Fields.FEField import FEField
+    inputFEField = FEField(name="2DTo3D",mesh=inputmesh,space=space,numbering=numberings[0])
+    N = 10
+    b = CreateCube(dimensions = [N,N,N],origin=[-0.5]*3,spacing=[2/(N-1),2/(N-1),2/(N-1)])
+
+    x = inputmesh.nodes[:,0]
+    y = inputmesh.nodes[:,1]
+    data = (x -0.5)**2-y*0.5+x*y*0.25
+    RunTransfer(inputFEField,data,b)
+    return "ok"
+
+
+def CheckIntegrity1DSecondOrderTo2D(GUI=False):
+    from BasicTools.Containers.UnstructuredMeshCreationTools import CreateSquare
+
+    from BasicTools.Containers.UnstructuredMeshCreationTools import CreateUniformMeshOfBars
+    inputmesh = CreateUniformMeshOfBars(0,1,11,secondOrder=True)
+    inputmesh.nodes[:,1] = inputmesh.nodes[:,0]**2
+    inputmesh.nodes = inputmesh.nodes[:,0:2]
+
+    from BasicTools.FE.FETools import PrepareFEComputation
+    space, numberings, _offset, _NGauss = PrepareFEComputation(inputmesh)
+    N = 10
+    #b = CreateSquare(dimensions = [N,N],origin=[-0.5,-0.5],spacing=[2/(N-1),2/(N-1)])
+    #b = CreateSquare(dimensions = [N,N],origin=[-0.1,0.0],spacing=[1./(N-1),0.7/(N-1)])
+    b = CreateSquare(dimensions = [N,N],origin=[-0.5,-0.5],spacing=[2/(N-1),2/(N-1)])
+
+    from BasicTools.FE.Fields.FEField import FEField
+    inputFEField = FEField(name="1DSecondTo2D",mesh=inputmesh,space=space,numbering=numberings[0])
+
+    x = inputmesh.nodes[:,0]
+    y = inputmesh.nodes[:,1]
+    data = (x -0.5)**2-y*0.5+x*y*0.25
+    RunTransfer(inputFEField,data,b)
+    return "ok"
+
+
 def CheckIntegrity_GetValueAtPosLinearSymplecticMesh(GUI=False):
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshOf
     from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearMesh
@@ -188,6 +559,11 @@ def CheckIntegrity(GUI=False):
     totest= [
     CheckIntegrity_GetValueAtPosLinearSymplecticMesh,
     CheckIntegrity_PointToCellData,
+    CheckIntegrity1DSecondOrderTo2D,
+    CheckIntegrity1DTo2D,
+    CheckIntegrity1D,
+    CheckIntegrity2D,
+    CheckIntegrity2DTo3D
     ]
     for f in totest:
         print("running test : " + str(f))

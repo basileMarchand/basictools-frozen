@@ -18,9 +18,9 @@ class TetSpaceBase(SymSpaceBase):
         self.dimensionality = 3
         self.geoSupport = EN.GeoTet #tri
 
-    def ClampXiChiEta(self,xichieta):
-        s = np.sum(xichieta)
-        res = xichieta.copy()
+    def ClampParamCoorninates(self,xietaphi):
+        s = np.sum(xietaphi)
+        res = xietaphi.copy()
         if s > 1:
             t = (1 -s)/3.
             res += t

@@ -16,13 +16,13 @@ class TriSpaceBase(SymSpaceBase):
         super(TriSpaceBase,self).__init__()
         self.dimensionality = 2
         self.geoSupport = EN.GeoTri
-    def ClampXiChiEta(self,xichieta):
-        res = xichieta.copy()
+    def ClampParamCoorninates(self,xietaphi):
+        res = xietaphi.copy()
         if res[0]+res[1] > 1:
             dif = res[0]-res[1]
             res[0] = (1+dif)/2.
             res[1] = 1.-res[0]
-        res = np.clip(xichieta,0,1.)
+        res = np.clip(xietaphi,0,1.)
         return res
 
 

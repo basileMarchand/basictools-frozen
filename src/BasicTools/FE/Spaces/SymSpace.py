@@ -26,9 +26,9 @@ class SpaceBase(FElement):
     def GetDimensionality(self):
         return self.geoSupport.dimensionality
 
-    def ClampXiChiEta(self,xichiphi):
-        res = xichiphi.copy()
-        for cpt, d in enumerate(xichiphi):
+    def ClampParamCoorninates(self,xietaphi):
+        res = xietaphi.copy()
+        for cpt, d in enumerate(xietaphi):
             if cpt < self. GetDimensionality():
                 res[cpt] = max(0.,d)
                 res[cpt] = min(1.,res[cpt])
