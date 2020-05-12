@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 import numpy as np
 
 from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshOfTriangles
@@ -57,17 +57,15 @@ def GetElementsCenters(mesh=None,nodes=None,elements=None, dim=None):
     def traiteElements(nod,els):
 
         connectivity = els.connectivity
-        localRes = np.zeros((els.GetNumberOfElements(),3) )
+        localRes = np.zeros((els.GetNumberOfElements(),nod.shape[1]) )
         for i in range(nod.shape[1]):
             localRes[:,i] += np.sum(nod[connectivity,i],axis=1)
         localRes /= connectivity.shape[1]
         return localRes
 
     if mesh is not None:
-        if dim is None:
-            res = np.empty((mesh.GetNumberOfElements(),3) )
-        else:
-            res = np.empty((mesh.GetNumberOfElements(dim),3) )
+        pos = mesh.GetPosOfNodes()
+        res = np.empty((mesh.GetNumberOfElements(dim=dim),pos.shape[1]) )
 
         cpt= 0
         for elementName,data in mesh.elements.items():
@@ -77,11 +75,6 @@ def GetElementsCenters(mesh=None,nodes=None,elements=None, dim=None):
             cpt += data.GetNumberOfElements()
     else:
         return traiteElements(nodes,elements)
-
-
-
-    pos = mesh.GetPosOfNodes()
-
 
     return res
 
