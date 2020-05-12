@@ -11,16 +11,29 @@ from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearMes
 from BasicTools.Containers.UnstructuredMeshModificationTools import ComputeSkin
 from BasicTools.Containers.UnstructuredMeshModificationTools import CleanLonelyNodes
 
-def CreateUniformMeshOfBars(pmin,pmax,npoints):
+def CreateUniformMeshOfBars(pmin,pmax,npoints,secondOrder=False):
+
     points = np.zeros((npoints,3))
     points[:,0] = np.linspace(pmin,pmax,npoints)
-    bars = np.empty((npoints-1,2))
-    bars[:,0] = np.arange(npoints-1)
-    bars[:,1] = np.arange(1,npoints)
-    res = CreateMeshOf(points,bars,elemName = ElementNames.Bar_2 )
+
+    if secondOrder :
+        if npoints % 2 == 0:
+            raise(Exception("the number of point must be odd in secondOrder"))
+
+        bars = np.empty(((npoints-1)//2 ,3))
+        bars[:,0] = np.arange(0,npoints-2,2)
+        bars[:,1] = np.arange(2,npoints,2)
+        bars[:,2] = np.arange(1,npoints-1,2)
+        res = CreateMeshOf(points,bars,elemName = ElementNames.Bar_3 )
+        #print(bars)
+        #raise
+    else:
+        bars = np.empty((npoints-1,2))
+        bars[:,0] = np.arange(npoints-1)
+        bars[:,1] = np.arange(1,npoints)
+        res = CreateMeshOf(points,bars,elemName = ElementNames.Bar_2 )
 
     elements = res.GetElementsOfType(ElementNames.Point_1)
-
     elements.connectivity = np.array([[0],[npoints-1]],dtype=np.int)
     elements.originalIds = np.arange(2,dtype=np.int)
     elements.cpt = elements.connectivity.shape[0]
