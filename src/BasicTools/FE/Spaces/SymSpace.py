@@ -3,11 +3,12 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-
-from BasicTools.FE.FElement import FElement
-from sympy import Symbol, DiracDelta
 import numpy as np
 
+from sympy import Symbol, DiracDelta, Matrix
+from sympy.utilities.lambdify import lambdify
+
+from BasicTools.FE.FElement import FElement
 
 class SpaceClasification(object):
     def __init__(self,family = "Lagrange", degree = 1, discontinuous = False):
@@ -25,6 +26,15 @@ class SpaceBase(FElement):
     def GetDimensionality(self):
         return self.geoSupport.dimensionality
 
+    def ClampXiChiEta(self,xichiphi):
+        res = xichiphi.copy()
+        for cpt, d in enumerate(xichiphi):
+            if cpt < self. GetDimensionality():
+                res[cpt] = max(0.,d)
+                res[cpt] = min(1.,res[cpt])
+            else:
+                res[cpt] = 0
+        return res
 
 class SymSpaceBase(SpaceBase):
     def __init__(self):
@@ -35,53 +45,60 @@ class SymSpaceBase(SpaceBase):
         self.phi = Symbol("phi")
         self.symN = None
         self.symdNdxi = None
-        self.symdNdeta = None
-        self.symdNdphi = None
-
-        #---- Generic part use SetIntegrationRule(...) rule to generate shape funct values and derivatives ----------
-        #self.GetShapeFunc = None (self,qcoor)
-        #---- Geneal element part, use xcoor with the coordinate of the elemetn to get values
 
     def GetNumberOfShapeFunctions(self):
         return len(self.symN)
 
     def Create(self):
 
-        self.lcoords = (self.xi,self.eta,self.phi)
-        self.lcoords = self.lcoords[0:self.GetDimensionality()]
+        def DiractDeltaNumeric(data,der=None):
+            if data :
+                return 0
+            else:
+                return 1
 
-#        if self.geoSupport.dimensionality >= 1:
-#            self.symdNdxi = self.symN.diff(self.xi)
-#        if self.geoSupport.dimensionality >= 2:
-#            self.symdNdeta = self.symN.diff(self.eta)
-#        if self.geoSupport.dimensionality >= 3:
-#            self.symdNdphi = self.symN.diff(self.phi)
+        allcoords = (self.xi,self.eta,self.phi)
+        self.lcoords = tuple(  (self.xi,self.eta,self.phi)[x] for x in range(self.GetDimensionality())  )
+        nbSF = self.GetNumberOfShapeFunctions()
+        nbDim = self.GetDimensionality()
 
-        self.fct_N = [None]*self.GetNumberOfShapeFunctions()
-        self.fct_dNdxi = [[None]*self.GetDimensionality() for i in range(self.GetNumberOfShapeFunctions() ) ]
-#        print self.fct_dNdxi
-#        if self.GetDimensionality() == 1:
-#            self.coords = [ self.xi]
-#        if self.GetDimensionality() == 1:
-#            self.coords = [ self.xi, self.eta]
-#        if self.GetDimensionality() == 1:
-#            self.coords = [ self.xi, self.eta, self.phi]
 
-        for i in range(self.GetNumberOfShapeFunctions()) :
-            self.fct_N[i] = lambda p,i=i: self.symN[i].subs(zip(self.lcoords,p)).evalf()
-            for j in range(self.GetDimensionality() ) :
-                func = self.symN[i].diff(self.lcoords[j])
-                self.fct_dNdxi[i][j] =  lambda p,func=func: func.subs(zip(self.lcoords,p)).evalf()
-        #print(self.fct_dNdxi)
+        subsList = [ (DiracDelta(0),1.), (DiracDelta(0,1),1.), (DiracDelta(0,2),1.) ]
+        lambdifyList =  [ {"DiracDelta":DiractDeltaNumeric}, "numpy"]
 
+        ############# shape function treatement ########################
+
+        clean_N = self.symN.subs(subsList)
+        self.fct_N_Matrix =  lambdify(allcoords,[ clean_N[i] for i in  range(nbSF)  ], lambdifyList )
+
+        ############# shape functions first derivative #################
+        self.symdNdxi = [[None]*nbSF for i in range(nbDim)]
+
+        for i in range(nbDim ) :
+            for j in range(nbSF) :
+                self.symdNdxi[i][j] = self.symN[j].diff(self.lcoords[i])
+
+        self.symdNdxi = Matrix(self.symdNdxi)
+        self.fct_dNdxi_Matrix =  lambdify(allcoords,self.symdNdxi.subs(subsList) , lambdifyList )
+        ############ shape functions second derivative ################
+
+        self.symdNdxidxi = [ None ]*nbSF
+        self.fct_dNdxidxi_Matrix = [ None ]*nbSF
+
+        for i in range(nbSF) :
+            self.symdNdxidxi[i] = [[0]*nbDim for j in range(nbDim ) ]
+            for j in range(nbDim ) :
+                for k in range(self.GetDimensionality() ) :
+                    func = self.symN[i].diff(self.lcoords[j]).diff(self.lcoords[k])
+                    self.symdNdxidxi[i][j][k] = func
+            self.symdNdxidxi[i] = Matrix(self.symdNdxidxi[i])
+
+            self.fct_dNdxidxi_Matrix[i] = lambdify(allcoords,self.symdNdxidxi[i].subs(subsList) , lambdifyList )
 
     def SetIntegrationRule(self, points, weights):
        self.int_Weights = weights
        self.int_Points = points
        self.int_nbPoints = len(weights)
-
-       nsf = self.GetNumberOfShapeFunctions()
-       dim = self.GetDimensionality()
 
        self.valN = [None]*self.int_nbPoints
        self.valdphidxi = [None]*self.int_nbPoints
@@ -89,30 +106,32 @@ class SymSpaceBase(SpaceBase):
        for pp in range(self.int_nbPoints):
            point = points[pp]
            self.valN[pp] = self.GetShapeFunc(point)
-           #self.valdphidxi[pp] = np.empty((dim,nsf),dtype=np.float)
            self.valdphidxi[pp] = self.GetShapeFuncDer(point)
-
-    def GetShapeFunc(self,qcoor):
-        res = []
-        for i in range(self.GetNumberOfShapeFunctions()):
-            res.append(self.fct_N[i](qcoor).subs(DiracDelta(0),1.))
-        return  np.array(res, dtype=np.float)
 
     def GetPosOfShapeFunction(self,i,Xi):
         valN = self.GetShapeFunc(self.posN[i,:])
         return np.dot(valN,Xi).T
 
+    def GetShapeFunc_default(self,xi=0,chi=0,phi=0):
+        return self.fct_N_Matrix(xi,chi,phi)
+
+    def GetShapeFunc(self,qcoor):
+        return np.array(self.GetShapeFunc_default(*qcoor), dtype=float)
+
+    def GetShapeFuncDer_default(self,xi=0,chi=0,phi=0):
+        return self.fct_dNdxi_Matrix(xi,chi,phi)
 
     def GetShapeFuncDer(self,qcoor):
+        return np.array(self.GetShapeFuncDer_default(*qcoor), dtype=float)
+
+
+    def GetShapeFuncDerDer_default(self,xi=0,chi=0,phi=0):
         nsf = self.GetNumberOfShapeFunctions()
         dim = self.GetDimensionality()
-        res = np.empty((dim,nsf),dtype=np.float)
-        for fct in range(nsf):
-            for direc in range(dim):
-                #print self.fct_dNdxi[fct]
-                # no derivative for DiracDelta
-                res[direc,fct]   = self.fct_dNdxi[fct][direc](qcoor).subs(DiracDelta(0,1),0).subs(DiracDelta(0),1.)
-        return res
+        return [ np.array(x(xi,chi,phi),dtype=float) for x in self.fct_dNdxidxi_Matrix ]
+
+    def GetShapeFuncDerDer(self,qcoor):
+        return self.GetShapeFuncDerDer_default(*qcoor)
 
     def GetNormal(self,Jack):
         # Edge in 2D
@@ -166,11 +185,6 @@ class SymSpaceBase(SpaceBase):
 
        return Jack, Jdet, jinv
 
-#    def GetBxByBzI(self,I,xcoor):
-#        Nfder = [self.valdNdxi[I], self.valdNdeta[I], self.valdNdphi[I]]
-#        return self.GetBxByBz(Nfder,xcoor)
-
-
     def Eval_FieldI(self,I,Xi,J,Jinv,der=-1):
 
         if der ==-1:
@@ -180,7 +194,6 @@ class SymSpaceBase(SpaceBase):
         else:
             res = np.dot(Jinv(self.valdphidxi[I])[der,:],Xi)
         return res
-
 
     def ComputeNfder(self):
        Nfer = []

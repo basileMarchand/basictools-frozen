@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 import numpy as np
 from sympy.matrices import Matrix
 
@@ -17,6 +17,14 @@ class TetSpaceBase(SymSpaceBase):
         super(TetSpaceBase,self).__init__()
         self.dimensionality = 3
         self.geoSupport = EN.GeoTet #tri
+
+    def ClampXiChiEta(self,xichieta):
+        s = np.sum(xichieta)
+        res = xichieta.copy()
+        if s > 1:
+            t = (1 -s)/3.
+            res += t
+        return  np.clip(res,0,1.)
 
 
 class Tet_P0_Global(TetSpaceBase):

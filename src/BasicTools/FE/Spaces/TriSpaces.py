@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 
 import numpy as np
 from sympy.matrices import Matrix
@@ -16,6 +16,14 @@ class TriSpaceBase(SymSpaceBase):
         super(TriSpaceBase,self).__init__()
         self.dimensionality = 2
         self.geoSupport = EN.GeoTri
+    def ClampXiChiEta(self,xichieta):
+        res = xichieta.copy()
+        if res[0]+res[1] > 1:
+            dif = res[0]-res[1]
+            res[0] = (1+dif)/2.
+            res[1] = 1.-res[0]
+        res = np.clip(xichieta,0,1.)
+        return res
 
 
 class Tri_P0_Global(TriSpaceBase):
