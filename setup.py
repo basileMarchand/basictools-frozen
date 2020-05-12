@@ -48,9 +48,10 @@ try:
         BUILD_ARGS[compiler] = compile_args
 
     import numpy
-    include_path = [numpy.get_include(), os.environ['EIGEN_INC']]
+    include_path = [numpy.get_include(), os.environ.get('EIGEN_INC','')]
     if "CONDA_PREFIX" in os.environ:
         include_path.append(os.environ["CONDA_PREFIX"] + "/include/")
+        include_path.append(os.environ["CONDA_PREFIX"] + "/Library/include/")
         modules = cythonize(["src/BasicTools/" + src for src in cython_src], gdb_debug=debug, annotate=annotate, include_path=include_path, force=force)
         for m in modules:
             m.include_dirs = include_path + ["src/BasicTools"]
