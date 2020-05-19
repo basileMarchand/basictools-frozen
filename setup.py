@@ -51,16 +51,16 @@ try:
     include_path = [numpy.get_include(), os.environ['EIGEN_INC']]
     if "CONDA_PREFIX" in os.environ:
         include_path.append(os.environ["CONDA_PREFIX"] + "/include/")
-        modules = cythonize(["src/BasicTools/" + src for src in cython_src], gdb_debug=debug, annotate=annotate, include_path=include_path, force=force)
-        for m in modules:
-            m.include_dirs = include_path + ["src/BasicTools"]
-            m.extra_compile_args = compile_args
-            if enable_MKL:
-                m.extra_link_args.append("-lmkl_core")
-                m.extra_link_args.append("-lmkl_avx")
-                m.extra_link_args.append("-lmkl_intel_lp64")
-                m.extra_link_args.append("-lmkl_sequential")
-                m.extra_link_args.append("-lmkl_def")
+    modules = cythonize(["src/BasicTools/" + src for src in cython_src], gdb_debug=debug, annotate=annotate, include_path=include_path, force=force)
+    for m in modules:
+        m.include_dirs = include_path + ["src/BasicTools"]
+        m.extra_compile_args = compile_args
+        if enable_MKL:
+            m.extra_link_args.append("-lmkl_core")
+            m.extra_link_args.append("-lmkl_avx")
+            m.extra_link_args.append("-lmkl_intel_lp64")
+            m.extra_link_args.append("-lmkl_sequential")
+            m.extra_link_args.append("-lmkl_def")
 
 except ImportError as e:
     print(f"Compilation disabled since {e.name} package is missing")
