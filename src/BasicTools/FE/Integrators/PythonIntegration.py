@@ -280,7 +280,7 @@ class MonoElementsIntegral(BOO):
             if "Normal" in term.fieldName :
                 term.internalType = term.EnumNormal
             elif term.constant:
-                if term.fieldName in self.constantsNames:
+                if term.fieldName in constantNames:
                     term.valuesIndex_ = constantNames.index(term.fieldName)
                     term.internalType = term.EnumConstant
                 elif term.fieldName in [f.name for f in self.__efs__]:
