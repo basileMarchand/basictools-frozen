@@ -510,14 +510,15 @@ class XdmfDataItem(Xdmfbase):
 
 
         if( self.Format  == 'XML'):
-
           if(self.Type.lower() =='float'):
               if(self.Precision == 4):
                   numpytype = 'float32'
               else:
                   numpytype = 'float_'
-          elif(self.Type.lower() =='int'):
+          elif(self.Type.lower() == 'int'):
               numpytype = 'int_'
+          elif(self.Type.lower() == 'char'):
+              numpytype = 'int8'
 
           self.Data= np.array(self.CDATA.split(), dtype=numpytype);
           self.Data = self.Data.reshape(self.Dimensions)
