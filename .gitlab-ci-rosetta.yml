@@ -16,10 +16,9 @@ doc:
     script:
         - module load PISCO/Python3Dev
         - export PYTHONPATH=$PWD/src:$PYTHONPATH
+        - python setup.py build_sphinx
         - mkdir public
-        - cd docs
-        - make html
-        - mv _build/html ../public/doc
+        - mv docs/_build/html public/doc
     artifacts:
         name: "Documentation"
         paths:
