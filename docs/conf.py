@@ -30,7 +30,11 @@ sys.path.insert(0, os.path.abspath('../..'))
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.autosummary', 'sphinx.ext.napoleon']
+extensions = [
+        'sphinx.ext.autodoc',
+        'sphinx.ext.autosummary',
+        'sphinx.ext.napoleon',
+        'sphinx.ext.viewcode']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = []
@@ -250,10 +254,13 @@ texinfo_documents = [
 # -- Options for autodoc extension
 #autodoc_mock_imports = ['BasicTools']
 
-# -- Options for napoleon extension
+# -- Options for autosummary extension
 autosummary_generate = False
 
 # -- Options for napoleon extension
+pass
+
+# -- Options for viewcode extension
 pass
 
 def run_apidoc(_):
