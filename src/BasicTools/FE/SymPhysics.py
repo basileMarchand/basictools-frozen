@@ -197,19 +197,19 @@ class MecaPhysics(Physics):
         symdep = self.primalUnknown
 
 
-        nodalEnergyT = GetTestField("strain_energy",1)
+        nodalEnergyT = GetTestField("elastic_energy",1)
         symEner = 0.5*wf.ToVoigtEpsilon(wf.Strain(symdep)).T*self.HookeLocalOperator*wf.ToVoigtEpsilon(wf.Strain(symdep))*nodalEnergyT
 
 
-        trStrainT = GetTestField("tr(strain)",1)
+        trStrainT = GetTestField("tr_strain_",1)
         symTrStrain = wf.Trace(wf.Strain(symdep)).T*trStrainT
 
-        trStressT = GetTestField("tr(stress)",1)
+        trStressT = GetTestField("tr_stress_",1)
         symTrStress = wf.Trace(wf.FromVoigtSigma(wf.ToVoigtEpsilon(wf.Strain(symdep)).T*self.HookeLocalOperator))*trStressT
 
-        postQuantities = {"strain_energy" : symEner,
-                          "tr(strain)": symTrStrain,
-                          "tr(stress)": symTrStress }
+        postQuantities = {"elastic_energy" : symEner,
+                          "tr_strain_": symTrStrain,
+                          "tr_stress_": symTrStress }
 
         return postQuantities
 
