@@ -11,11 +11,11 @@ from setuptools import setup
 
 
 # Compilation options
-enable_MKL = True
+enable_MKL = "BASICTOOLS_DISABLE_MKL" not in os.environ
 debug = False
 force = True # to force recompilation
 annotate = debug # to generate annotation (HTML files)
-useOpenmp = True
+useOpenmp = "BASICTOOLS_DISABLE_OPENMP" not in os.environ
 
 
 # Cython modules
@@ -30,7 +30,8 @@ try:
     # Compiler-dependent configuration
     # See https://stackoverflow.com/questions/30985862
     BUILD_ARGS = {}
-    for compiler in ('msvc', 'gcc', 'icc'):
+
+    for compiler in ('msvc', 'gcc', 'icc',  os.path.basename(os.environ.get('CXX', 'c++')) ):
         if debug:
             compile_args = ['-g','-O', '-std=c++11']
         else:
@@ -50,11 +51,12 @@ try:
     import numpy
     include_path = [numpy.get_include(), os.environ.get('EIGEN_INC','')]
     if "CONDA_PREFIX" in os.environ:
-        include_path.append(os.environ["CONDA_PREFIX"] + "/include/")
-        include_path.append(os.environ["CONDA_PREFIX"] + "/Library/include/")
-    modules = cythonize(["src/BasicTools/" + src for src in cython_src], gdb_debug=debug, annotate=annotate, include_path=include_path, force=force)
+        include_path.append(os.environ["CONDA_PREFIX"] + os.sep + "include" + os.sep + "eigen3")
+        include_path.append(os.environ["CONDA_PREFIX"] + os.sep + "include"+ os.sep )
+        include_path.append(os.environ["CONDA_PREFIX"] + os.sep + "Library"+ os.sep +"include"+ os.sep )
+    modules = cythonize(["src"+ os.sep +"BasicTools"+ os.sep + src for src in cython_src], gdb_debug=debug, annotate=annotate, include_path=include_path, force=force)
     for m in modules:
-        m.include_dirs = include_path + ["src/BasicTools"]
+        m.include_dirs = include_path + ["src"+ os.sep +"BasicTools"]
         m.extra_compile_args = compile_args
         if enable_MKL:
             m.extra_link_args.append("-lmkl_core")
