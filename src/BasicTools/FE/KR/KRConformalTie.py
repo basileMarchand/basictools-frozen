@@ -15,7 +15,7 @@ from BasicTools.Containers.Octree import Octree
 class KRConformalTieVector(KRBaseVector):
     def __init__(self):
         super(KRConformalTieVector,self).__init__()
-        self.tol = 0.0001
+        self.tol = 0.000001
         self.onII =[]
         self.argsII = []
 
@@ -79,11 +79,9 @@ class KRConformalTieVector(KRBaseVector):
 
         fieldDicI = {f.name:f for f in fields }
         fieldDicII = {f.name:f for f in fields }
-        #self.__fieldOffsetsI = { }
-        #self.__fieldOffsetsII = { }
 
-        offsets  , fieldOffsetsI  = self._ComputeOffsets(fields)
-        offsetsII, fieldOffsetsII = self._ComputeOffsets(fieldsII)
+        offsets  , fieldOffsetsI, totalNumberOfDofsI  = self._ComputeOffsets(fields)
+        offsetsII, fieldOffsetsII, totalNumberOfDofsII = self._ComputeOffsets(fieldsII)
 
         oc1 = Octree(bmax1[0],bmax1[1],bmax1[2],bmin1[0],bmin1[1],bmin1[2])
         oc2 = Octree(bmax2[0],bmax2[1],bmax2[2],bmin2[0],bmin2[1],bmin2[2])
@@ -107,12 +105,6 @@ class KRConformalTieVector(KRBaseVector):
         usedNodesMeshI, nodesI  = FillOctree(meshI,oc1, self.on, self.originSystem.GetOrthoNormalBase())
         usedNodesMeshII, nodesII = FillOctree(meshII,oc2,self.onII, self.targetSystem.GetOrthoNormalBase())
 
-
-        #print("usedNodesMeshI")
-        #print(usedNodesMeshI)
-        #print("usedNodesMeshII")
-        #print(usedNodesMeshII)
-
         ffI = []
         usedOffsetsI = []
         ffII = []
@@ -121,47 +113,43 @@ class KRConformalTieVector(KRBaseVector):
         for arg, argII in zip(self.args,argsII):
 
             if arg in fieldDicI.keys():
-                  dim = 1
-                  ffI.append(fieldDicI[arg])
-                  usedOffsetsI.append(fieldOffsetsI[arg])
-                  ffII.append(fieldDicII[argII])
-                  usedOffsetsII.append(fieldOffsetsII[argII])
+                dim = 1
+                ffI.append(fieldDicI[arg])
+                usedOffsetsI.append(fieldOffsetsI[arg])
+                ffII.append(fieldDicII[argII])
+                usedOffsetsII.append(fieldOffsetsII[argII])
             else:
-                  dim =0
-                  #field = fieldDic[arg+"_0"]
-                  for i in range(3):
-                      if arg+"_"+str(i) in fieldDicI:
-                         dim += 1
-                         ffI.append(fieldDicI[arg+"_"+str(i)])
-                         usedOffsetsI.append(fieldOffsetsI[arg+"_"+str(i)])
-                         ffII.append(fieldDicII[argII+"_"+str(i)])
-                         usedOffsetsII.append(fieldOffsetsI[argII+"_"+str(i)])
-
-                      else:
-                         break
+                dim =0
+                #field = fieldDic[arg+"_0"]
+                for i in range(3):
+                    if arg+"_"+str(i) in fieldDicI:
+                        dim += 1
+                        ffI.append(fieldDicI[arg+"_"+str(i)])
+                        usedOffsetsI.append(fieldOffsetsI[arg+"_"+str(i)])
+                        ffII.append(fieldDicII[argII+"_"+str(i)])
+                        usedOffsetsII.append(fieldOffsetsI[argII+"_"+str(i)])
+                    else:
+                        break
 
 
         for cpt,nidI in enumerate(usedNodesMeshI):
-                posI = nodesI[cpt,:]
-                entries = oc2.find_within_range_cube(nodesI[cpt], self.tol)
-                for entry in entries:
-                    posII, nidII = entry
-                    print(posII,nidII)
-                    dist = np.linalg.norm(posII - posI)
-                    if dist > self.tol:
-                        continue
+            posI = nodesI[cpt,:]
+            entries = oc2.find_within_range_cube(nodesI[cpt,:], self.tol)
+            for entry in entries:
+                posII, nidII = entry
+                dist = np.linalg.norm(posII - posI)
+                if dist > self.tol:
+                    continue
 
-
-
-                    for i in range(len(ffI)):
-                        firstOff = usedOffsetsI[i]
-                        firstNumbering = ffI[i].numbering.GetDofOfPoint(nidI)+firstOff
-                        secondOff = usedOffsetsII[i]
-                        secondNumbering = ffII[i].numbering.GetDofOfPoint(nidI) + secondOff
-                        CH.AddFactor(firstNumbering,1)
-                        CH.AddFactor(secondNumbering,-1)
-                        CH.NextEquation()
-                        #print("Adding ",(firstNumbering,secondNumbering))
+                for i in range(len(ffI)):
+                    firstOff = usedOffsetsI[i]
+                    firstNumbering = ffI[i].numbering.GetDofOfPoint(nidI)+firstOff
+                    secondOff = usedOffsetsII[i]
+                    secondNumbering = ffII[i].numbering.GetDofOfPoint(nidII) + secondOff
+                    CH.AddFactor(firstNumbering,1)
+                    CH.AddFactor(secondNumbering,-1)
+                    CH.NextEquation()
+                break
 
         return CH
 

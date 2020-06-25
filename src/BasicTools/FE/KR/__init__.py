@@ -9,4 +9,5 @@ _test = ["KRBase",
          "KRBlock",
          "KRMasterSlaves",
          "KRDofs",
-         "KRConformalTie"]
+         "KRConformalTie",
+         "KRMortar"]
