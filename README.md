@@ -29,7 +29,7 @@
       install Microsoft Visual C++ Build Tools to use eigen,
       scikit-sparse package not available in anaconda for windows, should be able to compile it for windows following https://github.com/xmlyqing00/Cholmod-Scikit-Sparse-Windows,
       tested on windows10: 99 tests OK, 3 tests not OK (Linalg.LinearSolver, IO.Wormhole (SIGALARM not supported on windows), IO.CodeInterface
-      
+
 
 
 2) INSTALLATION
@@ -52,8 +52,9 @@
     Every module must have a function called "CheckIntegrity" that takes no
     argument and returns the string "ok" if and only if the test was successful.
 
-    The __init__.py must have a variable named __all__ listing all submodules
-    so that the test infrastructure works as intended.
+    The __init__.py must have a variable named _test (the use of the variable
+    __all__ is depreciated) listing all submodules to be tested so that the test
+    infrastructure works as intended.
 
     Two functions are available to help writing tests :
 

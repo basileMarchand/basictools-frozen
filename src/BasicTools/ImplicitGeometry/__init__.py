@@ -4,7 +4,7 @@
 # file 'LICENSE.txt', which is part of this source code package.
 #
 
-__all__ = ['ImplicitGeometryFactory',
+_test = ['ImplicitGeometryFactory',
            'ImplicitGeometryBase',
            'ImplicitGeometryObjects',
            'ImplicitGeometryOperators'

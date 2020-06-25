@@ -5,7 +5,7 @@
 #
 
 
-__all__ = [
+_test = [
 'AnsysReader',
 'AscReader',
 'CodeInterface',

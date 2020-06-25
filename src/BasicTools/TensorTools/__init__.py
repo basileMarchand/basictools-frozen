@@ -5,6 +5,6 @@
 #
                        
 
-__all__ = ['Formats']
+_test = ['Formats']
 
 

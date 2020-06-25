@@ -9,7 +9,7 @@
    Please read the help for each individual module.
 """
 
-__all__ = [
+_test = [
 'BaseOutputObject',
 'CPU',
 'ParserHelper',

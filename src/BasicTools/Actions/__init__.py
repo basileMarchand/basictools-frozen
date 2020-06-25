@@ -5,4 +5,4 @@
 #
                        
 
-__all__ = ['OpenInParaView']
+_test = ['OpenInParaView']
