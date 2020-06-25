@@ -5,7 +5,7 @@
 #
 #
 
-__all__ = ["Actions",
+_test = ["Actions",
            "Containers",
            "FE",
            "Helpers",

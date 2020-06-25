@@ -5,7 +5,7 @@
 #
                        
 
-__all__ = [
+_test = [
 "ConstraintsHolder",
 "LinearSolver",
 "MatOperations"

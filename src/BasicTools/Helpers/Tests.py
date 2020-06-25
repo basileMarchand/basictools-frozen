@@ -16,22 +16,21 @@ import time
 Test_Help_String = """
 python  Tests.py -c -f -s -e <extraModules> -m <moduleFilter>
 options :
-    -c    To activate coverage and generate a html report
-          -cb (coverage with browser and local file index.html generated)
     -f    Full output for all the test
     -s    Stop at first error
     -e    To test extra Modules (-e can be repeated)
     -m    To filter the output by this string (-m can be repeated)
     -k    Skip test base on string
     -d    Dry run do not execute anything, only show what will be executed
-    -c    To activate coverage
+    -c    To activate coverage and generate a html report
+          -cb (coverage with browser and local file index.html generated)
     -l    Generation of the coverage (html) report localy (current path)
-    -b    Launch browser after the covarage report generation
+    -b    Launch browser after the covarage report generation 
     -p    Activate profiling
     -v    Activate maximal level of verbosity
     -y    Generate .pyc when inporting modules (default False)
     -L    Output Localy, Use the current path for all the outputs
-    -P <dir> Settemp output directory to 
+    -P <dir> Settemp output directory to
 """
 
 from BasicTools.Helpers.which import which
@@ -212,7 +211,18 @@ def __tryImportRecursive(submod,tocheck,stopAtFirstError,modulestotreat,modulest
      tocheck[submod ] = cif
   else :
      try:
-         for subsubmod  in [ submod +'.' + x for x in sm.__all__]:
+         subsubmods = []
+         try:
+             listToTest = getattr(sm,"__all__",getattr(sm,"_test",None))
+             subsubmods =  [ submod +'.' + x for x in listToTest]
+         except Exception as e:
+             print(e)
+             import os
+             print('Error Loading module : ' + submod + ' (Current folder'+os.getcwd()+')'  )
+             print('-*-*-*-*-*-*> missing _test variable ??? <*-*-*-*-*-*--'  )
+             raise
+
+         for subsubmod  in subsubmods:
              if any([x.lower() in subsubmod.lower() for x in modulestoskip]):
                  print("skip module :" +str(subsubmod))
                  continue

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-__all__ = [
+_test = [
 "NumericalWeakForm",
 "NativeNumericalWeakForm",
 ]

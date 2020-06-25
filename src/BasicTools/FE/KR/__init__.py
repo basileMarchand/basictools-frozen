@@ -5,6 +5,6 @@
 #
                        
 
-__all__=["KRBase",
+_test = ["KRBase",
          "KRBlock",
          "KRMasterSlaves"]

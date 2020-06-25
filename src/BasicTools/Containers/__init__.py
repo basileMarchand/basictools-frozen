@@ -5,7 +5,7 @@
 #
 
 
-__all__ = ["vtkBridge",
+_test = ["vtkBridge",
            "UnstructuredMesh",
            'UnstructuredMeshCreationTools',
            'UnstructuredMeshFieldOperations',
