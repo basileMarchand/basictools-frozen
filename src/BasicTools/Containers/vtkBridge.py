@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 
 import numpy as np
 
@@ -187,38 +187,25 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
         output.Allocate(mesh.GetNumberOfElements())
         ##copy points
         pts = vtkPoints()
-        pts.Allocate(mesh.GetNumberOfNodes())
+        pts.SetNumberOfPoints(mesh.GetNumberOfNodes())
 
         VTK_originalIDNodes = NumpyFieldToVtkField(mesh,mesh.originalIDNodes,"originalIds")
         output.GetPointData().AddArray(VTK_originalIDNodes)
 
-
-        #nodeOriginalIds = vtkIntArray()
-        #nodeOriginalIds.SetName("originalIds")
-        #nodeOriginalIds.SetNumberOfComponents(1)
-        #nodeOriginalIds.SetNumberOfTuples(mesh.GetNumberOfNodes())
         if mesh.nodes.shape[1] == 3 :
             for p in range(mesh.GetNumberOfNodes()):
                 point = mesh.nodes[p,:]
-                pts.InsertNextPoint(point[0],point[1],point[2])
-                #nodeOriginalIds.SetValue(p, mesh.originalIDNodes[p])
+                pts.SetPoint(p,point[0],point[1],point[2])
         else:
-            #2DCase
             for p in range(mesh.GetNumberOfNodes()):
                 point = mesh.nodes[p,:]
-                pts.InsertNextPoint(point[0],point[1],0.0)
-                #nodeOriginalIds.SetValue(p, mesh.originalIDNodes[p])
+                pts.SetPoint(p,point[0],point[1],0.0)
 
-        #output.GetPointData().AddArray(nodeOriginalIds)
         output.SetPoints(pts)
 
         VTK_originalIDsEl = NumpyFieldToVtkField(mesh,mesh.GetElementsOriginalIDs(),"originalIds")
         output.GetCellData().AddArray(VTK_originalIDsEl)
 
-        #elemOriginalIds = vtkIntArray()
-        #elemOriginalIds.SetName("originalIds")
-        #elemOriginalIds.SetNumberOfComponents(1)
-        #elemOriginalIds.SetNumberOfTuples(mesh.GetNumberOfElements())
         cpt = 0
         for elementsname,elementContainer in mesh.elements.items():
             pointIds = vtkIdList()
@@ -229,9 +216,7 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
                 for i in range(npe):
                     pointIds.SetId(i,elementContainer.connectivity[e,i])
                 output.InsertNextCell(vtknumber, pointIds)
-                #elemOriginalIds.SetValue(cpt, elementContainer.originalIds[e])
                 cpt += 1
-        #output.GetCellData().AddArray(elemOriginalIds)
 
     if hasattr(mesh,"nodeFields"):
         for name,data in mesh.nodeFields.items():

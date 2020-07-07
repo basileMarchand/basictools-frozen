@@ -6,6 +6,9 @@
 
 # this files is inteded to be used inside paraview as a plugin
 # compatible with paraview 5.7+
+
+import copy
+
 import numpy as np
 
 from paraview.util.vtkAlgorithm import *
@@ -249,9 +252,9 @@ for pext in WriterFactory.keys():
 @smproxy.filter(name="Center DataSet")
 @smhint.xml("""<ShowInMenu category="BasicTools Filters" />""")
 @smproperty.input(name="Target mesh", port_index=1)
-@smdomain.datatype(dataTypes=["vtkUnstructuredGrid"], composite_data_supported=False)
+@smdomain.datatype(dataTypes=["vtkUnstructuredGrid","vtkPolyData"], composite_data_supported=False)
 @smproperty.input(name="Data to move", port_index=0)
-@smdomain.datatype(dataTypes=["vtkUnstructuredGrid"], composite_data_supported=False)
+@smdomain.datatype(dataTypes=["vtkUnstructuredGrid","vtkPolyData"], composite_data_supported=False)
 class CenterSecondObjectOnTheFirst(VTKPythonAlgorithmBase):
     def __init__(self):
         VTKPythonAlgorithmBase.__init__(self, nInputPorts=2, nOutputPorts=1, outputType="vtkUnstructuredGrid")
@@ -259,12 +262,14 @@ class CenterSecondObjectOnTheFirst(VTKPythonAlgorithmBase):
     def FillInputPortInformation(self, port, info):
         if port == 0:
             info.Set(self.INPUT_REQUIRED_DATA_TYPE(), "vtkUnstructuredGrid")
+            info.Append(self.INPUT_REQUIRED_DATA_TYPE(), "vtkPolyData")
         else:
             info.Set(self.INPUT_REQUIRED_DATA_TYPE(), "vtkUnstructuredGrid")
+            info.Append(self.INPUT_REQUIRED_DATA_TYPE(), "vtkPolyData")
         return 1
 
     def RequestData(self, request, inInfoVec, outInfoVec):
-        from vtkmodules.vtkCommonDataModel import vtkTable, vtkDataSet, vtkPolyData
+        from vtkmodules.vtkCommonDataModel import  vtkDataSet
         input0 = VtkToMesh(vtkDataSet.GetData(inInfoVec[0], 0))
         input1 = VtkToMesh(vtkDataSet.GetData(inInfoVec[1], 0))
 
@@ -272,14 +277,13 @@ class CenterSecondObjectOnTheFirst(VTKPythonAlgorithmBase):
         mean1 = np.sum(input1.nodes,axis=0)/input1.GetNumberOfNodes()
 
         output = vtkUnstructuredGrid.GetData(outInfoVec, 0)
-        input0.nodes -= mean0
-        input0.nodes += mean1
 
-        MeshToVtk(input0,output)
+        # the user must not modify the inputs
+        outputmesh = copy.copy(input0)
+        outputmesh.nodes = input0.nodes + (mean1 - mean0)
+        MeshToVtk(outputmesh, output)
+
         return 1
 
 
-
 print("BasicTools ParaView Plugin Loaded")
-
-
