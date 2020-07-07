@@ -25,6 +25,7 @@ class ConstantRectilinearElementContainer(BaseOutputObject):
         self._connectivity = None
         self.mutable = False
         self.space = None
+
     @property
     def connectivity(self):
         if(self._connectivity is None):
@@ -155,6 +156,17 @@ class ConstantRectilinearMesh(MeshBase):
         self.elements = AllElements()
         self.structElements = ConstantRectilinearElementContainer(self.__dimensions)
         self.elements[self.structElements.elementType] = self.structElements
+
+    def __copy__(self):
+        res = ConstantRectilinearMesh(dim = len(self.__dimensions) )
+        res.__dimensions = self.__dimensions
+        res.__origin = self.__origin
+        res.__spacing = self.__spacing
+        res.nodes = self.nodes
+        res.elements = self.elements
+        res.structElements = self.structElements
+        res.elements = self.elements[self.structElements.elementType]
+        return res
 
     def GetNamesOfElemTagsBulk(self):
         return [ tag.name for tag in self.structElements.tags]

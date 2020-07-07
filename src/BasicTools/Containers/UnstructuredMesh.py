@@ -237,12 +237,22 @@ class UnstructuredMesh(MeshBase):
         return True
 
     def __init__(self):
-        super(UnstructuredMesh,self).__init__()
+        super(UnstructuredMesh, self).__init__()
         self.nodes = np.empty((0,3),dtype=np.double)
         self.originalIDNodes = np.empty((0,),dtype=np.int)
         self.elements = AllElements();
         self.boundingMin = np.array([0.,0,0]);
         self.boundingMax = np.array([0.,0,0]);
+
+    def __copy__(self):
+        res = UnstructuredMesh()
+        res._assign(self)
+        res.nodes = self.nodes
+        res.originalIDNodes = self.originalIDNodes
+        res.elements = self.elements
+        res.boundingMin = self.boundingMin
+        res.boundingMax = self.boundingMax
+        return res
 
     def GetNumberOfNodes(self):
         """

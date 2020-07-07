@@ -173,7 +173,6 @@ class Tags(BaseOutputObject):
         return res
 
 class MeshBase(BaseOutputObject):
-
     def __init__(self):
         super(MeshBase,self).__init__()
         self.nodesTags = Tags()
@@ -184,6 +183,17 @@ class MeshBase(BaseOutputObject):
         object using/setting the information
         """
         self.props = {}
+
+    def __copy__(self):
+        res = MeshBase()
+        res._assign(self)
+        return res
+
+    def _assign(self, other):
+        self.nodesTags = other.nodesTags
+        self.nodeFields = other.nodeFields
+        self.elemFields = other.elemFields
+        self.props = other.props
 
     def GetElementsOfType(self,typename):
         """
