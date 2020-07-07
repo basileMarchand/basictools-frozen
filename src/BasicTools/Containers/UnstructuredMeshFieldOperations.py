@@ -17,10 +17,10 @@ from BasicTools.Containers.UnstructuredMeshInspectionTools import  ExtractElemen
 def GetFieldTransferOp(inputField,targetPoints,method=None,verbose=False):
     """
         op : sparcematrix to do the transfer
-        status: vector with the status of the transfer (1:interp, 2: extrap, 3:clamp, 0:nearest)
+        status: vector with the status of the transfer (1:interp, 2: extrap, 3:clamp, 4:ZeroFill, 0:nearest)
         return op, status
     """
-    possibleMethods =["Interp/Nearest","Nearest/Nearest","Interp/Clamp","Interp/Extrap"]
+    possibleMethods =["Interp/Nearest","Nearest/Nearest","Interp/Clamp","Interp/Extrap","Interp/ZeroFill"]
 
     if method is None:
         method = possibleMethods[0]
@@ -157,10 +157,13 @@ def GetFieldTransferOp(inputField,targetPoints,method=None,verbose=False):
             elif method == "Interp/Clamp":
                 sF = memshapeFuncClamped
                 status[p] = 3
-            else:
+            elif method == "Interp/Extrap":
                 # we use the shapeFunction in extrapolation
                 sF = memshapeFunc
                 status[p] = 2
+            else:
+                status[p] = 4
+                continue
 
             data = memdata
             lenb = memlenb
@@ -391,14 +394,14 @@ def CheckIntegrity1D(GUI=False):
     #    print(data.connectivity)
     if GUI:
         import matplotlib.pyplot as plt
-        fig, axs = plt.subplots(nrows=2, ncols=2, constrained_layout=True)
+        fig, axs = plt.subplots(nrows=2, ncols=3, constrained_layout=True)
         axis = axs.flat
     else:
-        axis = [None]*4
+        axis = [None]*5
     data = (inputmesh.nodes[:,0] -0.5)**2
 
 
-    for method,ax in zip(["Interp/Nearest","Nearest/Nearest","Interp/Clamp","Interp/Extrap"],axis):
+    for method,ax in zip(["Interp/Nearest","Nearest/Nearest","Interp/Clamp","Interp/Extrap","Interp/ZeroFill"],axis):
 
         op = GetFieldTransferOp(inputFEField,b.nodes,method = method,verbose=True)[0]
         result = op.dot(data)
