@@ -159,6 +159,7 @@ class ConstantRectilinearMesh(MeshBase):
 
     def __copy__(self):
         res = ConstantRectilinearMesh(dim = len(self.__dimensions) )
+        res._assign(self)
         res.__dimensions = self.__dimensions
         res.__origin = self.__origin
         res.__spacing = self.__spacing
