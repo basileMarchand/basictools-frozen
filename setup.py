@@ -70,11 +70,15 @@ class build_ext_compiler_check(build_ext):
             link_args.append("-lmkl_intel_lp64")
             link_args.append("-lmkl_sequential")
             link_args.append("-lmkl_def")
+        if useOpenmp:
+            link_args.append("-lgomp")
         return link_args
 
     def _include_dirs(self, _):
         import numpy
-        include_dirs = [numpy.get_include(), os.environ.get('EIGEN_INC', '')]
+        include_dirs =[numpy.get_include()]
+        if "EIGEN_INC" in os.environ:
+            include_dirs.append(os.environ.get('EIGEN_INC'))
         if "CONDA_PREFIX" in os.environ:
             conda_prefix = os.environ["CONDA_PREFIX"]
             include_dirs.append(os.path.join(conda_prefix, "include"))
