@@ -25,7 +25,7 @@ options :
     -c    To activate coverage and generate a html report
           -cb (coverage with browser and local file index.html generated)
     -l    Generation of the coverage (html) report localy (current path)
-    -b    Launch browser after the covarage report generation 
+    -b    Launch browser after the covarage report generation
     -p    Activate profiling
     -v    Activate maximal level of verbosity
     -y    Generate .pyc when inporting modules (default False)
@@ -144,13 +144,18 @@ def __RunAndCheck(lis,bp,stopAtFirstError,dryrun,profiling):# pragma: no cover
             if dryrun:
                 r = "Dry Run "
             else:
+                teststr = """
+from {} import CheckIntegrity
+res = CheckIntegrity()""".format(name)
+                local = {}
 
                 if profiling :
                     import cProfile, pstats
                     from io import StringIO
                     pr = cProfile.Profile()
                     pr.enable()
-                    r = lis[name]()
+                    exec(teststr,{},local)
+                    r = local["res"]
                     pr.disable()
                     s = StringIO()
                     sortby = 'cumulative'
@@ -162,7 +167,8 @@ def __RunAndCheck(lis,bp,stopAtFirstError,dryrun,profiling):# pragma: no cover
 #                    cProfile.runctx("r = lis[name]()",glob,loc)
 #                    r = loc["r"]
                 else:
-                    r = lis[name]()
+                    exec(teststr,{},local)
+                    r = local["res"]
             sys.stdout.flush()
             sys.stderr.flush()
             stop_time = time.time()
@@ -292,14 +298,11 @@ def TestAll(modulestotreat=['ALL'],modulestoskip=[], fulloutput=False, stopAtFir
             for tool in extraToolsBoxs:
                 tocheck.update(__tryImport(tool,bp,stopAtFirstError,modulestotreat,modulestoskip))
 
-
-
         if not fulloutput:
             bp.ToSink()
             bp.Print("Sending all the output of the tests to sink")
 
-
-        if modulestotreat[0] is not  'ALL':
+        if modulestotreat[0] != 'ALL':
             filtered =  dict((k, v) for k, v in tocheck.items() if any(s in k for s in modulestotreat ) )
             tocheck = filtered
 
@@ -308,10 +311,6 @@ def TestAll(modulestotreat=['ALL'],modulestoskip=[], fulloutput=False, stopAtFir
             tocheck = filtered
 
         res = __RunAndCheck(tocheck,bp,stopAtFirstError,dryrun,profiling);
-
-        #bp.Restore()
-        #now the restore is done automaticaly
-
 
     if coverage["active"] :
         cov.stop()
