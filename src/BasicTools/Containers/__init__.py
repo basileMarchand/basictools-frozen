@@ -18,5 +18,5 @@ _test = ["vtkBridge",
            'ElementNames',
            'MeshTools',
            'Filters',
-           'SymExpr'
+           'SymExpr',
            ];
