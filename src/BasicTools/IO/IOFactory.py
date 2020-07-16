@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 
 
 from BasicTools.Helpers.Factory import Factory
@@ -16,6 +16,7 @@ def CreateReader(name,ops=None):
 
 class ReaderFactory(Factory):
     _Catalog = {}
+    _SetCatalog = set()
     def __init__(self):
         super(ReaderFactory,self).__init__()
 
@@ -61,25 +62,40 @@ def CreateWriter(name,ops=None):
 
 class WriterFactory(Factory):
     _Catalog = {}
+    _SetCatalog = set()
     def __init__(self):
         super(WriterFactory,self).__init__()
 
 def GetAvailableWriter():
     return list(WriterFactory._Catalog.keys())
 
-
-
-
 def CheckIntegrity():
-    from BasicTools.IO.IOFactory import WriterFactory,ReaderFactory
-    from BasicTools.IO.IOFactory import GetAvailableReaders
+    from BasicTools.IO.IOFactory import WriterFactory, ReaderFactory
+    from BasicTools.IO.IOFactory import GetAvailableReaders, RegisterReaderClass
     from BasicTools.IO.IOFactory import GetAvailableWriter
     ##
     InitAllReaders()
+    class DummyReaderI:
+        pass
+    class DummyReaderII:
+        pass
+
+    RegisterReaderClass(".test",DummyReaderI,withError=True)
+    RegisterReaderClass(".test",DummyReaderII,withError=False)
     print("Available Readers : ", GetAvailableReaders())
+    print("Available Readers for '.test': ", ReaderFactory.GetAvailablesFor(".test"))
 
     InitAllWriters()
+    class DummyWriterI:
+        pass
+    class DummyWriterII:
+        pass
+
+    RegisterWriterClass(".test",DummyWriterI,withError=True)
+    RegisterWriterClass(".test",DummyWriterII,withError=False)
     print("Available Writers : ", GetAvailableWriter())
+    print("Available Writers for '.test': ", WriterFactory.GetAvailablesFor(".test"))
+
 
     print("---------------------")
     ReaderFactory.PrintAvailable()

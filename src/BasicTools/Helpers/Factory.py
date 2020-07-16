@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 import BasicTools.Helpers.ParserHelper as PH
@@ -49,6 +49,9 @@ class Factory(BaseOutputObject):
         if name in cls._Catalog and withError:
            raise (Exception ("Class "+ str(name) +" already in the catalog") )
         cls._Catalog[name] = (classtype,constructor)
+        if hasattr(cls,"_SetCatalog"):
+            cls._SetCatalog.add( (name,classtype,constructor))
+
 
     @classmethod
     def GetClass(cls,name):
@@ -59,6 +62,10 @@ class Factory(BaseOutputObject):
     def GetConstructor(cls,name):
         classType, classConstructor = cls._Catalog[name]
         return classConstructor
+
+    @classmethod
+    def GetAvailablesFor(cls, name):
+        return [( obj,const) for key,obj,const in cls._SetCatalog if key == name]
 
     @classmethod
     def Create(cls,name,ops=None,propertiesAssign=True):
