@@ -19,4 +19,5 @@ _test = ["vtkBridge",
            'MeshTools',
            'Filters',
            'SymExpr',
+           'MeshIOBridge'
            ];
