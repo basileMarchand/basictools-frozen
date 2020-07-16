@@ -3,13 +3,13 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 
 from BasicTools.Helpers.Tests import TestTempDir
 from BasicTools.IO.PathControler import PathControler as PC
 
 paraviewExec= "paraview"
-def OpenInParaView( mesh=None,filename=None, run=True):
+def OpenInParaView( mesh=None,filename=None, run=True, wait=0):
     from subprocess import Popen
     from BasicTools.Helpers.which import which
 
@@ -38,7 +38,9 @@ def OpenInParaView( mesh=None,filename=None, run=True):
         WriteMeshToXdmf(filename,mesh,PointFieldsNames=PointFieldsNames,PointFields=PointFields,CellFieldsNames=CellFieldsNames,CellFields=CellFields  )
 
     if run:# pragma: no cover
-         Popen([paraviewExec,filename])
+         pross = Popen([paraviewExec,filename])
+         if wait:
+             pross.wait(wait)
 
 def CheckIntegrity(GUI=False):
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateCube
