@@ -1,4 +1,8 @@
-
+# -*- coding: utf-8 -*-
+#
+# This file is subject to the terms and conditions defined in
+# file 'LICENSE.txt', which is part of this source code package.
+#
 
 import BasicTools.Containers.ElementNames as EN
 from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
@@ -260,7 +264,6 @@ def CheckIntegrity():
     #AddWritersToBasicToolsFactory()
 
     return "ok"
-
 
 if __name__ == '__main__':
     print(CheckIntegrity()) #pragma: no cover
