@@ -10,6 +10,10 @@ from BasicTools.IO.UniversalReader import ReadMesh
 from BasicTools.IO.UniversalWriter import WriteMesh
 import  BasicTools.IO.IOFactory as IOF
 
+IOF.InitAllReaders()
+IOF.InitAllWriters()
+
+
 def PrintHelp():
   print( 'python  MeshFileConverter -i <inputfile> -o <outputfile>')
   print( 'options :')
@@ -19,10 +23,9 @@ def PrintHelp():
   print( '       -t    time to read (if the input file can handle time) (default last time step is writen)')
   print( '       -p    print availables time to read ')
   print( '       -v    more verbose output ')
-  IOF.InitAllReaders()
-  print("Available Readers : ", IOF.GetAvailableReaders())
+  print( '       -m    Activate MeshIO Readers and Writers ')
 
-  IOF.InitAllWriters()
+  print("Available Readers : ", IOF.GetAvailableReaders())
   print("Available Writers : ", IOF.GetAvailableWriter())
 
 #MeshFileConverter -i meshfile.meshb -o .PIPE > toto
@@ -155,11 +158,12 @@ def Main():
         PrintHelp()
         sys.exit()
     else:
-      try:
-          opts, args = getopt.getopt(sys.argv[1:],"vpht:i:o:")
-      except getopt.GetoptError:
-          PrintHelp()
-          sys.exit(2)
+      #try:
+      if True:
+          opts, args = getopt.getopt(sys.argv[1:],"vphmt:i:o:")
+      #except getopt.GetoptError:
+      #    PrintHelp()
+      #    sys.exit(2)
 
       outputfilename = ""
       ops= {}
@@ -185,6 +189,13 @@ def Main():
          elif opt in ("-c"):
             print(CheckIntegrity(GUI=True))
             sys.exit(0)
+         elif opt in ("-m"):
+             from BasicTools.Containers.MeshIOBridge import InitAllReaders,InitAllWriters,AddReadersToBasicToolsFactory,AddWritersToBasicToolsFactory
+             InitAllReaders()
+             InitAllWriters()
+             AddReadersToBasicToolsFactory()
+             AddWritersToBasicToolsFactory()
+
 
     Convert(inputfilename,outputfilename,ops )
 
