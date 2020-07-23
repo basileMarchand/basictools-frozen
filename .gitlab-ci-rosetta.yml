@@ -44,7 +44,7 @@ test_with_pytest_and_coverage:
     tags:
         - MSBasicTools
     script:
-        - module load PISCO/Python3Dev-pytest
+        - module load PISCO/Python3Dev
         - export ABAQUS_NO_FAIL="True"
         - export ZSET_NO_FAIL="True"
         - mkdir -p public/coverage
