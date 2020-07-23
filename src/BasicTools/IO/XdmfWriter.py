@@ -202,6 +202,12 @@ class XdmfWriter(WriterBase):
         self.__XmlSizeLimit = 0
         self.automaticOpen = False;
 
+        self.__isHdf5 = False
+        self.__hdf5FileName = None
+        self.__hdf5FileNameOnly = None
+        self.__hdf5FilePointer = None
+        self.__hdf5NameCpt = 0
+
         self.SetBinary(False)
         self.__binFileName = None;
         self.__filePointer = None;
@@ -223,6 +229,21 @@ class XdmfWriter(WriterBase):
         self.globalStorage = {}
         self.maxStorageSize = 50
 
+    def IsHdf5(self):
+        return self.__isHdf5
+
+    def SetBinary(self,val=True):
+        if self.IsHdf5() and val:
+            raise(Exception("Cant set binary and Hdf5 at the same time"))
+
+        super(XdmfWriter,self).SetBinary(val)
+
+    def SetHdf5(self,val=True):
+        if self.isBinary() and val :
+            raise(Exception("Cant set binary and Hdf5 at the same time"))
+
+        self.__isHdf5 = val
+
     def __str__(self):
         res  = 'XdmfWriter : \n'
         res += '   FileName : '+ str(self.fileName) +'\n'
@@ -230,6 +251,9 @@ class XdmfWriter(WriterBase):
         if self.isBinary():
            res += '   Binary output Active \n'
            res += '   Binary FileName : '+ self.__binFileName +'\n'
+        if self.IsHdf5():
+           res += '   Hdf5 output Active \n'
+           res += '   Hdf5 FileName : '+ self.__hdf5FileName +'\n'
         if self.IsTemporalOutput():
            res += '   Temporal output Active \n'
            res += '   TimeSteps : '+ str(self.timeSteps) + '\n'
@@ -248,6 +272,7 @@ class XdmfWriter(WriterBase):
         self.__path  = os.path.abspath(os.path.dirname(fileName));
         self.binfilecounter = 0
         self.NewBinaryFilename()
+        self.NewHdf5Filename()
 
     def SetParafac(self,val = True):
         self.__isParafacFormat = val
@@ -265,6 +290,17 @@ class XdmfWriter(WriterBase):
         self.__binFileName = name
         self.__binFileNameOnly = os.path.basename(self.__binFileName)
         self.__binfilecounter +=1
+
+    def NewHdf5Filename(self):
+        name = os.path.splitext(os.path.abspath(self.fileName))[0]
+        #name += "" +str(self.__binfilecounter)
+        if MPI.IsParallel():
+            name += "D"+ str(MPI.Rank())
+        name += ".h5"
+
+        self.__hdf5FileName = name
+        self.__hdf5FileNameOnly = os.path.basename(self.__hdf5FileName)
+        #self.__binfilecounter +=1
 
     def Step(self, dt = 1):
         self.currentTime += dt;
@@ -291,6 +327,9 @@ class XdmfWriter(WriterBase):
             # in python 3 we cant use unbuffered  text I/O (bug???)
             #self.filePointer = open(self.fileName, 'w',0)
             if self.InAppendMode():
+                if self.isBinary() == False:
+                    raise(Exception("Append Mode only works in binary mode") )
+
                 self.filePointer = open(self.fileName, 'r+')
                 self.filePointer.seek(-100,2)
 
@@ -358,6 +397,10 @@ class XdmfWriter(WriterBase):
         if self.isBinary():
             self.__binaryFilePointer = open (self.__binFileName, "wb")
 
+        if self.IsHdf5():
+            import h5py
+            self.__hdf5FilePointer = h5py.File(self.__hdf5FileName, 'w')
+
         if self.__keepXmlFileInSaneState:
             self.WriteTail()
 
@@ -387,6 +430,8 @@ class XdmfWriter(WriterBase):
             self._isOpen = False
             if self.isBinary():
                 self.__binaryFilePointer.close()
+            if self.IsHdf5():
+                self.__hdf5FilePointer.close()
             #print("File : '" + self.fileName + "' is close.")
 
     def WriteTail(self):
@@ -980,6 +1025,21 @@ class XdmfWriter(WriterBase):
                 self.filePointer.write('</DataItem>\n')
 
                 return res
+            elif self.IsHdf5():
+                if name is None:
+                    name = "dataset_"+ str(self.__hdf5NameCpt)
+                    self.__hdf5NameCpt += 1
+
+                self.__hdf5FilePointer.create_dataset(name, data=data)
+
+                self.filePointer.write(' <DataItem Format="HDF"'+
+                ' NumberType="'+typename+'"'+
+                ' Dimensions="'+dimension+'" '+
+                ' Precision="'+str(s)+'" >')
+                self.filePointer.write(self.__hdf5FileNameOnly)
+                self.filePointer.write(":")
+                self.filePointer.write(name)
+                self.filePointer.write('</DataItem>\n')
             else:
                 self.filePointer.write(' <DataItem Format="XML" NumberType="'+typename+'" Dimensions="'+dimension+'">')
                 self.filePointer.write(" ".join(str(x) for x in data.ravel()))
@@ -992,7 +1052,7 @@ from BasicTools.IO.IOFactory import RegisterWriterClass
 RegisterWriterClass(".xdmf",XdmfWriter)
 RegisterWriterClass(".xmf",XdmfWriter)
 
-def WriteTest(tempdir,Temporal, Binary):
+def WriteTest(tempdir,Temporal, Binary, Hdf5 ):
 
     from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearMesh
 
@@ -1010,9 +1070,10 @@ def WriteTest(tempdir,Temporal, Binary):
 
     dataDep.shape = (2,3,4,3)
 
-    writer = XdmfWriter(tempdir + 'TestOutput_Bin_'+str(Binary)+'_Temp_'+str(Temporal)+'.xmf')
+    writer = XdmfWriter(tempdir + 'TestOutput_Bin_'+str(Binary)+'_hdf5_'+str(Hdf5)+'_Temp_'+str(Temporal)+'.xmf')
     writer.SetTemporal(Temporal)
     writer.SetBinary(Binary)
+    writer.SetHdf5(Hdf5)
     writer.Open()
     print(writer)
     writer.Write(myMesh,PointFields=[dataT, dataDep], PointFieldsNames=["Temp","Dep"],CellFields=[np.arange(6)],CellFieldsNames=['S'], Time=0);
@@ -1093,10 +1154,14 @@ def CheckIntegrity(GUI=False):
 
     #----------------------
 
-    WriteTest(tempdir,False, False)
-    WriteTest(tempdir,False, True)
-    WriteTest(tempdir,True, False)
-    WriteTest(tempdir,True, True)
+    WriteTest(tempdir, False, False, False)
+    WriteTest(tempdir, False, True,  False)
+    WriteTest(tempdir, False, False, True)
+
+    WriteTest(tempdir,True, False,  False)
+    WriteTest(tempdir,True, True,  False)
+    WriteTest(tempdir,True, False, True)
+
     WriteTestAppend(tempdir,True, True)
 
 
