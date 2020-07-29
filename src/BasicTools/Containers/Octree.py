@@ -4,7 +4,7 @@
 # file 'LICENSE.txt', which is part of this source code package.
 #
 
-                       
+
 #python octree implementation
 # Code © Spencer Krum June 2011
 # Released underl GPLv3 See LICENSE file in this repository
@@ -62,9 +62,9 @@ class node():
             zzz = [self.Zlowerlimit,self.Zcenter,self.Zupperlimit]
 
 #            #Determine quadrant
-            i =  coord[0] > self.Xcenter
-            j =  coord[1] > self.Ycenter
-            k =  coord[2] > self.Zcenter
+            i =  int(coord[0] > self.Xcenter)
+            j =  int(coord[1] > self.Ycenter)
+            k =  int(coord[2] > self.Zcenter)
 
             Xlowerlimit, Xupperlimit = xxx[i],xxx[i+1]
             Ylowerlimit, Yupperlimit = yyy[j],yyy[j+1]
