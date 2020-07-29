@@ -464,7 +464,7 @@ def CheckIntegrityTTC(ttc,GUI=False):
     from scipy.sparse import linalg
 
     op = linalg.LinearOperator((CH.GetNumberOfDofsOnCSystem(),CH.GetNumberOfDofsOnCSystem()),matvec=CH.matvec,rmatvec=CH.rmatvec,dtype=float)
-    sol = linalg.gmres(op,CH.GetCRhs())[0]
+    sol = linalg.gmres(op,CH.GetCRhs(),atol=0.)[0]
 
     print("sol ", sol )
     refA = np.linalg.norm(CH.GetCOp().dot(sol)- CH.GetCRhs())/np.linalg.norm(CH.GetCRhs())

@@ -156,7 +156,7 @@ class LinearProblem(BOO):
             if res[1] < 0 :
                 self.Print(TF.InYellowBackGround(TF.InRed("Illegal input or breakdown"))) #pragma: no cover
         elif self.type == "gmres":
-            self.u = np.linalg.gmres(self.op, rhs,tol = self.tol)[0]
+            self.u = np.linalg.gmres(self.op, rhs,tol = self.tol, atol= self.tol)[0]
         elif self.type == "lstsq":
             self.u = np.linalg.lstsq(self.op, rhs)[0]
         elif self.type == "cholesky":

@@ -351,7 +351,7 @@ class Fea(FeaBase.FeaBase):
             #   self.PrintDebug(np.linalg.norm(K.dot(x)-rhs/norm))
             #    , callback=PrintRes
             self.PrintDebug("tol " + str(self.tol))
-            res = linalg.cg(K.tocsc(copy=False), rhs/norm, x0 = self.u[self.free, 0]/norm , M = M, tol = self.tol )
+            res = linalg.cg(K.tocsc(copy=False), rhs/norm, x0 = self.u[self.free, 0]/norm , M = M, tol = self.tol , atol=self.tol)
             if res[1] > 0:
                 raise
             self.u[self.free, 0] = res[0]*norm
@@ -359,7 +359,7 @@ class Fea(FeaBase.FeaBase):
           elif self.linearSolver == "LGMRES":
             M = sps.dia_matrix((1./K.diagonal(),0), shape=K.shape)
             norm = np.linalg.norm(rhs)
-            res = linalg.lgmres(K, rhs/norm, x0 = self.u[self.free, 0]/norm , M = M , tol = self.tol )
+            res = linalg.lgmres(K, rhs/norm, x0 = self.u[self.free, 0]/norm , M = M , tol = self.tol, atol=self.tol )
             self.u[self.free, 0] = res[0]*norm
           elif self.linearSolver == "AMG":# pragma: no cover
             try:
