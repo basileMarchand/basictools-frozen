@@ -299,9 +299,9 @@ def CheckIntegrityKF(edim, sdim,testCase):
             A = 1
             points = np.array([[0,],[2,],])
             L = sqrt(np.sum((points[1,:] - points[0,:])**2))
-            K = np.matrix([[E],])
+            K = np.array([[E],])
 
-            KValidation = (E*A/L)*np.matrix([[1, -1],[-1, 1]])
+            KValidation = (E*A/L)*np.array([[1, -1],[-1, 1]])
             permut = None
 
         elif sdim == 2:
@@ -309,8 +309,8 @@ def CheckIntegrityKF(edim, sdim,testCase):
             A = 5.
             points = np.array([[0,0],[30,40], ])
             L = sqrt(np.sum((points[1,:] - points[0,:])**2))
-            K = A*E*np.matrix([[1 ,1,0],[1,1 ,0],[0 ,0,0]])
-            KValidation = np.matrix([[36,48,-36,-48],
+            K = A*E*np.array([[1 ,1,0],[1,1 ,0],[0 ,0,0]])
+            KValidation = np.array([[36,48,-36,-48],
                                  [48,64,-48,-64],
                                  [-36,-48,36,48],
                                  [-48,-64,48,64]])
@@ -321,7 +321,7 @@ def CheckIntegrityKF(edim, sdim,testCase):
             L = sqrt(np.sum((points[1,:] - points[0,:])**2))
             E = 343.
             A = 10.
-            K = A*E*np.matrix([[1,1,1,0,0,0],
+            K = A*E*np.array([[1,1,1,0,0,0],
                                [1,1,1,0,0,0],
                                [1,1,1,0,0,0],
                                [0,0,0,0,0,0],
@@ -329,7 +329,7 @@ def CheckIntegrityKF(edim, sdim,testCase):
                                [0,0,0,0,0,0],])
 
             permut = [0,2,4,1,3,5]
-            KValidation = np.matrix([[40,60,120,-40,-60,-120],
+            KValidation = np.array([[40,60,120,-40,-60,-120],
                                  [60,90,180,-60,-90,-180],
                                  [120,180,360,-120,-180,-360],
                                  [-40,-60,-120,40,60,120],
@@ -357,7 +357,7 @@ def CheckIntegrityKF(edim, sdim,testCase):
 
                 permut = [0,4,1,5,3,7,2,6]
 #
-                KValidation = np.matrix([[0.9833333333333333333,-0.5, -.45, .2, 0 ,0,-0.5333333333333333333, 0.3],
+                KValidation = np.array([[0.9833333333333333333,-0.5, -.45, .2, 0 ,0,-0.5333333333333333333, 0.3],
                                 [-0.5,1.4,.3,-1.2,0,0,.2,-.2],
                                 [-0.45,.3,0.9833333333333333333,0,-0.5333333333333333333,0.2,0,-0.5],
                                 [.2,-1.2,0,1.4,.3,-.2,-0.5,0],
@@ -375,10 +375,10 @@ def CheckIntegrityKF(edim, sdim,testCase):
                 mesh = CreateMeshOfTriangles(points,[[0,1,2],])
                 #mesh.GetElementsOfType(EN.Triangle_3).tags.CreateTag("2D").SetIds(np.arange(mesh.GetElementsOfType(EN.Triangle_3).GetNumberOfElements() ) )
 
-                K = np.matrix([[8,2,0],[2,8,0],[0,0,3]])*8
+                K = np.array([[8,2,0],[2,8,0],[0,0,3]])*8
                 permut = [0,3,1,4,2,5]
 
-                KValidation = np.matrix([[11,5,-10,-2,-1,-3],
+                KValidation = np.array([[11,5,-10,-2,-1,-3],
                                  [5,11,2,10,-7,-21],
                                  [-10,2,44,-20,-34,18],
                                  [-2,10,-20,44,22,-54],
@@ -413,7 +413,7 @@ def CheckIntegrityKF(edim, sdim,testCase):
         #mesh.GetElementsOfType(EN.Tetrahedron_4).tags.CreateTag("3D").SetIds(np.arange(mesh.GetElementsOfType(EN.Tetrahedron_4).GetNumberOfElements() ) )
 
         permut = [0, 4, 8, 1, 5, 9, 2, 6, 10, 3, 7, 11]
-        KValidation = np.matrix( [[745, 540, 120, -5, 30, 60, -270, -240, 0, -470, -330, -180],
+        KValidation = np.array( [[745, 540, 120, -5, 30, 60, -270, -240, 0, -470, -330, -180],
                                  [540, 1720, 270, -120, 520, 210, -120, -1080, -60, -300, -1160, -420],
                                  [120, 270, 565, 0, 150, 175, 0, -120, -270, -120, -300, -470],
                                  [-5, -120, 0, 145, -90, -60, -90, 120, 0, -50, 90, 60],
@@ -458,7 +458,7 @@ def CheckIntegrityKF(edim, sdim,testCase):
     u = GetField("u",sdim)
     ut = GetTestField("u",sdim)
 
-    weak = ToVoigtEpsilon(Strain(u,sdim)).T*K*ToVoigtEpsilon(Strain(ut,sdim))
+    weak = ToVoigtEpsilon(Strain(u,sdim)).T@K@ToVoigtEpsilon(Strain(ut,sdim))
 
     wf = SymWeakToNumWeak(weak)
 
