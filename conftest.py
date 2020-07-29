@@ -20,7 +20,13 @@ def pytest_pycollect_makeitem(collector, name, obj):
     if name == "CheckIntegrity" and hasattr(obj, "__call__"):
         # Collect CheckIntegrity functions
         # Decorate them to detect failing return values
-        return pytest.Function(name, parent=collector, callobj=fail_if_not_ok(obj))
+        if hasattr(pytest.Function, "from_parent"):
+            item =  pytest.Function.from_parent(collector, name=name)
+            item.callobj = fail_if_not_ok(obj)
+            return item
+        else:
+            # DEPRECATED pytest API
+            return pytest.Function(name, parent=collector, callobj=fail_if_not_ok(obj))
     else:
         # Fallback to default handler
         return None
