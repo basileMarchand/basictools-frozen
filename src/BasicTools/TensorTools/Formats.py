@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 
 import numpy as np
 
@@ -44,7 +44,7 @@ class BaseTensor(object):
                     index.append(slice(part[n],int(part[n]+math.copysign(1,part[n])), int(math.copysign(1,part[n])) ) )
                 else:
                     index.append(slice(None))
-            c.array = c.array[index];
+            c.array = c.array[tuple(index)];
         return res
 
 
