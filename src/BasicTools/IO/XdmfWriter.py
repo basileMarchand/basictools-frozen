@@ -1028,7 +1028,11 @@ class XdmfWriter(WriterBase):
             elif self.IsHdf5():
                 if name is None:
                     name = "dataset_"+ str(self.__hdf5NameCpt)
-                    self.__hdf5NameCpt += 1
+                else:
+                    name += "_"+ str(self.__hdf5NameCpt)
+
+                self.__hdf5NameCpt += 1
+
 
                 self.__hdf5FilePointer.create_dataset(name, data=data)
 
