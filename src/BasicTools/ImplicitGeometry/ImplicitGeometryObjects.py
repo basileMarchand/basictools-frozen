@@ -920,6 +920,14 @@ class ImplicitGeometryHoles(ImplicitGeometryBase):
                 res = -np.cos(self.offset[0] + (self.n[0]*np.pi/l[0])*pos[:,0]) * \
                        np.cos(self.offset[1] + (self.n[1]*np.pi/l[1])*pos[:,1]) * \
                        np.cos(self.offset[2] + (self.n[2]*np.pi/l[2])*pos[:,2]) + self.r - 1.0
+        elif self.type == "Aligned":
+            balls = [ ImplicitGeometrySphere(radius=self.r,center=[x,y,z]) 
+                      for x in np.linspace(self.boundingMin[0],self.boundingMax[0], np.int(self.n[0]))
+                      for y in np.linspace(self.boundingMin[1],self.boundingMax[1], np.int(self.n[1])) 
+                      for z in np.linspace(self.boundingMin[2],self.boundingMax[2], np.int(self.n[2]))]
+            Ores = ImplicitGeometryUnion(balls)
+            Ores.insideOut=True
+            res = Ores.GetDistanceToPoint(pos)
         else:
             dl = l/self.n
             mpos = abs(np.mod((pos+self.offset)+dl,2*dl))-dl
