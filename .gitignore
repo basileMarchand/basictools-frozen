@@ -7,6 +7,9 @@
 *.o
 *.so
 *.pyc
+src/BasicTools/FE/Integrators/NativeIntegration.cpp
+src/BasicTools/FE/WeakForms/NativeNumericalWeakForm.cpp
+src/BasicTools/Linalg/EigenSolver.cpp
 
 # Packages #
 ############
