@@ -306,7 +306,7 @@ class XdmfTopology(Xdmfbase):
         import numpy as np
 
         self.Type = self.ReadAttribute(attrs,'Type', default=-1)
-        if self.Type is -1:
+        if self.Type == -1:
             self.Type = self.ReadAttribute(attrs,'TopologyType')
 
 #        if self.Type != "Mixed":
