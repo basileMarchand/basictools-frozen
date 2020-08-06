@@ -112,6 +112,12 @@ class MeshWriter(WriterBase):
             if nbelements == 0:
                 self.Print("Empty elemnt container (skipping) + " + elementContainer)
                 continue
+
+            if elementContainer == EN.Point_1:
+               print("MeshWriter warning: ignoring EN.Point_1 elements ")
+               globalOffset += data.GetNumberOfElements()
+               continue 
+
             elemtype = BinaryNumber[elementContainer]
 
             self.filePointer.write(struct.pack('i', elemtype ))
