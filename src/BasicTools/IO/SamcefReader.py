@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 import numpy as np
 
 import BasicTools.Containers.ElementNames as EN
@@ -11,6 +11,7 @@ from BasicTools.IO.ReaderBase import ReaderBase
 from BasicTools.Helpers import ParserHelper as PH
 
 KeywordToIgnore = ["INIT",
+                   "MCNL",
                    "ASEF",
                    "HYP",
                    "AEL",
@@ -21,6 +22,14 @@ KeywordToIgnore = ["INIT",
                    "SAM",
                    "OPT",
                    "SAI",
+                   "UNITE",
+                   "PHP",
+                   "RBE",
+                   "BPR",
+                   "FCT",
+                   "SUB",
+                   "FRAME",
+                   "MCT",
                    ]
 
 def DischardTillNextSection(func):
@@ -152,10 +161,28 @@ class DatReader(ReaderBase):
                     if l[0] == ".":
                         break
                     fields = l.split()
-                    oid = int(fields[0])
-                    x = float(fields[1])
-                    y = float(fields[2])
-                    z = float(fields[3])
+                    if fields[0] == "I":
+                        lcpt = 0
+                        while lcpt < len(fields):
+                            if fields[lcpt] == "I":
+                                oid = int(fields[lcpt+1])
+                                lcpt += 2
+                            elif fields[lcpt] == "X":
+                                x = float(fields[lcpt+1])
+                                lcpt += 2
+                            elif fields[lcpt] == "Y":
+                                y = float(fields[lcpt+1])
+                                lcpt += 2
+                            elif fields[lcpt] == "Z":
+                                z = float(fields[lcpt+1])
+                                lcpt += 2
+                            else:
+                                raise
+                    else:
+                        oid = int(fields[0])
+                        x = float(fields[1])
+                        y = float(fields[2])
+                        z = float(fields[3])
                     originalsids.append(oid)
 
                     xs.append(x)
@@ -185,61 +212,107 @@ class DatReader(ReaderBase):
                 continue
 
             if ldata["KEYWORD"] == "SEL":
+                l = l[1:] # hack to make the "while l[0] != ..." line work correctly  
                 fields = LineToList(l)
 
 
-                cpt = 0
-                onElements = False
-                ALL = False
-                while(cpt < len(fields)):
-                    if fields[cpt] == "GROUP":
-                        cpt +=1
-                        group = int(fields[cpt])
-                        cpt +=1
-                    elif fields[cpt] == "NOM":
-                        cpt +=1
-                        tagname = fields[cpt]
-                        cpt +=1
-                    elif fields[cpt] == "MAILLES":
-                        onElements = True
-                        cpt +=1
-                    elif fields[cpt] == "NOEUD":
-                        onElements = False
-                        cpt +=1
-                    elif fields[cpt] == "TOUT":
-                        ALL = True
-                        cpt +=1
-                    else:
-                        cpt +=1
-
-                ids = []
-                while(True):
-                    l = self.ReadCleanLine()
-                    if l == None:
+                while l[0] != ".":
+                    cpt = 0
+                    onElements = False
+                    ALL = False
+                    onFace = False
+                    tagname = None
+                    while(cpt < len(fields)):
+                        if fields[cpt] == "GROUP":
+                            cpt +=1
+                            group = int(fields[cpt])
+                            cpt +=1
+                        elif fields[cpt] == "NOM":
+                            cpt +=1
+                            tagname = fields[cpt]
+                            cpt +=1
+                        elif fields[cpt] == "MAILLES":
+                            onElements = True
+                            cpt +=1
+                        elif fields[cpt][0:6] == "NOEUD" :
+                            onElements = False
+                            cpt +=1
+                        elif fields[cpt] == "FACES":
+                            onFace = True
+                            break
+                        elif fields[cpt] == "TOUT":
+                            ALL = True
+                            cpt +=1
+                        else:
+                            cpt +=1
+                    if onFace :
+                        l = DischardTillNextSection(self.ReadCleanLine )
+                        self.PrintVerbose("Ignoring Group of Faces" )
                         break
-                    if l[0] == ".":
-                        break
+                    ids = []
+                    while(True):
+                        l = self.ReadCleanLine()
+                        if l == None:
+                            break
+                        if l[0] == ".":
+                            break
+                        fields = LineToList(l)
 
-                    lis = l.replace("I","").replace("$","").split()
-                    ids.extend(map(int,lis))
+                        if fields[0] == "GROUP":
+                            break
 
-                if onElements:
-                    if ALL:
-                        for name,data in res.elements.items():
-                            data.tags.CreateTag(tagname).SetIds(np.arange(data.GetNumberOfElements()))
+                        lis = l.replace("I","").replace("$","").split()
+                        ids.extend(map(int,lis))
+
+                    if tagname is None:
+                       tagname = "G"+str(group)
+                    if onElements:
+                        if ALL:
+                            for name,data in res.elements.items():
+                                data.tags.CreateTag(tagname).SetIds(np.arange(data.GetNumberOfElements()))
+                        else:
+                            for oidd in ids:
+                                elem,idd = filetointernalidElement[oidd]
+                                elem.tags.CreateTag(tagname,False).AddToTag(idd)
+                                elem.tags.CreateTag("Group"+str(group),False).AddToTag(idd)
                     else:
-                        for oidd in ids:
-                            elem,idd = filetointernalidElement[oidd]
-                            elem.tags.CreateTag(tagname,False).AddToTag(idd)
-                            elem.tags.CreateTag("Group"+str(group),False).AddToTag(idd)
-                else:
-                    if ALL:
-                        res.nodesTags.CreateTag(tagname).SetIds(np.arange(len(filetointernalid) ))
-                        res.nodesTags.CreateTag("Group"+str(group)).SetIds(np.arange(len(filetointernalid)))
-                    else:
-                        res.nodesTags.CreateTag(tagname).SetIds(ids)
-                        res.nodesTags.CreateTag("Group"+str(group)).SetIds(ids)
+                        if ALL:
+                            res.nodesTags.CreateTag(tagname).SetIds(np.arange(len(filetointernalid) ))
+                            res.nodesTags.CreateTag("Group"+str(group)).SetIds(np.arange(len(filetointernalid)))
+                        else:
+                            oids = [ filetointernalid[i] for i in ids]
+                            res.nodesTags.CreateTag(tagname).SetIds(oids)
+                            res.nodesTags.CreateTag("Group"+str(group)).SetIds(oids)
                 #".SEL GROUP 1 MAILLES NOM "tagname-1_CORPS_146""
+                continue
+
+            if ldata["KEYWORD"] == "MCE":
+                fields = l.split()
+                if len(fields) == 1:
+                    l = self.ReadCleanLine()
+                    fields = l.split()
+
+                fcpt = 0
+                oid = None
+                ids = None
+                while(fcpt < len(fields)):
+                    if fields[fcpt] == "I":
+                        fcpt += 1
+                        oid = int(fields[fcpt])
+                        fcpt += 1
+                        etype = fields[fcpt]
+                        fcpt += 1
+                    elif fields[fcpt] == "N":
+                        fcpt += 1
+                        ids = list(map(int,fields[fcpt:]))
+                    else:
+                        fcpt += 1
+                elements = res.GetElementsOfType( EN.Bar_2)
+                conn = GetInternalNumberFromOriginalid(ids[:2])
+                cid = elements.AddNewElement(conn,oid)
+                filetointernalidElement[oid] = (elements,cid-1)
+                l = self.ReadCleanLine()
+
                 continue
 
             if ldata["KEYWORD"] == "MAI":
@@ -295,13 +368,27 @@ class DatReader(ReaderBase):
                                     elements = res.GetElementsOfType( EN.Wedge_6)
                                 else:
                                     raise(Exception("type of element no coded" + str(p2) ))
-                                flist = [item for sublist in p2 for item in sublist]
-                                conn = GetInternalNumberFromOriginalid(flist)
 
-                                cid = elements.AddNewElement(conn,oid)
-                                filetointernalidElement[oid] = (elements,cid-1)
+                            elif len(p2) == 1:
+                                if len(p2[0]) == 4  :
+                                    elements = res.GetElementsOfType( EN.Quadrangle_4)
+                                else:
+                                    raise(Exception("type of element no coded" + str(p2) ))
+                            else:
+                                raise(Exception("type of element no coded" + str(p2) ))
+
+                            flist = [item for sublist in p2 for item in sublist]
+                            conn = GetInternalNumberFromOriginalid(flist)
+
+                            cid = elements.AddNewElement(conn,oid)
+
+                            filetointernalidElement[oid] = (elements,cid-1)
+
                 continue
+            self.SetVerboseLevel(5)
+            self.PrintVerbose("--------------- Error reading this line ------------------")
             self.PrintVerbose(l)
+            self.PrintVerbose("----------------------------------------------------------")
             raise
 
         res.nodes = np.array([xs,ys,zs],dtype=np.float).T
