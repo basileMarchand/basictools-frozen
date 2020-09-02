@@ -27,6 +27,7 @@ InpNumber = {}
 InpNumber['C3D4'] = EN.Tetrahedron_4
 InpNumber['S3'] = EN.Triangle_3
 InpNumber['CONN3D2'] = EN.Bar_2
+InpNumber['CPS4R'] = EN.Quadrangle_4
 
 def LineToDic(text):
     import csv
@@ -40,9 +41,9 @@ def LineToDic(text):
             else:
                 if f.find("=") >-1:
                   s = f.split("=")
-                  res[s[0].lstrip().rstrip()] = s[1].lstrip().rstrip().lstrip('"').rstrip('"')
+                  res[s[0].lstrip().rstrip().upper()] = s[1].lstrip().rstrip().lstrip('"').rstrip('"')
                 else:
-                  res[f.lstrip().rstrip()] = True
+                  res[f.lstrip().rstrip().upper()] = True
     return res
 
 def LineToList(text):
@@ -82,6 +83,10 @@ class InpReader(ReaderBase):
         self.commentChar= "**"
         self.readFormat = 'r'
 
+    def find(self,l,expr):
+        res = l.upper().find(expr.upper())
+        return res
+
     def Read(self,fileName=None,string=None, out=None):
         import BasicTools.FE.ProblemData as ProblemData
         import BasicTools.Containers.UnstructuredMesh as UM
@@ -112,13 +117,13 @@ class InpReader(ReaderBase):
           ldata = LineToDic(l)
 
 
-          if l.find("**LENGTH UNITS")>-1:
+          if self.find(l,"**LENGTH UNITS")>-1:
               if l.find("mm")>-1:
                   coef = 0.001
               l = self.ReadCleanLine()
               continue
 
-          if l.find("*NODE")>-1:
+          if self.find(l,"*NODE")>-1:
                 nodes= []
                 originalIds = []
 
@@ -126,12 +131,14 @@ class InpReader(ReaderBase):
                 res.originalIDNodes = np.empty((0,1), int)
                 res.nodes = np.empty((0,3), float)
                 l = self.ReadCleanLine()
+                dim = 3
                 while(True):
                     if len(l) == 0:
                         continue
                     if l.find("*") > -1 or not l:
                         break
                     s = l.replace(',', '').split()
+                    dim = len(s)-1
                     oid = int(s[0])
                     if oid not in filetointernalid:
                       filetointernalid[oid] = cpt
@@ -144,12 +151,12 @@ class InpReader(ReaderBase):
                     l = self.ReadCleanLine()
 
                 res.nodes = np.array(nodes,dtype=np.float)
-                res.nodes.shape = (cpt,3)
+                res.nodes.shape = (cpt,dim)
                 res.originalIDNodes = np.array(originalIds,dtype=np.int)
 
                 continue
 
-          if l.find("*ELEMENT")>-1:
+          if self.find(l,"*ELEMENT")>-1:
             data = LineToDic(l)
             #s = l.replace(',', '').split()
             etype = data["TYPE"]
@@ -183,7 +190,7 @@ class InpReader(ReaderBase):
 
 
 
-          if l.find("*NSET")>-1:
+          if self.find(l,"*NSET")>-1:
             data = LineToDic(l)
             nsetName = data['NSET']
             l  = self.ReadCleanLine()
@@ -210,7 +217,7 @@ class InpReader(ReaderBase):
             tag.SetIds([filetointernalid[x] for x in  nset ])
             continue
 
-          if l.find("*ELSET")>-1:
+          if self.find(l,"*ELSET")>-1:
             data = LineToDic(l)
             elsetName = data['ELSET']
             l  = self.ReadCleanLine()
@@ -230,7 +237,7 @@ class InpReader(ReaderBase):
 
             continue
 
-          if l.find("*HEADING")>-1:
+          if self.find(l,"*HEADING")>-1:
                HEADING = self.ReadCleanLine()
                meta.HEADING = HEADING
                l = self.ReadCleanLine()
@@ -241,7 +248,7 @@ class InpReader(ReaderBase):
     #*DENSITY
     #2670.
 
-          if l.find("*MATERIAL") > -1:
+          if self.find(l,"*MATERIAL") > -1:
                data = LineToDic(l)
                name = data["NAME"]
                mat = ProblemData.Material()
@@ -270,7 +277,7 @@ class InpReader(ReaderBase):
     #line to delete
     #           break
 
-          if l.find("*ORIENTATION")>-1:
+          if self.find(l,"*ORIENTATION")>-1:
                data = LineToDic(l)
                orient = ProblemData.Transform()
 
@@ -287,7 +294,7 @@ class InpReader(ReaderBase):
                l = DischardTillNextStar(self.ReadCleanLine )
                continue
 
-          if l.find("*SURFACE")>-1:
+          if self.find(l,"*SURFACE")>-1:
             data = LineToDic(l)
             #s = l.replace(',', '').split()
             name = data["NAME"]
