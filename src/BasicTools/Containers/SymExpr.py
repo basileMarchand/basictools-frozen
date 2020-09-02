@@ -17,19 +17,37 @@ class SymExprBase(BaseOutputObject):
         if string is not None:
             self.SetExpression(string)
 
-    def SetExpression(self,string):
+    def SetExpression(self,string,_symbols=None):
+        from sympy import Symbol
         from sympy import symbols
         from sympy import lambdify
         from sympy.parsing.sympy_parser import parse_expr
-        self.stringSymbols = list(self.constants.keys())
+
+        if _symbols is None:
+            self.stringSymbols = list(self.constants.keys())
+            _symbols = self.stringSymbols
+
         self._expression = string
-        self.func = lambdify(symbols(self.stringSymbols),parse_expr(self._expression))
+        _expr = parse_expr(self._expression)
+        self.func = lambdify(symbols(self.stringSymbols),_expr)
+        self.dfuncd = dict()
+        self.d2funcd2 = dict()
+        for s in  self.stringSymbols:
+            self.dfuncd[s] = lambdify(symbols(self.stringSymbols),_expr.diff(Symbol(s)))
+            for s2 in  self.stringSymbols:
+                self.d2funcd2[(s,s2)] = lambdify(symbols(self.stringSymbols),_expr.diff(Symbol(s)).diff(Symbol(s)))
 
     def SetConstants(self,name,value):
         self.constants[name]= value
 
     def GetValue(self,pos=None):
         return self.func(**self.constants)
+
+    def GetValueDerivative(self,coor,pos=None):
+        return self.dfuncd[coor](**self.constants)
+
+    def GetValueSecondDerivative(self,coor1,coor2,pos=None):
+        return self.d2funcd2[(coor1,coor2)](**self.constants)
 
     def __call__(self,pos=None):
         return self.GetValue(pos)
@@ -41,16 +59,30 @@ class SymExprWithPos(SymExprBase):
         self.on = ""
 
     def SetExpression(self,string):
-        from sympy import symbols
-        from sympy import lambdify
-        from sympy.parsing.sympy_parser import parse_expr
         self.stringSymbols = list(self.constants.keys())
         self.stringSymbols.extend("xyz")
-        self._expression = string
-        self.func = lambdify(symbols(self.stringSymbols),parse_expr(self._expression))
+        super().SetExpression(string,self.stringSymbols)
 
     def GetValue(self,pos):
-        return self.func(x=pos[:,0],y=pos[:,1],z=pos[:,2], **self.constants)
+        res = self.func(x=pos[:,0],y=pos[:,1],z=pos[:,2], **self.constants)
+        if res.size == pos.shape[0]:
+            return res
+        else:
+            return np.full((pos.shape[0],),fill_value=res)
+            
+    def GetValueDerivative(self,coor,pos):
+        res =self.dfuncd[coor](x=pos[:,0],y=pos[:,1],z=pos[:,2], **self.constants)
+        if res.size == pos.shape[0]:
+            return res
+        else:
+            return np.full((pos.shape[0],),fill_value=res)
+
+    def GetValueSecondDerivative(self,coor1,coor2,pos):
+        res = np.asarray(self.d2funcd2[(coor1,coor2)](x=pos[:,0],y=pos[:,1],z=pos[:,2], **self.constants))
+        if res.size == pos.shape[0]:
+            return res
+        else:
+            return np.full((pos.shape[0],),fill_value=res)
 
 def CreateSymExprWithPos(ops):
 
@@ -61,7 +93,7 @@ def CreateSymExprWithPos(ops):
 
 def CheckIntegrity(GUI=False):
     #minthreshold="0.00000"
-    string = """<Pressure  eTag="ET2" val="sin(3*t)+x" />"""
+    string = """<Pressure  eTag="ET2" val="sin(3*t)+x**2" />"""
 
     import xml.etree.ElementTree as ET
     root = ET.fromstring(string)
@@ -74,9 +106,18 @@ def CheckIntegrity(GUI=False):
 
     obj.SetConstants("t",3.14159/6.)
     print(obj)
-    print(obj.GetValue(np.array([[100.0,0.1,0.2 ] ])))
-
-
+    print("data : ")
+    data = np.array([[100.0,0.1,0.2 ],[0,0.1,0.2 ] ])
+    print(data)
+    print("f = ", obj._expression)
+    print(obj.GetValue(data))
+    print("dfdx :")
+    print(obj.GetValueDerivative("x",data))
+    print("dfdt :")
+    c = obj.GetValueDerivative("t",data)
+    print(c)    
+    print("d2fdx2 :")
+    print(obj.GetValueSecondDerivative("x","x",data))
 
     import BasicTools.Containers.ElementNames as EN
 
@@ -84,7 +125,7 @@ def CheckIntegrity(GUI=False):
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateCube
     mesh = CreateCube(dimensions=[10,11,12],spacing=[1.,1.,1.],ofTetras=False)
 
-    if np.any(mesh.nodes[:,0]+np.sin(3*3.14159/6.) - obj.GetValue(mesh.nodes)):
+    if np.any(mesh.nodes[:,0]**2+np.sin(3*3.14159/6.) - obj.GetValue(mesh.nodes)):
         raise (ValueError("vectors does not match"))
 
     for name,data in mesh.elements.items():
@@ -93,7 +134,6 @@ def CheckIntegrity(GUI=False):
              data.tags.CreateTag("Outside3D",False)
         if EN.dimension[name] == 2:
              data.tags.CreateTag("InterSurf",False).SetIds(np.arange(data.GetNumberOfElements()))
-
 
     return "ok"
 
