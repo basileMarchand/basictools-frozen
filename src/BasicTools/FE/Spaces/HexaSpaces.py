@@ -202,12 +202,106 @@ class Hexa_P2_Lagrange(SymSpaceBase):
                               ])
         self.Create()
 
+class Hexa20_P2_Lagrange(SymSpaceBase):
+    def __init__(self):
+        super(Hexa20_P2_Lagrange,self).__init__()
+        self.geoSupport = EN.GeoHex
+
+        xi = 1-self.xi
+        x1 = 1-xi
+        x2 = xi
+
+        eta = self.eta
+        e1 = 1-eta
+        e2 = eta
+
+        phi = self.phi 
+        p1 = 1-phi
+        p2 = phi
+
+        self.symN = Matrix([x2*e1*p1*(-1+2*xi-2*eta-2*phi),# linear part
+                            x1*e1*p1*(+1-2*xi-2*eta-2*phi),
+                            x1*e2*p1*(-1-2*xi+2*eta-2*phi),
+                            x2*e2*p1*(-3+2*xi+2*eta-2*phi),
+                            
+                            x2*e1*p2*(-3+2*xi-2*eta+2*phi),
+                            x1*e1*p2*(-1-2*xi-2*eta+2*phi),
+                            x1*e2*p2*(-3-2*xi+2*eta+2*phi),
+                            x2*e2*p2*(-5+2*xi+2*eta+2*phi),
+                            
+                            xi*(1-xi)*  (2-2*eta)*(2-2*phi),#edges of base
+                             (2-2*xi)*eta*(1-eta)*(2-2*phi),
+                            xi*(1-xi)*    (2*eta)*(2-2*phi),
+                               (2*xi)*eta*(1-eta)*(2-2*phi),
+                            
+                            xi*(1-xi)*  (2-2*eta)*(2*phi),#edges of  top
+                             (2-2*xi)*eta*(1-eta)*(2*phi),
+                            xi*(1-xi)*    (2*eta)*(2*phi),
+                               (2*xi)*eta*(1-eta)*(2*phi),
+                            
+                               (2*xi)*(2-2*eta)*phi*(1-phi), # vertical edges
+                             (2-2*xi)*(2-2*eta)*phi*(1-phi),
+                             (2-2*xi)*  (2*eta)*phi*(1-phi),
+                               (2*xi)*  (2*eta)*phi*(1-phi)])
+
+        self.dofAttachments = [("P",0,None),
+                               ("P",1,None),
+                               ("P",2,None),
+                               ("P",3,None),
+                               ("P",4,None),
+                               ("P",5,None),
+                               ("P",6,None),
+                               ("P",7,None),
+                               ("F2",0,None),
+                               ("F2",1,None),
+                               ("F2",2,None),
+                               ("F2",3,None),
+                               ("F2",4,None),
+                               ("F2",5,None),
+                               ("F2",6,None),
+                               ("F2",7,None),
+                               ("F2",8,None),
+                               ("F2",9,None),
+                               ("F2",10,None),
+                               ("F2",11,None)]
+
+        self.posN = np.array([[ 0, 0, 0],
+                              [ 1, 0, 0],
+                              [ 1, 1, 0],
+                              [ 0, 1, 0],
+                              [ 0, 0, 1],
+                              [ 1, 0, 1],
+                              [ 1, 1, 1],
+                              [ 0., 1, 1],
+
+                            [0.5,0.0,0.0], #edges of base
+                            [1.0,0.5,0.0],
+                            [0.5,1.0,0.0],
+                            [0.0,0.5,0.0],
+
+                            [0.5,0.0,1.0], #edges of  top
+                            [1.0,0.5,1.0],
+                            [0.5,1.0,1.0],
+                            [0.0,0.5,1.0],
+
+                            [0.0,0.0,0.5], # vertical edges
+                            [1.0,0.0,0.5],
+                            [1.0,1.0,0.5],
+                            [0.0,1.0,0.5],
+                              ])
+        self.Create()
+
+
 def CheckIntegrity(GUI=False):
-    p0G =Hexa_P0_Global()
-    p0L =Hexa_P0_Lagrange()
-    p1L =Hexa_P1_Lagrange()
-    p2L =Hexa_P2_Lagrange()
-    print(p2L)
+    p0G = Hexa_P0_Global()
+    p0L = Hexa_P0_Lagrange()
+    p1L = Hexa_P1_Lagrange()
+    p2L = Hexa_P2_Lagrange()
+    #print(p2L)
+    p2_20 = Hexa20_P2_Lagrange()
+    print(p2_20)
+    for i in range(20):
+        print(i+1, [ int(x)  for x in  p2_20.GetShapeFunc(p2_20.posN[i]) ]  )
     return "ok"
 
 if __name__ == '__main__':
