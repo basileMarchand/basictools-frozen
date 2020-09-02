@@ -68,14 +68,13 @@ def GetElementsCenters(mesh=None,nodes=None,elements=None, dim=None):
         res = np.empty((mesh.GetNumberOfElements(dim=dim),pos.shape[1]) )
 
         cpt= 0
-        for elementName,data in mesh.elements.items():
-            if dim is not None and EN.dimension[elementName] != dim:
-                continue
+        from BasicTools.containers.filters import ElementFilter
+        ff = ElementFilter(mesh=mesh, dimensionality=dim)
+        for elementName,data,ids in ff:
             res[cpt:cpt+data.GetNumberOfElements()] = traiteElements(mesh.nodes,data)
             cpt += data.GetNumberOfElements()
     else:
         return traiteElements(nodes,elements)
-
     return res
 
 
@@ -86,8 +85,8 @@ def CheckIntegrity_GetCellCenters():
     print(res)
 
     mesh2 = CRM.ConstantRectilinearMesh()
-    mesh2.SetDimensions([2,3,2]);
-    mesh2.SetSpacing([1, 1, 1]);
+    mesh2.SetDimensions([2,3,2])
+    mesh2.SetSpacing([1, 1, 1])
     mesh2.GetPosOfNodes()
     res = GetElementsCenters(mesh=mesh2)
     print(res)
