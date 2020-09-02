@@ -30,7 +30,10 @@ class FieldBase(BaseOutputObject):
 
     def GetName(self):
         return self.name
-    
+
+    def SetName(self,name):
+        self.name = name
+
     def __neg__(self):
         return self.unaryOp(np.negative)
 
@@ -55,7 +58,7 @@ class FieldBase(BaseOutputObject):
         op = getattr(np,name,None)
         if op is None:
             raise(AttributeError(str(type(self)) + " does not have the '"+str(name)+"' attribute."))
-            return 
+            return
         def newfunc():
            res = self.unaryOp(op)
            return res
