@@ -109,7 +109,10 @@ class KRBlockVector(KRBaseVector):
             for arg in self.args:
                 offsetUsed = []
                 for i in range(3):
-                    offsetUsed.append(fieldOffsets[arg + "_" + str(i)])
+                    if arg + "_" + str(i) in fieldOffsets:
+                        offsetUsed.append(fieldOffsets[arg + "_" + str(i)])
+                    else:
+                        break
 
                 field = fieldDic[arg+"_0"]
 
@@ -126,7 +129,8 @@ class KRBlockVector(KRBaseVector):
                         valN = geoSpace.GetShapeFunc(parampos)
                         xcoor = mesh.nodes[data.connectivity[elid,:],:]
                         pos = np.dot(valN ,xcoor).T
-
+                        if len(pos) == 2:
+                            pos = [pos[0], pos[1], 0]
                         disp =  self.ComputeDisplacement(pos) - pos
                         if self.constraintDiretions == "Local":
                             Jack, Jdet, Jinv = geoSpace.GetJackAndDetI(i,xcoor)
@@ -148,7 +152,8 @@ class KRBlockVector(KRBaseVector):
                             dirs = self.GetConstrainedDirections(pos,disp)
 
                         for dirToBlock in dirs:
-                            CH.AddEquationSparse(dofid+offsetUsed,dirToBlock,np.dot(disp,dirToBlock)  )
+                            dim = len(offsetUsed)
+                            CH.AddEquationSparse(dofid+offsetUsed,dirToBlock[0:dim],np.dot(disp,dirToBlock)  )
 
         return CH
 
