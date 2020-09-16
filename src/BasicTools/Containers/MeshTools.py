@@ -68,7 +68,7 @@ def GetElementsCenters(mesh=None,nodes=None,elements=None, dim=None):
         res = np.empty((mesh.GetNumberOfElements(dim=dim),pos.shape[1]) )
 
         cpt= 0
-        from BasicTools.containers.filters import ElementFilter
+        from BasicTools.Containers.Filters import ElementFilter
         ff = ElementFilter(mesh=mesh, dimensionality=dim)
         for elementName,data,ids in ff:
             res[cpt:cpt+data.GetNumberOfElements()] = traiteElements(mesh.nodes,data)
