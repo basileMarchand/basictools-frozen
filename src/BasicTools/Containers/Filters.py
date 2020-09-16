@@ -113,18 +113,6 @@ class Filter(BOO):
             else:
                 return np.intersect1d(first,second,assume_unique=True)
 
-class FilterOP(BOO):
-    """
-      Specialized class to compute the operation over filters
-    """
-    def __init__(self,mesh=None,filters=None):
-        super(FilterOP,self).__init__()
-        self.mesh = mesh
-        if filters is not None:
-            self.filters = filters
-        else:
-            self.filters = []
-
 class NodeFilter(Filter):
     """
        Specialized class for node filtering zone and tag
@@ -229,13 +217,29 @@ class NodeFilter(Filter):
         if callable(pc):
             pc(self.mesh)
 
-
-class UnionElementFilter(FilterOP):
+class FilterOP(BOO):
     """
-      Specialized class to compute the union of filter (add)
+      Specialized class to compute the operation over filters
     """
     def __init__(self,mesh=None,filters=None):
-        super(UnionElementFilter,self).__init__(mesh=mesh,filters=filters)
+        super(FilterOP,self).__init__()
+
+        if filters is not None:
+            self.filters = filters
+        else:
+            self.filters = []
+
+        self.mesh = mesh
+
+    @property
+    def mesh(self):
+        return self._mesh
+
+    @mesh.setter
+    def mesh(self, m):
+        self._mesh = m
+        for f in self.filters:
+            f.mesh = m
 
     def __iter__(self):
         """
@@ -243,7 +247,7 @@ class UnionElementFilter(FilterOP):
 
         :example:
 
-            myFilter = UnionElementFilter(myMesh)
+            myFilter = DerivedElementFilterName(myMesh)
             myFilter.filters.append(myOtherFilter1)
             myFilter.filters.append(myOtherFilter2)
 
@@ -257,12 +261,6 @@ class UnionElementFilter(FilterOP):
             ids = self.GetIdsToTreat(data)
             if len(ids) == 0: continue
             yield name, data, ids
-
-    def GetIdsToTreat(self, data):
-        ids = set()
-        for ff in self.filters:
-            ids.update(ff.GetIdsToTreat(data))
-        return list(ids)
 
     def ApplyOnElements(self,op):
         """
@@ -284,6 +282,57 @@ class UnionElementFilter(FilterOP):
         pc = getattr(op,"PostCondition",None)
         if callable(pc):
             pc(self.mesh)
+
+    def ApplyOnNodes(self,op):
+        """
+        Function to apply filter using an operator
+
+        :param callable op: An instance of a callable object, the object can have
+            the PreCondition function and/or the Postcondition function. Theses
+            functions are called (if exist) (with the mesh as the first argument)
+            before and after the main call ( op(mesh,nodes,ids) )
+        """
+
+        pc = getattr(op,"PreCondition",None)
+
+        if callable(pc):
+            pc(self.mesh)
+
+        op(self.mesh,self.mesh.nodes,self.GetIdsToTreat() )
+
+        pc = getattr(op,"PostCondition",None)
+        if callable(pc):
+            pc(self.mesh)
+
+class UnionElementFilter(FilterOP):
+    """
+      Specialized class to compute the union of filter (add)
+    """
+    def __init__(self,mesh=None,filters=None):
+        super(UnionElementFilter,self).__init__(mesh=mesh,filters=filters)
+
+    def GetIdsToTreat(self, data):
+        ids = set()
+        for ff in self.filters:
+            ids.update(ff.GetIdsToTreat(data))
+        return list(ids)
+
+class IntersectionElementFilter(FilterOP):
+    """
+      Specialized class to compute the intersection of filters
+    """
+    def __init__(self,mesh=None,filters=None):
+        super(IntersectionElementFilter,self).__init__(mesh=mesh,filters=filters)
+
+    def GetIdsToTreat(self, data):
+        ids = None
+        for ff in self.filters:
+            if ids is None:
+                ids = ff.GetIdsToTreat(data)
+            else:
+                ids = np.intersect1d(ids,ff.GetIdsToTreat(data) )
+        return list(ids)
+
 
 class ElementFilter(Filter):
     """
