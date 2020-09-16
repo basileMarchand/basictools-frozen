@@ -666,9 +666,9 @@ class XdmfWriter(WriterBase):
 
            # add an extra zeros to the data and print it out as Vector 3
            if baseMeshObject.GetDimensionality() == 2:
-                 shape = tuple(shape) + (1,2,)
+                 shape = (data.size//2,1,2,)
            else:
-                 shape = tuple(shape) + (2,)
+                 shape = (data.size//2,2,)
 
 
 
