@@ -334,6 +334,11 @@ void GetNormal(const int&  SpaceDim, const int& elementDim,MatrixDDD& Jack,Matri
        Normal[0] = Jack(1,0)-Jack(0,0);
        Normal[1] = Jack(1,1)-Jack(0,1);
        Normal[2] = 0;
+    } else if( elementDim == 1 && SpaceDim == 3 ) {
+        MatrixD31 Z1;
+        Z1 <<  0, 0., 1;
+        Normal = Jack.row(0).head<3>().cross(Z1);
+        Normal /= Normal.norm();
     } else {
         std::cerr << "error in the normal " << std::endl;
         exit(1);
