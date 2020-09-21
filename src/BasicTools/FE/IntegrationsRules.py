@@ -22,31 +22,18 @@ def TensorProductGauss(dim,npoints=2):
 
     if dim == 1:
         return (np.array([p,]).T,np.array(w))
-    
+
     return TensorProdHomogeneous(dim,np.array([p]).T,np.array(w))
 
 def TensorProdHomogeneous(dim,p,w):
-    Pres = []
-    Wres = []
-    pp,ww = TensorProd(p,w,p,w)
-    for i in range(dim-2):
-        pp,ww = TensorProd(pp,ww,p,w)
-    return pp,ww
-
+    #pp,ww = TensorProd(p,w,p,w)
+    #for i in range(dim-2):
+    #    pp,ww = TensorProd(p,w,pp,ww)
+    #return pp,ww
     if dim == 2:
-        for i in range(len(p)):
-            for j in range(len(p)):
-                    Pres.append([p[i,0], p[j,0]])
-                    Wres.append( w[i]*w[j])
         return TensorProd(p,w,p,w)
     elif dim ==3:
         return TensorProd(p,w,p,w,p,w)
-        for i in range(len(p)):
-            for j in range(len(p)):
-                for k in range(len(p)):
-                    Pres.append([p[k,0], p[j,0],p[i,0] ])
-                    Wres.append( w[i]*w[j]*w[k])
-        return (np.array(Pres),np.array(Wres))
     else :
         raise
 
@@ -65,8 +52,21 @@ def TensorProd(p1,w1,p2,w2,p3=None,w3=None):
                     Wres.append( w1[i]*w2[j])
         return (np.array(Pres),np.array(Wres))
     else:
-        p12,w12 = TensorProd(p1,w1,p2,w2)
-        return TensorProd(p12,w12,p3,w3)
+        for k in range(len(p3)):
+            for j in range(len(p2)):
+                for i in range(len(p1)):
+                    res = []
+                    res.extend(p1[i,:])
+                    res.extend(p2[j,:])
+                    res.extend(p3[k,:])
+                    Pres.append(res)
+
+                    #Pres.append([p1[i,0], p2[j,0]])
+                    Wres.append( w1[i]*w2[j]*w3[k])
+        return (np.array(Pres),np.array(Wres))
+
+        #p23,w23 = TensorProd(p2,w2,p3,w3)
+        #return TensorProd(p1,w1,p23,w23)
 
 IntegrationRulesAlmanac = {}
 
@@ -238,7 +238,7 @@ trapezoidalOrderGenerated = 10
 for i in range(1,trapezoidalOrderGenerated):
     traprule = {}
     IntegrationRulesAlmanac["TrapezoidalP"+str(i)] = traprule
-    if i == 1: 
+    if i == 1:
         w = np.ones(1)
         p = np.array([[0.5]])
     elif i == 2:
@@ -256,7 +256,7 @@ for i in range(1,trapezoidalOrderGenerated):
     traprule[EN.Hexaedron_8]  = TensorProdHomogeneous(3,p,w)
     traprule[EN.Hexaedron_20] = TensorProdHomogeneous(3,p,w)
     traprule[EN.Hexaedron_27] = TensorProdHomogeneous(3,p,w)
-        
+
 for i in range(1,trapezoidalOrderGenerated):
     traprule = IntegrationRulesAlmanac["TrapezoidalP"+str(i)]
     if i == 1:
@@ -269,7 +269,7 @@ for i in range(1,trapezoidalOrderGenerated):
         for j in range(i):
             phi0 = 1./(i-1)*j
             for k in range(i-j):
-                phi1 = 1./(i-1)*(k) 
+                phi1 = 1./(i-1)*(k)
                 p.append([phi0,phi1])
                 #halp of the contribution of the border points
                 if j == 0  or  j == i-1 or  k == 0 or  k == (i-j-1):
@@ -278,18 +278,18 @@ for i in range(1,trapezoidalOrderGenerated):
                 if (j == 0 and k == 0) or (j == 0 and k == i-j-1) or ( j == i-1 and k == 0):
                     w[cpt] = 1./6.
                 cpt += 1
-                        
+
         w = np.array(w)
         # normalization of the weight to sum = 1/2
         w *= 1/(np.sum(w)*2)
-        p = np.array(p)            
+        p = np.array(p)
     traprule[EN.Triangle_3] = (p,w)
     traprule[EN.Triangle_6] = (p,w)
 
 def CheckIntegrity(GUI=False):
 
     VolumeOne = [EN.Point_1,
-                 EN.Bar_2, EN.Bar_3, 
+                 EN.Bar_2, EN.Bar_3,
                  EN.Quadrangle_4, EN.Quadrangle_8,EN.Quadrangle_9,
                  EN.Hexaedron_8, EN.Hexaedron_20, EN.Hexaedron_27]
     VolumeHalf = [EN.Triangle_3,EN.Triangle_6, EN.Wedge_6, EN.Wedge_15, EN.Wedge_18]
@@ -310,18 +310,18 @@ def CheckIntegrity(GUI=False):
             if lp != lw:
                 print(data)
                 raise( Exception("incompatible rule") )
-            
+
             #Nodal... not designed for integration
             if rulename in [ "NodalEvalP1" ,"NodalEvalP2", "NodalEvalGeo"] :
                 continue
-            
+
             if elemName in VolumeOne:
                 volref = 1.
             elif elemName in VolumeHalf:
                 volref = 0.5
             else:
                 volref = 1./6.
-                
+
             if np.abs(np.sum(data[1])- volref)  >  1e-10:
                 print(data)
                 print("Mesure : ",np.sum(data[1]))
@@ -330,7 +330,7 @@ def CheckIntegrity(GUI=False):
 
             #if rulename in ["ElementCenterEval"]:
             #    continue
-            
+
             # End check of constant functiton
 
             # Checking linear function
@@ -338,28 +338,28 @@ def CheckIntegrity(GUI=False):
             #cant integrate over a point
             if elemName in [EN.Point_1] :
                 continue
-            
+
             # TrapezoidalP1 cant linear funtions
             if rulename in ['TrapezoidalP1']:
                continue
-            
+
             def f1(x):
                 return x[0]-0.5
-            
+
             if elemName in VolumeOne:
                 volref = 0.
             elif elemName in VolumeHalf:
                 volref = (1/3-0.5)/2
             else:
                 volref = -0.25/6
-            
+
             LagrangeSpaceGeo[elemName].SetIntegrationRule(p,w)
             integral = 0
             for ip in range(len(w)):
                 Jack, Jdet, Jinv = LagrangeSpaceGeo[elemName].GetJackAndDetI(ip,LagrangeSpaceGeo[elemName].posN)
                 integral +=  Jdet*w[ip]*f1(p[ip])
-            
-            #integral = data[1].dot([f1(x) for x in data[0]])                
+
+            #integral = data[1].dot([f1(x) for x in data[0]])
             if np.abs(integral - volref)  >  1e-10:
                 print("function :  f(x) = x-0.5")
                 print("int S f(x)dx =  {}".format(integral) )
@@ -371,7 +371,7 @@ def CheckIntegrity(GUI=False):
             # ElementCenterEval and LagrangeP1 cant integrate quadratic funtions
             if rulename in ['ElementCenterEval', "LagrangeP1"] or rulename[0:len("Trapezoidal")] == "Trapezoidal" :
                 continue
-           
+
             # this is a degre 1 integration
             if rulename == "LagrangeIsoParam" and elemName == 'tet4':
                 continue
@@ -379,7 +379,7 @@ def CheckIntegrity(GUI=False):
             # Checking quadratic integration
             def f2(x):
                 return (x[0]-0.5)**2
-            
+
             if elemName in VolumeOne:
                 volref = 1./12.
             elif elemName in VolumeHalf:
@@ -388,14 +388,14 @@ def CheckIntegrity(GUI=False):
                 volref = 1./60.
             else:
                 volref = None
-            
+
             LagrangeSpaceGeo[elemName].SetIntegrationRule(p,w)
             integral = 0
             for ip in range(len(w)):
                 Jack, Jdet, Jinv = LagrangeSpaceGeo[elemName].GetJackAndDetI(ip,LagrangeSpaceGeo[elemName].posN)
                 integral +=  Jdet*w[ip]*f2(p[ip])
-            
-            #integral = data[1].dot([f1(x) for x in data[0]])                
+
+            #integral = data[1].dot([f1(x) for x in data[0]])
             if np.abs(integral - volref)  >  1e-10:
                 print("function :  f(x) = (x-0.5)**2")
                 print("int S f(x)dx =  {}".format(integral) )
@@ -404,9 +404,9 @@ def CheckIntegrity(GUI=False):
                 #print(data)
                 raise(Exception(rulename + " " + elemName + " does not itegrate f(x) = (x-0.5)**2"))
 
-                    
-                            
-            
+
+
+
     return "ok"
 
 if __name__ == '__main__':
