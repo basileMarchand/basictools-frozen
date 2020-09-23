@@ -289,7 +289,7 @@ class UnstructuredMesh(MeshBase):
         the user can force the merge if needed (force variable)
         """
         if (self.nodes is not other.nodes) and (not force) :
-            raise(RuntimeError("the two meshes does not share the same nodes fiels (potentially dangerous)"))
+            raise(RuntimeError("the two meshes does not share the same nodes fields (potentially dangerous)"))
 
         for name,data in other.elements.items():
             self.GetElementsOfType(name).Merge(data)
