@@ -12,6 +12,27 @@ from BasicTools.FE.Fields.FEField import FEField
 from BasicTools.FE.Fields.IPField import IPField
 from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
 
+class IntegratonPointWrapper():
+    def __init__(self,field,rule):
+        self.feField = field
+        self.rule = rule
+
+    def diff(self,compName):
+        from BasicTools.FE.SymWeakForm import space
+
+        for cm in range(3):
+            if space[cm] == compName:
+                break
+        else:
+            cm = compName
+
+        from BasicTools.FE.Fields.FieldTools import TransferFEFieldToIPFieldDer
+        return TransferFEFieldToIPFieldDer(self.feField,der=cm,rule=self.rule)
+
+    def GetIpField(self):
+        from BasicTools.FE.Fields.FieldTools import TransferFEFieldToIPFieldDer
+        return TransferFEFieldToIPFieldDer(self.feField,der=-1,rule=self.rule)
+
 
 def CreateFieldFromDescription(mesh, fieldDefinition,ftype="FE"):
 
