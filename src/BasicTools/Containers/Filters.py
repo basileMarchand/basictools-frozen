@@ -241,6 +241,14 @@ class FilterOP(BOO):
         for f in self.filters:
             f.mesh = m
 
+    def Complementary(self):
+        for name,data in self.mesh.elements.items():
+            ids = self.GetIdsToTreat(data)
+            if len(ids) == data.GetNumberOfElements(): continue
+            mask = np.ones(data.GetNumberOfElements(),dtype=bool)
+            mask[ids] = False
+            yield name, data, np.where(mask)[0]
+
     def __iter__(self):
         """
         Iteration interface to ease the use of the filter
@@ -455,6 +463,14 @@ class ElementFilter(Filter):
             return range(elements.GetNumberOfElements())
         else:
             return res3
+
+    def Complementary(self):
+        for name,data  in self.mesh.elements.items():
+            ids = self.GetIdsToTreat(data)
+            if len(ids) == data.GetNumberOfElements(): continue
+            mask = np.ones(data.GetNumberOfElements(),dtype=bool)
+            mask[ids] = False
+            yield name, data, np.where(mask)[0]
 
     def __iter__(self):
         """
