@@ -9,12 +9,12 @@ import numpy as np
  #       raise(Exception("Need only one filter or zone"))
  #   if elementFilter is None and zone is None:
  #       raise(Exception("Need a filter or a zone"))
- #   
+ #
  #   if elementFilter is not None:
  #       zones = filter.zones
 
 
-    
+
 import BasicTools.Containers.ElementNames as ElementNames
 from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
 from BasicTools.Containers.UnstructuredMeshModificationTools import CleanLonelyNodes
@@ -22,7 +22,7 @@ from BasicTools.Containers.UnstructuredMeshModificationTools import CleanLonelyN
 def GetElementsFractionInside(field, points, name, elements, ids):
 
     from scipy.spatial import Delaunay
-   
+
     def triangle_lob_fraction(index, phis):
         div = phis-phis[index]
         div[index] = phis[index]
@@ -86,7 +86,7 @@ def GetElementsFractionInside(field, points, name, elements, ids):
 
     #-----------------------------------------------------------------------------
     res = np.zeros(len(ids)) -1
-    
+
     for cpt,id in enumerate(ids):
         coon = elements.connectivity[id,:]
         vals = field[coon]
@@ -104,7 +104,7 @@ def GetElementsFractionInside(field, points, name, elements, ids):
                 else:
                     res[cpt] = 1-abs(vals[0])/np.sup(abs(vals))
             elif ElementNames.dimension[name] == 2 and len(vals) == 3:
-               # triangles 
+               # triangles
                 signs = extract_signs(vals)
                 minuses, pluses = split_signs(signs)
 
@@ -260,12 +260,28 @@ def ExtractElementsByImplicitZone(inmesh,op,allNodes=True,cellCenter=False):
     outmesh.PrepareForOutput()
     return outmesh
 
+def ExtractElementsByElementFilter(inmesh,ff):
+
+    outmesh = type(inmesh)()
+    outmesh.CopyProperties(inmesh)
+
+    outmesh.nodes = inmesh.nodes
+    outmesh.originalIDNodes = inmesh.originalIDNodes
+    outmesh.nodesTags = inmesh.nodesTags
+
+    ff.mesh = inmesh
+    for name,data,ids in ff:
+        outmesh.elements[name] = ExtractElementsByMask(data,ids)
+
+    outmesh.PrepareForOutput()
+    return outmesh
+
 def ExtractElementsByMask(inelems, _mask):
     outelems = type(inelems)(inelems.elementType)
 
     newIndex = np.empty(inelems.GetNumberOfElements(),dtype=np.int)
 
-
+    _mask = np.asarray(_mask)
     if _mask.dtype == np.bool:
 
         nbels =0;
@@ -607,7 +623,7 @@ def CheckIntegrity_EnsureUniquenessElements(GUI=False):
 
 def CheckIntegrity_GetElementsFractionInside(GUI=False):
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshOfTriangles,CreateMeshOf
-    
+
     meshTris = CreateMeshOfTriangles([[0,0,0],[1,0,0],[0,1,0],[0,0,1] ], [[0,1,2],[0,2,3]])
     field = np.array([-1, -1, -1, 1])
     for name,elements in meshTris.elements.items():
@@ -617,7 +633,7 @@ def CheckIntegrity_GetElementsFractionInside(GUI=False):
     points = [[0,0,0],[1,0,0],[0,1,0],[0,0,1],[0,0,0] ]
     tets = [[0,1,2,3],]
     mesh3D = CreateMeshOf(points,tets,ElementNames.Tetrahedron_4)
-    
+
     for name,elements in mesh3D.elements.items():
         res = GetElementsFractionInside(field,mesh3D.nodes,name,elements,range(elements.GetNumberOfElements()))
         print(res)
