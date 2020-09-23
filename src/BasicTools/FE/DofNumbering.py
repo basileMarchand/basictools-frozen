@@ -141,6 +141,28 @@ def ComputeDofNumbering(mesh,Space,dofs=None,sign=1,fromConnectivity=False,eleme
 
             dofs[name] = dof
 
+        for name,data,fil in elementFilter.Complementary():
+            if len(fil) == 0:
+                continue
+
+            sp = Space[name]
+            if name in dofs:
+                dof = dofs[name]
+            else:
+                dof = np.zeros((data.GetNumberOfElements(),sp.GetNumberOfShapeFunctions()), dtype=np.int_) -1
+
+            numberOfShapeFunctions = sp.GetNumberOfShapeFunctions()
+            for i in fil:
+                conn = data.connectivity[i,:]
+                for j in range(numberOfShapeFunctions):
+                    h = Hash(sp.dofAttachments[j],lconn=conn,name=name,i=i,discontinuous = sp.classification.discontinuous)
+
+                    if h in almanac:
+                        dof[i,j] = almanac[h]
+
+            dofs[name] = dof
+
+
     if sign ==1:
         dofs["size"] = cpt
         # two point to take into account:
