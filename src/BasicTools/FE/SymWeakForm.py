@@ -113,15 +113,16 @@ def ToVoigtSigma(arg):
         return Matrix([arg[0,0]])
     raise()
 
+
 def FromVoigtSigma(arg):
 
-    if arg.shape[0] ==3:
+    if arg.shape[0] == 6:
         return Matrix([[arg[0], arg[5], arg[4] ],
                        [arg[5], arg[1], arg[3] ],
                        [arg[4], arg[3], arg[2] ],])
-    if arg.shape[0] ==2:
+    if arg.shape[0] == 3:
         return Matrix([[arg[0] ,arg[2]  ],
-                       [arg[5], arg[1] ]])
+                       [arg[2], arg[1] ]])
     if arg.shape[0] ==1:
         return Matrix([arg[0]])
     raise()
