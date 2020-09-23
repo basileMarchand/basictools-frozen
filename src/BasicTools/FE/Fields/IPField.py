@@ -67,6 +67,12 @@ class IPField(FieldBase):
         res = type(self)(name = None, mesh=self.mesh,rule=self.rule  )
         if isinstance(other,type(self)):
             res.data = { key:op(self.data[key],other.data[key]) for key in set(self.data.keys()).union(other.data.keys())}
+        elif type(other).__module__ == np.__name__:
+            res = np.empty(other.shape,dtype=object)
+            for res_data,other_data in np.nditer([res,other],flags=["refs_ok"],op_flags=["readwrite"]):
+                res_data[...] = op(self,other_data)
+            return res
+
         else:
             res.data = { key:op(self.data[key],other) for key in self.data.keys()}
 
