@@ -46,8 +46,8 @@ class Tag(object):
         self.SetIds(self._id)
 
     def SetIds(self, ids):
-        self._id = np.unique(np.array(ids,dtype=np.int))
-        self.cpt = len(ids)
+        self._id = np.unique(np.asarray(ids,dtype=np.int))
+        self.cpt = len(self._id)
 
     def SetId(self, pos, ids):
         self._id[pos] = ids
@@ -238,6 +238,17 @@ class MeshBase(BaseOutputObject):
     def IsRectilinear(self): return False
     def IsStructured(self): return False
     def IsUnstructured(self): return False
+
+    def WithModification(self):
+        class ClosingMeshAutomaticaly():
+            def __init__(self,mesh):
+                self.mesh = mesh
+            def __enter__(self):
+                pass
+
+            def __exit__(self, type, value, traceback):
+                self.mesh.PrepareForOutput()
+        return ClosingMeshAutomaticaly(self)
 
 def CheckIntegrity():
     obj = MeshBase()
