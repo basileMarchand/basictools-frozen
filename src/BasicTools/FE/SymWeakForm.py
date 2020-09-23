@@ -3,13 +3,14 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-from sympy import Symbol,Function,trace
+import sympy
+from sympy import Symbol,Function
 from sympy.matrices import Matrix
+
+import numpy as np
 
 testcharacter = "'"
 space = Matrix([Symbol('x'),Symbol('y'), Symbol("z")])
-
-
 
 def GetNormal(size):
     return GetField("Normal",size)
@@ -56,12 +57,15 @@ def GetField(name,size,star=False,sdim=3,extraCoordinates=[]):
             res.append(Function(name+"_"+str(i)+suffix)(*s))
     return (Matrix([res])).T
 
+########################## Mathematical operators ##############################
 def Inner(a,b):
-    return a.T*b
-
+    return a.dot(b)
 
 def Trace(arg):
-    return Matrix([trace(arg)])
+    if type(arg).__module__ == np.__name__:
+        return np.trace(arg)
+    else:
+        return sympy.trace(arg)
 
 def Divergence(arg,sdim=3):
     return Trace(Gradient(arg,sdim=sdim) )
@@ -72,14 +76,18 @@ def Gradient(arg,sdim=3):
     for s in range(shape):
         for d in range(sdim):
             res[d][s] = arg[s].diff(space[d])
-    return Matrix(res)
+
+    if type(arg).__module__ == np.__name__:
+       return np.array(res)
+    else :
+        return Matrix(res)
 
 def Strain(arg ,sdim=3):
     G = Gradient(arg,sdim)
     return (G+G.T)/2
 
 def StrainAxyCol(arg,radius):
-    # strain definition for axisymmetric mechanical problem (work in progress)
+    # strain definition for axisymmetric mechanical problem
     u = arg[0]
     v = arg[1]
     r = space[0]
@@ -89,44 +97,66 @@ def StrainAxyCol(arg,radius):
     dvdr = v.diff(r)
     dvdh = v.diff(h)
     # E_r, E_z, E_theta, E_rz
-    return Matrix([ dudr, dvdh, u/radius, dudh+dvdr  ])
+    res = [ dudr, dvdh, u/radius, dudh+dvdr  ]
+    if type(arg).__module__ == np.__name__:
+        return np.array(res)
+    else:
+        return Matrix(res)
 
 
 def ToVoigtEpsilon(arg):
-    """ we use yamma for shear
-
+    """ https://en.wikipedia.org/wiki/Voigt_notation
     """
     if arg.shape[0] ==3:
-        return Matrix([arg[0,0],arg[1,1],arg[2,2],2*arg[1,2],2*arg[0,2],2*arg[0,1], ])
-    if arg.shape[0] ==2:
-        return Matrix([arg[0,0],arg[1,1],2*arg[0,1]])
-    if arg.shape[0] ==1:
-        return Matrix([arg[0,0]])
-    raise()
+        res = [arg[0,0],arg[1,1],arg[2,2],2*arg[1,2],2*arg[0,2],2*arg[0,1], ]
+    elif arg.shape[0] ==2:
+        res = [arg[0,0],arg[1,1],2*arg[0,1]]
+    elif arg.shape[0] ==1:
+        res = [arg[0,0]]
+    else:
+        raise()
+
+    if type(arg).__module__ == np.__name__:
+        return np.array(res)
+    else:
+        return Matrix(res)
 
 def ToVoigtSigma(arg):
+    """ https://en.wikipedia.org/wiki/Voigt_notation
+    """
     if arg.shape[0] ==3:
-        return Matrix([arg[0,0],arg[1,1],arg[2,2],arg[1,2],arg[0,2],arg[0,1], ])
-    if arg.shape[0] ==2:
-        return Matrix([arg[0,0],arg[1,1],arg[0,1]])
-    if arg.shape[0] ==1:
-        return Matrix([arg[0,0]])
-    raise()
+        res = [arg[0,0],arg[1,1],arg[2,2],arg[1,2],arg[0,2],arg[0,1], ]
+    elif arg.shape[0] ==2:
+        res = [arg[0,0],arg[1,1],arg[0,1]]
+    elif arg.shape[0] ==1:
+        res = [arg[0,0]]
+    else:
+        raise()
 
+    if type(arg).__module__ == np.__name__:
+        return np.array(res)
+    else:
+        return Matrix(res)
 
 def FromVoigtSigma(arg):
-
+    """ https://en.wikipedia.org/wiki/Voigt_notation
+    """
     if arg.shape[0] == 6:
-        return Matrix([[arg[0], arg[5], arg[4] ],
-                       [arg[5], arg[1], arg[3] ],
-                       [arg[4], arg[3], arg[2] ],])
-    if arg.shape[0] == 3:
-        return Matrix([[arg[0] ,arg[2]  ],
-                       [arg[2], arg[1] ]])
-    if arg.shape[0] ==1:
-        return Matrix([arg[0]])
-    raise()
+        res = [[arg[0], arg[5], arg[4] ],
+               [arg[5], arg[1], arg[3] ],
+               [arg[4], arg[3], arg[2] ],]
+    elif arg.shape[0] == 3:
+        res =  [[arg[0] ,arg[2]  ],
+                [arg[2], arg[1] ]]
+    elif arg.shape[0] ==1:
+        res = [arg[0]]
+    else:
+        raise()
 
+    if type(arg).__module__ == np.__name__:
+        return np.array(res)
+    else:
+        return Matrix(res)
 
 
 def CheckIntegrity(GUI=False):
@@ -164,6 +194,15 @@ def CheckIntegrity(GUI=False):
 
     ener = ToVoigtEpsilon(Strain(u+u0)).T*K*ToVoigtEpsilon(Strain(ut))+ f.T*ut*alpha
     pprint(ener,use_unicode=GUI)
+
+
+    pprint(Gradient(u))
+    pprint(Trace(Gradient(u)))
+    print(type(Gradient(u)))
+    print(type(u))
+    print(type(u).__module__)
+    print(type(sympy))
+    print(sympy.__name__)
 
     return "OK"
 
