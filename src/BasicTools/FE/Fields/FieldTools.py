@@ -7,6 +7,7 @@
 import numpy as np
 
 from BasicTools.Containers.Filters import ElementFilter,NodeFilter
+import BasicTools.Containers.ElementNames as EN
 from BasicTools.FE.Fields.FEField import FEField
 from BasicTools.FE.Fields.IPField import IPField
 from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
@@ -47,6 +48,47 @@ def TransferFEFieldToIPField(inField,ruleName=None,rule=None):
                 valField = inField.data[inField.numbering[name][elid,:]]
                 val  = np.dot(valN ,valField).T
                 outField.data[name][elid,i] = val
+
+    return outField
+
+def TransferFEFieldToIPFieldDer(inField,der=-1,ruleName=None,rule=None,elementFilter=None):
+
+    if elementFilter is None:
+        elementFilter = ElementFilter(mesh=inField.mesh)
+
+    outField = IPField(name=inField.name,mesh=inField.mesh,ruleName=ruleName,rule=rule)
+    outField.Allocate()
+
+    from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
+    geospaces = LagrangeSpaceGeo
+
+    mesh = inField.mesh
+    for name, data, elids in elementFilter:
+        NnodeperEl = EN.numberOfNodes[name]
+
+        geospace = geospaces[name]
+        space = inField.space[name]
+        rule = outField.GetRuleFor(name)
+        nbip = len(rule[1])
+
+        geospace.SetIntegrationRule(rule[0],rule[1] )
+        space.SetIntegrationRule(rule[0],rule[1] )
+        numbering = inField.numbering[name]
+        outputHeavyData = outField.data[name]
+        for elid in elids:
+            xcoor = np.array([mesh.nodes[data.connectivity[elid,j]] for j in range(NnodeperEl)])
+
+            for iip in range(nbip):
+                if der == -1:
+                    valN = space.valN[iip]
+                else:
+                    _Jack, _Jdet, Jinv = geospace.GetJackAndDetI(iip,xcoor)
+                    valN = Jinv(space.valdphidxi[iip])[der]
+
+                dofsids = numbering[elid]
+                valField = inField.data[dofsids]
+                val  = np.dot(valN, valField).T
+                outputHeavyData[elid,iip] = val
 
     return outField
 
