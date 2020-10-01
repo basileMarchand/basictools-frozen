@@ -12,7 +12,7 @@ from BasicTools.FE.Fields.FEField import FEField
 from BasicTools.FE.Fields.IPField import IPField
 from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
 
-class IntegratonPointWrapper():
+class IntegrationPointWrapper():
     def __init__(self,field,rule):
         self.feField = field
         self.rule = rule
