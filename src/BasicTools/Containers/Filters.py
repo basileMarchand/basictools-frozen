@@ -512,6 +512,100 @@ class ElementFilter(Filter):
         if callable(pc):
             pc(self.mesh)
 
+def ElementFilterToImplicitField(ff,seudoDistance=1):
+    """ Function to generate a iso zero levelset on the mesh to represent
+    the shape of the filter. This discretise iso zero on the mesh cant always
+    hold a 'perfect' representation of the filter, so a modified iso zero is
+    created. An aditional parameter seudoDistance can be encreased to create
+    a seudo distance. This field is created using the connectivity and not
+    the real distances.
+
+    arguments:
+        ff : a ElementFilter
+        seudoDistance : distance (in number of elements) to compute seudo
+           distance
+
+    return
+        iso zeros of the ElementFilter Geometry (numpy array)
+    """
+    def UpdateInsideOutsideNodes(mesh, phi, insideNodes=None,outsideNodes=None, iso=0.0):
+        """ function to build masks (insideNodes, outsideNodes) with the information
+        about if a particular nodes is connected (	through an element) to the
+        inside phi < iso or to the ouside phi > iso
+        """
+        for name, data  in mesh.elements.items():
+            if mesh.GetDimensionality() != EN.dimension[name]:
+                continue
+            phis = phi[data.connectivity]
+            if insideNodes is not None:
+                elmask = np.any(phis<iso,axis=1)
+                insideNodes[ data.connectivity[elmask] ] = True
+            if outsideNodes is not None:
+                elmask = np.any(phis>iso,axis=1)
+                outsideNodes[ data.connectivity[elmask] ] = True
+            continue
+
+    mesh = ff.mesh
+    phi = np.zeros(mesh.GetNumberOfNodes())
+    insideNodes = np.zeros(mesh.GetNumberOfNodes(),dtype=bool)
+    for name, data, ids  in ff:
+        if mesh.GetDimensionality() != EN.dimension[name]:
+            continue
+        insideNodes[data.connectivity[ids,:]]  = True
+
+    outsideNodes = np.zeros(mesh.GetNumberOfNodes(),dtype=bool)
+    for name, data, ids  in ff.Complementary():
+        if mesh.GetDimensionality() != EN.dimension[name]:
+            continue
+        outsideNodes[data.connectivity[ids,:]]  = True
+
+    phi[insideNodes] = -1
+    phi[outsideNodes] = 1
+    phi[np.logical_and(insideNodes,outsideNodes)] = 0
+
+
+    # correction of point values
+    # if a point have only zeros or negative values on neighbors point then the point is set to inside
+    # if a point have only zeros or positive values on neighbors point then the point is set to outside
+
+    insideNodes = np.zeros(mesh.GetNumberOfNodes(),dtype=bool)
+    outsideNodes = np.zeros(mesh.GetNumberOfNodes(),dtype=bool)
+
+    UpdateInsideOutsideNodes(mesh,phi,insideNodes,outsideNodes, 0)
+    mask = phi == 0
+    And = np.logical_and
+    phi[And(mask, And(np.logical_not(outsideNodes),insideNodes ))] = -1/2
+    phi[And(mask, And(np.logical_not(insideNodes), outsideNodes))] = 1/2
+
+
+    insideWork = True
+    outsideWork = True
+    for i in range(1,seudoDistance):
+        if insideWork:
+            insideNodes.fill(False)
+            UpdateInsideOutsideNodes(mesh, phi, insideNodes, None, float(i) )
+            mask = phi == i
+            finalmaks = And(mask, np.logical_not(insideNodes) )
+            if np.any(finalmaks):
+                phi[finalmaks] = i+1
+            else:
+                insideWork = False
+
+        if outsideWork:
+            outsideNodes.fill(False)
+            UpdateInsideOutsideNodes(mesh, phi, None, outsideNodes, float(-i) )
+            mask = phi == -i
+            finalmaks = And(mask, np.logical_not(outsideNodes) )
+            if np.any(finalmaks):
+                phi[finalmaks] = -(i+1)
+            else:
+                outsideWork = False
+
+        if not outsideWork and not insideWork:
+            break
+
+    return phi
+
 def CheckIntegrity( GUI=False):
     """
     .. literalinclude:: ../../src/BasicTools/Containers/Filters.py
@@ -627,7 +721,20 @@ def CheckIntegrity( GUI=False):
         from BasicTools.Actions.OpenInParaView import OpenInParaView
         OpenInParaView(mesh=mesh)
 
+    ff = ElementFilter(mesh,tag="Some")
+    mesh.elements[EN.Tetrahedron_4].tags.CreateTag("Some").SetIds(list(range(4000)))
+
+
+    from BasicTools.Helpers.Timer import Timer
+    a = Timer("ElementFilterToImplicitField").Start()
+    phi = ElementFilterToImplicitField(ff,seudoDistance=50)
+    a.Stop()
+    print(a)
+
+    from BasicTools.IO.XdmfWriter import WriteMeshToXdmf
+    WriteMeshToXdmf("test.xdmf",mesh, PointFields=[phi],PointFieldsNames=["Phi"] )
+
     return "ok"
 
 if __name__ == '__main__':
-    print(CheckIntegrity(GUI=True)) # pragma: no cover
+    print(CheckIntegrity(GUI=False)) # pragma: no cover
