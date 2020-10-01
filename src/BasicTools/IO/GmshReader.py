@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 """ Gmsh file reader (gmesh mesh files)
 
 """
@@ -134,6 +134,7 @@ class GmshReader(ReaderBase):
                 #print("Reading "+str(nbElements)+ " Elements")
                 #res.nodes = np.empty((nbNodes,dim))
                 #res.originalIDNodes= np.empty((nbNodes,))
+                allTags = {}
                 cpt =0;
                 while(True):
                     l = self.ReadCleanLine()
@@ -153,17 +154,21 @@ class GmshReader(ReaderBase):
 
                     conn = [filetointernalid[x] for x in  map(int,s[(ntags+3):]) ]
                     elements = res.GetElementsOfType(nametype)
-                    elements.AddNewElement(conn,oid)
-
+                    elnumber = elements.AddNewElement(conn,oid)-1
+                    tags = allTags.get(nametype,{})
                     if ntags >=0 :
-                        res.AddElementToTagUsingOriginalId(oid,"PhyTag"+str(s[3]))
+                        tags.get("PhyTag"+s[3],[]).append(elnumber)
                     if ntags >=1 :
-                        res.AddElementToTagUsingOriginalId(oid,"GeoTag"+str(s[4]))
-
+                        tags.get("GeoTag"+s[4],[]).append(elnumber)
                     for n in range(2, ntags):
-                        res.AddElementToTagUsingOriginalId(oid,"ExtraTag"+str(n-2))
+                        tags.get("ExtraTag"+str(n-2),[]).append(elnumber)
 
                     cpt +=1
+                for nametype,tags in allTags.items():
+                    elements.res.GetElementsOfType(nametype)
+                    for name,ids in tags.items():
+                        elements.tags.CreateTag(name).SetIds()
+                del allTags
                 continue
             print("ignoring line : " + l )
 
