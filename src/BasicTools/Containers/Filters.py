@@ -512,7 +512,7 @@ class ElementFilter(Filter):
         if callable(pc):
             pc(self.mesh)
 
-def ElementFilterToImplicitField(ff,seudoDistance=1):
+def ElementFilterToImplicitField(ff,seudoDistance=2):
     """ Function to generate a iso zero levelset on the mesh to represent
     the shape of the filter. This discretise iso zero on the mesh cant always
     hold a 'perfect' representation of the filter, so a modified iso zero is
@@ -534,48 +534,45 @@ def ElementFilterToImplicitField(ff,seudoDistance=1):
         inside phi < iso or to the ouside phi > iso
         """
         for name, data  in mesh.elements.items():
-            if mesh.GetDimensionality() != EN.dimension[name]:
-                continue
-            phis = phi[data.connectivity]
-            if insideNodes is not None:
-                elmask = np.any(phis<iso,axis=1)
-                insideNodes[ data.connectivity[elmask] ] = True
-            if outsideNodes is not None:
-                elmask = np.any(phis>iso,axis=1)
-                outsideNodes[ data.connectivity[elmask] ] = True
-            continue
+            if mesh.GetDimensionality() == EN.dimension[name]:
+                phis = phi[data.connectivity]
+                if insideNodes is not None:
+                    elmask = np.any(phis<iso,axis=1)
+                    insideNodes[ data.connectivity[elmask] ] = True
+                if outsideNodes is not None:
+                    elmask = np.any(phis>iso,axis=1)
+                    outsideNodes[ data.connectivity[elmask] ] = True
 
     mesh = ff.mesh
     phi = np.zeros(mesh.GetNumberOfNodes())
     insideNodes = np.zeros(mesh.GetNumberOfNodes(),dtype=bool)
+    dim = 0
     for name, data, ids  in ff:
-        if mesh.GetDimensionality() != EN.dimension[name]:
-            continue
         insideNodes[data.connectivity[ids,:]]  = True
+        dim = max(dim,EN.dimension[name])
 
     outsideNodes = np.zeros(mesh.GetNumberOfNodes(),dtype=bool)
     for name, data, ids  in ff.Complementary():
-        if mesh.GetDimensionality() != EN.dimension[name]:
-            continue
         outsideNodes[data.connectivity[ids,:]]  = True
 
     phi[insideNodes] = -1
     phi[outsideNodes] = 1
     phi[np.logical_and(insideNodes,outsideNodes)] = 0
 
-
-    # correction of point values
-    # if a point have only zeros or negative values on neighbors point then the point is set to inside
-    # if a point have only zeros or positive values on neighbors point then the point is set to outside
-
-    insideNodes = np.zeros(mesh.GetNumberOfNodes(),dtype=bool)
-    outsideNodes = np.zeros(mesh.GetNumberOfNodes(),dtype=bool)
-
-    UpdateInsideOutsideNodes(mesh,phi,insideNodes,outsideNodes, 0)
-    mask = phi == 0
     And = np.logical_and
-    phi[And(mask, And(np.logical_not(outsideNodes),insideNodes ))] = -1/2
-    phi[And(mask, And(np.logical_not(insideNodes), outsideNodes))] = 1/2
+
+    if dim == mesh.GetDimensionality():
+        # correction of point values
+        # if a point have only zeros or negative values on neighbors point then the point is set to inside
+        # if a point have only zeros or positive values on neighbors point then the point is set to outside
+
+        insideNodes.fill(False)
+        outsideNodes.fill(False)
+
+        UpdateInsideOutsideNodes(mesh,phi,insideNodes,outsideNodes, 0)
+        mask = phi == 0
+        phi[And(mask, And(np.logical_not(outsideNodes),insideNodes ))] = -1/2
+        phi[And(mask, And(np.logical_not(insideNodes), outsideNodes))] = 1/2
 
 
     insideWork = True
@@ -603,7 +600,6 @@ def ElementFilterToImplicitField(ff,seudoDistance=1):
 
         if not outsideWork and not insideWork:
             break
-
     return phi
 
 def CheckIntegrity( GUI=False):
