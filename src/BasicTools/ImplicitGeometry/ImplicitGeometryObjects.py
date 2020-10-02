@@ -102,6 +102,7 @@ class ImplicitGeometryByETag(ImplicitGeometryBase):
         offset : offset from the eTag (negative will grow the zone )
 
         Note: For the moment works only for volume and surface eTag (no lines)
+        the implementation compute the distance on the the skin of the etag
 
     """
     def __init__(self ):
@@ -119,7 +120,7 @@ class ImplicitGeometryByETag(ImplicitGeometryBase):
         self.op.SetSurface(sup)
 
     def __str__(self):
-        res = "ImplicitGeometryByZones\n"
+        res = "ImplicitGeometryByETag\n"
         #res += "  support: " + str(self.support)+"\n"
         return res
 
@@ -133,6 +134,72 @@ class ImplicitGeometryByETag(ImplicitGeometryBase):
 
 RegisterClass("ETag",ImplicitGeometryByETag,CreateImplicitGeometryByETag)
 
+def CreateImplicitGeometryByETagII(ops):
+     res = ImplicitGeometryByETagII()
+     if "eTags" not in ops:
+         raise(Exception('Need a eTags'))
+     if ("support" in ops or "ls" in ops ) :
+         if "ls" in ops:
+             sup = ops["ls"].support
+         else:
+             sup = ops["support"]
+         res.SetSupportAndZones(sup,PH.ReadStrings(ops["eTags"] ))
+     else:
+         raise(Exception('Need a (ls or support) '))
+
+     res.offset = (PH.ReadFloat(ops.get("offset",res.offset)))
+     return res
+
+class ImplicitGeometryByETagII(ImplicitGeometryBase):
+    """ImplicitGeometry based in a eTags from a mesh (support) or levelset
+        support : mesh from where to extract the eTags
+        ls : levelset from where to extract the support to extract the eTags
+        etags : list of etags
+        offset : offset from the eTag (negative will grow the zone )
+
+        Note: for surface and line the resulting fields is possitive (no inside)
+        the implementation puts zeros in the interface beetwen the elements in the
+        etag and the other elements (1 outside, 0 in the interface, -1 inside)
+        Some special treatement is done for elements with all the nodes with zero values
+        (presence of values -0.5 and 0.5 in the resulting field)
+
+    """
+    def __init__(self ):
+        super(ImplicitGeometryByETagII,self).__init__()
+        self.offset = 0.
+        from BasicTools.Containers.Filters import ElementFilter
+        self.elementFilter  = ElementFilter()
+        self.offset = 0.
+        self.numberOfElementSeudoDistance = 10
+
+    def SetSupportAndZones(self,support, etags):
+        self.elementFilter.mesh = support
+        self.elementFilter.tags = etags
+
+    def __str__(self):
+        res = "ImplicitGeometryByETagII\n"
+        res += "   " + str(self.elementFilter)
+        return res
+
+    def ApplyVector(self, support, cellCenter=False):
+        if cellCenter:
+            raise (Exception("Not implemented"))
+
+        from BasicTools.Containers.Filters import ElementFilterToImplicitField
+        self.elementFilter.mesh = support
+        vals = ElementFilterToImplicitField(self.elementFilter,self.numberOfElementSeudoDistance)
+        res = self.ApplyInsideOut(vals+(self.offset))
+        return res
+
+    def GetDistanceToPoint(self,_pos):
+        if _pos is self.elementFilter.mesh.nodes:
+            from BasicTools.Containers.Filters import ElementFilterToImplicitField
+            vals = ElementFilterToImplicitField(self.elementFilter,self.numberOfElementSeudoDistance)
+            return self.ApplyInsideOut(vals+(self.offset))
+        raise
+
+
+RegisterClass("ETagII",ImplicitGeometryByETagII,CreateImplicitGeometryByETagII)
 
 class ImplicitGeometryAxisAlignBox(ImplicitGeometryBase):
     """ImplicitGeometry based ona Axis Alinged Box
@@ -1031,6 +1098,10 @@ def CheckIntegrity(GUI=False):
     IGHoles(OnePoint3D)
 
     MustFail(partial(IGHoles.SetNumberOfHoles,[1,2]))
+    ############################ImplicitGeometryByETagII###############################
+    IGByETagII = CreateImplicitGeometryByETagII({"support":myMesh, "eTags":["2elems"]})
+    print(IGByETagII)
+    ETagII = IGByETagII(myMesh)
 
     return "ok"
 
