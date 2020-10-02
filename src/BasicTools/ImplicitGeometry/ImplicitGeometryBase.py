@@ -66,6 +66,8 @@ class ImplicitGeometryCachedData(ImplicitGeometryBase):
         self.cacheData = None
         self.cachedInputGetDistanceToPoint = None
         self.cachedInputApplyVector = None
+        self.cachedInputcellCenter = False
+        self.cachedInputcelldim = 0
 
     def GetDistanceToPoint(self,pos):
         if self.cacheData is None:
@@ -85,11 +87,13 @@ class ImplicitGeometryCachedData(ImplicitGeometryBase):
 
     def ApplyVector(self, support,cellCenter=False,dim=None):
        if self.cacheData is not None:
-           if support is self.cachedInputApplyVector:
+           if support is self.cachedInputApplyVector and cellCenter == self.cachedInputcellCenter and dim == self.cachedInputcelldim:
                return self.cacheData
 
        res = super(ImplicitGeometryCachedData,self).ApplyVector(support,cellCenter=cellCenter,dim=dim)
        self.cachedInputApplyVector = support
+       self.cachedInputcellCenter  = cellCenter
+       self.cachedInputcelldim = dim
 
        return  res
 ####################### cache object ################################
@@ -109,6 +113,10 @@ class ImplicitGeometryDelayedInit (ImplicitGeometryBase):
           self.__ops = None
           if self.internalImplicitGeometry is None:
              raise (Exception('Error in the initialisation of  : ' + str(self.__name)) ) # pragma: no cover
+
+    def ApplyVector(self, support,cellCenter=False,dim=None):
+        self.Init()
+        return self.internalImplicitGeometry.ApplyVector(support,cellCenter=cellCenter)
 
     def GetDistanceToPoint(self,pos):
         self.Init()
