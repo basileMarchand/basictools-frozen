@@ -155,25 +155,26 @@ class GmshReader(ReaderBase):
                     conn = [filetointernalid[x] for x in  map(int,s[(ntags+3):]) ]
                     elements = res.GetElementsOfType(nametype)
                     elnumber = elements.AddNewElement(conn,oid)-1
-                    tags = allTags.get(nametype,{})
+                    tags = allTags.setdefault(nametype,{})
                     if ntags >=0 :
-                        tags.get("PhyTag"+s[3],[]).append(elnumber)
+                        tags.setdefault("PhyTag"+s[3],[]).append(elnumber)
                     if ntags >=1 :
-                        tags.get("GeoTag"+s[4],[]).append(elnumber)
+                        tags.setdefault("GeoTag"+s[4],[]).append(elnumber)
                     for n in range(2, ntags):
-                        tags.get("ExtraTag"+str(n-2),[]).append(elnumber)
+                        tags.setdefault("ExtraTag"+str(n-2),[]).append(elnumber)
 
                     cpt +=1
                 for nametype,tags in allTags.items():
-                    elements.res.GetElementsOfType(nametype)
+                    elements = res.GetElementsOfType(nametype)
                     for name,ids in tags.items():
-                        elements.tags.CreateTag(name).SetIds()
+                        elements.tags.CreateTag(name).SetIds(ids)
                 del allTags
                 continue
             print("ignoring line : " + l )
 
 
         ## apply tags names
+
         for dim,number,newName in tagsNames:
             for name,data in res.elements.items():
                 if EN.dimension[name] != dim :
