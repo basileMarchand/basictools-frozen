@@ -512,17 +512,17 @@ class ElementFilter(Filter):
         if callable(pc):
             pc(self.mesh)
 
-def ElementFilterToImplicitField(ff,seudoDistance=2):
+def ElementFilterToImplicitField(ff, pseudoDistance=2):
     """ Function to generate a iso zero levelset on the mesh to represent
     the shape of the filter. This discretise iso zero on the mesh cant always
     hold a 'perfect' representation of the filter, so a modified iso zero is
-    created. An aditional parameter seudoDistance can be encreased to create
-    a seudo distance. This field is created using the connectivity and not
+    created. An aditional parameter pseudoDistance can be encreased to create
+    a pseudo distance. This field is created using the connectivity and not
     the real distances.
 
     arguments:
         ff : a ElementFilter
-        seudoDistance : distance (in number of elements) to compute seudo
+        pseudoDistance : distance (in number of elements) to compute pseudo
            distance
 
     return
@@ -577,7 +577,7 @@ def ElementFilterToImplicitField(ff,seudoDistance=2):
 
     insideWork = True
     outsideWork = True
-    for i in range(1,seudoDistance):
+    for i in range(1, pseudoDistance):
         if insideWork:
             insideNodes.fill(False)
             UpdateInsideOutsideNodes(mesh, phi, insideNodes, None, float(i) )
@@ -723,7 +723,7 @@ def CheckIntegrity( GUI=False):
 
     from BasicTools.Helpers.Timer import Timer
     a = Timer("ElementFilterToImplicitField").Start()
-    phi = ElementFilterToImplicitField(ff,seudoDistance=50)
+    phi = ElementFilterToImplicitField(ff, pseudoDistance=50)
     a.Stop()
     print(a)
 

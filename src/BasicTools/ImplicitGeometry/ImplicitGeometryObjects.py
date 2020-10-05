@@ -170,7 +170,7 @@ class ImplicitGeometryByETagII(ImplicitGeometryBase):
         from BasicTools.Containers.Filters import ElementFilter
         self.elementFilter  = ElementFilter()
         self.offset = 0.
-        self.numberOfElementSeudoDistance = 10
+        self.numberOfElementPseudoDistance = 10
 
     def SetSupportAndZones(self,support, etags):
         self.elementFilter.mesh = support
@@ -187,14 +187,14 @@ class ImplicitGeometryByETagII(ImplicitGeometryBase):
 
         from BasicTools.Containers.Filters import ElementFilterToImplicitField
         self.elementFilter.mesh = support
-        vals = ElementFilterToImplicitField(self.elementFilter,self.numberOfElementSeudoDistance)
+        vals = ElementFilterToImplicitField(self.elementFilter,self.numberOfElementPseudoDistance)
         res = self.ApplyInsideOut(vals+(self.offset))
         return res
 
     def GetDistanceToPoint(self,_pos):
         if _pos is self.elementFilter.mesh.nodes:
             from BasicTools.Containers.Filters import ElementFilterToImplicitField
-            vals = ElementFilterToImplicitField(self.elementFilter,self.numberOfElementSeudoDistance)
+            vals = ElementFilterToImplicitField(self.elementFilter,self.numberOfElementPseudoDistance)
             return self.ApplyInsideOut(vals+(self.offset))
         raise
 
