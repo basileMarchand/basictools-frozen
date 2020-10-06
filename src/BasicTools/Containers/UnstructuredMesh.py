@@ -433,10 +433,10 @@ class UnstructuredMesh(MeshBase):
         function to free the extra memory used during a incremental creation of a mesh
         and final treatement (offset computation)
         """
-        self.ComputeGlobalOffset()
         self.nodesTags.Tighten()
         for ntype, data in self.elements.items():
              data.tighten()
+        self.ComputeGlobalOffset()
 
     def GenerateManufacturedOriginalIDs(self):
         """

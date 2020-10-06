@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 
 """ Geo fiel reader (Zset mesh file)
 
@@ -158,7 +158,7 @@ class GeoReader(ReaderBase):
            elif tag == u"bset":
                n_bset = self.readInt32()
                for i in range(n_bset):
-                   fasetName = self._getTag()
+                   bsetName = self._getTag()
                    eltype = self._getTag()
                    n_el = self.readInt32()
 
@@ -182,7 +182,28 @@ class GeoReader(ReaderBase):
 
                                elements = res.GetElementsOfType(nametype)
                                localId = elements.AddNewElement(conn,-1)
-                               elements.GetTag(fasetName).AddToTag(localId-1)
+                               elements.GetTag(bsetName).AddToTag(localId-1)
+                   elif eltype == "liset":
+                       if onlyMeta :
+                           for j in range(n_el):
+                               how = self.readInt32()
+                               self.filePointer.seek(how*4+5,1)
+                       else:
+                           for j in range(n_el):
+                               how = self.readInt32()
+                               conn = np.fromfile(self.filePointer,count=how, dtype=np.int32).byteswap()
+                               rawname = self.rawread(5)
+                               bsetelemtype = rawname[0:-1].decode("utf-8")
+                               nametype = GeofNumber[bsetelemtype]
+
+                               perm = None
+                               if bsetelemtype in PermutationZSetToBasicTools:
+                                   conn =  [conn[x] for x in PermutationZSetToBasicTools[bsetelemtype] ]
+
+                               elements = res.GetElementsOfType(nametype)
+                               localId = elements.AddNewElement(conn,-1)
+                               elements.GetTag(bsetName).AddToTag(localId-1)
+
 
                    else:
                        raise(Exception("Error I dont know how to treat bset of type "   + str(eltype) ))
@@ -200,16 +221,20 @@ class GeoReader(ReaderBase):
                if onlyMeta:
                    metadata['nbIntegrationPoints'] = np.sum(IPPerElement)
                    metadata['IPPerElement'] = IPPerElement
+                   self.EndReading()
+                   res.PrepareForOutput()
                    return metadata
                else:
                    self.output  = res
+                   self.EndReading()
+                   res.PrepareForOutput()
                    return res
            else:
                print(res)
                raise(Exception("Tag '"+ str(tag )+ "' not treated"))
 
        self.EndReading()
-
+       res.PrepareForOutput()
 
 
 
@@ -229,7 +254,7 @@ def CheckIntegrity():
     reader.SetFileName(fileName)
     print(reader.ReadMetaData())
     ReadGeo(fileName=fileName)
-    
+
     print(ReadMetaData(fileName=fileName))
     return 'ok'
 

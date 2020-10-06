@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 import BasicTools.Containers.ElementNames as EN
 
 GeofNumber = {}
@@ -19,6 +19,7 @@ GeofNumber['quad4'] = EN.Quadrangle_4
 GeofNumber['c2d4'] = EN.Quadrangle_4
 GeofNumber['c2d8'] = EN.Quadrangle_8
 GeofNumber["c2d3"] = EN.Triangle_3
+GeofNumber["s3d3"] = EN.Triangle_3
 GeofNumber["c2d6"] = EN.Triangle_6
 PermutationZSetToBasicTools["c2d6"] = [0, 2, 4, 1, 3, 5]
 PermutationZSetToBasicTools["c3d6"] = [0, 2, 4, 1, 3, 5]
@@ -224,6 +225,7 @@ nbIntegrationsPoints["r3d2"] = 0;
 nbIntegrationsPoints["rve1d"] = -1;
 nbIntegrationsPoints["rve2d"] = -1;
 nbIntegrationsPoints["rve3d"] = -1;
+nbIntegrationsPoints["s3d3"] = -1;
 nbIntegrationsPoints["s3d4"] = 8;
 nbIntegrationsPoints["s3d6r"] = 6;
 nbIntegrationsPoints["s3d8r"] = 8;
