@@ -100,7 +100,9 @@ class GeoReader(ReaderBase):
                    ltype =  self._getTag()
                    nametype = GeofNumber[ltype]
                    elements = res.GetElementsOfType(nametype)
-                   elements.Allocate(n_in_grp)
+
+                   elementsInContainerCpt = elements.GetNumberOfElements()
+                   elements.Allocate(n_in_grp+elementsInContainerCpt)
                    n_node = self.readInt32()
 
                    nintegpoints =  nbIntegrationsPoints[ltype]
@@ -121,11 +123,11 @@ class GeoReader(ReaderBase):
                            conn = self.readInts32(n_node)
                            if perm:
                                conn =  [conn[x] for x in perm ]
-                           elements.connectivity[j,:] = conn
-                           elements.originalIds[j] = rank
+                           elements.connectivity[j+elementsInContainerCpt,:] = conn
+                           elements.originalIds[j+elementsInContainerCpt] = rank
 
                            oidToElementContainer[rank] = elements
-                           oidToLocalElementNumber[rank] = j
+                           oidToLocalElementNumber[rank] = j+elementsInContainerCpt
                            IPPerElement[cpt] = nintegpoints
                            cpt += 1
 
