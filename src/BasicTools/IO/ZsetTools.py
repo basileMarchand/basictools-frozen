@@ -27,6 +27,7 @@ PermutationZSetToBasicTools["c3d6"] = [0, 2, 4, 1, 3, 5]
 
 GeofNumber['c3d4'] = EN.Tetrahedron_4
 GeofNumber['c3d4r'] = EN.Tetrahedron_4
+GeofNumber['c3d5'] = EN.Pyramid_5
 GeofNumber['c3d6'] = EN.Wedge_6
 GeofNumber['c3d8'] = EN.Hexaedron_8
 
