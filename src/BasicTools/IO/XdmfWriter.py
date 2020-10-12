@@ -200,6 +200,7 @@ class XdmfWriter(WriterBase):
         self.ddmCpt = 0;
         self.currentTime = 0;
         self.__XmlSizeLimit = 0
+        self.__chunkSize = 2**30
         self.automaticOpen = False;
 
         self.__isHdf5 = False
@@ -213,7 +214,9 @@ class XdmfWriter(WriterBase):
         self.__filePointer = None;
         #self.__isOpen = False;
         self.__binarycpt = 0;
+        self.__hdf5cpt = 0
         self.__binfilecounter = 0
+        self.__hdf5filecounter = 0
         self.__keepXmlFileInSaneState = True;
         self.__isParafacFormat = False
 
@@ -243,6 +246,9 @@ class XdmfWriter(WriterBase):
             raise(Exception("Cant set binary and Hdf5 at the same time"))
 
         self.__isHdf5 = val
+
+    def SetChunkSize(self,size):
+        self.__chunkSize = size
 
     def __str__(self):
         res  = 'XdmfWriter : \n'
@@ -293,14 +299,14 @@ class XdmfWriter(WriterBase):
 
     def NewHdf5Filename(self):
         name = os.path.splitext(os.path.abspath(self.fileName))[0]
-        #name += "" +str(self.__binfilecounter)
+        name += "" +str(self.__hdf5filecounter)
         if MPI.IsParallel():
             name += "D"+ str(MPI.Rank())
         name += ".h5"
 
         self.__hdf5FileName = name
         self.__hdf5FileNameOnly = os.path.basename(self.__hdf5FileName)
-        #self.__binfilecounter +=1
+        self.__hdf5filecounter +=1
 
     def Step(self, dt = 1):
         self.currentTime += dt;
@@ -974,7 +980,7 @@ class XdmfWriter(WriterBase):
             if self.isBinary() and len(data) > self.__XmlSizeLimit:# pragma: no cover
 
                 # to test this feature a big file must be created (so we dont test it)
-                if self.__binarycpt > (2**30) :
+                if self.__binarycpt > self.__chunkSize :
                     self.__binaryFilePointer.close()
                     self.NewBinaryFilename()
                     self.__binaryFilePointer = open (self.__binFileName, "wb")
@@ -1026,6 +1032,13 @@ class XdmfWriter(WriterBase):
 
                 return res
             elif self.IsHdf5():
+                if self.__hdf5cpt > self.__chunkSize :
+                    import h5py
+                    self.__hdf5FilePointer.close()
+                    self.NewHdf5Filename()
+                    self.__hdf5FilePointer = h5py.File(self.__hdf5FileName, 'w')
+                    self.__hdf5cpt = 0
+
                 if name is None:
                     name = "dataset_"+ str(self.__hdf5NameCpt)
                 else:
@@ -1035,7 +1048,7 @@ class XdmfWriter(WriterBase):
 
 
                 self.__hdf5FilePointer.create_dataset(name, data=data)
-
+                self.__hdf5cpt += s*data.size
                 self.filePointer.write(' <DataItem Format="HDF"'+
                 ' NumberType="'+typename+'"'+
                 ' Dimensions="'+dimension+'" '+
@@ -1347,7 +1360,37 @@ def CheckIntegrity(GUI=False):
     res = CheckIntegrityDDM(GUI=GUI)
     if res.lower() != "ok": return res
 
+    CheckIntegrityHdf5(tempdir)
+
     return 'ok'
+
+def CheckIntegrityHdf5(tempdir):
+
+    from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearMesh
+
+    myMesh = ConstantRectilinearMesh()
+    myMesh.SetDimensions([20,30,40]);
+    myMesh.SetSpacing([0.1, 0.1, 0.1]);
+    myMesh.SetOrigin([-2.5,-1.2,-1.5]);
+
+    dataT = np.arange(24000,dtype=np.float32)
+    dataT.shape = (20,30,40)
+    dataDep = np.arange(24000*3)+0.3
+    dataDep.shape = (20,30,40,3)
+
+    writer = XdmfWriter(tempdir + 'TestHDF5_.xmf')
+    writer.SetChunkSize(2**20)
+    writer.SetTemporal(True)
+    writer.SetHdf5(True)
+    writer.Open()
+    print(writer)
+    for i in range(3):
+        dataT = np.random.rand(24000)
+        dataT.shape = (20,30,40)
+        dataDep = np.random.rand(24000*3)+0.3
+        dataDep.shape = (20,30,40,3)
+        writer.Write(myMesh,PointFields=[dataT, dataDep], PointFieldsNames=["Temp","Dep"],CellFields=[np.arange(19*29*39)],CellFieldsNames=['S']);
+    writer.Close()
 
 def CheckIntegrityDDM(GUI=False):
     """ this test function can be lauched using the mpirun -n 2 ...
