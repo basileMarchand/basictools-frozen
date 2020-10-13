@@ -3,10 +3,11 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 """ Base object to Help output
 
 """
+from __future__ import print_function
 
 import time
 from functools import wraps

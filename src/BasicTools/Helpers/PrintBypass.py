@@ -3,11 +3,12 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 """ Send all the print statements to a file or to the sink os ...
 
 Also the output can be duplicated to a file
 """
+from __future__ import print_function
 
 import re
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
