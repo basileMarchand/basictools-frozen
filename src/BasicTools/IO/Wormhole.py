@@ -56,7 +56,7 @@ def import_module(name, package=None):
 ####################################
 # solution for time out form https://stackoverflow.com/questions/492519/timeout-on-a-function-call
 def TimeOutHandler():
-    print("Connection TimeOut")
+    self.PrintDebug("Connection TimeOut")
     exit(1)
 
 class WormholeBase(BaseOutputObject):
@@ -105,7 +105,7 @@ class WormholeBase(BaseOutputObject):
       return data
 
     def Send(self,data):
-        print("Sending data")
+        self.PrintDebug("Sending data")
         if int(sys.version_info.major) >= 3:
             streamdata = pickle.dumps(data,self.proto,fix_imports=True)
         else:
@@ -182,13 +182,13 @@ class WormholeServer(BaseOutputObject):
         self.ready = True
         self.communicator.otherSideR, address = self.communicator.socket.accept()
         self.communicator.otherSideS = self.communicator.otherSideR
-        print("(s) {0} connected".format( address ))
+        self.PrintDebug("(s) {0} connected".format( address ))
 
 
     def ProtocolNegotiation(self):
         ClientHighestProtocol = self.communicator.Receive()
         proto = min(pickle.HIGHEST_PROTOCOL, ClientHighestProtocol)
-        print("(s) Using Protocol " + str(proto))
+        self.PrintDebug("(s) Using Protocol " + str(proto))
         self.communicator.Send(proto)
         self.communicator.proto = proto
 
@@ -197,9 +197,6 @@ class WormholeServer(BaseOutputObject):
 
         while(True):
             action = self.communicator.Receive()
-            #if len(rdata) == 0 :
-            #    continue
-            #action = rdata.decode()
 
             self.PrintDebug(action)
             if action == "p":
@@ -210,9 +207,9 @@ class WormholeServer(BaseOutputObject):
                 key = self.communicator.Receive()
                 #print("receiving data for ",key)
                 value = self.communicator.Receive()
-                print(key ," = ", value)
+                self.PrintDebug(str(key)+ " = "  + str( value) )
                 if self.drymode:
-                    print("(s)" + str(key) +" = " + str(value))
+                    self.PrintDebug("(s)" + str(key) +" = " + str(value))
                 else:
                     self.globals[key] = value
                 #print(self.globals)
@@ -220,14 +217,19 @@ class WormholeServer(BaseOutputObject):
 
             elif action == "c":
                 expression = self.communicator.Receive()
-                print(expression)
+                self.PrintDebug(expression)
                 if self.drymode:
-                    print("(s) Exec: " + expression )
+                    self.PrintDebug("(s) Exec: " + expression )
                 else:
-                    exec(str(expression), self.globals)
+                    try:
+                        exec(str(expression), self.globals)
+                    except Exception as e:
+                        self.communicator.Send(str(e))
+                        raise(e)
+                    self.communicator.Send("OK")
 
             elif action == "r":
-                print("(s) Sending data back : "+ str(key))
+                self.PrintDebug("(s) Sending data back : "+ str(key))
                 if self.drymode:
                     self.Send(None)
                 else:
@@ -235,12 +237,12 @@ class WormholeServer(BaseOutputObject):
                     self.communicator.Send(self.globals[key])
 
             elif action  == "x":
-                print("(s) exit")
+                self.PrintDebug("(s) exit")
                 self.communicator.Close()
                 return
 
             else:
-                print("Dont know how to treat " + str(action))
+                self.PrintDebug("Dont know how to treat " + str(action))
                 return
 
 class WormholeClient(BaseOutputObject):
@@ -273,34 +275,41 @@ class WormholeClient(BaseOutputObject):
         self.communicator.socket = True
 
         self.communicator.otherSideR  = self.communicator.otherSideS
-        print("(c) connecting to "),
-        print((host, port))
+        self.PrintDebug("(c) connecting to "),
+        self.PrintDebug((host, port))
         self.communicator.otherSideS.connect((host, port))
-        print("(c) Connection on {0}".format(port))
+        self.PrintDebug("(c) Connection on {0}".format(port))
         self.ProtocolNegotiation()
-        print("(c) Using protocol " + str(self.proto) )
+        self.PrintDebug("(c) Using protocol " + str(self.proto) )
         self.communicator.proto = self.proto
 
     def ProtocolNegotiation(self):
         #request protocol negotiation
-        print("pickle.HIGHEST_PROTOCOL ",pickle.HIGHEST_PROTOCOL )
+        self.PrintDebug("pickle.HIGHEST_PROTOCOL "+ str(pickle.HIGHEST_PROTOCOL) )
         self.communicator.Send("p")
         self.communicator.Send(pickle.HIGHEST_PROTOCOL )
         #self.Communicator.send(str(pickle.HIGHEST_PROTOCOL)[0].encode() )
         self.proto = self.communicator.Receive()
-        print("self.proto ",self.proto )
+        self.PrintDebug("self.proto " +str(self.proto ))
 
     def SendData(self,key,data):
 
-        print("(c) sending " + str(key) + " :: " + str(data))
+        self.PrintDebug("(c) sending " + str(key) + " :: " + str(data))
         self.communicator.Send("s")
         self.communicator.Send(key)
         self.communicator.Send(data)
 
     def RemoteExec(self,expression):
-        print("Remote Exec : '" + str(expression) +"'")
+        self.PrintDebug("Remote Exec : '" + str(expression) +"'")
         self.communicator.Send("c")
         self.communicator.Send(expression)
+        responce = self.communicator.Receive()
+        if len(responce)==2 and responce == "OK":
+            pass
+        else:
+            self.PrintDebug(responce)
+            raise(Exception(responce))
+
 
 
     def RetrieveData(self,variable):
@@ -309,7 +318,7 @@ class WormholeClient(BaseOutputObject):
         return self.communicator.Receive()
 
     def Exit(self):
-        print("Sending Exit")
+        self.PrintDebug("Sending Exit")
         self.communicator.Send("x")
         self.communicator.Close()
 
@@ -359,7 +368,7 @@ def CheckIntegrityNetWork():
      TT.join(0)
      return "Not  OK"
 
-def GetPipeWrormholeScript():
+def GetPipeWormholeScript():
     from BasicTools.Helpers.Tests import TestTempDir
 
     return """
@@ -378,7 +387,7 @@ def CheckIntegrityPipe():
    if True:
      def runServerPipe(cmd):
 
-         script = GetPipeWrormholeScript()
+         script = GetPipeWormholeScript()
          print("(s) Starting Server Side")
          import subprocess, os
          proc = subprocess.Popen([cmd, '-c', script], cwd=os.getcwd(),

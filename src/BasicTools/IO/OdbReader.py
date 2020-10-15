@@ -3,8 +3,8 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
 
+import os
 import numpy as np
 
 from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
@@ -15,9 +15,12 @@ eltype["S3"] = EN.Triangle_3
 eltype["C3D4"] = EN.Tetrahedron_4
 eltype["C3D8"] = EN.Hexaedron_8
 eltype["C3D10"] = EN.Tetrahedron_10
+eltype["C3D20"] = EN.Hexaedron_20
 
-permutaion = {}
-#permutaion["C3D4"] = [0, 1, 3, 2]
+permutation = {}
+#permutation["C3D4"] = [0, 1, 3, 2]
+
+abaqus_EXEC = os.environ.get("ABAQUS_EXEC","abaqus")
 
 class OdbReader(object):
     def __init__(self):
@@ -38,10 +41,10 @@ class OdbReader(object):
         self.odb = None
         self.output = None
 
-    def __del__(self):
-        if not( self.proc is None):
-            self.client.Close()
-            self.proc = None
+    #def __del__(self):
+    #    if not( self.proc is None):
+    #        self.client.Close()
+    #        self.proc = None
 
     def Reset(self):
         self.fieldNameToRead = None
@@ -63,12 +66,12 @@ class OdbReader(object):
                 return attr
             except:
                 if self.proc == None:
-                    from BasicTools.IO.Wormhole import WormholeServer,WormholeClient,GetPipeWrormholeScript
+                    from BasicTools.IO.Wormhole import WormholeServer,WormholeClient,GetPipeWormholeScript
                     from BasicTools.Helpers.Tests import WriteTempFile
                     import subprocess
-                    script = GetPipeWrormholeScript()
+                    script = GetPipeWormholeScript()
                     fn = WriteTempFile("WormholeServer.py",script)
-                    self.proc = subprocess.Popen(["abaqus","python",fn], stdout=subprocess.PIPE,stdin=subprocess.PIPE)
+                    self.proc = subprocess.Popen([abaqus_EXEC,"python",fn], stdout=subprocess.PIPE,stdin=subprocess.PIPE)
                     self.client = WormholeClient(proc=self.proc)
                     self.client.RemoteExec("from BasicTools.IO.OdbReader import OdbReader")
                     self.client.RemoteExec("reader = OdbReader()")
@@ -146,7 +149,7 @@ with PrintBypass() as f:
                     fn = WriteTempFile("AbaqusReader.py",script)
                     pr = PipeReader()
 
-                    proc = subprocess.Popen(["abaqus", "python",fn], stdout=subprocess.PIPE)
+                    proc = subprocess.Popen([abaqus_EXEC, "python",fn], stdout=subprocess.PIPE)
                     pr.inbuffer = proc.stdout
                     result = pr.Read()
                     proc.wait()
@@ -251,7 +254,7 @@ with PrintBypass() as f:
             for elem in elements:
                 conn = [abatomesh[n] for n in elem.connectivity ]
                 elems = res.GetElementsOfType(eltype[elem.type])
-                per = permutaion.get(elem.type,None)
+                per = permutation.get(elem.type,None)
                 if per is None:
                     enum = elems.AddNewElement(conn,elem.label) - 1
                 else:

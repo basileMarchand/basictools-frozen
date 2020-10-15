@@ -98,11 +98,7 @@ class OdbWriter(object):
 
         if self.abaqusExec is None:
             import os
-            if "ABAQUS_ROOT" in os.environ:
-                abaqusExec = os.environ["ABAQUS_ROOT"]+os.sep+ ".." +os.sep+"Commands"+os.sep+"abq6136"
-            else:
-                abaqusExec = "abaqus"
-
+            abaqusExec = os.environ.get("ABAQUS_EXEC","abaqus")
 
         try :
             import abaqusConstants as AC
