@@ -8,7 +8,6 @@
 import cProfile
 import pstats
 import io
-from pstats import SortKey
 import numpy as np
 
 
@@ -26,7 +25,7 @@ class Profiler():
 
     def Stop(self):
         self.pr.disable()
-        self.ps = pstats.Stats(self.pr, stream=self.s).sort_stats(SortKey.CUMULATIVE)
+        self.ps = pstats.Stats(self.pr, stream=self.s).sort_stats(pstats.SortKey.CUMULATIVE)
         self.ps.reverse_order()
         self.ps.print_stats()
         
