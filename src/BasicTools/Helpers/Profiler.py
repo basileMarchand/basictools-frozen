@@ -30,7 +30,8 @@ class Profiler():
         self.ps.print_stats()
         
         
-    def PlotStats(self, fileName, numberOfFunctions = 4):
+    def PlotStats(self, fileName, partRest = 0.2):
+
         lines = self.s.getvalue().split('\n')[5:-3]
         functionNames = [l[46:][-20:] for l in lines]
         parsing = np.array([l.split()[:5] for l in lines])
@@ -38,36 +39,40 @@ class Profiler():
         tottimes = np.array(parsing[:,1], dtype = float)
         cumtimes = np.array(parsing[:,3], dtype = float)
 
-        sumtottimes = np.sum(tottimes)
-        sumcumtimes = np.sum(cumtimes)
+        tottimes = tottimes / np.sum(tottimes)
+        cumtimes = cumtimes / np.sum(cumtimes)
 
-        tottimesOrder = tottimes.argsort()[::-1][:numberOfFunctions]
-        cumtimesOrder = cumtimes.argsort()[::-1][:numberOfFunctions]
-
-        tottimes = tottimes[tottimesOrder]
-        sumpartialtottimes = np.sum(tottimes)
-        tottimes = np.hstack((tottimes, sumtottimes - sumpartialtottimes))
-        functionNamestottime = [functionNames[i] for i in tottimesOrder] + ["rest"]
-
-
-        cumtimes = cumtimes[cumtimesOrder]
-        sumpartialcumtimes = np.sum(cumtimes)
-        cumtimes = np.hstack((cumtimes, sumcumtimes - sumpartialcumtimes))
-        functionNamescumtime = [functionNames[i] for i in cumtimesOrder] + ["rest"]
-
+        tottimesArgSort = np.argsort(tottimes)
+        cumtimesArgSort = np.argsort(cumtimes)
         
-        tottime = tottimes/np.sum(tottimes)
-        cumtime = cumtimes/np.sum(cumtimes)
+        cumsumtottimes = np.cumsum(tottimes[tottimesArgSort])
+        cumsumcumtimes = np.cumsum(cumtimes[cumtimesArgSort])
+        
+        from BasicTools.Helpers import Search as S
+        
+        tottimesArgSortInv = tottimesArgSort[S.BinarySearch(cumsumtottimes, partRest):][::-1]
+        cumtimesArgSortInv = cumtimesArgSort[S.BinarySearch(cumsumcumtimes, partRest):][::-1]
+        
+        
+        tottimes = tottimes[tottimesArgSortInv]
+        tottimes = np.hstack((tottimes, 1 - np.sum(tottimes)))
+        
+        cumtimes = cumtimes[cumtimesArgSortInv]
+        cumtimes = np.hstack((cumtimes, 1 - np.sum(cumtimes)))
+        
+        functionNamestottime = [functionNames[i] for i in tottimesArgSortInv] + ["rest"]
+        functionNamescumtime = [functionNames[i] for i in cumtimesArgSortInv] + ["rest"]
+
         
         import matplotlib.pyplot as plt
 
         fig, axs = plt.subplots(2,1)
         
-        axs[0].pie(tottime, labels=functionNamestottime, autopct='%1.1f%%')
+        axs[0].pie(tottimes, labels=functionNamestottime, autopct='%1.1f%%')
         axs[0].axis('equal')
         axs[0].set_title("tottime")
         
-        axs[1].pie(cumtime, labels=functionNamescumtime, autopct='%1.1f%%')
+        axs[1].pie(cumtimes, labels=functionNamescumtime, autopct='%1.1f%%')
         axs[1].axis('equal')
         axs[1].set_title("cumtime")
         
@@ -95,8 +100,8 @@ def CheckIntegrity(GUI=False):
     p.PlotStats("test")
     
 
-
     return "ok"
+
 
 if __name__ == '__main__':
 
