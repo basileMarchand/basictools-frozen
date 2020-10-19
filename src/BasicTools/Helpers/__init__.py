@@ -21,7 +21,6 @@ _test = [
 "ProgressBar",
 "Timer",
 "MPIInterface",
-"which",
 "Profiler",
 "Search"
  ]
