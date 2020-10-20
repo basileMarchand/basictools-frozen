@@ -3,7 +3,17 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-        
+
+
+"""
+    Use of bisect to search in sorted lists
+    
+    from:
+    https://docs.python.org/3.8/library/bisect.html
+"""
+     
+import bisect
+
 
 def BinarySearch(list, item):
     """
@@ -21,9 +31,9 @@ def BinarySearch(list, item):
     int
         the rank of the largest element smaller than item in the sorted data "list"
     """
+    
     first = 0
     last = len(list)-1
-    res = None
 
     if item < list[first]:
         return first
@@ -31,19 +41,43 @@ def BinarySearch(list, item):
     if item > list[last]:
         return last
 
-    while first<=last:
-        midpoint = (first + last)//2
-        if list[midpoint] == item:
-            return midpoint
-        else:
-            if item <= list[midpoint]:
-                last = midpoint-1
-                res = midpoint-1
-            else:
-                first = midpoint+1
-                res = midpoint
+    return index(list, find_gt(list, item))-1
+    
 
-    return res
+def index(a, x):
+    'Locate the leftmost value exactly equal to x'
+    i = bisect.bisect_left(a, x)
+    if i != len(a) and a[i] == x:
+        return i
+    raise ValueError
+
+def find_lt(a, x):
+    'Find rightmost value less than x'
+    i = bisect.bisect_left(a, x)
+    if i:
+        return a[i-1]
+    raise ValueError
+
+def find_le(a, x):
+    'Find rightmost value less than or equal to x'
+    i = bisect.bisect_right(a, x)
+    if i:
+        return a[i-1]
+    raise ValueError
+
+def find_gt(a, x):
+    'Find leftmost value greater than x'
+    i = bisect.bisect_right(a, x)
+    if i != len(a):
+        return a[i]
+    raise ValueError
+
+def find_ge(a, x):
+    'Find leftmost item greater than or equal to x'
+    i = bisect.bisect_left(a, x)
+    if i != len(a):
+        return a[i]
+    raise ValueError
 
 
 def CheckIntegrity(GUI=False):
@@ -52,11 +86,11 @@ def CheckIntegrity(GUI=False):
     import numpy as np
     
     testlist = np.array([0.0, 1.0, 2.5, 10.])
-    valList = np.array([-1., 11., 0.6, 2.0, 2.6, 9.9, 1.0])
-
-    for i, val in enumerate(valList):
-        BinarySearch(testlist, val)
+    valList = np.array([-1., 0., 11., 0.6, 2.0, 2.6, 9.9, 1.0])
     
+
+    for i, val in enumerate(valList):        
+        BinarySearch(testlist, val)
 
     return "ok"
 
