@@ -33,7 +33,7 @@ class Profiler():
     def PlotStats(self, fileName, partRest = 0.2):
 
         lines = self.s.getvalue().split('\n')[5:-3]
-        functionNames = [l[46:][-20:] for l in lines]
+        functionNames = [l[46:][-30:] for l in lines]
         parsing = np.array([l.split()[:5] for l in lines])
                 
         tottimes = np.array(parsing[:,1], dtype = float)
@@ -50,8 +50,8 @@ class Profiler():
         
         from BasicTools.Helpers import Search as S
         
-        tottimesArgSortInv = tottimesArgSort[S.BinarySearch(cumsumtottimes, partRest):][::-1]
-        cumtimesArgSortInv = cumtimesArgSort[S.BinarySearch(cumsumcumtimes, partRest):][::-1]
+        tottimesArgSortInv = tottimesArgSort[S.BinarySearch(cumsumtottimes, partRest)+1:][::-1]
+        cumtimesArgSortInv = cumtimesArgSort[S.BinarySearch(cumsumcumtimes, partRest)+1:][::-1]
         
         
         tottimes = tottimes[tottimesArgSortInv]
@@ -68,11 +68,11 @@ class Profiler():
 
         fig, axs = plt.subplots(2,1)
         
-        axs[0].pie(tottimes, labels=functionNamestottime, autopct='%1.1f%%')
+        axs[0].pie(tottimes, labels=functionNamestottime, autopct='%1.1f%%', normalize = True)
         axs[0].axis('equal')
         axs[0].set_title("tottime")
         
-        axs[1].pie(cumtimes, labels=functionNamescumtime, autopct='%1.1f%%')
+        axs[1].pie(cumtimes, labels=functionNamescumtime, autopct='%1.1f%%', normalize = True)
         axs[1].axis('equal')
         axs[1].set_title("cumtime")
         
