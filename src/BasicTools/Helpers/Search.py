@@ -17,20 +17,23 @@ import bisect
 
 def BinarySearch(ordered_list, item):
     """
-    Searches in the sorted data "ordered_list" the rank of the largest element
-    smaller than item, in log(len(ordered_list)) complexity
+    Inspects the sorted list "ordered_list" and returns:
+        - 0 if item <= ordered_list[0]
+        - the rank of the largest element smaller or equal than item otherwise
 
     Parameters
     ----------
     ordered_list: list or one-dimensional np.ndarray
-        the data sorted in increasing order from which the previous rank is searched
+        the data sorted in increasing order from which the previous rank is\
+        searched
     item : float or int
         the item for which the previous rank is searched
 
     Returns
     -------
     int
-        the rank of the largest element smaller than item in the sorted data "list"
+        0 or the rank of the largest element smaller or equal than item in\
+        "ordered_list"
     """
 
     return max(bisect.bisect_right(ordered_list, item) - 1, 0)
