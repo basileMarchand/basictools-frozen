@@ -82,20 +82,17 @@ def find_ge(a, x):
 
 
 def CheckIntegrity(GUI=False):
-
-
     import numpy as np
 
     testlist = np.array([0.0, 1.0, 2.5, 10.])
     valList = np.array([-1., 0., 11., 0.6, 2.0, 2.6, 9.9, 1.0])
+    expected = (0, 0, 3, 0, 1, 2, 2, 1)
+    actual = tuple(BinarySearch(testlist, v) for v in valList)
 
-
-    for i, val in enumerate(valList):
-        BinarySearch(testlist, val)
+    assert actual == expected, "Test failed, actual = {}, expected = {}".format(actual, expected)
 
     return "ok"
 
 
 if __name__ == '__main__':
-
-    print(CheckIntegrity( GUI=True))
+    print(CheckIntegrity(GUI=True))
