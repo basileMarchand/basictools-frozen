@@ -7,22 +7,23 @@
 
 """
     Use of bisect to search in sorted lists
-    
+
     from:
     https://docs.python.org/3.8/library/bisect.html
 """
-     
+
 import bisect
 
 
-def BinarySearch(list, item):
+def BinarySearch(ordered_list, item):
     """
-    Searches in the sorted data "list" the rank of the largest element smaller than item, in log(len(list)) complexity
+    Searches in the sorted data "ordered_list" the rank of the largest element
+    smaller than item, in log(len(ordered_list)) complexity
 
     Parameters
     ----------
-    list: list or one-dimensional np.ndarray
-        the sorted data from which the previous rank is searched
+    ordered_list: list or one-dimensional np.ndarray
+        the data sorted in increasing order from which the previous rank is searched
     item : float or int
         the item for which the previous rank is searched
 
@@ -31,18 +32,18 @@ def BinarySearch(list, item):
     int
         the rank of the largest element smaller than item in the sorted data "list"
     """
-    
-    first = 0
-    last = len(list)-1
 
-    if item < list[first]:
+    first = 0
+    last = len(ordered_list) - 1
+
+    if item < ordered_list[first]:
         return first
 
-    if item > list[last]:
+    if item > ordered_list[last]:
         return last
 
-    return index(list, find_gt(list, item))-1
-    
+    return index(ordered_list, find_gt(ordered_list, item)) - 1
+
 
 def index(a, x):
     'Locate the leftmost value exactly equal to x'
@@ -84,12 +85,12 @@ def CheckIntegrity(GUI=False):
 
 
     import numpy as np
-    
+
     testlist = np.array([0.0, 1.0, 2.5, 10.])
     valList = np.array([-1., 0., 11., 0.6, 2.0, 2.6, 9.9, 1.0])
-    
 
-    for i, val in enumerate(valList):        
+
+    for i, val in enumerate(valList):
         BinarySearch(testlist, val)
 
     return "ok"
