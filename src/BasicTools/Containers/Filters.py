@@ -430,10 +430,10 @@ class ElementFilter(Filter):
             if self.zoneTreatment == "center":
                 res2 = zone(centers)<=0
             elif self.zoneTreatment == "allnodes":
-                z = zone(self.mesh.nodes)
+                z = zone(self.mesh.nodes)<=0
                 res2 = np.sum(z[elements.connectivity],axis=1) == elements.GetNumberOfNodesPerElement()
             elif self.zoneTreatment == "leastonenode":
-                z = zone(self.mesh.nodes)
+                z = zone(self.mesh.nodes)<=0
                 res2 = np.sum(z[elements.connectivity],axis=1) > 0
             else:#pragma: no cover
                 raise(Exception("zoneTreatment unknown"))
