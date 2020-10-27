@@ -465,6 +465,7 @@ class MeshReader(ReaderBase):
 
 
       res.GenerateManufacturedOriginalIDs()
+      res.PrepareForOutput()
 
       if self.refsAsAField:
          elemRefs = np.empty(globalElementCounter,dtype=np.int )
@@ -473,8 +474,6 @@ class MeshReader(ReaderBase):
              elemRefs[cpt:cpt+val.GetNumberOfElements()] = elemRefsDic[name].ravel()
              cpt += val.GetNumberOfElements()
          res.elemFields['refs'] = elemRefs
-
-      res.PrepareForOutput()
 
       self.EndReading()
       return res
