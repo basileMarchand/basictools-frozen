@@ -284,6 +284,11 @@ class DatReader(ReaderBase):
                             res.nodesTags.CreateTag(tagname).SetIds(oids)
                             res.nodesTags.CreateTag("Group"+str(group)).SetIds(oids)
                 #".SEL GROUP 1 MAILLES NOM "tagname-1_CORPS_146""
+                    if l == None:
+                        break
+                    if l[0] == ".":
+                        break
+
                 continue
 
             if ldata["KEYWORD"] == "MCE":
@@ -360,17 +365,20 @@ class DatReader(ReaderBase):
                             #self.PrintVerbose(p2)
                             if len(p2) == 2:
                                 if len(p2[0]) == 3 and len(p2[1]) == 1 :
-                                    #tetra
                                     elements = res.GetElementsOfType( EN.Tetrahedron_4)
                                 elif len(p2[0]) == 4 and len(p2[1]) == 4 :
                                     elements = res.GetElementsOfType( EN.Hexaedron_8)
+                                elif len(p2[0]) == 3 and len(p2[1]) == 3 :
+                                    elements = res.GetElementsOfType( EN.Wedge_6)
                                 elif len(p2[0]) == 3 and len(p2[1]) == 3 :
                                     elements = res.GetElementsOfType( EN.Wedge_6)
                                 else:
                                     raise(Exception("type of element no coded" + str(p2) ))
 
                             elif len(p2) == 1:
-                                if len(p2[0]) == 4  :
+                                if len(p2[0]) == 3  :
+                                    elements = res.GetElementsOfType( EN.Triangle_3)
+                                elif len(p2[0]) == 4 :
                                     elements = res.GetElementsOfType( EN.Quadrangle_4)
                                 else:
                                     raise(Exception("type of element no coded" + str(p2) ))

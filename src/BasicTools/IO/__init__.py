@@ -31,6 +31,7 @@ _test = [
 'ProxyWriter',
 'ReaderBase',
 'SamcefReader',
+'SamcefWriter',
 'StlReader',
 'StlWriter',
 'UniversalReader',
