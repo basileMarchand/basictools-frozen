@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 
 import time
 
@@ -49,8 +49,9 @@ class Timer():
 def CheckIntegrity(GUI=False):
 
     from BasicTools.Helpers.Timer import Timer
-    with Timer("Numpy import Time"):
-        import numpy as np
+    with Timer("os, sys  import Time"):
+        import os
+        import sys
 
     with Timer("Time to Solve"):
         print('toto')
