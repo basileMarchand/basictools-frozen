@@ -240,7 +240,7 @@ class MeshBase(BaseOutputObject):
     def IsUnstructured(self): return False
 
     def WithModification(self):
-        class ClosingMeshAutomaticaly():
+        class ClosingMeshAutomatically():
             def __init__(self,mesh):
                 self.mesh = mesh
             def __enter__(self):
@@ -248,7 +248,7 @@ class MeshBase(BaseOutputObject):
 
             def __exit__(self, type, value, traceback):
                 self.mesh.PrepareForOutput()
-        return ClosingMeshAutomaticaly(self)
+        return ClosingMeshAutomatically(self)
 
 def CheckIntegrity():
     obj = MeshBase()
