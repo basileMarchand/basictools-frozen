@@ -51,6 +51,11 @@ class FieldBase(BaseOutputObject):
     def __sub__(self,other):
         return self.binaryOp(other,binaryOps["__sub__"])
 
+    def __rsub__(self,other):
+        res = -self
+        res += other
+        return res
+
     def __truediv__(self,other):
         return self.binaryOp(other,binaryOps["__truediv__"])
 
