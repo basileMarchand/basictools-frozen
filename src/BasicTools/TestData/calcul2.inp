@@ -3,7 +3,7 @@
 **file cube.geof
 
 ***resolution newton
-**cycles 1
+**cycles 3
 *ratio 0.0001
 *time 20.
 *increment 20

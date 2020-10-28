@@ -400,6 +400,8 @@ def GetInputTimeSequence(data):
     dataIncrement = GetFromInp(data,{'3':['resolution'], '1':['increment']})
     dataTime      = GetFromInp(data,{'3':['resolution'], '1':['time']})
     dataDtime     = GetFromInp(data,{'3':['resolution'], '1':['dtime']})
+    dataCycles    = GetFromInp(data,{'3':['resolution'], '2':['cycles']})
+
 
     if len(dataTime) > 0:
       count = 0
@@ -447,6 +449,12 @@ def GetInputTimeSequence(data):
           #print(i, j, len(timeSequence), len(incrementSequence))
           reconstructedTimeSequence.append(timeSequence[i]+(j+1)*(timeSequence[i+1]-timeSequence[i])/incrementSequence[i])
 
+    if len(dataCycles) > 0:
+        nbeCycles = int(dataCycles[0][0][1])
+        Tcycle = reconstructedTimeSequence[1:]
+        TFcycle = reconstructedTimeSequence[-1]
+        for i in range(nbeCycles-1):
+            reconstructedTimeSequence += [t + (i+1)*TFcycle for t in Tcycle]
 
     return reconstructedTimeSequence
 
