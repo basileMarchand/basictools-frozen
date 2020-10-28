@@ -185,7 +185,7 @@ def DeleteElements(mesh,mask):
 
 def DeleteInternalFaces(mesh):
     from BasicTools.Containers.UnstructuredMeshInspectionTools import ExtractElementsByMask
-    
+
     OriginalNumberOfElements = mesh.GetNumberOfElements()
     skin = ComputeSkin(mesh)
     datatochange = {}
@@ -682,6 +682,39 @@ def LowerNodesDimension(mesh):
     mesh.nodes = newNodes
     return mesh
 
+
+def RigidBodyTransformation(mesh, rotationMatrix, translationVector):
+    """
+    the rotation matrix Q should verify:
+    QtQ = I = QQt et det Q = 1
+    """
+    assert np.linalg.norm(np.dot(rotationMatrix.T, rotationMatrix) - np.eye(3)) < 1.e-12
+    assert np.linalg.norm(np.dot(rotationMatrix, rotationMatrix.T) - np.eye(3)) < 1.e-12
+    assert (np.linalg.det(rotationMatrix) - 1) < 1.e-12
+
+    mesh.nodes = np.dot(rotationMatrix, mesh.nodes.T).T
+    for i in range(3):
+        mesh.nodes[:,i] += translationVector[i]
+
+
+def ComputeRigidBodyTransformationBetweenTwoSetOfPoints(setPoints1, setPoints2):
+    """
+    setPoints1 and setPoints2 have the same dimension (nbeOfPoints,dimension)
+
+    returns A, b such that setPoints1.T approx A*setPoints2.T + b
+    """
+    assert setPoints1.shape == setPoints2.shape
+
+    dim = setPoints1.shape[1]
+    setPoints1 = np.hstack((setPoints1, np.ones((setPoints1.shape[0],1))))
+
+    res = np.linalg.lstsq(setPoints1, setPoints2, rcond=None)[0]
+
+    A = res[:dim,:dim].T
+    b = res[dim,:].T
+
+    return A, b
+
 #------------------------- CheckIntegrity ------------------------
 
 def CheckIntegrity_AddTagPerBody(GUI=False):
@@ -880,6 +913,52 @@ def CheckIntegrity_DeleteInternalFaces(GUI=False):
     print(mesh)
     return "ok"
 
+def CheckIntegrity_RigidBodyTransformation(GUI=False):
+    from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshOf
+
+    points = [[0,0,0],[1,0,0],[0,1,0],[0,0,1],[1,1,1] ]
+    tets = [[0,1,2,3],[3,0,2,4]]
+    mesh = CreateMeshOf(points,tets,ElementNames.Tetrahedron_4)
+    ## add 2 tris
+    tris = mesh.GetElementsOfType(ElementNames.Triangle_3)
+    tris.AddNewElement([0,1,2],0)
+    tris.AddNewElement([3,0,2],1)
+    tris.AddNewElement([3,0,2],2)
+    #print(mesh)
+
+    theta = np.pi/2.
+    A = np.array([[1, 0, 0],
+                  [0, np.cos(theta), -np.sin(theta)],
+                  [0, np.sin(theta), np.cos(theta)]])
+    b = np.array([1,0,0])
+    RigidBodyTransformation(mesh, A, b)
+    return "ok"
+
+
+
+
+def CheckIntegrity_ComputeRigidBodyTransformationBetweenTwoSetOfPoints(GUI=False):
+
+    from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshOf
+
+    points1 = [[0,0,0],[1,0,0],[0,1,0],[0,0,1],[1,1,1] ]
+    tets = [[0,1,2,3],[3,0,2,4]]
+    mesh1 = CreateMeshOf(points1,tets,ElementNames.Tetrahedron_4)
+    mesh2 = CreateMeshOf(points1,tets,ElementNames.Tetrahedron_4)
+
+    theta = np.pi/3.
+    A = np.array([[1, 0, 0],
+                  [0, np.cos(theta), -np.sin(theta)],
+                  [0, np.sin(theta), np.cos(theta)]])
+    b = np.array([1,0,0])
+
+    RigidBodyTransformation(mesh2, A, b)
+
+    A, b = ComputeRigidBodyTransformationBetweenTwoSetOfPoints(mesh1.nodes, mesh1.nodes)
+    return "ok"
+
+
+
 def CheckIntegrity(GUI=False):
     totest= [
     CheckIntegrity_NodesPermutation,
@@ -891,6 +970,8 @@ def CheckIntegrity(GUI=False):
     CheckIntegrity_CleanLonelyNodes,
     CheckIntegrity_CleanEmptyTags,
     CheckIntegrity_AddTagPerBody,
+    CheckIntegrity_RigidBodyTransformation,
+    CheckIntegrity_ComputeRigidBodyTransformationBetweenTwoSetOfPoints,
     ]
     for f in totest:
         print("running test : " + str(f))
