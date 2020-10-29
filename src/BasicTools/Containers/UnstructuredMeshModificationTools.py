@@ -164,6 +164,8 @@ def CleanEmptyTags(inmesh):
     inmesh.nodesTags.RemoveEmptyTags()
 
 def DeleteElements(mesh,mask):
+    from BasicTools.Containers.UnstructuredMeshInspectionTools import ExtractElementsByMask
+
     OriginalNumberOfElements = mesh.GetNumberOfElements()
     datatochange = {}
 
