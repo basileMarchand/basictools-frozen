@@ -10,6 +10,7 @@ import numpy as np
 import BasicTools.Containers.ElementNames as ElementNames
 from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
 from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshOfTriangles
+from BasicTools.TestData import GetTestDataPath
 
 #from file vtkCellType.h  of the vtk sources
 vtkNameByNumber = {}
@@ -145,6 +146,136 @@ def ApplyVtkPipeline(mesh,op):
     vtkMesh = MeshToVtk(mesh)
     vtkOuputMesh = op(vtkMesh)
     return VtkToMesh(vtkOuputMesh)
+
+def PlotMesh(mesh):
+    import vtk
+
+    from BasicTools.Containers.MeshBase import MeshBase
+    if isinstance(mesh,MeshBase):
+        vtkMesh = MeshToVtk(mesh)
+    else:
+        vtkMesh = mesh
+
+    vGF = vtk.vtkGeometryFilter()
+    vGF.SetInputData(vtkMesh)
+    vGF.Update()
+
+    nbArrays = vtkMesh.GetPointData().GetNumberOfArrays()
+
+
+    cylinderMapper = vtk.vtkPolyDataMapper()
+    if nbArrays > 0:
+        out2 = vtk.vtkAssignAttribute()
+        out2.SetInputConnection(vGF.GetOutputPort())
+
+        array = vtkMesh.GetPointData().GetArray(0)
+        out2.Assign(array.GetName(), "SCALARS", "POINT_DATA")
+        cylinderMapper.SetInputConnection(out2.GetOutputPort())
+    else:
+        cylinderMapper.SetInputConnection(vGF.GetOutputPort())
+
+    cylinderActor = vtk.vtkActor()
+    cylinderActor.SetMapper(cylinderMapper)
+    cylinderActor.RotateX(30.0)
+    cylinderActor.RotateY(-45.0)
+
+    ren = vtk.vtkRenderer()
+    renWin = vtk.vtkRenderWindow()
+    renWin.AddRenderer(ren)
+
+    iren = vtk.vtkRenderWindowInteractor()
+    iren.SetRenderWindow(renWin)
+
+    style = vtk.vtkInteractorStyleTrackballCamera()
+    style.SetDefaultRenderer(ren)
+    iren.SetInteractorStyle(style)
+
+    ren.AddActor(cylinderActor)
+    ren.GradientBackgroundOn();
+    ren.SetBackground(0.3176,0.3412,0.4314);
+    ren.SetBackground2(0,0,0.1647);
+    renWin.SetSize(800, 600)
+
+    buttonWidget = vtk.vtkButtonWidget()
+    buttonWidget.SetInteractor(iren)
+
+    class Listener():
+        def __init__(self):
+            self.fildcpt = 0
+            self.minmaxs = dict()
+
+        def processStateChangeEvent(self,obj,ev):
+
+            self.fildcpt += 1
+            if vtkMesh.GetPointData().GetNumberOfArrays() == 0:
+                return
+
+            nb = self.fildcpt % vtkMesh.GetPointData().GetNumberOfArrays()
+            array = vtkMesh.GetPointData().GetArray(nb)
+            arrayName = array.GetName()
+
+            out2.Assign(arrayName, "SCALARS", "POINT_DATA")
+            if arrayName in self.minmaxs:
+               lo, hi =  self.minmaxs[arrayName]
+            else:
+               lo,hi = array.GetRange()
+               self.minmaxs[arrayName] = (lo,hi)
+
+            lut = vtk.vtkColorTransferFunction()
+            lut.SetColorSpaceToHSV()
+            lut.SetColorSpaceToDiverging()
+            lut.AddRGBPoint(lo,0.23137254902000001, 0.298039215686, 0.75294117647100001)
+            lut.AddRGBPoint((lo+hi)/2,0.86499999999999999, 0.86499999999999999, 0.86499999999999999)
+            lut.AddRGBPoint(hi,0.70588235294099999, 0.015686274509800001, 0.149019607843)
+            lut.Build()
+
+            cylinderMapper.SetInterpolateScalarsBeforeMapping(True)
+            cylinderMapper.SetScalarRange(lo, hi)
+            cylinderMapper.SetUseLookupTableScalarRange(True)
+            cylinderMapper.SetLookupTable(lut)
+            cylinderMapper.SetScalarModeToUsePointData()
+            cylinderMapper.ScalarVisibilityOn()
+            cylinderMapper.SelectColorArray(array.GetName())
+            print("Plot of field {} min/max, {}/{}".format(arrayName,lo,hi))
+            renWin.Render()
+
+            pass
+    listener = Listener()
+    listener.processStateChangeEvent(None,None)
+
+    buttonWidget.AddObserver( 'StateChangedEvent', listener.processStateChangeEvent )
+
+    buttonRepresentation= vtk.vtkTexturedButtonRepresentation2D()
+    buttonRepresentation.SetNumberOfStates(1);
+    r = vtk.vtkPNGReader()
+
+    fileName  = GetTestDataPath()+"Next.png"
+
+    r.SetFileName(fileName)
+    r.Update()
+    image = r.GetOutput()
+    buttonRepresentation.SetButtonTexture(0, image)
+
+    buttonRepresentation.SetPlaceFactor(1);
+    buttonRepresentation.PlaceWidget([0,50,0,50,0,0]);
+
+    buttonWidget.SetRepresentation(buttonRepresentation);
+
+    buttonWidget.On();
+
+    iren.Initialize()
+
+    axesActor = vtk.vtkAxesActor();
+    axes = vtk.vtkOrientationMarkerWidget()
+    axes.SetOrientationMarker(axesActor)
+    axes.SetInteractor(iren)
+    axes.EnabledOn()
+    axes.InteractiveOn()
+    ren.ResetCamera()
+    ren.GetActiveCamera().Zoom(1.5)
+    renWin.Render()
+    # Start the event loop.
+    iren.Start()
 
 def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
 
@@ -398,8 +529,13 @@ def CheckIntegrity_MeshToVtk(GUI=False):
 
     ## test a 2D mesh
     res = CreateMeshOfTriangles([[0,0],[1,0],[0,1],[1,1] ], [[0,1,2],[2,1,3]])
-    sol = MeshToVtk(res )
+    if GUI:
+        res.nodeFields["Field1"] = np.array([30,20,30,1])
+        res.nodeFields["Field2"] = np.array([0,1,0,1])+0.1
+        PlotMesh(res)
+        sol = MeshToVtk(res )
 
+        PlotMesh(sol)
 
     return "OK"
 
