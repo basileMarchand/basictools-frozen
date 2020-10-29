@@ -24,6 +24,7 @@ def PrintHelp():
   print( '       -p    print availables time to read ')
   print( '       -v    more verbose output ')
   print( '       -m    Activate MeshIO Readers and Writers ')
+  print( '       -s    Plot mesh before continue (press key "q" exit)')
 
   print("Available Readers : ", IOF.GetAvailableReaders())
   print("Available Writers : ", IOF.GetAvailableWriter())
@@ -59,7 +60,9 @@ def Convert(inputfilename,outputfilename,ops):
                   sys.exit(0)
 
           mesh = ReadMesh(inputfilename,timeToRead = ops["timeToRead"])
-
+          if ops["PlotOnScreen"]:
+              from BasicTools.Containers.vtkBridge import PlotMesh
+              PlotMesh(mesh)
           if len(outputfilename) == 0:
               PrintMeshInformation(mesh)
               print("No output file name")
@@ -148,6 +151,7 @@ def CheckIntegrity(GUI=False):
             ops= {}
             ops["timeToRead"] = -1
             ops["printTimes"] = False
+            ops["PlotOnScreen"] = GUI
             Convert(inputfilename,outputfilename,ops)
 
     return "ok"
@@ -160,7 +164,7 @@ def Main():
     else:
       #try:
       if True:
-          opts, args = getopt.getopt(sys.argv[1:],"vphmt:i:o:")
+          opts, args = getopt.getopt(sys.argv[1:],"svphmt:i:o:")
       #except getopt.GetoptError:
       #    PrintHelp()
       #    sys.exit(2)
@@ -169,6 +173,7 @@ def Main():
       ops= {}
       ops["timeToRead"] = -1
       ops["printTimes"] = False
+      ops["PlotOnScreen"] = False
       for opt, arg in opts:
          if opt == '-h':
              PrintHelp()
@@ -195,6 +200,8 @@ def Main():
              InitAllWriters()
              AddReadersToBasicToolsFactory()
              AddWritersToBasicToolsFactory()
+         elif opt in ("-s"):
+             ops["PlotOnScreen"] = True
 
 
     Convert(inputfilename,outputfilename,ops )
