@@ -77,8 +77,10 @@ def IntegrateGeneral( mesh, wform, constants, fields, unkownFields, testFields=N
             from BasicTools.FE.WeakForms.NativeNumericalWeakForm import PyWeakForm
             typeCpp = (type(wform) == PyWeakForm)
             import BasicTools.FE.Integrators.NativeIntegration
-        except :
+        except Exception as err :
             typeCpp = False
+            print("Error loading c++ integration")
+            print(str(err))
             print("Warning : Using Python Integration (very slow)")
 
         if UseCpp and typeCpp:
