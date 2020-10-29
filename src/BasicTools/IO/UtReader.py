@@ -64,7 +64,7 @@ class UtReader(ReaderBase):
         if fieldname is not None:
             self.fieldNameToRead = fieldname
 
-    def SetTimeToRead(self, time, timeIndex):
+    def SetTimeToRead(self, time=None, timeIndex=None):
 
         if (time is None) and (timeIndex is None):
             if self.timeToRead == -1:
@@ -78,6 +78,9 @@ class UtReader(ReaderBase):
 
         if time is None:
             self.timeToRead = self.time[timeIndex][4]
+            return timeIndex
+        elif time is -1:
+            self.timeToRead = self.time[-1][4]
             return timeIndex
         else:
             self.timeToRead = time

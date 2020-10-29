@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 
 import BasicTools.Containers.ElementNames as ElementNames
 
@@ -21,6 +21,7 @@ def ReadMesh(filename,out=None,timeToRead=-1):# pragma: no cover
     reader = CreateReader("."+filename.split(".")[-1])
     reader.SetFileName(filename)
     if reader.canHandleTemporal :
+        reader.ReadMetaData()
         reader.SetTimeToRead(timeToRead)
         if timeToRead == -1:
             print("Reading last available time step")
