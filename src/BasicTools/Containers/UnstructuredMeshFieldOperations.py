@@ -34,6 +34,7 @@ def GetFieldTransferOp(inputField,targetPoints,method=None,verbose=False):
 
     imesh = ExtractElementByDimensionalityNoCopy(inputField.mesh,imeshdim)
     numbering = inputField.numbering
+    space = inputField.space
     inodes = imesh.nodes
 
     kdt = cKDTree(inodes)
@@ -120,25 +121,36 @@ def GetFieldTransferOp(inputField,targetPoints,method=None,verbose=False):
         for cpt,e in enumerate(potentialElements):
             data, lenb = GetElement(imesh,e)
             localnumbering = numbering[data.elementType]
-            localspace = LagrangeSpaceGeo[data.elementType]
-            coordAtDofs = imesh.nodes[localnumbering [lenb,:],:]
+            localspace = space[data.elementType]
 
-            inside, shapeFunc, shapeFuncClamped = ComputeShapeFunctionsOnElement(coordAtDofs,localspace ,localnumbering,TP)
-            sF =  shapeFunc
+            posnumbering = data.connectivity
+            posspace = LagrangeSpaceGeo[data.elementType]
+            coordAtDofs = imesh.nodes[posnumbering[lenb,:],:]
+
+            #inside, shapeFunc, shapeFuncClamped = ComputeShapeFunctionsOnElement(coordAtDofs,localspace ,localnumbering,TP)
+
+            inside, bary, baryClamped = ComputeBarycentricCoordinateOnElement(coordAtDofs,posspace ,posnumbering,TP)
+
             if inside is None:
-
                 continue
 
+            posShapeFunc = posspace.GetShapeFunc(bary)
+            posShapeFuncClamped = posspace.GetShapeFunc(baryClamped)
+
+            #update the distance**2 with a *exact* distance
+            distElemToTP =  posShapeFuncClamped.dot(coordAtDofs) -TP
+            dist[cpt] = distElemToTP.dot(distElemToTP)
+
+            #compute shape function of the incomming space using the xi eta phi
+            shapeFunc = localspace.GetShapeFunc(bary)
+            shapeFuncClamped = localspace.GetShapeFunc(baryClamped)
+
             if inside:
-                #an good element is found
+                sF =  shapeFunc
                 status[p] = 1
                 break
 
-            #update the distance**2 with a *exact* distance
-            distElemToTP =  shapeFuncClamped.dot(coordAtDofs) -TP
-            dist[cpt] = distElemToTP.dot(distElemToTP)
-
-            # stor the best elements (closest)
+            # store the best elements (closest)
             if dist[cpt] < distmem:
                 distmem = dist[cpt]
                 memshapeFunc = shapeFunc
@@ -174,13 +186,19 @@ def GetFieldTransferOp(inputField,targetPoints,method=None,verbose=False):
         dat = sF
         AddToOutput(col,row,dat,cood)
 
-    return coo_matrix((cood[2][0:cood[3]], (cood[1][0:cood[3]], cood[0][0:cood[3]])), shape=(nbtp , inodes.shape[0])), status
+    return coo_matrix((cood[2][0:cood[3]], (cood[1][0:cood[3]], cood[0][0:cood[3]])), shape=(nbtp , inputField.numbering["size"])), status
 
 
 
 
 
 def ComputeShapeFunctionsOnElement(coordAtDofs,localspace,localnumbering,point):
+    inside, xietaphi, xietaphiClamped = ComputeBarycentricCoordinateOnElement(coordAtDofs,localspace,localnumbering,point)
+    N = localspace.GetShapeFunc(xietaphi)
+    NClamped = localspace.GetShapeFunc(xietaphiClamped)
+    return inside, N , NClamped
+
+def ComputeBarycentricCoordinateOnElement(coordAtDofs,localspace,localnumbering,point):
 
     def df(f,dN):
         dNX = dN.dot(coordAtDofs)
@@ -219,13 +237,11 @@ def ComputeShapeFunctionsOnElement(coordAtDofs,localspace,localnumbering,point):
         xietaphi -= np.linalg.inv(H).dot(df_num)
         N = localspace.GetShapeFunc(xietaphi)
     else:
-        return None, None,None
+        return None, xietaphi,localspace.ClampParamCoorninates(xietaphi)
 
     xichietaClamped = localspace.ClampParamCoorninates(xietaphi)
     inside = not np.any(xichietaClamped-xietaphi  )
-    return inside, N , localspace.GetShapeFunc(xichietaClamped)
-
-
+    return inside, xietaphi, xichietaClamped
 
 def PointToCellData(mesh,pointfield,dim=None):
 
