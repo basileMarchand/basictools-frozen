@@ -207,10 +207,10 @@ geoSupport[Tetrahedron_10] = GeoTet
 numberOfNodes[Tetrahedron_10] = 10
 dimension[Tetrahedron_10] = 3
 linear[Tetrahedron_10] = False
-faces[Tetrahedron_10] = [(Triangle_6,[0, 2, 1]),
-                        (Triangle_6,[0, 1, 3]),
-                        (Triangle_6,[1, 2, 3]),
-                        (Triangle_6,[2, 0, 3])]
+faces[Tetrahedron_10] = [(Triangle_6,[0, 2, 1, 6, 5, 4]),
+                         (Triangle_6,[0, 1, 3, 4, 8, 7]),
+                         (Triangle_6,[1, 2, 3, 5, 9, 8]),
+                         (Triangle_6,[2, 0, 3, 6, 7, 9])]
 
 Pyramid_13  = 'pyr13'
 geoSupport[Pyramid_13] = GeoPyr
