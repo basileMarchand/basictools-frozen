@@ -15,7 +15,7 @@ import BasicTools.IO.UtReader as UR
 from BasicTools.IO.GeofWriter import GeofName as GeofName
 from BasicTools.IO.GeofReader import nbIntegrationsPoints as nbIntegrationsPoints
 import BasicTools.Containers.ElementNames as EN
-from BasicTools.FE.IntegrationsRules import Lagrange as Lagrange
+from BasicTools.FE.IntegrationsRules import LagrangeIsoParam
 from BasicTools.Helpers.TextFormatHelper import TFormat
 
 class UtMerger(WriterBase):
@@ -190,7 +190,7 @@ def Return3DElements(mesh):
     if '3D' in data.tags:
       idstotreat = data.tags['3D'].GetIds()
       mesh.NnodeperEl = EN.numberOfNodes[name]
-      mesh.p, mesh.w =  Lagrange(name)
+      mesh.p, mesh.w =  LagrangeIsoParam[name]
       mesh.NGaussperEl = len(mesh.w)
       mesh.NGauss = data.GetNumberOfElements()*mesh.NGaussperEl
       mesh.nbElements = data.GetNumberOfElements()

@@ -343,7 +343,6 @@ def GetValueAtPosLinearSymplecticMesh(fields,mesh,constantRectilinearMesh):
         """
         import math
         from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
-        from BasicTools.FE.IntegrationsRules import Lagrange as Lagrange
         from BasicTools.FE.DofNumbering import ComputeDofNumbering
 
         numbering = ComputeDofNumbering(mesh,LagrangeSpaceGeo,fromConnectivity =True)

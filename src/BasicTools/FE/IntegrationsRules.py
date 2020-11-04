@@ -162,18 +162,6 @@ w = np.array([0.1116907948390 ,0.1116907948390 ,0.1116907948390 ,0.0549758718276
 LagrangeP2[EN.Triangle_3] = (p,w)
 LagrangeP2[EN.Triangle_6] = LagrangeP2[EN.Triangle_3]
 
-
-# vvvvvv this is not needed any more  vvvvv
-#Define dictionnary for LagrangeP1 and LangrangeP2, based on "linear" dictionnary from ElementNames
-linearLagrange = {}
-linearLagrange[True]  = LagrangeP1
-linearLagrange[False] = LagrangeP2
-
-def Lagrange(elementName):
-    return  LagrangeIsoParam[elementName]
-    #return linearLagrange[EN.linear[elementName]][EN.geoSupport[elementName]]
-# ^^^^^^ this is not needed any more ^^^^^^
-
 LagrangeIsoParam  = {}
 for name in LagrangeP1:
     if EN.linear[name]:
