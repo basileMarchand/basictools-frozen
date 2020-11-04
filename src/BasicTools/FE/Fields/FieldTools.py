@@ -113,6 +113,30 @@ def TransferFEFieldToIPFieldDer(inField,der=-1,ruleName=None,rule=None,elementFi
 
     return outField
 
+def TranferPosToIPField(mesh,ruleName=None,rule=None):
+    d = mesh.nodes.shape[1]
+    outField = []
+    for name in ["posx","posy","posz"][0:d]:
+        f = IPField(name=name,mesh=mesh,ruleName=ruleName,rule=rule)
+        f.Allocate()
+        outField.append(f) 
+
+    for name,elements,ids in ElementFilter(mesh=mesh):
+        geoSpace = LagrangeSpaceGeo[name]
+        rule = outField[0].GetRuleFor(name)
+        nbip = len(rule[1])
+        geoSpaceAtIntegrationPoints = geoSpace.SetIntegrationRule(rule[0],rule[1] )
+
+        fieldsData = [f.data[name] for f in outField]
+        for elid in ids:
+            xcoor = mesh.nodes[elements.connectivity[elid,:],:]
+            for i in range(nbip):
+                valN = geoSpaceAtIntegrationPoints.valN[i]
+                pos = np.dot(valN ,xcoor).T
+                for f, p in zip(fieldsData,pos):
+                    f[elid,i] = p
+
+    return outField
 
 def FillIPField(field,fieldDefinition):
 
