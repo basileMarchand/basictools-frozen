@@ -36,7 +36,10 @@ except ImportError as e:
 # See https://stackoverflow.com/questions/30985862
 class build_ext_compiler_check(build_ext):
     def build_extensions(self):
-        compiler = os.path.basename(self.compiler.compiler[0])
+        if os.name == 'nt':
+            compiler = os.path.basename(self.compiler.compiler_type)
+        else:
+            compiler = os.path.basename(self.compiler.compiler[0])
         compiler_type = self.compiler.compiler_type
         print(f"Using compiler {compiler} of type {compiler_type}")
         compile_args = self._compile_args(compiler)
@@ -50,28 +53,39 @@ class build_ext_compiler_check(build_ext):
 
     def _compile_args(self, compiler):
         if debug:
-            compile_args = ['-g', '-O', '-std=c++11']
+            if compiler =="msvc":
+                compile_args = ['/Od']
+            else:
+                compile_args = ['-g', '-O', '-std=c++11']
         else:
-            compile_args = ['-O3', '-std=c++11']
+            if compiler =="msvc":
+                compile_args = ['/O2']
+            else:
+                compile_args = ['-O3', '-std=c++11']
         if useOpenmp:
-            compile_args.append("-fopenmp")
             if compiler == "icc":
+                compile_args.append("-fopenmp")
                 compile_args.append("-inline-forceinline")
+            elif compiler == "msvc":
+                compile_args.append("/openmp")
+            else:
+                compile_args.append("-fopenmp")
         if enable_MKL:
             compile_args.append("-DMKL_DIRECT_CALL")
             compile_args.append("-DEIGEN_USE_MKL_VML")
         return compile_args
 
-    def _link_args(self, _):
+    def _link_args(self, compiler):
         link_args = []
-        if enable_MKL:
-            link_args.append("-lmkl_core")
-            link_args.append("-lmkl_avx")
-            link_args.append("-lmkl_intel_lp64")
-            link_args.append("-lmkl_sequential")
-            link_args.append("-lmkl_def")
-        if useOpenmp:
-            link_args.append("-lgomp")
+        if compiler != "msvc":
+            if enable_MKL:
+                link_args.append("-lmkl_core")
+                link_args.append("-lmkl_avx")
+                link_args.append("-lmkl_intel_lp64")
+                link_args.append("-lmkl_sequential")
+                link_args.append("-lmkl_def")
+            if useOpenmp:
+                link_args.append("-lgomp")
         return link_args
 
     def _include_dirs(self, _):
