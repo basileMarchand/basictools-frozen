@@ -23,7 +23,7 @@ class Bar_P0_Global(BarSpaceBase):
         self.symN = Matrix([1])
         self.posN = np.array([[None]])
         self.dofAttachments = [("G",None,None)]
-        self.Create()
+
 
 class Bar_P0_Lagrange(BarSpaceBase):
     def __init__(self):
@@ -32,7 +32,6 @@ class Bar_P0_Lagrange(BarSpaceBase):
 
         self.posN = np.array([[0.5]])
         self.dofAttachments = [("C",0,None) ]
-        self.Create()
 
 
 class Bar_P1_Lagrange(BarSpaceBase):
@@ -45,7 +44,6 @@ class Bar_P1_Lagrange(BarSpaceBase):
 
         self.dofAttachments = [("P",0,None),
                                ("P",1,None)]
-        self.Create()
 
 # work in progress
 class Bar_P2_Lagrange(BarSpaceBase):
@@ -62,7 +60,6 @@ class Bar_P2_Lagrange(BarSpaceBase):
         self.dofAttachments = [("P",0,None),
                                ("P",1,None),
                                ("C",0,None),]
-        self.Create()
 
 
 def CheckIntegrity(GUI=False):

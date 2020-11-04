@@ -57,7 +57,7 @@ def Hash(dofAttachment,lconn,name=None,i=None,discontinuous=False):
     return (T,n,h)
 
 
-def ComputeDofNumbering(mesh,Space,dofs=None,sign=1,fromConnectivity=False,elementFilter=None):
+def ComputeDofNumbering(mesh,Space,dofs=None,sign=1,fromConnectivity=False,elementFilter=None,discontinuous=False):
     """
     Function to compute a unique numbering of dofs. The user must provide:
 
@@ -129,7 +129,7 @@ def ComputeDofNumbering(mesh,Space,dofs=None,sign=1,fromConnectivity=False,eleme
             for i in fil:
                 conn = data.connectivity[i,:]
                 for j in range(numberOfShapeFunctions):
-                    h = Hash(sp.dofAttachments[j],lconn=conn,name=name,i=i,discontinuous = sp.classification.discontinuous)
+                    h = Hash(sp.dofAttachments[j],lconn=conn,name=name,i=i,discontinuous = discontinuous)
 
                     if h in almanac:
                         d = almanac[h]
@@ -155,7 +155,7 @@ def ComputeDofNumbering(mesh,Space,dofs=None,sign=1,fromConnectivity=False,eleme
             for i in fil:
                 conn = data.connectivity[i,:]
                 for j in range(numberOfShapeFunctions):
-                    h = Hash(sp.dofAttachments[j],lconn=conn,name=name,i=i,discontinuous = sp.classification.discontinuous)
+                    h = Hash(sp.dofAttachments[j],lconn=conn,name=name,i=i,discontinuous = discontinuous)
 
                     if h in almanac:
                         dof[i,j] = almanac[h]

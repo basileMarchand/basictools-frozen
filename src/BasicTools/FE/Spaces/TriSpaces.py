@@ -32,7 +32,6 @@ class Tri_P0_Global(TriSpaceBase):
         self.symN = Matrix([1])
         self.posN = np.array([[None,None]])
         self.dofAttachments = [("G",None,None)]
-        self.Create()
 
 class Tri_P0_Lagrange(TriSpaceBase):
     def __init__(self):
@@ -40,7 +39,6 @@ class Tri_P0_Lagrange(TriSpaceBase):
         self.symN = Matrix([1])
         self.posN = np.array([[0.33,0.33]])
         self.dofAttachments = [("C",0,None) ]
-        self.Create()
 
 class Tri_P1_Lagrange(TriSpaceBase):
     def __init__(self):
@@ -55,7 +53,6 @@ class Tri_P1_Lagrange(TriSpaceBase):
         self.dofAttachments = [("P",0,None),
                                ("P",1,None),
                                ("P",2,None) ]
-        self.Create()
 
 class Tri_P1Bulle_Lagrange(TriSpaceBase):
     def __init__(self):
@@ -75,12 +72,10 @@ class Tri_P1Bulle_Lagrange(TriSpaceBase):
                                ("P",2,None),
                                ("C",0,None),
                                ]
-        self.Create()
 
 class Tri_P2_Lagrange(TriSpaceBase):
     def __init__(self):
         super(Tri_P2_Lagrange,self).__init__()
-        self.classification.degree = 2
 
         xi = self.xi
         eta = self.eta
@@ -114,7 +109,6 @@ class Tri_P2_Lagrange(TriSpaceBase):
                                ("F",1,None),
                                ("F",2,None)]
 
-        self.Create()
 
 def plot2DTriangle(Space):
     import matplotlib.pyplot as plt

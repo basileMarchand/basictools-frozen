@@ -18,7 +18,6 @@ class Quad_P0_Global(SymSpaceBase):
         self.symN = Matrix([1])
         self.posN = np.array([ [ None,None] ])
         self.dofAttachments = [("G",None,None)]
-        self.Create()
 
 class Quad_P0_Lagrange(SymSpaceBase):
     def __init__(self):
@@ -29,7 +28,6 @@ class Quad_P0_Lagrange(SymSpaceBase):
         self.symN = Matrix([1])
         self.posN = np.array([ [ 0.5, 0.5] ])
         self.dofAttachments = [("C",0,None)]
-        self.Create()
 
 
 
@@ -55,7 +53,6 @@ class Quad_P1_Lagrange(SymSpaceBase):
                                ("P",2,None),
                                ("P",3,None),
                                ]
-        self.Create()
 
 class Quad8_P2_Lagrange(SymSpaceBase):
     def __init__(self):
@@ -102,7 +99,6 @@ class Quad8_P2_Lagrange(SymSpaceBase):
                                ("F",2,None),
                                ("F",3,None),
                                ]
-        self.Create()
 
 
 class Quad_P2_Lagrange(SymSpaceBase):
@@ -163,7 +159,6 @@ class Quad_P2_Lagrange(SymSpaceBase):
                                ("C",0,None),
 
                                ]
-        self.Create()
 
 def plot2DSquare(Space):
     import matplotlib.pyplot as plt

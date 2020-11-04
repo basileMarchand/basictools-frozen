@@ -10,7 +10,6 @@ _test = [
 "WeakForms",
 'ConstantRectilinearFea',
 'FeaBase',
-'FElement',
 'MaterialHelp',
 'UnstructuredFeaSym',
 "Spaces",

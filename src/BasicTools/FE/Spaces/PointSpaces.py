@@ -25,7 +25,6 @@ class Point_P0_Global(PointSpaceBase):
         self.symN = Matrix([1])
         self.posN = np.array([[None]])
         self.dofAttachments = [("G",None,None)]
-        self.Create()
 
 class Point_P0_Lagrange(PointSpaceBase):
     def __init__(self):
@@ -34,7 +33,6 @@ class Point_P0_Lagrange(PointSpaceBase):
 
         self.posN = np.array([[0]])
         self.dofAttachments = [("P",0,None) ]
-        self.Create()
 
 def CheckIntegrity(GUI=False):
     return "ok"

@@ -33,7 +33,6 @@ class Tet_P0_Global(TetSpaceBase):
         self.symN = Matrix([1])
         self.posN = np.array([[None,None,None]])
         self.dofAttachments = [("G",None,None)]
-        self.Create()
 
 
 class Tet_P0_Lagrange(TetSpaceBase):
@@ -42,7 +41,6 @@ class Tet_P0_Lagrange(TetSpaceBase):
         self.symN = Matrix([1])
         self.posN = np.array([[0.25,0.25,0.25]])
         self.dofAttachments = [("C",0,None)]
-        self.Create()
 
 class Tet_P1_Lagrange(TetSpaceBase):
     def __init__(self):
@@ -60,7 +58,6 @@ class Tet_P1_Lagrange(TetSpaceBase):
                                ("P",1,None),
                                ("P",2,None),
                                ("P",3,None) ]
-        self.Create()
 
 class Tet_P2_Lagrange(TetSpaceBase):
     def __init__(self):
@@ -104,9 +101,6 @@ class Tet_P2_Lagrange(TetSpaceBase):
                                ("F2",3,None),
                                ("F2",4,None)
                                ]
-
-
-        self.Create()
 
 def CheckIntegrity(GUI=False):
     return "ok"

@@ -21,7 +21,6 @@ class Hexa_P0_Global(SymSpaceBase):
         self.symN = Matrix([1])
         self.posN = np.array([ [ None, None, None] ])
         self.dofAttachments = [("G",None,None)]
-        self.Create()
 
 
 class Hexa_P0_Lagrange(SymSpaceBase):
@@ -33,7 +32,6 @@ class Hexa_P0_Lagrange(SymSpaceBase):
         self.symN = Matrix([1])
         self.posN = np.array([ [ 0.5, 0.5, 0.5] ])
         self.dofAttachments = [("C",0,None)]
-        self.Create()
 
 class Hexa_P1_Lagrange(SymSpaceBase):
     def __init__(self):
@@ -72,7 +70,6 @@ class Hexa_P1_Lagrange(SymSpaceBase):
                               [ 1, 0, 1],
                               [ 1, 1, 1],
                               [ 0, 1, 1]])
-        self.Create()
 
 class Hexa_P2_Lagrange(SymSpaceBase):
     def __init__(self):
@@ -200,7 +197,6 @@ class Hexa_P2_Lagrange(SymSpaceBase):
                             [0.5,0.5,0.5] # central element
 
                               ])
-        self.Create()
 
 class Hexa20_P2_Lagrange(SymSpaceBase):
     def __init__(self):
@@ -289,7 +285,6 @@ class Hexa20_P2_Lagrange(SymSpaceBase):
                             [1.0,1.0,0.5],
                             [0.0,1.0,0.5],
                               ])
-        self.Create()
 
 
 def CheckIntegrity(GUI=False):
@@ -299,6 +294,7 @@ def CheckIntegrity(GUI=False):
     p2L = Hexa_P2_Lagrange()
     #print(p2L)
     p2_20 = Hexa20_P2_Lagrange()
+    p2_20.Create()
     print(p2_20)
     for i in range(20):
         print(i+1, [ int(x)  for x in  p2_20.GetShapeFunc(p2_20.posN[i]) ]  )
