@@ -47,6 +47,7 @@ cdef class PyMonoElementsIntegralCpp():
     cdef list __usedSpaces__
     cdef list __usedNumbering__
     cdef list __usedValues__
+    cdef list __spaces_ipvalues__
 
     cdef np.ndarray testDofsNumbering;
     cdef np.ndarray unkownDofsNumbering;
@@ -411,10 +412,11 @@ cdef class PyMonoElementsIntegralCpp():
       self.__valN = [None]*len(self.__usedSpaces__)
       self.__dphidxi = [None]*len(self.__usedSpaces__)
 
+      self.__spaces_ipvalues__ = []
       for s in range(len(self.__usedSpaces__)):
           current_space = self.__usedSpaces__[s][elementType]
-          current_space.SetIntegrationRule(p,w)
-
+          space_ipvalues = current_space.SetIntegrationRule(p,w)
+          self.__spaces_ipvalues__.append(space_ipvalues)
           dimensionality = current_space.GetDimensionality()
           NOSF = current_space.GetNumberOfShapeFunctions()
 
@@ -424,10 +426,10 @@ cdef class PyMonoElementsIntegralCpp():
           self.__dphidxi[s] = [None]*numberOfIntegrationPoints
 
           for i in range(numberOfIntegrationPoints):
-              valN = current_space.valN[i]
+              valN = space_ipvalues.valN[i]
               self.__valN[s][i] = valN
               self.NativeIntegrator.SetSpaceSvalNI(s,i,&valN[0])
-              dphidxi = current_space.valdphidxi[i]
+              dphidxi = space_ipvalues.valdphidxi[i]
               self.__dphidxi[s][i] = dphidxi
 
               self.NativeIntegrator.SetSpaceSvaldphidxiI(s,i,&dphidxi[0,0])

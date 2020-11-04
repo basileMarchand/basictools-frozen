@@ -360,8 +360,7 @@ class MonoElementsIntegral(BOO):
 
         self.p, self.w = self.integrationRule[domain.elementType];
 
-        self.geoSpace = LagrangeSpaceGeo[domain.elementType]
-        self.geoSpace.SetIntegrationRule(self.p,self.w)
+        self.geoSpace = LagrangeSpaceGeo[domain.elementType].SetIntegrationRule(self.p,self.w)
 
         self.NumberOfShapeFunctionForEachSpace = np.zeros(len(self.__usedSpaces__), dtype=int)
 
@@ -372,8 +371,7 @@ class MonoElementsIntegral(BOO):
                 self.NumberOfShapeFunctionForEachSpace[cpt] = 0
                 self.localSpaces.append(None)
             else:
-                self.localSpaces.append(space[domain.elementType])
-                space[domain.elementType].SetIntegrationRule(self.p,self.w)
+                self.localSpaces.append(space[domain.elementType].SetIntegrationRule(self.p,self.w))
                 self.NumberOfShapeFunctionForEachSpace[cpt] = space[domain.elementType].GetNumberOfShapeFunctions()
             cpt += 1
 
