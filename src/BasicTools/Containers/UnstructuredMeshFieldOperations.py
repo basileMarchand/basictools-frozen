@@ -121,9 +121,11 @@ def GetFieldTransferOp(inputField,targetPoints,method=None,verbose=False):
             data, lenb = GetElement(imesh,e)
             localnumbering = numbering[data.elementType]
             localspace = space[data.elementType]
+            localspace.Create()
 
             posnumbering = data.connectivity
             posspace = LagrangeSpaceGeo[data.elementType]
+            localspace.Create()
             coordAtDofs = imesh.nodes[posnumbering[lenb,:],:]
 
             #inside, shapeFunc, shapeFuncClamped = ComputeShapeFunctionsOnElement(coordAtDofs,localspace ,localnumbering,TP)

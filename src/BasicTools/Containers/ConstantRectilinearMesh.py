@@ -55,6 +55,7 @@ class ConstantRectilinearElementContainer(BaseOutputObject):
             self.space = Quad_P1_Lagrange()
         else:
              raise(Exception("cant build a mesh of this dimensionality"))
+        self.space.Create()
 
     def GetDimensionality(self):
         return len(self.__dimensions)
