@@ -14,7 +14,7 @@ from BasicTools.FE.DofNumbering import ComputeDofNumbering
 import BasicTools.Containers.ElementNames as EN
 
 from scipy.sparse import coo_matrix, csr_matrix
-from BasicTools.FE.IntegrationsRules import Lagrange as Lagrange
+from BasicTools.FE.IntegrationsRules import LagrangeIsoParam 
 from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
 from BasicTools.Containers import Filters
 
@@ -67,9 +67,8 @@ def PrepareFEComputation(mesh, elementFilter = None, numberOfComponents = None):
     NGauss = 0
     spaces = LagrangeSpaceGeo
 
-    for name,data,ids in elementFilter:
-        p,w =  Lagrange(name)
-        spaces[name].SetIntegrationRule(p,w)
+    for name, data, ids in elementFilter:
+        p,w =  LagrangeIsoParam[name]
         NGauss += data.GetNumberOfElements()*len(w)
 
     numbering = ComputeDofNumbering(mesh,LagrangeSpaceGeo,fromConnectivity=True)
@@ -100,19 +99,20 @@ def ComputeL2ScalarProducMatrix(mesh, numberOfComponents):
     ej = []
 
     for name,data,ids in ff:
-        p,w =  Lagrange(name)
+        p,w =  LagrangeIsoParam[name]
         lenNumbering = len(numberings[0][name][0,:])
         #replace lenNumbering by nbsf = spaces[name].GetNumberOfShapeFunctions() ?
         ones = np.ones(lenNumbering,dtype=int)
 
         for el in ids:
             xcoor = mesh.nodes[data.connectivity[el],:]
-
+            space_ipvalues = spaces[name].SetIntegrationRule(p,w)
             for ip in range(len(w)):
-                Jack, Jdet, Jinv = spaces[name].GetJackAndDetI(ip,xcoor)
+                Jack, Jdet, Jinv = space_ipvalues.GetJackAndDetI(ip,xcoor)
+                #Jack, Jdet, Jinv = spaces[name].GetJackAndDetI(ip,xcoor)
                 for j in range(numberOfComponents):
                     leftNumbering = numberings[j][name][el,:] + offset[j]
-                    left = spaces[name].valN[ip]
+                    left = space_ipvalues.valN[ip]
                     ev.extend(((w[ip]*Jdet)*np.outer(left, left)).ravel())
                     for i in leftNumbering:
                         ei.extend(i*ones)
@@ -139,19 +139,19 @@ def ComputeH10ScalarProductMatrix(mesh, numberOfComponents):
 
 
     for name,data,ids in ff:
-        p,w =  Lagrange(name)
+        p,w = LagrangeIsoParam[name]
 
         lenNumbering = len(numberings[0][name][0,:])
         ones = np.ones(lenNumbering,dtype=int)
-
+        space_ipvalues = spaces[name].SetIntegrationRule(p,w)
         for el in ids:
 
             xcoor = mesh.nodes[data.connectivity[el],:]
             leftNumberings = [numberings[j][name][el,:]+offset[j] for j in range(numberOfComponents)]
 
             for ip in range(len(w)):
-                Jack, Jdet, Jinv = spaces[name].GetJackAndDetI(ip,xcoor)
-                BxByBzI = Jinv(spaces[name].valdphidxi[ip])
+                Jack, Jdet, Jinv = space_ipvalues.GetJackAndDetI(ip,xcoor)
+                BxByBzI = Jinv(space_ipvalues.valdphidxi[ip])
 
                 for j in range(numberOfComponents):
                     ev.extend((w[ip]*Jdet)*np.tensordot(BxByBzI,BxByBzI, axes=(0,0)).ravel())
@@ -216,23 +216,24 @@ def ComputeFEInterpMatAtGaussPoint(mesh):
     for name,data,ids in ff:
 
         NnodeperEl = EN.numberOfNodes[name]
-        p,w =  Lagrange(name)
+        p,w = LagrangeIsoParam[name]
         NGaussperEl = len(w)
         NGauss = data.GetNumberOfElements()*NGaussperEl
         nbElements = data.GetNumberOfElements()
 
         FEInterpAtIntegPointIndices.append(np.zeros((NGauss,NnodeperEl),dtype=np.int32))
         FEInterpAtIntegPointMatrix.append(np.zeros((NGauss,NnodeperEl)))
+        space_ipvalues = spaces[name].SetIntegrationRule(p,w)
 
         count = 0
         for i in range(nbElements):
           xcoor = np.array([mesh.nodes[data.connectivity[i,j]] for j in range(NnodeperEl)])
           for j in range(NGaussperEl):
 
-            Jack, Jdet, Jinv = spaces[name].GetJackAndDetI(j,xcoor)
+            Jack, Jdet, Jinv = space_ipvalues.GetJackAndDetI(j,xcoor)
 
             FEInterpAtIntegPointIndices[countElementType][count,:] = data.connectivity[i,:]
-            FEInterpAtIntegPointMatrix[countElementType][count,:] = spaces[name].valN[j]
+            FEInterpAtIntegPointMatrix[countElementType][count,:] = space_ipvalues.valN[j]
 
             count += 1
 
@@ -271,7 +272,7 @@ def ComputeFEInterpGradMatAtGaussPoint(mesh):
     for name,data,ids in ff:
 
         NnodeperEl = EN.numberOfNodes[name]
-        p,w =  Lagrange(name)
+        p,w = LagrangeIsoParam[name]
         NGaussperEl = len(w)
         NGauss = data.GetNumberOfElements()*NGaussperEl
         nbElements = data.GetNumberOfElements()
@@ -279,14 +280,15 @@ def ComputeFEInterpGradMatAtGaussPoint(mesh):
         FEInterpAtIntegPointIndices.append(np.zeros((NGauss,NnodeperEl),dtype=np.int32))
         for i in range(dim):
             FEInterpAtIntegPointGradMatrix[i].append(np.zeros((NGauss,NnodeperEl)))
+        space_ipvalues = spaces[name].SetIntegrationRule(p,w)
 
         count = 0
         for i in range(nbElements):
             xcoor = np.array([mesh.nodes[data.connectivity[i,j]] for j in range(NnodeperEl)])
             for j in range(NGaussperEl):
 
-                Jack, Jdet, Jinv = spaces[name].GetJackAndDetI(j,xcoor)
-                BxByBzI = Jinv(spaces[name].valdphidxi[j])
+                Jack, Jdet, Jinv = space_ipvalues.GetJackAndDetI(j,xcoor)
+                BxByBzI = Jinv(space_ipvalues.valdphidxi[j])
 
                 FEInterpAtIntegPointIndices[countElementType][count,:] = data.connectivity[i,:]
                 for k in range(dim):
@@ -338,12 +340,13 @@ def ComputeMecaIntegrator(mesh, elementSet = "ALLELEMENT"):
 
     count = 0
     for name,data,ids in ff:
-        p,w =  Lagrange(name)
+        p,w = LagrangeIsoParam[name]
 
         nbsf = spaces[name].GetNumberOfShapeFunctions()
         ones = np.ones(dimension*nbsf,dtype=int)
 
         B = np.zeros((dimension*nbsf, nbeInd[dimension]), dtype=np.float)
+        space_ipvalues = spaces[name].SetIntegrationRule(p,w)
 
         for el in ids:
 
@@ -351,8 +354,8 @@ def ComputeMecaIntegrator(mesh, elementSet = "ALLELEMENT"):
             leftNumbering = np.concatenate([numberings[j][name][el,:]+offset[j] for j in range(dimension)])
 
             for ip in range(len(w)):
-                Jack, Jdet, Jinv = spaces[name].GetJackAndDetI(ip,xcoor)
-                BxByBzI = Jinv(spaces[name].valdphidxi[ip])
+                Jack, Jdet, Jinv = space_ipvalues.GetJackAndDetI(ip,xcoor)
+                BxByBzI = Jinv(space_ipvalues.valdphidxi[ip])
 
                 integrationWeights[count] = w[ip]*Jdet
 
@@ -400,17 +403,18 @@ def ComputeNodeToIntegThermalOperatorRadiation(mesh, elementSets):
 
         count = 0
         for name,data,ids in ff:
-            p,w =  Lagrange(name)
+            p,w = LagrangeIsoParam[name]
 
             lenNumbering = len(numberings[0][name][0,:])
             ones = np.ones(lenNumbering,dtype=int)
+            space_ipvalues = spaces[name].SetIntegrationRule(p,w)
 
             for el in ids:
                 xcoor = mesh.nodes[data.connectivity[el],:]
                 leftNumbering = numberings[0][name][el,:] + offset[0]
 
                 for ip in range(len(w)):
-                    Jack, Jdet, Jinv = spaces[name].GetJackAndDetI(ip,xcoor)
+                    Jack, Jdet, Jinv = space_ipvalues.GetJackAndDetI(ip,xcoor)
                     integrationWeightsRadiation[count] = w[ip]*Jdet
 
                     left = spaces[name].valN[ip]
@@ -458,25 +462,26 @@ def ComputeNodeToIntegThermalOperator(mesh):
 
     count = 0
     for name,data,ids in ff:
-        p,w =  Lagrange(name)
+        p,w = LagrangeIsoParam[name]
 
         lenNumbering = len(numberings[0][name][0,:])
         ones = np.ones(lenNumbering,dtype=int)
 
         nbsf = spaces[name].GetNumberOfShapeFunctions()
         ones2 = np.ones(dimension*nbsf,dtype=int)
+        space_ipvalues = spaces[name].SetIntegrationRule(p,w)
 
         for el in ids:
             xcoor = mesh.nodes[data.connectivity[el],:]
             leftNumbering = numberings[0][name][el,:]
 
             for ip in range(len(w)):
-                Jack, Jdet, Jinv = spaces[name].GetJackAndDetI(ip,xcoor)
-                BxByBzI = Jinv(spaces[name].valdphidxi[ip])
+                Jack, Jdet, Jinv = space_ipvalues.GetJackAndDetI(ip,xcoor)
+                BxByBzI = Jinv(space_ipvalues.valdphidxi[ip])
 
                 integrationWeights[count] = w[ip]*Jdet
 
-                left = spaces[name].valN[ip]
+                left = space_ipvalues.valN[ip]
                 #prod = np.tensordot(BxByBzI,BxByBzI, axes=(0,0))
 
                 dat.extend(left.ravel())
@@ -522,7 +527,7 @@ def ComputeIntegrationPointsTags(mesh, dimension):
     totalIntPointOffset = 0
     elementOffset = 0
     for name,data,ids in ff:
-        _,w = Lagrange(name)
+        _,w = LagrangeIsoParam[name]
         elNbeOfIntPoints = len(w)
         for tag in data.tags:
             for id in tag.GetIds():
@@ -555,7 +560,8 @@ def IntegrateVectorNormalComponentOnSurface(mesh, set, vector):
     count = 0
     for name,data,ids in ff:
 
-        p,w = Lagrange(name)
+        p,w = LagrangeIsoParam[name]
+        space_ipvalues = spaces[name].SetIntegrationRule(p,w)
 
         for el in ids:
             pressureValue = vector[count]; count += 1
@@ -563,9 +569,9 @@ def IntegrateVectorNormalComponentOnSurface(mesh, set, vector):
             leftNumbering = np.concatenate([numberings[j][name][el,:]+offset[j] for j in range(dimension)])
 
             for ip in range(len(w)):
-                Jack, Jdet, Jinv = spaces[name].GetJackAndDetI(ip,xcoor)
-                normal = spaces[name].GetNormal(Jack)
-                left = spaces[name].valN[ip]
+                Jack, Jdet, Jinv = space_ipvalues.GetJackAndDetI(ip,xcoor)
+                normal = space_ipvalues.GetNormal(Jack)
+                left = space_ipvalues.valN[ip]
                 cartesian_product = np.dot(normal.reshape((normal.shape[0],1)),left.reshape((1,left.shape[0])))
 
                 res[leftNumbering] += ((w[ip]*Jdet*pressureValue)*cartesian_product).ravel()
@@ -597,7 +603,8 @@ def IntegrateOrderOneTensorOnSurface(mesh, set, scalarFields):
 
     count = 0
     for name,data,ids in ff:
-        p,w = Lagrange(name)
+        p,w = LagrangeIsoParam[name]
+        space_ipvalues = spaces[name].SetIntegrationRule(p,w)
 
         for el in ids:
 
@@ -605,8 +612,8 @@ def IntegrateOrderOneTensorOnSurface(mesh, set, scalarFields):
             leftNumbering = numberings[0][name][el,:] + offset[0]
 
             for ip in range(len(w)):
-                Jack, Jdet, Jinv = spaces[name].GetJackAndDetI(ip,xcoor)
-                left = spaces[name].valN[ip]
+                Jack, Jdet, Jinv = space_ipvalues.GetJackAndDetI(ip,xcoor)
+                left = space_ipvalues.valN[ip]
 
                 res += w[ip]*Jdet*np.dot(scalarFields[:,leftNumbering],left)
                 #contrib = (w[ip]*Jdet)
@@ -638,7 +645,8 @@ def IntegrateOrderTwoTensorOnSurface(mesh, set, scalarFields):
 
     count = 0
     for name,data,ids in ff:
-        p,w = Lagrange(name)
+        p,w = LagrangeIsoParam[name]
+        space_ipvalues = spaces[name].SetIntegrationRule(p,w)
 
         for el in ids:
 
@@ -646,8 +654,8 @@ def IntegrateOrderTwoTensorOnSurface(mesh, set, scalarFields):
             leftNumbering = numberings[0][name][el,:] + offset[0]
 
             for ip in range(len(w)):
-                Jack, Jdet, Jinv = spaces[name].GetJackAndDetI(ip,xcoor)
-                left = spaces[name].valN[ip]
+                Jack, Jdet, Jinv = space_ipvalues.GetJackAndDetI(ip,xcoor)
+                left = space_ipvalues.valN[ip]
 
 
                 tempt = np.dot(scalarFields[:,leftNumbering],left)
@@ -695,7 +703,9 @@ def IntegrateCentrifugalEffect(mesh, density, rotationAxis, rotationCenter):
             for el in mesh.GetElementsInTag(tag):
                 elementTags[el].append(tag)
 
-        p,w =  Lagrange(name)
+        p,w =  LagrangeIsoParam[name]
+        space_ipvalues = spaces[name].SetIntegrationRule(p,w)
+
         for el in ids:
 
             localTags = elementTags[el]
@@ -717,8 +727,8 @@ def IntegrateCentrifugalEffect(mesh, density, rotationAxis, rotationCenter):
                 ipProjectionFromRotationCenter = length*rotationAxis
                 r = ipPositionFromRotationCenter - ipProjectionFromRotationCenter
 
-                Jack, Jdet, Jinv = spaces[name].GetJackAndDetI(ip,xcoor)
-                left = spaces[name].valN[ip]
+                Jack, Jdet, Jinv = space_ipvalues.GetJackAndDetI(ip,xcoor)
+                left = space_ipvalues.valN[ip]
                 cartesian_product = np.dot(r.reshape((r.shape[0],1)),left.reshape((1,left.shape[0])))
 
                 res[leftNumbering] += localDensity*((w[ip]*Jdet)*cartesian_product).ravel()

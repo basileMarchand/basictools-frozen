@@ -62,10 +62,10 @@ def TransferFEFieldToIPField(inField,ruleName=None,rule=None):
         space = inField.space[name]
         rule = outField.GetRuleFor(name)
         nbip = len(rule[1])
-        space.SetIntegrationRule(rule[0],rule[1] )
+        ipvalues = space.SetIntegrationRule(rule[0],rule[1] )
         for elid in range(elements.GetNumberOfElements()):
             for i in range(nbip):
-                valN = space.valN[i]
+                valN = ipvalues.valN[i]
                 valField = inField.data[inField.numbering[name][elid,:]]
                 val  = np.dot(valN ,valField).T
                 outField.data[name][elid,i] = val
@@ -92,8 +92,8 @@ def TransferFEFieldToIPFieldDer(inField,der=-1,ruleName=None,rule=None,elementFi
         rule = outField.GetRuleFor(name)
         nbip = len(rule[1])
 
-        geospace.SetIntegrationRule(rule[0],rule[1] )
-        space.SetIntegrationRule(rule[0],rule[1] )
+        geospace_ipvalues = geospace.SetIntegrationRule(rule[0],rule[1] )
+        space_ipvalues = space.SetIntegrationRule(rule[0],rule[1] )
         numbering = inField.numbering[name]
         outputHeavyData = outField.data[name]
         for elid in elids:
@@ -101,10 +101,10 @@ def TransferFEFieldToIPFieldDer(inField,der=-1,ruleName=None,rule=None,elementFi
 
             for iip in range(nbip):
                 if der == -1:
-                    valN = space.valN[iip]
+                    valN = space_ipvalues.valN[iip]
                 else:
-                    _Jack, _Jdet, Jinv = geospace.GetJackAndDetI(iip,xcoor)
-                    valN = Jinv(space.valdphidxi[iip])[der]
+                    _Jack, _Jdet, Jinv = geospace_ipvalues.GetJackAndDetI(iip,xcoor)
+                    valN = Jinv(space_ipvalues.valdphidxi[iip])[der]
 
                 dofsids = numbering[elid]
                 valField = inField.data[dofsids]
@@ -128,11 +128,11 @@ def FillIPField(field,fieldDefinition):
                 geoSpace = LagrangeSpaceGeo[name]
                 rule = field.GetRuleFor(name)
                 nbip = len(rule[1])
-                geoSpace.SetIntegrationRule(rule[0],rule[1] )
+                geospace_ipvalues = geoSpace.SetIntegrationRule(rule[0],rule[1] )
 
                 for elid in ids:
                     for i in range(nbip):
-                        valN = geoSpace.valN[i]
+                        valN = geospace_ipvalues.valN[i]
                         xcoor = field.mesh.nodes[elements.connectivity[elid,:],:]
                         pos = np.dot(valN ,xcoor).T
                         field.data[name][elid,i] = fval(pos)
@@ -156,12 +156,12 @@ def FillFEField(field,fieldDefinition):
                 sp = field.space[name]
                 nbsf = sp.GetNumberOfShapeFunctions()
 
-                geoSpace.SetIntegrationRule(sp.posN,np.ones(nbsf) )
+                geospace_ipvalues  = geoSpace.SetIntegrationRule(sp.posN,np.ones(nbsf) )
 
                 for elid in ids:
                     for i in range(nbsf):
                         dofid = field.numbering[name][elid,i]
-                        valN = geoSpace.valN[i]
+                        valN = geospace_ipvalues.valN[i]
                         xcoor = field.mesh.nodes[elements.connectivity[elid,:],:]
                         pos = np.dot(valN ,xcoor).T
                         field.data[dofid] = fval(pos)

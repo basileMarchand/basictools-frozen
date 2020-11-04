@@ -353,10 +353,10 @@ def CheckIntegrity(GUI=False):
             else:
                 volref = -0.25/6
 
-            LagrangeSpaceGeo[elemName].SetIntegrationRule(p,w)
+            space_ipvalues = LagrangeSpaceGeo[elemName].SetIntegrationRule(p,w)
             integral = 0
             for ip in range(len(w)):
-                Jack, Jdet, Jinv = LagrangeSpaceGeo[elemName].GetJackAndDetI(ip,LagrangeSpaceGeo[elemName].posN)
+                Jack, Jdet, Jinv = space_ipvalues.GetJackAndDetI(ip,LagrangeSpaceGeo[elemName].posN)
                 integral +=  Jdet*w[ip]*f1(p[ip])
 
             #integral = data[1].dot([f1(x) for x in data[0]])
@@ -389,10 +389,10 @@ def CheckIntegrity(GUI=False):
             else:
                 volref = None
 
-            LagrangeSpaceGeo[elemName].SetIntegrationRule(p,w)
+            space_ipvalues = LagrangeSpaceGeo[elemName].SetIntegrationRule(p,w)
             integral = 0
             for ip in range(len(w)):
-                Jack, Jdet, Jinv = LagrangeSpaceGeo[elemName].GetJackAndDetI(ip,LagrangeSpaceGeo[elemName].posN)
+                Jack, Jdet, Jinv = space_ipvalues.GetJackAndDetI(ip,LagrangeSpaceGeo[elemName].posN)
                 integral +=  Jdet*w[ip]*f2(p[ip])
 
             #integral = data[1].dot([f1(x) for x in data[0]])
