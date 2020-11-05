@@ -68,11 +68,11 @@ class Profiler():
 
         fig, axs = plt.subplots(2,1)
 
-        axs[0].pie(tottimes, labels=functionNamestottime, autopct='%1.1f%%', normalize = True)
+        axs[0].pie(tottimes, labels=functionNamestottime, autopct='%1.1f%%')
         axs[0].axis('equal')
         axs[0].set_title("tottime")
 
-        axs[1].pie(cumtimes, labels=functionNamescumtime, autopct='%1.1f%%', normalize = True)
+        axs[1].pie(cumtimes, labels=functionNamescumtime, autopct='%1.1f%%')
         axs[1].axis('equal')
         axs[1].set_title("cumtime")
 
