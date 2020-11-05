@@ -52,8 +52,6 @@ for pext in ReaderFactory.keys():
             self._filename = name
             self.Modified()
             self.basicToolsReader.SetFileName(name)
-            print(name)
-
             if name is not None:
                 self.GetTimestepValues()
 
