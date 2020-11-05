@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 
 import numpy as np
 import os
@@ -71,7 +71,7 @@ class UtSplitter(WriterBase):
       reader.ReadMetaData()
 
 
-      if self.timeSteps is not "all":
+      if self.timeSteps != "all":
         reader.time = reader.time[self.timeSteps,:]
         if len(reader.time.shape) == 1:
           reader.time.shape = (1,reader.time.shape[0])
