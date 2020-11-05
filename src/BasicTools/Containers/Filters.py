@@ -370,6 +370,12 @@ class ElementFilter(Filter):
 
         self.zoneTreatment = "center" # "center", "allnodes", "leastonenode"
 
+    def SetZoneTreatment(self,zt):
+        if zt in ["center", "allnodes", "leastonenode"]:
+            self.zonzoneTreatment = zt
+        else:
+            raise(Exception(f"Zone treatment not valide ({zt}), possible options are : center, allnodes, leastonenode"))
+
     def SetDimensionality(self,dim):
         """
         Set the dimensionality of the elements to be treated
@@ -441,7 +447,6 @@ class ElementFilter(Filter):
             np.logical_or(res, res2 ,out=res)
 
         return np.where(res)[0]
-
 
     def GetIdsToTreat(self,elements):
         """
@@ -685,7 +690,7 @@ def CheckIntegrity( GUI=False):
             print("The counter is at {}".format(self.cpt) )
 
 
-    ff.zoneTreatment = "allnodes"
+    ff.SetZoneTreatment("allnodes")
     ff.ApplyOnElements(op)
     ff.zoneTreatment = "leastonenode"
     ff.ApplyOnElements(op)
