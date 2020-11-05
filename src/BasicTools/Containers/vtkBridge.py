@@ -276,6 +276,9 @@ def PlotMesh(mesh):
     renWin.Render()
     # Start the event loop.
     iren.Start()
+    renWin.Finalize()
+    iren.TerminateApp()
+    del renWin, iren
 
 def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
 
