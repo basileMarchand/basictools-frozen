@@ -448,6 +448,8 @@ cdef class PyMonoElementsIntegralCpp():
       for i in range(len(self.__ipefs__)):
           self.SetIPValues(i,self.__ipefs__[i].data[domain.elementType] )
 
+    @cython.boundscheck(False)  # Deactivate bounds checking
+    @cython.wraparound(False)   # Deactivate negative indexing.
     def Integrate(self,NNWF.PyWeakForm wform,
                   np.ndarray[int_DTYPE_t, ndim=1, mode="c"] idstotreat not None ):
 
