@@ -22,9 +22,9 @@ class TriSpaceBase(SymSpaceBase):
             dif = res[0]-res[1]
             res[0] = (1+dif)/2.
             res[1] = 1.-res[0]
-        res = np.clip(xietaphi,0,1.)
+        res[0] = max(min(res[0],1),0)
+        res[1] = max(min(res[1],1),0)
         return res
-
 
 class Tri_P0_Global(TriSpaceBase):
     def __init__(self):

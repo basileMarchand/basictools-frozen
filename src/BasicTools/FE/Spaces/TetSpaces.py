@@ -24,7 +24,7 @@ class TetSpaceBase(SymSpaceBase):
         if s > 1:
             t = (1 -s)/3.
             res += t
-        return  np.clip(res,0,1.)
+        return np.core.umath.maximum(np.core.umath.minimum(res, 1), 0)
 
 
 class Tet_P0_Global(TetSpaceBase):
