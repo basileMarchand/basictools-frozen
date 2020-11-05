@@ -787,12 +787,13 @@ class ImplicitGeometryStl(ImplicitGeometryBase):
         if len(pos.shape) == 1:
             res[0]  =  self.implicitFunction.EvaluateFunction(pos)
         else:
-            res = np.zeros(pos.shape[0],dtype=np.float)
-            cpt =0;
-            self.PrintDebug("in ImplicitGeometryStl::GetDistanceToPoint")
-            for point in pos:
-               res[cpt]  =  self.implicitFunction.EvaluateFunction(point)
-               cpt +=1;
+            import vtk
+            from vtk.util import numpy_support
+
+            VTK_pos = numpy_support.numpy_to_vtk(num_array=pos, deep=False)
+            out = vtk.vtkDoubleArray()
+            self.implicitFunction.EvaluateFunction(VTK_pos,out)
+            res = numpy_support.vtk_to_numpy(out)
 
         if not self.ismanifold:
             np.abs(res,out=res)
