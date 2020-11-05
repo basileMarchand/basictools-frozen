@@ -50,7 +50,7 @@ def GetFieldTransferOp(inputField,targetPoints,method=None,verbose=False):
             cols = [ numbering["almanac"][('P',pid,None)] for pid in ids ]
         row = np.arange(nbtp)
         data = np.ones(nbtp)
-        return coo_matrix((data, (row, cols)), shape=(nbtp , inodes.shape[0])).toarray(), np.zeros(nbtp)
+        return coo_matrix((data, (row, cols)), shape=(nbtp , inodes.shape[0])), np.zeros(nbtp)
 
     # we build de Dual Coonectivity
     from BasicTools.Containers.UnstructuredMeshInspectionTools import GetDualGraphNodeToElement
