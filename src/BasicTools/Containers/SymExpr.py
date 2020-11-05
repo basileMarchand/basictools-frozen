@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 import numpy as np
 
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
@@ -53,10 +53,8 @@ class SymExprBase(BaseOutputObject):
         return self.GetValue(pos)
 
 class SymExprWithPos(SymExprBase):
-    def __init__(self):
-        super(SymExprWithPos,self).__init__()
-        self.eTag = None
-        self.on = ""
+    def __init__(self,string=None):
+        super(SymExprWithPos,self).__init__(string=string)
 
     def SetExpression(self,string):
         self.stringSymbols = list(self.constants.keys())
@@ -69,7 +67,7 @@ class SymExprWithPos(SymExprBase):
             return res
         else:
             return np.full((pos.shape[0],),fill_value=res)
-            
+
     def GetValueDerivative(self,coor,pos):
         res =self.dfuncd[coor](x=pos[:,0],y=pos[:,1],z=pos[:,2], **self.constants)
         if res.size == pos.shape[0]:
@@ -83,6 +81,13 @@ class SymExprWithPos(SymExprBase):
             return res
         else:
             return np.full((pos.shape[0],),fill_value=res)
+
+    def __str__(self):
+        res = f"SymExprWithPos('{self._expression}') "
+        return res
+
+    def __repr__(self):
+        return self.__str__()
 
 def CreateSymExprWithPos(ops):
 
@@ -115,7 +120,7 @@ def CheckIntegrity(GUI=False):
     print(obj.GetValueDerivative("x",data))
     print("dfdt :")
     c = obj.GetValueDerivative("t",data)
-    print(c)    
+    print(c)
     print("d2fdx2 :")
     print(obj.GetValueSecondDerivative("x","x",data))
 
