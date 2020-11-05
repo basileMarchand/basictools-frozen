@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 
 import numpy as np
 import os
@@ -97,9 +97,6 @@ class UtWriter(WriterBase):
         else:
           __string = u"**meshfile "+geofName+"\n"
 
-        if self.mesh == None:
-          print("please attach a mesh to the UtWriter object to be able to write a mesh; script terminated")
-          exit()
 
         if writeGeof==True:
           self.WriteMesh()
