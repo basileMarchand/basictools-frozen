@@ -67,8 +67,7 @@ def GetFieldTransferOp(inputField,targetPoints,method=None,verbose=False):
     fillcpt = 0
     cood = [cols,rows,datas, fillcpt]
 
-    def AddToOutput(col,row,dat,cood):
-        l = len(col)
+    def AddToOutput(l,col,row,dat,cood):
         fillcpt = cood[3]
         cood[0][fillcpt:fillcpt+l] = col
         cood[1][fillcpt:fillcpt+l] = row
@@ -91,7 +90,7 @@ def GetFieldTransferOp(inputField,targetPoints,method=None,verbose=False):
         printProgressBar(0, nbtp, prefix = 'Building Transfer '+method+':', suffix = 'Complete', length = 50)
 
     status = np.zeros(nbtp)
-
+    ones = np.ones(50)
     for p in range(nbtp):
         if verbose:
             printProgressBar(p+1, nbtp, prefix = 'Building Transfer '+method+':', suffix = 'Complete', length = 50)
@@ -129,7 +128,7 @@ def GetFieldTransferOp(inputField,targetPoints,method=None,verbose=False):
 
             #inside, shapeFunc, shapeFuncClamped = ComputeShapeFunctionsOnElement(coordAtDofs,localspace ,localnumbering,TP)
 
-            inside, bary, baryClamped = ComputeBarycentricCoordinateOnElement(coordAtDofs,posspace ,posnumbering,TP)
+            inside, bary, baryClamped = ComputeBarycentricCoordinateOnElement(coordAtDofs,posspace ,posnumbering,TP,ElementNames.linear[data.elementType])
 
             if inside is None:
                 continue
@@ -163,7 +162,7 @@ def GetFieldTransferOp(inputField,targetPoints,method=None,verbose=False):
                 col = [CP]
                 row = [p]
                 dat = [1.]
-                AddToOutput(col,row,dat,cood)
+                AddToOutput(len(col),col,row,dat,cood)
                 #status[p] = 0
                 continue
             elif method == "Interp/Clamp":
@@ -182,9 +181,10 @@ def GetFieldTransferOp(inputField,targetPoints,method=None,verbose=False):
             localnumbering = memlocalnumbering
 
         col = localnumbering[lenb,:]
-        row = p*np.ones(len(col))
+        l = len(col)
+        row = p*ones[0:l]
         dat = sF
-        AddToOutput(col,row,dat,cood)
+        AddToOutput(l,col,row,dat,cood)
 
     return coo_matrix((cood[2][0:cood[3]], (cood[1][0:cood[3]], cood[0][0:cood[3]])), shape=(nbtp , inputField.numbering["size"])), status
 
@@ -198,44 +198,100 @@ def ComputeShapeFunctionsOnElement(coordAtDofs,localspace,localnumbering,point):
     NClamped = localspace.GetShapeFunc(xietaphiClamped)
     return inside, N , NClamped
 
-def ComputeBarycentricCoordinateOnElement(coordAtDofs,localspace,localnumbering,point):
+def ddf(f,xietaphi,point,dN,GetShapeFuncDerDer,coordAtDofs,linear):
+    dNX = dN.dot(coordAtDofs)
+    res = 2*dNX.dot(dNX.T)
 
-    def df(f,dN):
-        dNX = dN.dot(coordAtDofs)
-        res = 2*f.dot(-dNX.T)
-        return res
-
-    def ddf(xietaphi,point,dN):
-
-        dNX = dN.dot(coordAtDofs)
-        res = 2*dNX.dot(dNX.T)
-
-        # TODO need Check this part not sure is correct
-        ddN = localspace.GetShapeFuncDerDer(xietaphi)
-        for ccpt in range(coordAtDofs.shape[1]):
-            for cpt,fct in enumerate(ddN):
-               c = coordAtDofs[cpt,ccpt]
-               res -= 2*f[ccpt]*(c*fct)
-
+    if linear :
         for i in range(len(res) ):
             if res[i,i] == 0:
                 res[i,i] = 1
         return res
 
+    # TODO need Check this part not sure if is correct
+    ddN = GetShapeFuncDerDer(xietaphi)
+    for ccpt in range(coordAtDofs.shape[1]):
+        for cpt,fct in enumerate(ddN):
+           c = coordAtDofs[cpt,ccpt]
+           res -= 2*f[ccpt]*(c*fct)
+
+    for i in range(len(res) ):
+        if res[i,i] == 0:
+            res[i,i] = 1
+    return res
+
+def df(f,dN,coordAtDofs):
+    dNX = dN.dot(coordAtDofs)
+    res = 2*f.dot(-dNX.T)
+    return res
+
+
+def vdet(A):
+    detA = np.zeros_like(A[0, 0])
+    print(A)
+    detA = A[0, 0] * (A[1, 1] * A[2, 2] - A[1, 2] * A[2, 1]) -\
+           A[0, 1] * (A[2, 2] * A[1, 0] - A[2, 0] * A[1, 2]) +\
+        A[0, 2] * (A[1, 0] * A[2, 1] - A[2, 0] * A[1, 1])
+    return detA
+
+def hdinv(A):
+    invA = np.zeros_like(A)
+    detA = vdet(A)
+
+    invA[0, 0] = (-A[1, 2] * A[2, 1] +
+                  A[1, 1] * A[2, 2]) / detA
+    invA[1, 0] = (A[1, 2] * A[2, 0] -
+                  A[1, 0] * A[2, 2]) / detA
+    invA[2, 0] = (-A[1, 1] * A[2, 0] +
+                  A[1, 0] * A[2, 1]) / detA
+    invA[0, 1] = (A[0, 2] * A[2, 1] -
+                  A[0, 1] * A[2, 2]) / detA
+    invA[1, 1] = (-A[0, 2] * A[2, 0] +
+                  A[0, 0] * A[2, 2]) / detA
+    invA[2, 1] = (A[0, 1] * A[2, 0] -
+                  A[0, 0] * A[2, 1]) / detA
+    invA[0, 2] = (-A[0, 2] * A[1, 1] +
+                  A[0, 1] * A[1, 2]) / detA
+    invA[1, 2] = (A[0, 2] * A[1, 0] -
+                  A[0, 0] * A[1, 2]) / detA
+    invA[2, 2] = (-A[0, 1] * A[1, 0] +
+                  A[0, 0] * A[1, 1]) / detA
+    return invA
+
+
+def inv22(A):
+    a = A[0,0]
+    b = A[0,1]
+    c = A[1,0]
+    d = A[1,1]
+    invA = np.zeros_like(A)
+    invA[0,0] = d/(a*d-b*c);
+    invA[0,1] = -b/(a*d-b*c);
+    invA[1,0] = -c/(a*d-b*c);
+    invA[1,1] = a/(a*d-b*c);
+    return invA
+
+def ComputeBarycentricCoordinateOnElement(coordAtDofs,localspace,localnumbering,point,linear):
+
     xietaphi = np.array([0.5]*localspace.GetDimensionality())
 
-    N = localspace.GetShapeFunc(xietaphi)
     for x in range(10):
+        N = localspace.GetShapeFunc(xietaphi)
         #print("x {} : {} ".format(x,xietaphi) )
         dN = localspace.GetShapeFuncDer(xietaphi)
         f = point - N.dot(coordAtDofs)
-        df_num = df(f,dN)
+        df_num = df(f,dN,coordAtDofs)
 
         if df_num.dot(df_num) < 1e-10:
             break
-        H = ddf(xietaphi,point,dN)
-        xietaphi -= np.linalg.inv(H).dot(df_num)
-        N = localspace.GetShapeFunc(xietaphi)
+        H = ddf(f,xietaphi,point,dN,localspace.GetShapeFuncDerDer,coordAtDofs,linear)
+        if H.shape[0] == 2:
+            xietaphi -=inv22(H).dot(df_num)
+        elif H.shape[0] == 3:
+            xietaphi -=hdinv(H).dot(df_num)
+        else:
+            xietaphi -= np.linalg.inv(H).dot(df_num)
+
     else:
         return None, xietaphi,localspace.ClampParamCoorninates(xietaphi)
 
