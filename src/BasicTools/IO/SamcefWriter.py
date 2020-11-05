@@ -41,14 +41,16 @@ class DatWriter(WriterBase):
         groupcpt = 1
         gropuNames = dict()
         #Nodes Tags
-        for tag in meshObject.nodesTags:
-            self.writeText('.SEL GROUP {} NOM "{}" NOEUDS \n'.format(groupcpt,tag.name) )
-            gropuNames[tag.name] =  groupcpt
-            groupcpt += 1
-            self.writeText('I ')
-            #tag meshObject.nodesTags[tagname]
-            (tag.GetIds()+1).tofile(self.filePointer, sep=" ")
-            self.writeText("\n")
+        if len(meshObject.nodesTags):
+            self.writeText('.SEL\n' )
+            for tag in meshObject.nodesTags:
+                self.writeText('GROUP {} NOM "{}" NOEUDS \n'.format(groupcpt,tag.name) )
+                gropuNames[tag.name] =  groupcpt
+                groupcpt += 1
+                self.writeText('I ')
+                #tag meshObject.nodesTags[tagname]
+                (tag.GetIds()+1).tofile(self.filePointer, sep=" ")
+                self.writeText("\n")
 
         #Elements
         self.writeText(".MAI\n")
@@ -75,15 +77,42 @@ class DatWriter(WriterBase):
 
         celltags = meshObject.GetNamesOfElemTags()
         #Nodes Tags
-        for tagname in celltags:
-            self.writeText('.SEL GROUP {} NOM "{}" MAILLE \n'.format(groupcpt,tagname) )
-            gropuNames[tag.name] =  groupcpt
-            groupcpt += 1
+        if len(celltags):
+            self.writeText('.SEL\n' )
+            for tagname in celltags:
+                self.writeText('GROUP {} NOM "{}" MAILLE \n'.format(groupcpt,tagname) )
+                gropuNames[tag.name] =  groupcpt
+                groupcpt += 1
 
-            self.writeText('I ')
-            ids = meshObject.GetElementsInTag(tagname)+1
-            ids.tofile(self.filePointer, sep=" ")
-            self.writeText("\n")
+                self.writeText('I ')
+                ids = meshObject.GetElementsInTag(tagname)+1
+                ids.tofile(self.filePointer, sep=" ")
+                self.writeText("\n")
+
+        if "FrameX_0" in CellFieldsNames:
+            FrameX_0 = CellFields[CellFieldsNames.index("FrameX_0")]
+            FrameX_1 = CellFields[CellFieldsNames.index("FrameX_1")]
+            FrameX_2 = CellFields[CellFieldsNames.index("FrameX_2")]
+            FrameY_0 = CellFields[CellFieldsNames.index("FrameY_0")]
+            FrameY_1 = CellFields[CellFieldsNames.index("FrameY_1")]
+            FrameY_2 = CellFields[CellFieldsNames.index("FrameY_2")]
+
+            nbelems = meshObject.GetNumberOfElements()
+
+            self.writeText('.FRA\n')
+            idx = []
+            for n in range(nbelems):
+                if np.sum(np.abs([FrameX_0[n],FrameX_1[n],FrameX_2[n] ])) == 0:
+                    continue
+                idx.append(n+1)
+                self.writeText(f'I {n+1} V1 {FrameX_0[n]} {FrameX_1[n]} {FrameX_2[n]} V2 {FrameY_0[n]} {FrameY_1[n]} {FrameY_2[n]} \n')
+
+            self.writeText('.AEL\n')
+            for n in idx:
+                self.writeText(f'I {n} FRAME {n} \n')
+        self.writeText('RETURN\n')
+
+
 
 from BasicTools.IO.IOFactory import RegisterWriterClass
 RegisterWriterClass(".datt",DatWriter)
@@ -109,9 +138,13 @@ def CheckIntegrity():
     mymesh.AddElementToTagUsingOriginalId(3,"Tag1")
     mymesh.AddElementToTagUsingOriginalId(5,"Tag3")
 
+    nbel = mymesh.GetNumberOfElements()
+    CellFields= [np.ones(nbel),np.zeros(nbel),np.zeros(nbel),np.zeros(nbel),np.ones(nbel),np.zeros(nbel)]
+    CellFieldsNames= ["FrameX_0","FrameX_1","FrameX_2","FrameY_0","FrameY_1","FrameY_2"]
+
     OW = DatWriter()
-    OW.Open(tempdir+"Test_GmshWriter.datt")
-    OW.Write(mymesh)
+    OW.Open(tempdir+"Test_SamcefWriter.datt")
+    OW.Write(mymesh,CellFieldsNames=CellFieldsNames,CellFields=CellFields)
     OW.Close()
 
     return "ok"
