@@ -28,7 +28,7 @@ class DatWriter(WriterBase):
         res += '   FileName : '+str(self.fileName)+'\n'
         return res
 
-    def Write(self,meshObject,normals=None,Name= None,PointFieldsNames=None,PointFields=None,CellFieldsNames=None,CellFields=None,GridFieldsNames=None,GridFields=None):
+    def Write(self,meshObject,PointFieldsNames=None,PointFields=None,CellFieldsNames=None,CellFields=None,GridFieldsNames=None,GridFields=None):
         #Nodes
         numberofpoints = meshObject.GetNumberOfNodes()
         posn = meshObject.GetPosOfNodes()
@@ -60,14 +60,12 @@ class DatWriter(WriterBase):
             sign,permutation,splitpoint = BasicToolToSamcef[name]
 
             lconn = (1+data.connectivity)*sign
-            lconn = lconn[permutation]
+            lconn = lconn[:,permutation]
 
             fp = lconn[:,:splitpoint]
             sp = lconn[:,splitpoint:]
             for n in range(data.GetNumberOfElements()):
                 self.writeText("I {} N ".format(cpt))
-                lconn = (1+data.connectivity[n,:])*sign
-
                 fp[n,:].tofile(self.filePointer, sep=" ")
                 if sp.shape[1] > 0:
                     self.writeText(" 0 ")
