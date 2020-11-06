@@ -7,5 +7,6 @@
 _test = ['ImplicitGeometryFactory',
            'ImplicitGeometryBase',
            'ImplicitGeometryObjects',
-           'ImplicitGeometryOperators'
+           'ImplicitGeometryOperators',
+           'ImplicitGeometryTools'
            ]
