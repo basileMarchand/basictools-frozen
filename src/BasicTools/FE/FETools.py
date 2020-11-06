@@ -417,7 +417,7 @@ def ComputeNodeToIntegThermalOperatorRadiation(mesh, elementSets):
                     Jack, Jdet, Jinv = space_ipvalues.GetJackAndDetI(ip,xcoor)
                     integrationWeightsRadiation[count] = w[ip]*Jdet
 
-                    left = spaces[name].valN[ip]
+                    left = space_ipvalues.valN[ip]
                     dat.extend(left.ravel())
 
                     row.extend(leftNumbering.ravel())
