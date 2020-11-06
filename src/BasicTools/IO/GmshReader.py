@@ -90,12 +90,9 @@ class GmshReader(ReaderBase):
                     if l.find("$EndNodes") > -1:
                         break
                     s = l.split()
-                    #print(s)
-                    #print(res.originalIDNodes)
-                    oid = int(s[0])
                     if cpt == nbNodes :
                         raise(Exception("More points than the number of point in the header (fix your file!!!)")) # pragma: no cover
-                    filetointernalid[oid] = cpt
+                    filetointernalid[s[0]] = cpt
                     res.originalIDNodes[cpt] = int(s[0])
                     res.nodes[cpt,:] = list(map(float,s[1:]))
                     cpt +=1
@@ -152,8 +149,8 @@ class GmshReader(ReaderBase):
 
                     ntags = int(s[2])
 
-                    conn = [filetointernalid[x] for x in  map(int,s[(ntags+3):]) ]
-                    elements = res.GetElementsOfType(nametype)
+                    conn = [filetointernalid[x] for x in  s[ntags+3:] ]
+                    elements = res.elements.GetElementsOfType(nametype)
                     elnumber = elements.AddNewElement(conn,oid)-1
                     tags = allTags.setdefault(nametype,{})
                     if ntags >=0 :
@@ -165,7 +162,7 @@ class GmshReader(ReaderBase):
 
                     cpt +=1
                 for nametype,tags in allTags.items():
-                    elements = res.GetElementsOfType(nametype)
+                    elements = res.elements.GetElementsOfType(nametype)
                     for name,ids in tags.items():
                         elements.tags.CreateTag(name).SetIds(ids)
                 del allTags

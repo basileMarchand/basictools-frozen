@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 import os
 import struct
 
@@ -130,8 +130,8 @@ class ReaderBase(BaseOutputObject):
 
                 return None
 
-            string = string.replace(u'\ufeff', '')
-            string = string.lstrip().rstrip().rstrip(u'\r\n')
+            string = string.replace(u'\ufeff', '').strip(u' \r\n')
+
             #empty line
             if len(string) == 0 :
                 continue
