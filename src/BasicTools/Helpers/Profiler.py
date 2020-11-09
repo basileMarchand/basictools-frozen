@@ -17,6 +17,9 @@ class Profiler():
         self.pr = cProfile.Profile()
         self.s = io.StringIO()
         self.ps = None
+        self.discardedPortion = 0.2
+        self.totTimes = None
+        self.cumTimes = None
 
 
     def Start(self):
@@ -30,7 +33,11 @@ class Profiler():
         self.ps.print_stats()
 
 
-    def PlotStats(self, fileName, partRest = 0.2):
+    def SetDiscardedPortion(self, discardedPortion):
+        self.discardedPortion = discardedPortion
+
+
+    def SortStats(self):
 
         lines = self.s.getvalue().split('\n')[5:-3]
         functionNames = [l[46:][-30:] for l in lines]
@@ -50,8 +57,8 @@ class Profiler():
 
         from BasicTools.Helpers import Search as S
 
-        tottimesArgSortInv = tottimesArgSort[S.BinarySearch(cumsumtottimes, partRest)+1:][::-1]
-        cumtimesArgSortInv = cumtimesArgSort[S.BinarySearch(cumsumcumtimes, partRest)+1:][::-1]
+        tottimesArgSortInv = tottimesArgSort[S.BinarySearch(cumsumtottimes, self.discardedPortion)+1:][::-1]
+        cumtimesArgSortInv = cumtimesArgSort[S.BinarySearch(cumsumcumtimes, self.discardedPortion)+1:][::-1]
 
 
         tottimes = tottimes[tottimesArgSortInv]
@@ -64,24 +71,24 @@ class Profiler():
         functionNamescumtime = [functionNames[i] for i in cumtimesArgSortInv] + ["rest"]
 
 
-        import matplotlib.pyplot as plt
+        from collections import OrderedDict
 
-        fig, axs = plt.subplots(2,1)
-
-        axs[0].pie(tottimes, labels=functionNamestottime, autopct='%1.1f%%')
-        axs[0].axis('equal')
-        axs[0].set_title("tottime")
-
-        axs[1].pie(cumtimes, labels=functionNamescumtime, autopct='%1.1f%%')
-        axs[1].axis('equal')
-        axs[1].set_title("cumtime")
-
-        plt.savefig(fileName)
+        self.totTimes = OrderedDict(zip(tottimes, functionNamestottime))
+        self.cumTimes = OrderedDict(zip(cumtimes, functionNamescumtime))
 
 
 
     def __str__(self):
-        return self.s.getvalue()[:-1] + "   ncalls  tottime  percall  cumtime  percall filename:lineno(function)"
+
+        from BasicTools.Helpers.TextFormatHelper import TFormat
+        string = TFormat.InBlue("Profiler")+\
+        " discarding "+str(int(100.*self.discardedPortion))+"% of the smallest functions\n"
+        string += TFormat.InRed("total times:\n")+str(self.totTimes)+"\n"
+        string += TFormat.InRed("cumulated times:\n")+str(self.cumTimes)
+        return string
+
+
+        #return self.s.getvalue()[:-1] + "   ncalls  tottime  percall  cumtime  percall filename:lineno(function)"
 
 
 def CheckIntegrity(GUI=False):
@@ -90,14 +97,15 @@ def CheckIntegrity(GUI=False):
 
     p = Profiler()
     p.Start()
+    p.SetDiscardedPortion(0.2)
 
     time.sleep(0.002)
     print("toto")
 
     p.Stop()
+    p.SortStats()
     print(p)
 
-    p.PlotStats("test")
 
 
     return "ok"
