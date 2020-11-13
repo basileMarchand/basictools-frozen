@@ -215,6 +215,13 @@ class AllElements(object):
             self[typename] = ElementsContainer(typename)
         return self[typename]
 
+    def GetTagsNames(self):
+        res = set()
+        for name,data in self.items():
+            res.update(data.tags.keys() )
+
+        return list(res)
+
     def __str__(self):
         res = ""
         for name,data in self.storage.items():
@@ -520,6 +527,7 @@ def CheckIntegrity():
     print("----")
     print(resII)
     print(resII.GetNumberOfElements(dim=2))
+    print(resII.elements.GetTagsNames())
     del resII.elements[ElementNames.Triangle_3]
     return "ok"
 
