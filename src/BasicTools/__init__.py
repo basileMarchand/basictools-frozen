@@ -20,7 +20,7 @@ __copyright_holder__ = "Safran"
 __copyright_years__ = "2016-2020"
 __copyright__ = "{}, {}".format(__copyright_years__,__copyright_holder__)
 __license__ = "BSD 3-Clause License"
-__version__ = "1.3"
+__version__ = "1.4"
 
 
 def main():
