@@ -528,9 +528,7 @@ class XdmfWriter(WriterBase):
                 dataarray = np.empty((ntotalentries,),dtype=np.int)
                 cpt =0;
                 for ntype, data in baseMeshObject.elements.items():
-                   self.PrintVerbose("printing elements of type : {}".format(data.elementType) )
-                   self.PrintDebug("printing {}  elements".format(data.GetNumberOfElements()) )
-                   self.PrintDebug("with  {}  nodes per element ".format(data.GetNumberOfNodesPerElement()) )
+                   #self.PrintVerbose("printing {} elements  of type : {} ({} nodes per element)".format(data.GetNumberOfElements(),data.elementType, data.GetNumberOfNodesPerElement()) )
                    elemtype = XdmfNumber[ntype]
                    for i in range(data.GetNumberOfElements() ):
                        dataarray[cpt] = elemtype
@@ -545,8 +543,8 @@ class XdmfWriter(WriterBase):
                        for j in range(data.GetNumberOfNodesPerElement()):
                            dataarray[cpt] = data.connectivity[i,j]
                            cpt += 1;
-                self.PrintDebug("Number Of Entries {}".format(ntotalentries))
-                self.PrintDebug("counter {}".format(cpt))
+                #self.PrintDebug("Number Of Entries {}".format(ntotalentries))
+                #self.PrintDebug("counter {}".format(cpt))
 
                 self.__WriteDataItem(dataarray, name="Topo_U_"+str(name) )
             elif len(baseMeshObject.elements):
