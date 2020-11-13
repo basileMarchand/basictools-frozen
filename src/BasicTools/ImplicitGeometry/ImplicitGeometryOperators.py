@@ -22,20 +22,26 @@ class ImplicitGeometryUnion(ImplicitGeometryBase):
 
 
     def GetDistanceToPoint(self, pos):
-        if self.smoothControl == 0:
-            op = np.minimum
-        else:
-            def op(a,b):
-                return smoothmin(a,b,self.smoothControl)
 
+        op = ImplicitGeometryUnion.ApplyUnionOnLevelset
 
         if len(self.Zones) == 1:
             return self.ApplyInsideOut(self.Zones[0].GetDistanceToPoint(pos))
-        res = op(self.Zones[0].GetDistanceToPoint(pos),self.Zones[1].GetDistanceToPoint(pos))
+        res = op(self.Zones[0].GetDistanceToPoint(pos),self.Zones[1].GetDistanceToPoint(pos),self.smoothControl)
         for n in range(2,len(self.Zones)):
-            res = op(res,self.Zones[n].GetDistanceToPoint(pos))
+            res = op(res,self.Zones[n].GetDistanceToPoint(pos),self.smoothControl)
 
         return self.ApplyInsideOut(res)
+
+    @classmethod
+    def ApplyUnionOnLevelset(self,ls1,ls2,smoothControl=0):
+        if smoothControl == 0:
+            op = np.minimum
+        else:
+            def op(a,b):
+                return smoothmin(a,b,smoothControl)
+        return op(ls1,ls2)
+
     def __str__(self):
         res = "ImplicitGeometryUnion:\n"
         for z in self.Zones:
@@ -60,21 +66,26 @@ class ImplicitGeometryIntersection(ImplicitGeometryBase):
 
     def GetDistanceToPoint(self, pos):
 
-        if self.smoothControl == 0:
-            op = np.maximum
-        else:
-            def op(a,b):
-                return smoothmax(a,b,self.smoothControl)
-
+        op = ImplicitGeometryIntersection().ApplyIntersectionOnLevelset
 
         if len(self.Zones) == 1:
             return self.ApplyInsideOut(self.Zones[0].GetDistanceToPoint(pos))
 
-        res = op(self.Zones[0].GetDistanceToPoint(pos),self.Zones[1].GetDistanceToPoint(pos))
+        res = op(self.Zones[0].GetDistanceToPoint(pos),self.Zones[1].GetDistanceToPoint(pos),self.smoothControl)
         for n in range(2,len(self.Zones)):
-            res = op(res,self.Zones[n].GetDistanceToPoint(pos))
+            res = ImplicitGeometryIntersection().ApplyIntersectionOnLevelset(res,self.Zones[n].GetDistanceToPoint(pos),self.smoothControl)
 
         return self.ApplyInsideOut(res)
+
+    @classmethod
+    def ApplyIntersectionOnLevelset(self,ls1,ls2,smoothControl=0):
+        if smoothControl == 0:
+            op = np.maximum
+        else:
+            def op(a,b):
+                return smoothmax(a,b,smoothControl)
+        return op(ls1,ls2)
+
 
 RegisterClass("Intersection",ImplicitGeometryIntersection)
 
@@ -92,15 +103,21 @@ class ImplicitGeometryDifference(ImplicitGeometryBase):
         self.smoothControl = 0
 
     def GetDistanceToPoint(self, pos):
-        if self.smoothControl == 0:
-            op = np.minimum
+        op = ImplicitGeometryDifference.ApplyDifferenceOnLevelset
+        res = op(self.Zone1.GetDistanceToPoint(pos),self.Zone2.GetDistanceToPoint(pos),self.smoothControl)
+        return self.ApplyInsideOut(res)
+
+    @classmethod
+    def ApplyDifferenceOnLevelset(self,ls1,ls2,smoothControl=0):
+        if smoothControl == 0:
+            def op(a,b):
+                return np.minimum(a,-b)
         else:
             def op(a,b):
-                return smoothmin(a,b,self.smoothControl)
+                return smoothmin(a,-b,smoothControl)
 
-        res = op(self.Zone1.GetDistanceToPoint(pos),-self.Zone2.GetDistanceToPoint(pos))
+        return op(ls1,ls2)
 
-        return self.ApplyInsideOut(res)
 
 RegisterClass("Difference",ImplicitGeometryDifference)
 
