@@ -417,11 +417,8 @@ class MeshReader(ReaderBase):
               if self.refsAsAField:
                   elemRefsDic[elements.elementType] = refs
               else:
-                  cpt =0
-                  for ref in refs:
-                      #print(ref[0])
-                      elements.GetTag("ETag"+str(ref[0])).AddToTag(cpt)
-                      cpt +=1
+                  for ref in np.unique(refs):
+                     elements.GetTag("ETag"+str(ref)).SetIds(np.where(refs==ref)[0] )
               continue
 
               self.PrintVerbose('Reading '+ str(nbElements) + " Elements Done ")
