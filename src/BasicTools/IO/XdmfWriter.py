@@ -237,13 +237,13 @@ class XdmfWriter(WriterBase):
 
     def SetBinary(self,val=True):
         if self.IsHdf5() and val:
-            raise(Exception("Cant set binary and Hdf5 at the same time"))
+           self.SetHdf5(False)
 
         super(XdmfWriter,self).SetBinary(val)
 
     def SetHdf5(self,val=True):
         if self.isBinary() and val :
-            raise(Exception("Cant set binary and Hdf5 at the same time"))
+            self.SetBinary(False)
 
         self.__isHdf5 = val
 
@@ -256,7 +256,8 @@ class XdmfWriter(WriterBase):
         res += '   isParafacFormat : '+ ('True' if self.__isParafacFormat else "False") +'\n'
         if self.isBinary():
            res += '   Binary output Active \n'
-           res += '   Binary FileName : '+ self.__binFileName +'\n'
+           if self.__binFileName is not None:
+               res += '   Binary FileName : '+ self.__binFileName +'\n'
         if self.IsHdf5():
            res += '   Hdf5 output Active \n'
            res += '   Hdf5 FileName : '+ self.__hdf5FileName +'\n'
