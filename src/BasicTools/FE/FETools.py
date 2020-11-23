@@ -14,7 +14,7 @@ from BasicTools.FE.DofNumbering import ComputeDofNumbering
 import BasicTools.Containers.ElementNames as EN
 
 from scipy.sparse import coo_matrix, csr_matrix
-from BasicTools.FE.IntegrationsRules import LagrangeIsoParam 
+from BasicTools.FE.IntegrationsRules import LagrangeIsoParam
 from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
 from BasicTools.Containers import Filters
 
@@ -195,7 +195,7 @@ def ComputeInterpolationMatrix_FE_GaussPoint(mesh, feSpace, integrationRule,feNu
     RF = GetTestField("Gauss",1)
 
     symForm = LF.T*RF
-    interpMatrixMatrix,_ = IntegrateGeneral(mesh=mesh,constants={},fields=[],wform=symForm, unkownFields= [leftField],testFields=[rightField],onlyEvaluation=True,integrationRuleName=integrationRule,elementFilter=elementFilter)
+    interpMatrixMatrix,_ = IntegrateGeneral(mesh=mesh,constants={},fields=[],wform=symForm, unkownFields= [leftField],testFields=[rightField],onlyEvaluation=True,integrationRule=integrationRule,elementFilter=elementFilter)
     return interpMatrixMatrix
 
 def ComputeFEInterpMatAtGaussPoint(mesh):

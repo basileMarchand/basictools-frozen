@@ -43,7 +43,7 @@ def Integrate( mesh, wform, constants, fields, dofs,spaces,numbering, integratio
                             elementFilter=elementFilter)
 
 
-def IntegrateGeneral( mesh, wform, constants, fields, unkownFields, testFields=None, integrationRuleName=None,onlyEvaluation=False, elementFilter=None,userIntegrator=None):
+def IntegrateGeneral( mesh, wform, constants, fields, unkownFields, testFields=None, integrationRuleName=None,onlyEvaluation=False, elementFilter=None,userIntegrator=None, integrationRule=None):
 
     if elementFilter is None:
         # if no filter the the integral is over the bulk element
@@ -92,12 +92,37 @@ def IntegrateGeneral( mesh, wform, constants, fields, unkownFields, testFields=N
     else:
         integrator = userIntegrator
 
+    if integrationRuleName is None:
+       if integrationRule is None:
+           from BasicTools.FE.IntegrationsRules import LagrangeIsoParam
+           integrationRule = LagrangeIsoParam
+    else:
+       if integrationRule is None:
+           from BasicTools.FE.IntegrationsRules import IntegrationRulesAlmanac as IntegrationRulesAlmanac
+           integrationRule = IntegrationRulesAlmanac[integrationRuleName]
+       else:
+           raise(Exception("must give integrationRuleName or integrationRule not both"))
+
+    ## verification of the integration rule for the ip fields:
+    from BasicTools.FE.Fields.IPField import IPField
+    for f in fields:
+        if isinstance(f,IPField):
+            if f.rule != integrationRule:
+                print("f.rule")
+                print(f.rule)
+                print("integrationRule")
+                print(integrationRule)
+                if integrationRuleName is not None:
+                    print("integrationRuleName")
+                    print(integrationRuleName)
+                raise(Exception("Integration rule of field {f.GetName()} not compatible with the integration" ))
+
     integrator.SetOnlyEvaluation(onlyEvaluation)
     integrator.SetUnkownFields(unkownFields)
     integrator.SetTestFields(testFields)
     integrator.SetExtraFields(fields )
     integrator.SetConstants(constants)
-    integrator.SetIntegrationRule(integrationRuleName)
+    integrator.SetIntegrationRule(integrationRule)
 
     numberOfVIJ = integrator.ComputeNumberOfVIJ(mesh,elementFilter)
     if numberOfVIJ == 0:
