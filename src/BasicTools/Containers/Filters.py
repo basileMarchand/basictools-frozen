@@ -690,6 +690,8 @@ def CheckIntegrity( GUI=False):
             print("The counter is at {}".format(self.cpt) )
 
 
+    op = OP()
+
     ff.SetZoneTreatment("allnodes")
     ff.ApplyOnElements(op)
     ff.zoneTreatment = "leastonenode"
