@@ -79,7 +79,7 @@ class DatWriter(WriterBase):
             self.writeText('.SEL\n' )
             for tagname in celltags:
                 self.writeText('GROUP {} NOM "{}" MAILLE \n'.format(groupcpt,tagname) )
-                gropuNames[tag.name] =  groupcpt
+                gropuNames[tagname] =  groupcpt
                 groupcpt += 1
 
                 self.writeText('I ')
