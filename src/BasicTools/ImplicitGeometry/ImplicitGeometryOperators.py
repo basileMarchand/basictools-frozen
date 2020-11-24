@@ -148,6 +148,30 @@ class ImplicitGeometryOffset(ImplicitGeometryBase):
 
 RegisterClass("Offset",ImplicitGeometryOffset,CreateImplicitGeometryOffset)
 
+def CreateImplicitGeometryInsideOut(ops):
+    res = ImplicitGeometryInsideOut()
+    if "Zones" in ops:
+        if len(ops["Zones"]) > 1 :
+            raise Exception("Cant treat more than one zone")
+        res.Zone1 = ops["Zones"][0]
+    return res
+
+
+class ImplicitGeometryInsideOut(ImplicitGeometryBase):
+    """ImplicitGeometry InsideOut  of the levelset
+        z : zone
+    """
+    def __init__(self,a=None,val=0.):
+        super(ImplicitGeometryInsideOut,self).__init__()
+        self.Zone1 = a
+
+    def GetDistanceToPoint(self, pos):
+        res = -self.Zone1.GetDistanceToPoint(pos)
+        return self.ApplyInsideOut(res)
+
+RegisterClass("InsideOut",ImplicitGeometryInsideOut,CreateImplicitGeometryInsideOut)
+
+
 
 def CreateImplicitGeometrySymmetric(ops):
     res = ImplicitGeometrySymmetric()
@@ -280,7 +304,11 @@ def CheckIntegrity(GUI=False):
     IGShell(myMesh)
 
     MustFail(partial(CreateImplicitGeometryShell, {"Zones":[IGUnion,IGUnion],"thickness":0.1}))
+    ########################### ImplicitGeometryInsideOut #######################
+    IGIO = CreateImplicitGeometryInsideOut({"Zones":[IGUnion]})
+    IGIO(myMesh)
 
+    MustFail(partial(CreateImplicitGeometryInsideOut, {"Zones":[IGUnion,IGUnion]}))
 
     return "ok"
 
