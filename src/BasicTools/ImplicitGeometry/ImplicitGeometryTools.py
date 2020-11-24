@@ -11,35 +11,26 @@ from BasicTools.Containers.Filters import ElementFilter, IntersectionElementFilt
 import BasicTools.Containers.ElementNames as EN
 
 def DistanceToSurface(mesh,surfMesh,out = None):
-    from BasicTools.Containers.UnstructuredMeshFieldOperations import GetFieldTransferOp
+    from BasicTools.Containers.UnstructuredMeshFieldOperations import TransportPos
     from BasicTools.FE.FETools import PrepareFEComputation
     from BasicTools.FE.Fields.FEField import FEField
 
-    print("Preparing")
-    from BasicTools.Helpers.Timer import Timer
+    space, numberings, offset, NGauss = PrepareFEComputation(surfMesh,numberOfComponents=1)
 
-    with Timer("Preparing"):
-        space, numberings, offset, NGauss = PrepareFEComputation(surfMesh,numberOfComponents=1)
-        field = FEField("",mesh=surfMesh,space=space,numbering=numberings[0])
 
-    with Timer("Computing"):
-        op,status = GetFieldTransferOp(field,mesh.nodes,method="Interp/Clamp")
+    tspace, tnumbering,_,_ = PrepareFEComputation(mesh,numberOfComponents=1)
+    tnumbering = tnumbering[0]
 
-    with Timer("Post"):
-        pos = op.dot(field.mesh.nodes)
+    names = ["x","y","z"]
+    InterfacePosFields = TransportPos(surfMesh,mesh,tspace,tnumbering)
+    MeshPosFields = np.array([ FEField("pos_"+names[x],mesh, space=tspace, numbering=tnumbering,data=mesh.nodes[:,x]) for x in [0,1,2] ])
 
-        tspace, tnumbering,_,_ = PrepareFEComputation(mesh,numberOfComponents=1)
-        tnumbering = tnumbering[0]
-        names = ["x","y","z"]
-        InterfacePosFields = np.array([ FEField("ipos_"+names[x],mesh, space=tspace, numbering=tnumbering,data=pos[:,x]) for x in [0,1,2] ])
-        MeshPosFields = np.array([ FEField("pos_"+names[x],mesh, space=tspace, numbering=tnumbering,data=mesh.nodes[:,x]) for x in [0,1,2] ])
-
-        if out is None:
-            res = np.sqrt(np.sum((InterfacePosFields - MeshPosFields)**2)).data
-            return res
-        else:
-            out[:] = np.sqrt(np.sum((InterfacePosFields - MeshPosFields)**2)).data
-            return out
+    if out is None:
+        res = np.sqrt(np.sum((InterfacePosFields - MeshPosFields)**2)).data
+        return res
+    else:
+        out[:] = np.sqrt(np.sum((InterfacePosFields - MeshPosFields)**2)).data
+        return out
 
 def Redistance(mesh,phi,out=None):
 
