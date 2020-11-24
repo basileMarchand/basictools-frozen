@@ -301,6 +301,23 @@ def ComputeBarycentricCoordinateOnElement(coordAtDofs,localspace,localnumbering,
     inside = not np.any(xichietaClamped-xietaphi  )
     return inside, xietaphi, xichietaClamped
 
+
+def TransportPos(imesh,tmesh,tspace,tnumbering):
+    """
+    Function to transport the position from the input mesh (imesh)
+    to a target FEField target mesh, target space, tnumbering
+    """
+    from BasicTools.FE.Fields.FEField import FEField
+    from BasicTools.FE.FETools import PrepareFEComputation
+    space, numberings, offset, NGauss = PrepareFEComputation(imesh,numberOfComponents=1)
+    field = FEField("",mesh=imesh,space=space,numbering=numberings[0])
+    op,status = GetFieldTransferOp(field,tmesh.nodes,method="Interp/Clamp")
+    pos = op.dot(field.mesh.nodes)
+    names = ["x","y","z"]
+    posFields = np.array([ FEField("ipos_"+names[x],tmesh, space=tspace, numbering=tnumbering,data=pos[:,x]) for x in [0,1,2] ])
+    return posFields
+
+
 def PointToCellData(mesh,pointfield,dim=None):
 
     nbelemtns = 0
@@ -315,15 +332,14 @@ def PointToCellData(mesh,pointfield,dim=None):
         ncols  = 1
         res = np.zeros((nbelemtns),dtype=float)
 
-    filt = ElementFilter(mesh,dimensionality=dim)
     cpt = 0
     for name,data,ids in filt:
         if len(pointfield.shape) == 1:
-            valAtCenter = (np.sum(pointfield[data.connectivity],axis=1)/data.connectivity.shape[1]).flatten()
+            valAtCenter = (np.sum(pointfield[data.connectivity],axis=1)/data.GetNumberOfNodesPerElement()).flatten()
             res[cpt:cpt+data.GetNumberOfElements()] = valAtCenter
         else:
             for i in range(ncols):
-                valAtCenter = (np.sum(pointfield[data.connectivity,i],axis=1)/data.connectivity.shape[1]).flatten()
+                valAtCenter = (np.sum(pointfield[data.connectivity,i],axis=1)/data.GetNumberOfNodesPerElement()).flatten()
                 res[cpt:cpt+data.GetNumberOfElements(),i] = valAtCenter
         cpt += len(ids)
     return res
