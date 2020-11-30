@@ -455,7 +455,11 @@ cdef class PyMonoElementsIntegralCpp():
     def Integrate(self,NNWF.PyWeakForm wform,
                   np.ndarray[int_DTYPE_t, ndim=1, mode="c"] idstotreat not None ):
 
-        self.NativeIntegrator.Integrate(<NNWF.WeakForm*> wform.GetCppObject(), idstotreat)
+        cdef vector[int] im_buff = idstotreat
+        cdef NNWF.WeakForm* wfobject =  wform.GetCppObject()
+
+        with nogil:
+            self.NativeIntegrator.Integrate(wfobject, im_buff )
 
     def GetTotalTestDofs(self):
       return self.NativeIntegrator.totalTestDofs
