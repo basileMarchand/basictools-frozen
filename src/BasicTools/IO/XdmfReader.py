@@ -108,6 +108,7 @@ class XdmfGrid(Xdmfbase):
         self.geometry = None;
         self.attributes = []
         self.Name ='';
+        self.time = None;
 
     def GetSupport(self):
         if self.geometry.Type == "ORIGIN_DXDYDZ":
@@ -141,6 +142,12 @@ class XdmfGrid(Xdmfbase):
         for a in self.attributes:
             if a.Name == name : return True;
         return False
+
+    def GetTime(self):
+        if self.time == None:
+            return None
+        else:
+            return self.time.Value[0]
 
     def GetFieldsNames(self):
         return [a.Name for a in self.attributes ]
@@ -670,6 +677,7 @@ class XdmfReader(xml.sax.ContentHandler):
         elif name == "Time":
             res = XdmfTime()
             res.ReadAttributes(attrs)
+            father.time = res
 
         else:
             raise Exception("Unkown tag :  '"+ name +"' Sorry!") # pragma: no cover
