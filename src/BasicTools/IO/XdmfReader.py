@@ -121,17 +121,13 @@ class XdmfGrid(Xdmfbase):
         if self.geometry.Type == "XYZ":
             from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
             res = UnstructuredMesh()
-            res.nodes = self.geometry.GetNodes()
-
+            res.nodes = self.geometry.GetNodes().reshape((-1,3))
             res.elements = self.topology.GetConnectivity()
-            #print(self.topology)
-
-
-            #res.SetOrigin(self.geometry.GetOrigin())
-            #res.SetSpacing(self.geometry.GetSpacing())
-            #res.SetDimensions(self.topology.GetDimensions())
             res.GenerateManufacturedOriginalIDs()
             res.PrepareForOutput()
+            if np.linalg.norm(res.nodes[:,2] == 0):
+                from BasicTools.Containers.UnstructuredMeshModificationTools import LowerNodesDimension
+                res = LowerNodesDimension(res)
             return res
 
     def ReadAttributes(self,attrs):
@@ -365,8 +361,9 @@ class XdmfTopology(Xdmfbase):
             en = XdmfNameToEN[self.Type]
             data = ElementsContainer(en)
             data.connectivity = self.dataitems[0].GetData().ravel()
-            size = (ElementNames.numberOfNodes[en], len(data.connectivity)//ElementNames.numberOfNodes[en])
+            size = (len(data.connectivity)//ElementNames.numberOfNodes[en],ElementNames.numberOfNodes[en])
             data.connectivity.shape = size
+            data.cpt = size[0] 
             res[en] = data
             return res
 
