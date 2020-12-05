@@ -238,10 +238,9 @@ def CheckIntegrityFlexion(P,tetra,GUI=False):
     #return()
     print("Post process Eval")
     ff = ElementFilter(mesh=problem.mesh, tag="3D")
-
-    m,energyDensity = Integrate(mesh=problem.mesh, wform=EnerForm,  constants={},
-                        fields={f.name:f for f in problem.unkownFields}, dofs=["cellData"], spaces=[problem.spaces[0] ],
-                        numbering=[problem.numberings[0]], integrationRuleName="NodalEvalP"+str(P),
+    unkownFields =[ FEField(name="cellData",mesh=problem.mesh,numbering=problem.numberings[0],space=problem.spaces[0])]
+    m,energyDensity = IntegrateGeneral(mesh=problem.mesh, wform=EnerForm,  constants={},
+                        fields=problem.unkownFields, unkownFields = unkownFields, integrationRuleName="NodalEvalP"+str(P),
                         onlyEvaluation=True,
                         elementFilter=ff)
     print("energyDensity",energyDensity)
@@ -252,9 +251,10 @@ def CheckIntegrityFlexion(P,tetra,GUI=False):
 
     P0Numbering = ComputeDofNumbering(mesh,LagrangeSpaceP0,elementFilter=ElementFilter(mesh=mesh,dimensionality=mesh.GetDimensionality()))
 
-    m,P0energyDensity = Integrate(mesh=problem.mesh, wform=EnerForm, constants={},
-                        fields={f.name:f for f in problem.unkownFields}, dofs=["cellData"], spaces=[LagrangeSpaceP0 ],
-                        numbering=[P0Numbering], integrationRuleName="ElementCenterEval",
+    unkownFields =[ FEField(name="cellData",mesh=problem.mesh,numbering=P0Numbering,space=LagrangeSpaceP0)]
+    m,P0energyDensity = IntegrateGeneral(mesh=problem.mesh, wform=EnerForm, constants={},
+                        fields=problem.unkownFields, unkownFields = unkownFields,
+                        integrationRuleName="ElementCenterEval",
                         onlyEvaluation=True,
                         elementFilter=ff)
 
