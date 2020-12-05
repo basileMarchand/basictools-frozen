@@ -370,9 +370,17 @@ class ElementFilter(Filter):
 
         self.zoneTreatment = "center" # "center", "allnodes", "leastonenode"
 
+    def __str__(self):
+        res = "ElementFilter\n"
+        res += "  dimensionality: "+ str(self.dimensionality) + " \n"
+        res += "  tags          : "+ str(self.tags) + " \n"
+        res += "  zones         : "+ str(self.zones) + " \n"
+        res += "  zoneTreatment : "+ str(self.zoneTreatment) + " \n"
+        return res
+
     def SetZoneTreatment(self,zt):
         if zt in ["center", "allnodes", "leastonenode"]:
-            self.zonzoneTreatment = zt
+            self.zoneTreatment = zt
         else:
             raise(Exception(f"Zone treatment not valide ({zt}), possible options are : center, allnodes, leastonenode"))
 
