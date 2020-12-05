@@ -16,6 +16,8 @@ from BasicTools.FE.Fields.FEField import FEField
 
 #UseCpp = False
 UseCpp = True
+UseMultiThread =  True
+MultiThreadThreshold = 100
 
 def Integrate( mesh, wform, constants, fields, dofs,spaces,numbering, integrationRuleName=None,onlyEvaluation=False,elementFilter=None):
     #conversion of the old api to the new one
@@ -43,7 +45,7 @@ def Integrate( mesh, wform, constants, fields, dofs,spaces,numbering, integratio
                             elementFilter=elementFilter)
 
 
-def IntegrateGeneral( mesh, wform, constants, fields, unkownFields, testFields=None, integrationRuleName=None,onlyEvaluation=False, elementFilter=None,userIntegrator=None, integrationRule=None):
+def IntegrateGeneralMonoThread( mesh, wform, constants, fields, unkownFields, testFields=None, integrationRuleName=None,onlyEvaluation=False, elementFilter=None,userIntegrator=None, integrationRule=None):
 
     if elementFilter is None:
         # if no filter the the integral is over the bulk element
@@ -115,7 +117,7 @@ def IntegrateGeneral( mesh, wform, constants, fields, unkownFields, testFields=N
                 if integrationRuleName is not None:
                     print("integrationRuleName")
                     print(integrationRuleName)
-                raise(Exception("Integration rule of field {f.GetName()} not compatible with the integration" ))
+                raise(Exception(f"Integration rule of field {f.GetName()} not compatible with the integration" ))
 
     integrator.SetOnlyEvaluation(onlyEvaluation)
     integrator.SetUnkownFields(unkownFields)
@@ -258,6 +260,117 @@ def IntegrateGeneral( mesh, wform, constants, fields, unkownFields, testFields=N
     else:
         return
 
+
+def IntegrateGeneral( mesh, wform, constants, fields, unkownFields, testFields=None,
+                             integrationRuleName=None,onlyEvaluation=False, elementFilter=None,
+                             userIntegrator=None, integrationRule=None):
+
+    if not UseMultiThread or not UseCpp:
+        return IntegrateGeneralMonoThread(mesh=mesh, wform=wform, constants=constants, fields=fields, unkownFields=unkownFields,
+                         testFields=testFields,onlyEvaluation=onlyEvaluation,
+                         elementFilter=elementFilter,userIntegrator=userIntegrator,integrationRuleName=integrationRuleName, integrationRule=integrationRule)
+
+
+    if elementFilter is None:
+        elementFilter = ElementFilter()
+        elementFilter.SetDimensionality(mesh.GetDimensionality())
+
+    elementFilter.mesh = mesh
+
+    class OP():
+        def __init__(self):
+            self.cpt = 0
+        def PreCondition(self,mesh):
+            self.cpt = 0
+        def __call__(self,mesh,data,ids):
+            self.cpt += len(ids)
+
+    op = OP()
+    elementFilter.ApplyOnElements(op)
+
+    if op.cpt < MultiThreadThreshold:
+        return IntegrateGeneralMonoThread(mesh=mesh, wform=wform, constants=constants, fields=fields, unkownFields=unkownFields,
+                         testFields=testFields,onlyEvaluation=onlyEvaluation,
+                         elementFilter=elementFilter,userIntegrator=userIntegrator,integrationRuleName=integrationRuleName, integrationRule=integrationRule)
+
+    if integrationRuleName is None:
+       if integrationRule is None:
+           from BasicTools.FE.IntegrationsRules import LagrangeIsoParam
+           integrationRule = LagrangeIsoParam
+    else:
+       if integrationRule is None:
+           from BasicTools.FE.IntegrationsRules import IntegrationRulesAlmanac as IntegrationRulesAlmanac
+           integrationRule = IntegrationRulesAlmanac[integrationRuleName]
+       else:
+           raise(Exception("must give integrationRuleName or integrationRule not both"))
+
+    from BasicTools.FE.Fields.IPField import IPField
+    def InitSpaces(fs):
+        for f in fs:
+            if isinstance(f,IPField):
+                continue
+            for n,s in f.space.items():
+                s.Create()
+
+    for n,s in LagrangeSpaceGeo.items():
+        s.Create()
+    InitSpaces(unkownFields)
+    InitSpaces(fields)
+    if testFields is not None:
+        InitSpaces(testFields)
+
+    def ToIntegrate():
+
+        def toDo(elementFilterII):
+            return IntegrateGeneralMonoThread(mesh=mesh, wform=wform, constants=constants, fields=fields, unkownFields=unkownFields,
+                         testFields=testFields,onlyEvaluation=onlyEvaluation,
+                         elementFilter=elementFilterII,userIntegrator=userIntegrator, integrationRule=integrationRule)
+        return toDo
+
+
+    from BasicTools.Helpers.CPU import GetNumberOfAvailableCpus
+
+    ncpu = GetNumberOfAvailableCpus()
+
+    class PartialElementFilter(ElementFilter):
+        def __init__(self,elementFilter,partitions,nb):
+            self.partitions = partitions
+            self.parentfilter = elementFilter
+            self.nb = nb
+            self.mesh = elementFilter.mesh
+
+        def GetIdsToTreat(self,elements):
+            res = self.parentfilter.GetIdsToTreat(elements)
+            return np.array_split(res,self.partitions)[self.nb]
+
+        def Complementary(self):
+            for name,data,ids  in self.parentfilter.Complementary():
+                ids = np.array_split(ids,self.partitions)[self.nb]
+                if len(ids) == 0:
+                    continue
+                yield name, data, ids
+
+    allworkload = [ PartialElementFilter(elementFilter,ncpu,i) for i in range(ncpu)  ]
+    workload = []
+
+    for f in allworkload:
+        op = OP()
+        f.ApplyOnElements(op)
+        if op.cpt:
+            workload.append(f)
+
+    import concurrent.futures
+    with concurrent.futures.ThreadPoolExecutor(max_workers=ncpu) as executor:
+        results =  executor.map(ToIntegrate(),workload)
+        ks = []
+        fs = []
+        for r in results:
+            if r == None:
+                return
+            ks.append(r[0])
+            fs.append(r[1])
+        return np.add.reduce(ks), np.add.reduce(fs)
+
 def CheckIntegrityNormalFlux(GUI=False):
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshOf
 
@@ -292,12 +405,11 @@ def CheckIntegrityNormalFlux(GUI=False):
     pf = FEField("p",mesh,space,numbering)
     pf.Allocate(1)
 
-    fields  = {"p":pf}
-    wf = SymWeakToNumWeak(wformflux)
     print(mesh)
     ff = ElementFilter(mesh=mesh) # all elements
-    K,F = Integrate(mesh=mesh,wform=wformflux, constants=constants, fields=fields,
-                    dofs=dofs,spaces=spaces,numbering=numberings,
+    unkownFields = [FEField(dofs[n],mesh=mesh,space=spaces[n],numbering=numberings[n]) for n in range(len(dofs)) ]
+    K,F = IntegrateGeneral(mesh=mesh,wform=wformflux, constants=constants, fields=[pf],
+                    unkownFields = unkownFields,
                     elementFilter=ff )
     if GUI :
         from BasicTools.Actions.OpenInParaView import OpenInParaView
@@ -504,9 +616,11 @@ def CheckIntegrityKF(edim, sdim,testCase):
 
     ff = ElementFilter(mesh,tag=(str(edim)+"D"))
 
-    Kinteg,F = Integrate(mesh=mesh,wform=lwf, constants=constants, fields=fields,
-                    dofs=dofs,spaces=spaces,numbering=numberings,
-                    elementFilter=ff)
+    unkownFields = [FEField(dofs[n],mesh=mesh,space=spaces[n],numbering=numberings[n]) for n in range(len(dofs)) ]
+    Kinteg,F = IntegrateGeneral(mesh=mesh,wform=lwf, constants=constants, fields=fields,
+                    unkownFields = unkownFields,
+                    elementFilter=ff )
+
     stopt = time.time() - startt
 
     KK = Kinteg.todense()
@@ -566,7 +680,9 @@ def ComputeVolume(mesh):
 
     import time
     startt = time.time()
-    K,F = Integrate(mesh=mesh,wform=wf, constants=constants, fields=fields, dofs=dofs,spaces=spaces,numbering=numberings)
+    unkownFields = [FEField(dofs[n],mesh=mesh,space=spaces[n],numbering=numberings[n]) for n in range(len(dofs)) ]
+    K,F = IntegrateGeneral(mesh=mesh,wform=wf, constants=constants, fields=fields,
+                    unkownFields = unkownFields, elementFilter=ElementFilter() )
     stopt = time.time() - startt
     volk = np.sum(K)
     print("volume (k): " + str(volk))
