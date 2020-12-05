@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 import os
 import BasicTools.Helpers.ParserHelper as PH
 
@@ -17,7 +17,8 @@ def GetNumberOfAvailableCpus():
            out = out.strip().strip("'")
            return PH.ReadInt(out)
        except:
-           return 1
+           import multiprocessing
+           return multiprocessing.cpu_count()
 
 class CPU():
     """ Class to help doing the multithreading without using to many cpus
@@ -78,7 +79,7 @@ def CheckIntegrity():
 
    #     pass
     print("CPU dispo " + str( CPU.cpudispo))
-
+    print("GetNumberOfAvailableCpus", GetNumberOfAvailableCpus())
     return "ok"
 
 if __name__ == '__main__':# pragma: no cover
