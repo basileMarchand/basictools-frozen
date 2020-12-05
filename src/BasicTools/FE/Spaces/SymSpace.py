@@ -22,6 +22,13 @@ class SymSpaceBase(SpaceBase):
         self.symdNdxi = None
         self.__created__ = False
 
+    def __getstate__(self):
+        return None
+
+    def __setstat__(self,state):
+        self.__init__()
+
+
     def GetNumberOfShapeFunctions(self):
         return len(self.symN)
 
