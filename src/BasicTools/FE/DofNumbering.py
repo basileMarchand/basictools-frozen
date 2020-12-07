@@ -5,208 +5,197 @@
 #
 
 import numpy as np
+from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 import BasicTools.Containers.ElementNames as EN
 from BasicTools.Containers import Filters
 
-def Hash(dofAttachment,lconn,name=None,i=None,discontinuous=False):
-    """
-    Function to create a unique tuple for a given shape function (dof) this
-    tuple must be independent of the element that use this shape function ( an
-    exception is the discontinues galerkin approximation).
+class DofNumbering(BaseOutputObject ):
+    def __init__(self):
+        super(DofNumbering,self).__init__()
+        self.numbering = dict()
+        self.size = 0
+        self._doftopointLeft = None
+        self._doftopointRight= None
+        self._doftocellLeft =  None
+        self._doftocellRight = None
+        self.almanac = dict()
+        self.fromConnectivity = True
 
-    """
-    T,n,h = dofAttachment
-    if T == "P":
-        """P is for point"""
-        T = "P"
-        n = lconn[n]
-    elif T == "C":
-        """C is for cell"""
-        T = name
-        if h is not None:
-            T2, n2, h2 = h
-            h2 = Hash(h,lconn=lconn)
-            return (T,tuple(np.sort(lconn)),h2)
-        return (T,tuple(np.sort(lconn)),n)
+    def __getitem__(self,key):
+        if key == "size":
+           # print("Please use the new API of DofNumbering : DofNumbering.size")
+            return self.size
+        if key == "fromConnectivity":
+           # print("Please use the new API of DofNumbering : DofNumbering.fromConnectivity")
+            return self.fromConnectivity
+        if key == "almanac":
+           # print("Please use the new API of DofNumbering : DofNumbering.almanac")
+            return self.almanac
 
-    elif T == "F" :
-        """is for face  (face for a 3D element, edge for a 2D element """
-        edge = EN.faces[name][n]
-        T = edge[0]
-        n = tuple(np.sort(lconn[edge[1]]))
-        h = 0
+        if key == "doftopointLeft":
+           # print("Please use the new API of DofNumbering : DofNumbering.doftopointLeft")
+            return self.doftopointLeft
+        if key == "doftopointRight":
+           # print("Please use the new API of DofNumbering : DofNumbering.doftopointRight")
+            return self.doftopointRight
 
-    elif T == "F2":
-        """is for face second level (edge for a 3D element, point for a 2D element """
-        edge = EN.faces2[name][n]
-        T = edge[0]
-        n = tuple(np.sort(lconn[edge[1]]))
-        h = 0
-
-    elif T == "G":
-        """G is for global """
-        return (T,0,h)
-
-    elif T == "IP":
-        return (T,tuple(lconn),i)
-
-    else:
-        raise(Exception(" type of dof unknown : " + str(T) ) )
-
-    T += ("_"+ str(i)) if discontinuous else ""
-    return (T,n,h)
+        if key == "doftocellLeft":
+           # print("Please use the new API of DofNumbering : DofNumbering.doftopointLeft")
+            return self.doftocellLeft
+        if key == "doftocellRight":
+           # print("Please use the new API of DofNumbering : DofNumbering.doftopointRight")
+            return self.doftocellRight
 
 
-def ComputeDofNumbering(mesh,Space,dofs=None,sign=1,fromConnectivity=False,elementFilter=None,discontinuous=False):
-    """
-    Function to compute a unique numbering of dofs. The user must provide:
+        return self.numbering[key]
 
-    * mesh : (UnstructuredMesh), discretisation
-    * space : (from FESpaces.py for example) approximation space
-    * dofs : () previous dofNumbering computation
-    * tag : (str) tag name to treat
-    * sign : (default 1) user can give (-1) to use negative numbering
-    * fromConnectivity : (default False) for fast computation of isoparametric
-      numbering for all element (space, dofs,tag,sign are ignored). All Elements
-      are treated.
-    """
+    def get(self,key,default=None):
+        if key in self.numbering:
+            return self.numbering[key]
+        else:
+            return default
 
-    if fromConnectivity:
-        if dofs is not None or sign != 1 or elementFilter is not None:
-            raise(Exception("cant take dofs tag sign or elementFilter different from the default values"))
-        dofs = {}
-        dofs["size"] = mesh.GetNumberOfNodes()
-        dofs["dirichelet"] = -1
-        dofs["doftopointLeft"] = slice(mesh.GetNumberOfNodes())
-        dofs["doftopointRight"] = dofs["doftopointLeft"]
-        dofs["fromConnectivity"] = True
+    def __contains__(self, k):
+        return k in self.numbering
+
+    def GetSize(self):
+        return self.size
+
+    def ComputeNumberingFromConnectivity(self,mesh,space):
+
+        self.size = mesh.GetNumberOfNodes()
+        self._doftopointLeft = slice(self.size)
+        self._doftopointRight = slice(self.size)
+        self._doftocellLeft =  []
+        self._doftocellRight = []
+        self.fromConnectivity = True
+
         for name,data in mesh.elements.items():
-            dofs[name] = data.connectivity
+            self.numbering[name] = data.connectivity
 
-        cpt = dofs["size"]
         almanac = {}
-        for i in range(cpt):
+        for i in range(self.size):
             almanac[('P', i, None)] = i
-        dofs["almanac"] = almanac
-    else:
+        self.almanac = almanac
+        return self
+
+    def ComputeNumberingGeneral(self,mesh,space,elementFilter=None,discontinuous=False):
+        self.fromConnectivity = False
+        almanac = self.almanac
 
         if elementFilter is None:
             elementFilter = Filters.ElementFilter(mesh)
 
-        if dofs is None:
-            dofs = {}
-            dofs["size"] = 0
-            dofs["dirichelet"] = -1
-            dofs["almanac"] = {}
-            dofs["Hash"] = Hash
-            dofs["fromConnectivity"] = False
-            if sign == 1:
-                cpt = 0
+        cpt = self.size
+        self.PrintDebug("bulk ")
+        useddim = 0
+        cctt = 0
+        for name,data, elids in elementFilter:
+            cctt  += len(elids)
+            useddim = max(useddim,EN.dimension[name] )
+            res = self.GetHashFor(data,space[name],elids,discontinuous)
+            if name in self.numbering:
+                dofs = self.numbering[name]
             else:
-                cpt = -1
+                dofs = np.zeros((data.GetNumberOfElements(),space[name].GetNumberOfShapeFunctions()), dtype=np.int_) -1
 
-        else:
-            if sign == 1:
-              cpt= dofs["size"]
+            self.PrintDebug(name + " Done")
+            for i in range(len(res)):
+                lres = res[i]
+                ldofs = dofs[:,i]
+                for j,elid in enumerate(elids):
+                    d = almanac.setdefault(lres[j],cpt)
+                    cpt += (d == cpt)
+                    ldofs[elid] = d
+
+            self.numbering[name] = dofs
+            self.PrintDebug(name + " Done Done")
+        self.PrintDebug("bulk Done")
+        self.PrintDebug("complementary ")
+        from BasicTools.Containers.Filters import IntersectionElementFilter, ElementFilter, ComplementaryObject
+        outside = IntersectionElementFilter(mesh=mesh, filters =[ElementFilter(dimensionality=useddim-1), ComplementaryObject( filters = [elementFilter])] )
+        cctt = 0
+        for name,data,elids in outside:
+            cctt += len(elids)
+            res = self.GetHashFor(data,space[name],elids,discontinuous)
+            if name in self.numbering:
+                dofs = self.numbering[name]
             else:
-              cpt = dofs["dirichelet"]
-
-        almanac = dofs["almanac"]
-
-        for name,data,fil in elementFilter:
-            if len(fil) == 0:
-                continue
-
-            sp = Space[name]
-
-            if name in dofs:
-                dof = dofs[name]
-            else:
-                dof = np.zeros((data.GetNumberOfElements(),sp.GetNumberOfShapeFunctions()), dtype=np.int_) -1
-
-
-            numberOfShapeFunctions = sp.GetNumberOfShapeFunctions()
-            for i in fil:
-                conn = data.connectivity[i,:]
-                for j in range(numberOfShapeFunctions):
-                    h = Hash(sp.dofAttachments[j],lconn=conn,name=name,i=i,discontinuous = discontinuous)
-
-                    if h in almanac:
-                        d = almanac[h]
-                    else:
-                        d = cpt
-                        almanac[h] = d
-                        cpt += 1*sign
-                    dof[i,j] = d
-
-            dofs[name] = dof
-
-        for name,data,fil in elementFilter.Complementary():
-            if len(fil) == 0:
-                continue
-
-            sp = Space[name]
-            if name in dofs:
-                dof = dofs[name]
-            else:
-                dof = np.zeros((data.GetNumberOfElements(),sp.GetNumberOfShapeFunctions()), dtype=np.int_) -1
-
-            numberOfShapeFunctions = sp.GetNumberOfShapeFunctions()
-            for i in fil:
-                conn = data.connectivity[i,:]
-                for j in range(numberOfShapeFunctions):
-                    h = Hash(sp.dofAttachments[j],lconn=conn,name=name,i=i,discontinuous = discontinuous)
-
-                    if h in almanac:
-                        dof[i,j] = almanac[h]
-
-            dofs[name] = dof
+                dofs = self.numbering.setdefault(name,np.zeros((data.GetNumberOfElements(),space[name].GetNumberOfShapeFunctions()), dtype=np.int_) -1)
+            for i in range(len(res)):
+                lres = res[i]
+                ldofs = dofs[:,i]
+                for j,elid in enumerate(elids):
+                    if ldofs[elid] >= 0:
+                        continue
+                    ldofs[elid] = almanac.get(lres[j],-1)
+            self.numbering[name] = dofs
+        self.PrintDebug("complementary Done")
+        self.size = cpt
+        #-------------------------------------------------------------------------
+        self.mesh = mesh
+        # we keep a reference to the mesh because we need it to compute the
+        return self
 
 
-    if sign ==1:
-        dofs["size"] = cpt
-        # two point to take into account:
-        #     the numbering can be applied only to  a subdomain
-        #     the space used can be bigger than the mesh (p2 for example)
-        # so we need a two side extractor in the form of
-        #
-        # PointSizeVector[doftopointLeft] = solution[doftopointRight]
-        #
-        # this way we can have a extractor on P2 or P3 solution into a P1 mesh
-        # the user is responsible to allocate and initialise (of zeros) the
-        # PointSizeVector of the right size
-        extractorLeftSide = np.empty(cpt,dtype=np.int)
-        extractorRightSide = np.empty(cpt,dtype=np.int)
+    @property
+    def doftopointLeft(self):
+        if self._doftopointLeft is None:
+            self.computeDofToPoint()
+        return self._doftopointLeft
+
+    @property
+    def doftopointRight(self):
+        if self._doftopointRight is None:
+            self.computeDofToPoint()
+        return self._doftopointRight
+
+    def computeDofToPoint(self):
+        extractorLeftSide = np.empty(self.size,dtype=np.int)
+        extractorRightSide = np.empty(self.size,dtype=np.int)
 
         tmpcpt = 0
         # if k[0] is 'P' then k[1] is the node number
-        for k,v in almanac.items():
+        for k,v in self.almanac.items():
             if k[0] == 'P':
                 extractorLeftSide[tmpcpt] = k[1]
                 extractorRightSide[tmpcpt] = v
                 tmpcpt += 1
 
-        extractorLeftSide = np.resize(extractorLeftSide, (tmpcpt,))
-        extractorRightSide = np.resize(extractorRightSide, (tmpcpt,))
-        dofs["doftopointLeft"] =   extractorLeftSide
-        dofs["doftopointRight"] =  extractorRightSide
+        self._doftopointLeft = np.resize(extractorLeftSide, (tmpcpt,))
+        self._doftopointRight = np.resize(extractorRightSide, (tmpcpt,))
 
-        extractorLeftSide = np.empty(cpt,dtype=np.int)
-        extractorRightSide = np.empty(cpt,dtype=np.int)
+    @property
+    def doftocellLeft(self):
+        if self._doftocellLeft is None:
+            self.computeDofToCell()
+        return self._doftocellLeft
+
+    @property
+    def doftocellRight(self):
+        if self._doftocellRight is None:
+            self.computeDofToCell()
+        return self._doftocellRight
+
+
+    def computeDofToCell(self):
+        mesh = self.mesh
+        extractorLeftSide = np.empty(self.size,dtype=np.int)
+        extractorRightSide = np.empty(self.size,dtype=np.int)
 
         tmpcpt = 0
         # if k[0] is the elementname then k[1] is the connecivity
         # we generate the same almanac with the number of each element
         elemDic = {}
         for name,data in mesh.elements.items():
-            #num = elemDic.get(name,np.zeros(data.GetNumberOfElements()) -1)
             elemDic[name] = {}
             elemDic2 = elemDic[name]
+            sortedconnectivity = np.sort(data.connectivity,axis=1)
 
             for i in range(data.GetNumberOfElements()):
-                elemDic2[tuple(np.sort(data.connectivity[i,:]))] = i
+                elemDic2[tuple(sortedconnectivity[i,:])] = i
 
-        for k,v in almanac.items():
+        for k,v in self.almanac.items():
             #if not k[0] in {'P',"F","F2","G"} :
             #we need the global number of the element (not the local to the element container)
             if k[0] in elemDic.keys():
@@ -216,16 +205,79 @@ def ComputeDofNumbering(mesh,Space,dofs=None,sign=1,fromConnectivity=False,eleme
                     extractorRightSide[tmpcpt] = v
                     tmpcpt += 1
 
-        extractorLeftSide = np.resize(extractorLeftSide, (tmpcpt,))
-        extractorRightSide = np.resize(extractorRightSide, (tmpcpt,))
+        self._doftocellLeft = np.resize(extractorLeftSide, (tmpcpt,))
+        self._doftocellRight = np.resize(extractorRightSide, (tmpcpt,))
 
-        dofs["doftocellLeft"] =   extractorLeftSide
-        dofs["doftocellRight"] =  extractorRightSide
+    def GetHashFor(self,data,sp,elids,discontinuous):
 
+        numberOfShapeFunctions = sp.GetNumberOfShapeFunctions()
+        res = []
+        name = data.elementType
+
+        elidsConnectivity  = data.connectivity[elids,:]
+
+        for j in range(numberOfShapeFunctions):
+            on,idxI,idxII = sp.dofAttachments[j]
+            if on == "P":
+                T = "P"
+                shapeFunctionConnectivity = elidsConnectivity [:,idxI]
+
+                if discontinuous :
+                    res.append( [ (T+str(elids),x,idxII) for i,x in zip(elids,shapeFunctionConnectivity)  ]  )
+                else:
+                    res.append( [ (T,x,idxII) for x in shapeFunctionConnectivity  ]  )
+            elif on == "C":
+                sortedConnectivity = np.sort(elidsConnectivity,axis=1)
+                T = name
+                if idxII is not None:
+                    raise
+                res.append([(T,tuple(sortedConnectivity[i,:]),idxI) for i in range(len(elids)) ] )
+            elif on == "F2":
+                edge = EN.faces2[name][idxI]
+                T = edge[0]
+                nn = np.sort(elidsConnectivity[:,edge[1]],axis=1)
+                if discontinuous :
+                    res.append( [ (T+str(elids),tuple(x) ,0) for i,x in zip(elids,nn)  ]  )
+                else:
+                    res.append( [ (T,tuple(x),0) for x in nn  ]  )
+            elif on == "F":
+                edge = EN.faces[name][idxI]
+                T = edge[0]
+                nn = np.sort(elidsConnectivity[:,edge[1]],axis=1)
+                if discontinuous :
+                    res.append( [ (T,tuple(x),i) for i,x in zip(elids,nn)  ]  )
+                else:
+                    res.append( [ (T,tuple(x),0) for x in nn  ]  )
+            elif on == "G":
+                """G is for global """
+                key = (on,0,idxII)
+                res.append( [ key for x in elids ]  )
+            elif on == "IP":
+                res.append( [ (on,tuple(lcoon),i) for lcoon,i in zip(elidsConnectivity,elids) ]  )
+            else:
+                print(on)
+                raise
+        return res
+
+def ComputeDofNumbering(mesh,Space,dofs=None,sign=1,fromConnectivity=False,elementFilter=None,discontinuous=False):
+
+    if sign != 1:
+        raise(NotImplementedError())
+
+    if fromConnectivity:
+        res = DofNumbering()
+        if dofs is not None or sign != 1 or elementFilter is not None or discontinuous:
+           raise(Exception("cant take dofs, sign, discontinuous or elementFilter different from the default values"))
+        res.ComputeNumberingFromConnectivity(mesh,Space)
+        return res
     else:
-        dofs["dirichelet"] = cpt
+        if dofs is None:
+            res = DofNumbering()
+        else:
+            res = dofs
 
-    return dofs
+        res.ComputeNumberingGeneral(mesh=mesh, space=Space, elementFilter=elementFilter, discontinuous=discontinuous )
+        return res
 
 def CheckIntegrity(GUI=False):
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateCube

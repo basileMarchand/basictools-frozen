@@ -71,10 +71,6 @@ def IntegrateGeneralMonoThread( mesh, wform, constants, fields, unkownFields, te
             from BasicTools.FE.WeakForms.NumericalWeakForm import SymWeakToNumWeak
             wform = SymWeakToNumWeak(wform)
 
-        import time
-        st = time.time()
-        BaseOutputObject().PrintDebug("Integration ")
-
         try:
             from BasicTools.FE.WeakForms.NativeNumericalWeakForm import PyWeakForm
             typeCpp = (type(wform) == PyWeakForm)
@@ -255,7 +251,6 @@ def IntegrateGeneralMonoThread( mesh, wform, constants, fields, unkownFields, te
         numberOfUsedvij = integrator.GetNumberOfUsedIvij()
         data = (vK[0:numberOfUsedvij], (iK[0:numberOfUsedvij],jK[0:numberOfUsedvij]))
         K = coo_matrix(data, shape=(integrator.GetTotalTestDofs(), integrator.GetTotalUnkownDofs())) .tocsr()
-        BaseOutputObject().PrintDebug("Integration Done        " +str(time.time()-st))
         return K,F
     else:
         return
@@ -265,6 +260,7 @@ def IntegrateGeneral( mesh, wform, constants, fields, unkownFields, testFields=N
                              integrationRuleName=None,onlyEvaluation=False, elementFilter=None,
                              userIntegrator=None, integrationRule=None):
 
+    BaseOutputObject().PrintDebug("Integration ")
     if not UseMultiThread or not UseCpp:
         return IntegrateGeneralMonoThread(mesh=mesh, wform=wform, constants=constants, fields=fields, unkownFields=unkownFields,
                          testFields=testFields,onlyEvaluation=onlyEvaluation,
@@ -494,7 +490,7 @@ def CheckIntegrityKF(edim, sdim,testCase):
                 K = HookeIso(E,nu,dim=2)
 
 
-                permut = [0,4,1,5,3,7,2,6]
+                permut = [0,4,2,6,1,5,3,7]
 #
                 KValidation = np.array([[0.9833333333333333333,-0.5, -.45, .2, 0 ,0,-0.5333333333333333333, 0.3],
                                 [-0.5,1.4,.3,-1.2,0,0,.2,-.2],
