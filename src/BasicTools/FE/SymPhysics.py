@@ -99,10 +99,15 @@ class Physics(BOO):
         allFilters.filters.extend([f for f, form in self.bilinearWeakFormulations] )
 
         for d in range(self.GetNumberOfUnkownFields()):
-            if fromConnectivity:
-                self.numberings[d] = ComputeDofNumbering(mesh,self.spaces[d],fromConnectivity = True ,dofs=self.numberings[d])
+            for i in range(0,d):
+                if self.spaces[d] == self.spaces[i]:
+                    self.numberings[d] = self.numberings[i]
+                    break
             else:
-                self.numberings[d] = ComputeDofNumbering(mesh,self.spaces[d],fromConnectivity =False,elementFilter=allFilters,dofs=self.numberings[d])
+                if fromConnectivity:
+                    self.numberings[d] = ComputeDofNumbering(mesh,self.spaces[d],fromConnectivity = True ,dofs=self.numberings[d])
+                else:
+                    self.numberings[d] = ComputeDofNumbering(mesh,self.spaces[d],fromConnectivity =False,elementFilter=allFilters,dofs=self.numberings[d])
 
     def ComputeDofNumberingFromConnectivity(self,mesh):
         self.ComputeDofNumbering(mesh, fromConnectivity=True)
