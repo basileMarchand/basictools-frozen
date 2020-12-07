@@ -163,7 +163,7 @@ class NodeFilter(Filter):
 
         return np.where(res)[0]
 
-    def GetIdsToTreat(self):
+    def GetIdsToTreat(self,notused=None):
         """
         Main function of this class
 
@@ -229,7 +229,8 @@ class FilterOP(BOO):
         else:
             self.filters = []
 
-        self.mesh = mesh
+        if mesh is not None:
+            self.mesh = mesh
 
     @property
     def mesh(self):
@@ -242,12 +243,7 @@ class FilterOP(BOO):
             f.mesh = m
 
     def Complementary(self):
-        for name,data in self.mesh.elements.items():
-            ids = self.GetIdsToTreat(data)
-            if len(ids) == data.GetNumberOfElements(): continue
-            mask = np.ones(data.GetNumberOfElements(),dtype=bool)
-            mask[ids] = False
-            yield name, data, np.where(mask)[0]
+        return ComplementaryObject(mesh=self.mesh,filters=[self])
 
     def __iter__(self):
         """
@@ -306,7 +302,7 @@ class FilterOP(BOO):
         if callable(pc):
             pc(self.mesh)
 
-        op(self.mesh,self.mesh.nodes,self.GetIdsToTreat() )
+        op(self.mesh,self.mesh.nodes,self.GetIdsToTreat(None) )
 
         pc = getattr(op,"PostCondition",None)
         if callable(pc):
@@ -339,7 +335,26 @@ class IntersectionElementFilter(FilterOP):
                 ids = ff.GetIdsToTreat(data)
             else:
                 ids = np.intersect1d(ids,ff.GetIdsToTreat(data) )
+            if len(ids) == 0:
+                break
         return list(ids)
+
+class ComplementaryObject(FilterOP):
+        def __init__(self,mesh=None,filters=None):
+            super(ComplementaryObject,self).__init__(mesh=mesh,filters=filters)
+            if len(self.filters) > 1 :
+                raise(Exception("ComplementaryObject Error!: filters must be of len = 1"))
+
+        def GetIdsToTreat(self,data):
+            if len(self.filters)  > 1:
+                raise(Exception("ComplementaryObject Error!: filters must be of len = 1"))
+
+            f = self.filters[0]
+            ids = f.GetIdsToTreat(data)
+            if len(ids) == data.GetNumberOfElements(): return []
+            mask = np.ones(data.GetNumberOfElements(),dtype=bool)
+            mask[ids] = False
+            return np.where(mask)[0]
 
 
 class ElementFilter(Filter):
@@ -353,7 +368,7 @@ class ElementFilter(Filter):
 
     """
 
-    def __init__(self,mesh=None,dimensionality=None,**kwargs):
+    def __init__(self,mesh=None,dimensionality=None,elementTypes=None,elementType=None,**kwargs):
         """
         constructor : the dimensionality parameter can be used to select a type
         of element based in the dimension (tris are 2D, tetras are 3D...). All
@@ -367,8 +382,15 @@ class ElementFilter(Filter):
         """
         super(ElementFilter,self).__init__(mesh=mesh,**kwargs)
         self.dimensionality = dimensionality
-
         self.zoneTreatment = "center" # "center", "allnodes", "leastonenode"
+
+        self.elementTypes = list()
+
+        if elementTypes is not None:
+            self.SetElementTypes(elementTypes)
+
+        if elementType is not None:
+            self.AddElementType(elementType)
 
     def __str__(self):
         res = "ElementFilter\n"
@@ -376,6 +398,7 @@ class ElementFilter(Filter):
         res += "  tags          : "+ str(self.tags) + " \n"
         res += "  zones         : "+ str(self.zones) + " \n"
         res += "  zoneTreatment : "+ str(self.zoneTreatment) + " \n"
+        res += "  elementTypes  : "+ str(self.elementTypes) + " \n"
         return res
 
     def SetZoneTreatment(self,zt):
@@ -395,9 +418,16 @@ class ElementFilter(Filter):
         """
         self.dimensionality = dim
 
+    def SetElementTypes(self,elementTypes):
+        self.elementTypes = []
+        self.elementTypes.extend(elementTypes)
+
+    def AddElementType(self,elementType):
+        self.elementTypes.append(elementType)
+
     def _CheckDimensionality_(self,elements):
         """
-        Internal function check if a type of elemtn must be treated based on
+        Internal function check if a type of element must be treated based on
         the dimensionality criteria
 
         :param ElementsContainer elements: Elements to treat
@@ -419,6 +449,23 @@ class ElementFilter(Filter):
                     return False
         return True
 
+    def _CheckElementTypes_(self,elements):
+        """
+        Internal function check if a type of element must be treated based on
+        the elementType criteria
+
+        :param ElementsContainer elements: Elements to treat
+        :return: True, if the elements must be treated
+                              False, otherwise
+                              None, elementType criteria not active
+        :rtype: Bool/None
+        """
+        if len(self.elementTypes) == 0:
+            return None
+        if elements.elementType in self.elementTypes:
+            return True
+        else:
+            return False
 
     def _CheckZones_(self, elements):
         """
@@ -468,7 +515,12 @@ class ElementFilter(Filter):
         if self._CheckDimensionality_(elements) == False:
             return []
 
+        if self._CheckElementTypes_(elements) == False:
+            return []
+
         res  = self._CheckTags_(elements.tags,elements.GetNumberOfElements())
+        if res is not None and len(res) == 0:
+            return res
         res2 = self._CheckZones_(elements)
         self.zonesField = res2
         res3 = self.intersect1D(res,res2)
@@ -478,12 +530,7 @@ class ElementFilter(Filter):
             return res3
 
     def Complementary(self):
-        for name,data  in self.mesh.elements.items():
-            ids = self.GetIdsToTreat(data)
-            if len(ids) == data.GetNumberOfElements(): continue
-            mask = np.ones(data.GetNumberOfElements(),dtype=bool)
-            mask[ids] = False
-            yield name, data, np.where(mask)[0]
+        return ComplementaryObject(mesh=self.mesh,filters=[self])
 
     def __iter__(self):
         """
@@ -697,7 +744,6 @@ def CheckIntegrity( GUI=False):
         def PostCondition(self,mesh):
             print("The counter is at {}".format(self.cpt) )
 
-
     op = OP()
 
     ff.SetZoneTreatment("allnodes")
@@ -708,22 +754,45 @@ def CheckIntegrity( GUI=False):
 
 
     cpt = 0
-    ff = ElementFilter(mesh)
+    ff = ElementFilter(mesh,elementTypes=[], elementType=EN.Triangle_3)
+    ff.SetElementTypes([EN.Triangle_3])
+    print(ff)
+    def MustFail(func,*args,**kwargs):
+        try:
+            func(*args,**kwargs)
+        except:
+            pass
+        else:
+            raise # pragma no cover
+
+    MustFail(ff.SetZoneTreatment,"toto")
     ff.ApplyOnElements(op)
 
+    MustFail(ComplementaryObject,filters=[ff,ff])
 
+    ff.ApplyOnElements(op)
 
-    ff.AddTag("ZZ0")
+    f2 = ElementFilter(mesh,elementType=EN.Triangle_3)
+    f2.AddTag("ZZ0")
+
     op = OP()
-    ff.SetDimensionality(-2)
-    ff.ApplyOnElements(op)
 
     ff.SetDimensionality(2)
 
-    ff.ApplyOnElements(op)
+    f2.ApplyOnElements(op)
 
     if op.cpt != (2*(nx-1)*(ny-1)) : # pragma: no cover
         raise(Exception("Error in the number of elements in the tag = " + str(op.cpt)+ " must be " + str((2*(nx-1)*(ny-1)))))
+
+    IF = IntersectionElementFilter(mesh=mesh,filters=[ff,f2])
+    IF.ApplyOnElements(OP())
+
+    UF = UnionElementFilter(mesh=mesh,)
+    UF.filters=[ff,f2]
+    UF.ApplyOnElements(OP())
+    print(UF.Complementary())
+    NUF = UnionElementFilter(mesh=mesh,filters=[NodeFilter(mesh,etag="3D"),NodeFilter(mesh)])
+    NUF.ApplyOnNodes(NOP())
 
     print("Number of Element in tag ZZ0 {}".format(op.cpt))
     print(mesh)
