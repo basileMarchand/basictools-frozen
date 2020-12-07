@@ -9,6 +9,15 @@ import numpy as np
 from scipy import sparse
 from scipy.sparse import coo_matrix
 
+try:
+    from numba import jit
+    from numba import njit
+except :
+    print("numba not installed")
+    jit = lambda x: x
+    njit = lambda x: x
+
+
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject as BOO
 
 class ConstraintsHolder(BOO):
@@ -101,7 +110,7 @@ class ConstraintsHolder(BOO):
         from scipy.sparse import coo_matrix
         mask = np.zeros(self.nbdof+1,dtype=float)
 
-        usedDofs = np.sort(np.unique(self.cols))
+        usedDofs = np.sort(np.unique(self.cols)).astype(dtype=np.int64)
         if len(usedDofs) == 0:
             return coo_matrix(([], ([], [])), shape=((0, 0 )), copy= True ), usedDofs
 
@@ -123,55 +132,22 @@ class ConstraintsHolder(BOO):
     def GetNumberOfDofsOnOriginalSystem(self):
         return self.nbdof
 
+
     def _Factorise(self):
         #algorithm form https://rosettacode.org/wiki/Reduced_row_echelon_form#Python
         # with some modification to treat sparse matrices in dense mode ( the ifs)
 
         M, usedDofs = self.ToSparse()
         M = M.toarray()
-        def expand(M,r):
+
+
+        def expand(M,r,usedDofs):
            res = sparse.coo_matrix(M[0:r,:])
            return (res, usedDofs[0:-1])
 
-        rowCount = self.GetNumberOfConstraints()
-        columnCount = len(usedDofs)
+        M, r =  jitFactorize(M,usedDofs,self.GetNumberOfConstraints())
+        return expand(M,r,usedDofs)
 
-        lead = 0
-        for r in range(rowCount):
-            if lead >= columnCount:
-                return expand(M,r)
-            i = r
-            rollcpt = columnCount - 2
-            while M[i,lead] == 0:
-                i += 1
-                # if no non zero in the col
-                # we dont do the permutation of the last col
-                if i == rowCount and rollcpt > lead  :
-                    i = r
-                    M[:,[lead,rollcpt]] = M[:,[rollcpt,lead]]
-                    usedDofs[[lead,rollcpt]] = usedDofs[[rollcpt,lead]]
-                    rollcpt -= 1
-                    continue
-
-                if i == rowCount:
-                    i = r
-                    lead += 1
-                    if columnCount == lead:
-                        return expand(M,r)
-            if i != r:
-                M[[i,r],:] = M[[r,i],:]
-
-            lv = M[r,lead]
-            if lv != 1:
-                M[r,:] = M[r,:]/lv
-
-            for i in range(rowCount):
-                if i != r:
-                    lv = M[i,lead]
-                    if lv != 0:
-                        M[i,:] -=  M[r,:]*lv
-            lead += 1
-        return expand(M,r+1)
 #-----------------------  External API ------------------
 
     def SetConstraintsMethod(self,method):
@@ -218,6 +194,56 @@ class ConstraintsHolder(BOO):
         res += str(self.method)
         return res
 
+@njit("Tuple((float64[:,:],numba.int64))(float64[:,:],numba.int64[:],numba.int64)",fastmath=False)
+def jitFactorize(M,usedDofs,rowCount):
+
+    columnCount = len(usedDofs)
+
+    lead = 0
+    for r in range(rowCount):
+        if lead >= columnCount:
+            return M,r
+        i = r
+        rollcpt = columnCount - 2
+        while M[i,lead] == 0:
+            i += 1
+            # if no non zero in the col
+            # we dont do the permutation of the last col
+            if i == rowCount and rollcpt > lead  :
+                i = r
+                #M[:,[lead,rollcpt]] = M[:,[rollcpt,lead]]
+                a =  M[:,rollcpt].copy()
+                M[:,rollcpt] = M[:,lead]
+                M[:,lead] = a
+                #usedDofs[[lead,rollcpt]] = usedDofs[[rollcpt,lead]]
+                b = usedDofs[rollcpt]
+                usedDofs[rollcpt] = usedDofs[lead]
+                usedDofs[lead] = b
+                rollcpt -= 1
+                continue
+
+            if i == rowCount:
+                i = r
+                lead += 1
+                if columnCount == lead:
+                    return M,r
+        if i != r:
+            #M[[i,r],:] = M[[r,i],:]
+            c =  M[i,:].copy()
+            M[i,:] = M[r,:]
+            M[r,:] = c
+
+        lv = M[r,lead]
+        if lv != 1:
+            M[r,:] = M[r,:]/lv
+
+        for i in range(rowCount):
+            if i != r:
+                lv = M[i,lead]
+                if lv != 0:
+                    M[i,:] -=  M[r,:]*lv
+        lead += 1
+    return M,r+1
 #--------------------------------------------------------
 class Penalisation(BOO):
     def __init__(self):

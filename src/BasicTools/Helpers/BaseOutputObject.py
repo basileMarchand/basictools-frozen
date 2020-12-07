@@ -164,7 +164,7 @@ class BaseOutputObject(object):
                 res += (")".join("(".join(st.split("(")[1:]).split(")")[0:-1]) )
                 res += (" -> ")
             #print(" [" + str(memory()) + "]"),
-            res += (str(mess))
+            res = res +  ("\n" + res).join(str(mess).splitlines())
             res += "\n"
             print((res), end='')
             return
