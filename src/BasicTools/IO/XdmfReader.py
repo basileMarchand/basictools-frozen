@@ -129,9 +129,17 @@ class XdmfGrid(Xdmfbase):
                 from BasicTools.Containers.UnstructuredMeshModificationTools import LowerNodesDimension
                 res = LowerNodesDimension(res)
             return res
+        if self.geometry.Type == "XY":
+            from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
+            res = UnstructuredMesh()
+            res.nodes = self.geometry.GetNodes().reshape((-1,2))
+            res.elements = self.topology.GetConnectivity()
+            res.GenerateManufacturedOriginalIDs()
+            res.PrepareForOutput()
+            return res
 
     def ReadAttributes(self,attrs):
-        self.Name = self.ReadAttribute(attrs,'Name')
+        self.Name = self.ReadAttribute(attrs,'Name',default="")
         self.GridType = self.ReadAttribute(attrs,'CollectionType',default="Uniform")
 
     def HasField(self,name):
@@ -408,7 +416,7 @@ class XdmfGeometry(Xdmfbase):
             raise Exception# pragma: no cover
 
     def GetNodes(self):
-        if self.Type == "XYZ":
+        if self.Type == "XYZ" or self.Type == "XY":
             return self.dataitems[0].GetData()
         else:
             raise Exception# pragma: no cover
