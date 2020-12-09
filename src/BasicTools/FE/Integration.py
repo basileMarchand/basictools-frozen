@@ -560,13 +560,13 @@ def ComputeVolume(mesh):
     constants = {}
     fields  = {}
     from BasicTools.FE.Fields.FEField import FEField
-    f = FEField("f",mesh,LagrangeSpaceGeo,numbering)
+    f = FEField("F",mesh,LagrangeSpaceGeo,numbering)
     f.Allocate(1)
     fields["F"] = f
 
     import time
     startt = time.time()
-    K,F = Integrate(mesh=mesh,wform=wf, tag="ALL", constants=constants, fields=fields, dofs=dofs,spaces=spaces,numbering=numberings)
+    K,F = Integrate(mesh=mesh,wform=wf, constants=constants, fields=fields, dofs=dofs,spaces=spaces,numbering=numberings)
     stopt = time.time() - startt
     volk = np.sum(K)
     print("volume (k): " + str(volk))
