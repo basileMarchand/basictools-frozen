@@ -170,13 +170,19 @@ class GmshReader(ReaderBase):
             print("ignoring line : " + l )
 
 
+        ## convert to 2D if needed
+        if np.linalg.norm(res.nodes[:,2]) == 0:
+            from BasicTools.Containers.UnstructuredMeshModificationTools import LowerNodesDimension
+            res = LowerNodesDimension(res)
+
+
         ## apply tags names
 
         for dim,number,newName in tagsNames:
             for name,data in res.elements.items():
                 if EN.dimension[name] != dim :
                     continue
-                print("chaning tag form '" + str("PhyTag"+number) + "' to '" + str(newName)+"'")
+                print("changing tag form '" + str("PhyTag"+number) + "' to '" + str(newName)+"'")
                 data.tags.RenameTag("PhyTag"+number,newName,noError=True)
 
         self.EndReading()
