@@ -125,7 +125,7 @@ class XdmfGrid(Xdmfbase):
             res.elements = self.topology.GetConnectivity()
             res.GenerateManufacturedOriginalIDs()
             res.PrepareForOutput()
-            if np.linalg.norm(res.nodes[:,2] == 0):
+            if np.linalg.norm(res.nodes[:,2]) == 0:
                 from BasicTools.Containers.UnstructuredMeshModificationTools import LowerNodesDimension
                 res = LowerNodesDimension(res)
             return res
