@@ -229,11 +229,9 @@ def df(f,dN,coordAtDofs):
 
 
 def vdet(A):
-    detA = np.zeros_like(A[0, 0])
-    print(A)
     detA = A[0, 0] * (A[1, 1] * A[2, 2] - A[1, 2] * A[2, 1]) -\
            A[0, 1] * (A[2, 2] * A[1, 0] - A[2, 0] * A[1, 2]) +\
-        A[0, 2] * (A[1, 0] * A[2, 1] - A[2, 0] * A[1, 1])
+           A[0, 2] * (A[1, 0] * A[2, 1] - A[2, 0] * A[1, 1])
     return detA
 
 def hdinv(A):
