@@ -356,6 +356,17 @@ class ComplementaryObject(FilterOP):
             mask[ids] = False
             return np.where(mask)[0]
 
+class IdsAsNumpyMask(FilterOP):
+    def __init__(self,mesh=None,filters=None):
+        super(IdsAsNumpyMask,self).__init__(mesh=mesh,filters=filters)
+        if len(self.filters) > 1 :
+            raise(Exception("IdsToMask Error!: filters must be of len = 1"))
+
+    def __iter__(self):
+        for name, data, ids  in self.filters[0]:
+            mask = np.ones(data.GetNumberOfElements(),dtype=bool)
+            mask[ids] = False
+            yield name, data, mask
 
 class ElementFilter(Filter):
     """
