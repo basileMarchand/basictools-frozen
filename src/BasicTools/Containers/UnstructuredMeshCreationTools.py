@@ -184,7 +184,7 @@ def CreateCube(dimensions=[2,2,2], origin=[-1.0,-1.0,-1.0], spacing=[1.,1.,1.], 
     mesh.PrepareForOutput()
     return mesh
 
-def CreateMeshFromConstantRectilinearMesh(CRM, ofTetras= False,out=None):
+def CreateMeshFromConstantRectilinearMesh(CRM, ofTetras= False,out=None, legacy=False):
     if out is None:
         res = UnstructuredMesh()
     else:
@@ -219,41 +219,49 @@ def CreateMeshFromConstantRectilinearMesh(CRM, ofTetras= False,out=None):
 
     if ofTetras:
         if(CRM.GetDimensionality() == 3):
-            p0 = np.array([0,1,2,3,4,5,6,7])
-            p1=  np.array([1,2,3,0,5,6,7,4])
-            p2=  np.array([3,0,1,2,7,4,5,6])
-            p3=  np.array([2,3,0,1,6,7,4,5])
+            if legacy:
+                p0 = np.array([0,1,2,3,4,5,6,7])
+                p1=  np.array([1,2,3,0,5,6,7,4])
+                p2=  np.array([3,0,1,2,7,4,5,6])
+                p3=  np.array([2,3,0,1,6,7,4,5])
+                for elem in range(CRM.GetNumberOfElements()):
+                    index = CRM.GetMultiIndexOfElement(elem)
+                    idx = index[0]%2+ 2*(index[1]%2)+4*(index[2]%2)
+                    if idx == 0:
+                        per = p0
+                    elif idx == 1:
+                        per = p1
+                    elif idx == 2:
+                        per = p2
+                    elif idx == 3:
+                        per = p3
+                    elif idx == 4:
+                        per = p3
+                    elif idx == 5:
+                        per = p2
+                    elif idx == 6:
+                        per = p1
+                    elif idx == 7:
+                        per = p0
+                    else:
+                        raise # pragma: no cover
 
-            for elem in range(CRM.GetNumberOfElements()):
-
-                index = CRM.GetMultiIndexOfElement(elem)
-                idx = index[0]%2+ 2*(index[1]%2)+4*(index[2]%2)
-                if idx == 0:
-                    per = p0
-                elif idx == 1:
-                    per = p1
-                elif idx == 2:
-                    per = p2
-                elif idx == 3:
-                    per = p3
-                elif idx == 4:
-                    per = p3
-                elif idx == 5:
-                    per = p2
-                elif idx == 6:
-                    per = p1
-                elif idx == 7:
-                    per = p0
-                else:
-                    raise # pragma: no cover
-
-                conn = CRM.GetConnectivityForElement(elem)
-                elements.connectivity[elem*6+0,:] = conn[per[[0,6,5,1]]];
-                elements.connectivity[elem*6+1,:] = conn[per[[0,6,1,2]]];
-                elements.connectivity[elem*6+2,:] = conn[per[[0,6,2,3]]];
-                elements.connectivity[elem*6+3,:] = conn[per[[0,6,3,7]]];
-                elements.connectivity[elem*6+4,:] = conn[per[[0,6,7,4]]];
-                elements.connectivity[elem*6+5,:] = conn[per[[0,6,4,5]]];
+                    conn = CRM.GetConnectivityForElement(elem)
+                    elements.connectivity[elem*6+0,:] = conn[per[[0,6,5,1]]];
+                    elements.connectivity[elem*6+1,:] = conn[per[[0,6,1,2]]];
+                    elements.connectivity[elem*6+2,:] = conn[per[[0,6,2,3]]];
+                    elements.connectivity[elem*6+3,:] = conn[per[[0,6,3,7]]];
+                    elements.connectivity[elem*6+4,:] = conn[per[[0,6,7,4]]];
+                    elements.connectivity[elem*6+5,:] = conn[per[[0,6,4,5]]];
+            else:
+                for elem in range(CRM.GetNumberOfElements()):
+                    conn = CRM.GetConnectivityForElement(elem)
+                    elements.connectivity[elem*6+0,:] = conn[[0, 6, 2, 3]]
+                    elements.connectivity[elem*6+1,:] = conn[[0, 6, 3, 7]]
+                    elements.connectivity[elem*6+2,:] = conn[[0, 6, 7, 4]]
+                    elements.connectivity[elem*6+3,:] = conn[[0, 6, 4, 5]]
+                    elements.connectivity[elem*6+4,:] = conn[[0, 6, 5, 1]]
+                    elements.connectivity[elem*6+5,:] = conn[[0, 6, 1, 2]]
         else:
             for elem in range(CRM.GetNumberOfElements()):
                 conn = CRM.GetConnectivityForElement(elem)
