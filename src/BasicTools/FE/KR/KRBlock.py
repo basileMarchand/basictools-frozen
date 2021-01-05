@@ -39,9 +39,14 @@ class KRBlockScalar(KRBaseScalar):
                 sp = field.space[name]
                 nbsf = sp.GetNumberOfShapeFunctions()
                 geoSpace.SetIntegrationRule(sp.posN,np.ones(nbsf) )
+
+                treated = np.zeros(field.numbering["size"])
                 for elid in elids:
                     for i in range(nbsf):
                         dofid = field.numbering[name][elid,i]
+                        if treated[dofid]:
+                           continue
+                        treated[dofid] = True
                         parampos = sp.posN[i,:]
                         valN = geoSpace.GetShapeFunc(parampos)
                         xcoor = mesh.nodes[data.connectivity[elid,:],:]
@@ -122,9 +127,13 @@ class KRBlockVector(KRBaseVector):
 
               #if zone in data.tags:
                 #elids = data.tags[zone].GetIds()
+                treated = np.zeros(field.numbering["size"])
                 for elid in elids:
                     for i in range(nbsf):
                         dofid = field.numbering[name][elid,i]
+                        if treated[dofid]:
+                           continue
+                        treated[dofid] = True
                         parampos = sp.posN[i,:]
                         valN = geoSpace.GetShapeFunc(parampos)
                         xcoor = mesh.nodes[data.connectivity[elid,:],:]
