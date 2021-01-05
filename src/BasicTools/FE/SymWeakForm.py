@@ -58,8 +58,19 @@ def GetField(name,size,star=False,sdim=3,extraCoordinates=[]):
     return (Matrix([res])).T
 
 ########################## Mathematical operators ##############################
+def Diag(arg):
+    shape = len( arg)
+    res = [[0]*shape for i in range(shape)]
+    for i,v in enumerate(arg):
+        res[i][i] = v
+
+    if type(arg).__module__ == np.__name__ or type(arg)==list:
+        return np.array(res)
+    else :
+        return Matrix(res)
+
 def Inner(a,b):
-    return a.dot(b)
+    return a@b
 
 def Trace(arg):
     if type(arg).__module__ == np.__name__:

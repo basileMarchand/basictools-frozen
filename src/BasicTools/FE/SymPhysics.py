@@ -8,7 +8,7 @@ import math
 from BasicTools.Containers.Filters import ElementFilter
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject as BOO
 from BasicTools.FE.SymWeakForm import Gradient,Divergence, GetField,GetTestField, GetScalarField
-
+import BasicTools.FE.SymWeakForm as swf
 
 class Physics(BOO):
     def __init__(self):
@@ -57,7 +57,7 @@ class Physics(BOO):
         else:
             from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
             space = LagrangeSpaceGeo
-            self.integrationRule =  None
+            self.integrationRule =  "LagrangeIsoParam"
 
         self.spaces = [space]*len(self.GetPrimalNames())
 
@@ -137,25 +137,38 @@ class MecaPhysics(Physics):
     def GetPrimalNames(self):
         return self.ExpandNames(self.mecaPrimalName)
 
+    def GetHookeOperator(self,young=None,poisson=None,factor=None):
 
-    def GetBulkFormulation(self,young=None, poisson=None,alpha=None ):
-        from BasicTools.FE.SymWeakForm import ToVoigtEpsilon,Strain
         from BasicTools.FE.MaterialHelp import HookeLaw
-
-        u = self.primalUnknown
-        ut = self.primalTest
 
         if young is None:
             young = self.young
         if poisson is None:
             poisson = self.poisson
 
-        young = GetScalarField(young)*GetScalarField(alpha)
+        young = GetScalarField(young)*GetScalarField(factor)
 
         op = HookeLaw()
         op.Read({"E":young, "nu":poisson})
         self.HookeLocalOperator = op.HookeIso(dim=self.dim,planeStress=self.planeStress)
-        Symwfb = ToVoigtEpsilon(Strain(u,self.dim)).T*self.HookeLocalOperator*ToVoigtEpsilon(Strain(ut,self.dim))
+
+        return self.HookeLocalOperator
+
+    def GetStressVoigt(self,u,HookeLocalOperator=None):
+        from BasicTools.FE.SymWeakForm import ToVoigtEpsilon,Strain
+        if HookeLocalOperator is None:
+            HookeLocalOperator = self.HookeLocalOperator
+        return swf.Inner(ToVoigtEpsilon(Strain(u,self.dim)).T,HookeLocalOperator)
+
+    def GetBulkFormulation(self,young=None, poisson=None,alpha=None ):
+        from BasicTools.FE.SymWeakForm import ToVoigtEpsilon,Strain
+        u = self.primalUnknown
+        ut = self.primalTest
+
+        HookeLocalOperator = self.GetHookeOperator(young,poisson,alpha)
+        stress = self.GetStressVoigt(u,HookeLocalOperator)
+
+        Symwfb = stress*ToVoigtEpsilon(Strain(ut,self.dim))
         return Symwfb
 
     def GetPressureFormulation(self,pressure):
