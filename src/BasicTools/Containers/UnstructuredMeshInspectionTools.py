@@ -170,17 +170,23 @@ def VolumeOfHexaedrons(inmesh):
 
 def GetVolume(inmesh) :
 
-    vol = 0;
-    for name,elems in inmesh.elements.items():
-        if ElementNames.dimension[name] != 3:
-            continue# pragma: no cover
-        elif name == ElementNames.Tetrahedron_4:
-            vol += np.sum(VolumeOfTetrahedrons(inmesh))
-        elif name == ElementNames.Hexaedron_8:
-            vol += np.sum(VolumeOfHexaedrons(inmesh))
-        else:
-            raise Exception('Not implemented for elements of type "'+str(name)+'" code me please...')# pragma: no cover
-    return vol
+    from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo, ConstantSpaceGlobal
+    from BasicTools.FE.DofNumbering import ComputeDofNumbering
+    from BasicTools.FE.SymWeakForm import GetField
+    from BasicTools.FE.SymWeakForm import GetTestField
+    from BasicTools.FE.Fields.FEField import FEField
+    from BasicTools.FE.Integration import IntegrateGeneral
+
+    numbering = ComputeDofNumbering(inmesh,LagrangeSpaceGeo,fromConnectivity=True)
+
+    wform = GetField("F",1).T*GetTestField("T",1)
+
+    F = FEField("F",inmesh,LagrangeSpaceGeo,numbering)
+    F.Allocate(1)
+    gnumbering = ComputeDofNumbering(inmesh,ConstantSpaceGlobal)
+    unkownFields = [ FEField("T",mesh=inmesh,space=ConstantSpaceGlobal,numbering=gnumbering) ]
+    _,f  = IntegrateGeneral( mesh=inmesh, wform=wform, constants={}, fields=[F], unkownFields=unkownFields)
+    return f[0]
 
 def GetDualGraphNodeToElement(inmesh, maxNumConnections=200):
     # generation of the dual graph
