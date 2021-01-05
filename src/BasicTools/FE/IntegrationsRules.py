@@ -8,6 +8,18 @@ import numpy as np
 
 import BasicTools.Containers.ElementNames as EN
 
+def GetRule(ruleName=None,rule=None):
+    if ruleName is None :
+        if rule is None:
+            return IntegrationRulesAlmanac[LagrangeIsoParam]
+        else:
+            return rule
+    else:
+        if rule is None:
+            return IntegrationRulesAlmanac[ruleName]
+        else:
+            raise(Exception("must give ruleName or rule not both"))
+
 def TensorProductGauss(dim,npoints=2):
     import math
     if npoints == 2:
