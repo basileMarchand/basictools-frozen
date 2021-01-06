@@ -40,6 +40,14 @@ class Filter(BOO):
 
         self.mesh = mesh
 
+    def SetMesh(self,mesh):
+        """
+        Set the mesh
+
+        :param mesh mesh: mesh
+        """
+        self.mesh = mesh
+
     def SetTags(self,tagNames):
         """
         Set the tag list name to treate
