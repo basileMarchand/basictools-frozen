@@ -253,7 +253,7 @@ class DofNumbering(BaseOutputObject ):
                 key = (on,0,idxII)
                 res.append( [ key for x in elids ]  )
             elif on == "IP":
-                res.append( [ (on,tuple(lcoon),i) for lcoon,i in zip(elidsConnectivity,elids) ]  )
+                res.append( [ (on,tuple(lcoon),idxI) for lcoon,i in zip(elidsConnectivity,elids) ]  )
             else:
                 print(on)
                 raise
