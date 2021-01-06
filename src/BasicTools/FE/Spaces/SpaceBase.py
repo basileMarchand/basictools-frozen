@@ -13,7 +13,7 @@ class SpaceBase(BaseOutputObject):
         super(SpaceBase,self).__init__()
         self.nnodes = -1
         self.name = None
-     
+
     def Create(self):
         pass
 
@@ -29,7 +29,7 @@ class SpaceBase(BaseOutputObject):
         return self.geoSupport.dimensionality; #pragma: no cover
 
     def ClampParamCoorninates(self,xietaphi):
-        """ Clamps the xi eta and phi to othe intervals [0,1] for the first dim coordinates, 
+        """ Clamps the xi eta and phi to othe intervals [0,1] for the first dim coordinates,
         the others are set to zero """
         res = xietaphi.copy()
         for cpt, d in enumerate(xietaphi):
@@ -62,9 +62,12 @@ class SpaceBase(BaseOutputObject):
 
     def GetJackAndDet(self, Nfder, xcoor):
 
-       Jack = np.dot(Nfder,xcoor)
-
        dim = self.GetDimensionality()
+
+       if dim == 0:
+           return np.array([[1.]]), 1, lambda x:x
+
+       Jack = np.dot(Nfder,xcoor)
 
        s = xcoor.shape[1]
 
@@ -126,6 +129,6 @@ class SpaceAtIntegrationPoints():
 
     def GetJackAndDet(self, Nfder, xcoor):
         return self.space.GetJackAndDet(Nfder, xcoor)
-    
+
     def GetNormal(self,Jack):
         return self.space.GetNormal(Jack)

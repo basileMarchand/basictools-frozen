@@ -103,8 +103,8 @@ struct LocalSpace{
 
    void SetActiveIntegrationPoint(const int& ip,QRType& Jinv ){
        this->activeIntegrationPoint = ip;
-
-       this->BxByBz = solve(Jinv,*this->valdphidxi[ip]);
+       if(this->valdphidxi[ip])
+           this->BxByBz = solve(Jinv,*this->valdphidxi[ip]);
 
    }
 

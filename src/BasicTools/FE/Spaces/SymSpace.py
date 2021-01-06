@@ -37,7 +37,7 @@ class SymSpaceBase(SpaceBase):
             return
         self.__created__ = True
         def DiractDeltaNumeric(data,der=None):
-            if data :
+            if abs(data)>1e-15 :
                 return 0
             else:
                 return 1
@@ -64,7 +64,10 @@ class SymSpaceBase(SpaceBase):
                 self.symdNdxi[i][j] = self.symN[j].diff(self.lcoords[i])
 
         self.symdNdxi = Matrix(self.symdNdxi)
-        self.fct_dNdxi_Matrix =  lambdify(allcoords,self.symdNdxi.subs(subsList) , lambdifyList )
+        if self.symdNdxi.shape == (0,0):
+           self.fct_dNdxi_Matrix = lambda xi,chi,phi: np.empty((0,0))
+        else:
+           self.fct_dNdxi_Matrix =  lambdify(allcoords,self.symdNdxi.subs(subsList) , lambdifyList )
         ############ shape functions second derivative ################
 
         self.symdNdxidxi = [ None ]*nbSF

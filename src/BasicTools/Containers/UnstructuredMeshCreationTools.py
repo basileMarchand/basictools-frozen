@@ -584,9 +584,33 @@ def MirrorMesh(inmesh,x=None,y=None,z=None) :
     outmesh.PrepareForOutput()
     return outmesh
 
+def Creat0DElementAtEveryPoint(mesh):
+    res   = UnstructuredMesh()
+    res.nodes = mesh.nodes
+    res.originalIDNodes = mesh.originalIDNodes
+    res.nodesTags = mesh.nodesTags
 
+    elems1D = res.elements.GetElementsOfType(ElementNames.Point_1)
+    elems1D.tags = mesh.nodesTags
+    elems1D.connectivity = np.arange(mesh.GetNumberOfNodes())
+    elems1D.connectivity.shape  = (mesh.GetNumberOfNodes(),1)
+    elems1D.originalIds = mesh.originalIDNodes
+    elems1D.cpt = mesh.GetNumberOfNodes()
+    return res
 
 #------------------------- CheckIntegrity ------------------------
+def CheckIntegrity_Creat0DElementAtEveryPoint(GUI=False):
+    points = [[0,0,0],[1,0,0],[0,1,0],[0,0,1] ]
+    tets = [[0,1,2,3],]
+    mesh = CreateMeshOf(points,tets,ElementNames.Tetrahedron_4)
+    mesh.nodesTags.CreateTag("FirstPoint").AddToTag(0)
+
+    print(mesh)
+    outputmesh = Creat0DElementAtEveryPoint(mesh)
+    print(outputmesh)
+    if outputmesh.elements.GetElementsOfType(ElementNames.Point_1).GetNumberOfElements() != mesh.GetNumberOfNodes():
+        raise(Exception("Error "))
+    return "ok"
 
 def CheckIntegrity_MirrorMesh(GUI=False):
     points = [[0,0,0],[1,0,0],[0,1,0],[0,0,1] ]
@@ -686,6 +710,7 @@ def CheckIntegrity(GUI=False):
     CheckIntegrity_CreateMeshFromConstantRectilinearMesh,
     CheckIntegrity_QuadToLin,
     CheckIntegrity_MirrorMesh,
+    CheckIntegrity_Creat0DElementAtEveryPoint,
     ]
     for f in totest:
         print("running test : " + str(f))

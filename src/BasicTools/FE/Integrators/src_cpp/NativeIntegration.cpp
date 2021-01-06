@@ -169,6 +169,15 @@ void GetJackAndDet(MapMatrixDDD& valdphidxi,
                    double&    Jdet,
                    MatrixDDD&  Jinv){
 
+    if(Dimensionality == 0){
+        Jdet = 1.;
+        Jack.resize(1,1);
+        Jack(0,0) = 1.;
+        Jinv.resize(1,1);
+        Jinv(0,0) = 1.;
+        return;
+
+    }
     Jinv.resize(Dimensionality,xcoor.cols());
     Jack = valdphidxi*xcoor;
     //std::cout << " ***** Jack ***** " << std::endl;
