@@ -15,7 +15,13 @@ binaryOps = {"__add__":np.add,
              "__pow__":np.power,
              "__sub__":np.subtract,
              "__rmul__":np.multiply,
-             "__truediv__":np.divide
+             "__truediv__":np.divide,
+
+             "__gt__":np.ndarray.__gt__,
+             "__ge__":np.ndarray.__ge__,
+             "__lt__":np.ndarray.__lt__,
+             "__le__":np.ndarray.__le__,
+
              }
 
 
@@ -47,6 +53,14 @@ class FieldBase(BaseOutputObject):
         return self.binaryOp(other,binaryOps["__mul__"])
     def __pow__(self,other):
         return self.binaryOp(other,binaryOps["__pow__"])
+    def __gt__(self,other):
+        return self.binaryOp(other,binaryOps["__gt__"])
+    def __ge__(self,other):
+        return self.binaryOp(other,binaryOps["__ge__"])
+    def __lt__(self,other):
+        return self.binaryOp(other,binaryOps["__lt__"])
+    def __le__(self,other):
+        return self.binaryOp(other,binaryOps["__le__"])
 
     def __sub__(self,other):
         return self.binaryOp(other,binaryOps["__sub__"])

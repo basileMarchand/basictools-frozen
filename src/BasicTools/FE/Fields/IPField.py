@@ -34,9 +34,10 @@ class IPField(FieldBase):
         return self.rule[elemtype]
 
     def GetFieldFor(self,elemtype):
-            return self.data[elemtype]
+        return self.data[elemtype]
 
     def Allocate(self,val=0):
+        self.data = dict()
         for name,data in self.mesh.elements.items():
             nbItegPoints = len(self.GetRuleFor(name)[1])
             nbElements = data.GetNumberOfElements()
@@ -57,26 +58,83 @@ class IPField(FieldBase):
             res += str({ name:data.shape for name,data in self.data.items()} )  + "\n"
         return res
 
-    def unaryOp(self,op):
+    def unaryOp(self, op, out=None):
+        if out is None:
+            res = type(self)(name = None, mesh=self.mesh,rule=self.rule  )
+        else:
+            res = out
         res = type(self)(name = None, mesh=self.mesh,rule=self.rule )
         res.data = { key:op(self.data[key]) for key in self.data.keys()}
         return res
 
-    def binaryOp(self,other,op):
+    def binaryOp(self,other,op,out=None):
         self.CheckCompatiblility(other)
-        res = type(self)(name = None, mesh=self.mesh,rule=self.rule  )
+        if out is None:
+            res = type(self)(name = None, mesh=self.mesh,rule=self.rule  )
+        else:
+            res = out
+
         if isinstance(other,type(self)):
             res.data = { key:op(self.data[key],other.data[key]) for key in set(self.data.keys()).union(other.data.keys())}
-        elif type(other).__module__ == np.__name__:
+            return res
+        elif type(other).__module__ == np.__name__ and np.ndim(other) != 0:
             res = np.empty(other.shape,dtype=object)
             for res_data,other_data in np.nditer([res,other],flags=["refs_ok"],op_flags=["readwrite"]):
                 res_data[...] = op(self,other_data)
             return res
 
-        else:
-            res.data = { key:op(self.data[key],other) for key in self.data.keys()}
+        res.data = { key:op(self.data[key],other) for key in self.data.keys()}
 
         return res
+
+
+
+class RestrictedIPField(IPField):
+    def __init__(self,name=None,mesh=None,rule=None,ruleName=None,data=None,efmask=None):
+        super(RestrictedIPField,self).__init__(name=name, mesh=mesh,rule=rule,ruleName=ruleName,data=data)
+        if efmask == None:
+            from BasicTools.Containers.Filters import ElementFilter
+            self.efmask = ElementFilter()
+        else:
+            self.efmask = efmask
+
+    def Allocate(self,val=0):
+        self.efmask.SetMesh(self.mesh)
+        self.data = dict()
+        for name,data,ids in self.efmask :
+            nbItegPoints = len(self.GetRuleFor(name)[1])
+            nbElements = len(ids)
+            self.data[name] = np.zeros((nbElements,nbItegPoints), dtype=np.float)+val
+
+    def AllocateFromIpField(self,ipField):
+        self.name = ipField.name
+        self.mesh = ipField.mesh
+        self.rule = ipField.rule
+        self.efmask.SetMesh(self.mesh)
+        self.data = dict()
+        for name,data,ids in self.efmask :
+            self.data[name] = ipField.data[name][ids,:]
+
+    def GetIpFieldRepr(self,fillvalue=0):
+        res = IPField(name=self.name,mesh=self.mesh,rule=self.rule)
+        res.Allocate(fillvalue)
+        for name,data,ids in self.efmask :
+            res.data[name][ids,:] = self.data[name]
+        return res
+
+    def CheckCompatiblility(self,B):
+        super(RestrictedIPField,self).CheckCompatiblility(B)
+        if id(self.efmask) != id(B.efmask):
+           raise (Exception("The efmask of the fields are not the same"))
+
+    def unaryOp(self,op,out=None):
+        res = type(self)(name = None, mesh=self.mesh,rule=self.rule, efmask=self.efmask)
+        return super(RestrictedIPField,self).unaryOp(op,out=res)
+
+    def binaryOp(self,other,op,out=None):
+        res = type(self)(name = None, mesh=self.mesh,rule=self.rule, efmask=self.efmask)
+        return super(RestrictedIPField,self).binaryOp(other,op,out=res)
+
 
 def CheckIntegrity(GUI=False):
     from BasicTools.FE.IntegrationsRules import LagrangeP1
