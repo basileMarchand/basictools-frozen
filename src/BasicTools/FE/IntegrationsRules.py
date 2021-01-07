@@ -140,14 +140,14 @@ LagrangeP2[EN.Hexaedron_27] = LagrangeP2[EN.Hexaedron_8]
 p0 = 1./4.
 p1 = 1./6.
 p2 = 1./2.
-p=np.array([[p0,p0,p0],
-            [p1,p1,p1],
+p=np.array([[p1,p1,p1],
             [p2,p1,p1],
             [p1,p2,p1],
-            [p1,p1,p2]]);
+            [p1,p1,p2],
+            [p0,p0,p0]]);
 w0 = -2./15
 w1 = 3./40
-w= np.array([ w0, w1, w1, w1, w1]);
+w= np.array([w1, w1, w1, w1, w0]);
 LagrangeP2[EN.Tetrahedron_4] = (p,w)
 LagrangeP2[EN.Tetrahedron_10] = LagrangeP2[EN.Tetrahedron_4]
 
