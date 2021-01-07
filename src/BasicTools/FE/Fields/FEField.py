@@ -36,12 +36,20 @@ class FEField(FieldBase):
         TFormat.DI()
         return res
 
-    def GetPointRepresentation(self,fillvalue=0.):
+    def GetPointRepresentation(self,fillvalue=0):
+        """
+        Function to push the data from the field into a vector homogeneous to
+        the mesh (for visualisation for example). Entities with no dofs are filled
+        with the fillvalues (default 0)
+        """
 
         if fillvalue==0.:
             res = np.zeros(self.mesh.GetNumberOfNodes(),dtype=float)
         else:
             res = np.ones(self.mesh.GetNumberOfNodes(),dtype=float)*fillvalue
+
+        if len(self.numbering["doftopointLeft"]) == 0:
+            print("Warning : transfert vector is empty")
 
         res[self.numbering["doftopointLeft"]] = self.data[self.numbering["doftopointRight"]]
 
@@ -54,6 +62,24 @@ class FEField(FieldBase):
            self.data = np.ones(self.numbering["size"])*fillvalue
 
         self.data[self.numbering["doftopointRight"]] = userdata[self.numbering["doftopointLeft"]]
+
+    def GetCellRepresentation(self,fillvalue=0):
+        """
+        Function to push the data from the field into a vector homogeneous to
+        the mesh (for visualisation for example). Entities with no dofs are filled
+        with the fillvalues (default 0)
+        """
+
+        if fillvalue==0.:
+            res = np.zeros(self.mesh.GetNumberOfElements(),dtype=float)
+        else:
+            res = np.ones(self.mesh.GetNumberOfElements(),dtype=float)*fillvalue
+
+        if len(self.numbering["doftocellLeft"]) == 0:
+            print("Warning : transfert vector is empty")
+        res[self.numbering["doftocellLeft"]] = self.data[self.numbering["doftocellRight"]]
+
+        return res
 
     def CheckCompatiblility(self,B):
         if isinstance(B,type(self)):

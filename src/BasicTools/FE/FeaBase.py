@@ -89,47 +89,21 @@ class FeaBase(BaseOutputObject):
         self.sol = res
 
 
-    def PushVectorToUnkownFields(self):
+    def PushSolutionVectorToUnkownFields(self):
         """
         Function to extract fields from the solution vector and to put it into
         fields data
         """
-        offset =0
-        for f in self.unkownFields:
-              f.data = self.sol[offset:offset+f.numbering["size"]]
-              offset += f.numbering["size"]
+        from BasicTools.FE.Fields.FieldTools import VectorToFEFieldsData
+        VectorToFEFieldsData(self.sol,self.unkownFields)
 
-    def PushVectorToMesh(self,onNodes,fieldValues,name,numberings,justReturn=False):
+    def PushUnkownFieldsToSolutionVector(self):
         """
-        Function to push the data from the fields into a vector homogeneous to
-        the mesh (for visualition for example). Entities with no dofs are filled
-        with zeros. Use the justReturn to get the vector but do not put it in the mesh.
+        Function to extract from the Unkown fields a solution vector
         """
-        F = fieldValues.view()
-
-        ncomp = len(numberings)
-        if onNodes:
-            res = np.zeros((self.mesh.GetNumberOfNodes(), ncomp),dtype=float)
-            cpt = 0
-            for i in range(ncomp):
-                if len(numberings[i]["doftopointLeft"]) == 0:
-                    print("Warning : PushVectorToMesh()  transfert vector is empty")
-                res[numberings[i]["doftopointLeft"],i] =  F[cpt+numberings[i]["doftopointRight"]]
-                cpt += numberings[i]["size"]
-            if justReturn :
-                return res
-            self.mesh.nodeFields[name] = res
-        else:
-            res = np.zeros((self.mesh.GetNumberOfElements(), ncomp),dtype=float)
-            cpt = 0
-            for i in range(ncomp):
-                if len(numberings[i]["doftocellLeft"]) == 0:
-                    print("Warning : PushVectorToMesh()  transfert vector is empty")
-                res[numberings[i]["doftocellLeft"],i] =  F[cpt+numberings[i]["doftocellRight"]]
-                cpt += numberings[i]["size"]
-            if justReturn :
-                return res
-            self.mesh.elemFields[name] = res
+        from BasicTools.FE.Fields.FieldTools import FEFieldsDataToVector
+        self.sol = FEFieldsDataToVector(self.unkownFields)
+        self.solver.u = self.sol
 
 def CheckIntegrity(GUI=False):
     FeaBase()

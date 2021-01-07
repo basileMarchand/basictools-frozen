@@ -215,7 +215,16 @@ def CheckIntegrityFlexion(P,tetra,GUI=False):
     with Timer("Solve"):
         problem.Solve(k,f)
 
-    problem.PushVectorToUnkownFields()
+    problem.PushSolutionVectorToUnkownFields()
+    from BasicTools.FE.Fields.FieldTools import GetPointRepresentation
+    problem.mesh.nodeFields["sol"] = GetPointRepresentation(problem.unkownFields)
+
+
+    #Creation of a fake fields to export the rhs member
+    rhsFields = [ FEField(mesh=mesh,space=None,numbering=problem.numberings[i]) for i in range(3) ]
+    from BasicTools.FE.Fields.FieldTools import VectorToFEFieldsData
+    VectorToFEFieldsData(f,rhsFields)
+    problem.mesh.nodeFields["RHS"] = GetPointRepresentation(rhsFields)
 
     print("done solve")
 
@@ -229,45 +238,40 @@ def CheckIntegrityFlexion(P,tetra,GUI=False):
 
     EnerForm = SWF.ToVoigtEpsilon(SWF.Strain(symdep)).T*K*SWF.ToVoigtEpsilon(SWF.Strain(symdep))*symCellDataT + symCellData.T*symCellDataT
 
-    symEner = SWF.ToVoigtEpsilon(SWF.Strain(symdep))[0,0]*symCellDataT + symCellData.T*symCellDataT
-
-    #from BasicTools.Actions.OpenInParaView import OpenInParaView
-    #problem.PushVectorToMesh(True,f,"normalFlux")
-    #problem.PushVectorToMesh(True,problem.sol,"sol")
-    #OpenInParaView(mesh)
-    #return()
     print("Post process Eval")
     ff = ElementFilter(mesh=problem.mesh, tag="3D")
-    unkownFields =[ FEField(name="cellData",mesh=problem.mesh,numbering=problem.numberings[0],space=problem.spaces[0])]
+    energyDensityField = FEField(name="cellData",mesh=problem.mesh,numbering=problem.numberings[0],space=problem.spaces[0])
     m,energyDensity = IntegrateGeneral(mesh=problem.mesh, wform=EnerForm,  constants={},
-                        fields=problem.unkownFields, unkownFields = unkownFields, integrationRuleName="NodalEvalP"+str(P),
+                        fields=problem.unkownFields, unkownFields = [ energyDensityField ], integrationRuleName="NodalEvalP"+str(P),
                         onlyEvaluation=True,
                         elementFilter=ff)
     print("energyDensity",energyDensity)
     energyDensity /= m.diagonal()
+    energyDensityField.data = energyDensity
+
+    problem.mesh.nodeFields["PEnergy"] = energyDensityField.GetPointRepresentation()
+    problem.mesh.elemFields["PEnergy_fromP"+str(P) ] = energyDensityField.GetCellRepresentation()
+
 
     from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceP0
     from BasicTools.FE.DofNumbering import ComputeDofNumbering
 
     P0Numbering = ComputeDofNumbering(mesh,LagrangeSpaceP0,elementFilter=ElementFilter(mesh=mesh,dimensionality=mesh.GetDimensionality()))
 
-    unkownFields =[ FEField(name="cellData",mesh=problem.mesh,numbering=P0Numbering,space=LagrangeSpaceP0)]
+    P0energyDensityField = FEField(name="cellData",mesh=problem.mesh,numbering=P0Numbering,space=LagrangeSpaceP0)
     m,P0energyDensity = IntegrateGeneral(mesh=problem.mesh, wform=EnerForm, constants={},
-                        fields=problem.unkownFields, unkownFields = unkownFields,
+                        fields=problem.unkownFields, unkownFields = [ P0energyDensityField ],
                         integrationRuleName="ElementCenterEval",
                         onlyEvaluation=True,
                         elementFilter=ff)
 
     P0energyDensity /= m.diagonal()
+    P0energyDensityField.data = P0energyDensity
+
+    problem.mesh.elemFields["CEnergy"] = P0energyDensityField.GetCellRepresentation()
 
     if GUI  :
         from BasicTools.Actions.OpenInParaView import OpenInParaView
-        problem.PushVectorToMesh(True,f,"normalFlux",problem.numberings)
-        problem.PushVectorToMesh(True,problem.sol,"sol",problem.numberings)
-        problem.PushVectorToMesh(True,energyDensity,"PEnergy",[problem.numberings[0]])
-        problem.PushVectorToMesh(False,energyDensity,"CEnergy_FromP",[problem.numberings[0]])
-        problem.PushVectorToMesh(False,P0energyDensity,"CEnergy",[P0Numbering])
-
         OpenInParaView(mesh,filename="UnstructuredFeaSym_Sols_P"+str(P)+("Tetra"if tetra else "Hexa")+".xmf",run=True)
 
     print(Timer())

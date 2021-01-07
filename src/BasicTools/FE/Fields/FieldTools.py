@@ -24,11 +24,27 @@ def FEFieldsDataToVector(listOfFields,outvec=None):
         offset += f.numbering["size"]
     return outvec
 
-def VectorToFEFieldsData(invec,listOfFields,copy=True):
+def VectorToFEFieldsData(invec,listOfFields):
     offset = 0
     for f in listOfFields:
         f.data = invec[offset:offset+f.numbering["size"]]
         offset += f.numbering["size"]
+
+def GetPointRepresentation(listOfFEFields,fillvalue=0):
+
+    nbfields= len(listOfFEFields)
+    res = np.empty((listOfFEFields[0].mesh.GetNumberOfNodes(), nbfields) )
+    for i,f in enumerate(listOfFEFields):
+        res[:,i] = f.GetPointRepresentation(fillvalue=fillvalue)
+    return res
+
+def GetCellRepresentation(listOfFEFields,fillvalue=0):
+
+    nbfields= len(listOfFEFields)
+    res = np.empty(listOfFEFields[0].mesh.GetNumberOfElements(), nbfields)
+    for i,f in enumerate(listOfFEFields):
+        res[:,i] = f.GetCellRepresentation(fillvalue=fillvalue)
+    return res
 
 class IntegrationPointWrapper(FieldBase):
     def __init__(self,field,rule):
