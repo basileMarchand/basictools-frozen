@@ -11,7 +11,6 @@ from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 class SpaceBase(BaseOutputObject):
     def __init__(self):
         super(SpaceBase,self).__init__()
-        self.nnodes = -1
         self.name = None
 
     def Create(self):
