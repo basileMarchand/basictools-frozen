@@ -21,7 +21,7 @@ try:
     UseCpp = True
 except:
     UseCpp = False
-    print("Waring NativeNumericalWeakForm (cpp) not avilable, using python variant")
+    print("Warning NativeNumericalWeakForm (cpp) not available, using python variant")
 
     class PyWeakForm(object):
         def __init__(self):
