@@ -87,44 +87,38 @@ def PrepareFEComputation(mesh, elementFilter = None, numberOfComponents = None):
     return spaces, numberings, offset, NGauss
 
 
-
 def ComputeL2ScalarProducMatrix(mesh, numberOfComponents):
 
-
-    nbNodes = mesh.GetNumberOfNodes()
-    dim     = mesh.GetDimensionality()
+    dim = mesh.GetDimensionality()
 
     ff = Filters.ElementFilter(mesh)
     ff.SetDimensionality(dim)
 
     spaces, numberings, offset, NGauss = PrepareFEComputation(mesh, ff, numberOfComponents)
 
-    ev = []
-    ei = []
-    ej = []
+    from BasicTools.FE.SymWeakForm import GetField
+    from BasicTools.FE.SymWeakForm import GetTestField
 
 
-    for name,data,ids in ff:
-        p,w =  LagrangeIsoParam[name]
-        lenNumbering = len(numberings[0][name][0,:])
-        #replace lenNumbering by nbsf = spaces[name].GetNumberOfShapeFunctions() ?
-        ones = np.ones(lenNumbering,dtype=int)
+    T = GetField("T",numberOfComponents)
+    Tt = GetTestField("T",numberOfComponents)
 
-        for el in ids:
-            xcoor = mesh.nodes[data.connectivity[el],:]
-            space_ipvalues = spaces[name].SetIntegrationRule(p,w)
-            for ip in range(len(w)):
-                Jack, Jdet, Jinv = space_ipvalues.GetJackAndDetI(ip,xcoor)
-                #Jack, Jdet, Jinv = spaces[name].GetJackAndDetI(ip,xcoor)
-                for j in range(numberOfComponents):
-                    leftNumbering = numberings[j][name][el,:] + offset[j]
-                    left = space_ipvalues.valN[ip]
-                    ev.extend(((w[ip]*Jdet)*np.outer(left, left)).ravel())
-                    for i in leftNumbering:
-                        ei.extend(i*ones)
-                        ej.extend(leftNumbering.ravel())
+    wf = T.T*Tt
 
-    return coo_matrix((ev, (ei,ej)), shape=(numberOfComponents*nbNodes,numberOfComponents*nbNodes)).tocsr()
+    constants = {}
+    fields  = {}
+
+    if numberOfComponents == 1:
+        unkownFields = [FEField("T",mesh=mesh,space=spaces,numbering=numberings[0])]
+    else:
+        unkownFields = [FEField("T_"+str(i),mesh=mesh,space=spaces,numbering=numberings[i]) for i in range(numberOfComponents)]
+    
+    K,_ = IntegrateGeneral(mesh=mesh,wform=wf, constants=constants, fields=fields,
+                    unkownFields = unkownFields, elementFilter = ff)
+    
+    return K
+
+        
 
 
 
@@ -355,7 +349,6 @@ def ComputeGradPhiAtIntegPoint(mesh, elementSets = None, relativeDimension = 0):
                 for k in range(meshDimension):
                     GradPhiAtIntegPointValues[k].extend(BxByBzI[k])
 
-
                 row.extend(countTotal*ones)
                 countTotal += 1
 
@@ -503,12 +496,12 @@ def CheckIntegrity(GUI=False):
     ComputePhiAtIntegPoint(mesh)
     ComputeGradPhiAtIntegPoint(mesh)
     ComputeIntegrationPointsTags(mesh, 3)
-    vector = np.ones(len(mesh.elements["quad4"].tags["x0"].GetIds()))
     ComputeNormalsAtIntegPoint(mesh, ["x0"])
     length = len(mesh.elements["quad4"].tags["x0"].GetIds())
     CellDataToIntegrationPointsData(mesh, "x0", np.ones(length))    
 
     #TODELETE
+    #vector = np.ones(len(mesh.elements["quad4"].tags["x0"].GetIds()))
     #ComputeMecaIntegrator(mesh)
     #IntegrateVectorNormalComponentOnSurface(mesh, "x0", vector)
     #scalarFields = np.ones((3,mesh.GetNumberOfNodes()))
