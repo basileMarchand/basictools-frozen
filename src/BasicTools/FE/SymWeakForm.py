@@ -10,7 +10,7 @@ from sympy.matrices import Matrix
 import numpy as np
 
 testcharacter = "'"
-space = Matrix([Symbol('x'),Symbol('y'), Symbol("z")])
+space = Matrix([Symbol('x'),Symbol('y'), Symbol('z')])
 
 def GetNormal(size):
     return GetField("Normal",size)
