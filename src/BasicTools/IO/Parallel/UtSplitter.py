@@ -9,17 +9,14 @@ import numpy as np
 import os
 
 from BasicTools.IO.WriterBase import WriterBase as WriterBase
-import BasicTools.IO.GeofWriter as GW
 import BasicTools.IO.GeofReader as GR
 import BasicTools.IO.UtReader as UR
-from BasicTools.IO.GeofWriter import GeofName as GeofName
-from BasicTools.IO.GeofReader import nbIntegrationsPoints as nbIntegrationsPoints
 import BasicTools.Containers.ElementNames as EN
 from BasicTools.FE.IntegrationsRules import LagrangeIsoParam
 from BasicTools.Helpers.TextFormatHelper import TFormat
 
 class UtSplitter(WriterBase):
-    "This class can generate monolithic .ut, .goef, .ctnod, .node, .integ from files obtained from a parallel computation"
+    "This class can plit .ut, .goef, .ctnod, .node, .integ files frpù a monolithic Zset solution"
     def __init__(self):
         super(UtSplitter,self).__init__()
         self.timeSteps = "all"
@@ -94,7 +91,7 @@ class UtSplitter(WriterBase):
 
       globalMesh = GR.ReadGeof(fileName = self.dataFolder + self.name + ".geof",readElset=False,readFaset=False,printNotRead=False)
       Tag3D(globalMesh)
-      globalIdstotreat = Return3DElements(globalMesh)
+      Return3DElements(globalMesh)
       globalMesh.originalIDNodes = np.array(globalMesh.originalIDNodes-1, dtype=int)
 
       nGpE = globalMesh.NGaussperEl
@@ -104,7 +101,7 @@ class UtSplitter(WriterBase):
       printProgressBar(0, self.nbsd, prefix = 'Progress:', suffix = 'Complete', length = 50)
 
       for sd in range(1,self.nbsd+1):
-        sdString = sdTosdString(sd)
+        sdString = "-" + str(sd).zfill(3)
         localMesh = GR.ReadGeof(fileName = self.dataFolder+self.name + "-pmeshes" + os.sep + self.name + sdString + ".geof",readElset=False,readFaset=False,printNotRead=False)
         Tag3D(localMesh)
         localIdstotreat = Return3DElements(localMesh)
@@ -168,16 +165,6 @@ class UtSplitter(WriterBase):
 
 
 
-def sdTosdString(sd):
-  if sd<10:
-    sdString = "-00"+str(sd)
-  elif sd<100:
-    sdString = "-0"+str(sd)
-  else:
-    sdString = "-"+str(sd)
-  return sdString
-
-
 def Tag3D(mesh):
   for name, data in mesh.elements.items():
     if EN.dimension[name] == 3:
@@ -217,7 +204,7 @@ def CheckIntegrity():
 
     import filecmp
     for i in range(splitter.nbsd):
-      sdString = sdTosdString(i+1)
+      sdString = "-" + str(i+1).zfill(3)
       print(TFormat.InRed("node files for subdomain "+str(i+1)+" equals  ? "+ str(filecmp.cmp(tempdir + "cube"+sdString+".node",  BasicToolsTestData.GetTestDataPath() + "UtParExample/cube"+sdString+".node", shallow=False))))
       print(TFormat.InRed("integ files for subdomain "+str(i+1)+" equals ? "+ str(filecmp.cmp(tempdir + "cube"+sdString+".integ", BasicToolsTestData.GetTestDataPath() + "UtParExample/cube"+sdString+".integ", shallow=False))))
 
