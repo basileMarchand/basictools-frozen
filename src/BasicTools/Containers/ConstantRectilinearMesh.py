@@ -29,9 +29,7 @@ class ConstantRectilinearElementContainer(BaseOutputObject):
     @property
     def connectivity(self):
         if(self._connectivity is None):
-            self._connectivity = np.empty((self.GetNumberOfElements(),self.GetNumberOfNodesPerElement() ), dtype=np.int)
-            for i in range(self.GetNumberOfElements()):
-                self._connectivity[i,:] = self.GetConnectivityForElement(i)
+            self._connectivity = self.GetConnectivityForElements(np.arange(self.GetNumberOfElements()))
         return self._connectivity
 
     def SetDimensions(self,data):
@@ -60,51 +58,53 @@ class ConstantRectilinearElementContainer(BaseOutputObject):
     def GetDimensionality(self):
         return len(self.__dimensions)
 
-    def GetConnectivityForElement(self, index):
-        exyz = self.GetMultiIndexOfElement(index)
+    def GetConnectivityForElements(self, indices):
+
+        exyz = self.GetMultiIndexOfElements(np.asarray(indices))
 
         if self.GetDimensionality() == 3:
-            res = np.empty(8,dtype=int)
+            res = np.empty((exyz.shape[0],8),dtype=int)
             #n0
-            res[0] = exyz[0]*self.__dimensions[1]*self.__dimensions[2] +exyz[1]*self.__dimensions[2] + exyz[2]
+            res[:,0] = exyz[:,0]*self.__dimensions[1]*self.__dimensions[2] +exyz[:,1]*self.__dimensions[2] + exyz[:,2]
             #n1
-            res[1]= res[0] + self.__dimensions[1]*self.__dimensions[2]
-            res[2] = res[1] + self.__dimensions[2]
-            res[3] = res[0] + self.__dimensions[2]
+            res[:,1]= res[:,0] + self.__dimensions[1]*self.__dimensions[2]
+            res[:,2] = res[:,1] + self.__dimensions[2]
+            res[:,3] = res[:,0] + self.__dimensions[2]
 
-            res[4:8] = res[0:4] + 1
-            #n5 = n1 + 1
-            #n6 = n2 + 1
-            #n7 = n3 + 1
-
-            ##u0,u1,u3
+            res[:,4:8] = res[:,0:4] + 1
             return res
-            #np.array([n0, n1, n2, n3, n4, n5, n6, n7])
         else:
-            n0 = exyz[0]*self.__dimensions[1] +exyz[1]
-            n1 = n0 + self.__dimensions[1]
-            n2 = n1 + 1
-            n3 = n0 + 1
-            ##u0,u1,u3
-            return np.array([n0, n1, n2, n3])
+            res = np.empty((exyz.shape[0],4),dtype=int)
+            res[:,0] = exyz[:,0]*self.__dimensions[1] +exyz[:,1]
+            res[:,1] = res[:,0] + self.__dimensions[1]
+            res[:,2] = res[:,1] + 1
+            res[:,3] = res[:,0] + 1
+            return res
 
-    def GetMultiIndexOfElement(self,index):
-        index = int(index)
+    def GetConnectivityForElement(self, index):
+        return self.GetConnectivityForElements([index])[0,:]
+
+    def GetMultiIndexOfElements(self,indices):
+        indices =  np.asarray(indices,dtype=int)
         if self.GetDimensionality() == 3:
             planesize = (self.__dimensions[1]-1) *(self.__dimensions[2]-1)
 
-            res = np.empty(3,dtype=int)
-            res[0] = index // planesize
-            resyz = index - res[0]*(planesize)
-            res[1] = resyz //(self.__dimensions[2]-1)
-            res[2] =  resyz - res[1]*(self.__dimensions[2]-1)
+            res = np.empty((len(indices),3),dtype=int)
+            res[:,0] = indices // planesize
+            resyz = indices - res[:,0]*(planesize)
+            res[:,1] = resyz //(self.__dimensions[2]-1)
+            res[:,2] =  resyz - res[:,1]*(self.__dimensions[2]-1)
             return res
 
         else:
+            res = np.empty((len(indices),2),dtype=int)
             planesize = (self.__dimensions[1]-1)
-            nx = index // planesize
-            ny = index - nx*(planesize)
-            return np.array([nx,ny])
+            res[:,0] = indices // planesize
+            res[:,1] = indices - res[:,0]*(planesize)
+            return res
+
+    def GetMultiIndexOfElement(self,index):
+        return self.GetMultiIndexOfElements([index])[0,:]
 
     def GetNumberOfElements(self,dim=None):
         if dim is None:
@@ -216,25 +216,34 @@ class ConstantRectilinearMesh(MeshBase):
     def GetNumberOfElements(self,dim=None):
         return self.structElements.GetNumberOfElements()
 
+    def GetMultiIndexOfElements(self,indices):
+        return self.structElements.GetMultiIndexOfElements(indices)
+
     def GetMultiIndexOfElement(self,index):
         return self.structElements.GetMultiIndexOfElement(index)
 
     def GetDimensionality(self):
         return len(self.__dimensions)
 
-    def GetMultiIndexOfNode(self,index):
-        index = int(index)
+    def GetMultiIndexOfNodes(self,indices):
+        indices =  np.asarray(indices,dtype=int)
+
         if self.GetDimensionality() == 3:
             planesize = self.__dimensions[1] *self.__dimensions[2]
-            nx = index // planesize
-            resyz = index - nx*(planesize)
-            ny = resyz // self.__dimensions[2]
-            nz =  resyz - ny*self.__dimensions[2]
-            return np.array([nx,ny,nz],dtype= np.int_)
+            res = np.empty((len(indices),3),dtype=int)
+            res[:,0] = indices // planesize
+            resyz = indices - res[:,0]*(planesize)
+            res[:,1] = resyz // self.__dimensions[2]
+            res[:,2] =  resyz - res[:,1]*self.__dimensions[2]
+            return res
         else:
-            nx = index // self.__dimensions[1]
-            ny = index - nx*(self.__dimensions[1])
-            return np.array([nx,ny],dtype= np.int_)
+            res = np.empty((len(indices),2),dtype=int)
+            res[:,0] = indices // self.__dimensions[1]
+            res[:,1] = indices - res[:,0]*(self.__dimensions[1])
+            return res
+
+    def GetMultiIndexOfNode(self,index):
+        return self.GetMultiIndexOfNodes([index])[0,:]
 
     def GetMonoIndexOfNode(self,_indexs):
         _indexs= np.asarray(_indexs)
@@ -254,24 +263,28 @@ class ConstantRectilinearMesh(MeshBase):
             planesize = self.__dimensions[1]
             return planesize*indexs[:,0]+indexs[:,1]
 
-    def GetMonoIndexOfElement(self,indexs):
+    def GetMonoIndexOfElements(self,indices):
+        indices = np.asarray(indices,dtype=int)
         if self.GetDimensionality() == 3:
             planesize = (self.__dimensions[1]-1) *(self.__dimensions[2]-1)
-            return indexs[0]*planesize+indexs[1]*(self.__dimensions[2]-1) +indexs[2]
+            return indices[:,0]*planesize+indices[:,1]*(self.__dimensions[2]-1) +indices[:,2]
         else :
             planesize = (self.__dimensions[1]-1)
-            return indexs[0]*planesize+indexs[1]
+            return indices[:,0]*planesize+indices[:,1]
+
+    def GetMonoIndexOfElement(self,index):
+        return self.GetMonoIndexOfElements([index])[0]
 
     def GetPosOfNode(self,index):
         if self.nodes is not None:
             return self.nodes[index,:]
 
         if self.GetDimensionality() == 3 :
-            [nx,ny,nz] = self.GetMultiIndexOfNode(index)
-            return np.multiply([nx,ny,nz],self.__spacing)+self.__origin
+            nxnynz = self.GetMultiIndexOfNode(index)
+            return np.multiply(nxnynz,self.__spacing)+self.__origin
         else:
-            [nx,ny] = self.GetMultiIndexOfNode(index)
-            return np.multiply([nx,ny],self.__spacing)+self.__origin
+            nxny = self.GetMultiIndexOfNode(index)
+            return np.multiply(nxny,self.__spacing)+self.__origin
 
     def GetPosOfNodes(self):
         """
@@ -592,6 +605,11 @@ def CheckIntegrity():
     if np.any(np.sort(res) != [0, 1, 2, 3, 5, 6, 7, 8 ]): # pragma: no cover
         return "Not Ok on 'GetNodalIndicesOfBorder(0)'"
 
+
+    print(myMesh.GetMultiIndexOfElement(0))
+    print(myMesh.GetMultiIndexOfElement(0))
+    print(myMesh.GetMultiIndexOfElements([0]))
+    print(myMesh.GetMultiIndexOfElements(np.array([0,1])))
     return "OK"
 
 if __name__ == '__main__':
