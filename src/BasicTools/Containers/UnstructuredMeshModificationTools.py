@@ -305,73 +305,100 @@ def DeleteInternalFaces(mesh):
     mesh.PrepareForOutput()
 
 def ComputeSkin(mesh, md=None ,inplace=False):
-
-    #dualGraph,usedPoints = GetDualGraph(mesh)
+    """ compute the skin of a mesh (mesh), if md (mesh dimensionality) (md) is None
+    the the mesh.getdimensionality() is used to filter the element to compute
+    the skin, if inplace=True the skin is added to the original mesh. if inplace
+    is False (default) a new mesh is returned with the element of the skin not
+    prensent on the original mesh.
+    """
 
     if md is None:
         md = mesh.GetDimensionality()
 
-    # first we add the 2D element to the skin almanac
+    # first we count the total number of individual skin elemnts
+    totalcpt = {}
+    Dfilter = ElementFilter(mesh,dimensionality = md)
+    for elemName, data, ids in Dfilter:
+        faces = ElementNames.faces[elemName]
+        nbelements = data.GetNumberOfElements()
+        for faceType,localFaceConnectivity in faces:
+            cpt = totalcpt.setdefault(faceType,0) + nbelements
+            totalcpt[faceType] =  cpt
 
-    surf = {}
-    class Operator():
-        def __init__(self,surf):
-            self.surf = surf
+    D1filter = ElementFilter(mesh,dimensionality = md-1)
+    for elemName, data ,ids  in D1filter:
+        nbelements = data.GetNumberOfElements()
+        cpt = totalcpt.setdefault(elemName,0) + nbelements
+        totalcpt[elemName] =  cpt
 
-        def __call__(self,name,data,ids):
-            if name not in surf:
-                self.surf[name] = {}
-            surf2 = self.surf.get(name)
-            #print(ids)
-            for i in ids:
-                cc = data.connectivity[i,:]
-                lc = np.sort(cc)
-                ehash = (name,tuple(lc))
-                if ehash in surf2:
-                    surf2[ehash][0] +=1
-                    if  surf2[ehash][0] >= 2:
-                        del surf2[ehash]
-                else:
-                    surf2[ehash] = [1,cc]
+    #  Allocation of matrices to store all skin elements
+    #sortedstorage = {}
+    storage = {}
+    for k,v in totalcpt.items():
+        nn = ElementNames.numberOfNodes[k]
+        storage[k] = np.empty((v,nn),dtype=int)
+        totalcpt[k] = 0
 
-    op = Operator(surf)
-    ElementFilter(mesh,dimensionality = md-1 ).ApplyOnElements(op)
+    # fill storage with skin element aready on the mesh
+    for elemName, data, ids in D1filter:
+        cpt = totalcpt[elemName]
+        nbelements = data.GetNumberOfElements()
+        storage[elemName][cpt:cpt+nbelements,:] = data.connectivity
+        totalcpt[elemName] += nbelements
 
-    for name,data in mesh.elements.items():
-        if ElementNames.dimension[name] < md:
-            continue
-        faces = ElementNames.faces[name]
-        ne = data.GetNumberOfElements()
+    # fill storage with skin of elements of dimensionality D
+    for elemName,data,ids in Dfilter:
+        faces = ElementNames.faces[elemName]
         for faceType,localFaceConnectivity in faces:
             globalFaceConnectivity = data.connectivity[:,localFaceConnectivity]
-            if not faceType in surf:
-                surf[faceType] = {}
-            surf2 = surf[faceType]
-            for i in range(ne):
-                cc = globalFaceConnectivity[i,:]
-                lc = np.sort(cc)
-                ehash = (faceType,tuple(lc))
-                if ehash in surf2:
-                    surf2[ehash][0] +=1
-                    if  surf2[ehash][0] >= 2:
-                        del surf2[ehash]
-                else:
-                    surf2[ehash] = [1,cc]
+            cpt = totalcpt[faceType]
+            nbelements = data.GetNumberOfElements()
+            storage[faceType][cpt:cpt+nbelements,:] = globalFaceConnectivity
+            totalcpt[faceType] += nbelements
+
+
     if inplace:
         res = mesh
     else:
-        res = UnstructuredMesh()
+        res = mesh.__copy__()
         res.nodes = mesh.nodes
+        res.elements = type(mesh.elements)()
 
-    for name in surf:
-        data = res.GetElementsOfType(name)
-        surf2 = surf[name]
-        for hashh,data2 in surf2.items():
-            if data2[0] == 1:
-                data.AddNewElement(data2[1],-1)
-        data.tags.CreateTag("ExteriorSurf").SetIds(np.arange(data.GetNumberOfElements()))
 
-    res.PrepareForOutput()
+    # recover only the unique elements
+    for elemName,cpt in totalcpt.items():
+        if cpt == 0:
+            continue
+        store = storage[elemName]
+        _,index,counts = np.unique(np.sort(store,axis=1),return_index=True,return_counts=True,axis=0)
+
+        uniqueelems = index[counts==1]
+
+        if elemName in mesh.elements:
+            melements = mesh.elements.GetElementsOfType(elemName)
+            nbmelems = melements.GetNumberOfElements()
+            ids =  uniqueelems[uniqueelems < nbmelems]
+            # tag element already present on the original mesh
+            melements.tags.CreateTag("Skin",False).SetIds(ids)
+        else:
+            nbmelems = 0
+
+
+
+        ids =  uniqueelems[uniqueelems >= nbmelems]
+        if len(ids) == 0 :
+            continue
+
+        if inplace:
+            elems = mesh.elements.GetElementsOfType(elemName)
+        else:
+            elems = res.GetElementsOfType(elemName)
+
+
+        newelements = store[ids,:]
+        # add and tag new elements into the output
+        elems.tags.CreateTag("Skin",False).AddToTag(np.arange(newelements.shape[0])+elems.GetNumberOfElements())
+        elems.AddNewElements(newelements)
 
     return res
 
@@ -835,6 +862,7 @@ def CheckIntegrity_ComputeSkin(GUI=False):
     skin = ComputeSkin(res2)
     if GUI :
         from BasicTools.Actions.OpenInParaView import OpenInParaView
+        #OpenInParaView(res2,filename="res2.xmf")
 
         OpenInParaView(skin,filename="skin.xmf")
 
