@@ -40,6 +40,18 @@ class Filter(BOO):
 
         self.mesh = mesh
 
+    def IsEquivalent(self, other):
+        if id(self) == id(other):
+            return True
+        if isinstance(other, self.__class__):
+            if sorted(self.tags) != sorted(other.tags):
+                return False
+            if sorted(self.zones) != sorted(other.zones):
+                return False
+            return True
+        else:
+            return False
+
     def SetMesh(self,mesh):
         """
         Set the mesh
@@ -240,6 +252,16 @@ class FilterOP(BOO):
         if mesh is not None:
             self.mesh = mesh
 
+    def IsEquivalent(self, other):
+        if id(self) == id(other):
+            return True
+        if isinstance(other, self.__class__):
+            if self.filters != other.filters:
+                return False
+            return True
+        else:
+            return False
+
     @property
     def mesh(self):
         return self._mesh
@@ -410,6 +432,24 @@ class ElementFilter(Filter):
 
         if elementType is not None:
             self.AddElementType(elementType)
+
+    def IsEquivalent(self, other):
+        res = super(ElementFilter,self).IsEquivalent(other)
+        if not res :
+            return False
+
+        if id(self) == id(other):
+            return True
+        if isinstance(other, self.__class__):
+            if self.dimensionality != other.dimensionality:
+                return False
+            if self.zoneTreatment != other.zoneTreatment:
+                return False
+            if self.elementTypes != other.elementTypes:
+                return False
+            return True
+        else:
+            return False
 
     def __str__(self):
         res = "ElementFilter\n"

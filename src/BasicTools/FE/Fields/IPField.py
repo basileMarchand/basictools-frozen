@@ -124,8 +124,9 @@ class RestrictedIPField(IPField):
 
     def CheckCompatiblility(self,B):
         super(RestrictedIPField,self).CheckCompatiblility(B)
-        if id(self.efmask) != id(B.efmask):
-           raise (Exception("The efmask of the fields are not the same"))
+        if isinstance(B,type(self)):
+            if not self.efmask.IsEquivalent(B.efmask):
+                raise (Exception("The efmask of the fields are not the same"))
 
     def unaryOp(self,op,out=None):
         res = type(self)(name = None, mesh=self.mesh,rule=self.rule, efmask=self.efmask)
