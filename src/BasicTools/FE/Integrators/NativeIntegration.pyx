@@ -431,7 +431,7 @@ cdef class PyMonoElementsIntegralCpp():
               self.NativeIntegrator.SetSpaceSvalNI(s,i,&valN[0])
               dphidxi = space_ipvalues.valdphidxi[i]
               self.__dphidxi[s][i] = dphidxi
-              if len(dphidxi):
+              if dphidxi.size != 0:
                   self.NativeIntegrator.SetSpaceSvaldphidxiI(s,i,&dphidxi[0,0])
       ############ sending lnumbering ###############################
       self.NativeIntegrator.SetNumberOfNumberings(len(self.__usedNumbering__))

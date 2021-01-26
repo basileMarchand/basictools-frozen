@@ -184,6 +184,62 @@ def CreateCube(dimensions=[2,2,2], origin=[-1.0,-1.0,-1.0], spacing=[1.,1.,1.], 
     mesh.PrepareForOutput()
     return mesh
 
+def MeshToSimplex(mesh, legacy=False):
+    """
+    Convert mesh to only tetrahedron/triangle/bars/points
+    """
+
+    from BasicTools.Containers.UnstructuredMesh import ElementsContainer,AllElements
+
+    ae = AllElements()
+
+
+    for elemtype, data in mesh.elements.items():
+        res = data
+
+        if elemtype == ElementNames.Hexaedron_8:
+
+            res = ElementsContainer(ElementNames.Tetrahedron_4)
+            nbelems = data.GetNumberOfElements()
+            res.Allocate(nbelems*6)
+            conn = data.connectivity
+            res.connectivity[0:nbelems*6:6] = conn[:,[0, 6, 2, 3]]
+            res.connectivity[1:nbelems*6:6] = conn[:,[0, 6, 3, 7]]
+            res.connectivity[2:nbelems*6:6] = conn[:,[0, 6, 7, 4]]
+            res.connectivity[3:nbelems*6:6] = conn[:,[0, 6, 4, 5]]
+            res.connectivity[4:nbelems*6:6] = conn[:,[0, 6, 5, 1]]
+            res.connectivity[5:nbelems*6:6] = conn[:,[0, 6, 1, 2]]
+
+            res.originalIds =  np.repeat(data.originalIds,6)
+            for tname in data.tags:
+                ids = data.tags[tname].GetIds()
+                res.tags.CreateTag(tname).SetIds(np.repeat(ids,6)*6+np.tile(range(6),len(ids)) )
+
+        elif elemtype == ElementNames.Quadrangle_4:
+
+            res = ElementsContainer(ElementNames.Triangle_3)
+            nbelems = data.GetNumberOfElements()
+            res.Allocate(nbelems*2)
+            conn = data.connectivity
+            res.connectivity[0:nbelems*2:2] = conn[:,[0, 1, 2]]
+            res.connectivity[1:nbelems*2:2] = conn[:,[0, 2, 3]]
+
+            res.originalIds =  np.repeat(data.originalIds,2)
+            for tname in data.tags:
+                ids = data.tags[tname].GetIds()
+                res.tags.CreateTag(tname).SetIds(np.repeat(ids,2)*2+np.tile(range(2),len(ids)) )
+        elif elemtype in [ElementNames.Triangle_3,ElementNames.Triangle_6,ElementNames.Tetrahedron_4,ElementNames.Tetrahedron_10,ElementNames.Bar_2,ElementNames.Bar_3,ElementNames.Point_1]  :
+            pass
+        else:
+            raise(Exception("Dont know how to convert {} to simplices".format(elemtype)))
+
+        if elemtype in ae:
+            ae[res.elementType].merge(res)
+        else:
+            ae[res.elementType] = res
+
+    mesh.elements = ae
+
 def CreateMeshFromConstantRectilinearMesh(CRM, ofTetras= False,out=None, legacy=False):
     if out is None:
         res = UnstructuredMesh()
@@ -194,85 +250,25 @@ def CreateMeshFromConstantRectilinearMesh(CRM, ofTetras= False,out=None, legacy=
 
     res.nodes = CRM.GetPosOfNodes();
     res.originalIDNodes = np.arange(0,res.GetNumberOfNodes(),dtype=np.int);
-
     res.nodesTags = CRM.nodesTags
 
-    nbelements = CRM.GetNumberOfElements()
+    from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearElementContainer
+    from BasicTools.Containers.UnstructuredMesh import ElementsContainer
 
-    elementtype = ElementNames.Tetrahedron_4
-    if(CRM.GetDimensionality() == 3):
-        if ofTetras:
-            elementtype = ElementNames.Tetrahedron_4
-            nbelements = CRM.GetNumberOfElements()*6
+    for elemtype, data in CRM.elements.items():
+        if isinstance(data,ConstantRectilinearElementContainer):
+            eres = ElementsContainer(elemtype)
+            eres.connectivity = data.connectivity
+            eres.tags = data.tags
+            eres.cpt = data.GetNumberOfElements()
+            eres.originalIds = np.arange(0,data.GetNumberOfElements(),dtype=np.int)
         else:
-            elementtype = ElementNames.Hexaedron_8
-    else:
-        if ofTetras:
-            elementtype = ElementNames.Triangle_3
-            nbelements = CRM.GetNumberOfElements()*2
-        else:
-            elementtype = ElementNames.Quadrangle_4
+            eres = data
 
-    elements = res.GetElementsOfType(elementtype)
-    elements.connectivity = np.zeros((nbelements,ElementNames.numberOfNodes[elementtype]),dtype=np.int)
-    elements.cpt = nbelements
+        res.elements[elemtype] = eres
 
     if ofTetras:
-        if(CRM.GetDimensionality() == 3):
-            if legacy:
-                p0 = np.array([0,1,2,3,4,5,6,7])
-                p1=  np.array([1,2,3,0,5,6,7,4])
-                p2=  np.array([3,0,1,2,7,4,5,6])
-                p3=  np.array([2,3,0,1,6,7,4,5])
-                for elem in range(CRM.GetNumberOfElements()):
-                    index = CRM.GetMultiIndexOfElement(elem)
-                    idx = index[0]%2+ 2*(index[1]%2)+4*(index[2]%2)
-                    if idx == 0:
-                        per = p0
-                    elif idx == 1:
-                        per = p1
-                    elif idx == 2:
-                        per = p2
-                    elif idx == 3:
-                        per = p3
-                    elif idx == 4:
-                        per = p3
-                    elif idx == 5:
-                        per = p2
-                    elif idx == 6:
-                        per = p1
-                    elif idx == 7:
-                        per = p0
-                    else:
-                        raise # pragma: no cover
-
-                    conn = CRM.GetConnectivityForElement(elem)
-                    elements.connectivity[elem*6+0,:] = conn[per[[0,6,5,1]]];
-                    elements.connectivity[elem*6+1,:] = conn[per[[0,6,1,2]]];
-                    elements.connectivity[elem*6+2,:] = conn[per[[0,6,2,3]]];
-                    elements.connectivity[elem*6+3,:] = conn[per[[0,6,3,7]]];
-                    elements.connectivity[elem*6+4,:] = conn[per[[0,6,7,4]]];
-                    elements.connectivity[elem*6+5,:] = conn[per[[0,6,4,5]]];
-            else:
-                for elem in range(CRM.GetNumberOfElements()):
-                    conn = CRM.GetConnectivityForElement(elem)
-                    elements.connectivity[elem*6+0,:] = conn[[0, 6, 2, 3]]
-                    elements.connectivity[elem*6+1,:] = conn[[0, 6, 3, 7]]
-                    elements.connectivity[elem*6+2,:] = conn[[0, 6, 7, 4]]
-                    elements.connectivity[elem*6+3,:] = conn[[0, 6, 4, 5]]
-                    elements.connectivity[elem*6+4,:] = conn[[0, 6, 5, 1]]
-                    elements.connectivity[elem*6+5,:] = conn[[0, 6, 1, 2]]
-        else:
-            for elem in range(CRM.GetNumberOfElements()):
-                conn = CRM.GetConnectivityForElement(elem)
-                elements.connectivity[elem*2+0,:] = conn[[0, 1, 2]];
-                elements.connectivity[elem*2+1,:] = conn[[0, 2, 3]];
-
-    else:
-        elements.connectivity = CRM.GenerateFullConnectivity()
-
-    elements.originalIds = np.arange(0,elements.GetNumberOfElements(),dtype=np.int)
-    res.PrepareForOutput()
+        MeshToSimplex(res)
     return res
 
 def QuadToLin(inputmesh, divideQuadElements=True,lineariseMiddlePoints=False):
