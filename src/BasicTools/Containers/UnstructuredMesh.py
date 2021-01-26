@@ -78,6 +78,28 @@ class ElementsContainer(BaseOutputObject):
 
         self.cpt += other.cpt
 
+    def AddNewElements(self,conn,originalids=None):
+        """
+        append a new element to the connectivity
+
+        inputs:
+        conn : connectivity of the added element
+        originalid : the original id of the added element
+
+        return the total number of elements in the container
+        """
+        onoe = self.GetNumberOfElements()
+        self.Allocate(onoe+conn.shape[0])
+
+        self.connectivity[onoe:onoe+conn.shape[0],:] = conn
+
+        if originalids is None:
+            self.originalIds[onoe:onoe+conn.shape[0]] = -1
+        else:
+            self.originalIds[onoe:onoe+conn.shape[0]] = originalids
+
+        return self.cpt
+
     def AddNewElement(self,conn,originalid):
         """
         append a new element to the connectivity
