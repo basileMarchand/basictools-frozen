@@ -22,13 +22,13 @@ GeofNumber["c2d3"] = EN.Triangle_3
 GeofNumber["s3d3"] = EN.Triangle_3
 GeofNumber["c2d6"] = EN.Triangle_6
 PermutationZSetToBasicTools["c2d6"] = [0, 2, 4, 1, 3, 5]
-PermutationZSetToBasicTools["c3d6"] = [0, 2, 4, 1, 3, 5]
-
 
 GeofNumber['c3d4'] = EN.Tetrahedron_4
 GeofNumber['c3d4r'] = EN.Tetrahedron_4
 GeofNumber['c3d5'] = EN.Pyramid_5
 GeofNumber['c3d6'] = EN.Wedge_6
+PermutationZSetToBasicTools["c3d6"] = [0,2,1,3,5,4]
+
 GeofNumber['c3d8'] = EN.Hexaedron_8
 
 GeofNumber['c3d10'] = EN.Tetrahedron_10
@@ -43,12 +43,14 @@ PermutationZSetToBasicTools["c3d20"] = [0,2,4,6,12,14,16,18,1,3,5,7,13,15,17,19,
 GeofNumber['t3']   = EN.Triangle_3
 
 GeofNumber['t6']   = EN.Triangle_6
-PermutationZSetToBasicTools["t6"] = PermutationZSetToBasicTools["c3d6"]
+PermutationZSetToBasicTools["t6"] = PermutationZSetToBasicTools["c2d6"]
 
 GeofNumber['q8']   = EN.Quadrangle_8
 PermutationZSetToBasicTools["q8"] = [0, 2, 4, 6, 1, 3, 5, 7]
 
+GeofNumber['c3d15']   = EN.Wedge_15
 PermutationZSetToBasicTools["c3d15"] = [0, 2, 4, 9, 11, 13, 1, 3, 5, 10, 12, 14, 6, 7, 8]
+GeofNumber['c3d13']   = EN.Pyramid_13
 
 
 nbIntegrationsPoints = {}
