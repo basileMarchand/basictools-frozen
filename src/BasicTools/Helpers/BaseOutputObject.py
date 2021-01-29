@@ -16,6 +16,10 @@ useDifferentialTime = True
 
 from BasicTools.Helpers.TextFormatHelper import TFormat
 
+def ResetStartTime():
+    global _startTime
+    _startTime = time.time()
+
 def SetUseDifferentialTime(val):
     global useDifferentialTime
     useDifferentialTime = val
