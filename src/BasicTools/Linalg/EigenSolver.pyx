@@ -12,25 +12,54 @@ cdef extern from "src_cpp/NativeEigenSolvers.h" :
     cdef cppclass NativeEigenSolvers:
         NativeEigenSolvers() except +
         void SetSolverType(int)
-        void SetOp(int, int, double*,int*,int*) nogil
+        void SetOp(int, int,int, double*,int*,int*, const double& ) nogil
         void Solve(int,double*,double*) nogil
+        int GetSPQRRank()
+        void GetSPQR_R(long*, long*, double*,long*,long*)
+        void GetSPQR_Q(long*, long*, double*, long*, long*)
+        int GetSPQR_R_nonZeros()
+        int GetSPQR_Q_nonZeros()
+        void GetSPQR_P(long*)
 
 cdef class EigenSolvers():
      cdef NativeEigenSolvers c_solver  # Hold a C++ instance which we're wrapping
+     cdef int m
+     cdef int n
+     cdef double tol
      def __cinit__(self):
         self.c_solver = NativeEigenSolvers()
-     def SetSolverType(self,int stype):
-         self.c_solver.SetSolverType(stype)
+        self.m = 0
+        self.n = 0
+        self.tol = 1.e-6
+
+     def SetTolerance(self,double tol):
+         self.tol = tol
+
+     def SetSolverType(self,str stype):
+         if stype == "CG":
+             self.c_solver.SetSolverType(1)
+         elif stype == "LU":
+             self.c_solver.SetSolverType(2)
+         elif stype == "SPQR":
+             self.c_solver.SetSolverType(3)
+         elif stype == "BiCGSTAB":
+             self.c_solver.SetSolverType(4)
+         else:
+             print("SolverType Not Available")
+             raise
+
      def SetOp(self,matrix):
          data = coo_matrix(matrix)
-         cdef int shape  = matrix.shape[0]
+         self.m = matrix.shape[0]
+         self.n = matrix.shape[1]
          cdef np.ndarray[double, ndim=1, mode="c"] ddata =  data.data
          cdef np.ndarray[int, ndim=1, mode="c"] drow =  data.row
          cdef np.ndarray[int, ndim=1, mode="c"] dcol =  data.col
-         self.SetOp_internal(shape,data.data,data.row,data.col)
+         self.SetOp_internal(self.m,self.n,data.data,data.row,data.col)
 
-     def SetOp_internal(self,int shape,
-                np.ndarray[double, ndim=1, mode="c"] data,
+
+     def SetOp_internal(self,int m,int n,
+               np.ndarray[double, ndim=1, mode="c"] data,
                np.ndarray[int, ndim=1, mode="c"] row,
                np.ndarray[int, ndim=1, mode="c"] col):
 
@@ -38,11 +67,11 @@ cdef class EigenSolvers():
          cdef double* datap =  &data[0]
          cdef int* rowp =  &row[0]
          cdef int* colp =  &col[0]
-
+         cdef double tol  = self.tol
          with nogil:
-             self.c_solver.SetOp(shape,data_shape,datap,rowp,colp)
-     def Solve(self,np.ndarray[double, ndim=1, mode="c"] rhs) :
-         cdef np.ndarray[double, ndim=1, mode="c"] sol = np.zeros_like(rhs)
+             self.c_solver.SetOp(m,n,data_shape,datap,rowp,colp,tol)
+
+     def Solve(self,np.ndarray[double, ndim=1, mode="c"] rhs,np.ndarray[double, ndim=1, mode="c"] sol ) :
          cdef int s = rhs.shape[0]
          cdef double* rhsp = &rhs[0]
          cdef double* solp = &sol[0]
@@ -51,3 +80,63 @@ cdef class EigenSolvers():
              solver.Solve(s, rhsp, solp)
          return sol
 
+     def GetSPQRRank(self):
+         cdef NativeEigenSolvers* solver = &self.c_solver
+         return solver.GetSPQRRank()
+
+     def GetSPQR_R(self):
+
+         cdef NativeEigenSolvers* solver = &self.c_solver
+         nzsize = solver.GetSPQR_R_nonZeros();
+         cdef np.ndarray[double, ndim=1, mode="c"] vals = np.ndarray(nzsize,dtype=np.double);
+         cdef np.ndarray[long, ndim=1, mode="c"] rows = np.ndarray(nzsize,dtype=int);
+         cdef np.ndarray[long, ndim=1, mode="c"]cols = np.ndarray(nzsize,dtype=int);
+         cdef np.ndarray[long, ndim=1, mode="c"] sizes = np.ndarray(2,dtype=int);
+         from scipy.sparse import coo_matrix
+
+         if nzsize == 0:
+             return coo_matrix(([],([],[])), shape=(sizes[0],sizes[1] ))
+
+         cdef long* si = &sizes[0]
+         cdef long* sj = &sizes[1]
+         cdef double* vp = &vals[0]
+         cdef long* rp = &rows[0]
+         cdef long* cp = &cols[0]
+
+         solver.GetSPQR_R(si,sj, vp,rp,cp);
+         data = (vals, (rows,cols))
+         K = coo_matrix(data, shape=(sizes[0],sizes[1] ))
+         return K
+
+     def GetSPQR_P(self):
+        cdef np.ndarray[long, ndim=1, mode="c"] p = np.ndarray(self.n,dtype=int);
+        cdef long* pp = &p[0]
+        cdef NativeEigenSolvers* solver = &self.c_solver
+        solver.GetSPQR_P(pp);
+        return p
+
+     def GetSPQR_Q(self):
+
+         cdef NativeEigenSolvers* solver = &self.c_solver
+         nzsize = solver.GetSPQR_Q_nonZeros();
+         cdef np.ndarray[double, ndim=1, mode="c"] vals = np.ndarray(nzsize,dtype=np.double);
+         cdef np.ndarray[long, ndim=1, mode="c"] rows = np.ndarray(nzsize,dtype=int);
+         cdef np.ndarray[long, ndim=1, mode="c"] cols = np.ndarray(nzsize,dtype=int);
+         cdef np.ndarray[long, ndim=1, mode="c"] sizes = np.ndarray(2,dtype=int);
+
+         from scipy.sparse import coo_matrix
+
+         if nzsize == 0:
+             return coo_matrix(([],([],[])), shape=(sizes[0],sizes[1] ))
+
+         cdef long* si = &sizes[0]
+         cdef long* sj = &sizes[1]
+         cdef double* vp = &vals[0]
+         cdef long* rp = &rows[0]
+         cdef long* cp = &cols[0]
+
+         solver.GetSPQR_Q(si,sj, vp,rp,cp);
+
+         data = (vals, (rows,cols))
+         Q = coo_matrix(data, shape=(sizes[0],sizes[1]) )
+         return Q

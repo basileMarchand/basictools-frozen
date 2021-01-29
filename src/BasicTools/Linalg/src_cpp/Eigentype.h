@@ -28,6 +28,7 @@ typedef Eigen::Matrix<INT_TYPE, 1, Dynamic> MatrixI1D;
 
 
 typedef Eigen::SparseMatrix<FLOAT_TYPE, Eigen::ColMajor> SpMatD;
+typedef Eigen::SparseMatrix<FLOAT_TYPE, Eigen::RowMajor> SpMatDR;
 
 
 typedef Eigen::Map<MatrixDDD> MapMatrixDDD;

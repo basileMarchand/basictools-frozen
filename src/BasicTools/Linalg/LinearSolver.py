@@ -18,17 +18,25 @@ from BasicTools.Linalg.ConstraintsHolder import ConstraintsHolder
 
 
 def _available_algorithms():
-    result = ["Direct", "CG", "lstsq", "gmres"]
+    result = ["Direct", "CG", "lsqr", "gmres","lgmres"]
     try:
         import sksparse.cholmod
         result.append("cholesky")
     except ImportError:
         pass
+
     try:
-        import BasicTools.Linalg.EigenSolver
-        result.extend(("EigenCG", "EigenLU"))
+        import pyamg
+        result.append("AMG")
     except ImportError:
         pass
+
+    try:
+        import BasicTools.Linalg.EigenSolver
+        result.extend(("EigenCG", "EigenLU","EigenBiCGSTAB","EigenSPQR"))
+    except ImportError:
+        pass
+
     return tuple(result)
 
 
@@ -43,6 +51,9 @@ class LinearProblem(BOO):
 
         self.constraints = ConstraintsHolder()
         self.SetAlgo(self.type)
+
+    def SetTolerance(self,tol):
+        self.tol = tol
 
     def HasConstraints(self):
         return self.constraints.numberOfEquations > 0
@@ -68,46 +79,38 @@ class LinearProblem(BOO):
         self.originalOp = op
 
         if self.HasConstraints():
-            self.PrintVerbose('With constraints (' +str(self.constraints.numberOfEquations) + ')')
+            self.PrintVerbose(" With constraints (" +str(self.constraints.numberOfEquations) + ")")
+            self.PrintVerbose(" Treating constraints using "+ str(type(self.constraints.method)) )
             self.constraints.SetNumberOfDofs(op.shape[1])
+            self.PrintDebug(" Setting Op" )
             self.constraints.SetOp( op  )
+            self.PrintDebug(" UpdateCSystem()" )
             self.constraints.UpdateCSystem()
+            self.PrintDebug(" GetCOp ")
             op = self.constraints.GetCOp()
             self.PrintVerbose('Constraints treatememnt Done ')
 
         self.op = op
 
-        if self.type == "Direct":
+        if self.type in [ "CG", "gmres","lsqr", "lgmres" ]:
+            self.solver = None
+        elif self.type == "Direct":
             self.PrintDebug('Starting Factorisaton')
             self.solver = sps.linalg.factorized(op)
-        elif self.type == "CG":
-            self.solver = None
-            pass
-        elif self.type == "lstsq":
-            self.solver = None
-            pass
-        elif self.type == "gmres":
-            self.solver = None
-            pass
+        elif self.type == "AMG":
+            import pyamg
+            self.solver = pyamg.ruge_stuben_solver(op.tocsr())
         elif self.type == "cholesky":
             from sksparse.cholmod import cholesky
             self.solver = cholesky(op)
         elif len(self.type) >= 5 and  self.type[0:5] == "Eigen":
-            self.PrintVerbose('Loading Eigensolver ')
-
             import BasicTools.Linalg.EigenSolver as EigenSolver
-            self.PrintVerbose('Loading Eigensolver Done')
             self.solver = EigenSolver.EigenSolvers()
-            #print(self.type[5:])
-            if self.type[5:] =="CG":
-                self.solver.SetSolverType(1)
-            elif self.type[5:] =="LU":
-                self.solver.SetSolverType(2)
-            else:
-                raise(Exception("Solver not found"))
+            self.solver.SetSolverType(self.type[5:])
+            self.solver.SetTolerance(self.tol)
             self.solver.SetOp(op)
         else:
-            raise(Exception("Error"))
+            raise(Exception("Error setting the operator"))
 
         self.PrintDebug('In SetOp Done')
 
@@ -131,13 +134,19 @@ class LinearProblem(BOO):
         else:
             u0 = self.u
 
+        if u0 is None:
+           u0 = np.zeros_like(rhs)
+
+        rhs = rhs.squeeze()
+        u0 = u0.squeeze()
 
         self.PrintDebug('In LinearProblem Solve')
-        if self.type == "Direct":
+        if self.type in ["Direct", "cholesky"]:
             self.u = self.solver(rhs)
+        elif self.type == "AMG":
+            self.u = self.solver.solve(rhs,x0=u0,tol=self.tol)
         elif len(self.type) >= 5 and  self.type[0:5] == "Eigen":
-            #print("solve using eigen")
-            self.u = self.solver.Solve(rhs)
+            self.u = self.solver.Solve(rhs,u0)
         elif self.type == "CG":
             diag = self.op.diagonal()
             diag[diag == 0] = 1.0
@@ -156,11 +165,20 @@ class LinearProblem(BOO):
             if res[1] < 0 :
                 self.Print(TF.InYellowBackGround(TF.InRed("Illegal input or breakdown"))) #pragma: no cover
         elif self.type == "gmres":
-            self.u = np.linalg.gmres(self.op, rhs,tol = self.tol, atol= self.tol)[0]
-        elif self.type == "lstsq":
-            self.u = np.linalg.lstsq(self.op, rhs)[0]
-        elif self.type == "cholesky":
-            self.u = self.solver(rhs)
+            diag = self.op.diagonal()
+            diag[diag == 0] = 1.0
+            M = sps.dia_matrix((1./diag,0), shape=self.op.shape)
+            self.u = spslin.gmres(self.op, rhs, x0 = u0,M = M,tol = self.tol, atol= self.tol)[0]
+        elif self.type == "lgmres":
+            diag = self.op.diagonal()
+            diag[diag == 0] = 1.0
+            M = sps.dia_matrix((1./diag,0), shape=self.op.shape)
+            self.u = spslin.lgmres(self.op, rhs, x0 = u0,M = M,tol = self.tol, atol= self.tol)[0]
+        elif self.type == "lsqr":
+            self.u = spslin.lsqr(self.op, rhs, atol=self.tol, btol=self.tol, x0 = u0)[0]
+        else:
+            raise(Exception("Error solving system"))
+
 
         self.PrintDebug("Done Linear solver")
 
@@ -176,63 +194,81 @@ class LinearProblem(BOO):
     def GetAvailableAlgorithms(cls):
         return cls.__available_algorithms
 
-
-def CheckIntegrity(GUI=False):
-
+def CheckSolver(GUI,solver):
+    print("Solver "+ str(solver))
     LS = LinearProblem ()
-
-    LS.SetAlgo('CG')
     LS.SetGlobalDebugMode()
+    LS.SetAlgo(solver)
 
     LS.SetOp(sps.csc_matrix(np.array([[0.5,0],[0,1]])) )
-    sol = LS.Solve(np.array([[1],[2]]))
+    sol = LS.Solve(np.array([[1.],[2.]]))
     # second run
-    sol = LS.Solve(np.array([[1],[2]]))
+    sol = LS.Solve(np.array([[1.],[2.]]))
+
     if abs(sol[0] - 2.) >1e-15  :
         print(sol[0]-2) #pragma: no cover
         raise Exception() #pragma: no cover
     if abs(sol[1] - 2.) > 1e-15 : raise Exception()
 
-    LS.SetAlgo("Direct")
+    if solver == "EigenSPQR" :
 
-    LS.SetOp(sps.csc_matrix(np.array([[0.5,0],[0,1]])))
-    sol = LS.Solve(np.array([[1],[2]]))
-    if sol[0] != 2. : raise Exception()
-    if sol[1] != 2. : raise Exception()
+        A = sps.csc_matrix(np.array([[0,0,0,1,1],
+                                     [0,0,0,1,1],
+                                     [0.51,0.5,0.5,0,10],
+                                     [0.5,0.5,0.5,0,10],
+                                     [0,1,0,0,5],
+                                     ]))
 
-    import platform
-    if platform.system() == "Windows":
-        print("Skiping the rest of the test on windows test on windows")
-        return "OK"
+        def QRTest(A):
+            LS.SetTolerance(1e-5)
+            print(A.toarray())
+            LS.SetOp(A)
+            rank = LS.solver.GetSPQRRank()
+            print("Rank",rank )
+            Q = LS.solver.GetSPQR_Q()
+            print("Q")
+            print(Q.toarray())
+            R = LS.solver.GetSPQR_R()
+            print("R")
+            print(R.toarray())
+            P = LS.solver.GetSPQR_P()
+            print("P" ,P)
+            print("-------------------------------------------------")
+            print("AP")
+            print(A.toarray()[:,P])
+            print("QR")
+            print(Q.tocsr().dot(R.tocsr().toarray() ) )
+            print("norm A[:,P]-QR")
+            print(np.linalg.norm(A.toarray()[:,P] - Q.tocsr()[:,0:rank].dot(R.tocsr()[0:rank,:].toarray() ) ) )
+            print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+            print("Q réduit")
+            print(Q.tocsr()[:,0:rank].toarray())
+            print("R réduit")
+            print(R.tocsr()[0:rank,0:rank].toarray())
+            print("QR reduit")
+            print(Q.tocsr()[:,0:rank].dot(R.tocsr()[0:rank,0:rank].toarray() ) )
+            print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+            error = np.linalg.norm(A.toarray()[:,P[0:rank]] - Q.tocsr()[:,0:rank].dot(R.tocsr()[0:rank,0:rank].toarray() ) )
+            if abs(error) > 1e-10:
+                raise
+            print(error)
 
-    algorithm = "cholesky"
-    if algorithm in LS.GetAvailableAlgorithms():
-        LS.SetAlgo(algorithm)
-        LS.SetOp(sps.csc_matrix(np.array([[0.5,0],[0,1]])))
-        sol = LS.Solve(np.array([[1],[2]]))
-        if sol[0] != 2. : raise Exception()
-        if sol[1] != 2. : raise Exception()
 
-    b = np.array([1.,2.])
-    matrix = sps.csc_matrix(np.array([[0.5,0],[0,1.]]))
+            print ("OK EigenSPQR"  )
 
-    LS.SetAlgo("EigenLU")
-    LS.SetOp(matrix)
-    sol = LS.Solve(b)
-    #print("sol " +str(sol))
-    if sol[0] != 2. : raise Exception()
-    if sol[1] != 2. : raise Exception()
+        QRTest(A.T)
 
-    LS.SetAlgo("EigenCG")
-    LS.SetOp(matrix)
-    sol = LS.Solve(b)
-    #print("sol " +str(sol))
-    if sol[0] != 2. : raise Exception()
-    if sol[1] != 2. : raise Exception()
-#    if sol[0] != 2. : raise Exception()
-#    if sol[1] != 2. : raise Exception()
 
-    return "OK"
+
+def CheckIntegrity(GUI=False):
+
+    solvers = _available_algorithms()
+
+    for s in solvers:
+        CheckSolver(GUI,s)
+
+    return "ok"
+
 
 if __name__ == '__main__':
     print(CheckIntegrity()) #pragma: no cover
