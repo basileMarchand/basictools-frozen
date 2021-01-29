@@ -93,6 +93,10 @@ vtkNumberByElementName[ElementNames.Quadrangle_8] = 23
 vtkNumberByElementName[ElementNames.Tetrahedron_10] = 24
 vtkNumberByElementName[ElementNames.Hexaedron_20] = 25
 vtkNumberByElementName[ElementNames.Quadrangle_9] = 28
+
+vtkNumberByElementName[ElementNames.Pyramid_13] = 27
+vtkNumberByElementName[ElementNames.Wedge_15] = 26
+
 elementNameByVtkNumber = {}
 
 for key,vtknumber in vtkNumberByElementName.items():
