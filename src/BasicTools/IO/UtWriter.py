@@ -213,7 +213,11 @@ class UtWriter(WriterBase):
 
           numberElements = []
           nbPtIntPerElement = []
-          mesh3D = ExtractElementByDimensionalityNoCopy(self.mesh,3)
+          if self.mesh.GetNumberOfElements(3) != 0:
+              dim = 3
+          else:
+              dim = 2
+          mesh3D = ExtractElementByDimensionalityNoCopy(self.mesh,dim)
           for name,data in mesh3D.elements.items():
             numberElements.append(data.GetNumberOfElements())
             nbPtIntPerElement.append(nbIntegrationsPoints[GeofName[name]])
