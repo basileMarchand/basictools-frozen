@@ -338,48 +338,12 @@ class Fea(FeaBase.FeaBase):
         self.u = np.zeros((self.ndof, 1), dtype=np.double)
 
         if K.nnz > 0 :
-          if self.linearSolver == "Direct":
-            self.u[self.free, 0] = linalg.spsolve(K, rhs)
-          elif self.linearSolver == "DirectDense":
-            self.u[self.free, 0] = denselinalg.solve(K.toarray(), rhs,sym_pos=True,overwrite_a=True)
-          elif self.linearSolver == "CG":
-            # Preconditioning
-            M = sps.dia_matrix((1./K.diagonal(),0), shape=K.shape)
-            # normalization of the rhs term ( to treat correctly the tol of CG) (Please read the documentaion of numpy.linalg.cg)
-            norm = np.linalg.norm(rhs)
-            #def PrintRes(x):
-            #   self.PrintDebug(np.linalg.norm(K.dot(x)-rhs/norm))
-            #    , callback=PrintRes
-            self.PrintDebug("tol " + str(self.tol))
-            res = linalg.cg(K.tocsc(copy=False), rhs/norm, x0 = self.u[self.free, 0]/norm , M = M, tol = self.tol , atol=self.tol)
-            if res[1] > 0:
-                raise
-            self.u[self.free, 0] = res[0]*norm
-
-          elif self.linearSolver == "LGMRES":
-            M = sps.dia_matrix((1./K.diagonal(),0), shape=K.shape)
-            norm = np.linalg.norm(rhs)
-            res = linalg.lgmres(K, rhs/norm, x0 = self.u[self.free, 0]/norm , M = M , tol = self.tol, atol=self.tol )
-            self.u[self.free, 0] = res[0]*norm
-          elif self.linearSolver == "AMG":# pragma: no cover
-            try:
-                import pyamg
-            except:#pragma: no cover
-                raise Exception('AMG module not installed')#pragma: no cover
-            K = K.tocsr()
-            ml = pyamg.ruge_stuben_solver(K)
-            res = ml.solve(rhs,x0 = self.u[self.free, 0] , tol=1e-12,accel='cg')
-            self.u[self.free, 0] = res
-          elif self.linearSolver == "cholesky":# pragma: no cover
-            from sksparse.cholmod import cholesky
-            self.u[self.free, 0] = cholesky(K)(rhs )
-
-          else :
             from BasicTools.Linalg.LinearSolver import LinearProblem
             linSol = LinearProblem()
             linSol.tol = self.tol
             linSol.SetAlgo(self.linearSolver)
             linSol.SetOp(K)
+            linSol.u = self.u[self.free, 0]
             self.u[self.free, 0] = linSol.Solve(rhs)
           #else :
 
@@ -582,21 +546,6 @@ def CheckIntegrityThermal3D():
     myProblem.linearSolver = 'Direct'
     myProblem.Solve()
     myProblem.Write()
-    myProblem.linearSolver = 'DirectDense'
-    myProblem.Solve()
-    myProblem.Write()
-    myProblem.linearSolver = 'LGMRES'
-    myProblem.Solve()
-    myProblem.element_elastic_energy()
-    myProblem.Write()
-    try:# pragma: no cover
-       import pyamg
-       myProblem.linearSolver = 'AMG'
-       myProblem.Solve()
-       myProblem.Write()
-    except Exception as inst: # pragma: no cover
-       print(inst.args[0])# pragma: no cover
-
     myProblem.writer.Close()
 
 
@@ -728,21 +677,8 @@ def CheckIntegrityThermal2D():
     myProblem.linearSolver = 'Direct'
     myProblem.Solve()
     myProblem.Write()
-    myProblem.linearSolver = 'DirectDense'
-    myProblem.Solve()
-    myProblem.Write()
-    myProblem.linearSolver = 'LGMRES'
-    myProblem.Solve()
     myProblem.element_elastic_energy()
     myProblem.Write()
-    try:# pragma: no cover
-       import pyamg
-       myProblem.linearSolver = 'AMG'
-       myProblem.Solve()
-       myProblem.Write()
-    except Exception as inst: # pragma: no cover
-        print(inst.args[0])# pragma: no cover
-
     myProblem.writer.Close()
 
 
