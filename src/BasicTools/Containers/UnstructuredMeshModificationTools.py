@@ -484,6 +484,8 @@ def ComputeFeatures(inputmesh,FeatureAngle=90,skin=None):
         bars.tags.CreateTag("Ridges").SetIds(np.arange(bars.GetNumberOfElements()))
     skinmesh.PrepareForOutput()
     edgemesh.PrepareForOutput()
+    skinmesh.GenerateManufacturedOriginalIDs()
+    edgemesh.GenerateManufacturedOriginalIDs()
 
     """
     Now we compute the corners
