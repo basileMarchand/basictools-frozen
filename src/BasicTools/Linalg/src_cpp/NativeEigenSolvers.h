@@ -100,9 +100,10 @@ struct NativeEigenSolvers {
     Eigen::ConjugateGradient<SpMatD, Upper|Lower >* cgSolver;
     Eigen::SparseLU<SpMatD >*   luSolver;
     Eigen::SparseQR< SpMatD, Eigen::COLAMDOrdering<int> >* spqrSolver;
-    Eigen::BiCGSTAB<SpMatD >* bicgstabSolver;
+    Eigen::BiCGSTAB<SpMatDR >* bicgstabSolver;
 
     SpMatD* A;
+    SpMatDR* A_rowmajor;
     int solverType;
     Eigen::SparseMatrix<double> Q;
     Eigen::SparseMatrix<double> R;
@@ -114,6 +115,7 @@ struct NativeEigenSolvers {
        this->spqrSolver = 0;
        this->bicgstabSolver = 0;
        this->A = 0;
+       this->A_rowmajor = 0;
     }
     ~NativeEigenSolvers(){
         this->Clean();
@@ -125,6 +127,7 @@ struct NativeEigenSolvers {
        if(this->spqrSolver){ delete this->spqrSolver;this->spqrSolver = 0;};
        if(this->bicgstabSolver){ delete this->bicgstabSolver;this->bicgstabSolver = 0;};
        if(this->A){ delete this->A;this->A = 0;};
+       if(this->A_rowmajor){ delete this->A_rowmajor;this->A_rowmajor = 0;};
        this->Q.resize(0,0);
        this->R.resize(0,0);
 
@@ -139,21 +142,31 @@ struct NativeEigenSolvers {
         } else if(i == 3) {
             this->spqrSolver = new Eigen::SparseQR< SpMatD, Eigen::COLAMDOrdering<int> >();
         } else if(i == 4) {
-            this->bicgstabSolver = new Eigen::BiCGSTAB<SpMatD >();
+            this->bicgstabSolver = new Eigen::BiCGSTAB<SpMatDR >();
         } else{
             std::cout << "Solver type " << i << " not avilable " << std::endl;
         }
     };
     void SetOp(const int& sizem,const int& sizen,const int& ev_size ,FLOAT_TYPE* ev, int* ei, int* ej, const double& tolerance){
-        if(this->A) delete A;
-        this->A = new SpMatD(sizem,sizen);
+
         container cont;
         cont.ev = ev;
         cont.ei = ei;
         cont.ej = ej;
         cont.size = ev_size;
-        this->A->setFromTriplets(cont.begin(), cont.end());
-        this->A->makeCompressed ();
+
+        if (this->solverType == 4){
+            if(this->A_rowmajor) delete A_rowmajor;
+            this->A_rowmajor = new SpMatDR(sizem,sizen);
+            this->A_rowmajor->setFromTriplets(cont.begin(), cont.end());
+            this->A_rowmajor->makeCompressed ();
+        } else {
+            if(this->A) delete A;
+            this->A = new SpMatD(sizem,sizen);
+            this->A->setFromTriplets(cont.begin(), cont.end());
+            this->A->makeCompressed ();
+        }
+
 
         if(this->solverType == 0 ) {
             std::cout << "ERROR! NativeEigenSolvers::SetOp() Solver type not set " << std::endl;
@@ -187,7 +200,7 @@ struct NativeEigenSolvers {
             }
         }else if(this->solverType == 4 ){
             this->bicgstabSolver->setTolerance(tolerance);
-            this->bicgstabSolver->compute(*A);
+            this->bicgstabSolver->compute(*A_rowmajor);
             if(this->bicgstabSolver->info()!=Success) {
                 std::cout << "bicgstab compute failed" << std::endl;
                 // decomposition failed
