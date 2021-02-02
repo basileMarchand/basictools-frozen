@@ -15,10 +15,16 @@ def GetNumberOfAvailableCpus():
        try:
            out = subprocess.check_output(["/usr/bin/squeue","-h","-t","r","-u",str(os.environ.get("USER")),"-w",platform.node(),"-o","'%C'"], shell=False ).decode("utf-8","ignore")
            out = out.strip().strip("'")
-           return PH.ReadInt(out)
+           res = PH.ReadInt(out)
+           os.environ['SLURM_JOB_CPU_PER_NODE'] = str(res)
+           return res
        except:
            import multiprocessing
-           return multiprocessing.cpu_count()
+           res = multiprocessing.cpu_count()
+           os.environ['SLURM_JOB_CPU_PER_NODE'] = str(res)
+           return res
+
+   return  PH.ReadInt(SLURM_JOB_CPU_PER_NODE)
 
 class CPU():
     """ Class to help doing the multithreading without using to many cpus

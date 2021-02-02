@@ -155,9 +155,9 @@ class KRConformalTieVector(KRBaseVector):
 
                     for i in range(len(ffI)):
                         firstOff = usedOffsetsI[i]
-                        firstNumbering = ffI[i].numbering["almanac"][('P', nidI, None) ]+firstOff
+                        firstNumbering = ffI[i].numbering.GetDofOfPoint(nidI)+firstOff
                         secondOff = usedOffsetsII[i]
-                        secondNumbering = ffII[i].numbering["almanac"][('P', nidII, None)] + secondOff
+                        secondNumbering = ffII[i].numbering.GetDofOfPoint(nidI) + secondOff
                         CH.AddFactor(firstNumbering,1)
                         CH.AddFactor(secondNumbering,-1)
                         CH.NextEquation()

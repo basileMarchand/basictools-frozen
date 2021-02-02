@@ -238,7 +238,7 @@ def IntegrateGeneralMonoThread( mesh, wform, constants, fields, unkownFields, te
                         offset += tf.numbering["size"]
                     #idx = testFields.find(lambda x:x.name == term.fieldName)
                     for x in ids:
-                        leftNumbering = tf.numbering["almanac"][("P",x,None)] + offset
+                        leftNumbering = tf.numbering.GetDofOfPoint(x) + offset
                     continue
                 else:
                     print("type " + str(term.internalType) + "Not coded yet")

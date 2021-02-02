@@ -69,6 +69,9 @@ class KRBaseVector(KRBase):
         self.originSystem = Transform()
         self.targetSystem = Transform()
 
+    def Fix(self,direc,val=True):
+        self.blockDirections[direc] = val
+        return self
 
     def Fix0(self,val=True):
         self.blockDirections[0] = val

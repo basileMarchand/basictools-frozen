@@ -34,7 +34,8 @@ class KRMasterNodeToSlaveScalar(KRBaseScalar):
         fieldname = self.args[0]
         field = fieldDic[fieldname]
 
-        masterDofs = np.array([ field.numbering['almanac'][('P',x,None)] for x in nids])+fieldOffsets[fieldname]
+
+        masterDofs = np.array([ field.numbering.GetDofOfPoint(x)  for x in nids])+fieldOffsets[fieldname]
 
         ef = ElementFilter(mesh=mesh, tags=self.on )
         for name, data, elids in ef:
@@ -78,7 +79,7 @@ class KRMasterNodeToSlaveVector(KRBaseVector):
         for sufix in range(3):
             cfieldname = fieldname + "_"+ str(sufix)
 
-            masterDofs.append( fieldDic[cfieldname].numbering['almanac'][('P',nids[0],None)] + fieldOffsets[cfieldname]  )
+            masterDofs.append( fieldDic[cfieldname].numbering.GetDofOfPoint(nids[0]) + fieldOffsets[cfieldname]  )
 
             usedFields.append(fieldDic[cfieldname])
 
@@ -92,6 +93,7 @@ class KRMasterNodeToSlaveVector(KRBaseVector):
         for name, data, elids in ef:
             print(name)
             sp = field.space[name]
+            sp.Create()
             nbsf = sp.GetNumberOfShapeFunctions()
             nu = [x.numbering[name] for x in usedFields]
             for elid in elids:
