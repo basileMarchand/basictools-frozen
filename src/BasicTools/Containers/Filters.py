@@ -251,6 +251,11 @@ class FilterOP(BOO):
 
         if mesh is not None:
             self.mesh = mesh
+        else:
+            #if no mesh provided we pick the mesh of the first object
+            #(if available)
+            if len(self.filters):
+                self.mesh = self.filters[0].mesh
 
     def IsEquivalent(self, other):
         if id(self) == id(other):
