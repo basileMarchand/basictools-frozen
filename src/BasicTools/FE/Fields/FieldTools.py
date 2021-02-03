@@ -11,6 +11,7 @@ import BasicTools.Containers.ElementNames as EN
 from BasicTools.FE.Fields.FEField import FEField
 from BasicTools.FE.Fields.IPField import IPField, RestrictedIPField
 from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
+from BasicTools.FE.DofNumbering import ComputeDofNumbering
 from BasicTools.FE.Fields.IPField import FieldBase
 
 
@@ -47,11 +48,15 @@ def GetCellRepresentation(listOfFEFields,fillvalue=0):
     return res
 
 class IntegrationPointWrapper(FieldBase):
-    def __init__(self,field,rule):
+    def __init__(self,field,rule,efmask=None):
+        if not isinstance(field,FEField):
+            raise(Exception("IntegrationPointWrapper work only on FEFields"))
+
         self.feField = field
         self.rule = rule
         self._ipcache = None
         self._diffipcache = {}
+        self.efmask = efmask
 
     @property
     def name(self):
@@ -71,14 +76,14 @@ class IntegrationPointWrapper(FieldBase):
             cm = compName
 
         if cm not in self._diffipcache:
-            from BasicTools.FE.Fields.FieldTools import TransferFEFieldToIPFieldDer
-            self._diffipcache[cm] = TransferFEFieldToIPFieldDer(self.feField,der=cm,rule=self.rule)
+            from BasicTools.FE.Fields.FieldTools import TransferFEFieldToIPField
+            self._diffipcache[cm] = TransferFEFieldToIPField(self.feField,der=cm,rule=self.rule, elementFilter= self.efmask)
         return self._diffipcache[cm]
 
     def GetIpField(self):
         if self._ipcache is None:
-            from BasicTools.FE.Fields.FieldTools import TransferFEFieldToIPFieldDer
-            self._ipcache =  TransferFEFieldToIPFieldDer(self.feField,der=-1,rule=self.rule)
+            from BasicTools.FE.Fields.FieldTools import TransferFEFieldToIPField
+            self._ipcache =  TransferFEFieldToIPField(self.feField,der=-1,rule=self.rule, elementFilter= self.efmask)
         return self._ipcache
 
     def unaryOp(self,op):
@@ -248,13 +253,11 @@ def FillIPField(field,fieldDefinition):
         raise(Exception("Cant use this type of filter to fill an IPField : {}".format(str(type(f)))))
 
 def FillFEField(field,fieldDefinition):
-
     for f,val in fieldDefinition:
         if callable(val):
             fval = val
         else:
             fval = lambda x: val
-
 
         f.mesh = field.mesh
         if isinstance(f,ElementFilter):
@@ -263,7 +266,6 @@ def FillFEField(field,fieldDefinition):
                 geoSpace = LagrangeSpaceGeo[name]
                 sp = field.space[name]
                 nbsf = sp.GetNumberOfShapeFunctions()
-
                 geospace_ipvalues  = geoSpace.SetIntegrationRule(sp.posN,np.ones(nbsf) )
 
                 for elid in ids:
@@ -281,23 +283,120 @@ def FillFEField(field,fieldDefinition):
                 pos = field.mesh.nodes[pid,:]
                 field.data[dofid] = fval(pos)
 
-def FieldsAtIp(listOfFields,rule):
+
+def FieldsAtIp(listOfFields,rule,efmask=None):
     from BasicTools.FE.Fields.FieldTools import IntegrationPointWrapper
     res = []
     for f in listOfFields:
         if isinstance(f,FEField):
-            res.append(IntegrationPointWrapper(f,rule))
+            res.append(IntegrationPointWrapper(f,rule,efmask=efmask))
         elif isinstance(f,IPField):
             if f.rule == rule:
-                res.append(f)
+                if efmask is None:
+                    res.append(f)
+                else:
+                    res.append(f.GetRestrictedIPField(efmask) )
             else:
                 print (f.rule)
                 print (rule)
                 print(f"skiping ipfield {f.name} because it has a not compatible IP rule type {str(type(f))}")
         else:
             raise(Exception("Dont know how to treat this type of field {}".format(str(type(f)) )))
-    print([f.name for f in res])
     return res
+
+class FieldsMeshTransportation():
+    def __init__(self):
+        self.cache_numbering = {}
+
+    def ResetCacheData(self):
+        self.cache_numbering = {}
+
+    def GetNumbering(self, mesh, space, fromConnectivity=False,discontinuous=False):
+        meshid = str(id(mesh))
+        spaceid = str(id(space))
+        key = (meshid,spaceid,fromConnectivity,discontinuous)
+
+        if key not in self.cache_numbering:
+            self.cache_numbering[key] = ComputeDofNumbering(mesh, space, fromConnectivity=True,discontinuous=False)
+        return self.cache_numbering[key]
+
+    def TransportFEFieldToOldMesh(self,oldmesh, infield, fillvalue=0.):
+        """ function to define a FEField on the oldmesh, the infield mesh must be a
+        tranformation of the oldmesh. This means the infield mesh originalids
+        (for nodes and elements) must be with respect to the oldmesh
+
+        if fillvalue is None, a partial field is generated on the old mesh.
+        if fillvalue is not None, a fill over the full mesh is generated with fillvalues
+        on dofs not availables on the infield
+        """
+
+        if id(infield.mesh) == id(oldmesh):
+            return infield
+
+        name = infield.name
+        space = infield.space
+        if infield.numbering.fromConnectivity:
+            numbering = ComputeDofNumbering(oldmesh, space, fromConnectivity=True)
+            res = FEField(name = name, mesh=oldmesh, space=space, numbering=numbering)
+            res.Allocate(fillvalue)
+            res.data[infield.mesh.originalIDNodes] = infield.data
+        else :
+            numbering =self.GetNumbering(oldmesh,space)
+            #numbering = ComputeDofNumbering(oldmesh, space)
+            res = FEField(name = name, mesh=oldmesh, space=space, numbering=numbering)
+            res.Allocate(fillvalue)
+            for name,data in oldmesh.elements.items():
+                if name  not in infield.mesh.elements:
+                    continue
+                newdata = infield.mesh.elements[name]
+                res.data[numbering[name][newdata.originalIds,:].flatten()]= infield.data[infield.numbering[name].flatten()]
+        return res
+
+    def TransportFEFieldToNewMesh(self,infield,newmesh):
+        """ function to define a FEField on the newmesh, the new mesh must be a
+        tranformation of the mesh in the infield. This means the newmesh originalids
+        (for nodes and elements) must be with respect tot the mesh of the infield
+        """
+
+        if id(infield.mesh) == id(newmesh):
+            return infield
+
+        name = infield.name
+        space = infield.space
+        if  infield.numbering.fromConnectivity:
+            numbering = ComputeDofNumbering(newmesh,space,fromConnectivity=True)
+            res = FEField(name = name, mesh=newmesh, space=space, numbering=numbering)
+            res.data = infield.data[newmesh.originalIDNodes]
+        else:
+            numbering = ComputeDofNumbering(newmesh, space)
+            res = FEField(name = name, mesh=newmesh, space=space, numbering=numbering)
+            res.Allocate()
+            for name,data in newmesh.elements.items():
+                res.data[numbering.numbering[data].flatten()] = infield.data[infield.numbering[name][data.originalIds,:].flatten()]
+        return res
+
+    def TransportIPFieldToOldMesh(self,oldmesh,ipfield):
+        if id(ipfield.mesh) == id(oldmesh):
+            return ipfield
+
+        outdata = {}
+        for elemType,data in ipfield.mesh.elements.items():
+            indata = ipfield.data[elemType]
+            outdata[elemType] = np.zeros((oldmesh.elements[elemType].GetNumberOfElements(),indata.shape[1]))
+            outdata[elemType][data.originalIds,:] = ipfield.data[elemType]
+        res = IPField(name=ipfield.name,mesh=oldmesh,rule=ipfield.rule,data=outdata)
+        return res
+
+
+    def TransportIPFieldToNewMesh(self,ipfield,newmesh):
+        if id(ipfield.mesh) == id(newmesh):
+            return ipfield
+
+        outputdata = {}
+        for elemType,data in newmesh.elements.items():
+            outputdata[elemType] = ipfield.data[elemType][data.originalIds,:]
+        res = IPField(name=ipfield.name,mesh=newmesh,rule=ipfield.rule,data=outputdata)
+        return res
 
 
 class FieldsEvaluator():
@@ -305,104 +404,116 @@ class FieldsEvaluator():
         self.originals = {}
         from BasicTools.FE.IntegrationsRules import IntegrationRulesAlmanac
         self.rule = IntegrationRulesAlmanac['LagrangeIsoParam']
+        self.ruleAtCenter = IntegrationRulesAlmanac['ElementCenterEval']
         self.atIp = {}
         self.atCenter = {}
         if fields is not None:
             for f in fields:
                 self.Addfield(f)
         self.constants = {}
+        self.efmask = None
+        self.modified = True
 
-
-    def Addfield(self,field):
-        from BasicTools.FE.IntegrationsRules import IntegrationRulesAlmanac
+    def AddField(self,field):
         self.originals[field.name] = field
-        self.atIp.update( {f.name:f for f in FieldsAtIp([field],self.rule)})
-        self.atCenter.update( {f.name:f for f in FieldsAtIp([field],IntegrationRulesAlmanac['ElementCenterEval'])})
+
+    def AddConstant(self,name,val):
+        self.constants[name] = val
+
+    def Update(self,what="all"):
+        for name,field in self.originals.items():
+            if what=="all" or what =="IPField":
+                self.atIp[name] = FieldsAtIp([field],self.rule,efmask=self.efmask)[0]
+
+            if what=="all" or what =="Centroids":
+                self.atCenter[name] = FieldsAtIp([field],self.ruleAtCenter,efmask=self.efmask)[0]
 
     def GetFieldsAt(self,on):
-        if on == "IntegrationPoints":
+        if on == "IPField":
             res =  self.atIp
         elif on == "Nodes":
             res = {}
             for f in self.originals.values():
-                if isinstance(f,FEField) and f.space == LagrangeSpaceGeo :
-                    res[f.name] = f
+                res[f.name] = f.GetPointRepresentation()
         elif on == "Centroids":
             res =  self.atCenter
         elif on == "FEField":
             res = self.originals
-        elif on == "IPField":
-            res= self.atCenter
         else:
             raise
         result = dict(self.constants)
         result.update(res)
         return result
 
+    def GetOptimizedFunction(self,func):
+        import sympy
+        import inspect
+        from BasicTools.FE.SymWeakForm import space
+
+        class OptimizedFunction():
+            def __init__(self,func,constants):
+                self.constants = dict(constants)
+                # get arguments names
+                args = inspect.getargspec(func).args
+                # clean self, in the case of a member function
+                if args[0] == "self":
+                    args.pop(0)
+
+                symbsimbols = {}
+
+                self.args = args
+                for n  in args:
+                    if n in self.constants:
+                        symbsimbols[n] = self.constants[n]
+                    else:
+                        symbsimbols[n] = sympy.Function(n)(*space)
+                #symbolicaly evaluation of the function
+                funcValues = func(**symbsimbols)
+
+                repl, redu = sympy.cse(funcValues)
+
+                restkeys = list(symbsimbols.keys())
+                restkeys.extend(["x","y","z"])
+                self.auxFuncs = []
+                self.auxNames = []
+                for i, v in enumerate(repl):
+                    funclam = sympy.lambdify(restkeys,v[1])
+                    self.auxFuncs.append(funclam)
+                    funname = str(v[0])
+                    self.auxNames.append(funname)
+                    restkeys.append(str(v[0]))
+                self.mainFunc = sympy.lambdify(restkeys,redu)
+
+            def __call__(self,**args):
+                numericFields = {"x":0,"y":0,"z":0}
+
+                class Toto():
+                    def __init__(self,obj):
+                        self.obj=obj
+                    def __call__(self,*args,**kwds):
+                        return self.obj
+
+                for n  in self.args:
+                    if n not in args:
+                        numericFields[n] = self.constants[n]
+                    else:
+                        numericFields[n] = Toto(args[n])
+
+                for name,func in zip(self.auxNames,self.auxFuncs):
+                    numericFields[name] = func(**numericFields)
+                return self.mainFunc(**numericFields)[0]
+
+        return OptimizedFunction(func,self.constants)
+
     def Compute(self,func, on,usesympy=False,ef=None):
 
-        if usesympy :
-            import sympy
-            import inspect
-            spec = inspect.getargspec(func)
-            print("-------------spec")
-            print(spec)
-            print(spec.args)
-            args = spec.args
-            if args[0] == "self":
-                args.pop(0)
-            print(args)
-            symbsimbols = {v:sympy.symbols(v) for v  in args}
-            from BasicTools.FE.SymWeakForm import space
-
-            symbsimbols = {v:sympy.Function(v)(*space) for v  in args}
-
-            funcValues = func(**symbsimbols)
-
-            print("-----------------------------------------------------------")
-            print(funcValues )
-            repl,redu = sympy.cse(funcValues)
-            print(repl)
-            print("----REDU-------------------------------------------------------")
-            print(redu)
-            fields = self.GetFieldsAt(on)
-            fields = {sympy.Function(k)(*space):v for k,v in fields.items()}
-            restkeys = []
-            restvalues = []
-            for i, v in enumerate(repl):
-                print("-----")
-                print(v)
-                print("with subms", fields)
-                res = v[1].subs(fields).doit()
-#                sympy.lambdify(restkeys,redu)(fields)
-                print("subs resulr " , res)
-                fields[v[0]] = res
-                restkeys.append( str(v[0]) )
-                restvalues.append( res)
-
-                for i,v in enumerate(restvalues):
-                    print( i)
-                    print( v)
-                raise
-
-            print("----REDU-------------------------------------------------------")
-            if type(redu):
-                redu = [x.subs(fields).doit() for x in redu]
-            else:
-                redu = redu.subs(fields).doti()
-            return redu
-            funclam = sympy.lambdify(restkeys,redu)
-            print(redu)
-            print(restkeys)
-            print(restvalues)
-            return funclam(*restvalues)
-
-
+        if usesympy:
+            func = self.GetOptimizedFunction(func)
 
         fields = self.GetFieldsAt(on)
         return func(**fields)
 
-        if on == "IntegrationPoints":
+        if on == "IPField":
             return func(**self.atIp)
         elif on == "Nodes":
             fields = {}
@@ -415,7 +526,7 @@ class FieldsEvaluator():
         elif on == "FEField":
             return func(**self.originals)
         elif on == "IPField":
-            return func(**self.atCenter).data
+            return func(**self.atCenter)
         else:
             raise
 
@@ -423,7 +534,6 @@ class FieldsEvaluator():
 def CheckIntegrity(GUI=False):
 
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateUniformMeshOfBars
-    import BasicTools.Containers.ElementNames as EN
 
     mesh =CreateUniformMeshOfBars(0, 1, 10)
     bars = mesh.GetElementsOfType(EN.Bar_2)
@@ -465,6 +575,30 @@ def CheckIntegrity(GUI=False):
     res = TranferPosToIPField(mesh,ruleName="LagrangeIsoParam",elementFilter=ElementFilter(dimensionality=1,tag="next3"))
     print(res[0].data)
     print(res[0].GetIpFieldRepr().data)
+
+    FE = FieldsEvaluator()
+    field.name = "E"
+    FE.AddField(field)
+    FE.AddConstant("alpha",0)
+
+    def op(E,alpha,**args):
+        return (2*E+1+alpha)+(2*E+1+alpha)**2+(2*E+1+alpha)**3
+
+    print("--------")
+    print(field.data)
+    print("--------")
+    res = FE.Compute(op,"FEField")
+    print(res.data)
+
+    FE.Update("IPField")
+    res = FE.Compute(op,"IPField")
+    print(res.data)
+
+
+    res = FE.Compute(op,"FEField",usesympy=True)
+    print(res.data)
+
+    res = FE.GetOptimizedFunction(op)
     return "ok"
 
 if __name__ == '__main__':
