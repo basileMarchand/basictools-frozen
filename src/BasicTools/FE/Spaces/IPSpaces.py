@@ -7,8 +7,12 @@
 import numpy as np
 import BasicTools.Containers.ElementNames as EN
 
+_cache_ = {}
 
 def GenerateSpaceForIntegrationPointInterpolation(integrationRule):
+    if id(integrationRule) in _cache_:
+        return _cache_[id(integrationRule)]
+
     res={}
 
     from BasicTools.FE.Spaces.SymSpace import SymSpaceBase
@@ -28,6 +32,8 @@ def GenerateSpaceForIntegrationPointInterpolation(integrationRule):
 
     for name in integrationRule:
             res[name] = IntegrationPointSpace(integrationRule,name)
+    _cache_[id(integrationRule)] = res
+
     return res
 
 
