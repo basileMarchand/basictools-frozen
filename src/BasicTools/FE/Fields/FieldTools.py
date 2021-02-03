@@ -277,7 +277,7 @@ def FillFEField(field,fieldDefinition):
         elif isinstance(f,NodeFilter):
             ids = f.GetIdsToTreat()
             for pid in ids:
-                dofid = field.numbering["almanac"][("P",pid,None)]
+                dofid = field.numbering.GetDofOfPoint(pid)
                 pos = field.mesh.nodes[pid,:]
                 field.data[dofid] = fval(pos)
 

@@ -21,5 +21,6 @@ _test = [
 "ProblemData",
 "SymPhysics",
 "KR",
-"FETools"]
+"FETools",
+"Numberings"]
 
