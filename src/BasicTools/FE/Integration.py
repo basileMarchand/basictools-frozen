@@ -450,6 +450,7 @@ def CheckIntegrityKF(edim, sdim,testCase):
                                  [-36,-48,36,48],
                                  [-48,-64,48,64]])
             permut = [0,2,1,3]
+            KValidation = KValidation[permut,:][:,permut]
 
         elif sdim == 3:
             points = np.array([[0,0,0],[2.,3.,6.], ])
@@ -463,7 +464,7 @@ def CheckIntegrityKF(edim, sdim,testCase):
                                [0,0,0,0,0,0],
                                [0,0,0,0,0,0],])
 
-            permut = [0,2,4,1,3,5]
+            permut = [0,3,1,4,2,5]
             KValidation = np.array([[40,60,120,-40,-60,-120],
                                  [60,90,180,-60,-90,-180],
                                  [120,180,360,-120,-180,-360],
@@ -471,6 +472,7 @@ def CheckIntegrityKF(edim, sdim,testCase):
                                  [-60,-90,-180,60,90,180],
                                  [-120,-180,-360,120,180,360]])
 
+            KValidation = KValidation[permut,:][:,permut]
 
         mesh = CreateMeshOf(points,[[0,1],],EN.Bar_2 )
 
@@ -490,8 +492,7 @@ def CheckIntegrityKF(edim, sdim,testCase):
                 K = HookeIso(E,nu,dim=2)
 
 
-                permut = [0,4,2,6,1,5,3,7]
-#
+                permut = [0,2,6,4,1,3,7,5]
                 KValidation = np.array([[0.9833333333333333333,-0.5, -.45, .2, 0 ,0,-0.5333333333333333333, 0.3],
                                 [-0.5,1.4,.3,-1.2,0,0,.2,-.2],
                                 [-0.45,.3,0.9833333333333333333,0,-0.5333333333333333333,0.2,0,-0.5],
@@ -502,6 +503,8 @@ def CheckIntegrityKF(edim, sdim,testCase):
                                 [0.3,-0.2,-0.5,0,0.2,-1.2,0,1.4]       ])
                 #                     ^^^
                 #attention il y a un erreur dans le pdf  (ce termet est possitive dans le pdf)
+                KValidation = KValidation[permut,:][:,permut]
+
 
             elif  testCase[0] == "B" :
                 #https://www.colorado.edu/engineering/CAS/courses.d/IFEM.d/IFEM.Ch15.d/IFEM.Ch15.pdf
@@ -511,7 +514,7 @@ def CheckIntegrityKF(edim, sdim,testCase):
                 #mesh.GetElementsOfType(EN.Triangle_3).tags.CreateTag("2D").SetIds(np.arange(mesh.GetElementsOfType(EN.Triangle_3).GetNumberOfElements() ) )
 
                 K = np.array([[8,2,0],[2,8,0],[0,0,3]])*8
-                permut = [0,3,1,4,2,5]
+                permut = [0,2,4,1,3,5]
 
                 KValidation = np.array([[11,5,-10,-2,-1,-3],
                                  [5,11,2,10,-7,-21],
@@ -519,6 +522,8 @@ def CheckIntegrityKF(edim, sdim,testCase):
                                  [-2,10,-20,44,22,-54],
                                  [-1,-7,-34,22,35,-15],
                                  [-3,-21,18,-54,-15,75]])
+                KValidation = KValidation[permut,:][:,permut]
+
             else:
                 raise
 
@@ -547,7 +552,7 @@ def CheckIntegrityKF(edim, sdim,testCase):
         K = HookeIso(E,nu,dim=sdim)
         #mesh.GetElementsOfType(EN.Tetrahedron_4).tags.CreateTag("3D").SetIds(np.arange(mesh.GetElementsOfType(EN.Tetrahedron_4).GetNumberOfElements() ) )
 
-        permut = [0, 4, 8, 1, 5, 9, 2, 6, 10, 3, 7, 11]
+        permut = [0, 3, 6, 9, 1, 4, 7,10,  2, 5, 8, 11]
         KValidation = np.array( [[745, 540, 120, -5, 30, 60, -270, -240, 0, -470, -330, -180],
                                  [540, 1720, 270, -120, 520, 210, -120, -1080, -60, -300, -1160, -420],
                                  [120, 270, 565, 0, 150, 175, 0, -120, -270, -120, -300, -470],
@@ -560,6 +565,7 @@ def CheckIntegrityKF(edim, sdim,testCase):
                                  [-470, -300, -120, -50, 0, 0, 180, 120, 0, 340, 180, 120],
                                  [-330, -1160, -300, 90, -380, -180, 60, 720, 120, 180, 820, 360],
                                  [-180, -420, -470, 60, -180, -230, 0, 240, 180, 120, 360, 520]])
+        KValidation = KValidation[permut,:][:,permut]
 
 
     else :
@@ -620,6 +626,13 @@ def CheckIntegrityKF(edim, sdim,testCase):
     stopt = time.time() - startt
 
     KK = Kinteg.todense()
+
+    permut = []
+    offset = 0
+    for f in unkownFields:
+        for p in range(mesh.GetNumberOfNodes()):
+            permut.append(f.numbering.GetDofOfPoint(p)+offset)
+        offset += f.numbering.size
     if permut is not None:
         KK = KK[:,permut][permut,:]
 
