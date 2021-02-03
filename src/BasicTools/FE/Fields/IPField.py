@@ -10,6 +10,7 @@ from BasicTools.FE.IntegrationsRules import IntegrationRulesAlmanac as Integrati
 from BasicTools.Containers import ElementNames as EN
 from BasicTools.FE.Fields.FieldBase import FieldBase
 from BasicTools.Helpers.TextFormatHelper import TFormat
+from BasicTools.Containers.Filters import ElementFilter
 
 
 class IPField(FieldBase):
@@ -87,13 +88,95 @@ class IPField(FieldBase):
 
         return res
 
+    def GetCellRepresentation(self,fillvalue=0,method='mean'):
+        """
+        Function to push the data from the field into a vector homogeneous to
+        the mesh (for visualisation for example).
+        """
+        if fillvalue==0.:
+            res = np.zeros(self.mesh.GetNumberOfElements(),dtype=float)
+        else:
+            res = np.ones(self.mesh.GetNumberOfElements(),dtype=float)*fillvalue
 
+        cpt =0
+        for name,data in self.mesh.elements.items():
+            nbelems = data.GetNumberOfElements()
+
+            if name not in self.data:
+                cpt += nbelems
+                continue
+
+            if method == 'mean':
+                data = np.mean(self.data[name],axis=1)
+            elif method == 'max':
+                data = np.max(self.data[name],axis=1)
+            elif method == 'min':
+                data = np.min(self.data[name],axis=1)
+            elif method == 'maxdiff' or method == "maxdifffraction":
+                cols = self.data[name].shape[1]
+                op = np.zeros( (cols,(cols*(cols-1))//2) )
+                icpt = 0
+                for i in range(0,cols-1):
+                    for j in range(i+1,cols):
+                        op[i,icpt] = 1
+                        op[j,icpt] = -1
+                        icpt += 1
+                data = np.max(abs(self.data[name].dot(op)),axis=1)
+                if method == "maxdifffraction":
+                    data /= np.mean(self.data[name],axis=1)
+            else:
+                col = min(int(method),self.data.shape[1])
+                data = self.data[name][:,col]
+
+            res[cpt:cpt+nbelems] = data
+            cpt += nbelems
+
+        return res
+
+    def GetPointRepresentation(self,fillvalue=0, method="mean",dim=None):
+        cellData = self.GetCellRepresentation(fillvalue=fillvalue,method=method)
+        if fillvalue==0.:
+            res = np.zeros(self.mesh.GetNumberOfNodes(),dtype=float)
+        else:
+            res = np.ones(self.mesh.GetNumberOfNodes(),dtype=float)*fillvalue
+
+        pntcpt = np.zeros(self.mesh.GetNumberOfNodes(),dtype=int)
+        cpt = 0
+        for name,data in self.mesh.elements.items():
+            if dim is not None:
+                if EN.dimension[name] != dim:
+                    cpt += data.GetNumberOfElements()
+                    continue
+            for i in range(data.GetNumberOfNodesPerElement()):
+                res[data.connectivity[:,i]] += cellData[cpt:cpt+data.GetNumberOfElements()]
+                pntcpt[data.connectivity[:,i]] += 1
+            cpt += data.GetNumberOfElements()
+        pntcpt[pntcpt==0] = 1
+        res /= pntcpt
+        return res
+
+    def Flatten(self,dim=-1):
+        elements3D = ElementFilter(self.mesh,dimensionality=dim)
+        nbvalues = 0
+        for elemType,data,ids in elements3D:
+            nbvalues += np.prod(self.data[elemType].shape)
+        res = np.empty(nbvalues,dtype=float)
+        cpt = 0
+        for elemType,data,ids in elements3D:
+            lsize= np.prod(self.data[elemType].shape)
+            res[cpt:cpt+lsize] = self.data[elemType].flatten()
+            cpt += lsize
+        return res
+
+    def GetRestrictedIPField(self,efmask):
+        res = RestrictedIPField(name=self.name,mesh=self.mesh,rule=self.rule,efmask=efmask)
+        res.AllocateFromIpField(self)
+        return res
 
 class RestrictedIPField(IPField):
     def __init__(self,name=None,mesh=None,rule=None,ruleName=None,data=None,efmask=None):
         super(RestrictedIPField,self).__init__(name=name, mesh=mesh,rule=rule,ruleName=ruleName,data=data)
         if efmask == None:
-            from BasicTools.Containers.Filters import ElementFilter
             self.efmask = ElementFilter()
         else:
             self.efmask = efmask
@@ -136,6 +219,51 @@ class RestrictedIPField(IPField):
         res = type(self)(name = None, mesh=self.mesh,rule=self.rule, efmask=self.efmask)
         return super(RestrictedIPField,self).binaryOp(other,op,out=res)
 
+    def GetCellRepresentation(self,fillvalue=0,method='mean'):
+        """
+        Function to push the data from the field into a vector homogeneous to
+        the mesh (for visualisation for example).
+        """
+        if fillvalue==0.:
+            res = np.zeros(self.mesh.GetNumberOfElements(),dtype=float)
+        else:
+            res = np.ones(self.mesh.GetNumberOfElements(),dtype=float)*fillvalue
+
+        cpt =0
+        self.efmask.SetMesh(self.mesh)
+        for name, eldata in self.mesh.elements.items():
+            ids = self.efmask.GetIdsToTreat(eldata)
+            nbelems = eldata.GetNumberOfElements()
+
+            if name not in self.data:
+                cpt += nbelems
+                continue
+
+            if method == 'mean':
+                data = np.mean(self.data[name],axis=1)
+            elif method == 'max':
+                data = np.max(self.data[name],axis=1)
+            elif method == 'min':
+                data = np.min(self.data[name],axis=1)
+            elif method == 'maxdiff' or method == "maxdifffraction":
+                cols = self.data[name].shape[1]
+                op = np.zeros( (cols,(cols*(cols-1))//2) )
+                icpt = 0
+                for i in range(0,cols-1):
+                    for j in range(i+1,cols):
+                        op[i,icpt] = 1
+                        op[j,icpt] = -1
+                        icpt += 1
+                data = np.max(abs(self.data[name].dot(op)),axis=1)
+                if method == "maxdifffraction":
+                    data /= np.mean(self.data[name],axis=1)
+            else:
+                col = min(int(method),self.data.shape[1])
+                data = self.data[name][:,col]
+            res[cpt+np.array(ids,dtype=int)]=data
+            cpt += nbelems
+
+        return res
 
 def CheckIntegrity(GUI=False):
     from BasicTools.FE.IntegrationsRules import LagrangeP1
