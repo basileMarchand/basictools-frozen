@@ -83,7 +83,7 @@ class Tag(object):
 
         output[self._id] = True
 
-        return True
+        return output
 
     def Merge(self,other=None,ids=None):
         if other is not None:
