@@ -242,10 +242,6 @@ class GeofWriter(WriterBase):
                                 self.filePointer.write(" ".join([str(x+1) for x in conn ]))
                                 self.filePointer.write(" \n")
 
-
-                    self.filePointer.write("\n")
-
-
         self.filePointer.write("***return \n")
 
 from BasicTools.IO.IOFactory import RegisterWriterClass
