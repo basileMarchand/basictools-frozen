@@ -746,6 +746,50 @@ def ComputeRigidBodyTransformationBetweenTwoSetOfPoints(setPoints1, setPoints2):
 
     return A, b
 
+def ConvertNTagsToETags(mesh,prefix="NTag",targetDim=None):
+    from BasicTools.Containers.UnstructuredMeshInspectionTools import ExtractElementsByMask
+
+    filt = ElementFilter(mesh,dimensionality=targetDim)
+
+    ntags = mesh.nodesTags.keys()
+
+    edges, skin = ComputeFeatures(mesh,FeatureAngle=80)
+
+    for ntag in ntags:
+        mask = mesh.nodesTags[ntag].GetIdsAsMask(mesh.GetNumberOfNodes())
+
+        for m in [edges, skin, mesh]:
+            filt.mesh = m
+            for name,data,ids in filt:
+                a = np.sum(mask[data.connectivity],axis=1)
+                elids = np.where(a==data.GetNumberOfNodesPerElement())[0]
+                d = ElementNames.dimension[name]
+                name = prefix+str(d)+"D_"+ntag
+                data.tags.CreateTag(name).SetIds(elids)
+
+    tomerge =[]
+    if targetDim == 1 or targetDim == None:
+        tomerge.append(edges)
+    if targetDim == 2 or targetDim == None:
+        tomerge.append(skin)
+
+    for m in tomerge:
+        for name,data in m.elements.items():
+           ne  = data.GetNumberOfElements()
+           mask = np.zeros(ne,dtype=bool)
+           for etag in data.tags.keys():
+               np.logical_or(mask, data.tags[etag].GetIdsAsMask(ne), out=mask)
+
+           if not np.any(mask):
+               continue
+
+           if data.GetNumberOfElements()==0:
+               continue
+
+           subdata = ExtractElementsByMask(data,mask)
+           mesh.GetElementsOfType(name).Merge(subdata)
+
+
 #------------------------- CheckIntegrity ------------------------
 
 def CheckIntegrity_AddTagPerBody(GUI=False):
