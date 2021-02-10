@@ -208,6 +208,11 @@ NodalEvaluationP1[EN.Hexaedron_27] = NodalEvaluationP1[EN.Hexaedron_8]
 NodalEvaluationP2 = {}
 IntegrationRulesAlmanac["NodalEvalP2"] = NodalEvaluationP2
 
+import BasicTools.FE.Spaces.BarSpaces as BaS
+bar = BaS.Bar_P2_Lagrange()
+NodalEvaluationP2[EN.Bar_2] = (bar.posN , np.ones(tri.posN.shape[0]) )
+NodalEvaluationP2[EN.Bar_3] = NodalEvaluationP2[EN.Bar_2]
+
 import BasicTools.FE.Spaces.TriSpaces as TrS
 tri = TrS.Tri_P2_Lagrange()
 NodalEvaluationP2[EN.Triangle_3] = (tri.posN , np.ones(tri.posN.shape[0]) )
@@ -223,6 +228,12 @@ hexa = HS.Hexa_P2_Lagrange()
 NodalEvaluationP2[EN.Hexaedron_8] = (hexa.posN , np.ones(hexa.posN.shape[0]) )
 #NodalEvaluationP2[EN.Hexaedron_20] = NodalEvaluationP2[EN.Hexaedron_8]
 NodalEvaluationP2[EN.Hexaedron_27] = NodalEvaluationP2[EN.Hexaedron_8]
+
+import BasicTools.FE.Spaces.QuadSpaces as QS
+quad = QS.Quad_P2_Lagrange()
+NodalEvaluationP2[EN.Quadrangle_4] = (quad.posN , np.ones(quad.posN.shape[0]) )
+NodalEvaluationP2[EN.Quadrangle_8] = NodalEvaluationP2[EN.Quadrangle_4]
+NodalEvaluationP2[EN.Quadrangle_9] = NodalEvaluationP2[EN.Quadrangle_4]
 
 
 NodalEvalIsoGeo  = {}
