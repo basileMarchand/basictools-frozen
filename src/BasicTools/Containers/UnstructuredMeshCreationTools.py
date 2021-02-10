@@ -594,7 +594,124 @@ def Creat0DElementAtEveryPoint(mesh):
     elems1D.cpt = mesh.GetNumberOfNodes()
     return res
 
+def SubDivideMesh(mesh,level=1):
+    if level == 0:
+        return mesh
+
+    res = UnstructuredMesh()
+
+    subdivitionAlmanac = {}
+    subdivitionAlmanac[ElementNames.Point_1] = [(ElementNames.Point_1, [0]) ]
+    subdivitionAlmanac[ElementNames.Bar_2] = [(ElementNames.Bar_2, [0,2]),
+                                              (ElementNames.Bar_2, [2,1])]
+
+    subdivitionAlmanac[ElementNames.Quadrangle_4] = [(ElementNames.Quadrangle_4, [0,4,8,7]),
+                                                     (ElementNames.Quadrangle_4, [4,1,5,8]),
+                                                     (ElementNames.Quadrangle_4, [8,5,2,6]),
+                                                     (ElementNames.Quadrangle_4, [7,8,6,3])]
+
+    subdivitionAlmanac[ElementNames.Hexaedron_8] = [(ElementNames.Hexaedron_8, [ 0, 8,24,11,16,22,26,20]),
+                                                    (ElementNames.Hexaedron_8, [ 8, 1, 9,24,22,17,21,26]),
+                                                    (ElementNames.Hexaedron_8, [24, 9, 2,10,26,21,18,23]),
+                                                    (ElementNames.Hexaedron_8, [11,24,10, 3,20,26,23,19]),
+                                                    (ElementNames.Hexaedron_8, [16,22,26,20, 4,12,25,15]),
+                                                    (ElementNames.Hexaedron_8, [22,17,21,26,12, 5,13,25]),
+                                                    (ElementNames.Hexaedron_8, [26,21,18,23,25,13, 6,14]),
+                                                    (ElementNames.Hexaedron_8, [20,26,23,19,15,25,14, 7])]
+
+    from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo, LagrangeSpaceP2
+    from BasicTools.FE.DofNumbering import ComputeDofNumbering
+    from BasicTools.FE.IntegrationsRules import NodalEvaluationP2
+
+    numberingGeo = ComputeDofNumbering(mesh,LagrangeSpaceGeo,fromConnectivity=True)
+    numberingP2 = ComputeDofNumbering(mesh,LagrangeSpaceP2)
+
+    ## Generation of nodes
+
+    res.nodes = np.empty((numberingP2.size,3), dtype=float)
+    res.originalIDNodes = np.zeros(res.nodes.shape[0],dtype=int)-1
+
+    oldToNewDofs = []
+
+    for i in range(mesh.GetNumberOfNodes()):
+        oldToNewDofs.append(numberingP2.GetDofOfPoint(i))
+
+    oldToNewDofs = np.array(oldToNewDofs)
+    res.originalIDNodes[oldToNewDofs] = mesh.originalIDNodes
+
+    for tag in mesh.nodesTags.keys():
+        name = mesh.nodesTags[tag].name
+        ids = mesh.nodesTags[tag].GetIds()
+        res.nodesTags.CreateTag(name).SetIds(oldToNewDofs[ids])
+
+    for elemType, data in mesh.elements.items():
+        spaceGeo = LagrangeSpaceGeo[elemType]
+        spaceGeo.Create()
+        p,w = NodalEvaluationP2[elemType]
+        sGeoAtIp = spaceGeo.SetIntegrationRule(p,w)
+
+        nGeo = numberingGeo[elemType]
+        nP2 = numberingP2[elemType]
+
+        # generation of nodes
+        for sf in range(len(p)):
+            geoNs = sGeoAtIp.valN[sf]
+            for c in range(3):
+                res.nodes[nP2[:,sf], c] = np.sum(mesh.nodes[:,c][nGeo]*geoNs,axis=1)
+
+       #generation of elements
+        for t,nn in subdivitionAlmanac[elemType]:
+            #t = elementype
+            #nn = new numbering
+            nelems = res.GetElementsOfType(t)
+            offset = nelems.GetNumberOfElements()
+            tne =  nelems.AddNewElements(nP2[:,nn], data.originalIds)
+            for tag in data.tags.keys():
+                name = data.tags[tag].name
+                ids = data.tags[tag].GetIds()
+                if len(ids) == 00:
+                    continue
+                nelems.tags.CreateTag(name,False).AddToTag(ids+offset)
+                #nelems.tags.CreateTag(name,False).AddToTag(np.arange(offset,tne))
+
+    return SubDivideMesh(res,level-1)
 #------------------------- CheckIntegrity ------------------------
+def CheckIntegrity_SubDivideMesh(GUI=False):
+    points = [[0,0,0],
+              [1,0,0],
+              [1,1,0],
+              [0,1,0],
+              [0,0,1],
+              [1,0,1.5],
+              [1,1,1],
+              [0,1,1.5]]
+    hexa= [[0,1,2,3,4,5,6,7],]
+
+    mesh = CreateMeshOf(points,hexa,ElementNames.Hexaedron_8)
+    mesh.nodesTags.CreateTag("FirstPoint").AddToTag(0)
+    mesh.GetElementsOfType(ElementNames.Hexaedron_8).tags.CreateTag("OnlyHex").AddToTag(0)
+
+    outmesh = SubDivideMesh(mesh,1)
+    print(mesh)
+    print(outmesh)
+    if GUI:
+        from BasicTools.Containers.vtkBridge import PlotMesh
+        PlotMesh(outmesh)
+
+    from BasicTools.IO.XdmfWriter import WriteMeshToXdmf
+    from BasicTools.Helpers.Tests import TestTempDir
+    tempdir = TestTempDir.GetTempPath()
+    WriteMeshToXdmf(tempdir+"CheckIntegrity_SubDivideMesh.xdmf",outmesh,PointFields=[outmesh.originalIDNodes],PointFieldsNames=["originalIDNodes"] )
+    print(tempdir)
+
+    if outmesh.GetNumberOfNodes() != 27:
+        raise# pragma: no cover
+
+    if outmesh.GetNumberOfElements() != 8:
+        raise# pragma: no cover
+    return "ok"
+
+
 def CheckIntegrity_Creat0DElementAtEveryPoint(GUI=False):
     points = [[0,0,0],[1,0,0],[0,1,0],[0,0,1] ]
     tets = [[0,1,2,3],]
@@ -707,6 +824,7 @@ def CheckIntegrity(GUI=False):
     CheckIntegrity_QuadToLin,
     CheckIntegrity_MirrorMesh,
     CheckIntegrity_Creat0DElementAtEveryPoint,
+    CheckIntegrity_SubDivideMesh,
     ]
     for f in totest:
         print("running test : " + str(f))
