@@ -168,6 +168,23 @@ class IPField(FieldBase):
             cpt += lsize
         return res
 
+    def SetDataFromNumpy(self, indata,dim=-1):
+        elements3D = ElementFilter(self.mesh,dimensionality=dim)
+        nbvalues = 0
+        for elemType,data,ids in elements3D:
+            nbvalues += np.prod(self.data[elemType].shape)
+
+        if indata.size != nbvalues:
+            raise(Exception("incompatible sizes"))
+
+        cpt = 0
+        for elemType,data,ids in elements3D:
+            lsize= np.prod(self.data[elemType].shape)
+
+            self.data[elemType][:,:] = indata[cpt:cpt+lsize].reshape(self.data[elemType].shape)
+            cpt += lsize
+
+
     def GetRestrictedIPField(self,efmask):
         res = RestrictedIPField(name=self.name,mesh=self.mesh,rule=self.rule,efmask=efmask)
         res.AllocateFromIpField(self)
@@ -288,7 +305,12 @@ def CheckIntegrity(GUI=False):
     print("545454")
     print(np.linalg.norm([sig22, sig22 ] ).data )
 
+    data = sig22.GetCellRepresentation()
+    sig22.SetDataFromNumpy(sig22.Flatten())
+    data2 = sig22.GetCellRepresentation()
 
+    if np.linalg.norm(data-data2) > 0  :
+        raise()
 
     dummyField = IPField()
     dummyField.data[None] = np.arange(3)+1
