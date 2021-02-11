@@ -1,5 +1,6 @@
-# distutils: language = c++
-#cython: language_level=3
+#distutils: language = c++
+#cython: language_level = 3
+
 
 from libcpp.vector cimport vector
 
@@ -27,7 +28,6 @@ cdef class EigenSolvers():
      cdef int n
      cdef double tol
      def __cinit__(self):
-        self.c_solver = NativeEigenSolvers()
         self.m = 0
         self.n = 0
         self.tol = 1.e-6
