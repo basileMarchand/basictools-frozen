@@ -11,7 +11,7 @@ import BasicTools.Containers.ElementNames as EN
 def GetRule(ruleName=None,rule=None):
     if ruleName is None :
         if rule is None:
-            return IntegrationRulesAlmanac[LagrangeIsoParam]
+            return IntegrationRulesAlmanac["LagrangeIsoParam"]
         else:
             return rule
     else:
@@ -30,7 +30,7 @@ def TensorProductGauss(dim,npoints=2):
         p = [-math.sqrt(3./5.)/2+.5, 0.5 ,math.sqrt(3./5.)/2+.5 ]
         w = [5./18., 8./18., 5./18.]
     else:
-        raise
+        raise # pragma: no cover
 
     if dim == 1:
         return (np.array([p,]).T,np.array(w))
@@ -47,7 +47,7 @@ def TensorProdHomogeneous(dim,p,w):
     elif dim ==3:
         return TensorProd(p,w,p,w,p,w)
     else :
-        raise
+        raise# pragma: no cover
 
 def TensorProd(p1,w1,p2,w2,p3=None,w3=None):
     Pres = []
@@ -298,6 +298,17 @@ for i in range(1,trapezoidalOrderGenerated):
     traprule[EN.Triangle_6] = (p,w)
 
 def CheckIntegrity(GUI=False):
+    GetRule()
+    GetRule(ruleName="TrapezoidalP1")
+    GetRule(rule=NodalEvalIsoGeo)
+    error = False
+    #must fail
+    try:
+        GetRule(ruleName="TrapezoidalP1",rule=NodalEvalIsoGeo)
+        error = True# pragma: no cover
+    except:
+        pass
+    if error: raise
 
     VolumeOne = [EN.Point_1,
                  EN.Bar_2, EN.Bar_3,
@@ -318,7 +329,7 @@ def CheckIntegrity(GUI=False):
             lp = len(data[0] )
             lw = len(data[1] )
             print(rulename + " " + elemName + " has " + str(lw) + " integration points")
-            if lp != lw:
+            if lp != lw:# pragma: no cover
                 print(data)
                 raise( Exception("incompatible rule") )
 
@@ -333,7 +344,7 @@ def CheckIntegrity(GUI=False):
             else:
                 volref = 1./6.
 
-            if np.abs(np.sum(data[1])- volref)  >  1e-10:
+            if np.abs(np.sum(data[1])- volref)  >  1e-10:# pragma: no cover
                 print(data)
                 print("Mesure : ",np.sum(data[1]))
                 print("Mesure Error: ",np.abs(np.sum(data[1])- volref))
@@ -371,7 +382,7 @@ def CheckIntegrity(GUI=False):
                 integral +=  Jdet*w[ip]*f1(p[ip])
 
             #integral = data[1].dot([f1(x) for x in data[0]])
-            if np.abs(integral - volref)  >  1e-10:
+            if np.abs(integral - volref)  >  1e-10:# pragma: no cover
                 print("function :  f(x) = x-0.5")
                 print("int S f(x)dx =  {}".format(integral) )
                 print("Integral Exact: ",volref)
@@ -398,7 +409,7 @@ def CheckIntegrity(GUI=False):
             elif elemName in VolumeSixth:
                 volref = 1./60.
             else:
-                volref = None
+                raise # pragma: no cover
 
             space_ipvalues = LagrangeSpaceGeo[elemName].SetIntegrationRule(p,w)
             integral = 0
@@ -407,7 +418,7 @@ def CheckIntegrity(GUI=False):
                 integral +=  Jdet*w[ip]*f2(p[ip])
 
             #integral = data[1].dot([f1(x) for x in data[0]])
-            if np.abs(integral - volref)  >  1e-10:
+            if np.abs(integral - volref)  >  1e-10:# pragma: no cover
                 print("function :  f(x) = (x-0.5)**2")
                 print("int S f(x)dx =  {}".format(integral) )
                 print("Integral Exact: ",volref)
