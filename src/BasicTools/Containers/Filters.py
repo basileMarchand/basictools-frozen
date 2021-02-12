@@ -267,6 +267,14 @@ class FilterOP(BOO):
         else:
             return False
 
+    def SetMesh(self,mesh):
+        """
+        Set the mesh
+
+        :param mesh mesh: mesh
+        """
+        self.mesh = mesh
+
     @property
     def mesh(self):
         return self._mesh
@@ -371,7 +379,9 @@ class IntersectionElementFilter(FilterOP):
             else:
                 ids = np.intersect1d(ids,ff.GetIdsToTreat(data) )
             if len(ids) == 0:
-                break
+                return []
+        if ids is None :
+            return []
         return list(ids)
 
 class ComplementaryObject(FilterOP):
