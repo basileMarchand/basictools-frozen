@@ -6,7 +6,7 @@
 
 import numpy as np
 
-from BasicTools.FE.IntegrationsRules import IntegrationRulesAlmanac as IntegrationRulesAlmanac
+from BasicTools.FE.IntegrationsRules import GetRule
 from BasicTools.Containers import ElementNames as EN
 from BasicTools.FE.Fields.FieldBase import FieldBase
 from BasicTools.Helpers.TextFormatHelper import TFormat
@@ -24,17 +24,12 @@ class IPField(FieldBase):
         self.SetRule(ruleName=ruleName,rule=rule)
 
     def SetRule(self,ruleName=None,rule=None):
-        if ruleName is not None and rule is not None:
-            raise(Exception("must give ruleName or rule not both"))
-        if ruleName is not None:
-            self.rule = IntegrationRulesAlmanac[ruleName]
-        else :
-            self.rule = rule
+        self.rule = GetRule(ruleName=ruleName,rule=rule)
 
     def GetRuleFor(self,elemtype):
         return self.rule[elemtype]
 
-    def GetFieldFor(self,elemtype):
+    def GetDataFor(self,elemtype):
         return self.data[elemtype]
 
     def Allocate(self,val=0):
@@ -64,7 +59,6 @@ class IPField(FieldBase):
             res = type(self)(name = None, mesh=self.mesh,rule=self.rule  )
         else:
             res = out
-        res = type(self)(name = None, mesh=self.mesh,rule=self.rule )
         res.data = { key:op(self.data[key]) for key in self.data.keys()}
         return res
 
@@ -125,7 +119,7 @@ class IPField(FieldBase):
                 if method == "maxdifffraction":
                     data /= np.mean(self.data[name],axis=1)
             else:
-                col = min(int(method),self.data.shape[1])
+                col = min(int(method),self.data[name].shape[1])
                 data = self.data[name][:,col]
 
             res[cpt:cpt+nbelems] = data
@@ -206,19 +200,42 @@ class RestrictedIPField(IPField):
             nbElements = len(ids)
             self.data[name] = np.zeros((nbElements,nbItegPoints), dtype=np.float)+val
 
+    def GetRestrictedIPField(self,efmask):
+        from BasicTools.Containers.Filters import IntersectionElementFilter
+        res = RestrictedIPField(name=self.name,mesh=self.mesh,rule=self.rule,efmask= IntersectionElementFilter(filters=[efmask,self.efmask]) )
+        print("self.efmask")
+        print(self.efmask)
+        print("efmask")
+        print(efmask)
+        print("res.efmask")
+        print(res.efmask)
+        res.AllocateFromIpField(self)
+        return res
+
     def AllocateFromIpField(self,ipField):
         self.name = ipField.name
         self.mesh = ipField.mesh
         self.rule = ipField.rule
         self.efmask.SetMesh(self.mesh)
         self.data = dict()
-        for name,data,ids in self.efmask :
-            self.data[name] = ipField.data[name][ids,:]
+
+        if isinstance(ipField,RestrictedIPField):
+            for name,data,ids in self.efmask :
+                print('toto')
+                idsII =  ipField.efmask.GetIdsToTreat(data)
+                idds = np.empty(data.GetNumberOfElements(),dtype=int)
+                idds[idsII] = np.arange(len(idsII))
+                self.data[name] = ipField.data[name][idds[ids],:]
+        else:
+            for name,data,ids in self.efmask :
+                self.data[name] = ipField.data[name][ids,:]
 
     def GetIpFieldRepr(self,fillvalue=0):
         res = IPField(name=self.name,mesh=self.mesh,rule=self.rule)
         res.Allocate(fillvalue)
         for name,data,ids in self.efmask :
+            if name not in self.data:
+                continue
             res.data[name][ids,:] = self.data[name]
         return res
 
@@ -275,7 +292,7 @@ class RestrictedIPField(IPField):
                 if method == "maxdifffraction":
                     data /= np.mean(self.data[name],axis=1)
             else:
-                col = min(int(method),self.data.shape[1])
+                col = min(int(method),self.data[name].shape[1])
                 data = self.data[name][:,col]
             res[cpt+np.array(ids,dtype=int)]=data
             cpt += nbelems
@@ -286,7 +303,7 @@ def CheckIntegrity(GUI=False):
     from BasicTools.FE.IntegrationsRules import LagrangeP1
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateCube
     mesh = CreateCube([2.,3.,4.],[-1.0,-1.0,-1.0],[2./10, 2./10,2./10])
-
+    print(mesh)
     sig11 = IPField("Sig_11",mesh=mesh,rule=LagrangeP1)
     sig11.Allocate()
     print(sig11)
@@ -310,13 +327,56 @@ def CheckIntegrity(GUI=False):
     data2 = sig22.GetCellRepresentation()
 
     if np.linalg.norm(data-data2) > 0  :
-        raise()
+        raise() # pragma: no cover
+
+    data2 = sig22.GetPointRepresentation(0,"max")
+    data2 = sig22.GetPointRepresentation(0,"min")
+    data2 = sig22.GetPointRepresentation(0,"maxdiff")
+    data2 = sig22.GetPointRepresentation(0,"maxdifffraction")
+    data2 = sig22.GetPointRepresentation(0)
+    data2 = sig22.GetPointRepresentation(-1,0)
 
     dummyField = IPField()
     dummyField.data[None] = np.arange(3)+1
     print("dummyField")
     print(dummyField*dummyField-dummyField**2/dummyField)
 
+    restrictedIPField = sig22.GetRestrictedIPField(ElementFilter(tag="Skin"))
+    restrictedIPField = -(2*restrictedIPField)
+
+    print(restrictedIPField )
+    data2 = restrictedIPField.GetPointRepresentation(0,"max")
+    data2 = restrictedIPField.GetPointRepresentation(0,"min")
+    data2 = restrictedIPField.GetPointRepresentation(0,"maxdiff")
+    data2 = restrictedIPField.GetPointRepresentation(0,"maxdifffraction")
+    data2 = restrictedIPField.GetPointRepresentation(0)
+    data2 = restrictedIPField.GetPointRepresentation(-1,0)
+    restrictedIPField.GetIpFieldRepr()
+    #restrictedIPField2 = restrictedIPField.GetRestrictedIPField(ElementFilter(dimensionality=3))
+    #restrictedIPField2.Allocate()
+    restrictedIPField2 = restrictedIPField.GetRestrictedIPField(ElementFilter(tag="X0"))
+    #restrictedIPField2.Allocate()
+    print(restrictedIPField2.data)
+
+    restrictedIPField2 = -(2*sig22.GetRestrictedIPField(ElementFilter(tags=["X0"])))
+    print(restrictedIPField2.data)
+    restrictedIPField2.Allocate(1)
+    print(restrictedIPField2*np.array([0.1, 0.3]))
+    import BasicTools.Containers.ElementNames as EN
+    restrictedIPField2.GetDataFor(EN.Quadrangle_4)
+
+    obj = RestrictedIPField(data={})
+    obj.SetRule()
+
+    #mustfail
+    error = False
+    try:
+        restrictedIPField+restrictedIPField2
+        error = True# pragma: no cover
+    except:
+        pass
+    if error:# pragma: no cover
+        raise
 
     return "ok"
 
