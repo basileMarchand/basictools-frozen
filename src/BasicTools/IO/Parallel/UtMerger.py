@@ -62,24 +62,24 @@ class UtMerger(WriterBase):
         self.timeSteps = iterator
 
     def Merge(self):
-        
+
         localDataInteg = []
         localDataNode = []
         localIdstotreat = []
         localoriginalIDNodes = []
-        
+
         from BasicTools.Helpers.ProgressBar import printProgressBar
         printProgressBar(0, self.nbsd, prefix = 'Reading Local solutions:', suffix = 'Complete', length = 50)
-    
+
         #Read each subdomain computation
         for sd in range(1,self.nbsd+1):
             sdString = "-" + str(sd).zfill(3)
-            
+
             reader = UR.UtReader()
             reader.SetFileName(self.dataFolder + self.name + sdString + ".ut")
             reader.ReadMetaData()
             nbeTimeSteps = reader.time.shape[0]
-            
+
             if self.timeSteps != "all":
                 reader.time = reader.time[self.timeSteps,:]
                 if len(reader.time.shape) == 1:
@@ -87,55 +87,55 @@ class UtMerger(WriterBase):
 
             localMesh = GR.ReadGeof(fileName = self.dataFolder+reader.meshfile,readElset=False,readFaset=False,printNotRead=False)
             Tag3D(localMesh)
-            idstotreat = Return3DElements(localMesh)
-            
+            idstotreat, metaDataMesh3D = Return3DElements(localMesh)
+
             originalIDNodes = np.array(localMesh.originalIDNodes-1, dtype=int)
-            
+
             reader.atIntegrationPoints = True
             dataInteg = {}
             for din in reader.integ:
                 dataInteg[din] = np.empty((reader.meshMetadata['nbIntegrationPoints'],nbeTimeSteps))
                 for timeStep in range(nbeTimeSteps):
                     dataInteg[din][:,timeStep] = reader.ReadField(fieldname=din, timeIndex=int(reader.time[timeStep,0])-1)
-            
+
             reader.atIntegrationPoints = False
             dataNode = {}
             for din in reader.node:
                 dataNode[din] = np.empty((reader.meshMetadata['nbNodes'],nbeTimeSteps))
                 for timeStep in range(nbeTimeSteps):
                     dataNode[din][:,timeStep] = reader.ReadField(fieldname=din, timeIndex=int(reader.time[timeStep,0])-1)
-            
+
             localDataInteg.append(dataInteg)
             localDataNode.append(dataNode)
             localIdstotreat.append(idstotreat)
             localoriginalIDNodes.append(originalIDNodes)
-            
+
             printProgressBar(sd, self.nbsd, prefix = 'Reading Local solutions:', suffix = 'Complete', length = 50)
         print("Local solutions have been read")
-    
-    
+
+
         cutGeof = GeofFromCut(self.dataFolder, self.name)
         globalMesh = GR.ReadGeof(fileName = self.dataFolder + cutGeof,readElset=False,readFaset=False,printNotRead=False)
-    
+
         Tag3D(globalMesh)
-        globalIdstotreat = Return3DElements(globalMesh)
+        globalIdstotreat, metaDataMesh3D = Return3DElements(globalMesh)
         #globalMesh.originalIDNodes = np.array(globalMesh.originalIDNodes-1, dtype=int)
-    
+
         globaldataInteg = {}
         for din in reader.integ:
-            globaldataInteg[din] = np.empty((globalMesh.NGauss,nbeTimeSteps))
+            globaldataInteg[din] = np.empty((metaDataMesh3D.NGauss,nbeTimeSteps))
         globaldataNode = {}
         for din in reader.node:
-            globaldataNode[din] = np.empty((globalMesh.Nodes,nbeTimeSteps))
-    
+            globaldataNode[din] = np.empty((metaDataMesh3D.Nodes,nbeTimeSteps))
+
         #write .integ
-        data_integ = np.empty(len(reader.integ)*globalMesh.NGauss*(nbeTimeSteps))
-        nGpE = globalMesh.NGaussperEl
+        data_integ = np.empty(len(reader.integ)*metaDataMesh3D.NGauss*(nbeTimeSteps))
+        nGpE = metaDataMesh3D.NGaussperEl
         count0 = 0
-        
+
         printProgressBar(0, nbeTimeSteps, prefix = 'Writing global .integ:', suffix = 'Complete', length = 50)
         for timeStep in range(nbeTimeSteps):
-            field = np.empty((len(reader.integ),globalMesh.NGauss))
+            field = np.empty((len(reader.integ),metaDataMesh3D.NGauss))
             count = 0
             for sd in range(self.nbsd):
                 for k in range(len(reader.integ)):
@@ -146,33 +146,33 @@ class UtMerger(WriterBase):
             for m in range(len(globalIdstotreat)):
                 for k in range(len(reader.integ)):
                     data_integ[count0:count0+nGpE] = field[k,nGpE*m:nGpE*(m+1)]
-                    count0 += nGpE        
+                    count0 += nGpE
             printProgressBar(timeStep+1, nbeTimeSteps, prefix = 'Writing global .integ:', suffix = 'Complete', length = 50)
-    
+
         data_integ.astype(np.float32).byteswap().tofile(self.outputFolder + self.name + ".integ")
         print("Global .integ has been written")
-    
+
         #write .node
-        data_node = np.zeros(len(reader.node)*globalMesh.Nodes*(nbeTimeSteps))
+        data_node = np.zeros(len(reader.node)*metaDataMesh3D.Nodes*(nbeTimeSteps))
         printProgressBar(0, nbeTimeSteps, prefix = 'Writing global .node:', suffix = 'Complete', length = 50)
         for timeStep in range(nbeTimeSteps):
             count = 0
             for sd in range(self.nbsd):
                 for k in range(len(reader.node)):
-                    indices = list(map(lambda x: x + len(reader.node)*globalMesh.Nodes*timeStep+k*globalMesh.Nodes, localoriginalIDNodes[sd]))
+                    indices = list(map(lambda x: x + len(reader.node)*metaDataMesh3D.Nodes*timeStep+k*metaDataMesh3D.Nodes, localoriginalIDNodes[sd]))
                     data_node[indices] = localDataNode[sd][reader.node[k]][:,timeStep]
             printProgressBar(timeStep+1, nbeTimeSteps, prefix = 'Writing global .node:', suffix = 'Complete', length = 50)
-    
+
         data_node.astype(np.float32).byteswap().tofile(self.outputFolder + self.name + ".node")
         print("Global .node has been written")
-    
+
         #write .ut
         __string = "**meshfile " + os.path.relpath(self.dataFolder, self.outputFolder) + os.sep + cutGeof+"\n"
         with open(self.dataFolder + self.name + "-001.ut", 'r') as inFile:
           inFile.readline()
           for i in range(3):
             __string += inFile.readline()
-    
+
         with open(self.outputFolder + self.name + ".ut", "w") as outFile:
           outFile.write(__string)
           for timeStep in range(nbeTimeSteps):
@@ -181,12 +181,13 @@ class UtMerger(WriterBase):
               line += str(int(reader.time[timeStep,i]))+" "
             line += str(reader.time[timeStep,4])+"\n"
             outFile.write(line)
-          
+
 
 def GeofFromCut(dataFolder, cutName):
   cutFile = open(dataFolder+cutName+".cut", 'r')
   strings = cutFile.readlines()
   return strings[1].split()[1]
+
 
 def Tag3D(mesh):
   for name, data in mesh.elements.items():
@@ -195,17 +196,20 @@ def Tag3D(mesh):
 
 
 def Return3DElements(mesh):
+  class metaDataMesh3DClass():
+      pass
   for name, data in mesh.elements.items():
     if '3D' in data.tags:
       idstotreat = data.tags['3D'].GetIds()
-      mesh.NnodeperEl = EN.numberOfNodes[name]
-      mesh.p, mesh.w =  LagrangeIsoParam[name]
-      mesh.NGaussperEl = len(mesh.w)
-      mesh.NGauss = data.GetNumberOfElements()*mesh.NGaussperEl
-      mesh.nbElements = data.GetNumberOfElements()
-      mesh.Nodes = mesh.GetNumberOfNodes()
-  return idstotreat
-
+      metaDataMesh3D = metaDataMesh3DClass()
+      metaDataMesh3D.NnodeperEl = EN.numberOfNodes[name]
+      metaDataMesh3D.p, metaDataMesh3D.w =  LagrangeIsoParam[name]
+      metaDataMesh3D.NGaussperEl = len(metaDataMesh3D.w)
+      metaDataMesh3D.NGauss = data.GetNumberOfElements()*metaDataMesh3D.NGaussperEl
+      metaDataMesh3D.nbElements = data.GetNumberOfElements()
+      metaDataMesh3D.Nodes = mesh.GetNumberOfNodes()
+      return idstotreat, metaDataMesh3D
+  raise('no 3D tag detected')
 
 def CheckIntegrity():
 

@@ -14,6 +14,7 @@ import BasicTools.IO.UtReader as UR
 import BasicTools.Containers.ElementNames as EN
 from BasicTools.FE.IntegrationsRules import LagrangeIsoParam
 from BasicTools.Helpers.TextFormatHelper import TFormat
+from BasicTools.IO.Parallel.UtMerger import Tag3D, Return3DElements
 
 class UtSplitter(WriterBase):
     "This class can plit .ut, .goef, .ctnod, .node, .integ files frpù a monolithic Zset solution"
@@ -91,10 +92,10 @@ class UtSplitter(WriterBase):
 
       globalMesh = GR.ReadGeof(fileName = self.dataFolder + self.name + ".geof",readElset=False,readFaset=False,printNotRead=False)
       Tag3D(globalMesh)
-      Return3DElements(globalMesh)
+      globalIdstotreat, metaDataglobalMesh3D = Return3DElements(globalMesh)
       globalMesh.originalIDNodes = np.array(globalMesh.originalIDNodes-1, dtype=int)
 
-      nGpE = globalMesh.NGaussperEl
+      nGpE = metaDataglobalMesh3D.NGaussperEl
 
 
       from BasicTools.Helpers.ProgressBar import printProgressBar
@@ -104,16 +105,16 @@ class UtSplitter(WriterBase):
         sdString = "-" + str(sd).zfill(3)
         localMesh = GR.ReadGeof(fileName = self.dataFolder+self.name + "-pmeshes" + os.sep + self.name + sdString + ".geof",readElset=False,readFaset=False,printNotRead=False)
         Tag3D(localMesh)
-        localIdstotreat = Return3DElements(localMesh)
+        localIdstotreat, metaDatalocalMesh3D = Return3DElements(localMesh)
         localOriginalIDNodes = np.array(localMesh.originalIDNodes-1, dtype=int)
 
 
         #write .integ
-        data_integ = np.empty(len(reader.integ)*localMesh.NGauss*(reader.time.shape[0]))
+        data_integ = np.empty(len(reader.integ)*metaDatalocalMesh3D.NGauss*(reader.time.shape[0]))
 
         count0 = 0
         for timeStep in range(reader.time.shape[0]):
-          field = np.empty((len(reader.integ),localMesh.NGauss))
+          field = np.empty((len(reader.integ),metaDatalocalMesh3D.NGauss))
           count = 0
           for k in range(len(reader.integ)):
             count = 0
@@ -129,11 +130,11 @@ class UtSplitter(WriterBase):
 
         #write .node
         count0 = 0
-        data_node = np.zeros(len(reader.node)*localMesh.Nodes*(reader.time.shape[0]))
+        data_node = np.zeros(len(reader.node)*metaDatalocalMesh3D.Nodes*(reader.time.shape[0]))
         for timeStep in range(reader.time.shape[0]):
           for k in range(len(reader.node)):
-            data_node[count0:count0+localMesh.Nodes] = globaldataNode[reader.node[k]][localOriginalIDNodes,timeStep]
-            count0 += localMesh.Nodes
+            data_node[count0:count0+metaDatalocalMesh3D.Nodes] = globaldataNode[reader.node[k]][localOriginalIDNodes,timeStep]
+            count0 += metaDatalocalMesh3D.Nodes
         data_node.astype(np.float32).byteswap().tofile(self.outputFolder + self.name + sdString +".node")
 
 
@@ -162,26 +163,6 @@ class UtSplitter(WriterBase):
       __string = "***decomposition\n" + "  **global_mesh " + os.path.relpath(self.dataFolder, self.outputFolder) + os.sep + self.name + ".geof\n" + "  **domains "+str(self.nbsd)+"\n"
       with open(self.outputFolder + self.name + ".cut", "w") as outFile:
         outFile.write(__string)
-
-
-
-def Tag3D(mesh):
-  for name, data in mesh.elements.items():
-    if EN.dimension[name] == 3:
-      mesh.GetElementsOfType(name).tags.CreateTag('3D').SetIds(mesh.GetElementsOfType(name).originalIds-1)
-
-
-def Return3DElements(mesh):
-  for name, data in mesh.elements.items():
-    if '3D' in data.tags:
-      idstotreat = data.tags['3D'].GetIds()
-      mesh.NnodeperEl = EN.numberOfNodes[name]
-      mesh.p, mesh.w =  LagrangeIsoParam[name]
-      mesh.NGaussperEl = len(mesh.w)
-      mesh.NGauss = data.GetNumberOfElements()*mesh.NGaussperEl
-      mesh.nbElements = data.GetNumberOfElements()
-      mesh.Nodes = mesh.GetNumberOfNodes()
-  return idstotreat
 
 
 def CheckIntegrity():
