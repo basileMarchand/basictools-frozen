@@ -13,6 +13,7 @@ import time
 from functools import wraps
 _startTime = time.time()
 useDifferentialTime = True
+useFroze_itDecorator = False
 
 from BasicTools.Helpers.TextFormatHelper import TFormat
 
@@ -30,6 +31,10 @@ def SetUseDifferentialTime(val):
 sentinel = object()
 ## for the moment if a class is frozen no heritage is possible ... working on a solution
 def froze_it(cls):
+
+    if not useFroze_itDecorator:
+        return cls
+
     cls.__frozen = False
 
     def frozensetattr(self, key, value):
@@ -246,29 +251,32 @@ def CheckIntegrity():
             print(self.UnFrozen())
             self.b = 50
 
-    obj = FrozenTest()
-    obj.a = 5
-    try:
+    if useFroze_itDecorator:
+
+        obj = FrozenTest()
+        obj.a = 5
+        try:
+            obj.b = 7
+            return "Error in a frozen class"
+        except Exception as inst:
+            pass
+            print(inst)
+            print("this error message is normal")
+        obj.__frozen = False
         obj.b = 7
-        return "Error in a frozen class"
-    except Exception as inst:
-        pass
-        print(inst)
-        print("this error message is normal")
-    obj.__frozen = False
-    obj.b = 7
 
 
-    obj = FrozenSubClass()
-    obj.b = 5
-    try:
+
+        obj = FrozenSubClass()
+        obj.b = 5
+        try:
+            obj.c = 7
+            return "Error frozing subclass"
+        except Exception as inst:
+            pass
+
+        obj.UnFrozen()
         obj.c = 7
-        return "Error frozing subclass"
-    except Exception as inst:
-        pass
-
-    obj.UnFrozen()
-    obj.c = 7
 
     return "OK"
 
