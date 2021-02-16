@@ -452,7 +452,7 @@ def VtkToMesh(vtkmesh, meshobject=None, TagsAsFields=False):
             data =  vtkmesh.GetPointData().GetArray(f)
             (name,field) = VtkFieldToNumpyField(out,data)
             if name == "originalIds":
-                out.originalIds = field
+                out.originalIDNodes = field
             else:
                 if len(field.shape) == 1 and field.dtype ==  int and min(field)>=0 and max(field) <= 1:
                     out.nodesTags.CreateTag(name).SetIds(np.where(field)[0])
