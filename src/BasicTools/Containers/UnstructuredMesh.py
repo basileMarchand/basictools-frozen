@@ -12,8 +12,9 @@ from BasicTools.Containers.MeshBase import MeshBase
 from BasicTools.Containers.MeshBase import Tag
 from BasicTools.Containers.MeshBase import Tags
 
-from BasicTools.Helpers.BaseOutputObject import BaseOutputObject,froze_it
+from BasicTools.Helpers.BaseOutputObject import BaseOutputObject, froze_it
 
+@froze_it
 class ElementsContainer(BaseOutputObject):
     """
     Class to hold a list of element of the same type
@@ -193,6 +194,7 @@ class ElementsContainer(BaseOutputObject):
         res += "  Tags : " + " ".join([ ("("+x.name+":"+str(len(x)) +")") for x in self.tags]) + "\n"
         return res
 
+@froze_it
 class AllElements(object):
     """
     Class to store a list of element containers
@@ -250,6 +252,7 @@ class AllElements(object):
             res += str(data)
         return res
 
+@froze_it
 class UnstructuredMesh(MeshBase):
     """
     Class storing an unstructured (i.e. general) mesh:
@@ -467,15 +470,6 @@ class UnstructuredMesh(MeshBase):
              data.tighten()
         self.ComputeGlobalOffset()
 
-    def GenerateManufacturedOriginalIDs(self):
-        """
-        function to generate a valid originalid data
-        """
-        self.originalIDNodes = np.arange(self.GetNumberOfNodes())
-        counter = 0
-        for key, value in self.elements.items():
-           value.originalIds = np.arange(counter,counter+value.GetNumberOfElements())
-           counter += value.GetNumberOfElements()
 
 
     def __str__(self):

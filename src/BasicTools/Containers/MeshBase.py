@@ -7,13 +7,14 @@
 
 import numpy as np
 
-from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
+from BasicTools.Helpers.BaseOutputObject import BaseOutputObject, froze_it
 
 allElements = object()
 bulkElements = object() # element of dimensionality for meshdim (Tetra in 3D, Tri in 2D)
 borderElements = object() # element of dimensionality for meshdim-1 (Tri in 3D, Edge in 2D)
 borderborderElements = object() # element of dimensionality for meshdim-2 (Edge in 3D, Point in 2D)
 
+@froze_it
 class Tag(object):
     def __init__(self,tagname):
         self.name = tagname
@@ -238,6 +239,17 @@ class MeshBase(BaseOutputObject):
     def IsRectilinear(self): return False
     def IsStructured(self): return False
     def IsUnstructured(self): return False
+
+    def GenerateManufacturedOriginalIDs(self):
+        """
+        function to generate a valid originalid data
+        """
+        self.originalIDNodes = np.arange(self.GetNumberOfNodes())
+        counter = 0
+        for key, value in self.elements.items():
+           value.originalIds = np.arange(counter,counter+value.GetNumberOfElements())
+           counter += value.GetNumberOfElements()
+
 
     def WithModification(self):
         class ClosingMeshAutomatically():
