@@ -360,7 +360,9 @@ def ComputeSkin(mesh, md=None ,inplace=False):
     if inplace:
         res = mesh
     else:
-        res = mesh.__copy__()
+        res = UnstructuredMesh()
+        res.nodesTags =  mesh.nodesTags
+        res.originalIDNodes =  mesh.originalIDNodes
         res.nodes = mesh.nodes
         res.elements = type(mesh.elements)()
 
@@ -464,8 +466,9 @@ def ComputeFeatures(inputmesh,FeatureAngle=90,skin=None):
             #print(surf2)
 
 
-    edgemesh = type(inputmesh)()
+    edgemesh = UnstructuredMesh()
     edgemesh.nodes = inputmesh.nodes
+    edgemesh.originalIDNodes = inputmesh.originalIDNodes
     numberOfNodes = inputmesh.GetNumberOfNodes()
 
     for name in surf:
@@ -484,8 +487,6 @@ def ComputeFeatures(inputmesh,FeatureAngle=90,skin=None):
         bars.tags.CreateTag("Ridges").SetIds(np.arange(bars.GetNumberOfElements()))
     skinmesh.PrepareForOutput()
     edgemesh.PrepareForOutput()
-    skinmesh.GenerateManufacturedOriginalIDs()
-    edgemesh.GenerateManufacturedOriginalIDs()
 
     """
     Now we compute the corners
