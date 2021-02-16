@@ -9,12 +9,11 @@ import numpy as np
 
 from BasicTools.Containers.MeshBase import MeshBase
 from BasicTools.Containers.MeshBase import Tags
-from BasicTools.Containers.UnstructuredMesh import ElementsContainer as ElementsContainer
 from BasicTools.Containers.UnstructuredMesh import AllElements as AllElements
 import BasicTools.Containers.ElementNames as ElementNames
-from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
-from BasicTools.Containers.UnstructuredMeshModificationTools import ComputeSkin
+from BasicTools.Helpers.BaseOutputObject import BaseOutputObject, froze_it
 
+@froze_it
 class ConstantRectilinearElementContainer(BaseOutputObject):
     def __init__(self,__dimensions):
         super(ConstantRectilinearElementContainer,self).__init__(None)
@@ -142,6 +141,7 @@ class ConstantRectilinearElementContainer(BaseOutputObject):
         res += "  Tags : " + " ".join([ ("("+x.name+":"+str(len(x)) +")") for x in self.tags]) + "\n"
         return res
 
+@froze_it
 class ConstantRectilinearMesh(MeshBase):
 
     def IsConstantRectilinear(self):
@@ -154,6 +154,7 @@ class ConstantRectilinearMesh(MeshBase):
         self.__origin = np.zeros((dim,) )
         self.__spacing = np.ones((dim,))
         self.nodes = None
+        self.originalIDNodes = None
         self.elements = AllElements()
         self.structElements = ConstantRectilinearElementContainer(self.__dimensions)
         self.elements[self.structElements.elementType] = self.structElements
@@ -165,6 +166,7 @@ class ConstantRectilinearMesh(MeshBase):
         res.__origin = self.__origin
         res.__spacing = self.__spacing
         res.nodes = self.nodes
+        res.originalIDNodes = self.originalIDNodes
         res.elements = self.elements
         res.structElements = self.structElements
         res.elements = self.elements[self.structElements.elementType]
@@ -180,6 +182,7 @@ class ConstantRectilinearMesh(MeshBase):
         self.__dimensions = np.array(data,int);
         self.structElements.SetDimensions(self.__dimensions)
         self.nodes = None
+        self.originalIDNodes = None
 
     def GetDimensions(self):
         return np.array(self.__dimensions)
@@ -313,6 +316,9 @@ class ConstantRectilinearMesh(MeshBase):
             self.nodes[:,0] = xv.ravel()
             self.nodes[:,1] = yv.ravel()
             self.nodes[:,2] = zv.ravel()
+
+        if self.originalIDNodes is None:
+            self.originalIDNodes = np.arange(self.GetNumberOfNodes(),dtype=int)
 
         return self.nodes
 
