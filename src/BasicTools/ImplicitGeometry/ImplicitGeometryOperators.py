@@ -111,10 +111,10 @@ class ImplicitGeometryDifference(ImplicitGeometryBase):
     def ApplyDifferenceOnLevelset(self,ls1,ls2,smoothControl=0):
         if smoothControl == 0:
             def op(a,b):
-                return np.minimum(a,-b)
+                return np.maximum(a,-b)
         else:
             def op(a,b):
-                return smoothmin(a,-b,smoothControl)
+                return smoothmax(a,-b,smoothControl)
 
         return op(ls1,ls2)
 
