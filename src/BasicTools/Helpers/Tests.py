@@ -136,11 +136,12 @@ def __RunAndCheck(lis,bp,stopAtFirstError,dryrun,profiling):# pragma: no cover
         bp.Print(TFormat.InBlue(TFormat.Center( "Running Test " +name ,width=80 ) ))
         if lis[name] is None:
             bp.Print(TFormat().InRed(TFormat().GetIndent() + 'Sub Module "' + name + '" does not have the CheckIntegrity function'))
-            raise(Exception(TFormat().GetIndent() + 'Sub Module "' + name + '" does not have the CheckIntegrity function'))
+            r = 'Not OK'
+            if stopAtFirstError :
+                raise(Exception(TFormat().GetIndent() + 'Sub Module "' + name + '" does not have the CheckIntegrity function'))
         try:
             start_time = time.time()
             stop_time = time.time()
-            #print(lis[name])
             if dryrun:
                 r = "Dry Run "
             else:
@@ -162,10 +163,6 @@ res = CheckIntegrity()""".format(name)
                     ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
                     ps.print_stats()
                     print(s.getvalue())
-#                    glob = {"lis":lis,"name":name}
-#                    loc = {}
-#                    cProfile.runctx("r = lis[name]()",glob,loc)
-#                    r = loc["r"]
                 else:
                     exec(teststr,{},local)
                     r = local["res"]
@@ -210,7 +207,10 @@ def __tryImportRecursive(submod,tocheck,stopAtFirstError,modulestotreat,modulest
 
 
   import importlib
-  sm = importlib.import_module(submod)
+  try:
+    sm = importlib.import_module(submod)
+  except :
+    sm = None
 
   cif = getattr( sm, "CheckIntegrity", None)
   if cif is not None:
