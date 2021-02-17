@@ -186,18 +186,37 @@ class ConstraintsHolder(BOO):
             Q' containt only the non zero columns of [A|b] and always the last
             column (the b)
             usedDofs : the indices of the columns present in Q
-,
         """
         self.PrintDebug("GetCleanConstraintBase ")
 
         try:
             import BasicTools.Linalg.EigenSolver as EigenSolver
+            LS = EigenSolver.EigenSolvers()
         except:
-            print("Eigen SPQR decomposition not available using very slow algo ")
-            raise(Exception("Need to compile BasicTools to use this functionality"))
-
-
-        LS = EigenSolver.EigenSolvers()
+            print("Warning!!! Eigen SPQR decomposition not available using slower algorithm (scipy.linalg.qr)")
+            from scipy.linalg  import qr
+            class WrapedScipyQr():
+                def __init__(self):
+                    self.tol = 1.e-6
+                def SetTolerance(self,tol):
+                    self.tol = tol
+                def SetSolverType(self,st):
+                    if st != "SPQR":
+                        raise(Exception("SolverType '"+str(st)+"' not allowed "))
+                def SetOp(self,op):
+                    Q,r,P= qr(op.toarray(),mode="full", pivoting=True,check_finite=False)
+                    diag = r.diagonal()
+                    diag = diag/diag[0]
+                    mask = (abs(diag)<self.tol)
+                    self.rank = mask.argmax()
+                    if self.rank == 0:
+                        self.rank = op.shape[1]
+                    self.Q = sparse.csr_matrix(Q)
+                def GetSPQRRank(self):
+                    return self.rank
+                def GetSPQR_Q(self):
+                    return self.Q
+            LS = WrapedScipyQr()
         LS.SetTolerance(self.tol)
         LS.SetSolverType("SPQR")
 
