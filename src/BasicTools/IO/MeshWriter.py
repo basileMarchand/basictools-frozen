@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 
 import struct
 import numpy as np
@@ -384,6 +384,9 @@ class MeshWriter(WriterBase):
 
 
     def _WriteSolutionsFieldsBinaryUsingKey(self,meshObject,key,Sols):
+
+        if len(Sols) == 0:
+            return
 
         NumberOfEntries = Sols[0].shape[0]
 
