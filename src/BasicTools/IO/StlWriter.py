@@ -38,7 +38,9 @@ class StlWriter(WriterBase):
         tris = ElementsContainer(EN.Triangle_3)
         tris.Merge(meshObject.GetElementsOfType(EN.Triangle_3))
         nodes = meshObject.nodes
-
+        if nodes.shape[1] < 3:
+            nodes = np.hstack((nodes,)+(np.zeros((nodes.shape[0],1)),)*(3-nodes.shape[1]) )
+            print(nodes)
         if self.extractSkin :
             from BasicTools.Containers.UnstructuredMeshModificationTools import ComputeSkin
             skin = ComputeSkin(meshObject)
@@ -59,6 +61,9 @@ class StlWriter(WriterBase):
                 p2 = nodes[tris.connectivity[i,2],:]
                 normal = np.cross(p1-p0,p2-p0)
                 normal = normal/np.linalg.norm(normal)
+                print(p0)
+                print(p1)
+                print(p2)
                 self.writeText(" facet normal {}\n".format(" ".join(map(str,normal)) ))
             self.writeText("  outer loop\n")
             for p in range(3):
