@@ -68,6 +68,8 @@ try:
                 self.metadata = self.basicToolsReader.ReadMetaData()
 
                 timeSteps = self.basicToolsReader.GetAvilableTimes()
+                if len(timeSteps) == 0:
+                    return None
                 return timeSteps
             else:
                 return None

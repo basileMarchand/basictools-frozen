@@ -371,7 +371,7 @@ class XdmfTopology(Xdmfbase):
             data.connectivity = self.dataitems[0].GetData().ravel()
             size = (len(data.connectivity)//ElementNames.numberOfNodes[en],ElementNames.numberOfNodes[en])
             data.connectivity.shape = size
-            data.cpt = size[0] 
+            data.cpt = size[0]
             res[en] = data
             return res
 
@@ -600,11 +600,16 @@ class XdmfReader(xml.sax.ContentHandler):
         self.SetFileName(filename);
         self.readed = False;
         self.lazy = True;
+        self.canHandleTemporal = True
+        self.time = np.array([])
+        self.timeToRead = -1
 
     def Reset(self):
         self.xdmf = Xdmf();
         self.pile = [];
         self.readed = False;
+        self.timeToRead = -1
+        self.time = np.array([])
 
     def SetFileName(self,filename):
         #if same filename no need to read the file again
@@ -615,8 +620,39 @@ class XdmfReader(xml.sax.ContentHandler):
         self.filename = filename;
         self.path = __os.path.dirname(filename)
 
+    def ReadMetaData(self):
+        self.lazy = True;
+        times = []
+        self.Read()
+        for i, grid in enumerate(self.xdmf.domains[0].grids):
+            t  = grid.GetTime()
+            if t == None:
+                continue
+            times.append(t)
+        self.time = np.array(times)
+
+    def GetAvilableTimes(self):
+        return self.time
+
+    def SetTimeToRead(self, time=None, timeIndex=None):
+        if time is not None:
+            self.timeToRead = time
+        else:
+            if timeIndex is not None:
+                self.timeToRead = self.time[timeIndex]
+            else:
+                self.timeToRead = -1
 
     def Read(self,fileName=None):
+
+
+        if self.timeToRead == -1.:
+            timeIndex = len(self.time)-1
+        else:
+            if len(self.time) == 0:
+                timeIndex = -1
+            else:
+                timeIndex = np.argmin(abs(self.time - self.timeToRead ))
 
         if fileName is not None:
             self.SetFileName(fileName)
@@ -636,7 +672,7 @@ class XdmfReader(xml.sax.ContentHandler):
         parser.setFeature(xml.sax.handler.feature_external_ges, False)
         parser.parse(thefile)
         thefile.close();
-        return self.xdmf.GetDomain(-1).GetGrid(-1).GetSupport()
+        return self.xdmf.GetDomain(-1).GetGrid(timeIndex).GetSupport()
 
     # this a a overloaded function (must start with lower case)      !!!!!
     def startElement(self, name, attrs):
