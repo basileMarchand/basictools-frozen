@@ -252,7 +252,7 @@ class MeshWriter(WriterBase):
 
 
 
-        if PointFields is not None:
+        if PointFields is not None and len(PointFields)>0 :
             if solutionOnOwnFile :
                 #self.filePointer.write(struct.pack('i', 54)) #dimension
                 self.Close();

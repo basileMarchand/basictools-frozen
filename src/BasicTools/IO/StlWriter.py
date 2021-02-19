@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 import numpy as np
 
 from BasicTools.IO.WriterBase import WriterBase as WriterBase
@@ -34,35 +34,35 @@ class StlWriter(WriterBase):
             super(StlWriter,self).Close()
 
     def Write(self,meshObject,normals=None,Name= None,PointFieldsNames=None,PointFields=None,CellFieldsNames=None,CellFields=None,GridFieldsNames=None,GridFields=None):
+        from BasicTools.Containers.UnstructuredMesh import ElementsContainer
+        tris = ElementsContainer(EN.Triangle_3)
+        tris.Merge(meshObject.GetElementsOfType(EN.Triangle_3))
+        nodes = meshObject.nodes
 
         if self.extractSkin :
-            from BasicTools.Containers.UnstructuredMeshModificationTools import ComputeSkin, CleanLonelyNodes
+            from BasicTools.Containers.UnstructuredMeshModificationTools import ComputeSkin
             skin = ComputeSkin(meshObject)
-            #print(skin)
-            CleanLonelyNodes(skin)
-            nodes = skin.nodes
             elements = skin.GetElementsOfType(EN.Triangle_3)
-        else:
-            nodes = meshObject.nodes
-            elements = meshObject.GetElementsOfType(EN.Triangle_3)
+            tris.Merge(elements)
+
         #self.PrintDebug(Name)
         if Name is None:
             Name == "Solid"
 
         self.writeText("solid {}\n".format(Name))
-        for i in range(elements.GetNumberOfElements()):
+        for i in range(tris.GetNumberOfElements()):
             if normals is not None:
                 self.writeText(" facet normal {}\n".format(" ".join(map(str,normals[i,:])) ))
             else:
-                p0 = nodes[elements.connectivity[i,0],:]
-                p1 = nodes[elements.connectivity[i,1],:]
-                p2 = nodes[elements.connectivity[i,2],:]
+                p0 = nodes[tris.connectivity[i,0],:]
+                p1 = nodes[tris.connectivity[i,1],:]
+                p2 = nodes[tris.connectivity[i,2],:]
                 normal = np.cross(p1-p0,p2-p0)
                 normal = normal/np.linalg.norm(normal)
                 self.writeText(" facet normal {}\n".format(" ".join(map(str,normal)) ))
             self.writeText("  outer loop\n")
             for p in range(3):
-                self.writeText("   vertex {}\n".format(" ".join(map(str,nodes[elements.connectivity[i,p],:] ))))
+                self.writeText("   vertex {}\n".format(" ".join(map(str,nodes[tris.connectivity[i,p],:] ))))
             self.writeText("  endloop\n")
             self.writeText(" endfacet\n")
         self.writeText("endsolid\n")
