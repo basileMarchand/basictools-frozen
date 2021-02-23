@@ -52,7 +52,7 @@ class OdbReader(object):
         self.time = None
         self.stepData =None
 
-    def GetAvilableTimes(self):
+    def GetAvailableTimes(self):
            return self.time
 
 

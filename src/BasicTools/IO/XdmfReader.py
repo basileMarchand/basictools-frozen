@@ -631,7 +631,7 @@ class XdmfReader(xml.sax.ContentHandler):
             times.append(t)
         self.time = np.array(times)
 
-    def GetAvilableTimes(self):
+    def GetAvailableTimes(self):
         return self.time
 
     def SetTimeToRead(self, time=None, timeIndex=None):

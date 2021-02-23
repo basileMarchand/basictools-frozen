@@ -67,7 +67,7 @@ try:
                 self.basicToolsReader.SetFileName(self._filename)
                 self.metadata = self.basicToolsReader.ReadMetaData()
 
-                timeSteps = self.basicToolsReader.GetAvilableTimes()
+                timeSteps = self.basicToolsReader.GetAvailableTimes()
                 if len(timeSteps) == 0:
                     return None
                 return timeSteps
@@ -279,7 +279,7 @@ try:
             mean0 = np.sum(input0.nodes,axis=0)/input0.GetNumberOfNodes()
             mean1 = np.sum(input1.nodes,axis=0)/input1.GetNumberOfNodes()
 
-            output = vtkUnstructuredGrid.GetData(outInfoVec, 0)
+            output = vtkUnstructuredGrid.GetData(outInfoVec, 0)t
 
             # the user must not modify the inputs
             outputmesh = copy.copy(input0)

@@ -87,7 +87,7 @@ class UtReader(ReaderBase):
             return [data[4]for data in self.time].index(self.timeToRead)
 
 
-    def GetAvilableTimes(self):
+    def GetAvailableTimes(self):
            return self.time[:,4]
 
     def ReadUTMetaData(self):

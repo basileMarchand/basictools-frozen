@@ -55,7 +55,7 @@ def Convert(inputfilename,outputfilename,ops):
               if reader.canHandleTemporal :
                   reader.ReadMetaData()
                   print("Available Times in files:")
-                  print(reader.GetAvilableTimes())
+                  print(reader.GetAvailableTimes())
                   import sys
                   sys.exit(0)
 
