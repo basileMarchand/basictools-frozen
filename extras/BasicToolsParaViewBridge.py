@@ -279,7 +279,7 @@ try:
             mean0 = np.sum(input0.nodes,axis=0)/input0.GetNumberOfNodes()
             mean1 = np.sum(input1.nodes,axis=0)/input1.GetNumberOfNodes()
 
-            output = vtkUnstructuredGrid.GetData(outInfoVec, 0)t
+            output = vtkUnstructuredGrid.GetData(outInfoVec, 0)
 
             # the user must not modify the inputs
             outputmesh = copy.copy(input0)
