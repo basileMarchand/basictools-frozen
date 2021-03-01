@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 """ Fem file reader
 
 """
@@ -61,12 +61,16 @@ keysToIgnoreBulk = [ "PSOLID",
                 "OUTPUT,",
                 ]
 
+class ignored():
+    def __init__(self,ignored):
+        pass
 
 class NastranLineParcer(object):
     def __init__(self):
          self.fields = []
          self.data = {}
          self.structured = False
+
     def Parse(self,line,file=None):
         #k = GetField(line,0)
         #if k != self.fields[0][0]:
@@ -74,7 +78,6 @@ class NastranLineParcer(object):
 
         for i in range(1,len(self.fields)):
             f = self.GetField(line,i)
-            print("Parsing" + str(self.fields[i]))
             name = self.fields[i][0]
             types = self.fields[i][1]
             self.data[name] = self.ParseTypes(f,types)
@@ -93,43 +96,35 @@ class NastranLineParcer(object):
         else:
            return line.split()[fn]
 
-
-    def ParseTypes(self,field,ts):
-        if type(ts) == tuple:
-            for t in ts:
-                try:
-                    res = self.ParseTypes(field, t)
-                    return res
-                except:
-                    pass
-
-        elif ts == float:
+    def ParseType(self,field,typ):
+        if typ == float:
             return self.ParseFloat(field)
         else:
-            return ts(field)
+            return typ(field)
+
+    def ParseTypes(self,fields,ts):
+        res = []
+        for i,t in enumerate(ts):
+            f = self.GetField(fields,i)
+            res.append(self.ParseType(f, t))
+        return res
 
     def ParseFloat(self,line):
             line += (8-len(line))*' '
             if line[6] == "-"  and line[5] != " ":
-                    #print(line)
                     line = line[0:6] + "e" + line[6:8]
             elif line[5] == "-"  and line[4] != " ":
-                    #print(line)
                     line = line[0:5] + "e" + line[5:8]
             elif line[4] == "-"  and line[3] != " ":
-                    #print(line)
                     line = line[0:4] + "e" + line[4:8]
             elif line[3] == "-"  and line[2] != " ":
-                    #print(line)
                     line = line[0:3] + "e" + line[3:8]
             elif line[2] == "-"  and line[1] != " ":
-                    #print(line)
                     line = line[0:2] + "e" + line[2:8]
-
             try:
                     res = float(line)
-            except:
-                    print(line)
+            except:# pragma: no cover
+                    print("string is ->",line)
                     raise
             return res
 class FORCE(NastranLineParcer):
@@ -142,8 +137,7 @@ class LOAD(NastranLineParcer):
     def __init__(self):
         super(LOAD,self).__init__()
         self.structured = True
-        self.fields = [("KeyWord",str), ("S",real),("S1",real),("L1",float)]
-
+        self.fields = [("KeyWord",str), ("S",float),("S1",float),("L1",float)]
 
 class IgnoredOneLine(NastranLineParcer):
     pass
@@ -333,7 +327,7 @@ class FemReader(ReaderBase):
                         continue
 
                     if key == 'DOPTPRM'  :
-                        resdic["DOPTPRM"] = {self.GetField(line,1):ParseFloat(self.GetField(line,2))}
+                        resdic["DOPTPRM"] = {self.GetField(line,1):NLP.ParseFloat(self.GetField(line,2))}
                         continue
                     if key == 'DTPL' :
                         print("DTPL intensionally ignored")
@@ -349,7 +343,6 @@ class FemReader(ReaderBase):
                         #PBUSH is in the keysToIgnoreBulk list
                         #https://knowledge.autodesk.com/support/nastran/learn-explore/caas/CloudHelp/cloudhelp/2018/ENU/NSTRN-Reference/files/GUID-47AAEE71-02F5-4DB2-9817-39F5EE1B0CE8-htm.html
                         NLP.structured = True
-
                         PID,K  = NLP.GetFields(line,1,3)
                         if K != "K" :
                             print("--",K,"--")
@@ -413,9 +406,9 @@ class FemReader(ReaderBase):
                         # from
                         # https://knowledge.autodesk.com/support/nastran/learn-explore/caas/CloudHelp/cloudhelp/2018/ENU/NSTRN-Reference/files/GUID-F048B85B-79B9-49AD-94B4-87CC69122C3B-htm.html
                         idd = int(self.GetField(line,1))
-                        floats = [ParseFloat(self.GetField(line,x)) for x in [3,4,5,6,7,8]]
+                        floats = [NLP.ParseFloat(self.GetField(line,x)) for x in [3,4,5,6,7,8]]
                         line = self.ReadCleanLine()
-                        floats.extend([ParseFloat(self.GetField(line,x)) for x in [1,2,3]] )
+                        floats.extend([NLP.ParseFloat(self.GetField(line,x)) for x in [1,2,3]] )
                         from BasicTools.FE.ProblemData import Transform
                         orient = Transform()
                         orient.system = "CORD2R"
@@ -436,9 +429,11 @@ class FemReader(ReaderBase):
                     if key == 'CORD1R' and self.ignoreNotTreated : continue
                     if key == 'RBE2' :
                         #https://knowledge.autodesk.com/support/nastran/learn-explore/caas/CloudHelp/cloudhelp/2017/ENU/NSTRN-Reference/files/GUID-9C8F3EE5-D900-487A-88E7-9502838E0A3F-htm.html?st=RBE2
-                        EID = int(line[8:8*2])
-                        GN = int(line[8*2:8*3])
-                        CM = line[8*3:8*4]
+                        NLP.structured = True
+                        EID, GN,CM = NLP.GetFields(line,1,4)
+                        EID = int(EID)
+                        GN = int(GN)
+
                         elements = res.GetElementsOfType(ElementNames.Bar_2)
                         tag = elements.tags.CreateTag("RBE2_"+str(EID),False)
 
@@ -453,8 +448,8 @@ class FemReader(ReaderBase):
                                 data = line[8*i:8*(i+1)].strip()
                                 if len(data) ==0:
                                     break
-                                P1 = int(data)
-                                localid = elements.AddNewElement([oidd, filetointernalid[P1] ],-1)
+                                GMi = int(data)
+                                localid = elements.AddNewElement([oidd, filetointernalid[GMi] ],-1)
                                 tag.AddToTag(localid-1)
 
 
@@ -464,16 +459,21 @@ class FemReader(ReaderBase):
                     if key == 'RBE3' :
                         # from https://knowledge.autodesk.com/support/nastran/learn-explore/caas/CloudHelp/cloudhelp/2017/ENU/NSTRN-Reference/files/GUID-69695F7D-3B6E-4183-8BB0-838E8A014CD2-htm.html?st=RBE3
 
-                        EID = int(line[8:8*2])
-                        REFGRID = int(line[8*3:8*4])
-                        REFC = int(line[8*4:8*5])
-                        WTi = float(line[8*5:8*6])
-                        P1 = int(line[8*6:8*7])
+                        EID, _, REFGRID,REFC,WTi,C1,G11,G12  = NLP.GetFields(line,1,9)
+                        EID =int(EID)
+                        REFGRID = int(REFGRID)
+                        REFC = int(REFC)
+                        ##Reading weights
+                        WTi = float(WTi)
+                        C1 = int(C1)
+                        G11 = int(G11)
+                        G12 = int(G12)
+
                         oidd = filetointernalid[REFGRID]
                         elements = res.GetElementsOfType(ElementNames.Bar_2)
-                        tag = elements.tags.CreateTag("RBE3_"+str(EID))
-                        localid = elements.AddNewElement([oidd, filetointernalid[P1] ],-1)
-                        tag.AddToTag(localid-1)
+                        tag = elements.tags.CreateTag("RBE3_"+str(EID)+"_"+str(REFC))
+                        #localid = elements.AddNewElement([oidd, filetointernalid[P1] ],-1)
+                        #tag.AddToTag(localid-1)
                         P2 = int(line[8*7:8*8])
                         localid = elements.AddNewElement([oidd, filetointernalid[P2]],-1)
                         tag.AddToTag(localid-1)
@@ -526,32 +526,23 @@ class FemReader(ReaderBase):
                         tag = res.GetNodalTag(name)
                         idd = int(line[8*2:8*3])
                         node = filetointernalid[idd ]
-                        #tag.AddToTag(filetointernalid[idd])
-                        #resdic[name] = {'N':node, "val":ParseFloat(line[8*3:8*4]) }
-
                         ElementsAndNumber = filetointernalidElement[idd]
                         ElementsAndNumber[0].AddElementToTag(ElementsAndNumber[1],name)
-
-
                         continue
+
                     if key == 'FORCE' :
-                        name = "FORCE"+str(int(line[8:8*2]) )
-                        tag = res.GetNodalTag(name)
-                        node = filetointernalid[int(line[8*2:8*3]) ]
-                        tag.AddToTag(node)
-
-                        fx = ParseFloat(line[8*5:8*6])
-                        fy = ParseFloat(line[8*6:8*7])
-                        fz = ParseFloat(line[8*7:8*8])
+                        NLP.structured = True
+                        key,name,oid,_,factor,fx,fy,fz = NLP.ParseTypes(line,[str,str,int,ignored,float,float,float,float])
+                        name = "FORCE_"+name
+                        node = filetointernalid[oid ]
+                        tag = res.GetNodalTag(name).AddToTag(node)
                         val = [fx,fy,fz]
-                        resdic[name] = {'N':node, "factor":ParseFloat(line[8*4:8*5]), "val":val }
+                        resdic[name] = {'N':node, "factor":factor, "val":val }
                         continue
-                    if key == 'GRID' :
-                      oid = int(line[8:8*2])
 
-                      x = ParseFloat(line[8*3:8*4])
-                      y = ParseFloat(line[8*4:8*5])
-                      z = ParseFloat(line[8*5:8*6])
+                    if key == 'GRID' :
+                      NLP.structured = True
+                      key,oid,_,x,y,z = NLP.ParseTypes(line,[str,int,str,float,float,float])
                       ids.append(oid)
                       csystem= self.GetField(line,2)
                       if csystem != " "*8:
@@ -561,8 +552,8 @@ class FemReader(ReaderBase):
                       zs.append(z)
                       filetointernalid[oid] = cpt
                       cpt +=1
-
                       continue
+
                     if key ==  'CTRIA3':
                       oid = int(line[8:8*2])
                       idd2 = str(int(line[8*2:8*3]))
@@ -612,13 +603,13 @@ class FemReader(ReaderBase):
                     if key == 'ENDDATA' : break
                     if line is None: break
 
-                    print("key " + str(key) )
-                    raise(ValueError("string  '" + str(line) + "' not treated"))
+                    print("key " + str(key) )# pragma: no cover
+                    raise(ValueError("string  '" + str(line) + "' not treated"))# pragma: no cover
 
             if key == 'ENDDATA' : break
 
-            print("key " + str(key) )
-            raise(ValueError("string '" + str(line) + "' not treated"))
+            print("key " + str(key) ) # pragma: no cover
+            raise(ValueError("string '" + str(line) + "' not treated"))# pragma: no cover
 
         res.nodes = np.array([xs,ys,zs],dtype=np.float).T
         res.originalIDNodes = np.array(ids,dtype=np.int)
@@ -631,51 +622,58 @@ class FemReader(ReaderBase):
 from BasicTools.IO.IOFactory import RegisterReaderClass
 RegisterReaderClass(".fem",FemReader)
 
-def ParseFloat(line):
-    line += (8-len(line))*' '
-    if line[6] == "-"  and line[5] != " ":
-        #print(line)
-        line = line[0:6] + "e" + line[6:8]
-    elif line[5] == "-"  and line[4] != " ":
-        #print(line)
-        line = line[0:5] + "e" + line[5:8]
-    elif line[4] == "-"  and line[3] != " ":
-        #print(line)
-        line = line[0:4] + "e" + line[4:8]
-    elif line[3] == "-"  and line[2] != " ":
-        #print(line)
-        line = line[0:3] + "e" + line[3:8]
-    elif line[2] == "-"  and line[1] != " ":
-        #print(line)
-        line = line[0:2] + "e" + line[2:8]
-
-    try:
-        res = float(line)
-    except:
-        print(line)
-        raise
-    return res
-
-
 
 def CheckIntegrity(GUI = False):
 
 
-    from BasicTools.Helpers.Tests import TestTempDir
+    from BasicTools.Helpers.Tests import TestTempDir, WriteTempFile
 
     testData=u"""
+DESOBJ(MIN) = 1
 BEGIN BULK
-
+DRESP1         1   wcomp   WCOMP
+DRESP1         2 volfrac VOLFRAC
+DTPL           1  PSOLID      72
+        MEMBSIZ .001
+DCONSTR        1       2        .1
+DCONADD        2       1
+DOPTPRM,OPTMETH,DUAL
+DOPTPRM,OBJTOL,0.005
+GAPPRM,GAPCMPL,      NO
+PARAM,CHECKEL,      NO
+PARAM,RENUMOK,     YES
+PARAM,PRINFACC,       1
+PARAM,CONTFEL,     YES
+$$----------------------
+$$  System Data
+$$----------------------
+$HMNAME SYSTCOL       80 "For_Support 1"
+$HWCOLOR  SYSTCOL        80       9
+$
+CORD2R         1       0-.08441 -.0764260.      -.08441 -.076426-1.     +
++       .9155901-.0764260.
 GRID      162969        53.00389234.456633.29904
 GRID      156839        50.53256233.782536.31633
 GRID      156554        50.67131231.871634.13537
 GRID      146810        54.21149233.586335.82001
 CTETRA    581279       2  162969  156839  156554  146810
+CTRIA3    581280       3  162969  156839  156554
 SPC            1  162969  1234560.0
 FORCE          2  156839       01.0     2949.8  -5792.120.0
+RBE2     1649872 162969  123456    156839    156554
+CBUSH    581279      74  162969  156839                               1
+PBUSH        74       K   RIGID   RIGID   RIGID
+$$0000001111111122222222333333334444444455555555666666667777777788888888
+RBE3     1649879          146810  1234561.0          123  162969  156554
++         156839
 ENDDATA
++
 """
+    filename = "CheckIntegrity_FemReader.fem"
+    WriteTempFile(filename,testData)
+    res = ReadFem(TestTempDir.GetTempPath() + filename)
 
+    res = ReadFem(string=testData)
 
     FR = FemReader()
     FR.SetStringToRead(testData)
@@ -687,9 +685,20 @@ ENDDATA
     WriteMeshToXdmf(TestTempDir().GetTempPath()+"FemReaderTest.xdmf",res)
     print(TestTempDir().GetTempPath())
 
-    if GUI:
+    if GUI:# pragma: no cover
         import os
         os.system('vglrun paraview ' + TestTempDir().GetTempPath()+"FemReaderTest.xdmf")
+
+
+    nlp=NastranLineParcer()
+
+    assert nlp.ParseFloat("1") == 1
+    assert nlp.ParseFloat("1.-3") == 1e-3
+    assert nlp.ParseFloat("1.2-4") == 1.2e-4
+    assert nlp.ParseFloat("1.23-5") == 1.23e-5
+    assert nlp.ParseFloat("1.234-6") == 1.234e-6
+    assert nlp.ParseFloat("1.2345-7") == 1.2345e-7
+
     return 'ok'
 
 if __name__ == '__main__':
