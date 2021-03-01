@@ -136,8 +136,17 @@ class ConstraintsHolder(BOO):
             res : a sparse matrix of [A'|B] , A' has only the non zero columns of A
             usedDofs : the indices of the columns present in A'
         """
+        return self.CleanEmptyColumns(self.ToSparseFull())
+
+    def ToSparseFull(self):
+        """
+        Function to convert to the constraints system Ax=B to a sparse matrix
+
+        this function returns:
+            res : a sparse matrix of [A|B] ,
+        """
         mat = coo_matrix((self.vals, (self.rows, self.cols)), shape=((self.numberOfEquations, self.nbdof+1 )), copy= False )
-        return self.CleanEmptyColumns(mat)
+        return mat
 
     def CleanEmptyColumns(self,mat):
         """
@@ -175,7 +184,7 @@ class ConstraintsHolder(BOO):
     def GetNumberOfDofsOnOriginalSystem(self):
         return self.nbdof
 
-    def GetCleanConstraintBase(self):
+    def GetCleanConstraintBase(self, purePython=False):
         """
         This function compute the QR decompostion of the augmentd system [A|b]
         Il will use the self.tol value to detect redundants constrants (rank revealing)
@@ -186,14 +195,21 @@ class ConstraintsHolder(BOO):
             Q' containt only the non zero columns of [A|b] and always the last
             column (the b)
             usedDofs : the indices of the columns present in Q
+
+        option:
+            purePython: to force scipy for computing the QR decomposition
         """
         self.PrintDebug("GetCleanConstraintBase ")
 
-        try:
-            import BasicTools.Linalg.EigenSolver as EigenSolver
-            LS = EigenSolver.EigenSolvers()
-        except:
-            print("Warning!!! Eigen SPQR decomposition not available using slower algorithm (scipy.linalg.qr)")
+        if purePython == False:
+            try:
+                import BasicTools.Linalg.EigenSolver as EigenSolver
+                LS = EigenSolver.EigenSolvers()
+            except: # pragma: no cover
+                purePython = True
+                print("Warning!!! Eigen SPQR decomposition not available using slower algorithm (scipy.linalg.qr)")
+
+        if purePython == True:
             from scipy.linalg  import qr
             class WrapedScipyQr():
                 def __init__(self):
@@ -201,7 +217,7 @@ class ConstraintsHolder(BOO):
                 def SetTolerance(self,tol):
                     self.tol = tol
                 def SetSolverType(self,st):
-                    if st != "SPQR":
+                    if st != "SPQR": # pragma: no cover
                         raise(Exception("SolverType '"+str(st)+"' not allowed "))
                 def SetOp(self,op):
                     Q,r,P= qr(op.toarray(),mode="full", pivoting=True,check_finite=False)
@@ -288,8 +304,6 @@ class ConstraintsHolder(BOO):
                 else:
                     slaves.extend(cols )
 
-
-
         # normalisation
         res = coo_matrix((res_vals,(res_rows,res_cols)), shape=(rankcpt,len(usedDofs) ) )
         rescsr = res.tocsr()
@@ -304,7 +318,7 @@ class ConstraintsHolder(BOO):
 
     def SetConstraintsMethod(self,method):
         MethodClass =  methodFactory.get(method.lower(),None)
-        if MethodClass is None:
+        if MethodClass is None:# pragma: no cover
             raise(Exception(f"Method '{method}' to avaible: possible options are {list(methodFactory.keys())}"))
 
         self.method = MethodClass()
@@ -335,13 +349,84 @@ class ConstraintsHolder(BOO):
     def RestrictSolution(self,arg):
         return self.method.RestrictSolution(self.op, self.rhs, arg)
 
+    def GetLagrangeMultiplierValues(self,arg):
+        C = self.ToSparseFull().tocsc()[:,:-1]
+        return C.dot(self.rhs-self.op.dot(arg))
+
     def __str__(self):
         res = "Constraints Holder: \n"
         res = "   Number of contraints: "+str(self.GetNumberOfConstraints()) +"\n"
         res += str(self.method)
         return res
 
+def ExpandMatrix(op,mattoglobal,nbdofs,  treatrows=True, treatcols=True):
+    op = op.tocoo()
+    data = op.data
+    if treatrows :
+        rows = mattoglobal[op.row]
+        rs = nbdofs[0]
+    else:
+        rows = op.row
+        rs = op.shape[0]
+
+    if treatcols :
+        cols = mattoglobal[op.col]
+        cs = nbdofs[1]
+    else:
+        cols = op.col
+        cs = op.shape[1]
+
+    return  sparse.coo_matrix((data,(rows,cols)),shape=(rs,cs)).tocsr()
+
 #--------------------------------------------------------
+class ProjectionII(BOO):
+    """
+    Method from https://doi.org/10.1016/S0045-7825(01)00236-5
+    Because the CleanConstraint(C) matrix is orthonormal then C.dot(C.T) = I
+    this make the P Q R expression simpler
+
+    """
+    def __init__(self):
+        super(ProjectionII, self).__init__()
+        self.P = None
+        self.Q = None
+        self.R = None
+        self.g = None
+        self.mattoglobal = None
+
+    def UpdateSystem(self,CH):
+        self.nbdof = CH.GetNumberOfDofsOnOriginalSystem()
+        mat, self.mattoglobal, slaves = CH.GetCleanConstraintBase()
+        matcsc = mat.tocsc()
+        C = matcsc[:,0:-1]
+        nbdofs = (self.nbdof,self.nbdof)
+        self.g = matcsc[:,-1]
+        self.P = ExpandMatrix(C.T.dot(C),self.mattoglobal,nbdofs).tocsc()
+        self.Q = (sparse.eye(self.nbdof) - self.P).tocsc()
+        self.R = ExpandMatrix(C,self.mattoglobal,nbdofs,treatrows=False).T.tocsc()
+
+    def GetCOp(self,op):
+        return self.P + self.Q.T.dot(op.dot(self.Q))
+
+    def GetCRhs(self, op,rhs):
+        a = self.R.dot(self.g).toarray()[:,0]
+        b = self.Q.T.dot(rhs - op.dot(self.R.dot(self.g).toarray()[:,0]))
+        return (a +b).flatten()
+
+    def GetNumberOfDofs(self):
+    	return self.nbdof
+
+    def matvec(self,op,arg):
+        return self.P.dot(arg) + self.Q.T.dot(op.dot(self.Q.dot(arg)))
+
+    def RestoreSolution(self,op,rhs,arg):
+        return arg
+
+    def RestrictSolution(self,op, rhs, arg):
+        return arg
+
+methodFactory["ProjectionII".lower()] = ProjectionII
+
 class Penalisation(BOO):
     def __init__(self):
         super(Penalisation, self).__init__()
@@ -546,18 +631,19 @@ def CheckIntegrityTTC(ttc,GUI=False):
     rhs = np.array([0,0,0,0],dtype=float)
     # Dirichlet zero left
     CH.AddEquation([1,0,0,0],0)
-    CH.AddEquation([1.,0,0,0],0)
+    CH.AddEquationsFromIJV([0],[0],[1])
     #kinematic relation
     CH.AddEquation([0.,-1,1.,0.],1)
     #to test the elimination of redundant equations
     CH.AddEquation([0.,-2,2.,0.],2)
     #Dirichlet right side
     CH.AddEquation([0,0,0,1.],3.)
-    CH.AddEquation([0,0,0,1.],3.)
+    CH.AddEquationSparse([3],[1.],3)
     CH.Compact()
 
     np.set_printoptions(threshold=np.inf,linewidth=np.inf)
     print("System to Solve ")
+    print("Number Of constraints: ", CH.GetNumberOfConstraints())
     print("K ")
     print(sys)
     print("F ")
@@ -577,6 +663,7 @@ def CheckIntegrityTTC(ttc,GUI=False):
 
 
     Mv =  CH.GetCleanConstraintBase()[0].toarray()
+    MvSlow = CH.GetCleanConstraintBase(purePython=True)[0].toarray()
     M = Mv[:,:-1]
     v = Mv[:,-1]
     print("Clean Contraints Base ")
@@ -592,6 +679,8 @@ def CheckIntegrityTTC(ttc,GUI=False):
     Kc = CH.GetCOp().tocsc()
     Fc = CH.GetCRhs()
     print("\nConstrained operator  : \n",Kc.toarray() )
+    conditionNumber = np.linalg.cond(Kc.toarray(), p='fro')
+    print("\nCondition number of Constrained operator  : \n", conditionNumber )
     print("\nConstrained rhs : \n",Fc )
 
 
@@ -645,6 +734,9 @@ def CheckIntegrityTTC(ttc,GUI=False):
     print("Error on the solution |ref_sol - computed_sol|/|ref_sol| \n ", errorD)
     if errorD > 1e-8:
         raise
+    print("Lagrange multiplier :")
+    print(CH.GetLagrangeMultiplierValues(dfsol))
+    print(CH)
     print('-------------------  '+ttc+' DONE  -----------------')
 
     return "OK"
