@@ -41,8 +41,7 @@ def InitAllReaders():
     from BasicTools.IO.UtReader import UtReader
     from BasicTools.IO.VtuReader import VtuReader
     from BasicTools.IO.SamcefReader import DatReader
-
-
+    import BasicTools.IO.SamcefOutputReader
 
 def InitAllWriters():
     from BasicTools.IO.GeofWriter import GeofWriter

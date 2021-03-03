@@ -32,6 +32,7 @@ _test = [
 'ReaderBase',
 'SamcefReader',
 'SamcefWriter',
+'SamcefOutputReader',
 'StlReader',
 'StlWriter',
 'UniversalReader',

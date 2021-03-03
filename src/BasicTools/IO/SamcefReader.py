@@ -212,7 +212,7 @@ class DatReader(ReaderBase):
                 continue
 
             if ldata["KEYWORD"] == "SEL":
-                l = l[1:] # hack to make the "while l[0] != ..." line work correctly  
+                l = l[1:] # hack to make the "while l[0] != ..." line work correctly
                 fields = LineToList(l)
 
 
@@ -404,6 +404,10 @@ class DatReader(ReaderBase):
         res.PrepareForOutput()
 
         self.output = res
+
+        self.filetointernalidElement = filetointernalidElement
+        self.filetointernalid = filetointernalid
+
         return res
 
 
