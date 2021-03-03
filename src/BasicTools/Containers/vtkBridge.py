@@ -386,8 +386,9 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
 
             if data is None:
                 continue
-            if np.size(data) != mesh.GetNumberOfElements() and np.size(data) != 2*mesh.GetNumberOfElements() and np.size(data) != 3*mesh.GetNumberOfElements():
-                print("field ("+str(name)+") is not consistent : it has " + str(np.size(data)) +" values and the mesh has " +str(mesh.GetNumberOfNodes())+ " nodes" )
+
+            if np.size(data)/mesh.GetNumberOfElements() !=  np.size(data)//mesh.GetNumberOfElements() :
+                print("field ("+str(name)+") is not consistent : it has " + str(np.size(data)) +" values and the mesh has " +str(mesh.GetNumberOfElements())+ " elements" )
                 raise
                 continue
 
