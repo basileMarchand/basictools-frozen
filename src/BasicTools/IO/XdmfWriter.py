@@ -645,6 +645,15 @@ class XdmfWriter(WriterBase):
                   shape = shape[[2,1,0,3]]
 
 
+       elif data.size == ndata*6:
+           attype = "Vector"
+           if baseMeshObject.IsConstantRectilinear() :
+             if center == "Node":
+                  shape = baseMeshObject.GetDimensions()
+             elif center == "Cell":
+                  shape = baseMeshObject.GetDimensions()-1
+             else:
+                  shape = [1]
 
        elif data.size == ndata*9:
 
