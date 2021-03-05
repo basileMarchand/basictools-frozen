@@ -23,6 +23,7 @@ gmshNumber['5'] = EN.Hexaedron_8
 gmshNumber['6'] = EN.Wedge_6
 gmshNumber['7'] = EN.Pyramid_5
 gmshNumber['8'] = EN.Bar_3
+gmshNumber['9'] = EN.Triangle_6
 gmshNumber['10'] = EN.Quadrangle_9
 gmshNumber['15'] = EN.Point_1
 gmshNumber['16'] = EN.Quadrangle_8

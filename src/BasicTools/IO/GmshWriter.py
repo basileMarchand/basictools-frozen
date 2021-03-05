@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 """ Gmsh  ile Writer (gmesh mesh files)
 
 """
@@ -21,9 +21,12 @@ gmshName[EN.Tetrahedron_4] = '4'
 gmshName[EN.Hexaedron_8]   = '5'
 gmshName[EN.Wedge_6]       = '6'
 gmshName[EN.Pyramid_5]     = '7'
-gmshName[EN.Point_1]   = '15'
+gmshName[EN.Bar_3]         = '8'
+gmshName[EN.Triangle_6]    = '9'
+gmshName[EN.Quadrangle_9]  = '10'
+gmshName[EN.Point_1]       = '15'
 gmshName[EN.Quadrangle_8]  = '16'
-gmshName[EN.Hexaedron_20]   = '17'
+gmshName[EN.Hexaedron_20]  = '17'
 
 def WriteMeshToGmsh(filename,mesh, useOriginalId=False):
     OW = GmshWriter()
