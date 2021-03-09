@@ -8,6 +8,7 @@ import numpy as np
 from scipy.sparse import linalg as splinalg
 
 from scipy import sparse
+import scipy.linalg as sp_linalg
 from scipy.sparse import coo_matrix
 from scipy.sparse.csgraph import connected_components
 
@@ -349,9 +350,6 @@ class ConstraintsHolder(BOO):
     def RestrictSolution(self,arg):
         return self.method.RestrictSolution(self.op, self.rhs, arg)
 
-    def GetLagrangeMultiplierValues(self,arg):
-        C = self.ToSparseFull().tocsc()[:,:-1]
-        return C.dot(self.rhs-self.op.dot(arg))
 
     def __str__(self):
         res = "Constraints Holder: \n"
@@ -379,7 +377,7 @@ def ExpandMatrix(op,mattoglobal,nbdofs,  treatrows=True, treatcols=True):
     return  sparse.coo_matrix((data,(rows,cols)),shape=(rs,cs)).tocsr()
 
 #--------------------------------------------------------
-class ProjectionII(BOO):
+class Ainsworth(BOO):
     """
     Method from https://doi.org/10.1016/S0045-7825(01)00236-5
     Because the CleanConstraint(C) matrix is orthonormal then C.dot(C.T) = I
@@ -387,7 +385,7 @@ class ProjectionII(BOO):
 
     """
     def __init__(self):
-        super(ProjectionII, self).__init__()
+        super(Ainsworth, self).__init__()
         self.P = None
         self.Q = None
         self.R = None
@@ -401,14 +399,18 @@ class ProjectionII(BOO):
         C = matcsc[:,0:-1]
         nbdofs = (self.nbdof,self.nbdof)
         self.g = matcsc[:,-1]
-        self.P = ExpandMatrix(C.T.dot(C),self.mattoglobal,nbdofs).tocsc()
+        CCT_1 = splinalg.inv(C.dot(C.T))
+        r = C.T.dot(CCT_1)
+        self.R = ExpandMatrix(r,self.mattoglobal,nbdofs,treatcols=False).tocsc()
+        p = r.dot(C)
+        self.P = ExpandMatrix(p,self.mattoglobal,nbdofs).tocsc()
         self.Q = (sparse.eye(self.nbdof) - self.P).tocsc()
-        self.R = ExpandMatrix(C,self.mattoglobal,nbdofs,treatrows=False).T.tocsc()
 
     def GetCOp(self,op):
         return self.P + self.Q.T.dot(op.dot(self.Q))
 
     def GetCRhs(self, op,rhs):
+
         a = self.R.dot(self.g).toarray()[:,0]
         b = self.Q.T.dot(rhs - op.dot(self.R.dot(self.g).toarray()[:,0]))
         return (a +b).flatten()
@@ -425,7 +427,7 @@ class ProjectionII(BOO):
     def RestrictSolution(self,op, rhs, arg):
         return arg
 
-methodFactory["ProjectionII".lower()] = ProjectionII
+methodFactory["Ainsworth".lower()] = Ainsworth
 
 class Penalisation(BOO):
     def __init__(self):
@@ -602,6 +604,26 @@ class Projection(BOO):
 
 methodFactory["Projection".lower()] = Projection
 
+def TestQR():
+
+    CH = ConstraintsHolder()
+    CH.SetGlobalDebugMode()
+    CH.SetNumberOfDofs(2)
+    CH.AddEquation([1,-1],2)
+    CH.AddEquation([1.,0],3)
+    CH.Compact()
+    Ab = CH.ToSparse()[0].toarray()
+    print(Ab)
+    Cg= CH.GetCleanConstraintBase()[0].toarray()
+    C = Cg[:,:-1]
+    g = Cg[:,-1]
+    print("C",C)
+    print("g",g)
+
+    print(C.T.dot(C))
+    print(C.dot(C.T))
+#TestQR()
+#exit()
 
 def CheckIntegrity(GUI=False):
     typeToCheck = list(methodFactory.keys())
@@ -734,8 +756,6 @@ def CheckIntegrityTTC(ttc,GUI=False):
     print("Error on the solution |ref_sol - computed_sol|/|ref_sol| \n ", errorD)
     if errorD > 1e-8:
         raise
-    print("Lagrange multiplier :")
-    print(CH.GetLagrangeMultiplierValues(dfsol))
     print(CH)
     print('-------------------  '+ttc+' DONE  -----------------')
 
