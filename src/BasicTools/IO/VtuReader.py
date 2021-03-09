@@ -3,12 +3,30 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 import numpy as np
 
 import BasicTools.Containers.ElementNames as EN
 from BasicTools.IO.ReaderBase import ReaderBase
 from BasicTools.Containers.vtkBridge import VtkToMesh
+from BasicTools.IO.IOFactory import RegisterReaderClass
+
+class VtkReader(ReaderBase):
+    def __init__(self,fileName = None):
+        super(VtkReader,self).__init__()
+
+    def Read(self, fileName=None,string=None,out=None):
+      import vtk
+      reader = vtk.vtkGenericDataObjectReader()
+      reader.SetFileName(self.fileName)
+      reader.Update()
+      res = reader.GetUnstructuredGridOutput()
+      if res is None:
+          res = reader.GetPolyDataOutput()
+      self.output = VtkToMesh(res)
+      return self.output
+
+RegisterReaderClass(".vtk",VtkReader)
 
 def LoadVtuWithVTK(filename):
     import vtk
@@ -37,7 +55,6 @@ class VtuReader(ReaderBase):
       return self.output
 
 
-from BasicTools.IO.IOFactory import RegisterReaderClass
 RegisterReaderClass(".vtu",VtuReader)
 
 def CheckIntegrity():
