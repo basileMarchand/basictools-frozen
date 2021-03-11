@@ -14,6 +14,16 @@ from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
 from BasicTools.Containers.UnstructuredMeshCreationTools import QuadToLin
 from BasicTools.Containers.UnstructuredMeshInspectionTools import  ExtractElementByDimensionalityNoCopy
 
+def CopyFieldsFromOriginalMeshToTargetMesh(inmesh,outmesh):
+    """ Function to copy fields for the original mesh to the
+        derivated mesh (mesh generated from one operations)"""
+    def Work(indic,outdic,oid):
+        for k,d in indic.items():
+            outdic[k] = d[oid]
+    Work(inmesh.nodeFields,outmesh.nodeFields, outmesh.originalIDNodes )
+    Work(inmesh.elemFields,outmesh.elemFields, outmesh.GetElementsOriginalIDs() )
+
+
 def GetFieldTransferOp(inputField,targetPoints,method=None,verbose=False):
     """
         op : sparcematrix to do the transfer
