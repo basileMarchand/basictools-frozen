@@ -272,7 +272,7 @@ def ExtractElementsByElementFilter(inmesh,ff):
     outmesh.CopyProperties(inmesh)
 
     outmesh.nodes = inmesh.nodes
-    outmesh.originalIDNodes = inmesh.originalIDNodes
+    outmesh.originalIDNodes = np.arange(inmesh.GetNumberOfNodes())
     outmesh.nodesTags = inmesh.nodesTags
 
     ff.mesh = inmesh
