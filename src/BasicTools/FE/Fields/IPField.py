@@ -149,7 +149,7 @@ class IPField(FieldBase):
         res /= pntcpt
         return res
 
-    def Flatten(self,dim=-1):
+    def Flatten(self,dim=None):
         elements3D = ElementFilter(self.mesh,dimensionality=dim)
         nbvalues = 0
         for elemType,data,ids in elements3D:
@@ -162,7 +162,7 @@ class IPField(FieldBase):
             cpt += lsize
         return res
 
-    def SetDataFromNumpy(self, indata,dim=-1):
+    def SetDataFromNumpy(self, indata,dim=None):
         elements3D = ElementFilter(self.mesh,dimensionality=dim)
         nbvalues = 0
         for elemType,data,ids in elements3D:
