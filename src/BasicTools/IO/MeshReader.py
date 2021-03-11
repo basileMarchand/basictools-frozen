@@ -300,7 +300,6 @@ class MeshReader(ReaderBase):
 
       dataType = np.float32
       dataSize = 4;
-
       if key == BKeys["GmfVersionFormatted"]:
           self.version = self.readInt32()
           if self.version >= 2 :
@@ -339,6 +338,12 @@ class MeshReader(ReaderBase):
 
       dataType,dataSize,dimension = self._ReadBinaryHeader()
 
+      def ReadEndOfInformation():
+          if self.version == 3:
+               return self.readInt64()
+          else:
+               return self.readInt32()
+
       globalElementCounter = 0;
       elemRefsDic = {}
 
@@ -348,10 +353,7 @@ class MeshReader(ReaderBase):
           if key == BKeys["GmfEnd"]:
               break
 
-          if self.version == 3:
-               endOfInformation = self.readInt64()
-          else:
-               endOfInformation = self.readInt32()
+          endOfInformation = ReadEndOfInformation()
           #Vertices
           if key == BKeys["GmfVertices"]:
               nbNodes = self.readInt32()
@@ -360,16 +362,13 @@ class MeshReader(ReaderBase):
 
               res.nodes = np.empty((nbNodes,dimension),dtype=dataType)
               res.originalIDNodes= np.empty((nbNodes,),dtype=np.int)
+              dt =  np.dtype([('pos', dataType,(dimension,) ), ('ref', np.int32, (1,))])
 
-              if dataSize == 4:
-                 dt =  np.dtype([('pos', np.float32,(dimension,) ), ('ref', np.int32, (1,))])
-              else:
-                 dt =  np.dtype([('pos', np.float64,(dimension,) ), ('ref', np.int32, (1,))])
 
               data = np.fromfile(self.filePointer,dtype=dt,count=nbNodes, sep="")
 
-              res.nodes = data[:]["pos"]
-              res.originalIDNodes = np.arange(nbNodes)
+              res.nodes[:,:] = data[:]["pos"]
+              res.originalIDNodes[:] = np.arange(nbNodes)
 
               refs = data[:]["ref"]
               if self.refsAsAField:
