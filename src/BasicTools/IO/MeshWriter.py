@@ -61,7 +61,14 @@ class MeshWriter(WriterBase):
 
         #key Dimension (3)
         self.filePointer.write(struct.pack('i', 3))
-        dimension = meshObject.GetDimensionality()
+
+        mmax = np.max(meshObject.nodes[:,2])
+        mmin = np.min(meshObject.nodes[:,2])
+        if meshObject.nodes.shape[1] == 3 and  mmax !=  mmin :
+            dimension = 3
+        else:
+            dimension = 2
+
         self.filePointer.write(struct.pack('i', self.filePointer.tell()+8))# end of information
         self.filePointer.write(struct.pack('i', dimension)) #dimension
 
@@ -76,7 +83,7 @@ class MeshWriter(WriterBase):
         dataformat = ('f' if self.dataSize == 4 else 'd')
         posn = meshObject.GetPosOfNodes()
         for n in range(numberofpoints):
-             posn[n,:].astype(self.dataType).tofile(self.filePointer, sep='')
+             posn[n,0:dimension].astype(self.dataType).tofile(self.filePointer, sep='')
              if nodalRefNumber is  None :
                  self.filePointer.write(struct.pack("i", 0))# refs
              else :
