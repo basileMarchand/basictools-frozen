@@ -8,7 +8,7 @@
 import numpy as np
 
 import BasicTools.Containers.ElementNames as ElementNames
-from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
+from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh, AllElements
 from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshOfTriangles
 from BasicTools.TestData import GetTestDataPath
 
@@ -102,7 +102,12 @@ elementNameByVtkNumber = {}
 for key,vtknumber in vtkNumberByElementName.items():
     elementNameByVtkNumber[vtknumber] = key
 
+elementNameByVtkNumber[4] = ElementNames.Bar_2
 elementNameByVtkNumber[11] = ElementNames.Hexaedron_8   #voxel
+
+#if a field is of type [..] and the min max are 0 and 1 then the field is
+#converted to a tag. the first type is used to encode tags in vtk
+tagsTypes = [np.int8, np.uint8, int]
 
 def VtkFieldToNumpyField(support,vtkField):
     from vtk.util import numpy_support
@@ -309,7 +314,6 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
                 output = vtkPolyData()
             else:
                 output = vtkUnstructuredGrid()
-
     else:
         output = vtkobject # pragma: no cover
 
@@ -373,7 +377,7 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
             continue
 
     if TagsAsFields:
-        tagMask = np.empty(mesh.GetNumberOfNodes(),int)
+        tagMask = np.empty(mesh.GetNumberOfNodes(),tagsTypes[0])
 
         for tag in mesh.nodesTags:
             tag.GetIdsAsMask(output=tagMask)
@@ -385,6 +389,9 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
         for name,data in mesh.elemFields.items():
 
             if data is None:
+                continue
+
+            if mesh.GetNumberOfElements() == 0:
                 continue
 
             if np.size(data)/mesh.GetNumberOfElements() !=  np.size(data)//mesh.GetNumberOfElements() :
@@ -402,7 +409,7 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
         #print(elementTags)
         for tagname in elementTags:
             ids = mesh.GetElementsInTag(tagname)
-            tagMask = np.zeros(mesh.GetNumberOfElements(),int )
+            tagMask = np.zeros(mesh.GetNumberOfElements(),dtype=tagsTypes[0] )
             tagMask[ids] = True
             VTK_data = NumpyFieldToVtkField(mesh,tagMask,tagname)
             output.GetCellData().AddArray(VTK_data)
@@ -410,7 +417,68 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
 
     return output
 
-def VtkToMesh(vtkmesh, meshobject=None, TagsAsFields=False):
+def VtkToMeshOnlyMeta(vtkmesh, FieldsAsTags=False):
+    from vtk.util import numpy_support
+
+    class UnstructuredMeshMetaData():
+        def __init__(self):
+            self.nbnodes = 0
+            self.originalIDNodes = False
+            self.nodesTags = []
+            self.nodeFields= []
+
+            self.nbelements = 0
+            self.originalIDElements = False
+            self.elemTags = []
+            self.elemFields = []
+
+    res = UnstructuredMeshMetaData()
+    res.nbnodes = vtkmesh.GetPoints().GetNumberOfPoints()
+    res.nbelements = vtkmesh.GetCells().GetNumberOfCells()
+
+    for f in range(vtkmesh.GetCellData().GetNumberOfArrays()):
+        data =  vtkmesh.GetCellData().GetAbstractArray(f)
+
+        if data is None:
+            continue
+
+        if data.IsNumeric() is None:
+            continue
+
+        nptype = numpy_support.get_numpy_array_type(data.GetDataType())
+        name = data.GetName()
+        if name == "originalIds":
+            res.originalIDElements = True
+        else:
+            rmin,rmax = data.GetRange()
+            if FieldsAsTags and  nptype in tagsTypes and rmin>=0 and rmax <= 1:
+                res.elemTags.append(name)
+            else:
+                res.elemFields.append(name)
+        continue
+
+    for f in range(vtkmesh.GetPointData().GetNumberOfArrays()):
+        data =  vtkmesh.GetPointData().GetAbstractArray(f)
+
+        if data is None:
+            continue
+
+        if data.IsNumeric() is None:
+            continue
+
+        name = data.GetName()
+        nptype = numpy_support.get_numpy_array_type(data.GetDataType())
+        if name == "originalIds":
+            res.originalIDNodes = True
+        else:
+            rmin,rmax = data.GetRange()
+            if FieldsAsTags and nptype in tagsTypes and rmin>=0 and rmax <= 1 :
+                res.nodesTags.append(name)
+            else:
+                res.nodeFields.append(name)
+    return res
+
+def VtkToMesh(vtkmesh, meshobject=None, FieldsAsTags=True):
 
     if meshobject is None:
         out = UnstructuredMesh()
@@ -436,6 +504,8 @@ def VtkToMesh(vtkmesh, meshobject=None, TagsAsFields=False):
         # we have to be careful because we potentialy change the number of
         # elements in the mesh if we have polylines
         if ct == 4:
+            if nps > 2 :
+                print("Warning polyline with more than 2 nodes, elemfield are incompatible after conversion ")
             for j in range(nps-1):
                 out.GetElementsOfType(et).AddNewElement([cell.GetPointId(j),cell.GetPointId(j+1) ] ,i)
         elif ct ==  11:
@@ -455,7 +525,7 @@ def VtkToMesh(vtkmesh, meshobject=None, TagsAsFields=False):
             if name == "originalIds":
                 out.originalIDNodes = field
             else:
-                if len(field.shape) == 1 and field.dtype ==  int and min(field)>=0 and max(field) <= 1:
+                if FieldsAsTags and len(field.shape) == 1 and field.dtype in tagsTypes and np.min(field)>=0 and np.max(field) <= 1:
                     out.nodesTags.CreateTag(name).SetIds(np.where(field)[0])
                 else:
                     out.nodeFields[name] = field
@@ -478,7 +548,7 @@ def VtkToMesh(vtkmesh, meshobject=None, TagsAsFields=False):
             if name == "originalIds":
                 out.SetElementsOriginalIDs(Elfield)
             else:
-                if len(field.shape) == 1 and field.dtype ==  int and min(field)>=0 and max(field) <= 1 :
+                if FieldsAsTags and  len(field.shape) == 1 and field.dtype in tagsTypes and np.min(field)>=0 and np.max(field) <= 1 :
                     cpt = 0
                     for elname,data in out.elements.items():
                         nn = data.GetNumberOfElements()
