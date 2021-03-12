@@ -86,6 +86,7 @@ def CheckIntegrity():
     print("Available Readers : ", GetAvailableReaders())
     print("Available Readers for '.test': ", ReaderFactory.GetAvailablesFor(".test"))
 
+    print(CreateReader(".test"))
     InitAllWriters()
     class DummyWriterI:
         pass
@@ -96,12 +97,15 @@ def CheckIntegrity():
     RegisterWriterClass(".test",DummyWriterII,withError=False)
     print("Available Writers : ", GetAvailableWriter())
     print("Available Writers for '.test': ", WriterFactory.GetAvailablesFor(".test"))
-
+    print(CreateWriter(".test"))
 
     print("---------------------")
     ReaderFactory.PrintAvailable()
     print("---------------------")
     WriterFactory.PrintAvailable()
+
+    ReaderFactory()
+    WriterFactory()
     return "ok"
 
 
