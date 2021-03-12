@@ -24,6 +24,8 @@ class ConstantRectilinearElementContainer(BaseOutputObject):
         self._connectivity = None
         self.mutable = False
         self.space = None
+        self.originalIds = np.empty((0,),dtype=np.int)
+        self.originalOffset = 0
 
     @property
     def connectivity(self):
@@ -53,6 +55,8 @@ class ConstantRectilinearElementContainer(BaseOutputObject):
         else:
              raise(Exception("cant build a mesh of this dimensionality"))
         self.space.Create()
+        self.originalIds = np.arange(self.GetNumberOfElements(),dtype=np.int)
+
 
     def GetDimensionality(self):
         return len(self.__dimensions)
@@ -170,6 +174,18 @@ class ConstantRectilinearMesh(MeshBase):
         res.elements = self.elements
         res.structElements = self.structElements
         res.elements = self.elements[self.structElements.elementType]
+        return res
+
+    def GetElementsOriginalIDs(self,dim = None):
+        """
+        return a single list with all the originalid concatenated
+        """
+        res = np.empty(self.GetNumberOfElements(dim=dim),dtype=np.int)
+        cpt = 0
+        from BasicTools.Containers.Filters import ElementFilter
+        for name,data,ids in ElementFilter(self,dimensionality = dim):
+            res[0+cpt:len(ids)+cpt] = data.originalIds[ids]+data.originalOffset
+            cpt += len(ids)
         return res
 
     def GetNamesOfElemTagsBulk(self):
