@@ -11,9 +11,26 @@ import BasicTools.Containers.ConstantRectilinearMesh as CRM
 import BasicTools.Containers.ElementNames as EN
 
 def IsClose(mesh1,mesh2):
-    if not np.all(np.isclose(mesh1.nodes,mesh2.nodes)):
-        print("nodes not equal")
+    if type(mesh1) != type(mesh2):
+        print("types not equal")
         return False
+
+    if mesh1.IsConstantRectilinear():
+        if np.any(mesh1.GetDimensions() - mesh2.GetDimensions()):
+            print("Dimensions not equal")
+            return False
+        if np.any(mesh1.GetOrigin() - mesh2.GetOrigin()):
+            print("Origin not equal")
+            return False
+        if np.any(mesh1.GetSpacing() - mesh2.GetSpacing()):
+            print("Spacing not equal")
+            return False
+    else:
+        if not np.all(np.isclose(mesh1.nodes,mesh2.nodes)):
+            print(mesh1.nodes)
+            print(mesh2.nodes)
+            print("nodes not equal")
+            return False
 
     for tag1 in mesh1.nodesTags:
         tag2 = mesh2.nodesTags[tag1.name]
@@ -23,7 +40,11 @@ def IsClose(mesh1,mesh2):
 
     for name,data1 in mesh1.nodeFields.items():
         data2 = mesh2.nodeFields[name]
-        if not np.all(np.isclose(data1,data2)):
+        try:
+            if not np.all(np.isclose(data1,data2)):
+                print("Field "+ str(name) + " not equal")
+                return False
+        except:
             print("Field "+ str(name) + " not equal")
             return False
 
