@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 import pickle as __pickle
 
 class IOHelper:
@@ -43,6 +43,61 @@ def LoadData(filename):
         return  IOHelper(data)
     return None # pragma: no cover
 
+from BasicTools.IO.ReaderBase import ReaderBase
+
+class PickleReader(ReaderBase):
+    def __init__(self):
+        super(PickleReader,self).__init__()
+        self.canHandleTemporal = False
+
+    def Read(self):
+        internalReader = LoadData(self.fileName)
+        self.output = internalReader.named["mesh"]
+        return self.output
+
+class PickleWriter():
+    def __init__(self):
+        super(PickleWriter,self).__init__()
+        self.filename = ""
+        self.canHandleBinaryChange = False
+
+    def SetBinary(self,val=True):
+        pass
+
+    def SetFileName(self,filename):
+        self.filename = filename;
+
+    def Open(self,fileName=None):
+        if not fileName is None:
+            self.SetFileName(fileName)
+
+    def Close(self):
+        pass
+
+
+    def Write(self,mesh, PointFields = None, CellFields = None, GridFields= None, PointFieldsNames = None, CellFieldsNames= None, GridFieldsNames=None):
+
+        if PointFieldsNames is not None:
+            nodeFields = {k:v for k,v in zip(PointFieldsNames,PointFields)}
+        else:
+            nodeFields = {}
+
+        if CellFieldsNames is not None:
+            elemFields = {k:v for k,v in zip(CellFieldsNames,CellFields)}
+        else:
+            elemFields = {}
+        import copy
+        cmesh = copy.copy(mesh)
+        cmesh.nodeFields = nodeFields
+        cmesh.elemFields = elemFields
+        SaveData(self.filename,mesh= cmesh)
+
+
+from BasicTools.IO.IOFactory import RegisterWriterClass, RegisterReaderClass
+RegisterReaderClass(".pickle",PickleReader)
+RegisterWriterClass(".pickle",PickleWriter)
+
+
 def CheckIntegrity():
     """ AutoTest routine """
 
@@ -62,10 +117,35 @@ def CheckIntegrity():
         output = b.__str__()
         print(b)
         # delete temp directory
-        return 'Ok'
     except:# pragma: no cover
         # delete temp directory
         raise
+
+    from BasicTools.Containers.UnstructuredMeshCreationTools import CreateUniformMeshOfBars
+    barmesh = CreateUniformMeshOfBars(0,8,10)
+    import numpy as np
+    PointFields = [np.arange(barmesh.GetNumberOfNodes())]
+    PointFieldsNames = ["PointData"]
+
+    CellFields = [np.arange(barmesh.GetNumberOfElements())]
+    CellFieldsNames = ["PointData"]
+
+    print(barmesh)
+    pw = PickleWriter()
+    pw.SetBinary()# this has no effect
+    pw.Open(tempdir + "testFile.pickle")
+    pw.Write(barmesh)
+    pw.Write(barmesh,PointFieldsNames=PointFieldsNames,PointFields=PointFields,CellFields=CellFields,CellFieldsNames=CellFieldsNames)
+    pw.Close() # this has no effect
+    pr = PickleReader()
+    pr.SetFileName(tempdir + "testFile.pickle")
+    barmeshII = pr.Read()
+
+    from BasicTools.Containers.MeshTools import IsClose
+    IsClose(barmesh,barmeshII)
+    print(barmeshII)
+
+    return 'Ok'
 
 if __name__ == '__main__':
     #import time
