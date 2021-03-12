@@ -44,6 +44,10 @@ class Factory(BaseOutputObject):
         return cls._Catalog.keys()
 
     @classmethod
+    def AllEntries(cls):
+        return cls._SetCatalog
+
+    @classmethod
     def RegisterClass(cls, name, classtype, constructor=None, withError = True):
         #cls().PrintDebug(str(name) + " -> " +  str(classtype) )
         if name in cls._Catalog and withError:
@@ -87,7 +91,7 @@ class Factory(BaseOutputObject):
                res = classConstructor(ops)
            return res
 
-        raise(Exception("Unable to create object of type " + str(name) +"\n Possible object are :"+ str(list(cls._Catalog.keys()))  ))# pragma: no cover
+        raise(Exception("Unable to create object of type " + str(name) +"\n Possible object are :"+ str(list(cls._Catalog.keys()))  ))
 
     @classmethod
     def PrintAvailable(cls,fullDetails=False):
@@ -99,27 +103,95 @@ class Factory(BaseOutputObject):
                 else:
                     print(" "*indent,name," : ", doc)
             else:
-                print(" "*indent + name+ " : (", type(obj) + ")")
+                print(" "*indent + name+ " : (", str(type(obj)) + ")")
 
-        for name,data in cls._Catalog.items():
-            if data[1] is not None:
-                if data[1].__doc__ is not None:
-                    obj = data[1]
+        for name,cl,cons in cls._SetCatalog:
+
+            if cons is not None:
+                if cons.__doc__ is not None:
+                    obj = cons
                 else:
-                    obj = data[0]()
+                    obj = cl()
             else:
-                obj = data[0]()
-
+                obj = cl()
+            print("---------------------------------------------------------")
+            if (cl,cons) in cls._Catalog.values():
+                print(" vvvvvv  default  for '"+name+"' vvvvv ")
             PrintDoctring(name,obj,indent=0)
             if fullDetails:
-                for propName in obj:
-                    if propName[0] == "_" : continue
-                    PrintDoctring(propName,obj.__dict__[propName],"type",6)
+                if hasattr(obj, '__dict__') and  hasattr(obj.__dict__, '__iter__'):
+                    for propName in obj.__dict__:
+                        if propName[0] == "_" : continue
+                        PrintDoctring(propName,obj.__dict__[propName],"type",6)
 
 
 
 def CheckIntegrity(GUI=False):
-    fact = Factory()
+    class DummyFactory(Factory):
+        _Catalog = {}
+        _SetCatalog = set()
+        def __init__(self):
+            super(DummyFactory,self).__init__()
+
+    fact = DummyFactory()
+    print(fact.keys())
+    print(fact.AllEntries())
+    fact.RegisterClass("str",str)
+    ok = True
+    fact.RegisterClass("str",str,withError=False)
+
+    try:
+        fact.RegisterClass("str",str)
+        ok = False#pragma: no cover
+    except:
+        pass
+    assert ok
+
+    print(fact.GetClass("str"))
+    print(fact.GetConstructor("str"))
+    print(fact.GetAvailablesFor("str"))
+
+    print(fact.Create("str"))
+
+    ok = True
+    try:
+        print(fact.Create("Million Dollars"))
+        ok = False#pragma: no cover
+    except:
+        pass
+    assert ok
+
+    def DummyConstructor(ops):
+        """documentation for this dummy constructor
+        """
+        return str(round(ops))
+
+    class DummyClass():
+        def __init__(self):
+            self.str = ""
+    def DummyWithoutDocumentation(ops):
+        return str(round(ops))
+
+    fact.RegisterClass("rounded_str",str,DummyConstructor )
+    print(fact.Create("rounded_str",ops=3.5))
+    fact.RegisterClass("rounded_str",DummyClass,DummyWithoutDocumentation,withError=False )
+    print(fact.Create("rounded_str",ops=3.5))
+
+    fact.PrintAvailable(fullDetails=True)
+
+
+
+
+    ok = True
+    try:
+        a = 5
+        fact.RegisterClass("numpy",a)
+        print(fact.Create("numpy"))
+        ok = False#pragma: no cover
+    except:
+        pass
+    assert ok
+
     return "ok"
 
 
