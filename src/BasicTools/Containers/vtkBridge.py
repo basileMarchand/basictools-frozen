@@ -8,7 +8,8 @@
 import numpy as np
 
 import BasicTools.Containers.ElementNames as ElementNames
-from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh, AllElements
+from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
+from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearMesh
 from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshOfTriangles
 from BasicTools.TestData import GetTestDataPath
 
@@ -117,7 +118,10 @@ def VtkFieldToNumpyField(support,vtkField):
     data = numpy_support.vtk_to_numpy(vtkField)
     if support.IsConstantRectilinear():
         dims = list(support.GetDimensions())[::-1]
-        dims.append(data.shape[1])
+        if len(data.shape) > 1:
+            dims.append(data.shape[1])
+        else:
+            dims.append(1)
         data.shape = tuple(dims)
         data = np.swapaxes(data,0,2)
 
@@ -136,10 +140,10 @@ def NumpyFieldToVtkField(support,fielddata,fieldname):
           dims = list(support.GetDimensions())
           dims.append(fielddata.shape[1])
           dataView.shape = tuple(dims)
-          dataView.shape = support.GetDimensions()
           VTK_data = numpy_support.numpy_to_vtk(num_array=np.swapaxes(dataView,0,2).ravel(), deep=True, array_type=outputtype)
       else:
           VTK_data = numpy_support.numpy_to_vtk(num_array=fielddata, deep=True, array_type=outputtype)
+      VTK_data.SetNumberOfComponents(fielddata.shape[1])
     else:
       #cpt = 0
       if isimagedata:
@@ -156,7 +160,7 @@ def ApplyVtkPipeline(mesh,op):
     vtkOuputMesh = op(vtkMesh)
     return VtkToMesh(vtkOuputMesh)
 
-def PlotMesh(mesh):
+def PlotMesh(mesh):# pragma: no cover
     import vtk
 
     from BasicTools.Containers.MeshBase import MeshBase
@@ -328,20 +332,18 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
     else:
         output.Allocate(mesh.GetNumberOfElements())
         ##copy points
-        pts = vtkPoints()
-        pts.SetNumberOfPoints(mesh.GetNumberOfNodes())
 
         VTK_originalIDNodes = NumpyFieldToVtkField(mesh,mesh.originalIDNodes,"originalIds")
         output.GetPointData().AddArray(VTK_originalIDNodes)
 
+        from vtk.util import numpy_support
+        pts = vtkPoints()
         if mesh.nodes.shape[1] == 3 :
-            for p in range(mesh.GetNumberOfNodes()):
-                point = mesh.nodes[p,:]
-                pts.SetPoint(p,point[0],point[1],point[2])
+            pts.SetData(numpy_support.numpy_to_vtk(num_array=mesh.nodes, deep=False))
         else:
-            for p in range(mesh.GetNumberOfNodes()):
-                point = mesh.nodes[p,:]
-                pts.SetPoint(p,point[0],point[1],0.0)
+            p = np.zeros((mesh.GetNumberOfNodes(),3));
+            p[:,0:2] = mesh.nodes
+            pts.SetData(numpy_support.numpy_to_vtk(num_array=p, deep=False))
 
         output.SetPoints(pts)
 
@@ -362,11 +364,11 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
 
     if hasattr(mesh,"nodeFields"):
         for name,data in mesh.nodeFields.items():
-            if data is None:
+            if data is None: # pragma: no cover
                 continue
             #VTK_data = numpy_support.numpy_to_vtk(num_array=np.swapaxes(phi,0,2).ravel(), deep=True, array_type=vtk.VTK_FLOAT)
             #VTK_data.SetName(name)
-            if np.size(data) != mesh.GetNumberOfNodes() and np.size(data) != 2*mesh.GetNumberOfNodes() and np.size(data) != 3*mesh.GetNumberOfNodes():
+            if np.size(data) != mesh.GetNumberOfNodes() and np.size(data) != 2*mesh.GetNumberOfNodes() and np.size(data) != 3*mesh.GetNumberOfNodes(): # pragma: no cover
                 print("field ("+str(name)+") is not consistent : it has " + str(np.size(data)) +" values and the mesh has " +str(mesh.GetNumberOfNodes())+ " nodes" )
                 raise
                 continue
@@ -388,13 +390,13 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
     if hasattr(mesh,"elemFields"):
         for name,data in mesh.elemFields.items():
 
-            if data is None:
+            if data is None: # pragma: no cover
                 continue
 
-            if mesh.GetNumberOfElements() == 0:
+            if mesh.GetNumberOfElements() == 0:# pragma: no cover
                 continue
 
-            if np.size(data)/mesh.GetNumberOfElements() !=  np.size(data)//mesh.GetNumberOfElements() :
+            if np.size(data)/mesh.GetNumberOfElements() !=  np.size(data)//mesh.GetNumberOfElements() : # pragma: no cover
                 print("field ("+str(name)+") is not consistent : it has " + str(np.size(data)) +" values and the mesh has " +str(mesh.GetNumberOfElements())+ " elements" )
                 raise
                 continue
@@ -434,15 +436,15 @@ def VtkToMeshOnlyMeta(vtkmesh, FieldsAsTags=False):
 
     res = UnstructuredMeshMetaData()
     res.nbnodes = vtkmesh.GetPoints().GetNumberOfPoints()
-    res.nbelements = vtkmesh.GetCells().GetNumberOfCells()
+    res.nbelements = vtkmesh.GetNumberOfCells()
 
     for f in range(vtkmesh.GetCellData().GetNumberOfArrays()):
         data =  vtkmesh.GetCellData().GetAbstractArray(f)
 
-        if data is None:
+        if data is None: # pragma: no cover
             continue
 
-        if data.IsNumeric() is None:
+        if not data.IsNumeric(): # pragma: no cover
             continue
 
         nptype = numpy_support.get_numpy_array_type(data.GetDataType())
@@ -460,10 +462,10 @@ def VtkToMeshOnlyMeta(vtkmesh, FieldsAsTags=False):
     for f in range(vtkmesh.GetPointData().GetNumberOfArrays()):
         data =  vtkmesh.GetPointData().GetAbstractArray(f)
 
-        if data is None:
+        if data is None: # pragma: no cover
             continue
 
-        if data.IsNumeric() is None:
+        if not data.IsNumeric(): # pragma: no cover
             continue
 
         name = data.GetName()
@@ -481,42 +483,47 @@ def VtkToMeshOnlyMeta(vtkmesh, FieldsAsTags=False):
 def VtkToMesh(vtkmesh, meshobject=None, FieldsAsTags=True):
 
     if meshobject is None:
-        out = UnstructuredMesh()
+        if vtkmesh.IsA("vtkImageData"):
+            out = ConstantRectilinearMesh()
+        else:
+            out = UnstructuredMesh()
     else:
-
         out = meshobject
 
     from vtk.util import numpy_support
-    data = vtkmesh.GetPoints().GetData()
-    out.nodes = numpy_support.vtk_to_numpy(data)
+    if vtkmesh.IsA("vtkImageData"):
+        out.SetOrigin(vtkmesh.GetOrigin() )
+        out.SetSpacing(vtkmesh.GetSpacing() )
+        out.SetDimensions(vtkmesh.GetDimensions() )
 
-    import numpy as np
+    else:
+        data = vtkmesh.GetPoints().GetData()
+        out.nodes = numpy_support.vtk_to_numpy(data)
 
-    out.originalIDNodes = np.arange(out.GetNumberOfNodes())
-    nc = vtkmesh.GetNumberOfCells()
+        out.originalIDNodes = np.arange(out.GetNumberOfNodes())
+        nc = vtkmesh.GetNumberOfCells()
 
-    for i in range(nc):
-        cell= vtkmesh.GetCell(i)
-        ct = cell.GetCellType()
-        et = elementNameByVtkNumber[ct]
-        nps = cell.GetNumberOfPoints()
-        #polyline case
-        # we have to be careful because we potentialy change the number of
-        # elements in the mesh if we have polylines
-        if ct == 4:
-            if nps > 2 :
-                print("Warning polyline with more than 2 nodes, elemfield are incompatible after conversion ")
-            for j in range(nps-1):
-                out.GetElementsOfType(et).AddNewElement([cell.GetPointId(j),cell.GetPointId(j+1) ] ,i)
-        elif ct ==  11:
-            # 11 is a voxel and the numbering is not the same as the hexahedron
-            #https://vtk.org/wp-content/uploads/2015/04/file-formats.pdf
-            original_coonectivity = np.array([cell.GetPointId(j) for j in range(nps)])
-            connectivity = original_coonectivity[[0,1,3,2,4,5,7,6]]
-
-            out.GetElementsOfType(et).AddNewElement(connectivity  ,i)
-        else:
-            out.GetElementsOfType(et).AddNewElement([cell.GetPointId(j) for j in range(nps)] ,i)
+        for i in range(nc):
+            cell= vtkmesh.GetCell(i)
+            ct = cell.GetCellType()
+            et = elementNameByVtkNumber[ct]
+            nps = cell.GetNumberOfPoints()
+            #polyline case
+            # we have to be careful because we potentialy change the number of
+            # elements in the mesh if we have polylines
+            if ct == 4:
+                if nps > 2 :
+                    print("Warning polyline with more than 2 nodes, elemfield are incompatible after conversion ")
+                for j in range(nps-1):
+                    out.GetElementsOfType(et).AddNewElement([cell.GetPointId(j),cell.GetPointId(j+1) ] ,i)
+            elif ct ==  11:
+                # 11 is a voxel and the numbering is not the same as the hexahedron
+                #https://vtk.org/wp-content/uploads/2015/04/file-formats.pdf
+                original_coonectivity = np.array([cell.GetPointId(j) for j in range(nps)])
+                connectivity = original_coonectivity[[0,1,3,2,4,5,7,6]]
+                out.GetElementsOfType(et).AddNewElement(connectivity  ,i)
+            else:
+                out.GetElementsOfType(et).AddNewElement([cell.GetPointId(j) for j in range(nps)] ,i)
     out.PrepareForOutput()
 
     if vtkmesh.GetPointData().GetNumberOfArrays():
@@ -526,7 +533,7 @@ def VtkToMesh(vtkmesh, meshobject=None, FieldsAsTags=True):
             if name == "originalIds":
                 out.originalIDNodes = field
             else:
-                if FieldsAsTags and len(field.shape) == 1 and field.dtype in tagsTypes and np.min(field)>=0 and np.max(field) <= 1:
+                if FieldsAsTags and field.size == out.GetNumberOfNodes() and field.dtype in tagsTypes and np.min(field)>=0 and np.max(field) <= 1:
                     out.nodesTags.CreateTag(name).SetIds(np.where(field)[0])
                 else:
                     out.nodeFields[name] = field
@@ -536,7 +543,7 @@ def VtkToMesh(vtkmesh, meshobject=None, FieldsAsTags=True):
     if vtkmesh.GetCellData().GetNumberOfArrays():
         for f in range(vtkmesh.GetCellData().GetNumberOfArrays()):
             data =  vtkmesh.GetCellData().GetArray(f)
-            if data is None:
+            if data is None:# pragma: no cover
                 continue
 
             data =  vtkmesh.GetCellData().GetArray(f)
@@ -549,7 +556,7 @@ def VtkToMesh(vtkmesh, meshobject=None, FieldsAsTags=True):
             if name == "originalIds":
                 out.SetElementsOriginalIDs(Elfield)
             else:
-                if FieldsAsTags and  len(field.shape) == 1 and field.dtype in tagsTypes and np.min(field)>=0 and np.max(field) <= 1 :
+                if FieldsAsTags and  field.size == out.GetNumberOfElements() and field.dtype in tagsTypes and np.min(field)>=0 and np.max(field) <= 1 :
                     cpt = 0
                     for elname,data in out.elements.items():
                         nn = data.GetNumberOfElements()
@@ -575,21 +582,51 @@ def VtkToMeshMultiblock(vtkObject,OP=VtkToMesh):
 
 
 def CheckIntegrity_VtkToMesh(GUI=False):
-    res = CreateMeshOfTriangles([[0,0,0],[1,0,0],[0,1,0],[0,0,1] ], [[0,1,2],[0,2,3]])
+    from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshOf
+    points  = [[0,0,0],[1,0,0],[0,1,0],[0,0,1] ]
+    tet = [[0,1,2,3]]
+    res = CreateMeshOf(points,tet,elemName = ElementNames.Tetrahedron_4 )
     res.nodeFields = {"x": res.nodes[:,0].flatten(), "Pos":res.nodes}
     res.nodesTags.CreateTag("FirstPoint").AddToTag(0)
-    res.elemFields = {"SecondPoint": res.GetElementsOfType(ElementNames.Triangle_3).connectivity[:,1].flatten(), "conn": res.GetElementsOfType(ElementNames.Triangle_3).connectivity }
+    res.elemFields = {"SecondPoint": res.GetElementsOfType(ElementNames.Tetrahedron_4).connectivity[:,1].flatten().astype(float), "conn": res.GetElementsOfType(ElementNames.Tetrahedron_4).connectivity }
+    res.GetElementsOfType(ElementNames.Tetrahedron_4).tags.CreateTag("FirstTetrahedron").AddToTag(0)
+    sol = MeshToVtk(res,TagsAsFields= True)
+
+    print("CheckIntegrity_VtkToMesh :")
+    print(res)
+    print(VtkToMeshOnlyMeta(sol,FieldsAsTags=True).elemTags)
+    resII=VtkToMesh(sol,FieldsAsTags=True)
+
+    print(resII)
+    from BasicTools.Containers.MeshTools import IsClose
+    print(res)
+    print(resII)
+    if not IsClose(res,resII): # pragma: no cover
+        raise(Exception("The meshes are not equal"))
+    return 'ok'
+
+def CheckIntegrity_VtkToMesh2D(GUI=False):
+    res = CreateMeshOfTriangles([[0,0],[1,0],[1,1],[1,1] ], [[0,1,2],[0,2,3]])
+
+    res.nodeFields = {"x": res.nodes[:,0].flatten(), "Pos":res.nodes}
+    res.nodesTags.CreateTag("FirstPoint").AddToTag(0)
+    res.elemFields = {"SecondPoint": res.GetElementsOfType(ElementNames.Triangle_3).connectivity[:,1].flatten().astype(float), "conn": res.GetElementsOfType(ElementNames.Triangle_3).connectivity }
     res.GetElementsOfType(ElementNames.Triangle_3).tags.CreateTag("FirstTriangle").AddToTag(0)
     sol = MeshToVtk(res,TagsAsFields= True)
 
     print("CheckIntegrity_VtkToMesh :")
     print(res)
-    resII=VtkToMesh(sol)
+    print(VtkToMeshOnlyMeta(sol))
+    resII=VtkToMesh(sol,FieldsAsTags=True)
+    resII.nodes = resII.nodes[:,0:2]
     print(resII)
     from BasicTools.Containers.MeshTools import IsClose
-    if not IsClose(res,resII):
+    print(res)
+    print(resII)
+    if not IsClose(res,resII): # pragma: no cover
         raise(Exception("The meshes are not equal"))
     return 'ok'
+
 
 def CheckIntegrity_MeshToVtk(GUI=False):
     res = CreateMeshOfTriangles([[0,0,0],[1,0,0],[0,1,0],[0,0,1] ], [[0,1,2],[0,2,3]])
@@ -599,16 +636,14 @@ def CheckIntegrity_MeshToVtk(GUI=False):
     res.GetElementsOfType(ElementNames.Triangle_3).tags.CreateTag("FirstTriangle").AddToTag(0)
     sol = MeshToVtk(res,TagsAsFields= True)
     print(sol)
-    resII = VtkToMesh(sol)
-    print(res)
-    print(resII)
+    resII = VtkToMesh(sol,meshobject=UnstructuredMesh())
     from BasicTools.Containers.MeshTools import IsClose
-    if not IsClose(res,resII):
+    if not IsClose(res,resII):# pragma: no cover
         raise(Exception("The meshes are not equal"))
 
     ## test a 2D mesh
     res = CreateMeshOfTriangles([[0,0],[1,0],[0,1],[1,1] ], [[0,1,2],[2,1,3]])
-    if GUI:
+    if GUI: # pragma: no cover
         res.nodeFields["Field1"] = np.array([30,20,30,1])
         res.nodeFields["Field2"] = np.array([0,1,0,1])+0.1
         PlotMesh(res)
@@ -618,10 +653,52 @@ def CheckIntegrity_MeshToVtk(GUI=False):
 
     return "OK"
 
+def CheckIntegrity_ConstantRectilinearMesh(GUI=False):
+    print("*** CheckIntegrity_ConstantRectilinearMesh **** ")
+    from BasicTools.Containers.ConstantRectilinearMeshTools import CreateMesh
+    crm = CreateMesh(3)
+    crm.nodesTags.CreateTag("FirstPoint").SetIds([0])
+    crm.nodeFields["nodeData"] = np.arange(crm.GetNumberOfNodes())*0.3
+    crm.nodeFields["nodeData3coom"] = np.zeros((crm.GetNumberOfNodes(),3) )*0.3
+    vtkcrm = MeshToVtk(crm,TagsAsFields=True)
+    crmII = VtkToMesh(vtkcrm,FieldsAsTags=True)
+    from BasicTools.Containers.MeshTools import IsClose
+    print(crm)
+    print(vtkcrm)
+    print(crmII)
+    print(crm.nodeFields["nodeData"])
+    crmII.nodeFields["nodeData"] = crmII.nodeFields["nodeData"].flatten()
+    crmII.nodeFields["nodeData3coom"] = crmII.nodeFields["nodeData3coom"].reshape(-1,3)
+
+    if not IsClose(crm,crmII): # pragma: no cover
+        raise(Exception("The meshes are not equal"))
+
+def checkIntegrity_ApplyVtkPipeline(GUI):
+    res = CreateMeshOfTriangles([[0,0,0],[1,0,0],[0,1,0],[0,0,1] ], [[0,1,2],[0,2,3]])
+    class op():
+        def __call__(self,vtkinput):
+            import vtk
+            extrude = vtk.vtkLinearExtrusionFilter()
+            extrude.SetInputData(vtkinput)
+            extrude.SetExtrusionTypeToNormalExtrusion()
+            extrude.SetVector(2., 2., 2.0)
+            extrude.Update()
+            cleaner = vtk.vtkTriangleFilter()
+            cleaner.SetInputData(extrude.GetOutput())
+            cleaner.Update()
+            return cleaner.GetOutput()
+
+    res = ApplyVtkPipeline(res, op())
+    if GUI: # pragma: no cover
+        PlotMesh(res)
+
 
 def CheckIntegrity(GUI=False):
     CheckIntegrity_MeshToVtk(GUI)
+    CheckIntegrity_VtkToMesh2D(GUI)
     CheckIntegrity_VtkToMesh(GUI)
+    CheckIntegrity_ConstantRectilinearMesh(GUI)
+    checkIntegrity_ApplyVtkPipeline(GUI)
     return 'ok'
 
 if __name__ == '__main__':
