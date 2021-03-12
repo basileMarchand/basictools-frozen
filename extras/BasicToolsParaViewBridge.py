@@ -23,6 +23,13 @@ try:
     from BasicTools.IO.IOFactory import WriterFactory
     from BasicTools.Containers.vtkBridge import VtkToMesh, MeshToVtk
 
+    try :
+        import BasicTools.Containers.MeshIOBridge as MeshIOBridge
+        MeshIOBridge.InitAllReaders()
+        MeshIOBridge.InitAllWriters()
+    except:
+        print("Error loading meshio interface ")
+
 
     paraview_plugin_name = "BasicTools ParaView Bridge"
     paraview_plugin_version = "5.7"
@@ -31,11 +38,11 @@ try:
     InitAllReaders()
 
 
-    for pext in ReaderFactory.keys():
+    for pext,readerClass,_ in ReaderFactory.AllEntries():
         if pext==".PIPE":
             continue
         ext = pext[1:]
-        readerClass = ReaderFactory.GetClass(pext)
+        #readerClass = ReaderFactory.GetClass(pext)
         readerClassName = readerClass.__name__
         wrapperClassName = "BasicToolsPython"+ext.upper()+"Reader"
 
