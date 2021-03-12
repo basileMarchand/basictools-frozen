@@ -511,8 +511,9 @@ def VtkToMesh(vtkmesh, meshobject=None, FieldsAsTags=True):
         elif ct ==  11:
             # 11 is a voxel and the numbering is not the same as the hexahedron
             #https://vtk.org/wp-content/uploads/2015/04/file-formats.pdf
-            original_coonectivity = [cell.GetPointId(j) for j in range(nps)]
-            connectivity = original_coonectivity[[0,1,3,24,5,7,6]]
+            original_coonectivity = np.array([cell.GetPointId(j) for j in range(nps)])
+            connectivity = original_coonectivity[[0,1,3,2,4,5,7,6]]
+
             out.GetElementsOfType(et).AddNewElement(connectivity  ,i)
         else:
             out.GetElementsOfType(et).AddNewElement([cell.GetPointId(j) for j in range(nps)] ,i)
