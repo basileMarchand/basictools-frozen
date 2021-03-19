@@ -62,9 +62,12 @@ class MeshWriter(WriterBase):
         #key Dimension (3)
         self.filePointer.write(struct.pack('i', 3))
 
-        mmax = np.max(meshObject.nodes[:,2])
-        mmin = np.min(meshObject.nodes[:,2])
-        if meshObject.nodes.shape[1] == 3 and  mmax !=  mmin :
+        flat= True
+        if meshObject.nodes.shape[1] == 3:
+            mmax = np.max(meshObject.nodes[:,2])
+            mmin = np.min(meshObject.nodes[:,2])
+            flat = (mmax == mmin)
+        if meshObject.nodes.shape[1] == 3 and  not flat :
             dimension = 3
         else:
             dimension = 2
