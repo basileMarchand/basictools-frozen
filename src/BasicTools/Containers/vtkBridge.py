@@ -560,14 +560,36 @@ def VtkToMesh(vtkmesh, meshobject=None, FieldsAsTags=True):
                     cpt = 0
                     for elname,data in out.elements.items():
                         nn = data.GetNumberOfElements()
-                        data.tags.CreateTag(name).SetIds(np.where(field[cpt:cpt+nn])[0])
+                        data.tags.CreateTag(name).SetIds(np.where(Elfield[cpt:cpt+nn])[0])
                         cpt += nn
-
                 else:
-                    out.elemFields[name] = field
+                    out.elemFields[name] = Elfield
             continue
 
     return out
+
+def GetInputVtk(request, inInfoVec, outInfoVec, connection=0, port=0):
+    from vtkmodules.vtkCommonDataModel import vtkUnstructuredGrid, vtkPolyData
+    input0 = vtkUnstructuredGrid.GetData(inInfoVec[connection], port)
+    if input0 is None:
+        input0 = vtkPolyData.GetData(inInfoVec[connection], port)
+    return input0
+
+def GetInputBasicTools(request, inInfoVec, outInfoVec,FieldsAsTags=False, connection=0, port=0):
+    vtkobj = GetInputVtk(request, inInfoVec, outInfoVec, connection=connection, port=port)
+    return VtkToMesh(vtkobj,FieldsAsTags=FieldsAsTags)
+
+def GetOutputVtk(request, inInfoVec, outInfoVec, copyAttr = True):
+    from vtkmodules.vtkCommonDataModel import vtkUnstructuredGrid
+    output = vtkUnstructuredGrid.GetData(outInfoVec, 0)
+    if copyAttr :
+        input0 = GetInputVtk(request, inInfoVec, outInfoVec)
+        output.CopyAttributes(input0)
+    return output
+
+def SetOutputBasicTools(request, inInfoVec, outInfoVec, outMesh,TagsAsFields=False):
+    output = GetOutputVtk(request, inInfoVec, outInfoVec, False)
+    MeshToVtk(outMesh, output,TagsAsFields=TagsAsFields)
 
 def VtkToMeshMultiblock(vtkObject,OP=VtkToMesh):
     if input.IsA("vtkMultiBlockDataSet"):
