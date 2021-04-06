@@ -34,7 +34,14 @@ extensions = [
         'sphinx.ext.autodoc',
         'sphinx.ext.autosummary',
         'sphinx.ext.napoleon',
-        'sphinx.ext.viewcode']
+        'sphinx.ext.viewcode',
+        'sphinx.ext.mathjax',
+        'sphinx.ext.todo',
+
+        ]
+
+todo_include_todos=True
+
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = []
@@ -258,10 +265,10 @@ texinfo_documents = [
 autosummary_generate = False
 
 # -- Options for napoleon extension
-pass
+#pass
 
 # -- Options for viewcode extension
-pass
+#pass
 
 def run_apidoc(_):
     import sphinx.ext.apidoc
@@ -274,4 +281,34 @@ def run_apidoc(_):
     sphinx.ext.apidoc.main(['-T', '-M', '-e', '-f', '-o', target_dir, module])
 
 def setup(app):
+
     app.connect('builder-inited', run_apidoc)
+
+
+# Additional stuff for the LaTeX preamble.
+
+
+mathjax_config = {                  
+    "TeX": {                        
+        "Macros": {                 
+            "RR": '{\\bf R}',
+			
+			 "KFE": r'{\mathbf{K}}',
+             "UFE": r'{\mathbf{u}}',
+             "FFE": r'{\mathbf{f}}',
+
+             "AFE": r'{\mathbf{A}}',
+             "BFE": r'{\mathbf{b}}',
+
+             "APFE": r"{\mathbf{A'}}",
+
+             "MFE": r'{\mathbf{M}}',
+             "VFE": r'{\mathbf{v}}',
+
+             "XFE": r'{\mathbf{X}}',
+             "DFE": r'{\mathbf{d}}',
+            "bold": ['{\\bf #1}',1] 
+            }                       
+        }                           
+    }   
+	

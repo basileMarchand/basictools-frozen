@@ -6,16 +6,24 @@
 Welcome to BasicTools's documentation!
 ======================================
 
+.. figure:: images/BasicToolsLogo.svg
+    :width: 400px
+    :align: center
+    :height: 400px
+    :alt: Basic Tools Logo
+    :figclass: align-center
+
 Contents:
 
 .. toctree::
    :maxdepth: 4
 
-   _source/BasicTools
-
-.. literalinclude:: ../README.md
-
-
+   Intro
+   Admin
+   Utilities
+   Containers
+   Kinematics
+   Examples
 
 Indices and tables
 ==================
