@@ -18,10 +18,20 @@ useFroze_itDecorator = False
 from BasicTools.Helpers.TextFormatHelper import TFormat
 
 def ResetStartTime():
+    """
+    Function to reset the start time of a program.
+
+    """
     global _startTime
     _startTime = time.time()
 
 def SetUseDifferentialTime(val):
+    """
+    Function to set the printing format 
+
+    :param [val]: True to print the time from the begining of the program or False to print the current time, defaults to [True]
+    :type [val]: [Bool] 
+    """
     global useDifferentialTime
     useDifferentialTime = val
 
@@ -31,7 +41,11 @@ def SetUseDifferentialTime(val):
 sentinel = object()
 ## for the moment if a class is frozen no heritage is possible ... working on a solution
 def froze_it(cls):
+    """
+    Decorator to make the class immutable (no more attributes can be added after initialization)
 
+    For the moment if a class is frozen no heritage is possible.
+    """
     if not useFroze_itDecorator:
         return cls
 
@@ -69,6 +83,10 @@ def froze_it(cls):
     return cls
 
 class BaseOutputObject(object):
+    """
+    Base class for almost all the classes in BasicTools. The principal functionality of this class is to handle output to the console with different level of verbosity. the user can change verbose level for a specific instance or to all the instances in a program.
+
+    """
     __globalDebugMode = False
     __verboseLevel = 1
     # constants

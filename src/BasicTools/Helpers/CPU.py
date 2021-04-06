@@ -8,23 +8,26 @@ import os
 import BasicTools.Helpers.ParserHelper as PH
 
 def GetNumberOfAvailableCpus():
-   SLURM_JOB_CPU_PER_NODE = os.environ.get('SLURM_JOB_CPU_PER_NODE')
-   if SLURM_JOB_CPU_PER_NODE is None:
-       import subprocess
-       import platform
-       try:
-           out = subprocess.check_output(["/usr/bin/squeue","-h","-t","r","-u",str(os.environ.get("USER")),"-w",platform.node(),"-o","'%C'"], shell=False ).decode("utf-8","ignore")
-           out = out.strip().strip("'")
-           res = PH.ReadInt(out)
-           os.environ['SLURM_JOB_CPU_PER_NODE'] = str(res)
-           return res
-       except:
-           import multiprocessing
-           res = multiprocessing.cpu_count()
-           os.environ['SLURM_JOB_CPU_PER_NODE'] = str(res)
-           return res
+    """
+    Function to discover the number of computing cores available.
 
-   return  PH.ReadInt(SLURM_JOB_CPU_PER_NODE)
+    """
+    SLURM_JOB_CPU_PER_NODE = os.environ.get('SLURM_JOB_CPU_PER_NODE')
+    if SLURM_JOB_CPU_PER_NODE is None:
+        import subprocess
+        import platform
+        try:
+            out = subprocess.check_output(["/usr/bin/squeue","-h","-t","r","-u",str(os.environ.get("USER")),"-w",platform.node(),"-o","'%C'"], shell=False ).decode("utf-8","ignore")
+            out = out.strip().strip("'")
+            res = PH.ReadInt(out)
+            os.environ['SLURM_JOB_CPU_PER_NODE'] = str(res)
+            return res
+        except:
+            import multiprocessing
+            res = multiprocessing.cpu_count()
+            os.environ['SLURM_JOB_CPU_PER_NODE'] = str(res)
+            return res
+    return  PH.ReadInt(SLURM_JOB_CPU_PER_NODE)
 
 class CPU():
     """ Class to help doing the multithreading without using to many cpus

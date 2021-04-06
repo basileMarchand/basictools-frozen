@@ -297,10 +297,10 @@ mathjax_config = {
              "UFE": r'{\mathbf{u}}',
              "FFE": r'{\mathbf{f}}',
 
-             "AFE": r'{\mathbf{A}}',
-             "BFE": r'{\mathbf{b}}',
+             "CFE": r'{\mathbf{C}}',
+             "GFE": r'{\mathbf{g}}',
 
-             "APFE": r"{\mathbf{A'}}",
+             "CPFE": r"{\mathbf{C'}}",
 
              "MFE": r'{\mathbf{M}}',
              "VFE": r'{\mathbf{v}}',
