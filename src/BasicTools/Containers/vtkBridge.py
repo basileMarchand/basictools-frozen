@@ -189,8 +189,6 @@ def PlotMesh(mesh):# pragma: no cover
 
     cylinderActor = vtk.vtkActor()
     cylinderActor.SetMapper(cylinderMapper)
-    cylinderActor.RotateX(30.0)
-    cylinderActor.RotateY(-45.0)
 
     ren = vtk.vtkRenderer()
     renWin = vtk.vtkRenderWindow()
