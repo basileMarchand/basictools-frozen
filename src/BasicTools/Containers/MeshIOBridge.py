@@ -136,8 +136,8 @@ def MeshIOToMesh(mesh, TagsAsFields=False):
 readers = {}
 def InitAllReaders():
     import meshio
-    from meshio import _helpers as HH
-    for ext, filetype in HH.extension_to_filetype.items():
+    from meshio import extension_to_filetype
+    for ext, filetype in extension_to_filetype.items():
         def Getinit(filetype):
             def __init__(self):
                 super(type(self),self).__init__()
@@ -174,14 +174,14 @@ def AddReadersToBasicToolsFactory():
 
 writers = {}
 def InitAllWriters():
-    from meshio import _helpers as HH
-
-    for ext, filetype in HH.extension_to_filetype.items():
+    from meshio import extension_to_filetype
+    for ext, filetype in extension_to_filetype.items():
 
         def GetInit(filetype):
             def __init__(self):
                 super(type(self),self).__init__()
                 self.canHandleTemporal = False
+                self.canHandleBinaryChange = False
             return __init__
 
         def GetSetFileName():

@@ -217,7 +217,7 @@ try:
 
 
         def RequestData(self, request, inInfoVec, outInfoVec):
-            mesh = GetInputBasicTools(request,inInfoVec,outInfoVec,FieldsAsTags=True,0,0)
+            mesh = GetInputBasicTools(request,inInfoVec,outInfoVec,FieldsAsTags=True,connectino=0,port=0)
 
             from BasicTools.IO.IOFactory import CreateWriter
             writer = self.basicToolsReader
