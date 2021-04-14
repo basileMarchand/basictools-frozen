@@ -4,6 +4,8 @@
 # file 'LICENSE.txt', which is part of this source code package.
 #
 
+# If this file is modified a compilation must executed to export this data
+# to the cpp portion of BasicTools
 
 class GeoSupport(object):
     def __init__(self,data):
@@ -24,17 +26,6 @@ class GeoSupport(object):
 
     def __hash__(self):
         return id(self.name)
-
-#GeoEntities = [
-#        GeoSupport(("point",1)),   #0
-#        GeoSupport(("bar"  ,1)),   #1
-#        GeoSupport(("tri"  ,2)),   #2
-#        GeoSupport(("quad" ,2)),   #3
-#        GeoSupport(("tet"  ,3)),   #4
-#        GeoSupport(("pyr"  ,3)),   #5
-#        GeoSupport(("wed"  ,3)),   #6
-#        GeoSupport(("hex"  ,3 ))]  #7
-
 
 GeoPoint = GeoSupport(("point",0))   #0
 GeoBar   = GeoSupport(("bar"  ,1))   #1
@@ -118,7 +109,7 @@ faces[Triangle_6] = [(Bar_3,[0, 1,3]),
 Quadrangle_8  = 'quad8'
 geoSupport[Quadrangle_8] = GeoQuad
 numberOfNodes[Quadrangle_8] = 8
-mirrorPermutation[Quadrangle_8] = [0,2,1,5,4,3]
+mirrorPermutation[Quadrangle_8] = [0,3,2,1,7,6,5,4]
 dimension[Quadrangle_8] = 2
 linear[Quadrangle_8] = False
 faces[Quadrangle_8] = [(Bar_3,[0, 1,4]),
@@ -129,6 +120,7 @@ faces[Quadrangle_8] = [(Bar_3,[0, 1,4]),
 Quadrangle_9  = 'quad9'
 geoSupport[Quadrangle_9] = GeoQuad
 numberOfNodes[Quadrangle_9] = 9
+mirrorPermutation[Quadrangle_9] = [0,3,2,1,7,6,5,4,8]
 dimension[Quadrangle_9] = 2
 linear[Quadrangle_9] = False
 faces[Quadrangle_9] = [(Bar_3,[0, 1,4]),
@@ -159,6 +151,7 @@ faces2[Tetrahedron_4] = [(Bar_2,[0, 1]),
 Pyramid_5  = 'pyr5'
 geoSupport[Pyramid_5] = GeoPyr
 numberOfNodes[Pyramid_5] = 5
+mirrorPermutation[Pyramid_5] = [0,3,2,1,4]
 dimension[Pyramid_5] = 3
 linear[Pyramid_5] = False
 faces[Pyramid_5] = [(Quadrangle_4,[0, 1, 2,3]),
@@ -170,12 +163,14 @@ faces[Pyramid_5] = [(Quadrangle_4,[0, 1, 2,3]),
 Wedge_6 = 'wed6'
 geoSupport[Wedge_6] = GeoWed
 numberOfNodes[Wedge_6] = 6
+mirrorPermutation[Wedge_6] = [0,2,1,3,5,4]
 dimension[Wedge_6] = 3
 linear[Wedge_6] = True
 
 Hexaedron_8 = 'hex8'
 geoSupport[Hexaedron_8] = GeoHex
 numberOfNodes[Hexaedron_8] = 8
+mirrorPermutation[Hexaedron_8] = [0,3,2,1,4,7,6,5]
 dimension[Hexaedron_8] = 3
 linear[Hexaedron_8] = True
 faces[Hexaedron_8] = [(Quadrangle_4,[3, 0, 4, 7]),
@@ -256,6 +251,53 @@ faces[Hexaedron_27] = [(Quadrangle_9,[3, 0, 4, 7,11,16,15,19,20]),
                        (Quadrangle_9,[0, 3, 2, 1,11,10, 9, 8,24]),
                        (Quadrangle_9,[4, 5, 6, 7,12,13,14,15,25])]
 
+
+def GeneratertElementNamesCpp(filename = "cpp_src/Containers/ElementNames.cpp"):
+    try:
+        with open(filename,"w") as file:
+            file.write("""
+#include <Containers/ElementNames.h>
+#include <map>
+
+std::map<std::string,ElementInfo> InitElementNames() {
+    std::map<std::string,ElementInfo> ElementNames;
+""")
+            for elemtype in geoSupport:
+            #for elemtype in ['tet4']:
+               file.write(f"""
+    ElementNames["{elemtype}"] = ElementInfo();
+    ElementNames["{elemtype}"].numberOfNodes = {numberOfNodes[elemtype]};
+    ElementNames["{elemtype}"].geoSupport = Geo{geoSupport[elemtype].name.capitalize()};
+    ElementNames["{elemtype}"].name = "{elemtype}";
+    ElementNames["{elemtype}"].mirrorPermutation.resize({len(mirrorPermutation.get(elemtype,""))},1);\n""")
+               #if len(mirrorPermutation.get(elemtype,"")):
+               #   print(f"""ElementNames["{elemtype}"].mirrorPermutation <<  {", ".join(map(str,mirrorPermutation.get(elemtype,[])))};""")
+
+               for n,v in enumerate(mirrorPermutation.get(elemtype,[])):
+                  file.write(f"""    ElementNames["{elemtype}"].mirrorPermutation({n},0)= {v};\n""")
+
+
+               file.write(f"""    ElementNames["{elemtype}"].linear = {('true' if linear[elemtype] else 'false'  )};\n""")
+
+               for e,n in faces.get(elemtype,[]):
+                   file.write("    {\n")
+                   file.write(f"""        MatrixID1 matA({len(n)}, 1);
+        matA << """+ ", ".join(map(str,n)) + ";\n")
+                   file.write(f"""        ElementNames["{elemtype}"].faces.push_back(std::pair<ElementInfo,MatrixID1>(ElementNames["{e}"],matA) );\n""" )
+                   file.write("    }\n")
+               for e,n in faces2.get(elemtype,[]):
+                   file.write("    {\n")
+                   file.write(f"""        MatrixID1 matA({len(n)}, 1);
+        matA << """+ ", ".join(map(str,n)) + ";\n")
+                   file.write(f"""        ElementNames["{elemtype}"].faces2.push_back(std::pair<ElementInfo,MatrixID1>(ElementNames["{e}"],matA) );\n""" )
+                   file.write("    }\n")
+            file.write("""
+    return ElementNames;
+};\n""")
+
+    except Exception:
+        print('Unable to create file '+ filename)
+     #continue if file not found
 
 def CheckIntegrity(GUI=False):
     print(GeoPoint)

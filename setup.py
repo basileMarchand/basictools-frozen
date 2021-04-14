@@ -20,7 +20,9 @@ useOpenmp = "BASICTOOLS_DISABLE_OPENMP" not in os.environ
 #Cpp sources (relative to the cpp_src folder)
 cpp_src = ("Containers/Tags.cpp",
            "FE/NativeIntegration.cpp",
-           "Containers/ElementFilter.cpp",)
+           "Containers/ElementFilter.cpp",
+           "Containers/ElementNames.cpp", # <-- this files is generated from ElementNames.py
+           )
 
 # Cython modules
 cython_src = (
@@ -35,8 +37,13 @@ cython_src = (
 try:
     from Cython.Build import cythonize
     import eigency
-
     from Cython.Compiler import Options
+
+    from BasicTools.Containers.ElementNames import GeneratertElementNamesCpp
+
+    GeneratertElementNamesCpp()
+
+
     Options.fast_fail = True
     Options.embed = True
 
@@ -49,7 +56,7 @@ try:
     basictools_src_path = os.path.join("src", "BasicTools")
     cython_src_with_path  = [os.path.join(basictools_src_path, src) for src in cython_src]
     all_src.extend(cython_src_with_path )
-    
+
     modules = cythonize(all_src , gdb_debug=debug, annotate=annotate, force=force)
 
 except ImportError as e:
