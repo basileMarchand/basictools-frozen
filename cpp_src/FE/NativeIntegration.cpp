@@ -2,13 +2,16 @@
 // This file is subject to the terms and conditions defined in
 // file 'LICENSE.txt', which is part of this source code package.
 //
-#include <iostream>
 
 #include "NativeIntegration.h"
 #include <Eigen/SparseCore>
 //http://cython.readthedocs.io/en/latest/src/userguide/wrapping_CPlusPlus.html
 
-typedef Eigen::SparseMatrix<double> SpMat; // declares a column-major sparse matrix type of double
+#include <iostream>
+#include <string>
+
+
+//typedef Eigen::SparseMatrix<double> SpMat; // declares a column-major sparse matrix type of double
 
 const int EnumError = -1;
 const int EnumNormal = 0;

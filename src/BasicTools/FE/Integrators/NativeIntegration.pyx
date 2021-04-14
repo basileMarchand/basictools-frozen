@@ -477,3 +477,6 @@ def CheckIntegrity(GUI=False):
     obj = PyMonoElementsIntegralCpp()
     print(obj)
     return "OK"
+
+if __name__ == '__main__':# pragma: no cover
+    print(CheckIntegrity())

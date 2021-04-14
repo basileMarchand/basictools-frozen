@@ -2,20 +2,20 @@
 // This file is subject to the terms and conditions defined in
 // file 'LICENSE.txt', which is part of this source code package.
 //
-#ifndef NATIVEINTEGRATION_H
-#define NATIVEINTEGRATION_H
+#pragma once
+
 #include <string>
 #include <iostream>
 #include <vector>
 
-#include <FE/WeakForms/src_cpp/NativeNumericalWeakForm.h>
-#include <Linalg/src_cpp/Eigentype.h>
+#include <FE/NativeNumericalWeakForm.h>
+#include <LinAlg/EigenTypes.h>
 
 #define IN_DEBUG
 #ifdef IN_DEBUG
-  #define PRINTL(var) std::cout  << __FILE__ <<"::" << __LINE__ << " " << #var  << " -> " << (var) << std::endl;
-  #define PRINT(var) std::cout  << #var  << " -> " << (var) << std::endl;
-  #define PRINTS(str) std::cout <<  #str   << std::endl;
+//  #define PRINTL(var) std::cout  << __FILE__ <<"::" << __LINE__ << " " << #var  << " -> " << (var) << std::endl;
+  //#define PRINT(var) std::cout  << #var  << " -> " << (var) << std::endl;
+  //#define PRINTS(str) std::cout <<  #str   << std::endl;
   template<typename T>
   void printMatrix(T& mat){
     std::cout << std::endl <<" c++  ";
@@ -249,5 +249,3 @@ struct MonoElementsIntegralCpp{
   void Integrate( WeakForm* wform, std::vector<int>& idstotreat);
 
 };
-
-#endif

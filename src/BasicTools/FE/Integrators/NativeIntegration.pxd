@@ -8,12 +8,12 @@ cimport numpy as np
 
 cimport BasicTools.FE.WeakForms.NativeNumericalWeakForm as NNWF
 
-cdef extern from "src_cpp/NativeIntegration.cpp":
+cdef extern from "FE/NativeIntegration.cpp":
     pass
 
 # Decalre the class with cdef
 
-cdef extern from "src_cpp/NativeIntegration.h" :
+cdef extern from "FE/NativeIntegration.h" :
     cdef cppclass MonoElementsIntegralCpp:
         MonoElementsIntegralCpp() except +
         void SetNumberOfUnkownFields(int)
