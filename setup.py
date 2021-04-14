@@ -17,16 +17,40 @@ force = True # to force recompilation
 annotate = debug # to generate annotation (HTML files)
 useOpenmp = "BASICTOOLS_DISABLE_OPENMP" not in os.environ
 
+#Cpp sources (relative to the cpp_src folder)
+cpp_src = ("Containers/Tags.cpp",
+           "FE/NativeIntegration.cpp",
+           "Containers/ElementFilter.cpp",)
+
 # Cython modules
 cython_src = (
     "Linalg/EigenSolver.pyx",
     "FE/Integrators/NativeIntegration.pyx",
-    "FE/WeakForms/NativeNumericalWeakForm.pyx")
+    "FE/WeakForms/NativeNumericalWeakForm.pyx",
+    "Containers/NativeUnstructuredMesh.pyx",
+    "FE/Numberings/NativeDofNumbering.pyx",
+    "FE/Spaces/NativeSpace.pyx",
+    "Containers/NativeFilters.pyx",)
 
 try:
     from Cython.Build import cythonize
+    import eigency
+
+    from Cython.Compiler import Options
+    Options.fast_fail = True
+    Options.embed = True
+
+    all_src = []
+
+    basictools_cpp_src_path = os.path.join("cpp_src")
+    cpp_src_with_path = [os.path.join(basictools_cpp_src_path, src) for src in cpp_src]
+    all_src.extend(cpp_src_with_path)
+
     basictools_src_path = os.path.join("src", "BasicTools")
-    modules = cythonize([os.path.join(basictools_src_path, src) for src in cython_src], gdb_debug=debug, annotate=annotate, force=force)
+    cython_src_with_path  = [os.path.join(basictools_src_path, src) for src in cython_src]
+    all_src.extend(cython_src_with_path )
+    
+    modules = cythonize(all_src , gdb_debug=debug, annotate=annotate, force=force)
 
 except ImportError as e:
     print(f"Compilation disabled since {e.name} package is missing")
@@ -90,7 +114,8 @@ class build_ext_compiler_check(build_ext):
 
     def _include_dirs(self, _):
         import numpy
-        include_dirs =[numpy.get_include()]
+        include_dirs =[numpy.get_include(),"cpp_src" ]
+        include_dirs.extend(eigency.get_includes(include_eigen=False) )
         if "EIGEN_INC" in os.environ:
             include_dirs.append(os.environ.get('EIGEN_INC'))
         if "CONDA_PREFIX" in os.environ:
