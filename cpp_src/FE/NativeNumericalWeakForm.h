@@ -2,8 +2,8 @@
 // This file is subject to the terms and conditions defined in
 // file 'LICENSE.txt', which is part of this source code package.
 //
-#ifndef __NativeNumericalWeakForm_H_
-#define __NativeNumericalWeakForm_H_
+#pragma once
+
 #include <string>
 #include <ostream>
 #include <vector>
@@ -63,4 +63,3 @@ std::ostream& operator <<(std::ostream& stream, const WeakMonom& monom) {
 
     return stream;
 }
-#endif

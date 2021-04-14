@@ -8,7 +8,7 @@ from libcpp.vector cimport vector
 from libcpp.string cimport string
 from libcpp.vector cimport vector
 
-cdef extern from "../WeakForms/src_cpp/NativeNumericalWeakForm.h" :
+cdef extern from "FE/NativeNumericalWeakForm.h" :
     cdef cppclass WeakTerm:
         WeakTerm() except     +
         string fieldName
@@ -25,20 +25,17 @@ cdef extern from "../WeakForms/src_cpp/NativeNumericalWeakForm.h" :
         int modeIndex_
 
 
-cdef extern from "../WeakForms/src_cpp/NativeNumericalWeakForm.h" :
+cdef extern from "FE/NativeNumericalWeakForm.h" :
     cdef cppclass WeakMonom:
         WeakMonom() except     +
         double prefactor;
         vector[WeakTerm] prod
 
-cdef extern from "../WeakForms/src_cpp/NativeNumericalWeakForm.h" :
+cdef extern from "FE/NativeNumericalWeakForm.h" :
     cdef cppclass WeakForm:
         WeakForm() except     +
         vector[WeakMonom] form
         int GetNumberOfTerms()
-
-
-
 
 cdef class PyWeakTerm:
     cdef WeakTerm* _c_WeakTerm
