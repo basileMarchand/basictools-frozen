@@ -9,7 +9,7 @@ import numpy as np
 from scipy.sparse import coo_matrix
 
 
-cdef extern from "src_cpp/NativeEigenSolvers.h" :
+cdef extern from "LinAlg/NativeEigenSolvers.h" :
     cdef cppclass NativeEigenSolvers:
         NativeEigenSolvers() except +
         void SetSolverType(int)
