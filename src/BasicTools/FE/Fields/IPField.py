@@ -230,6 +230,21 @@ class RestrictedIPField(IPField):
             for name,data,ids in self.efmask :
                 self.data[name] = ipField.data[name][ids,:]
 
+    def SetDataFromNumpy(self, indata):
+
+        nbvalues = 0
+        for elemType,data,ids in self.efmask:
+            nbvalues += np.prod(self.data[elemType].shape)
+
+        if indata.size != nbvalues:
+            raise(Exception("incompatible sizes"))
+
+        cpt = 0
+        for elemType,data,ids in self.efmask:
+            lsize= np.prod(self.data[elemType].shape)
+            self.data[elemType][:,:] = indata[cpt:cpt+lsize].reshape(self.data[elemType].shape)
+            cpt += lsize
+
     def GetIpFieldRepr(self,fillvalue=0):
         res = IPField(name=self.name,mesh=self.mesh,rule=self.rule)
         res.Allocate(fillvalue)
