@@ -7,6 +7,7 @@
 *.o
 *.so
 *.pyc
+__pycache__/
 src/BasicTools/FE/Integrators/NativeIntegration.cpp
 src/BasicTools/FE/WeakForms/NativeNumericalWeakForm.cpp
 src/BasicTools/Linalg/EigenSolver.cpp
@@ -14,6 +15,7 @@ src/BasicTools/Linalg/NativeEigenSolver.cpp
 src/BasicTools/FE/Numberings/NativeDofNumbering.cpp
 src/BasicTools/Containers/NativeUnstructuredMesh.cpp
 src/BasicTools/Containers/NativeFilters.cpp
+src/BasicTools/FE/Spaces/NativeSpace.cpp
 cpp_src/Containers/ElementNames.cpp
 *.html
 
