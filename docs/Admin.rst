@@ -26,6 +26,7 @@ Python packages:
 * vtk
 * scikit-learn
 * scikit-sparse
+* eigency
 
 Optionals Python packages:
 
@@ -50,7 +51,7 @@ Anaconda Installation
 *********************
 
 The Anaconda [#anacondaurl]_  python package manager provides a, ready to use, package of BasicTools.
-The BasicTools Anaconda package [#basictoolsanaconda]_ is managed by the community. 
+The BasicTools Anaconda package [#basictoolsanaconda]_ is managed by the community.
 
 The installation can be done using the following command.
 
@@ -80,7 +81,7 @@ The ParaView Plugin
 ###################
 
 ParaView can benefits from some functionalities of BasicTools.
-This can be achieved using the BasicToolsParaView plugin. 
+This can be achieved using the BasicToolsParaView plugin.
 The plugin to be loaded (``BasicToolsParaViewBridge.py``) is located on the ``extras`` folder.
 Please read the ParaView documentation for how to load this plugin.
 Be aware that your Python installation version may not be compatible with Python version of ParaView.
@@ -96,20 +97,20 @@ Be aware that the use of this functionalities involve a format conversion betwee
 To contribute to BasicTools
 ###########################
 
-To contribute to BasicTools you can fill a bug report on either of the gitlab with a *minimal non working example*. 
-This makes the debuging in ours side easier. 
+To contribute to BasicTools you can fill a bug report on either of the gitlab with a *minimal non working example*.
+This makes the debuging in ours side easier.
 
-If you want to contribute with code you must. 
- 
+If you want to contribute with code you must.
+
 *  clone the master branch of BasicTools from either one of the two gitlab repositories
-*  make a development branch 
+*  make a development branch
 *  modify/created changes, commit changes
 *  compile BasicTools
 *  test you branch (see section `Testing Infrastructure`_ )
 *  accept the Contribution Agreement (see section `Licensing and External Contributions`_ )
 *  push your branch to the server
 *  create a merge request (on the web)
- 
+
 Testing Infrastructure
 ######################
 
@@ -119,12 +120,12 @@ A file ``conftest.py`` present at the root of the repository is responsible of t
 
 Every module must have a function called ``CheckIntegrity`` that takes no argument and returns the string ``"ok"`` if and only if the test was successful.
 Any other return value (or a raised exception) will be interpreted as a failed test.
- 
+
 The ``__init__.py`` must have a variable named ``_test`` (the use of the variable ``__all__`` is depreciated) listing all submodules to be tested so that the test infrastructure works as intended.
 
 Some tests need to write data to disk or read data from the test data directory.
 Two functions are available to help writing tests :
- 
+
 *  GetTestDataPath() : Returns the path of the data directory (``from BasicTools.TestData import GetTestDataPath`` )
 *  TestTempDir: A class to handle the creation of a directory to hold temporary data (``from BasicTools.Helpers.Test import TestTempDir``)
 
@@ -161,14 +162,14 @@ An example is available in the file ``BasicTools/FE/ZmatFemProblem.py`` at the b
 Licensing and External Contributions
 ####################################
 
-BasicTools license. 
+BasicTools license.
 
 .. literalinclude:: ../LICENSE.txt
 
 For contribution the user must accept the Contribution Agreement. This means the user transfer the property of the contributed code to Safran.
 
-.. literalinclude:: ../CONTRIBUTING.md    
-    
+.. literalinclude:: ../CONTRIBUTING.md
+
 .. rubric:: Footnotes
 .. [#gitlaburlpublic]  https://gitlab.com/drti/basic-tools
 .. [#anacondaurl] https://anaconda.org/
