@@ -8,7 +8,8 @@ from BasicTools.Containers import Filters
 
 __cache__ = {}
 __cacheSize__ = 1
-numberingAlgorithm = "NumpyBase"
+numberingAlgorithm = "CppBase"
+#numberingAlgorithm = "NumpyBase"
 #numberingAlgorithm = "DictBase"
 
 def GetNumberingFromCache(mesh,space,elementFilter=None,discontinuous=False,fromConnectivity=False):
@@ -30,7 +31,15 @@ def ComputeDofNumbering(mesh,Space,dofs=None,fromConnectivity=False,elementFilte
         cachedData = GetNumberingFromCache(mesh=mesh, space=Space, fromConnectivity=fromConnectivity, elementFilter=elementFilter, discontinuous=discontinuous )
     if cachedData is not None:
         return cachedData
-
+	
+    global numberingAlgorithm 
+    if numberingAlgorithm == "CppBase":
+        try:
+            from BasicTools.FE.Numberings.NativeDofNumbering import NativeDofNumbering
+            res = NativeDofNumbering()
+        except:
+           numberingAlgorithm = "NumpyBase" 
+	
     if numberingAlgorithm == "NumpyBase":
         from BasicTools.FE.Numberings.DofNumberingNumpy import DofNumberingNumpy
         res = DofNumberingNumpy()
@@ -57,9 +66,11 @@ def ComputeDofNumbering(mesh,Space,dofs=None,fromConnectivity=False,elementFilte
         return res
 
 def CheckIntegrity(GUI=False):
+    import BasicTools.FE.DofNumbering  as DN
+
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateCube
 
-    res2 = CreateCube([2.,2.,2.],[-1.0,-1.0,-1.0],[2./46, 2./46,2./46])
+    res2 = CreateCube([2,2,2],[-1.0,-1.0,-1.0],[2./46, 2./46,2./46])
 
     from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo, LagrangeSpaceP0, LagrangeSpaceP1, LagrangeSpaceP2, ConstantSpaceGlobal
 
@@ -73,18 +84,25 @@ def CheckIntegrity(GUI=False):
     spacesToTest["gaussSpace"] =gaussSpace
     import time
     for spacename, space in spacesToTest.items():
-        print("******************************************************************************* {} **********************************************************".format(spacename))
+        print("*************************** {} {}*******************************************".format(DN.numberingAlgorithm, spacename))
         # on a tag
         print("----------------------{} tag -----------------------------".format(spacename))
         st = time.time()
-        numbering = ComputeDofNumbering(res2,space,elementFilter= Filters.ElementFilter(mesh=res2,tag="X0") )
+        numbering = DN.ComputeDofNumbering(res2,space,elementFilter= Filters.ElementFilter(mesh=res2,tag="X0") )
+
+        for k,v in res2.elements.items():
+            print(k,numbering.get(k,None))
+        print(numbering.size)
         print("----------------------{} tag -----------------------------".format(spacename))
         print(time.time()-st)
 
         # all
         print("----------------------{} all -----------------------------".format(spacename))
         st = time.time()
-        numbering = ComputeDofNumbering(res2,space)
+        numbering = DN.ComputeDofNumbering(res2,space)
+        for k,v in res2.elements.items():
+            print(k,numbering.get(k,None))
+        print(numbering.size)
         print("----------------------{} all -----------------------------".format(spacename))
         print(time.time()-st)
 
@@ -92,14 +110,20 @@ def CheckIntegrity(GUI=False):
         # from connectivity
         print("----------------------{} from connectivity -----------------------------".format(spacename))
         st = time.time()
-        numbering = ComputeDofNumbering(res2, space,fromConnectivity=True)
+        numbering = DN.ComputeDofNumbering(res2, space,fromConnectivity=True)
+        for k,v in res2.elements.items():
+            print(k,numbering.get(k,None))
+        print(numbering.size)
         print("----------------------{} from connectivity -----------------------------".format(spacename))
         print(time.time()-st)
 
         # 3D using filter
         print("----------------------{} 3D filter-----------------------------".format(spacename))
         st = time.time()
-        numbering = ComputeDofNumbering(res2,space,elementFilter=Filters.ElementFilter(mesh=res2,dimensionality=3) )
+        numbering = DN.ComputeDofNumbering(res2,space,elementFilter=Filters.ElementFilter(mesh=res2,dimensionality=3) )
+        for k,v in res2.elements.items():
+            print(k,numbering.get(k,None))
+        print(numbering.size)
         print("----------------------{} 3D filter-----------------------------".format(spacename))
         print(time.time()-st)
     return "ok"
