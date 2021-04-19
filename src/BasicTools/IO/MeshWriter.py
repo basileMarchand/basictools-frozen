@@ -493,8 +493,8 @@ def CheckIntegrity():
     nodalRefNumber = np.arange(mymesh.GetNumberOfNodes())
     elemRefNumber = np.arange(mymesh.GetNumberOfElements())
 
-    WriteMesh("CheckIntegrity_with_refs",mymesh,PointFields=[nodalRefNumber*10], elemRefNumber=elemRefNumber,nodalRefNumber=nodalRefNumber,solutionOnOwnFile=True)
-    WriteMesh("CheckIntegrity_with_refs",mymesh,binary=False, PointFields=[nodalRefNumber*10], elemRefNumber=elemRefNumber,nodalRefNumber=nodalRefNumber,solutionOnOwnFile=True)
+    WriteMesh(tempdir+"CheckIntegrity_with_refs.mesh",mymesh,PointFields=[nodalRefNumber*10], elemRefNumber=elemRefNumber,nodalRefNumber=nodalRefNumber,solutionOnOwnFile=True)
+    WriteMesh(tempdir+"CheckIntegrity_with_refs.mesh",mymesh,binary=False, PointFields=[nodalRefNumber*10], elemRefNumber=elemRefNumber,nodalRefNumber=nodalRefNumber,solutionOnOwnFile=True)
 
     OW = MeshWriter()
     OW.SetBinary(False)
