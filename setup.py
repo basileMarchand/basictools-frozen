@@ -7,7 +7,7 @@
 
 import os, sys
 from setuptools.command.build_ext import build_ext
-from setuptools import setup
+from setuptools import setup, Extension
 
 
 # Compilation options
@@ -18,11 +18,19 @@ annotate = debug # to generate annotation (HTML files)
 useOpenmp = "BASICTOOLS_DISABLE_OPENMP" not in os.environ
 
 #Cpp sources (relative to the cpp_src folder)
-cpp_src = ("Containers/Tags.cpp",
-           "FE/NativeIntegration.cpp",
+cpp_src = ("LinAlg/EigenTools.cpp",
+           "ImplicitGeometry/ImplicitGeometryBase.cpp",
            "Containers/ElementFilter.cpp",
-           "Containers/ElementNames.cpp", # <-- this files is generated from ElementNames.py
+           "Containers/UnstructuredMesh.cpp",
+           "Containers/UnstructuredMeshTools.cpp",
+           "Containers/Tags.cpp",
+           "FE/NativeIntegration.cpp",
+           "FE/DofNumberingCpp.cpp",
            )
+
+#Cpp sources generated files
+cpp_src += ("Containers/ElementNames.cpp", # <-- this files is generated from ElementNames.py
+               )
 
 # Cython modules
 cython_src = (
@@ -43,21 +51,22 @@ try:
 
     GeneratertElementNamesCpp()
 
-
     Options.fast_fail = True
     Options.embed = True
 
-    all_src = []
+    modules = []
 
     basictools_cpp_src_path = os.path.join("cpp_src")
     cpp_src_with_path = [os.path.join(basictools_cpp_src_path, src) for src in cpp_src]
-    all_src.extend(cpp_src_with_path)
+    cppextensions = [Extension("libCppBasicTools", cpp_src_with_path)]
+    modules.extend(cppextensions)
 
     basictools_src_path = os.path.join("src", "BasicTools")
     cython_src_with_path  = [os.path.join(basictools_src_path, src) for src in cython_src]
-    all_src.extend(cython_src_with_path )
 
-    modules = cythonize(all_src , gdb_debug=debug, annotate=annotate, force=force)
+    for n,m in zip(cython_src,cython_src_with_path):
+        cythonextension = [Extension("BasicTools."+n.split(".pyx")[0].replace("/","."), [m],libraries=["CppBasicTools.cpython-36m-x86_64-linux-gnu"],library_dirs=["build/lib.linux-x86_64-3.6"], include_dirs=["./cpp_src/"])]
+        modules.extend(cythonize(cythonextension, gdb_debug=debug, annotate=annotate, force=force))
 
 except ImportError as e:
     print(f"Compilation disabled since {e.name} package is missing")
@@ -121,7 +130,7 @@ class build_ext_compiler_check(build_ext):
 
     def _include_dirs(self, _):
         import numpy
-        include_dirs =[numpy.get_include(),"cpp_src" ]
+        include_dirs =[numpy.get_include(),"cpp_src" ,"."]
         include_dirs.extend(eigency.get_includes(include_eigen=False) )
         if "EIGEN_INC" in os.environ:
             include_dirs.append(os.environ.get('EIGEN_INC'))
