@@ -26,3 +26,20 @@
 #define MAPSETGET_MatrixID1(Name,attribute) MAPSETGETTYPEII(Name,attribute,MapMatrixID1)
 #define MAPSETGET_MatrixIDD(Name,attribute) MAPSETGETTYPEII(Name,attribute,MapMatrixIDD)
 #define MAPSETGET_MatrixDDD(Name,attribute) MAPSETGETTYPEII(Name,attribute,MapMatrixDDD)
+
+
+#define MACRO_SetGet_EIGEN(Name,attribute,dtype)                                \
+                                                                                \
+    void Set##Name(const dtype &  &arg1){                                       \
+        this->attribute.reset(new dtype(arg1.data(), arg1.rows(), arg1.cols()));\
+    };                                                                          \
+    dtype& Get ## Name ## Matrix(){                                             \
+        return *(this->attribute);                                              \
+    };                                                                          \
+    const dtype& Get ## Name ## Matrix() const {                                \
+        return *(this->attribute);                                              \
+    };
+
+#define SETGET_MatrixID1(Name,attribute) MACRO_SetGet_EIGEN(Name,attribute,MarixID1)
+#define SETGET_MatrixIDD(Name,attribute) MACRO_SetGet_EIGEN(Name,attribute,MatrixIDD)
+#define SETGET_MatrixDDD(Name,attribute) MACRO_SetGet_EIGEN(Name,attribute,MatrixDDD)
