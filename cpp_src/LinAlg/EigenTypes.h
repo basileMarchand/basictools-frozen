@@ -8,6 +8,8 @@
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 
+namespace BasicTools
+{
 
 typedef double FLOAT_TYPE;
 typedef long int INT_TYPE;
@@ -56,5 +58,5 @@ typedef Eigen::Map<MatrixID1> MapMatrixID1;
 
 typedef MatrixDDD QRType;
 
-
+} // BasicTools namespace
 
