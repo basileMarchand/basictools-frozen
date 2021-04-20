@@ -16,6 +16,8 @@
 #include <memory>
 #include <iostream>
 
+namespace BasicTools
+{
 
 class ElementsContainer{
     std::string elementType;
@@ -24,121 +26,67 @@ class ElementsContainer{
     std::shared_ptr<MapMatrixID1 > originalIds;
 public:
     Tags tags;
-    ElementsContainer(const std::string& elemtype = "" ){
-        this->elementType = elemtype;
-        this->globaloffset = 0;
-        this->connectivity.reset(new MapMatrixIDD(nullptr, 0, 1));
-        this->originalIds.reset(new MapMatrixID1(nullptr, 0, 1));
-    }
-
-    INT_TYPE GetNumberOfElements() const {
-        return this->connectivity->rows();
-    }
+    ElementsContainer(const std::string& elemtype = "" );
+    INT_TYPE GetNumberOfElements() const ;
 
     MAPSETGET_MatrixIDD(Connectivity,connectivity)
     MAPSETGET_MatrixID1(Ids,originalIds)
-    std::string GetElementType() const {
-        return this->elementType;
-    }
 
+    std::string GetElementType() const ;
     template<typename T>
-    void AddTag(std::string& name, T& arg1){
-        Tag ntag;
-        ntag.SetName(name);
-        ntag.SetIds(arg1);
-        this->tags.AddTag(ntag);
+    void AddTag(std::string& name, T& arg1);
+};
+
+struct sortbyName {
+    bool operator()(std::string a, std::string b) const {
+        return a < b;
     }
 };
 
 class AllElements{
 public:
-    std::map<std::string, ElementsContainer > storage;
-    ElementsContainer& GetElementsOfType(const std::string& elemtype){
-        if(this->storage.count(elemtype) == 0 ){
-              this->storage[elemtype] = ElementsContainer(elemtype);
-        }
-        return this->storage[elemtype];
-    };
+    std::map<std::string, ElementsContainer, sortbyName > storage;
+    ElementsContainer& GetElementsOfType(const std::string& elemtype);
     //
-    INT_TYPE GetNumberOfElements(){
-      INT_TYPE res = 0;
-      for (auto const& x : this->storage){
-         res += x.second.GetNumberOfElements();
-      }
-      return res;
-    }
+    INT_TYPE GetNumberOfElements() const ;
     //
-    std::string ToStr(){
-        std::string res;
-        for (auto const& x : this->storage){
-            res += "   ElementsContainer,    Type : ("+ ToString(x.first) + ","+ToString(x.second.GetNumberOfElements())+ "),";
-            res += x.second.tags.ToStr() ;
-        }
-        return res;
-    }
-    //
-    ElementsContainer& operator[](const std::string& key) {
-        return this->storage[key];
-    }
+    std::string ToStr();
 
-    //const ElementsContainer& operator[](const std::string& key) const {
-    //    return this->storage[key];
-    //}
+    ElementsContainer& operator[](const std::string& key) ;
+
+    std::map<std::string, ElementsContainer, sortbyName >::const_iterator begin() const {return this->storage.begin();}
+    std::map<std::string, ElementsContainer, sortbyName >::const_iterator end() const {return this->storage.end();}
 };
 
-class NativeUnstructuredMesh{
+class UnstructuredMesh{
     std::shared_ptr<MapMatrixDDD > nodes;
     std::shared_ptr<MapMatrixID1 > originalIDNodes;
     Tags nodesTags;
     std::map<std::string,float> props;
 public:
     AllElements elements;
-    NativeUnstructuredMesh():
-     nodes(std::make_shared<MapMatrixDDD>(nullptr, 0, 3) ),
-     originalIDNodes(std::make_shared<MapMatrixID1>(nullptr,0,1) ){
-    };
+    UnstructuredMesh();
 
     MAPSETGET_MatrixID1(OriginalIds,originalIDNodes)
     MAPSETGET_MatrixDDD(Nodes,nodes)
 
-    INT_TYPE GetNumberOfNodes() const {
-        return this->nodes->rows();
-    };
-
+    INT_TYPE GetNumberOfNodes() const ;
     template<typename T>
-    void AddNodalTag(std::string& name, T& arg1){
-        Tag ntag;
-        ntag.SetName(name);
-        ntag.SetIds(arg1);
-        this->nodesTags.AddTag(ntag);
-    };
+    void AddNodalTag(std::string& name, T& arg1);
 
     template<typename T, typename T2>
-    void AddElemens(std::string& elementType, T& arg1, T2& arg2){
-        ElementsContainer& ec = this->elements.GetElementsOfType(elementType);
-        ec.SetConnectivity(arg1);
-        ec.SetIds(arg2);
-    };
+    void AddElemens(std::string& elementType, T& arg1, T2& arg2);
 
     template<typename T>
-    void AddElementTag(std::string& elementType, std::string& tagname, T& arg1){
-        ElementsContainer& ec = this->elements.GetElementsOfType(elementType);
-        ec.AddTag(tagname, arg1);
-    };
+    void AddElementTag(std::string& elementType, std::string& tagname, T& arg1);
 
-    void Print(){
-        std::cout << this->ToStr() ;
-        std::cout.flush();
-    };
+    void Print();
 
-    std::string ToStr(){
-        std::string res= "UnstructuredMesh (cpp)\n" ;
-        res += "  Number Of Nodes    : " + ToString(this->nodes->rows()) + "\n";
-        res += this->nodesTags.ToStr();
-        res += "  Number Of Elements : " + ToString(this->elements.GetNumberOfElements()) + "\n";
-        res += this->elements.ToStr();
-        return res;
-    };
+    std::string ToStr();
 
 };
+
+} // namespace BasicTools
+
+#include <Containers/UnstructuredMesh.hpp>
 
