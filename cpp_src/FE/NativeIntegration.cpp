@@ -10,7 +10,9 @@
 #include <iostream>
 #include <string>
 
-
+namespace BasicTools
+{
+    
 //typedef Eigen::SparseMatrix<double> SpMat; // declares a column-major sparse matrix type of double
 
 const int EnumError = -1;
@@ -612,3 +614,6 @@ void MonoElementsIntegralCpp::Integrate( WeakForm* wform, std::vector<int>& idst
     }
 
 };
+    
+
+} // namespace BasicTools
