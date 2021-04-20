@@ -8,6 +8,9 @@
 #include <ostream>
 #include <vector>
 
+namespace BasicTools
+{
+    
 struct WeakTerm {
     WeakTerm ():fieldName("None"),derCoordName("None"),derDegree(0),constant(false),normal(false){};
     std::string fieldName;
@@ -63,3 +66,5 @@ std::ostream& operator <<(std::ostream& stream, const WeakMonom& monom) {
 
     return stream;
 }
+
+} // namespace BasicTools

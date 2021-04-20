@@ -10,31 +10,9 @@
 
 #include <FE/NativeNumericalWeakForm.h>
 #include <LinAlg/EigenTypes.h>
-
-#define IN_DEBUG
-#ifdef IN_DEBUG
-//  #define PRINTL(var) std::cout  << __FILE__ <<"::" << __LINE__ << " " << #var  << " -> " << (var) << std::endl;
-  //#define PRINT(var) std::cout  << #var  << " -> " << (var) << std::endl;
-  //#define PRINTS(str) std::cout <<  #str   << std::endl;
-  template<typename T>
-  void printMatrix(T& mat){
-    std::cout << std::endl <<" c++  ";
-    for(int i =0; i < mat.rows(); ++i){
-        std::cout << std::endl;
-        for(int j =0; j < mat.cols(); ++j){
-            std::cout <<  mat(i,j) << " ";
-        };
-    };
-    std::cout << std::endl;
-  };
-#else
-  template<typename T>
-  void printMatrix(T& mat){};
-  #define PRINTL(var)
-  #define PRINT(var)
-  #define PRINTS(str)
-#endif
-
+namespace BasicTools
+{
+    
 
 template<typename T>
 MatrixDDD solve(T& Jinv,MapMatrixDDD &valdphidxi);
@@ -249,3 +227,5 @@ struct MonoElementsIntegralCpp{
   void Integrate( WeakForm* wform, std::vector<int>& idstotreat);
 
 };
+
+} // namespace BasicTools
