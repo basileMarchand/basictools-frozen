@@ -25,7 +25,7 @@ cpp_src = ("LinAlg/EigenTools.cpp",
            "Containers/UnstructuredMeshTools.cpp",
            "Containers/Tags.cpp",
            "FE/NativeIntegration.cpp",
-           "FE/DofNumberingCpp.cpp",
+           "FE/DofNumbering.cpp",
            )
 
 #Cpp sources generated files
