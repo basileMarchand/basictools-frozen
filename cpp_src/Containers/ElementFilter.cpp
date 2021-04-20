@@ -9,7 +9,7 @@
 namespace BasicTools
 {
 
-const MatrixID1 ElementFilterBase::GetIdsToTreatComplementaty( NativeUnstructuredMesh& mesh, const std::string& elemtype)  {
+const MatrixID1 ElementFilterBase::GetIdsToTreatComplementaty( UnstructuredMesh& mesh, const std::string& elemtype)  {
     const MatrixID1& ids =  this->GetIdsToTreat(mesh, elemtype);
     //std::cout << "line:" << __LINE__  << ": ids "<< ids << std::endl;
     MatrixID1 cids;
@@ -48,7 +48,7 @@ const MatrixID1 ElementFilterBase::GetIdsToTreatComplementaty( NativeUnstructure
 }
 //////////////// ElementFilterIntersection
 
-const MatrixID1 ElementFilterIntersection::GetIdsToTreat(NativeUnstructuredMesh& mesh, const std::string& elemtype)  {
+const MatrixID1 ElementFilterIntersection::GetIdsToTreat(UnstructuredMesh& mesh, const std::string& elemtype)  {
     MatrixID1 res = storage[0]->GetIdsToTreat(mesh, elemtype);
     for (unsigned int i = 0; i< this->storage.size(); ++i) {
         res = Intersect1D(res,storage[i]->GetIdsToTreat(mesh, elemtype));
@@ -56,7 +56,7 @@ const MatrixID1 ElementFilterIntersection::GetIdsToTreat(NativeUnstructuredMesh&
     return res;
 };
 ////////////// ElementFilterEvaluated
-const MatrixID1 ElementFilterEvaluated::GetIdsToTreat(NativeUnstructuredMesh& mesh, const std::string& elemtype)  {
+const MatrixID1 ElementFilterEvaluated::GetIdsToTreat(UnstructuredMesh& mesh, const std::string& elemtype)  {
     if( this->ids.count(elemtype) == 0 ) {
         this->ids[elemtype] = MatrixID1();//(nullptr, 0, 1);
         this->ids[elemtype].resize(0,1);
@@ -124,7 +124,7 @@ bool ElementFilter::CheckElementTypes(const std::string& elemtype,bool& active) 
     }
 }
 //
-MatrixID1 ElementFilter::CheckZones( NativeUnstructuredMesh& mesh,  const std::string& elemtype, bool& active) const {
+MatrixID1 ElementFilter::CheckZones( UnstructuredMesh& mesh,  const std::string& elemtype, bool& active) const {
 
     const ElementsContainer& elements = mesh.elements[elemtype];
     if(this->zones.size() == 0) {
@@ -184,7 +184,7 @@ const  MatrixID1 ElementFilter::CheckTags(Tags& tags,const INT_TYPE& ts, bool& a
     return res;
 }
 //
-const  MatrixID1 ElementFilter::GetIdsToTreat(NativeUnstructuredMesh& mesh,  const std::string& elemtype) const {
+const  MatrixID1 ElementFilter::GetIdsToTreat(UnstructuredMesh& mesh,  const std::string& elemtype) const {
 
     MatrixID1 res;
     bool active=false;

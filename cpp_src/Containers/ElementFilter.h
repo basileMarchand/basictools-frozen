@@ -21,15 +21,15 @@ namespace BasicTools
     
 class ElementFilterBase {
 public:
-    virtual const MatrixID1 GetIdsToTreat(NativeUnstructuredMesh& mesh, const std::string& elemtype)  =0;
-    const MatrixID1 GetIdsToTreatComplementaty( NativeUnstructuredMesh& mesh, const std::string& elemtype);
+    virtual const MatrixID1 GetIdsToTreat(UnstructuredMesh& mesh, const std::string& elemtype)  =0;
+    const MatrixID1 GetIdsToTreatComplementaty(UnstructuredMesh& mesh, const std::string& elemtype);
 };
 
 class ElementFilterEvaluated : public ElementFilterBase {
     std::map<std::string,MatrixID1 > ids;
     std::map<std::string,INT_TYPE> nbelements;
 public:
-    const MatrixID1 GetIdsToTreat(NativeUnstructuredMesh& mesh, const std::string& elemtype);
+    const MatrixID1 GetIdsToTreat(UnstructuredMesh& mesh, const std::string& elemtype);
     //
     void SetIdsToTreatFor(const std::string& elemtype, const Eigen::Ref<const MatrixID1>& ids);
     //
@@ -52,7 +52,7 @@ private:
     //
     bool CheckElementTypes(const std::string& elemtype,bool& active) const;
     //
-    MatrixID1 CheckZones( NativeUnstructuredMesh& mesh,  const std::string& elemtype, bool& active) const ;
+    MatrixID1 CheckZones( UnstructuredMesh& mesh,  const std::string& elemtype, bool& active) const ;
 public:
     //
     ElementFilter();
@@ -62,7 +62,7 @@ public:
     //
     virtual const  MatrixID1 CheckTags(Tags& tags,const INT_TYPE& ts, bool& active) const ;
     //
-    virtual const  MatrixID1 GetIdsToTreat(NativeUnstructuredMesh& mesh,  const std::string& elemtype) const ;
+    virtual const  MatrixID1 GetIdsToTreat(UnstructuredMesh& mesh,  const std::string& elemtype) const ;
     //
     virtual std::string ToStr() const;
     void SetCENTER();
@@ -74,7 +74,7 @@ public:
 class ElementFilterIntersection : public ElementFilterBase {
     std::vector<ElementFilterBase*> storage;
 public:
-    const MatrixID1 GetIdsToTreat(NativeUnstructuredMesh& mesh, const std::string& elemtype);
+    const MatrixID1 GetIdsToTreat(UnstructuredMesh& mesh, const std::string& elemtype);
 };
 
 
