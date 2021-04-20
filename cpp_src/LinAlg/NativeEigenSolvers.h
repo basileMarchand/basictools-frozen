@@ -14,6 +14,9 @@
 
 #include <LinAlg/EigenTypes.h>
 
+
+namespace BasicTools {
+    
 using Eigen::Success;
 using Eigen::Upper;
 using Eigen::Lower;
@@ -274,4 +277,7 @@ struct NativeEigenSolvers {
         }
         CopyMatrix(sizei, sizej, ev, ei, ej, this->Q);
     }
+
 };
+
+} // namespace BasicTools
