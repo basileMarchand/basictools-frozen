@@ -886,7 +886,10 @@ def CheckIntegrity( GUI=False):
     print(a)
 
     from BasicTools.IO.XdmfWriter import WriteMeshToXdmf
-    WriteMeshToXdmf("test.xdmf",mesh, PointFields=[phi],PointFieldsNames=["Phi"] )
+    from BasicTools.Helpers.Tests import TestTempDir
+    tempdir = TestTempDir.GetTempPath()
+
+    WriteMeshToXdmf(tempdir+"test.xdmf",mesh, PointFields=[phi],PointFieldsNames=["Phi"] )
 
     return "ok"
 
