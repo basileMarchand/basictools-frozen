@@ -26,6 +26,7 @@ cpp_src = ("LinAlg/EigenTools.cpp",
            "Containers/Tags.cpp",
            "FE/NativeIntegration.cpp",
            "FE/DofNumbering.cpp",
+           "FE/Space.cpp",
            )
 
 #Cpp sources generated files
