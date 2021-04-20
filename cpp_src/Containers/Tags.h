@@ -9,7 +9,9 @@
 #include <string>
 #include <memory>
 
-
+namespace BasicTools
+{
+    
 class Tag {
     std::string name;
     std::shared_ptr<MapMatrixID1 >  ids;
@@ -34,5 +36,7 @@ public:
     std::map<std::string,Tag>::iterator begin();
     std::map<std::string,Tag>::iterator end();
 };
+
+} // namespace BasicTools
 
 #include <Containers/Tags.hpp>

@@ -5,6 +5,9 @@
 #include <Containers/Tags.h>
 #include <Helpers/ToString.h>
 
+namespace BasicTools
+{
+    
 Tag::Tag() {
     this->ids.reset(new std::shared_ptr<MapMatrixID1 >::element_type(nullptr, 0, 1));
 };
@@ -48,3 +51,5 @@ std::map<std::string,Tag>::iterator Tags::begin() {
 std::map<std::string,Tag>::iterator Tags::end() {
     return this->storage.end();
 }
+
+} // namespace BasicTools
