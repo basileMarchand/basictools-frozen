@@ -11,48 +11,32 @@
 
 #include <LinAlg/EigenTypes.h>
 
+namespace BasicTools
+{
+    
 struct DofAttachment {
     DofAttachment(const char& entity, const int& entityNumber, const int& extraKey): entity(entity), entityNumber(entityNumber), extraKey(extraKey){};
     char entity;
     int  entityNumber;
     int  extraKey;
-
-
 };
 
 struct ElementSpace{
     std::vector<DofAttachment > storage;
-    ElementSpace(){}
-    int GetNumberOfShapeFunctions(){
-        return this->storage.size();
-    }
-    const DofAttachment& GetDofAttachment(const int& dofnumber) const {
-        return this->storage[dofnumber];
-    };
-    void AppendDofAttachement(const char& entity, const int& entityNumber, const int& extraKey){
-        //std::cout << "AppendDofAttachement  "  << entity << " " << entityNumber << " " << extraKey << std::endl;
-        storage.push_back( DofAttachment(entity,entityNumber, extraKey) ) ;
-    }
+    ElementSpace(){};
+    int GetNumberOfShapeFunctions();
+    const DofAttachment& GetDofAttachment(const int& dofnumber) const ;
+    void AppendDofAttachement(const char& entity, const int& entityNumber, const int& extraKey);
 };
 
 class Space{
     std::map<std::string, ElementSpace > storage;
 public:
-    int GetNumberOfShapeFunctionsFor(const std::string& elemtype){
-        return this->storage[elemtype].GetNumberOfShapeFunctions();
-    };
-    void AddDofTo(const std::string& elemtype, const char& entity, const int& entityNumber, const int& extraKey){
-        this->storage[elemtype].AppendDofAttachement(entity, entityNumber, extraKey);
-    }
-    ElementSpace& GetSpaceFor(const std::string& elemtype){
-        return this->storage[elemtype];
-    }
-
-    void Print(){
-    }
-    std::string ToStr(){
-        std::string res = "Space \n";
-        return res;
-    }
+    int GetNumberOfShapeFunctionsFor(const std::string& elemtype);
+    void AddDofTo(const std::string& elemtype, const char& entity, const int& entityNumber, const int& extraKey);
+    ElementSpace& GetSpaceFor(const std::string& elemtype);
+    void Print();
+    std::string ToStr();
 };
 
+} // namespace BasicTools
