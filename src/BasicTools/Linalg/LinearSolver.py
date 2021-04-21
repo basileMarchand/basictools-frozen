@@ -4,9 +4,6 @@
 # file 'LICENSE.txt', which is part of this source code package.
 #
 
-
-__author__ = "Felipe Bordeu"
-
 import numpy as np
 import scipy.sparse as sps
 import scipy.sparse.linalg as spslin
@@ -15,7 +12,6 @@ from BasicTools.Helpers.BaseOutputObject import BaseOutputObject as BOO
 from BasicTools.Helpers.TextFormatHelper import TFormat as TF
 
 from BasicTools.Linalg.ConstraintsHolder import ConstraintsHolder
-
 
 def _available_algorithms():
     result = ["Direct", "CG", "lsqr", "gmres","lgmres"]
@@ -104,8 +100,8 @@ class LinearProblem(BOO):
             from sksparse.cholmod import cholesky
             self.solver = cholesky(op)
         elif len(self.type) >= 5 and  self.type[0:5] == "Eigen":
-            import BasicTools.Linalg.EigenSolver as EigenSolver
-            self.solver = EigenSolver.EigenSolvers()
+            import BasicTools.Linalg.EigenSolver as NativeEigenSolver
+            self.solver = NativeEigenSolver.CEigenSolvers()
             self.solver.SetSolverType(self.type[5:])
             self.solver.SetTolerance(self.tol)
             self.solver.SetOp(op)
@@ -154,9 +150,9 @@ class LinearProblem(BOO):
 
             norm = np.linalg.norm(rhs)
             if self.u is None:
-                res = spslin.cg(self.op, rhs/norm, M = M,tol = self.tol)
+                res = spslin.cg(self.op, rhs/norm, M = M,tol = self.tol, atol = self.tol)
             else:
-                res = spslin.cg(self.op, rhs/norm, M = M, x0 = u0/norm,tol = self.tol)
+                res = spslin.cg(self.op, rhs/norm, M = M, x0 = u0/norm,tol = self.tol, atol = self.tol)
             self.u = res[0][np.newaxis].T*norm
             self.u = self.u[:,0]
 

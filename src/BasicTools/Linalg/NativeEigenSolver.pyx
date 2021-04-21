@@ -1,6 +1,9 @@
 #distutils: language = c++
 #cython: language_level = 3
-
+#
+# This file is subject to the terms and conditions defined in
+# file 'LICENSE.txt', which is part of this source code package.
+#
 
 from libcpp.vector cimport vector
 
@@ -9,9 +12,9 @@ import numpy as np
 from scipy.sparse import coo_matrix
 
 
-cdef extern from "LinAlg/NativeEigenSolvers.h" :
-    cdef cppclass NativeEigenSolvers:
-        NativeEigenSolvers() except +
+cdef extern from "LinAlg/EigenSolvers.h"  namespace "BasicTools"  :
+    cdef cppclass EigenSolvers:
+        EigenSolvers() except +
         void SetSolverType(int)
         void SetOp(int, int,int, double*,int*,int*, const double& ) nogil
         void Solve(int,double*,double*) nogil
@@ -22,8 +25,8 @@ cdef extern from "LinAlg/NativeEigenSolvers.h" :
         int GetSPQR_Q_nonZeros()
         void GetSPQR_P(long*)
 
-cdef class EigenSolvers():
-     cdef NativeEigenSolvers c_solver  # Hold a C++ instance which we're wrapping
+cdef class CEigenSolvers():
+     cdef EigenSolvers cpp_object  # Hold a C++ instance which we're wrapping
      cdef int m
      cdef int n
      cdef double tol
@@ -37,13 +40,13 @@ cdef class EigenSolvers():
 
      def SetSolverType(self,str stype):
          if stype == "CG":
-             self.c_solver.SetSolverType(1)
+             self.cpp_object.SetSolverType(1)
          elif stype == "LU":
-             self.c_solver.SetSolverType(2)
+             self.cpp_object.SetSolverType(2)
          elif stype == "SPQR":
-             self.c_solver.SetSolverType(3)
+             self.cpp_object.SetSolverType(3)
          elif stype == "BiCGSTAB":
-             self.c_solver.SetSolverType(4)
+             self.cpp_object.SetSolverType(4)
          else:
              print("SolverType Not Available")
              raise
@@ -69,24 +72,24 @@ cdef class EigenSolvers():
          cdef int* colp =  &col[0]
          cdef double tol  = self.tol
          with nogil:
-             self.c_solver.SetOp(m,n,data_shape,datap,rowp,colp,tol)
+             self.cpp_object.SetOp(m,n,data_shape,datap,rowp,colp,tol)
 
      def Solve(self,np.ndarray[double, ndim=1, mode="c"] rhs,np.ndarray[double, ndim=1, mode="c"] sol ) :
          cdef int s = rhs.shape[0]
          cdef double* rhsp = &rhs[0]
          cdef double* solp = &sol[0]
-         cdef NativeEigenSolvers* solver = &self.c_solver
+         cdef EigenSolvers* solver = &self.cpp_object
          with nogil:
              solver.Solve(s, rhsp, solp)
          return sol
 
      def GetSPQRRank(self):
-         cdef NativeEigenSolvers* solver = &self.c_solver
+         cdef EigenSolvers* solver = &self.cpp_object
          return solver.GetSPQRRank()
 
      def GetSPQR_R(self):
 
-         cdef NativeEigenSolvers* solver = &self.c_solver
+         cdef EigenSolvers* solver = &self.cpp_object
          nzsize = solver.GetSPQR_R_nonZeros();
          cdef np.ndarray[double, ndim=1, mode="c"] vals = np.ndarray(nzsize,dtype=np.double);
          cdef np.ndarray[long, ndim=1, mode="c"] rows = np.ndarray(nzsize,dtype=int);
@@ -111,13 +114,13 @@ cdef class EigenSolvers():
      def GetSPQR_P(self):
         cdef np.ndarray[long, ndim=1, mode="c"] p = np.ndarray(self.n,dtype=int);
         cdef long* pp = &p[0]
-        cdef NativeEigenSolvers* solver = &self.c_solver
+        cdef EigenSolvers* solver = &self.cpp_object
         solver.GetSPQR_P(pp);
         return p
 
      def GetSPQR_Q(self):
 
-         cdef NativeEigenSolvers* solver = &self.c_solver
+         cdef EigenSolvers* solver = &self.cpp_object
          nzsize = solver.GetSPQR_Q_nonZeros();
          cdef np.ndarray[double, ndim=1, mode="c"] vals = np.ndarray(nzsize,dtype=np.double);
          cdef np.ndarray[long, ndim=1, mode="c"] rows = np.ndarray(nzsize,dtype=int);

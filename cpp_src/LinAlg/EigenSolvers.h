@@ -102,7 +102,7 @@ void printMatrix(const std::string& name, T& mat) {
     std::cout << mat << sep;
 }
 
-struct NativeEigenSolvers {
+struct EigenSolvers {
     typedef Eigen::ConjugateGradient<SpMatD, Upper|Lower> EigenSpCG;
     typedef Eigen::SparseLU<SpMatD> EigenSpLU;
     typedef Eigen::SparseQR<SpMatD, Eigen::COLAMDOrdering<int>> EigenSpQR;
@@ -120,7 +120,7 @@ struct NativeEigenSolvers {
     Eigen::SparseMatrix<double> Q;
     Eigen::SparseMatrix<double> R;
 
-    NativeEigenSolvers() : solverType(0) {
+    EigenSolvers() : solverType(0) {
         // Nothing to do
     }
 
@@ -171,7 +171,7 @@ struct NativeEigenSolvers {
         }
 
         if (this->solverType == 0) {
-            std::cout << "ERROR! NativeEigenSolvers::SetOp() Solver type not set " << std::endl;
+            std::cout << "ERROR! EigenSolvers::SetOp() Solver type not set " << std::endl;
             exit(0);
         }
 
