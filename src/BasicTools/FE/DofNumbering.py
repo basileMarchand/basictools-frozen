@@ -33,20 +33,22 @@ def ComputeDofNumbering(mesh,Space,dofs=None,fromConnectivity=False,elementFilte
         return cachedData
 	
     global numberingAlgorithm 
+    res = None
     if numberingAlgorithm == "CppBase":
         try:
             from BasicTools.FE.Numberings.NativeDofNumbering import NativeDofNumbering
             res = NativeDofNumbering()
         except:
            numberingAlgorithm = "NumpyBase" 
-	
+           print("Warning CppBase Numbering non available (missing compilation) Using NumpyBase")
+        
     if numberingAlgorithm == "NumpyBase":
         from BasicTools.FE.Numberings.DofNumberingNumpy import DofNumberingNumpy
         res = DofNumberingNumpy()
     elif numberingAlgorithm == "DictBase":
         from BasicTools.FE.Numberings.DofNumberingDict import DofNumberingDict
         res = DofNumberingDict()
-    else:
+    elif res == None:
         raise(Exception(f"Numbering algorithm of type {numberingAlgorithm} not available "))
 
 

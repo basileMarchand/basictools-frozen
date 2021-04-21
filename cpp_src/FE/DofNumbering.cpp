@@ -83,11 +83,11 @@ void DofNumbering::SetFromConnectivity(const bool& val){
     this->fromConnectivity = val;
 };
 
-void DofNumbering::ComputeNumberingFromConnectivity(UnstructuredMesh* mesh){
-    this->size = mesh->GetNumberOfNodes();
+void DofNumbering::ComputeNumberingFromConnectivity(UnstructuredMesh& mesh){
+    this->size = mesh.GetNumberOfNodes();
     this->fromConnectivity = true;
     this->numbering.clear();
-    for (auto& x : mesh->elements.storage){
+    for (auto& x : mesh.elements.storage){
         this->numbering[x.first] = x.second.GetConnectivityMatrix();
     }
     this->almanac.clear();
@@ -96,19 +96,19 @@ void DofNumbering::ComputeNumberingFromConnectivity(UnstructuredMesh* mesh){
     }
 }
 
-void DofNumbering::ComputeNumberingGeneral(UnstructuredMesh* mesh, Space* space, ElementFilterBase* elementFilter){
+void DofNumbering::ComputeNumberingGeneral(UnstructuredMesh& mesh, Space& space, ElementFilterBase& elementFilter){
     INT_TYPE& size = this->size;
     
     INT_TYPE useddim = 0;
     INT_TYPE cctt = 0;
-    for (auto& x : mesh->elements.storage){
-        MatrixID1 ids = elementFilter->GetIdsToTreat(*mesh, x.first);
+    for (auto& x : mesh.elements.storage){
+        MatrixID1 ids = elementFilter.GetIdsToTreat(mesh, x.first);
         INT_TYPE  nel = ids.rows();
         if (nel == 0) continue;
         const int dim = ElementNames[x.first].dimension();
         useddim = max(useddim, dim);
         cctt += nel;
-        const int& nbOfShapeFuntions = space->GetNumberOfShapeFunctionsFor(x.first) ;
+        const int& nbOfShapeFuntions = space.GetNumberOfShapeFunctionsFor(x.first) ;
         const int& nbOfElement = x.second.GetNumberOfElements();
         
         if ( !this->HasNumberingFor(x.first) ){
@@ -116,17 +116,9 @@ void DofNumbering::ComputeNumberingGeneral(UnstructuredMesh* mesh, Space* space,
         }
         
         auto& localNumbering = this->GetNumberingFor(x.first);
-        const auto& localspace = space->GetSpaceFor(x.first);
+        const auto& localspace = space.GetSpaceFor(x.first);
         
         
-        //if(localNumbering.rows() != nbOfElement or
-        //   localNumbering.cols() != nbOfShapeFuntions   ) {
-        //   localNumbering.resize(nbOfElement,nbOfShapeFuntions   );
-        //   localNumbering.fill(-1);
-        //localNumbering.setZero();
-        //localNumbering = localNumbering + MatrixIDD::Constant(nbOfElement,nbOfShapeFuntions,-1.);
-        
-        //}
         const auto& localConnectivity = x.second.GetConnectivityMatrix();
         INT_TYPE d;
         for(int j = 0 ; j < nbOfShapeFuntions; ++j){
@@ -147,16 +139,16 @@ void DofNumbering::ComputeNumberingGeneral(UnstructuredMesh* mesh, Space* space,
             };
         };
     }
-    for (auto& x : mesh->elements.storage){
+    for (auto& x : mesh.elements.storage){
         if ( useddim <= ElementNames[x.first].dimension()) continue;
         
-        MatrixID1 ids = elementFilter->GetIdsToTreatComplementaty(*mesh, x.first);
+        MatrixID1 ids = elementFilter.GetIdsToTreatComplementaty(mesh, x.first);
         
         INT_TYPE  nel = ids.rows();
         if (nel == 0) continue;
         
-        const auto& localspace = space->GetSpaceFor(x.first);
-        const int& nbOfShapeFuntions = space->GetNumberOfShapeFunctionsFor(x.first) ;
+        const auto& localspace = space.GetSpaceFor(x.first);
+        const int& nbOfShapeFuntions = space.GetNumberOfShapeFunctionsFor(x.first) ;
         const int& nbOfElement = x.second.GetNumberOfElements();
         
         if ( !this->HasNumberingFor(x.first) ){
@@ -245,10 +237,19 @@ INT_TYPE DofNumbering::GetDofOfkey(const DofKey& key){
     else
         return -1;
 }
+
+INT_TYPE DofNumbering::GetSizeOfDofToPoint()   {
+    this->computeDofToPoint();
+    return this->doftopointLeft.rows();
+}
+
+INT_TYPE DofNumbering::GetSizeOfDofToCell()  {
+    return this->doftocellLeft.rows();
+}
+
 void DofNumbering::computeDofToCell(UnstructuredMesh& mesh){
     if (this->dofToCellComputed) return ;
    
-    
     INT_TYPE dofcpt = mesh.elements.GetNumberOfElements();
     this->doftocellLeft.resize(dofcpt,1);
     this->doftocellRight.resize(dofcpt,1);
@@ -269,74 +270,26 @@ void DofNumbering::computeDofToCell(UnstructuredMesh& mesh){
         }
         elemcpt += nbel;
     }
-    //TODO delete TO
-    //this is only for bug resolution mut delete the folowing code
-    //vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-    if (dofcpt== 0) {
-        this->doftocellLeft(0,0) = 0;
-        this->doftocellRight(0,0) = 0;
-        ++dofcpt;
-    }
-    //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
     this->doftocellLeft.conservativeResize(dofcpt);//,Eigen::NoChange_t);
     this->doftocellRight.conservativeResize(dofcpt);//,Eigen::NoChange_t);
     this->dofToCellComputed = true;
 }
 //
-MatrixID1& DofNumbering::GetdoftocellLeft(UnstructuredMesh& mesh){
-    this->computeDofToCell(mesh);
+MatrixID1& DofNumbering::GetdoftocellLeft(){
+     if (!this->dofToCellComputed) throw "Call computeDofToCell first";
     return this->doftocellLeft;
 }
 //
-MatrixID1& DofNumbering::GetdoftocellRight(UnstructuredMesh& mesh){
-    this->computeDofToCell(mesh);
+MatrixID1& DofNumbering::GetdoftocellRight(){
+    if (!this->dofToCellComputed) throw "Call computeDofToCell first";
     return this->doftocellRight;
 }
-//
-/*
-DofKey DofNumbering::GetKeyFor(const std::string & elemtype,const INT_TYPE& elid,const int& sf, const ElementsContainer& data,const DofAttachment& da, const Eigen::Ref<const MatrixIDD> & elcoon)const {
-    if(da.entity == 'P'){
-        const INT_TYPE& pid = da.entityNumber;
-        return GetPointDofKey(elcoon(0,pid));
-    } else if (da.entity == 'C'){
-        DofKey res = DofKey(elemtype,elcoon,da.entityNumber);
-        res.SortId0();
-        return  res;
-    } else if (da.entity == 'F'){
-        const auto& face = ElementNames[elemtype].faces[da.entityNumber];
-        MatrixID1 face_connectivity(face.second.rows(),1);
-        for(Eigen::Index i = 0 ; i < face.second.rows() ; ++i)
-            face_connectivity(i,0) = elcoon(0,face.second(i,0));
-        DofKey res = DofKey(face.first.name,face_connectivity ,0);
-        res.SortId0();
-        //res.Print();
-        return res;
-    } else if (da.entity == 'E'){
-        const auto& face2 = ElementNames[elemtype].faces2[da.entityNumber];
-        MatrixID1 face2_connectivity(face2.second.rows(),1);
-        for(Eigen::Index i = 0 ; i < face2.second.rows() ; ++i){
-            face2_connectivity(i,0) = elcoon(0,face2.second(i,0));
-        }
-        DofKey res = DofKey(face2.first.name,face2_connectivity ,0);
-        res.SortId0();
-        //res.Print();
-        return res;
-    } else if(da.entity == 'G'){
-        return DofKey(Global,0,da.extraKey);
-    } else if(da.entity == 'I') {
-        //std::cout << elcoon << std::endl;
-        return DofKey(IntegrationPoint,elcoon,sf);
-    }
-    throw  true;
-    return GetPointDofKey(-1);
-}
-*/
 //
 std::string DofNumbering::ToStr(){
     std::string res = "";
     return res;
     
 }
-
     
 } // namespace BasicTools

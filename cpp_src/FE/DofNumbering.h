@@ -59,9 +59,9 @@ public:
     INT_TYPE GetSize() const ;
     bool GetFromConnectivity() const ;
     void SetFromConnectivity(const bool& val);
-    void ComputeNumberingFromConnectivity(UnstructuredMesh* mesh);
+    void ComputeNumberingFromConnectivity(UnstructuredMesh& mesh);
     //
-    void ComputeNumberingGeneral(UnstructuredMesh* mesh, Space* space, ElementFilterBase* elementFilter);
+    void ComputeNumberingGeneral(UnstructuredMesh& mesh, Space& space, ElementFilterBase& elementFilter);
     //
     bool HasNumberingFor(const std::string & elemtype);
     //
@@ -72,14 +72,17 @@ public:
     INT_TYPE GetDofOfkey(const DofKey& key);
     //
     INT_TYPE GetDofOfPoint(const INT_TYPE& pid);
+    INT_TYPE GetSizeOfDofToPoint();
     MatrixID1& GetdoftopointLeft();
     MatrixID1& GetdoftopointRight();
     void computeDofToPoint();
     //
     void computeDofToCell(UnstructuredMesh& mesh);
-    MatrixID1& GetdoftocellLeft(UnstructuredMesh& mesh);
-    MatrixID1& GetdoftocellRight(UnstructuredMesh& mesh);
+    INT_TYPE GetSizeOfDofToCell();
+    MatrixID1& GetdoftocellLeft();
+    MatrixID1& GetdoftocellRight();
     //
+    
     template< typename S>
     DofKey GetKeyFor(const std::string & elemtype,const INT_TYPE& elid,const int& sf, const ElementsContainer& data,const DofAttachment& da, const S & elcoon) const {
     //DofKey GetKeyFor(const std::string & elemtype,const INT_TYPE& elid,const int& sf, const ElementsContainer& data,const DofAttachment& da, const Eigen::Ref<const MatrixIDD> & elcoon) const ;        
