@@ -35,7 +35,7 @@ cpp_src += ("Containers/ElementNames.cpp", # <-- this files is generated from El
 
 # Cython modules
 cython_src = (
-    "Linalg/EigenSolver.pyx",
+    "Linalg/NativeEigenSolver.pyx",
     "FE/Integrators/NativeIntegration.pyx",
     "FE/WeakForms/NativeNumericalWeakForm.pyx",
     "Containers/NativeUnstructuredMesh.pyx",
@@ -142,7 +142,8 @@ class build_ext_compiler_check(build_ext):
             include_dirs.append(os.path.join(conda_prefix, "Library", "include"))
         include_dirs.append(os.path.join("src", "BasicTools"))
         return include_dirs
-
-setup(
-    ext_modules=modules,
-    cmdclass={'build_ext': build_ext_compiler_check})
+        
+if __name__ == '__main__':
+    setup(
+        ext_modules=modules,
+        cmdclass={'build_ext': build_ext_compiler_check})
