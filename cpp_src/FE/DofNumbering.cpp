@@ -4,6 +4,7 @@
 //
 
 #include <FE/DofNumbering.h>
+#include <algorithm>
 
 namespace BasicTools
 {
@@ -105,8 +106,8 @@ void DofNumbering::ComputeNumberingGeneral(UnstructuredMesh& mesh, Space& space,
         MatrixID1 ids = elementFilter.GetIdsToTreat(mesh, x.first);
         INT_TYPE  nel = ids.rows();
         if (nel == 0) continue;
-        const int dim = ElementNames[x.first].dimension();
-        useddim = max(useddim, dim);
+        const INT_TYPE dim = ElementNames[x.first].dimension();
+        useddim = std::max(useddim, dim);
         cctt += nel;
         const int& nbOfShapeFuntions = space.GetNumberOfShapeFunctionsFor(x.first) ;
         const int& nbOfElement = x.second.GetNumberOfElements();

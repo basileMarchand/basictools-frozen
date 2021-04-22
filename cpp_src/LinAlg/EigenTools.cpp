@@ -4,6 +4,8 @@
 //
 
 #include <cassert>
+#include <algorithm>
+
 #include <LinAlg/EigenTools.h>
 
 namespace BasicTools
@@ -23,7 +25,7 @@ MatrixID1 NonZero(const MatrixBD1& input){
 
 
 MatrixID1 Intersect1D(const MatrixID1& A, const MatrixID1& B){
-    MatrixID1 res(min(A.rows(),B.rows()),1);
+    MatrixID1 res(std::min(A.rows(),B.rows()),1);
     INT_TYPE cptA= 0;
     INT_TYPE cptB= 0;
     INT_TYPE cpt= 0;

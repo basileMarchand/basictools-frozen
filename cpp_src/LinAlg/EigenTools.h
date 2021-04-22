@@ -8,9 +8,6 @@
 
 #include <LinAlg/EigenTypes.h>
 
-#define max(a,b) ((a)>=(b)?(a):(b))
-#define min(a,b) ((a)<=(b)?(a):(b))
-
 namespace BasicTools
 {
     
