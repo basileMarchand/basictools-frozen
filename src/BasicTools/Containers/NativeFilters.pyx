@@ -1,36 +1,35 @@
 #distutils: language = c++
 #cython: language_level = 3
-
+#
+# This file is subject to the terms and conditions defined in
+# file 'LICENSE.txt', which is part of this source code package.
+#
+from libcpp.vector cimport vector
+from libcpp.string cimport string
 
 import numpy as np
 cimport numpy as cnp
-from eigency.core cimport *
-
-int_DTYPE   = np.int64
-float_DTYPE = np.float
-
-#ctypedef cnp.int64_t     int_DTYPE_t
-#ctypedef cnp.float64_t float_DTYPE_t
-
-
-from libcpp.vector cimport vector
-from libcpp.string cimport string
 cnp.import_array()
 
+from eigency.core cimport *
+
+from BasicTools.CythonDefs cimport int_DTYPE_t,float_DTYPE_t
+from BasicTools.NumpyDefs import int_DTYPE,float_DTYPE
 
 cimport BasicTools.Containers.NativeFilters as cNF
 
-cdef class WrapElementFilterEvaluated:
-    #cdef ElementFilterEvaluated cpp_object
-    cdef cNF.ElementFilterEvaluated* GetCppObject(self):
+cdef class CElementFilterEvaluated:
+    #cdef cNF.ElementFilterEvaluated cpp_object
+
+    cdef cNF.ElementFilterEvaluated* GetCppPointer(self) nogil:
         return &(self.cpp_object)
 
-    def callnumpysure(self, elemtype, cnp.ndarray[int_DTYPE_t, ndim=1, mode="c"] ids not None):
+    def callnumpysure(self, elemtype, cnp.ndarray[int_DTYPE_t, ndim=1, mode="c"] ids not None) :
         self.cpp_object.SetIdsToTreatFor(elemtype,
                                          FlattenedMap[Matrix, int_DTYPE_t, Dynamic, _1](ids) )
 
     def SetIdsToTreat(self,mesh,elementFilter ):
-        self.GetCppObject().Clear()
+        self.GetCppPointer()[0].Clear()
         if elementFilter is None:
            for elemtype, data in mesh.elements.items():
                self.callnumpysure(elemtype.encode(),np.arange(data.GetNumberOfElements()) )
