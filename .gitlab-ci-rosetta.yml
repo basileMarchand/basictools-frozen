@@ -36,7 +36,7 @@ build_Python3:
         paths:
           - src/BasicTools/FE/*/*36*.so*
           - src/BasicTools/Linalg/*36*.so*
-          - src/*36*.so*
+          - src/libCppBasicTools.so
 
         expire_in: 600 minutes
 

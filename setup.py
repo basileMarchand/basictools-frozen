@@ -57,17 +57,20 @@ try:
 
     modules = []
 
+    cythonextension = []
+
     basictools_cpp_src_path = os.path.join("cpp_src")
     cpp_src_with_path = [os.path.join(basictools_cpp_src_path, src) for src in cpp_src]
     cppextensions = [Extension("libCppBasicTools", cpp_src_with_path)]
-    modules.extend(cppextensions)
+    cythonextension.extend(cppextensions)
 
     basictools_src_path = os.path.join("src", "BasicTools")
     cython_src_with_path  = [os.path.join(basictools_src_path, src) for src in cython_src]
-
+    
     for n,m in zip(cython_src,cython_src_with_path):
-        cythonextension = [Extension("BasicTools."+n.split(".pyx")[0].replace("/","."), [m],libraries=["CppBasicTools.cpython-36m-x86_64-linux-gnu"],library_dirs=["build/lib.linux-x86_64-3.6"], include_dirs=["./cpp_src/"])]
-        modules.extend(cythonize(cythonextension, gdb_debug=debug, annotate=annotate, force=force))
+        cythonextension.append(Extension("BasicTools."+n.split(".pyx")[0].replace("/","."), [m],libraries=["CppBasicTools"], include_dirs=["./cpp_src/"]))
+        
+    modules.extend(cythonize(cythonextension, gdb_debug=debug, annotate=annotate, force=force))
 
 except ImportError as e:
     print(f"Compilation disabled since {e.name} package is missing")
@@ -76,6 +79,18 @@ except ImportError as e:
 # Compiler-dependent configuration
 # See https://stackoverflow.com/questions/30985862
 class build_ext_compiler_check(build_ext):
+    def get_ext_filename(self, ext_name):
+        #strip sufix for the libCppBasicTools.xxxxx.so
+        filename = super().get_ext_filename(ext_name)
+        if filename.find("libCppBasicTools") == 0 :
+            return filename.split(".")[0]+"."+filename.split(".")[-1]
+        return filename 
+
+    def finalize_options(self):
+        super().finalize_options()
+        self.library_dirs.append(self.build_temp)
+        self.library_dirs.append(self.build_temp.replace("temp.","lib."))
+
     def build_extensions(self):
         if os.name == 'nt':
             compiler = os.path.basename(self.compiler.compiler_type)
