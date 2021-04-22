@@ -636,7 +636,7 @@ def SubDivideMesh(mesh,level=1):
     for i in range(mesh.GetNumberOfNodes()):
         oldToNewDofs.append(numberingP2.GetDofOfPoint(i))
 
-    oldToNewDofs = np.array(oldToNewDofs)
+    oldToNewDofs = np.array(oldToNewDofs,dtype=int)
     res.originalIDNodes[oldToNewDofs] = mesh.originalIDNodes
 
     for tag in mesh.nodesTags.keys():
