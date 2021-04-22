@@ -1,27 +1,24 @@
 #distutils: language = c++
 #cython: language_level = 3
-
-
-# # distutils: sources = Rectangle.cpp
+#
+# This file is subject to the terms and conditions defined in
+# file 'LICENSE.txt', which is part of this source code package.
+#
+from libcpp.vector cimport vector
+from libcpp.string cimport string
 
 import numpy as np
 cimport numpy as cnp
-from eigency.core cimport *
-
-int_DTYPE   = np.int64
-float_DTYPE = np.float
-
-ctypedef cnp.int64_t     int_DTYPE_t
-ctypedef cnp.float64_t float_DTYPE_t
-
-
-from libcpp.vector cimport vector
-from libcpp.string cimport string
 cnp.import_array()
 
-cdef extern from "Containers/UnstructuredMesh.h" :
-    cdef cppclass NativeUnstructuredMesh:
-       NativeUnstructuredMesh() except +
+from eigency.core cimport *
+
+from BasicTools.CythonDefs cimport int_DTYPE_t,float_DTYPE_t
+from BasicTools.NumpyDefs import int_DTYPE,float_DTYPE
+
+cdef extern from "Containers/UnstructuredMesh.h" namespace "BasicTools":
+    cdef cppclass UnstructuredMesh:
+       UnstructuredMesh() except +
        void SetOriginalIds(FlattenedMap[Matrix, int_DTYPE_t, Dynamic, _1]& )
        void SetNodes(FlattenedMapWithOrder[Matrix, float_DTYPE_t, Dynamic, Dynamic, RowMajor]& )
        void AddNodalTag(string& name, FlattenedMap[Matrix, int_DTYPE_t, Dynamic, _1] &arg1)
@@ -37,6 +34,6 @@ cdef extern from "Containers/UnstructuredMesh.h" :
        string  ToStr()
 
 
-cdef class UnstructuredMesh:
-    cdef NativeUnstructuredMesh c_UMesh
-    cdef NativeUnstructuredMesh* GetCppObject(self)
+cdef class CUnstructuredMesh:
+    cdef UnstructuredMesh cpp_object
+    cdef UnstructuredMesh* GetCppPointer(self) nogil
