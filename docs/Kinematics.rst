@@ -305,8 +305,8 @@ Now we can rewrite the :math:`\UFE` in the form of :
     -\MFE_{s}^{-1} ( \MFE_m   ) \\
     I \\
     \end{bmatrix}\UFE_m
-    \label{eq:Ulambda}
     \end{equation}
+    :label: Ulambda
 
 By defying:
 
