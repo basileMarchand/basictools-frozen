@@ -1,5 +1,9 @@
 # distutils: language = c++
 #cython: language_level=3
+#
+# This file is subject to the terms and conditions defined in
+# file 'LICENSE.txt', which is part of this source code package.
+#
 
 import cython
 import numpy as np
@@ -12,6 +16,8 @@ cimport BasicTools.FE.WeakForms.NativeNumericalWeakForm as NNWF
 
 
 cdef class PyWeakTerm:
+    #cdef NNWF.WeakTerm* _c_WeakTerm
+
     def __cinit__(self):
        self._c_WeakTerm = new NNWF.WeakTerm()
        self.pointerOwner = True
@@ -22,7 +28,7 @@ cdef class PyWeakTerm:
         if self._c_WeakTerm is not NULL and self.pointerOwner == True:
             del self._c_WeakTerm
 
-    cdef NNWF.WeakTerm* GetCppObject(self):
+    cdef NNWF.WeakTerm* GetCppPointer(self):
         return self._c_WeakTerm
 
     cdef PyWeakTerm copy(self):
@@ -41,7 +47,7 @@ cdef class PyWeakTerm:
         return res        
 
     @staticmethod
-    cdef PyWeakTerm create(WeakTerm* ptr):
+    cdef PyWeakTerm create(NNWF.WeakTerm* ptr):
         obj = <PyWeakTerm>PyWeakTerm.__new__(PyWeakTerm) # create instance without calling __init__
         obj._c_WeakTerm = ptr
         obj.pointerOwner = False
@@ -182,7 +188,9 @@ cdef class PyWeakTerm:
 
 
 
-cdef class PyWeakMonom:
+cdef class PyWeakMonom: 
+    #cdef NNWF.WeakMonom* _c_WeakMonom
+
     def __cinit__(self):
         self.pointerOwner = True
         self._c_WeakMonom = new NNWF.WeakMonom()
@@ -197,7 +205,7 @@ cdef class PyWeakMonom:
         res = PyWeakMonom()
         res._c_WeakMonom.prefactor = self._c_WeakMonom.prefactor 
         for i in range(self.GetNumberOfProds()):
-            res._c_WeakMonom.prod.push_back(deref(self.GetProd(i).copy().GetCppObject() ))
+            res._c_WeakMonom.prod.push_back(deref(self.GetProd(i).copy().GetCppPointer() ))
         return res
         
     cpdef  hasVariable(self,str var):
@@ -208,20 +216,20 @@ cdef class PyWeakMonom:
 
     cpdef AddProd(self,PyWeakTerm term):
         term.pointerOwner = False
-        self._c_WeakMonom.prod.push_back(deref(term.GetCppObject()))
+        self._c_WeakMonom.prod.push_back(deref(term.GetCppPointer()))
 
     cpdef int GetNumberOfProds(self):
         return self._c_WeakMonom.prod.size()
 
     cdef PyWeakTerm GetProd(self, int n):
-        cdef WeakTerm* res = &self._c_WeakMonom.prod[n]
+        cdef NNWF.WeakTerm* res = &self._c_WeakMonom.prod[n]
         return PyWeakTerm.create(res)
 
-    cdef NNWF.WeakMonom* GetCppObject(self):
+    cdef NNWF.WeakMonom* GetCppPointer(self):
         return self._c_WeakMonom
 
     @staticmethod
-    cdef PyWeakMonom create(WeakMonom* ptr):
+    cdef PyWeakMonom create(NNWF.WeakMonom* ptr):
         obj = <PyWeakMonom>PyWeakMonom.__new__(PyWeakMonom) # create instance without calling __init__
         obj._c_WeakMonom = ptr
         obj.pointerOwner = False
@@ -247,9 +255,11 @@ cdef class PyWeakMonom:
         return PyWeakMonomIter(self)
 
 cdef class PyWeakForm:
+    #cdef NNWF.WeakForm* _c_WeakForm
+    
     def __cinit__(self):
         self.pointerOwner = False
-        self._c_WeakForm = new WeakForm()
+        self._c_WeakForm = new NNWF.WeakForm()
         if self._c_WeakForm is NULL:
             raise MemoryError()
 
@@ -257,18 +267,18 @@ cdef class PyWeakForm:
         if self._c_WeakForm is not NULL and self.pointerOwner == True:
             del self._c_WeakForm
 
-    cdef WeakForm* GetCppObject(self):
+    cdef NNWF.WeakForm* GetCppPointer(self):
         return self._c_WeakForm
 
     cpdef AddTerm(self,PyWeakMonom monom):
         monom.pointerOwner = False
-        self._c_WeakForm.form.push_back(deref(monom.GetCppObject()))
+        self._c_WeakForm.form.push_back(deref(monom.GetCppPointer()))
 
     cpdef int GetNumberOfTerms(self):
         return self._c_WeakForm.GetNumberOfTerms()
 
     cpdef PyWeakMonom GetMonom(self, int n):
-        cdef WeakMonom* res = &self._c_WeakForm.form[n]
+        cdef NNWF.WeakMonom* res = &self._c_WeakForm.form[n]
         return PyWeakMonom.create(res)
 
     def GetRightPart(self,list unknownvars):
@@ -301,7 +311,7 @@ cdef class PyWeakForm:
 
 
     @staticmethod
-    cdef PyWeakForm create(WeakForm* ptr):
+    cdef PyWeakForm create(NNWF.WeakForm* ptr):
         obj = <PyWeakForm>PyWeakForm.__new__(PyWeakForm) # create instance without calling __init__
         obj._c_WeakForm = ptr
         return obj

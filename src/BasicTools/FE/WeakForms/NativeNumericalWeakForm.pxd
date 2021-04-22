@@ -1,14 +1,14 @@
 # distutils: language = c++
 #cython: language_level=3
-
+#
+# This file is subject to the terms and conditions defined in
+# file 'LICENSE.txt', which is part of this source code package.
+#
 cimport numpy as np
 from libcpp.string cimport string
 from libcpp.vector cimport vector
 
-from libcpp.string cimport string
-from libcpp.vector cimport vector
-
-cdef extern from "FE/NativeNumericalWeakForm.h" :
+cdef extern from "FE/NativeNumericalWeakForm.h" namespace "BasicTools" :
     cdef cppclass WeakTerm:
         WeakTerm() except     +
         string fieldName
@@ -25,13 +25,13 @@ cdef extern from "FE/NativeNumericalWeakForm.h" :
         int modeIndex_
 
 
-cdef extern from "FE/NativeNumericalWeakForm.h" :
+cdef extern from "FE/NativeNumericalWeakForm.h" namespace "BasicTools" :
     cdef cppclass WeakMonom:
         WeakMonom() except     +
         double prefactor;
         vector[WeakTerm] prod
 
-cdef extern from "FE/NativeNumericalWeakForm.h" :
+cdef extern from "FE/NativeNumericalWeakForm.h" namespace "BasicTools" :
     cdef cppclass WeakForm:
         WeakForm() except     +
         vector[WeakMonom] form
@@ -40,7 +40,7 @@ cdef extern from "FE/NativeNumericalWeakForm.h" :
 cdef class PyWeakTerm:
     cdef WeakTerm* _c_WeakTerm
     cdef bint pointerOwner
-    cdef WeakTerm* GetCppObject(self)
+    cdef WeakTerm* GetCppPointer(self)
     @staticmethod
     cdef PyWeakTerm create(WeakTerm* )
     cdef PyWeakTerm copy(self)
@@ -52,7 +52,7 @@ cdef class PyWeakMonom:
     cpdef AddProd(self,PyWeakTerm)
     cpdef int GetNumberOfProds(self)
     cdef PyWeakTerm GetProd(self, int)
-    cdef WeakMonom* GetCppObject(self)
+    cdef WeakMonom* GetCppPointer(self)
     cpdef hasVariable(self,str)
     #def PyWeakMonom copy(self)
 
@@ -66,7 +66,7 @@ cdef class PyWeakForm:
     cpdef int GetNumberOfTerms(self)
     cpdef PyWeakMonom GetMonom(self, int n)
     cpdef AddTerm(self,PyWeakMonom)
-    cdef WeakForm* GetCppObject(self)
+    cdef WeakForm* GetCppPointer(self)
     @staticmethod
     cdef PyWeakForm create(WeakForm*)
 
