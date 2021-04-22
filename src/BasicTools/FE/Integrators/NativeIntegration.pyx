@@ -1,16 +1,18 @@
 # distutils: language = c++
-#cython: language_level=3
-
-##https://stackoverflow.com/questions/21851985/difference-between-np-int-np-int-int-and-np-int-t-in-cython
+#cython: language_level=3, boundscheck=False, wraparound=False, initializedcheck=False
+#
+# This file is subject to the terms and conditions defined in
+# file 'LICENSE.txt', which is part of this source code package.
+#
 import numpy as np
 
 from BasicTools.FE.Fields.FEField import FEField
 from BasicTools.FE.SymWeakForm import testcharacter
 import BasicTools.Containers.ElementNames as EN
 cimport BasicTools.FE.WeakForms.NativeNumericalWeakForm as NNWF
+cimport BasicTools.FE.Integrators.NativeIntegration as NI
 from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
-
 
 cimport numpy as cnp
 cimport cython
@@ -23,10 +25,10 @@ ctypedef cnp.float64_t float_DTYPE_t
 
 from libcpp.vector cimport vector
 from libcpp.string cimport string
-np.import_array()
-
+cnp.import_array()
+    
 cdef class PyMonoElementsIntegralCpp():
-    cdef MonoElementsIntegralCpp NativeIntegrator
+    cdef NI.MonoElementsIntegralCpp NativeIntegrator
     #this are internal references to the python objects
     cdef list __ufs__
     cdef list __tfs__
@@ -40,7 +42,7 @@ cdef class PyMonoElementsIntegralCpp():
     cdef int numberOfVIJ
     cdef int maxNumberOfElementVIJ
 
-    cdef np.ndarray nodes
+    cdef cnp.ndarray nodes
     cdef dict geoSpace
     cdef int geoSpaceNumber
 
@@ -49,8 +51,8 @@ cdef class PyMonoElementsIntegralCpp():
     cdef list __usedValues__
     cdef list __spaces_ipvalues__
 
-    cdef np.ndarray testDofsNumbering;
-    cdef np.ndarray unkownDofsNumbering;
+    cdef cnp.ndarray testDofsNumbering
+    cdef cnp.ndarray unkownDofsNumbering
 
     cdef int numberOfTerms
 
@@ -58,44 +60,41 @@ cdef class PyMonoElementsIntegralCpp():
 
     # we keep reference to the data send to C++
 
-    cdef np.ndarray __vK
-    cdef np.ndarray __iK
-    cdef np.ndarray __jK
-    cdef np.ndarray __F
+    cdef cnp.ndarray __vK
+    cdef cnp.ndarray __iK
+    cdef cnp.ndarray __jK
+    cdef cnp.ndarray __F
     cdef list __values
     cdef list __ipvalues
-    cdef np.ndarray __nodes
-    cdef np.ndarray __localUnkownDofsOffset
-    cdef np.ndarray __localtTestDofsOffset
-    cdef np.ndarray __conn
+    cdef cnp.ndarray __nodes
+    cdef cnp.ndarray __localUnkownDofsOffset
+    cdef cnp.ndarray __localtTestDofsOffset
+    cdef cnp.ndarray __conn
     cdef list __valN
     cdef list __dphidxi
     cdef list __numbering
 
     def __init__(self):
-        self.NativeIntegrator = MonoElementsIntegralCpp()
+        self.NativeIntegrator = NI.MonoElementsIntegralCpp()
         self.geoSpace = LagrangeSpaceGeo
         self.__ufs__ = list()
         self.__tfs__ = list()
         self.__efs__ = list()
         self.__ipefs__ = list()
         self.maxNumberOfElementVIJ = 0
-        self.BOO = BaseOutputObject()
-
-
-
+        self.BOO = BaseOutputObject() 
 
     def SetUnkownFields(self,list ufs): # OK
       self.__ufs__ = ufs
 
-      self.NativeIntegrator.SetNumberOfUnkownFields(len(ufs));
+      self.NativeIntegrator.SetNumberOfUnkownFields(len(ufs))
       cdef int totalUnkownDofs = 0
       cdef int cpt = 0
       for uf in ufs:
-        self.NativeIntegrator.SetUnkownOffset(cpt,totalUnkownDofs);
+        self.NativeIntegrator.SetUnkownOffset(cpt,totalUnkownDofs)
         totalUnkownDofs += uf.numbering["size"]
         cpt += 1
-      self.NativeIntegrator.SetTotalUnkownDofs(totalUnkownDofs);
+      self.NativeIntegrator.SetTotalUnkownDofs(totalUnkownDofs)
 
     def SetTestFields(self,list tfs = None): #ok
       if tfs is None:
@@ -105,14 +104,14 @@ cdef class PyMonoElementsIntegralCpp():
       else:
           self.__tfs__ = tfs
 
-      self.NativeIntegrator.SetNumberOfTestFields(len(self.__tfs__));
+      self.NativeIntegrator.SetNumberOfTestFields(len(self.__tfs__))
       cdef int totalTestDofs = 0
       cdef int cpt = 0
       for tf in self.__tfs__:
-        self.NativeIntegrator.SetTestOffset(cpt,totalTestDofs);
+        self.NativeIntegrator.SetTestOffset(cpt,totalTestDofs)
         totalTestDofs += tf.numbering["size"]
         cpt += 1
-      self.NativeIntegrator.SetTotalTestDofs(totalTestDofs);
+      self.NativeIntegrator.SetTotalTestDofs(totalTestDofs)
 
     def SetExtraFields(self,efs): #ok
         self.__efs__ = []
@@ -174,11 +173,11 @@ cdef class PyMonoElementsIntegralCpp():
     def PrepareFastIntegration(self,
                                mesh,
                                wform,
-                               np.ndarray[float_DTYPE_t, ndim=1, mode="c"] vK not None ,
-                               np.ndarray[int_DTYPE_t, ndim=1, mode="c"] iK not None ,
-                               np.ndarray[int_DTYPE_t, ndim=1, mode="c"] jK not None ,
+                               cnp.ndarray[float_DTYPE_t, ndim=1, mode="c"] vK not None ,
+                               cnp.ndarray[int_DTYPE_t, ndim=1, mode="c"] iK not None ,
+                               cnp.ndarray[int_DTYPE_t, ndim=1, mode="c"] jK not None ,
                                int cpt,
-                               np.ndarray[float_DTYPE_t, ndim=1, mode="c"] F not None):
+                               cnp.ndarray[float_DTYPE_t, ndim=1, mode="c"] F not None):
 
       self.__vK = vK
       self.__iK = iK
@@ -190,7 +189,7 @@ cdef class PyMonoElementsIntegralCpp():
       self.NativeIntegrator.jK = &jK[0]
       self.NativeIntegrator.F = &F[0]
 
-      self.numberOfTerms = wform.GetNumberOfTerms();
+      self.numberOfTerms = wform.GetNumberOfTerms()
 
       cdef bint hasnormal = False
       for monom in wform:
@@ -316,7 +315,7 @@ cdef class PyMonoElementsIntegralCpp():
       self.NativeIntegrator.SetNumberOfValues(len(self.__usedValues__))
       self.__values = [None]*len(self.__usedValues__)
       self.__ipvalues = [None]*len(self.__ipefs__)
-      cdef np.ndarray[float_DTYPE_t, ndim=1, mode = 'c' ] vdata
+      cdef cnp.ndarray[float_DTYPE_t, ndim=1, mode = 'c' ] vdata
       for i in range(len(self.__usedValues__)):
           try:
               self.SetValues(i,self.__usedValues__[i])
@@ -327,17 +326,17 @@ cdef class PyMonoElementsIntegralCpp():
 
               raise
 
-    def SetValues(self,int i,np.ndarray[float_DTYPE_t, ndim=1,mode="c"] vdata not None):
+    def SetValues(self,int i,cnp.ndarray[float_DTYPE_t, ndim=1,mode="c"] vdata not None):
           self.__values[i] = vdata
           self.NativeIntegrator.SetValueI(i,vdata.shape[0],vdata.shape[1], &vdata[0])
 
-    def SetIPValues(self,int i,np.ndarray[float_DTYPE_t, ndim=2,mode="c"] vdata not None):
+    def SetIPValues(self,int i,cnp.ndarray[float_DTYPE_t, ndim=2,mode="c"] vdata not None):
           self.__ipvalues[i] = vdata
           self.NativeIntegrator.SetIPValueI(i,vdata.shape[0],vdata.shape[1], &vdata[0,0])
 
     #@cython.boundscheck(False)
     #@cython.wraparound(False)
-    def SetPoints(self,np.ndarray[float_DTYPE_t, ndim=2,mode="c"] nodes not None):
+    def SetPoints(self,cnp.ndarray[float_DTYPE_t, ndim=2,mode="c"] nodes not None):
         ## we make a copy in case is not continuous
         self.__nodes = nodes
 
@@ -360,7 +359,7 @@ cdef class PyMonoElementsIntegralCpp():
       if not elementType in self.integrationRule :
           print("Integration rule incomplete for this type of geo element : "+  str(elementType) + "  integration rule : "+ str(list(self.integrationrule.keys())))
 
-      p, w = self.integrationRule[elementType];
+      p, w = self.integrationRule[elementType]
       cdef int numberOfIntegrationPoints = len(w)
 
 
@@ -446,17 +445,17 @@ cdef class PyMonoElementsIntegralCpp():
           self.__numbering[i] = ndata
           self.NativeIntegrator.SetNumberingI(i,ndata.shape[0],ndata.shape[1], &ndata[0,0])
 
-      self.NativeIntegrator.SetNumberOfIPValues(len(self.__ipefs__));
+      self.NativeIntegrator.SetNumberOfIPValues(len(self.__ipefs__))
       for i in range(len(self.__ipefs__)):
           self.SetIPValues(i,self.__ipefs__[i].data[domain.elementType] )
 
     @cython.boundscheck(False)  # Deactivate bounds checking
     @cython.wraparound(False)   # Deactivate negative indexing.
     def Integrate(self,NNWF.PyWeakForm wform,
-                  np.ndarray[int_DTYPE_t, ndim=1, mode="c"] idstotreat not None ):
+                  cnp.ndarray[int_DTYPE_t, ndim=1, mode="c"] idstotreat not None ):
 
         cdef vector[int] im_buff = idstotreat
-        cdef NNWF.WeakForm* wfobject =  wform.GetCppObject()
+        cdef NNWF.WeakForm* wfobject =  wform.GetCppPointer()
 
         with nogil:
             self.NativeIntegrator.Integrate(wfobject, im_buff )

@@ -1,19 +1,16 @@
-# distutils: language = c++
-#cython: language_level=3
-
+#distutils: language = c++
+#cython: language_level = 3
+#
+# This file is subject to the terms and conditions defined in
+# file 'LICENSE.txt', which is part of this source code package.
+#
 from libcpp.vector cimport vector
 
-cimport numpy as np
-
+cimport numpy as cnp
 
 cimport BasicTools.FE.WeakForms.NativeNumericalWeakForm as NNWF
 
-cdef extern from "FE/NativeIntegration.cpp":
-    pass
-
-# Decalre the class with cdef
-
-cdef extern from "FE/NativeIntegration.h" :
+cdef extern from "FE/NativeIntegration.h" namespace "BasicTools" :
     cdef cppclass MonoElementsIntegralCpp:
         MonoElementsIntegralCpp() except +
         void SetNumberOfUnkownFields(int)
@@ -36,7 +33,7 @@ cdef extern from "FE/NativeIntegration.h" :
         void SetComputeNormal(int)
         void SetDomainToTreat()
         void SetPoints(double*, int, int)
-        void SetConnectivity(np.int_t*, int, int)
+        void SetConnectivity(cnp.int_t*, int, int)
 
         void SetNumberOfSpaces(int)
         void InitSpaceS(const int& s,
@@ -52,7 +49,7 @@ cdef extern from "FE/NativeIntegration.h" :
 
 
         void SetNumberOfNumberings(int i)
-        void SetNumberingI(int i, int n, int m,np.int_t* ip)
+        void SetNumberingI(int i, int n, int m, cnp.int_t* ip)
         void SetNumberOfValues(int i)
         void SetValueI(int i, int n, int m, double* dp)
 
@@ -64,8 +61,8 @@ cdef extern from "FE/NativeIntegration.h" :
         int GetNumberOfUsedIvij()
         int AddToNumbefOfUsedIvij(int)
         double* vK
-        np.int_t* iK
-        np.int_t* jK
+        cnp.int_t* iK
+        cnp.int_t* jK
         double* F
         int totalvijcpt
         bint onlyEvaluation
