@@ -1,30 +1,28 @@
 #distutils: language = c++
 #cython: language_level = 3
-
-
-# # distutils: sources = Rectangle.cpp
+#
+# This file is subject to the terms and conditions defined in
+# file 'LICENSE.txt', which is part of this source code package.
+#
+from libcpp.vector cimport vector
+from libcpp.string cimport string
 
 import numpy as np
 cimport numpy as cnp
+cnp.import_array()
+
 from eigency.core cimport *
 
-int_DTYPE   = np.int64
-float_DTYPE = np.float
-
-#ctypedef cnp.int64_t     int_DTYPE_t
-#ctypedef cnp.float64_t float_DTYPE_t
-
-
-from libcpp.vector cimport vector
-from libcpp.string cimport string
-cnp.import_array()
+from BasicTools.CythonDefs cimport int_DTYPE_t,float_DTYPE_t
+from BasicTools.NumpyDefs import int_DTYPE,float_DTYPE
 
 cimport BasicTools.FE.Spaces.NativeSpace as cNS
 
-cdef class WrapedSpace:
-    #cdef Space c_Space hold c++ instance
-    cdef Space* GetCppObject(self):
-        return &(self.c_Space)
+cdef class CSpace:
+    #cdef cNS.Space cpp_object 
+
+    cdef cNS.Space* GetCppPointer(self):
+        return &(self.cpp_object)
 
     def SetDataFromPython(self,space):
         for name,data in space.items():
@@ -34,12 +32,6 @@ cdef class WrapedSpace:
                     idxI = -1
                 if idxII is None :
                     idxII = -1
-
-                #print("name",name)
-                #print("on",on)
-                #print("idxI",idxI)
-                #print("idxII",idxII)
                 if on == "F2" :
                     on = "E"
-                #print("on",on)
-                self.c_Space.AddDofTo(name.encode(),ord(on[0].encode()), int(idxI),int(idxII) )
+                self.cpp_object.AddDofTo(name.encode(),ord(on[0].encode()), int(idxI),int(idxII) )

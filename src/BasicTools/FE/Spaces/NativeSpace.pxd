@@ -1,25 +1,22 @@
 #distutils: language = c++
 #cython: language_level = 3
-
-
-# # distutils: sources = Rectangle.cpp
+#
+# This file is subject to the terms and conditions defined in
+# file 'LICENSE.txt', which is part of this source code package.
+#
+from libcpp.vector cimport vector
+from libcpp.string cimport string
 
 import numpy as np
 cimport numpy as cnp
-from eigency.core cimport *
-
-int_DTYPE   = np.int64
-float_DTYPE = np.float
-
-ctypedef cnp.int64_t     int_DTYPE_t
-ctypedef cnp.float64_t float_DTYPE_t
-
-
-from libcpp.vector cimport vector
-from libcpp.string cimport string
 cnp.import_array()
 
-cdef extern from "FE/Space.h" :
+from eigency.core cimport *
+
+from BasicTools.CythonDefs cimport int_DTYPE_t,float_DTYPE_t
+from BasicTools.NumpyDefs import int_DTYPE,float_DTYPE
+
+cdef extern from "FE/Space.h" namespace "BasicTools" :
     cdef cppclass Space:
        Space() except +
        int GetNumberOfShapeFunctionsFor(const string&  elemtype);
@@ -27,6 +24,6 @@ cdef extern from "FE/Space.h" :
        void Print()
        string  ToStr()
 
-cdef class WrapedSpace:
-    cdef Space c_Space
-    cdef Space* GetCppObject(self)
+cdef class CSpace:
+    cdef Space cpp_object
+    cdef Space* GetCppPointer(self)
