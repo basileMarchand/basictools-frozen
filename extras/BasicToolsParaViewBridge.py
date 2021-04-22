@@ -19,14 +19,14 @@ if debug :
 else:
     def PrintDebug(mes):
         pass
-
-import numpy as np
-
-from paraview.util.vtkAlgorithm import smproxy, smproperty, smdomain, smhint
-from paraview.util.vtkAlgorithm import VTKPythonAlgorithmBase
-from vtkmodules.vtkCommonDataModel import vtkUnstructuredGrid
-
 try:
+
+    import numpy as np
+
+    from paraview.util.vtkAlgorithm import smproxy, smproperty, smdomain, smhint
+    from paraview.util.vtkAlgorithm import VTKPythonAlgorithmBase
+    from vtkmodules.vtkCommonDataModel import vtkUnstructuredGrid
+
     PrintDebug("Loading libs")
     from BasicTools.Containers.vtkBridge import GetInputVtk, GetInputBasicTools,  SetOutputBasicTools
     from BasicTools.IO.IOFactory import InitAllReaders
