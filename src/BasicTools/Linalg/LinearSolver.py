@@ -28,7 +28,7 @@ def _available_algorithms():
         pass
 
     try:
-        import BasicTools.Linalg.EigenSolver
+        import BasicTools.Linalg.NativeEigenSolver
         result.extend(("EigenCG", "EigenLU","EigenBiCGSTAB","EigenSPQR"))
     except ImportError:
         pass
@@ -100,7 +100,7 @@ class LinearProblem(BOO):
             from sksparse.cholmod import cholesky
             self.solver = cholesky(op)
         elif len(self.type) >= 5 and  self.type[0:5] == "Eigen":
-            import BasicTools.Linalg.EigenSolver as NativeEigenSolver
+            import BasicTools.Linalg.NativeEigenSolver as NativeEigenSolver
             self.solver = NativeEigenSolver.CEigenSolvers()
             self.solver.SetSolverType(self.type[5:])
             self.solver.SetTolerance(self.tol)
