@@ -177,6 +177,8 @@ def SymWeakMonomToNumWeakMono(exp):
             res.AddProd(term)
         return res
 
+__cached_normal =GetNormal(3)
+
 def ConverTermToProd(arg):
     if isinstance(arg,Symbol):
         t = PyWeakTerm()
@@ -208,12 +210,11 @@ def ConverTermToProd(arg):
 
     if isinstance(arg,Function):
         t = PyWeakTerm()
-        N = GetNormal(3)
         #print(str(arg.func)+"* * * * * * ")
         #print(arg.func)
         #print (N)
         #print ([arg == nc for nc in N])
-        if np.any([arg == nc for nc in N]):
+        if np.any([arg == nc for nc in __cached_normal ]):
             t.normal = True
             t.derDegree = int(str(arg.func).split("_")[1])
         else:
