@@ -433,6 +433,9 @@ def GetValueAtPosLinearSymplecticMesh(fields,mesh,constantRectilinearMesh):
             shapeRes.append(d)
         result = np.zeros(tuple(shapeRes))
         mask = np.zeros(tuple(dimensions))
+        
+        numbering = ComputeDofNumbering(mesh, LagrangeSpaceGeo,fromConnectivity = True)
+
         for name, data in mesh.elements.items():
             #print("name =", name)
             #print("ElementNames.dimension[name] =", ElementNames.dimension[name])
@@ -452,7 +455,6 @@ def GetValueAtPosLinearSymplecticMesh(fields,mesh,constantRectilinearMesh):
                     #print("localBoundingMin =", localBoundingMin)
                     #print("localBoundingMax =", localBoundingMax)
 
-                    numbering = ComputeDofNumbering(mesh, LagrangeSpaceGeo,fromConnectivity = True)
 
                     imin, imax = max(int(math.floor((localBoundingMin[0]-origin[0])/spacing[0])),0),min(int(math.floor((localBoundingMax[0]-origin[0])/spacing[0])+1),dimensions[0])
                     jmin, jmax = max(int(math.floor((localBoundingMin[1]-origin[1])/spacing[1])),0),min(int(math.floor((localBoundingMax[1]-origin[1])/spacing[1])+1),dimensions[1])
@@ -609,7 +611,7 @@ def CheckIntegrity1DTo2D(GUI=False):
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateUniformMeshOfBars
     inputmesh = CreateUniformMeshOfBars(0,1,10)
     inputmesh.nodes[:,1] = inputmesh.nodes[:,0]**2
-    inputmesh.nodes = inputmesh.nodes[:,0:2]
+    inputmesh.nodes = inputmesh.nodes[:,0:2].copy(order='C')
 
     from BasicTools.FE.FETools import PrepareFEComputation
     space, numberings, _offset, _NGauss = PrepareFEComputation(inputmesh)
@@ -656,7 +658,7 @@ def CheckIntegrity1DSecondOrderTo2D(GUI=False):
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateUniformMeshOfBars
     inputmesh = CreateUniformMeshOfBars(0,1,11,secondOrder=True)
     inputmesh.nodes[:,1] = inputmesh.nodes[:,0]**2
-    inputmesh.nodes = inputmesh.nodes[:,0:2]
+    inputmesh.nodes = inputmesh.nodes[:,0:2].copy(order='C')
 
     from BasicTools.FE.FETools import PrepareFEComputation
     space, numberings, _offset, _NGauss = PrepareFEComputation(inputmesh)
