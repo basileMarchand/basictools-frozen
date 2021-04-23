@@ -37,6 +37,7 @@ Optionals Python packages:
 * pytest
 * pytest-cov
 * setuptools
+* pyvista
 
 C++ packages:
 

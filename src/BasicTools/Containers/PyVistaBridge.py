@@ -11,7 +11,7 @@ def PyVistaToMesh(pvmesh,FieldsAsTags=False):
     return VtkToMesh(pvmesh,FieldsAsTags=FieldsAsTags)
 
 
-def PlotMesh(mesh):# pragma: no cover
+def PlotMesh(mesh,**kargs):# pragma: no cover
 
     from BasicTools.Containers.MeshBase import MeshBase
 
@@ -20,7 +20,7 @@ def PlotMesh(mesh):# pragma: no cover
     else:
         pyVistaMesh = mesh
 
-    pyVistaMesh.plot()
+    pyVistaMesh.plot(**kargs)
 
 def CheckIntegrity(GUI=False):
     from BasicTools.Helpers.Tests import SkipTest
@@ -46,6 +46,11 @@ def CheckIntegrity(GUI=False):
 
     if not IsClose(res,resII): # pragma: no cover
         raise(Exception("The meshes are not equal"))
+
+    if GUI:
+        PlotMesh(res)
+        PlotMesh(resII,eye_dome_lighting=True, cpos=[-1, -1, 0.2], color=True)
+        
     return 'ok'
 
 if __name__ == '__main__':
