@@ -69,7 +69,7 @@ Then inside the repository folder the user must compile the c++ extensions to ta
     ``> python setup.py build_ext --inplace``
 
 Then the user is responsible to add the ``BASICTOOLS_REPOSITORY/src/`` folder to the ``PYTHONPATH`` environment variables (more information on [#pythonpathdoc]_).
-
+In the case you whant to use the compiled tools (using the --inplace option) you must add to the LD_LIBRARY_PATH the ``BASICTOOLS_REPOSITORY/src/`` folder.
 
 For Windows
 ^^^^^^^^^^^
