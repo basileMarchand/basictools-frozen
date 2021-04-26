@@ -181,7 +181,7 @@ void DofNumbering::InitNumberingFor(const std::string & elemtype, const long int
 }
 
 MatrixIDD& DofNumbering::GetNumberingFor(const std::string & elemtype){
-    if(this->numbering.count(elemtype)){
+    if(this->HasNumberingFor(elemtype)){
         return this->numbering[elemtype];
     }
     std::cout << "element " << elemtype << std::endl;

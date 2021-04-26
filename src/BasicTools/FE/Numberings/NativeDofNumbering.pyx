@@ -36,7 +36,7 @@ cdef extern from "FE/DofNumbering.h" namespace "BasicTools" :
         void ComputeNumberingGeneral(cNUM.UnstructuredMesh&, cNS.Space&, cNF.ElementFilterBase&)
         void computeDofToPoint()
 
-        PlainObjectBase & GetNumberingFor(const string & elemtype)
+        PlainObjectBase & GetNumberingFor(const string & elemtype) 
         int_DTYPE_t GetSizeOfDofToPoint()
         PlainObjectBase & GetdoftopointLeft()
         PlainObjectBase & GetdoftopointRight()
@@ -84,10 +84,7 @@ cdef class NativeDofNumbering:
 
 
         if self.dn_cpp.HasNumberingFor(key.encode()):
-            try:
-                return  ndarray_view(self.dn_cpp.GetNumberingFor(key.encode()))
-            except:
-                return None
+            return  ndarray_view(self.dn_cpp.GetNumberingFor(key.encode()))
         else:
             return None
             #raise KeyError
