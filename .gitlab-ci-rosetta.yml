@@ -112,6 +112,7 @@ deploy:
   script:
     - echo "Deploy... on $PREFIX"
     - rsync -av --delete-after --cvs-exclude --include=FE/*/*36*.so --include=Linalg/*36*.so --omit-dir-times --no-perms ./src/BasicTools/. $PREFIX
+    - rsync -av --delete-after --no-perms ./src/libCppBasicTools.so $PREFIX
     - $ACLSCRIPT $PREFIX/../.acl $PREFIX
     - echo "Deploy... using $PREFIXII"
     - $PREFIXII
