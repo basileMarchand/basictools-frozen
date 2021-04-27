@@ -33,7 +33,8 @@ try:
     from BasicTools.IO.IOFactory import ReaderFactory
     from BasicTools.IO.IOFactory import InitAllWriters
     from BasicTools.IO.IOFactory import WriterFactory
-    from BasicTools.Containers.vtkBridge import VtkToMesh
+    from BasicTools.Containers.vtkBridge import VtkToMesh, VtkToMeshOnlyMeta
+    import BasicTools.Containers.ElementNames as EN
     PrintDebug("Loading")
 
     try :
@@ -429,7 +430,7 @@ try:
             self.__elemTagsFilter = {}
 
         def RequestInformation(self, request, inInfoVec, outInfoVec):
-            metadata = VtkToMeshOnlyMeta(GetInputVtk(request, inInfoVec, outInfoVec))
+            metadata = VtkToMeshOnlyMeta(GetInputVtk(request, inInfoVec, outInfoVec),FieldsAsTags=True)
             tagnames = metadata.elemTags
             self.__elemTagsFilter = {n:self.__elemTagsFilter.get(n,0) for n in tagnames}
             #possible improvement. not ready yet
@@ -451,7 +452,7 @@ try:
                 for name,data in outMesh.elements.items():
                     data.tags.RemoveEmptyTags()
             CopyFieldsFromOriginalMeshToTargetMesh(inMesh,outMesh)
-            SetOutputBasicTools(request,inInfoVec,outInfoVec,outMesh)
+            SetOutputBasicTools(request, inInfoVec, outInfoVec, outMesh, TagsAsFields=True)
             return 1
 
         @smproperty.xml("""<IntVectorProperty
