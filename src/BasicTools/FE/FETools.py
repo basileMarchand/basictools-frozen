@@ -112,13 +112,13 @@ def ComputeL2ScalarProducMatrix(mesh, numberOfComponents):
         unkownFields = [FEField("T",mesh=mesh,space=spaces,numbering=numberings[0])]
     else:
         unkownFields = [FEField("T_"+str(i),mesh=mesh,space=spaces,numbering=numberings[i]) for i in range(numberOfComponents)]
-    
+
     K,_ = IntegrateGeneral(mesh=mesh,wform=wf, constants=constants, fields=fields,
                     unkownFields = unkownFields, elementFilter = ff)
-    
+
     return K
 
-        
+
 
 
 
@@ -199,6 +199,47 @@ def ComputeInterpolationMatrix_FE_GaussPoint(mesh, feSpace, integrationRule,feNu
 
 
 
+
+
+def ComputeJdetAtIntegPoint(mesh, elementSets = None, relativeDimension = 0):
+
+    ff = Filters.ElementFilter(mesh)
+
+    dimension = mesh.GetDimensionality() + relativeDimension
+    ff.SetDimensionality(dimension)
+
+    if elementSets:
+        assert type(elementSets) == list, "elementSets should be a list of elementSets"
+        for set in elementSets:
+            if set:
+                ff.AddTag(set)
+
+
+    spaces, numberings, offset, NGauss = PrepareFEComputation(mesh, ff)
+
+    jDet = np.zeros(NGauss)
+
+
+    countTotal = 0
+    for name,data,ids in ff:
+
+        p,w =  LagrangeIsoParam[name]
+        NGaussperEl = len(w)
+
+        for el in ids:
+            xcoor = mesh.nodes[data.connectivity[el],:]
+            space_ipvalues = spaces[name].SetIntegrationRule(p,w)
+            for ip in range(NGaussperEl):
+                Jack, Jdet, Jinv = space_ipvalues.GetJackAndDetI(ip,xcoor)
+
+                jDet[countTotal] = Jdet
+
+                countTotal += 1
+
+    return jDet
+
+
+
 def ComputePhiAtIntegPoint(mesh, elementSets = None, relativeDimension = 0):
     """
     Computes the shape functions on the integration
@@ -221,7 +262,7 @@ def ComputePhiAtIntegPoint(mesh, elementSets = None, relativeDimension = 0):
     coo_matrix of size (NGauss, nbNodes)
         phiAtIntegPointMatrix
     """
-    
+
     ff = Filters.ElementFilter(mesh)
 
     dimension = mesh.GetDimensionality() + relativeDimension
@@ -232,7 +273,7 @@ def ComputePhiAtIntegPoint(mesh, elementSets = None, relativeDimension = 0):
         for set in elementSets:
             if set:
                 ff.AddTag(set)
-                
+
 
     spaces, numberings, offset, NGauss = PrepareFEComputation(mesh, ff)
 
@@ -248,11 +289,11 @@ def ComputePhiAtIntegPoint(mesh, elementSets = None, relativeDimension = 0):
 
     countTotal = 0
     for name,data,ids in ff:
-        
+
         p,w =  LagrangeIsoParam[name]
         NGaussperEl = len(w)
         lenNumbering = len(numberings[0][name][0,:])
-        
+
         ones = np.ones(lenNumbering,dtype=int)
 
         for el in ids:
@@ -260,7 +301,7 @@ def ComputePhiAtIntegPoint(mesh, elementSets = None, relativeDimension = 0):
             space_ipvalues = spaces[name].SetIntegrationRule(p,w)
             for ip in range(NGaussperEl):
                 Jack, Jdet, Jinv = space_ipvalues.GetJackAndDetI(ip,xcoor)
-                
+
                 integrationWeights[countTotal] = w[ip]*Jdet
 
                 leftNumbering = numberings[0][name][el,:]
@@ -298,8 +339,8 @@ def ComputeGradPhiAtIntegPoint(mesh, elementSets = None, relativeDimension = 0):
     list (length dimensionality of the mesh) coo_matrix of size (NGauss, nbNodes)
         gradPhiAtIntegPoint
     """
-    
-    
+
+
     ff = Filters.ElementFilter(mesh)
 
     dimension = mesh.GetDimensionality() + relativeDimension
@@ -310,7 +351,7 @@ def ComputeGradPhiAtIntegPoint(mesh, elementSets = None, relativeDimension = 0):
         for set in elementSets:
             if set:
                 ff.AddTag(set)
-                
+
 
     spaces, numberings, offset, NGauss = PrepareFEComputation(mesh, ff)
 
@@ -327,11 +368,11 @@ def ComputeGradPhiAtIntegPoint(mesh, elementSets = None, relativeDimension = 0):
 
     countTotal = 0
     for name,data,ids in ff:
-        
+
         p,w =  LagrangeIsoParam[name]
         NGaussperEl = len(w)
         lenNumbering = len(numberings[0][name][0,:])
-        
+
         ones = np.ones(lenNumbering,dtype=int)
 
         for el in ids:
@@ -340,11 +381,11 @@ def ComputeGradPhiAtIntegPoint(mesh, elementSets = None, relativeDimension = 0):
             for ip in range(NGaussperEl):
                 Jack, Jdet, Jinv = space_ipvalues.GetJackAndDetI(ip,xcoor)
                 BxByBzI = Jinv(space_ipvalues.valdphidxi[ip])
-                
+
                 integrationWeights[countTotal] = w[ip]*Jdet
 
                 leftNumbering = numberings[0][name][el,:]
- 
+
                 GradPhiAtIntegPointIndices.extend(leftNumbering)
                 for k in range(meshDimension):
                     GradPhiAtIntegPointValues[k].extend(BxByBzI[k])
@@ -364,7 +405,7 @@ def ComputeNormalsAtIntegPoint(mesh, elementSets):
     """
     vector is the size of the number of nodes of "set"
     """
-    
+
     ff = Filters.ElementFilter(mesh)
 
     dimension = mesh.GetDimensionality() - 1
@@ -378,14 +419,14 @@ def ComputeNormalsAtIntegPoint(mesh, elementSets):
                 ff.AddTag(set)
 
 
-                
+
     spaces, numberings, offset, NGauss = PrepareFEComputation(mesh, ff)
 
     normalsAtIntegPoint = np.empty((mesh.GetDimensionality(), NGauss))
 
     countTotal = 0
     for name,data,ids in ff:
-        
+
         p,w =  LagrangeIsoParam[name]
         NGaussperEl = len(w)
 
@@ -397,14 +438,14 @@ def ComputeNormalsAtIntegPoint(mesh, elementSets):
                 normal = space_ipvalues.GetNormal(Jack)
                 normalsAtIntegPoint[:,countTotal] = normal
                 countTotal += 1
-                
+
     return normalsAtIntegPoint
 
 
 
 def ComputeIntegrationPointsTags(mesh, dimension = None):
 
-    
+
     if dimension == None:
         dimension = mesh.GetDimensionality()
 
@@ -445,14 +486,14 @@ def CellDataToIntegrationPointsData(mesh, set, scalarFields, relativeDimension =
     ff.AddTag(set)
 
     _, _, _, NGauss = PrepareFEComputation(mesh, ff, dimension)
-    
+
     if type(scalarFields) == dict:
         keymap = list(scalarFields.keys())
     elif type(scalarFields) == np.ndarray:
         keymap = np.arange(scalarFields.shape[0])
     else:
         raise("scalarFields is neither an np.ndarray nor a dict")
-    
+
     numberOfFields = len(keymap)
     integrationPointsData = np.empty((numberOfFields, NGauss))
 
@@ -464,10 +505,10 @@ def CellDataToIntegrationPointsData(mesh, set, scalarFields, relativeDimension =
         numberOfIPperEl = len(w)
 
         for el in ids:
-            
+
             for f in range(numberOfFields):
                 integrationPointsData[f,countIp:countIp+numberOfIPperEl] = scalarFields[keymap[f]][countEl]
-                
+
             countEl += 1
             countIp += numberOfIPperEl
 
@@ -498,7 +539,7 @@ def CheckIntegrity(GUI=False):
     ComputeIntegrationPointsTags(mesh, 3)
     ComputeNormalsAtIntegPoint(mesh, ["x0"])
     length = len(mesh.elements["quad4"].tags["x0"].GetIds())
-    CellDataToIntegrationPointsData(mesh, "x0", np.ones(length))    
+    CellDataToIntegrationPointsData(mesh, "x0", np.ones(length))
 
     #TODELETE
     #vector = np.ones(len(mesh.elements["quad4"].tags["x0"].GetIds()))
@@ -507,7 +548,7 @@ def CheckIntegrity(GUI=False):
     #scalarFields = np.ones((3,mesh.GetNumberOfNodes()))
     #IntegrateOrderOneTensorOnSurface(mesh, "x0", scalarFields)
     #IntegrateOrderTwoTensorOnSurface(mesh, "x0", scalarFields)
-    #IntegrateCentrifugalEffect(mesh, {'ALLELEMENT':1.}, np.array([1.,0.,0.]), np.array([0.,0.,0.]))    
+    #IntegrateCentrifugalEffect(mesh, {'ALLELEMENT':1.}, np.array([1.,0.,0.]), np.array([0.,0.,0.]))
 
     from BasicTools.FE.IntegrationsRules import LagrangeP1
     mesh.elements["hex8"].tags.CreateTag("Transfert").SetIds([0,1] )
