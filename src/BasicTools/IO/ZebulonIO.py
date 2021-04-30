@@ -276,18 +276,28 @@ def StringReader(inputString, folder):
     return appendedString
 
 
-def ReadInp2(fileName=None,string=None,startingNstar=4):
+def ReadInp2(fileName = None, string = None, rootpath = None, startingNstar=4):
     """
     Reads an Zebulon inp files and return the results in nested lists
     """
 
+    if fileName is None and string is None:# pragma: no cover
+            raise("fileName and string cannot be both None")
+
+    if fileName is not None and string is not None:# pragma: no cover
+            raise("fileName and string cannot be both specified")
+
+    if string is not None and rootpath is None:# pragma: no cover
+            raise("when string is not None, rootpath must be defined")
+
     if fileName is not None:
       string = open(fileName, 'r')
+      rootpath = os.path.dirname(fileName)
     elif string is not None:
       from io import StringIO
       string = StringIO(string)
 
-    string0 = StringReader(inputString = string, folder = os.path.dirname(fileName))
+    string0 = StringReader(inputString = string, folder = rootpath)
 
     string = string0.strip('\n').lstrip().rstrip().split(startingNstar*"*"+'return')[:-1]
     for i in range(len(string)):
@@ -625,7 +635,6 @@ def ReadBinaryFile(fileName):
     return np.fromfile(fileName, dtype=np.float32).byteswap()
 
 
-
 def GetDensity(materialFileName):
     res = ReadInp2(materialFileName, startingNstar=3)
     return float(GetFromInp(res,{'3':['behavior'], '2':['coefficient']})[0][1][1])
@@ -678,10 +687,10 @@ def CheckIntegrity():
     print(GetBehavior(T2.GetTestDataPath() + 'elas'))
     GetProblemType(res)
 
+
     res = ReadInp2(T2.GetTestDataPath() + 'mat', startingNstar=3)
     GetFromInp(res,{'3':['behavior', 'thermal'], '2':['conductivity', 'isotropic']})
     GetFromInp(res,{'3':['behavior', 'thermal'], '2':['coefficient']})
-
 
 
     ReadBinaryFile(T2.GetTestDataPath() + 'UtExample/cube.node')
