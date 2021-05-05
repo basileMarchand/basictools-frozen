@@ -14,7 +14,6 @@ KeywordToIgnore = ["INIT",
                    "MCNL",
                    "ASEF",
                    "HYP",
-                   "AEL",
                    "DES",
                    "MAT",
                    "UNIT",
@@ -28,7 +27,6 @@ KeywordToIgnore = ["INIT",
                    "BPR",
                    "FCT",
                    "SUB",
-                   "FRAME",
                    "MCT",
                    ]
 
@@ -136,6 +134,9 @@ class DatReader(ReaderBase):
                 print("ERROR!!! Node with number " + str(e) + " not in file")
                 raise
 
+        self.FRAME  = {}
+        self.AEL  = []
+
         l = self.ReadCleanLine()
         while True:
             if l == "RETURN":
@@ -144,7 +145,6 @@ class DatReader(ReaderBase):
                 break
 
             ldata = LineToDic(l)
-
 
             if ldata["KEYWORD"] in KeywordToIgnore:
               self.PrintVerbose("Ignoring: " + ldata["KEYWORD"] )
@@ -320,6 +320,136 @@ class DatReader(ReaderBase):
 
                 continue
 
+            if ldata["KEYWORD"] == "FRAME":
+                self.PrintVerbose('Reading frame')
+                cpt = 0
+                #l = self.ReadCleanLine()
+                l = self.ReadCleanLine()
+                while(True): # for every I entry
+                    
+                    if l == None:
+                        break
+                    if l[0] == ".":
+                        break
+
+                    # default values
+                    __origin = np.array([0.,0.,0.])
+                    __V1 = np.array([1.,0.,0.])
+                    __V2 = np.array([0.,1.,0.])
+                    __TYPE = "CARTESIAN"
+                    oid = -1
+
+                    while(True):  # for every line of each I
+
+                        if l == None:
+                            break
+                        if l[0] == ".":
+                            break
+
+                        fields = l.split()
+                        fcpt = 0
+
+                        while(fcpt < len(fields)): # for every field in 
+                            if fields[fcpt] == "I":
+                                fcpt += 1
+                                if oid != -1: break
+                                oid = int(fields[fcpt])
+                                fcpt += 1
+                                continue
+                            if fields[fcpt] == "TYPE":
+                                fcpt += 1
+                                __TYPE = (fields[fcpt])
+                                fcpt += 1
+                                continue
+                            if fields[fcpt] == "ORIGIN":
+                                fcpt += 1
+                                __origin = np.array(list(map(float,fields[fcpt:fcpt+3])))
+                                fcpt += 3
+                                continue
+                            if fields[fcpt] == "V1":
+                                fcpt += 1
+                                __V1 = np.array(list(map(float,fields[fcpt:fcpt+3])))
+                                fcpt += 3
+                                continue
+                            if fields[fcpt] == "V2":
+                                fcpt += 1
+                                __V2 = np.array(list(map(float,fields[fcpt:fcpt+3])))
+                                fcpt += 3
+                                continue
+                            #print(fcpt)
+                            #print(fields)
+                            raise
+                        else:
+                            l = self.ReadCleanLine()
+                            if l == None:
+                                break
+                            if l[0] == ".":
+                                break
+                            
+                            continue
+
+                        break
+
+                    #print(fields)
+                    self.FRAME[oid] = {"T":__TYPE, "O":__origin, "V1":__V1, "V2":__V2 }
+                    #print("self.FRAME " ,self.FRAME)
+                    if l == None:
+                        break
+                    if l[0] == ".":
+                        break
+
+                #print(self.FRAME)
+                continue
+
+            if ldata["KEYWORD"] == "AEL":
+                self.PrintVerbose('Reading Elements')
+                cpt = 0
+                while(True):
+                    l = self.ReadCleanLine()
+                    if l == None:
+                        break
+                    if l[0] == ".":
+                        break
+                    fields = l.split()
+                    fcpt = 0
+                    __I = -1
+                    __FRAME = -1
+                    __MAT = -1
+                    __GROUP = -1
+
+                    while(fcpt < len(fields)):
+                        if fields[fcpt] == "I":
+                            fcpt += 1
+                            __I = int(fields[fcpt])
+                            fcpt += 1
+                            continue
+                        if fields[fcpt] == "FRAME":
+                            fcpt += 1
+                            __FRAME = int(fields[fcpt])
+                            fcpt += 1
+                            continue
+                        if fields[fcpt] == "MAT":
+                            fcpt += 1
+                            __MAT = int(fields[fcpt])
+                            fcpt += 1
+                            continue
+                        if fields[fcpt] == "GROUP":
+                            fcpt += 1
+                            __GROUP = fields[fcpt]
+                            fcpt += 1
+                            continue
+                        if fields[fcpt] == "DEGRE":
+                            fcpt += 1
+                            __DEGRE = fields[fcpt]
+                            fcpt += 1
+                            continue
+                        
+                        
+                        print(fields)
+                        raise
+                    self.AEL.append({'I':__I,"G":__GROUP,"M":__MAT,"F":__FRAME})
+                continue
+
             if ldata["KEYWORD"] == "MAI":
                 self.PrintVerbose('Reading Elements')
                 #"I 1 N 55175 65855 57080 0 58679"
@@ -408,6 +538,48 @@ class DatReader(ReaderBase):
         self.filetointernalidElement = filetointernalidElement
         self.filetointernalid = filetointernalid
 
+        #print(self.FRAME)
+        #print(self.AEL)
+
+        if len(self.FRAME) >0 and len(self.AEL)> 0:
+            V1 = np.zeros( (res.GetNumberOfElements(),3))
+            V1[:,0] = 1
+            V2 = np.zeros( (res.GetNumberOfElements(),3))
+            V2[:,1] = 1
+            MAT = np.zeros( (res.GetNumberOfElements(),1))-1
+
+            for ael  in self.AEL:
+                if ael["I"] != -1:
+                    oid = ael["I"]
+                    oids = [ el.globaloffset+cpt  for el,cpt in [filetointernalidElement[oid]] ]
+
+                elif ael["G"] != -1:
+                    oids = res.GetElementsInTag("Group"+str(ael["G"]))
+                else:
+                    raise
+
+                if ael["F"] != -1:
+                    frame = self.FRAME[ael["F"]]
+                
+                    (elements,cpt) = filetointernalidElement[oid] 
+                    if frame["T"] != "CARTESIAN":
+                        raise
+                    if np.any(frame["O"]-[0,0,0]):
+                        raise
+                        #self.FRAME[oid] = {"T":__TYPE, "O":__origin, "V1":__V1, "V2":__V2 }
+                    #print(frame)
+                    V1[oids,:] = frame["V1"]
+                    V2[oids,:] = frame["V2"]
+                elif ael["M"] != -1:
+                    MAT[oids] = ael["M"]
+
+            res.elemFields["V1"] = V1
+            res.elemFields["V2"] = V2
+            res.elemFields["Mat"] = MAT
+            #print(V1)
+            #print(V2)
+
+
         return res
 
 
@@ -437,7 +609,15 @@ MODE IMPRES 0 LECT 132 MOUCHARD 1 ECHO 1
 !*********** Fixed Supports ***********
   FIX NOEUD I 1 C 1 2 3
   FIX NOEUD I 3 C 1 2 3
-
+.FRAME
+     I 1 TYPE CARTESIAN ORIGIN 0.000000 0.000000 0.000000
+      V1 0.886548 -0.462637 -0.000000
+      V2 0.000000 -0.000000 1.000000
+     I 2 TYPE CARTESIAN ORIGIN 0.000000 0.000000 0.000000
+      V1 0.959641 -0.281229 -0.000000
+      V2 0.000000 -0.000000 1.000000
+.AEL
+     I 1 FRAME 1
 """
 
     res = DatReader().Read(string=data)
