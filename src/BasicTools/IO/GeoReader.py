@@ -64,6 +64,7 @@ class GeoReader(ReaderBase):
        res = UM.UnstructuredMesh()
        metadata = {}
 
+       FENames = {}
        oidToElementContainer = {}
        oidToLocalElementNumber = {}
 
@@ -105,6 +106,11 @@ class GeoReader(ReaderBase):
                    elements.Allocate(n_in_grp+elementsInContainerCpt)
                    n_node = self.readInt32()
 
+                   if nametype not in FENames:
+                       FENames[nametype] = []
+                   
+                   FENames_etype = FENames[nametype]
+
                    nintegpoints =  nbIntegrationsPoints[ltype]
                    if onlyMeta :
                        self.filePointer.seek((4)*(n_node+2)*n_in_grp,1 )
@@ -125,10 +131,11 @@ class GeoReader(ReaderBase):
                                conn =  [conn[x] for x in perm ]
                            elements.connectivity[j+elementsInContainerCpt,:] = conn
                            elements.originalIds[j+elementsInContainerCpt] = rank
-
+                           FENames[nametype].append(ltype)
                            oidToElementContainer[rank] = elements
                            oidToLocalElementNumber[rank] = j+elementsInContainerCpt
                            IPPerElement[cpt] = nintegpoints
+
                            cpt += 1
 
            elif tag == u"nset":
@@ -230,6 +237,15 @@ class GeoReader(ReaderBase):
                    self.output  = res
                    self.EndReading()
                    res.PrepareForOutput()
+
+                   fenames = []
+                   for elname in res.elements:
+                       if elname not in FENames:
+                           fenames.extend(["NA"]*res.elements[elname].GetNumberOfElements())  
+                       else:
+                           fenames.extend(FENames[elname])
+                   
+                   res.elemFields["FE Names"] = np.array(fenames) 
                    return res
            else:
                print(res)
@@ -255,7 +271,7 @@ def CheckIntegrity():
     reader = GeoReader()
     reader.SetFileName(fileName)
     print(reader.ReadMetaData())
-    ReadGeo(fileName=fileName)
+    print(ReadGeo(fileName=fileName))
 
     print(ReadMetaData(fileName=fileName))
     return 'ok'

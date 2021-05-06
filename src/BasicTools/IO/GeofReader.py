@@ -75,7 +75,6 @@ class GeofReader(ReaderBase):
 
   def Read(self, fileName=None,string=None,out=None,readElset=True,readFaset=True,printNotRead=True):
     import BasicTools.Containers.UnstructuredMesh as UM
-
     if fileName is not None:
       self.SetFileName(fileName)
 
@@ -90,6 +89,7 @@ class GeofReader(ReaderBase):
         res = out
 
     filetointernalid = {}
+    FENames = {}
 
     oidToElementContainer = {}
     oidToLocalElementNumber = {}
@@ -142,6 +142,9 @@ class GeofReader(ReaderBase):
           cpt = elements.AddNewElement(conn,oid)
           oidToElementContainer[oid] = elements
           oidToLocalElementNumber[oid] = cpt-1
+          if nametype not in FENames:
+            FENames[nametype] = []
+          FENames[nametype].append(s[1])
         continue
 
       if l.find("**nset")>-1:
@@ -210,6 +213,15 @@ class GeofReader(ReaderBase):
 
     self.EndReading()
     res.PrepareForOutput()
+    fenames = []
+    for elname in res.elements:
+      if elname not in FENames:
+        fenames.extend(["NA"]*res.elements[elname].GetNumberOfElements())  
+      else:
+        fenames.extend(FENames[elname])
+    
+    res.elemFields["FE Names"] = np.array(fenames) 
+
     self.output = res
     return res
 
