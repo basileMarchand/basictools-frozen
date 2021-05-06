@@ -38,15 +38,7 @@ def IsClose(mesh1,mesh2):
             print("Nodal tag  "+ str(tag1.name) + " not equal")
             return False
 
-    for name,data1 in mesh1.nodeFields.items():
-        data2 = mesh2.nodeFields[name]
-        try:
-            if not np.all(np.isclose(data1,data2)):
-                print("Field "+ str(name) + " not equal")
-                return False
-        except:
-            print("Field "+ str(name) + " not equal")
-            return False
+    
 
     for name, data1 in mesh1.elements.items():
         data2 = mesh2.elements[name]
@@ -59,11 +51,28 @@ def IsClose(mesh1,mesh2):
                 print("Tag " + str(tag1.name) + " is not equal for element" + str(name))
                 return False
 
-    for name,data1 in mesh1.elemFields.items():
-        data2 = mesh2.elemFields[name]
-        if not np.all(np.isclose(data1,data2)):
-            print("Field "+ str(name) + " not equal")
-            return False
+    def CompareFields(fields1,fields2):
+        for name,data1 in fields1.items():
+            data2 = fields2[name]
+            if len(data1) !=  len(data2):
+                print("Field "+ str(name) + " has different size")    
+                return False
+
+            if data1.dtype == data2.dtype and data1.dtype == object:
+                if not np.all([ d1==d2 for d1,d2 in zip(data1,data2) ]):
+                    print("Field "+ str(name) + " not equal")
+                    return False
+                continue    
+            
+            if not np.all(np.isclose(data1,data2)):
+                print("Field "+ str(name) + " not equal")
+                return False
+
+    if CompareFields(mesh1.nodeFields,mesh2.nodeFields) == False:
+        return False
+
+    if CompareFields(mesh1.elemFields,mesh2.elemFields) == False:
+        return False
 
     return True
 
