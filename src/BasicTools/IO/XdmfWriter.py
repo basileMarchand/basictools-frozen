@@ -980,7 +980,10 @@ class XdmfWriter(WriterBase):
                 typename = 'Char'
                 s = data.dtype.itemsize
             else:
-                raise(Exception('Output Not implemented for data of type ' + str(type(data[0]))))                                                         # pragma: no cover
+                print("Warning : skipping field '" + str(name) + "' of type '" + str(type(data[0])) +" type not supported'")
+                return None
+                #raise(Exception('Output Not implemented for data of type ' + )))                                                         # pragma: no cover
+
 
             dimension = ArrayToString(shape)
 
