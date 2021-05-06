@@ -112,8 +112,12 @@ tagsTypes = [np.int8, np.uint8, int]
 
 def VtkFieldToNumpyField(support,vtkField):
     from vtk.util import numpy_support
+    import vtk 
 
     name = vtkField.GetName()
+
+    if isinstance(vtkField, vtk.vtkStringArray):
+        return (name, np.array([vtkField.GetValue(x) for x in range(vtkField.GetNumberOfValues() )], dtype=object))
 
     data = numpy_support.vtk_to_numpy(vtkField)
     if support.IsConstantRectilinear():
@@ -132,7 +136,18 @@ def NumpyFieldToVtkField(support,fielddata,fieldname):
 
 
     isimagedata = support.IsConstantRectilinear()
-    outputtype = numpy_support.get_vtk_array_type(fielddata.dtype)
+    if type(fielddata[0]) in [ str, object, np.str_ ]: # working on list of string or numpy of objects
+        # for the moment only work for scalar (1 components fields )
+        import vtk
+        VTK_data = vtk.vtkStringArray()
+        VTK_data.SetNumberOfComponents(1)
+        VTK_data.SetNumberOfTuples(len(fielddata))
+        for i,v in enumerate(fielddata):
+            VTK_data.InsertValue(i,str(v))
+        VTK_data.SetName(fieldname)
+        return VTK_data
+    else:
+        outputtype = numpy_support.get_vtk_array_type(fielddata.dtype)
 
     if len(fielddata.shape) > 1:
       if isimagedata:
@@ -202,9 +217,9 @@ def PlotMesh(mesh):# pragma: no cover
     iren.SetInteractorStyle(style)
 
     ren.AddActor(cylinderActor)
-    ren.GradientBackgroundOn();
-    ren.SetBackground(0.3176,0.3412,0.4314);
-    ren.SetBackground2(0,0,0.1647);
+    ren.GradientBackgroundOn()
+    ren.SetBackground(0.3176,0.3412,0.4314)
+    ren.SetBackground2(0,0,0.1647)
     renWin.SetSize(800, 600)
 
     buttonWidget = vtk.vtkButtonWidget()
@@ -267,16 +282,16 @@ def PlotMesh(mesh):# pragma: no cover
     image = r.GetOutput()
     buttonRepresentation.SetButtonTexture(0, image)
 
-    buttonRepresentation.SetPlaceFactor(1);
-    buttonRepresentation.PlaceWidget([0,50,0,50,0,0]);
+    buttonRepresentation.SetPlaceFactor(1)
+    buttonRepresentation.PlaceWidget([0,50,0,50,0,0])
 
-    buttonWidget.SetRepresentation(buttonRepresentation);
+    buttonWidget.SetRepresentation(buttonRepresentation)
 
     buttonWidget.On();
 
     iren.Initialize()
 
-    axesActor = vtk.vtkAxesActor();
+    axesActor = vtk.vtkAxesActor()
     axes = vtk.vtkOrientationMarkerWidget()
     axes.SetOrientationMarker(axesActor)
     axes.SetInteractor(iren)
@@ -540,13 +555,10 @@ def VtkToMesh(vtkmesh, meshobject=None, FieldsAsTags=True):
     EOIds = np.argsort(EOIds)
     if vtkmesh.GetCellData().GetNumberOfArrays():
         for f in range(vtkmesh.GetCellData().GetNumberOfArrays()):
-            data =  vtkmesh.GetCellData().GetArray(f)
-            if data is None:# pragma: no cover
-                continue
+            data =  vtkmesh.GetCellData().GetAbstractArray(f)
 
-            data =  vtkmesh.GetCellData().GetArray(f)
             (name,field) = VtkFieldToNumpyField(out,data)
-            Elfield = np.empty(field.shape,dtype=float)
+            Elfield = np.empty(field.shape,dtype=field.dtype)
             if len(field.shape) > 1:
                 Elfield[EOIds,:] = field[range(field.shape[0]),:]
             else:
@@ -577,9 +589,9 @@ def GetInputBasicTools(request, inInfoVec, outInfoVec,FieldsAsTags=False, connec
     vtkobj = GetInputVtk(request, inInfoVec, outInfoVec, connection=connection, port=port)
     return VtkToMesh(vtkobj,FieldsAsTags=FieldsAsTags)
 
-def GetOutputVtk(request, inInfoVec, outInfoVec, copyAttr = True):
+def GetOutputVtk(request, inInfoVec, outInfoVec, copyAttr = True, outputNumber= 0):
     from vtkmodules.vtkCommonDataModel import vtkUnstructuredGrid
-    output = vtkUnstructuredGrid.GetData(outInfoVec, 0)
+    output = vtkUnstructuredGrid.GetData(outInfoVec, outputNumber)
     if copyAttr :
         input0 = GetInputVtk(request, inInfoVec, outInfoVec)
         output.CopyAttributes(input0)
@@ -652,7 +664,7 @@ def CheckIntegrity_MeshToVtk(GUI=False):
     res = CreateMeshOfTriangles([[0,0,0],[1,0,0],[0,1,0],[0,0,1] ], [[0,1,2],[0,2,3]])
     res.nodeFields = {"x": res.nodes[:,0].flatten(), "Pos":res.nodes}
     res.nodesTags.CreateTag("FirstPoint").AddToTag(0)
-    res.elemFields = {"SecondPoint": res.GetElementsOfType(ElementNames.Triangle_3).connectivity[:,1].flatten(), "conn": res.GetElementsOfType(ElementNames.Triangle_3).connectivity }
+    res.elemFields = {"SecondPoint": res.GetElementsOfType(ElementNames.Triangle_3).connectivity[:,1].flatten(), "conn": res.GetElementsOfType(ElementNames.Triangle_3).connectivity, "FE Names":np.array(['c2d3','c2d3'],dtype=object) }
     res.GetElementsOfType(ElementNames.Triangle_3).tags.CreateTag("FirstTriangle").AddToTag(0)
     sol = MeshToVtk(res,TagsAsFields= True)
     print(sol)
