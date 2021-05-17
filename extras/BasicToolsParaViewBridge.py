@@ -218,7 +218,7 @@ try:
 
 
         def RequestData(self, request, inInfoVec, outInfoVec):
-            mesh = GetInputBasicTools(request,inInfoVec,outInfoVec,FieldsAsTags=True,connectino=0,port=0)
+            mesh = GetInputBasicTools(request,inInfoVec,outInfoVec,FieldsAsTags=True,connection=0,port=0)
 
             from BasicTools.IO.IOFactory import CreateWriter
             writer = self.basicToolsReader
@@ -416,6 +416,147 @@ try:
             SetOutputBasicTools(request, inInfoVec, outInfoVec,outputmesh )
             return 1
 
+    @smproxy.filter(name="Tensor Rotation")
+    @smhint.xml("""<ShowInMenu category="BasicTools" />""")
+    @smproperty.input(name="Input", port_index=0)
+    @smdomain.datatype(dataTypes=["vtkUnstructuredGrid","vtkPolyData"], composite_data_supported=False)
+    class TensorRotation(VTKPythonAlgorithmBase):
+        def __init__(self):
+            VTKPythonAlgorithmBase.__init__(self, nInputPorts=1, nOutputPorts=1, outputType="vtkUnstructuredGrid")
+            self.V1Name = None
+            self.V2Name = None
+            self.__firstStressArray = None
+            self.WorkOnCells = False
+            self.__inverse = False
+
+        def RequestData(self, request, inInfoVec, outInfoVec):
+            from vtkmodules.vtkCommonDataModel import  vtkDataSet
+            input0 = GetInputBasicTools(request, inInfoVec, outInfoVec,FieldsAsTags=True,connection=0)
+
+            mean0 = np.sum(input0.nodes,axis=0)/input0.GetNumberOfNodes()
+            #mean1 = np.sum(input1.nodes,axis=0)/input1.GetNumberOfNodes()
+            # the user must not modify the inputs
+            outputmesh = copy.copy(input0)
+            if self.WorkOnCells:
+                data = copy.copy(input0.elemFields)
+            else:
+                data = copy.copy(input0.nodeFields)
+            from BasicTools.Containers.UnstructuredMeshFieldOperations import  ApplyRotationMatrixTensorField
+
+            db = {}
+            db["XX"] =[["XX","XY","XZ"],["XY","YY","YZ"],["XZ","YZ","ZZ"] ]
+            db["xx"] =[["xx","xy","xz"],["xy","yy","yz"],["xz","yz","zz"] ]
+            db["00"] =[["00","01","02"],["01","11","12"],["02","12","22"] ]
+            db["11"] =[["11","12","13"],["12","22","23"],["13","23","33"] ]
+
+            part1 = self.__firstStressArray[:-2]
+            part2 = db[self.__firstStressArray[-2:]]
+            fieldstoTreat = [ [ part1+x for x in p] for p in part2]
+
+            newfields = ApplyRotationMatrixTensorField(data, fieldstoTreat, baseNames=[self.V1Name,self.V2Name],inplace=False,prefix="new_",inverse=self.__inverse)
+            
+            if self.WorkOnCells:
+                data.update(newfields)
+                outputmesh.elemFields = data
+            else:
+                data = input0.nodeFields
+                outputmesh.elemFields = data
+                
+            #outputmesh.nodes = input0.nodes + (mean1 - mean0)
+            SetOutputBasicTools(request, inInfoVec, outInfoVec,outputmesh )
+            return 1
+
+        @smproperty.xml("""<StringVectorProperty command="SetV1Array"
+                            default_values="1"
+                            element_types="0 0 0 0 2"
+                            name="OrientationV1Array"
+                            number_of_elements="5">
+        <ArrayListDomain attribute_type="Vectors"
+                         input_domain_name="vector_array"
+                         name="array_list"
+                         none_string="V1 not selected">
+          <RequiredProperties>
+            <Property function="Input"
+                      name="Input" />
+          </RequiredProperties>
+        </ArrayListDomain>
+        <Documentation>
+Select the input array to use for orienting the glyphs.
+        </Documentation>
+      </StringVectorProperty>""")
+        def SetV1Array(self, *val):
+            #PointData            vals  (1, 0, 0, 0, 'Normals')
+            #CellData             vals  (1, 0, 0, 1, 'Normals')
+
+            if self.V1Name != val[4] or self.WorkOnCells != val[3]:
+                self.V1Name = val[4]
+                self.WorkOnCells = val[3]
+                self.Modified()
+    
+        @smproperty.xml("""<StringVectorProperty command="SetV2Array"
+                            default_values="1"
+                            element_types="0 0 0 0 2"
+                            name="OrientationV2Array"
+                            number_of_elements="5">
+        <ArrayListDomain attribute_type="Vectors"
+                         input_domain_name="vector_array"
+                         name="array_list"
+                         none_string="V2 not selected">
+          <RequiredProperties>
+            <Property function="Input"
+                      name="Input" />
+          </RequiredProperties>
+        </ArrayListDomain>
+        <Documentation>
+Select the input array to use for orienting the glyphs.
+        </Documentation>
+      </StringVectorProperty>""")
+        def SetV2Array(self, *val):
+            if self.V2Name != val[4] or self.WorkOnCells != val[3] :
+                self.V2Name = val[4]
+                self.WorkOnCells = val[3]
+                self.Modified()
+        
+        @smproperty.xml("""<StringVectorProperty command="SetStressArray"
+                            default_values="1"
+                            element_types="0 0 0 0 2"
+                            name="FirstStressArray"
+                            number_of_elements="5">
+        <ArrayListDomain attribute_type="Vectors"
+                         input_domain_name="vector_array"
+                         name="array_list"
+                         none_string="V2 not selected">
+          <RequiredProperties>
+            <Property function="Input"
+                      name="Input" />
+          </RequiredProperties>
+        </ArrayListDomain>
+        <Documentation>
+Select the input array to use for orienting the glyphs.
+        </Documentation>
+      </StringVectorProperty>""")
+        def SetStressArray(self, *val):
+            if self.__firstStressArray != val[4] or self.WorkOnCells != val[3] :
+                self.__firstStressArray = val[4]
+                self.WorkOnCells = val[3]
+                self.Modified()
+
+
+        @smproperty.xml("""<IntVectorProperty
+                             name="Inverse"
+                             command="SetInverse"
+                             number_of_elements="1"
+                             default_values="0">
+                             <BooleanDomain name="bool"/>
+            <Documentation>
+              This property indicates if we need to apply the invers of the transformation. 
+            </Documentation>
+            </IntVectorProperty>""")
+        def SetInverse(self, val):
+            val = int(val)
+            if self.__inverse != val :
+                self.__inverse = val
+                self.Modified()
 
     @smproxy.filter(name="Mesh Filter")
     @smhint.xml("""<ShowInMenu category="BasicTools" />""")
