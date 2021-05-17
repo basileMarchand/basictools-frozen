@@ -267,6 +267,17 @@ class Transform(BaseOutputObject):
     def ApplyTransformDirection(self,point):
         return np.dot(self.RMatrix,point)
 
+    def ApplyTransformTensor(self,point):
+        return np.dot(self.RMatrix,np.dot(point,self.RMatrix.T))
+
+    def ApplyInvTransformTensor(self,tensor):
+        # we apply inverse of the transformation
+        if self.keepNormalised == False:
+            raise
+            #inv = np.linalg.inv(self.RMatrix)
+            #return np.dot(inv,np.dot(tensor,self.RMatrix))
+        else:
+            return np.dot(self.RMatrix.T,np.dot(tensor,self.RMatrix))
 
     def GetOrthoNormalBase(self):
         return Transform(self.offset, self.RMatrix[0,:], self.RMatrix[1,:])
