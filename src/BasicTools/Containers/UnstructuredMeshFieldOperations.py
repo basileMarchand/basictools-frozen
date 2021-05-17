@@ -14,6 +14,40 @@ from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
 from BasicTools.Containers.UnstructuredMeshCreationTools import QuadToLin
 from BasicTools.Containers.UnstructuredMeshInspectionTools import  ExtractElementByDimensionalityNoCopy
 
+
+def ApplyRotationMatrixTensorField(fields,fieldstoTreat, baseNames=["v1","v2"],inplace=False,prefix="new_",inverse=False):
+    nbentries = fields[fieldstoTreat[0][0]].shape[0]
+    from BasicTools.FE.ProblemData import Transform
+
+    bs =  Transform()
+    bs.keepNormalised = True
+    v1 = fields[baseNames[0]]
+    v2 = fields[baseNames[1]]
+    tempdata = np.zeros((nbentries,3,3))
+    for i in range(3):
+        for j in range(3):
+            tempdata[:,i,j] = fields[fieldstoTreat[i][j]][:]
+
+    for i in range(nbentries):
+        bs.SetFirst(v1[i,:])
+        bs.SetSecond(v2[i,:])
+        if inverse:
+            tempdata[i,:,:] = bs.ApplyInvTransformTensor(tempdata[i,:,:])
+        else:
+            tempdata[i,:,:] = bs.ApplyTransformTensor(tempdata[i,:,:])
+
+    output = {}
+    for i in range(3):
+        for j in range(3):
+            output[fieldstoTreat[i][j]]  = tempdata[:,i,j]
+
+    output = {(prefix+x):v for x,v in output.items()}
+    
+    if inplace:
+        fields.update(output)
+
+    return output
+
 def CopyFieldsFromOriginalMeshToTargetMesh(inmesh,outmesh):
     """ Function to copy fields for the original mesh to the
         derivated mesh (mesh generated from one operations)"""
@@ -449,6 +483,30 @@ def GetValueAtPosLinearSymplecticMesh(fields,mesh,constantRectilinearMesh):
 
 
 #------------------------- CheckIntegrity ------------------------
+def CheckIntegrityApplyRotationMatrixTensorField(GUI=False):
+    from BasicTools.Containers.UnstructuredMeshCreationTools import CreateUniformMeshOfBars
+    inputmesh = CreateUniformMeshOfBars(0,1,10)
+    nn = inputmesh.GetNumberOfNodes()
+    inputmesh.nodeFields["Sxx"] = np.ones(nn)
+    inputmesh.nodeFields["Syy"] = np.ones(nn)*2
+    inputmesh.nodeFields["Szz"] = np.ones(nn)*3
+    inputmesh.nodeFields["Sxy"] = np.ones(nn)*0
+    inputmesh.nodeFields["Sxz"] = np.ones(nn)*0
+    inputmesh.nodeFields["Syz"] = np.ones(nn)*0
+
+    inputmesh.nodeFields["v1"] = np.zeros((nn,3))
+    inputmesh.nodeFields["v1"][:,0] = 1
+    inputmesh.nodeFields["v2"] = np.zeros((nn,3))
+    inputmesh.nodeFields["v2"][:,2] = 1
+    
+
+    res = ApplyRotationMatrixTensorField(inputmesh.nodeFields,[["Sxx","Sxy","Sxz"],["Sxy","Syy","Syz"],["Sxz","Syz","Szz"]], baseNames=["v1","v2"],inplace=False,prefix="new_",inverse=False)
+
+    for k,v in res.items():
+        print(k,v)
+
+    return "ok"
+
 def RunTransfer(inputFEField,data,outmesh):
     from BasicTools.Helpers.Tests import TestTempDir
     tempdir = TestTempDir.GetTempPath()
@@ -663,7 +721,8 @@ def CheckIntegrity(GUI=False):
     CheckIntegrity1DTo2D,
     CheckIntegrity1D,
     CheckIntegrity2D,
-    CheckIntegrity2DTo3D
+    CheckIntegrity2DTo3D,
+    CheckIntegrityApplyRotationMatrixTensorField
     ]
     for f in totest:
         print("running test : " + str(f))
