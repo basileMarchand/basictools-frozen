@@ -338,6 +338,15 @@ class ConstantRectilinearMesh(MeshBase):
 
         return self.nodes
 
+
+    def GetElementsInTag(self,tagname,useOriginalId=False) :
+        """
+        return a list with the ids of the elements in a tag (only for the structElements)
+        """
+        if tagname in self.structElements.tags:
+            return self.structElements.tags[tagname].GetIds()
+        return np.zeros((0,),dtype=int)
+        
     def GetNodalIndicesOfBorder(self,border=0):
 
         dim =  np.maximum(self.__dimensions-border*2,0)
