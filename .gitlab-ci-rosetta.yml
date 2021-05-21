@@ -47,6 +47,7 @@ test_with_pytest_and_coverage:
         - module load PISCO/Python3Dev
         - export ABAQUS_NO_FAIL="True"
         - export ZSET_NO_FAIL="True"
+        - export CATALYST_NO_FAIL="True"
         - mkdir -p public/coverage
         - pytest --cov=BasicTools --cov-report=html:public/coverage --ignore=src/BasicTools/IO/ParaViewBridge --ignore=src/BasicTools/IO/Wormhole.py src
     coverage: '/pc_cov">([0-9]+\.?[0-9]+?%)/'
@@ -62,6 +63,7 @@ test_with_coverage_Python3:
     script:
         - module load PISCO/Python3Dev
         - export ZSET_NO_FAIL="True"
+        - export CATALYST_NO_FAIL="True"
         - export PYTHONPATH=$PWD/src:$PYTHONPATH
         - mkdir -p public/coverage3
         - cd public/coverage3
@@ -80,6 +82,7 @@ test_full_output_stop_at_first_error_Python3:
     script:
         - module load PISCO/Python3Dev
         - export ZSET_NO_FAIL="True"
+        - export CATALYST_NO_FAIL="True"
         - export PYTHONPATH=$PWD/src:$PYTHONPATH
         - python src/BasicTools/Helpers/Tests.py -e ${MYPROJECT} -f -s
     when: on_failure
