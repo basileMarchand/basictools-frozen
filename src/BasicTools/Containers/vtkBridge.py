@@ -152,7 +152,12 @@ def NumpyFieldToVtkField(support,fielddata,fieldname):
     if len(fielddata.shape) > 1:
       if isimagedata:
           dataView = fielddata.view()
-          dims = list(support.GetDimensions())
+          #automatic detection if is a nodeField or a elemField
+          if np.prod(dataView.shape[:-1]) == np.prod(support.GetDimensions()):
+              dims = list(support.GetDimensions())
+          else:
+              newshape= list([ (x-1 if x-1 >0 else 1 )  for x in support.GetDimensions()])
+              dims  = newshape
           dims.append(fielddata.shape[1])
           dataView.shape = tuple(dims)
           VTK_data = numpy_support.numpy_to_vtk(num_array=np.swapaxes(dataView,0,2).ravel(), deep=True, array_type=outputtype)
@@ -163,7 +168,14 @@ def NumpyFieldToVtkField(support,fielddata,fieldname):
       #cpt = 0
       if isimagedata:
           dataView = fielddata.view()
-          dataView.shape = support.GetDimensions()
+          #automatic detection if is a nodeField or a elemField
+          if np.prod(dataView.shape) == np.prod(support.GetDimensions()):
+              #nodefield
+              dataView.shape = support.GetDimensions()
+          else:
+              #elemfield
+              newshape= tuple([ (x-1 if x-1 >0 else 1 )  for x in support.GetDimensions()])
+              dataView.shape = newshape
           VTK_data = numpy_support.numpy_to_vtk(num_array=np.swapaxes(dataView,0,2).ravel(), deep=True, array_type=outputtype)
       else:
           VTK_data = numpy_support.numpy_to_vtk(num_array=fielddata, deep=True, array_type=outputtype)
