@@ -160,19 +160,13 @@ class Transform(BaseOutputObject):
        self.keepNormalised = True
 
        # offset off the new origin with respect to the old
-       if offset is None:
-           self.SetOffset([0.0, 0.0, 0.0])
-       else:
+       if offset is not None:
            self.SetOffset(offset)
 
-       if first is None:
-           self.SetFirst([1.0, 0.0, 0.0])
-       else:
+       if first is not None:
            self.SetFirst(first)
 
-       if second is None:
-           self.SetSecond([0.0, 1.0, 0.0])
-       else:
+       if second is not None:
            self.SetSecond(second)
 
     def GetDirection(self,i, pos=None, direction=None):
@@ -196,7 +190,8 @@ class Transform(BaseOutputObject):
         # the z direction is calculated with a cross product
         first = self.RMatrix[0,:]
         second = np.array(data, dtype=np.float)
-        second -= first*np.dot(first,second)/np.dot(first,first)
+        if self.keepOrthogonal:
+            second -= first*np.dot(first,second)/np.dot(first,first)
         if self.keepNormalised :
             second /= np.linalg.norm(second)
         self.RMatrix[1,:] = second
@@ -210,8 +205,9 @@ class Transform(BaseOutputObject):
             self.RMatrix[2,:] = np.cross(first, second)
         else:
             third = np.array(data, dtype=np.float)
-            third -= first*np.dot(first,third)/np.dot(first,first)
-            third -= second*np.dot(second,third)/np.dot(second,second)
+            if self.keepOrthogonal:
+                third -= first*np.dot(first,third)/np.dot(first,first)
+                third -= second*np.dot(second,third)/np.dot(second,second)
             self.RMatrix[2,:] = third
 
         if self.keepNormalised :
@@ -236,48 +232,68 @@ class Transform(BaseOutputObject):
                 for i in [0,1,2]:
                     self.RMatrix[i,:] /= np.linalg.norm(self.RMatrix[i,:])
 
+    def ApplyTransform(self,point):
+        # we apply inverse of the transformation
+        #p = M*(point-self.offset)
+        point = np.asarray(point)
+
+        op = self.RMatrix
+
+        return self.__ApplyOpForEveryLine(op,point-self.offset)
+
     def ApplyInvTransform(self,point):
         # we apply inverse of the transformation
-        #p = point+self.offset
-        if self.keepNormalised == False:
-            return np.dot(np.linalg.inv(self.RMatrix),point)+self.offset
+        #p = M^-1*point+self.offset
+        point = np.asarray(point)
+
+        if self.keepNormalised == False or self.keepOrthogonal == False:
+            op = np.linalg.inv(self.RMatrix)
         else:
-            return np.dot(self.RMatrix.T,point)+self.offset
+            op = self.RMatrix.T
+        
+        return self.__ApplyOpForEveryLine(op,point)+self.offset
+
+    def ApplyTransformDirection(self,point):
+        point = np.asarray(point)
+
+        op = self.RMatrix
+
+        return self.__ApplyOpForEveryLine(op,point)
 
     def ApplyInvTransformDirection(self,point):
         # we apply inverse of the transformation
         #p = point+self.offset
-        if self.keepNormalised == False:
-            return np.dot(np.linalg.inv(self.RMatrix),point)
+        point = np.asarray(point)
+
+        if self.keepNormalised == False or self.keepOrthogonal == False:
+            op = np.linalg.inv(self.RMatrix)
         else:
-            return np.dot(self.RMatrix.T,point)
+            op = self.RMatrix.T
 
-    def ApplyTransform(self,point):
-        # we apply inverse of the transformation
-        #p = point+self.offset
-        point = np.array(point)
-        if len(point.shape) == 1:
-            return np.dot(self.RMatrix,point-self.offset)
-        else:
-            res = np.empty_like(point)
-            for i in range(point.shape[0]):
-                res[i,:] = self.ApplyTransform(point[i,:])
-            return res
+        return self.__ApplyOpForEveryLine(op,point)
 
-    def ApplyTransformDirection(self,point):
-        return np.dot(self.RMatrix,point)
-
-    def ApplyTransformTensor(self,point):
-        return np.dot(self.RMatrix,np.dot(point,self.RMatrix.T))
+    def ApplyTransformTensor(self,tensor):
+        tensor = np.asarray(tensor)
+        op = self.RMatrix
+        return np.dot(op,np.dot(tensor,op.T))
 
     def ApplyInvTransformTensor(self,tensor):
         # we apply inverse of the transformation
-        if self.keepNormalised == False:
-            raise
-            #inv = np.linalg.inv(self.RMatrix)
-            #return np.dot(inv,np.dot(tensor,self.RMatrix))
+
+        if self.keepNormalised == False or self.keepOrthogonal == False:
+            op = np.linalg.inv(self.RMatrix)
         else:
-            return np.dot(self.RMatrix.T,np.dot(tensor,self.RMatrix))
+            op = self.RMatrix.T
+        return np.dot(op,np.dot(tensor,op.T))
+
+
+    def __ApplyOpForEveryLine(self,op,points):
+
+        if len(points.shape) == 2:
+            return np.dot(op,points.T).T
+        else:
+            return np.dot(op,points)
+
 
     def GetOrthoNormalBase(self):
         return Transform(self.offset, self.RMatrix[0,:], self.RMatrix[1,:])
