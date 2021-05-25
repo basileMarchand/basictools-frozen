@@ -694,7 +694,7 @@ def CheckIntegrityTTC(ttc,GUI=False):
     print("v ")
     print(v)
     if len(v) != 3:
-        raise
+        raise Exception("Error in CheckIntegrity")
 
     CH.SetOp(sys,rhs)
 
@@ -712,7 +712,7 @@ def CheckIntegrityTTC(ttc,GUI=False):
     contrainedSolutionError =  np.linalg.norm(Kc.dot(Uc) - Fc)/np.linalg.norm(Fc)
     print("\nContraines solution error (|Kc(Uc)-Fc|/|Fc|)  : \n", contrainedSolutionError)
     if contrainedSolutionError > 1e-8:
-        raise
+        raise Exception("Error in CheckIntegrity")
 
     # try to solve the constrained system Using the matvec
     # we use the gmres to correctrly treat non defined matrices
@@ -732,11 +732,11 @@ def CheckIntegrityTTC(ttc,GUI=False):
     errorA = np.linalg.norm(Kc.dot(sol)- Fc)/np.linalg.norm(Fc)
     print('Error on the computed solution (using matricexs) |Kc(Uc)-Fc|/|Fc| \n', errorA)
     if errorA > 10e-8:
-        raise
+        raise Exception("Error in CheckIntegrity")
     errorB = np.linalg.norm(CH.matvec(sol)- Fc)/np.linalg.norm(Fc)
     print('Error on the computed solution (using matvec) | Op(Uc)-Fc |/|Fc| \n', errorB)
     if errorB > 10e-8:
-        raise
+        raise Exception("Error in CheckIntegrity")
 
     computed_solution = CH.RestoreSolution(sol)
     print("--------------------------")
@@ -745,7 +745,7 @@ def CheckIntegrityTTC(ttc,GUI=False):
     errorC = np.linalg.norm(computed_solution - refsol )/np.linalg.norm(refsol)
     print("relative error |ref_sol - computed_sol|/|ref_sol|",errorC)
     if errorC > 1e-8:
-        raise
+        raise Exception("Error in CheckIntegrity")
 
     print("---------- Solution using spsolve --------------  \n", sol )
     sol = sparse.linalg.spsolve(Kc,Fc )
@@ -755,7 +755,7 @@ def CheckIntegrityTTC(ttc,GUI=False):
     errorD = np.linalg.norm(dfsol - refsol )/np.linalg.norm(refsol)
     print("Error on the solution |ref_sol - computed_sol|/|ref_sol| \n ", errorD)
     if errorD > 1e-8:
-        raise
+        raise Exception("Error in CheckIntegrity")
     print(CH)
     print('-------------------  '+ttc+' DONE  -----------------')
 
