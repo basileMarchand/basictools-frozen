@@ -201,7 +201,8 @@ def TransferFEFieldToIPField(inField,ruleName=None,rule=None,der=-1,elementFilte
         nbelements = op[elemType].shape[0]//len(irule[elemType][1])
 
         data = op[elemType].dot(inField.data)
-        outField.data[elemType] =np.reshape(data,(nbelements, len(irule[elemType][1]) ),'F')
+        outField.data[elemType] = np.reshape(data,(nbelements, len(irule[elemType][1]) ),'F')
+        outField.data[elemType] = np.ascontiguousarray(outField.data[elemType])
 
     return outField
 
