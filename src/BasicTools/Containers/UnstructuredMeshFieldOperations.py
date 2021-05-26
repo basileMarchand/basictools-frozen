@@ -169,6 +169,7 @@ def GetFieldTransferOp(inputField,targetPoints,method=None,verbose=False):
 
             posnumbering = data.connectivity
             posspace = LagrangeSpaceGeo[data.elementType]
+            posspace.Create()
             localspace.Create()
             coordAtDofs = imesh.nodes[posnumbering[lenb,:],:]
 
