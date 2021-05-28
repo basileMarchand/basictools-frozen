@@ -23,11 +23,11 @@ class Tag(object):
 
 
     def AddToTag(self,tid):
-        if type(tid).__module__ == np.__name__:
-            self._id = np.resize(self._id, (self.cpt+tid.size,))
-            self._id[self.cpt:] = tid
-
-            self.cpt += tid.size
+        if hasattr(tid, '__iter__'): 
+            if len(self._id) <= self.cpt+len(tid):
+                self._id = np.resize(self._id, (len(self._id)*2+len(tid),))
+            self._id[self.cpt:self.cpt+len(tid)] = tid
+            self.cpt += len(tid)
         else:
             if len(self._id) <= self.cpt:
                 self._id = np.resize(self._id, (self.cpt*2+1,))
