@@ -105,12 +105,18 @@ class Filter(BOO):
         """
         if len(self.tags) == 0:
             return None
-
-        res = np.zeros(0,dtype=int)
-        for tag in self.tags:
-            if tag in tags:
-                res = np.union1d(res,tags[tag].GetIds())
-        return res
+        if len(self.tags) > 10:
+            res = np.zeros(numberOfObjects,dtype=bool)
+            for tag in self.tags:
+                if tag in tags:
+                    res[tags[tag].GetIds()] = True 
+            return np.where(res)[0]
+        else:
+            res = np.zeros(0,dtype=int)
+            for tag in self.tags:
+                if tag in tags:
+                    res = np.union1d(res,tags[tag].GetIds())
+            return res
 
     def intersect1D(self,first,second):
         """
@@ -837,7 +843,7 @@ def CheckIntegrity( GUI=False):
         except:
             pass
         else:
-            raise # pragma no cover
+            raise Exception("Error in the CheckIntegrity ")# pragma no cover
 
     MustFail(ff.SetZoneTreatment,"toto")
     ff.ApplyOnElements(op)
