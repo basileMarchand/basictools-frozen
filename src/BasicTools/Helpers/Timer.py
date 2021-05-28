@@ -13,24 +13,31 @@ class Timer():
     def __init__(self, name=None):
         self.name = name
         self.starttime = 0
+        self.stoptime = 0
         if not name in Timer.almanac:
             # cumulative time and number of time called
-            Timer.almanac[name] = [0,0]
+            Timer.almanac[name] = [0.,0]
 
     def __enter__(self):
-        self.starttime =  time.time()
+        self.Start()
 
     def __exit__(self, type, value, traceback):
-        stoptime = time.time()
-        data = Timer.almanac[self.name]
-        data[0] += stoptime-self.starttime
-        data[1] += 1
+        self.Stop()
 
     def __str__(self):
+        if self.starttime  == 0 and self.stoptime==0:
+            return self.PrintTimes()
         res = ""
-        for name, val in self.almanac.items():
+        val = self.almanac[self.name]
+        res += "\n" + str(self.name) + ": " + str(time.time()-self.starttime if self.stoptime == 0 else self.stoptime-self.starttime ) +"  ("+str(val[1])+") : " + '{:6.3e}'.format(val[0]) + " s (mean {:6.3e} s/call)".format(val[0]/val[1] )
+        return res
+
+    @classmethod
+    def PrintTimes(cls):
+        res = ""
+        for name, val in cls.almanac.items():
             if name is None: continue
-            res += "\n" + str(name) + " ("+str(val[1])+") : " + '{:6.3e}'.format(val[0]) + " s (mean {:6.3e} s/call)".format(val[0]/val[1] )
+            res += "\n" + str(name) + ":   ("+str(val[1])+") : " + '{:6.3e}'.format(val[0]) + " s (mean {:6.3e} s/call)".format(val[0]/val[1] )
         return res
 
     def Start(self):
@@ -38,9 +45,9 @@ class Timer():
         return self
 
     def Stop(self):
-        stoptime = time.time()
+        self.stoptime = time.time()
         data = Timer.almanac[self.name]
-        data[0] += stoptime-self.starttime
+        data[0] += self.stoptime-self.starttime
         data[1] += 1
 
     def Reset(self):
@@ -56,7 +63,7 @@ def CheckIntegrity(GUI=False):
     with Timer("Time to Solve"):
         print('toto')
 
-    print(Timer())
+    print(Timer.PrintTimes())
     Timer().Reset()
 
     with Timer("Time of 1 print"):
@@ -78,7 +85,7 @@ def CheckIntegrity(GUI=False):
     print("3 Mississippi")
     a.Stop()
 
-    print(Timer())
+    print(Timer.PrintTimes())
 
     return "ok"
 
