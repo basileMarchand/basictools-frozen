@@ -262,6 +262,7 @@ class FilterOP(BOO):
             #(if available)
             if len(self.filters):
                 self.mesh = self.filters[0].mesh
+        self.withError = False
 
     def IsEquivalent(self, other):
         if id(self) == id(other):
@@ -310,10 +311,15 @@ class FilterOP(BOO):
 
                 print("Number of element of type " + str(name)+ " is : "  + str(len(ids) )
         """
+        elementsFound = False
         for name,data in self.mesh.elements.items():
             ids = self.GetIdsToTreat(data)
             if len(ids) == 0: continue
+            elementsFound = True
             yield name, data, ids
+
+        if elementsFound == False and self.withError:
+            raise Exception("Error!! Zero element in the element filter : \n" + str(self))
 
     def ApplyOnElements(self,op):
         """
@@ -453,6 +459,8 @@ class ElementFilter(Filter):
 
         if elementType is not None:
             self.AddElementType(elementType)
+
+        self.withError = False
 
     def IsEquivalent(self, other):
         res = super(ElementFilter,self).IsEquivalent(other)
@@ -626,10 +634,15 @@ class ElementFilter(Filter):
 
                 print("Number of 2D element of type " + str(name)+ " is : "  + str(len(ids) )
         """
+        elementsFound = False
         for name,data in self.mesh.elements.items():
             ids = self.GetIdsToTreat(data)
             if len(ids) == 0: continue
+            elementsFound = True
             yield name, data, ids
+
+        if elementsFound  == False and self.withError:
+            raise Exception("Error!! Zero element in the element filter : \n" + str(self))
 
     def ApplyOnElements(self,op):
         """
