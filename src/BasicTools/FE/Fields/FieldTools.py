@@ -15,6 +15,29 @@ from BasicTools.FE.DofNumbering import ComputeDofNumbering
 from BasicTools.FE.Fields.IPField import FieldBase
 
 
+def NodeFieldToFEField(mesh):
+    numbering = ComputeDofNumbering(mesh,LagrangeSpaceGeo,fromConnectivity=True)
+    res = {}
+    for name,values in mesh.nodeFields.items():
+        if len(values.shape) == 2:
+            for i in range(values.shape[1]):
+                res[name+"_"+str(i)] = FEField(name=name+"_"+str(i), mesh=mesh, space=LagrangeSpaceGeo, numbering=numbering,data=values[:,i])
+        else:
+            res[name] = FEField(name=name, mesh=mesh, space=LagrangeSpaceGeo, numbering=numbering,data=values)
+    return res
+
+def ElemFieldsToFEField(mesh):
+    from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceP0
+    numbering = ComputeDofNumbering(mesh,LagrangeSpaceP0)
+    res = {}
+    for name,values in mesh.nodeFields.items():
+        if len(values.shape) == 2:
+            for i in range(values.shape[1]):
+                res[name+"_"+str(i)] = FEField(name=name+"_"+str(i), mesh=mesh, space=LagrangeSpaceP0, numbering=numbering, data=values[:,i])
+        else:
+            res[name] = FEField(name=name, mesh=mesh, space=LagrangeSpaceP0, numbering=numbering, data=values)
+    return res
+
 def FEFieldsDataToVector(listOfFields,outvec=None):
     if outvec is None:
         s = sum([f.numbering["size"] for f in listOfFields])
@@ -42,7 +65,7 @@ def GetPointRepresentation(listOfFEFields,fillvalue=0):
 def GetCellRepresentation(listOfFEFields,fillvalue=0):
 
     nbfields= len(listOfFEFields)
-    res = np.empty(listOfFEFields[0].mesh.GetNumberOfElements(), nbfields)
+    res = np.empty((listOfFEFields[0].mesh.GetNumberOfElements(), nbfields))
     for i,f in enumerate(listOfFEFields):
         res[:,i] = f.GetCellRepresentation(fillvalue=fillvalue)
     return res
@@ -441,7 +464,7 @@ class FieldsEvaluator():
         elif on == "FEField":
             res = self.originals
         else:
-            raise
+            raise Exception("Target support not supported (" + str(on) + ")" )
         result = dict(self.constants)
         result.update(res)
         return result
@@ -598,8 +621,21 @@ def CheckIntegrity(GUI=False):
 
     res = FE.Compute(op,"FEField",usesympy=True)
     print(res.data)
+    mesh.nodeFields["FEField_onPoints"] = GetPointRepresentation((res,)) 
 
+    GetCellRepresentation((res,))
+
+    print(NodeFieldToFEField(mesh))
+    print(ElemFieldsToFEField(mesh))
+
+    vect = FEFieldsDataToVector([res])
+
+    VectorToFEFieldsData(vect,[res])
     res = FE.GetOptimizedFunction(op)
+
+    obj = FieldsMeshTransportation()
+
+
     return "ok"
 
 if __name__ == '__main__':
