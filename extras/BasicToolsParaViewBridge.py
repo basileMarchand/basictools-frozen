@@ -462,8 +462,7 @@ try:
                 data = input0.nodeFields
                 outputmesh.elemFields = data
                 
-            #outputmesh.nodes = input0.nodes + (mean1 - mean0)
-            SetOutputBasicTools(request, inInfoVec, outInfoVec,outputmesh )
+            SetOutputBasicTools(request, inInfoVec, outInfoVec, outputmesh, TagsAsFields=True )
             return 1
 
         @smproperty.xml("""<StringVectorProperty command="SetV1Array"
@@ -540,7 +539,6 @@ Select the input array to use for orienting the glyphs.
                 self.__firstStressArray = val[4]
                 self.WorkOnCells = val[3]
                 self.Modified()
-
 
         @smproperty.xml("""<IntVectorProperty
                              name="Inverse"
