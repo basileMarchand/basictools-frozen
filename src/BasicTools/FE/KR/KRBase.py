@@ -8,7 +8,7 @@ import numpy as np
 
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject as BOO
 from BasicTools.Linalg.ConstraintsHolder import ConstraintsHolder
-from BasicTools.FE.ProblemData import Transform
+from BasicTools.Linalg.Transform import Transform
 
 
 class KRBase(BOO):
@@ -109,9 +109,9 @@ class KRBaseVector(KRBase):
             #Create a local base based on the direction vector
             # need a second vector to generate a connsistent base(???)
 
-            raise
+            raise Exception("Error! 'Local' constraintDiretions not well formed ")
         else:
-            raise
+            raise Exception("Error! constraintDiretions not well formed ")
 
 def CheckIntegrity(GUI=False):
 

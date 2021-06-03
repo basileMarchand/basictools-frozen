@@ -8,5 +8,6 @@
 _test = [
 "ConstraintsHolder",
 "LinearSolver",
-"MatOperations"
+"MatOperations",
+"Transform"
 ]

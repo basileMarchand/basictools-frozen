@@ -17,7 +17,7 @@ from BasicTools.Containers.UnstructuredMeshInspectionTools import  ExtractElemen
 
 def ApplyRotationMatrixTensorField(fields,fieldstoTreat, baseNames=["v1","v2"],inplace=False,prefix="new_",inverse=False):
     nbentries = fields[fieldstoTreat[0][0]].shape[0]
-    from BasicTools.FE.ProblemData import Transform
+    from BasicTools.Linalg.Transform import Transform
 
     bs =  Transform()
     bs.keepNormalised = True

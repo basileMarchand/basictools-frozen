@@ -277,7 +277,7 @@ class FemReader(ReaderBase):
                 data = []
 
                 if l[2] != "=":
-                    raise
+                    raise Exception("Error in the file format")
 
                 line = " ".join(l[3:])
 
@@ -346,7 +346,7 @@ class FemReader(ReaderBase):
                         PID,K  = NLP.GetFields(line,1,3)
                         if K != "K" :
                             print("--",K,"--")
-                            raise
+                            raise Exception("Error in the file format")
 
                         (K1,K2,K3) = NLP.GetFields(line,3,6)
                         print( (K1,K2,K3) )
@@ -409,7 +409,7 @@ class FemReader(ReaderBase):
                         floats = [NLP.ParseFloat(self.GetField(line,x)) for x in [3,4,5,6,7,8]]
                         line = self.ReadCleanLine()
                         floats.extend([NLP.ParseFloat(self.GetField(line,x)) for x in [1,2,3]] )
-                        from BasicTools.FE.ProblemData import Transform
+                        from BasicTools.Linalg.Transform import Transform
                         orient = Transform()
                         orient.system = "CORD2R"
 
