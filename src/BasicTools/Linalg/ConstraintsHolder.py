@@ -59,7 +59,6 @@ class ConstraintsHolder(BOO):
         self.vals = []
         self.op = None
         self.rhs =[]
-        self.nbdof = 0
 
     def AddConstraint(self,constraints):
         self.constraints.append(constraints)
@@ -68,6 +67,7 @@ class ConstraintsHolder(BOO):
         self.Reset()
         for cons in self.constraints:
             cons.GenerateEquations(mesh,unkownFields,self)
+        self.PrintVerbose(self.nbdof)    
         self.PrintVerbose(len(self.constraints) )
         self.PrintVerbose(self.numberOfEquations )
 
@@ -122,6 +122,20 @@ class ConstraintsHolder(BOO):
         self.rows = res.row
         self.cols = res.col
         self.vals = res.data
+
+
+    def AddEquationsFromOperatorAAndb(self, A, b = None):
+        self.rows.extend(A.row+self.numberOfEquations)
+        self.cols.extend(A.col)
+        self.vals.extend(A.data)
+
+        if b is not None:
+            self.rows.extend(np.arange(A.shape[0])+self.numberOfEquations )
+            self.cols.extend(np.ones(A.shape[0])*self.nbdof)
+            self.vals.extend(b)
+            raise
+
+        self.numberOfEquations += A.shape[0]
 
     def SetOp(self,op,rhs=None):
         self.op = sparse.csr_matrix(op)
