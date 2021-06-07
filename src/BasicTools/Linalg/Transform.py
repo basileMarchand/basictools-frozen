@@ -38,18 +38,38 @@ class Transform(BaseOutputObject):
         if self.keepNormalised :
             first /= np.linalg.norm(first)
         self.RMatrix[0,:] = first
-        self.SetSecond(self.RMatrix[1,:])
+        self.SetSecond()
         self.SetThird()
 
-    def SetSecond(self,data):
+    def SetSecond(self,data=None):
         # this point define the y coordinate (direction) with respect to the new origin
         # the z direction is calculated with a cross product
         first = self.RMatrix[0,:]
-        second = np.array(data, dtype=np.float)
+
+        if data is None:
+            second = self.RMatrix[1,:]-first*np.dot(first,self.RMatrix[1,:])/np.dot(first,first)
+            # if norm is zero compute a vector not colinear to first and we restart
+            if np.linalg.norm(second) == 0:
+                second = first*1
+                for i,v in enumerate(second):
+                    if v == 0:
+                        second[i] += 1
+                        break
+                else:
+                    second[0] += 1
+                return self.SetSecond(second)
+        else:
+            second = np.array(data, dtype=np.float)
+
         if self.keepOrthogonal:
             second -= first*np.dot(first,second)/np.dot(first,first)
+ 
+        second_norm = np.linalg.norm(second)
+        if  second_norm == 0:
+            raise Exception("cat set second to " + str(data) + " This vector ir colinear to first :" + str(first))
+
         if self.keepNormalised :
-            second /= np.linalg.norm(second)
+            second /= second_norm
         self.RMatrix[1,:] = second
         self.SetThird()
 
@@ -58,21 +78,24 @@ class Transform(BaseOutputObject):
         second = self.RMatrix[1,:]
 
         if data is None:
-            self.RMatrix[2,:] = np.cross(first, second)
+            third = np.cross(first, second)
         else:
             third = np.array(data, dtype=np.float)
             if self.keepOrthogonal:
                 third -= first*np.dot(first,third)/np.dot(first,first)
                 third -= second*np.dot(second,third)/np.dot(second,second)
-            self.RMatrix[2,:] = third
+
+        third_norm = np.linalg.norm(third)
+        if  third_norm == 0:
+            raise Exception("cat set third to " + str(data) + " This vector ir colinear to first and/or sencond :" + str(first) + " " + str(second))
 
         if self.keepNormalised :
-            self.RMatrix[2,:] /= np.linalg.norm(self.RMatrix[2,:])
+            third /= third_norm 
+        self.RMatrix[2,:] = third
 
     def SetOpUsingThird(self,third):
         self.SetFirst(third)
         self.SetOperator(op=np.roll(self.RMatrix, -1, axis=0))
-
 
     def SetOperator(self, first=None, second=None, third=None, op=None)    :
         if op is None:
@@ -104,9 +127,7 @@ class Transform(BaseOutputObject):
 
     def ApplyTransformDirection(self,point):
         point = np.asarray(point)
-
         op = self.RMatrix
-
         return self.__ApplyOpForEveryLine(op,point)
 
     def ApplyInvTransformDirection(self,point):
