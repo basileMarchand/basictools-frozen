@@ -36,16 +36,16 @@ class KRBase(BOO):
 
     def _ComputeOffsets(self, fields):
 
-        cpt = 0
+        totalNumberOfDofsI = 0
         offsets = []
         fieldOffsets = { }
 
         for field in fields:
-            offsets.append(cpt)
-            fieldOffsets[field.name] = cpt
-            cpt += field.numbering["size"]
+            offsets.append(totalNumberOfDofsI)
+            fieldOffsets[field.name] = totalNumberOfDofsI
+            totalNumberOfDofsI += field.numbering["size"]
 
-        return offsets, fieldOffsets
+        return offsets, fieldOffsets, totalNumberOfDofsI
 
 class KRBaseScalar(KRBase):
     def __init__(self):

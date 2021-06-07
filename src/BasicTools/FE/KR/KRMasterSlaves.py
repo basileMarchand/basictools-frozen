@@ -20,7 +20,7 @@ class KRMasterNodeToSlaveScalar(KRBaseScalar):
 
     def GenerateEquations(self,mesh,fields,CH=None):
         CH = self._GetConstraintHolder(CH)
-        offsets, fieldOffsets  = self._ComputeOffsets(fields)
+        offsets, fieldOffsets, totalNumberOfDofs  = self._ComputeOffsets(fields)
 
         fieldDic = {f.name:f for f in fields }
 
@@ -60,7 +60,7 @@ class KRMasterNodeToSlaveVector(KRBaseVector):
 
     def GenerateEquations(self,mesh,fields,CH=None):
         CH = self._GetConstraintHolder(CH)
-        offsets, fieldOffsets  = self._ComputeOffsets(fields)
+        offsets, fieldOffsets, totalNumberOfDofs  = self._ComputeOffsets(fields)
 
         fieldDic = {f.name:f for f in fields }
 
