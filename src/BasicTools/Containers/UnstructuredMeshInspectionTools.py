@@ -5,6 +5,7 @@
 #
 
 import numpy as np
+
  #   if elementFilter is not None and zone is not None:
  #       raise(Exception("Need only one filter or zone"))
  #   if elementFilter is None and zone is None:
@@ -289,8 +290,7 @@ def ExtractElementsByMask(inelems, _mask):
 
     _mask = np.asarray(_mask)
     if _mask.dtype == np.bool:
-
-        nbels =0;
+        nbels =0
         for i in range(inelems.GetNumberOfElements()):
            newIndex[i] = nbels
            nbels += 1 if _mask[i] else 0
@@ -456,7 +456,7 @@ def MeshQualityAspectRatioBeta(mesh):
                    #print(b)
                    normal = np.cross(p1-p0,p2-p0)
                    #https://math.stackexchange.com/questions/128991/how-to-calculate-area-of-3d-triangle
-                   base_area = 0.5*a*b*math.sqrt(1-(np.dot(p1-p0,p2-p0)/(a*b))**2)
+                   base_area = 0.5*a*b*np.sqrt(1-(np.dot(p1-p0,p2-p0)/(a*b))**2)
 
                    normal /= np.linalg.norm(normal)
 
@@ -480,7 +480,7 @@ def MeshQualityAspectRatioBeta(mesh):
                    #                                      (a*A+b*B-c*C)*
                    #                                      (a*A-b*B+c*C)*
                    #                                      (-a*A+b*B+c*C))
-                   circumradius_sphere_radius = math.sqrt((a*A+b*B+c*C)*
+                   circumradius_sphere_radius = np.sqrt((a*A+b*B+c*C)*
                                                          (a*A+b*B-c*C)*
                                                          (a*A-b*B+c*C)*
                                                          (-a*A+b*B+c*C))/(24*volume)
@@ -535,6 +535,7 @@ def ComputeMeshMinMaxLengthScale(mesh):
 
 #------------------------- CheckIntegrity ------------------------
 def CheckIntegrity_ExtractElementByTags(GUI=False):
+    from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshOfTriangles
     res = CreateMeshOfTriangles([[0,0,0],[1,0,0],[0,1,0],[0,0,1] ], [[0,1,2],[0,2,3]])
     res.AddElementToTagUsingOriginalId(0,"first")
     res.AddElementToTagUsingOriginalId(1,"second")
