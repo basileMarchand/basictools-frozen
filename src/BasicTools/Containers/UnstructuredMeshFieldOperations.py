@@ -12,7 +12,7 @@ import BasicTools.Containers.ElementNames as ElementNames
 from BasicTools.Containers.Filters import ElementFilter
 from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
 from BasicTools.Containers.UnstructuredMeshCreationTools import QuadToLin
-from BasicTools.Containers.UnstructuredMeshInspectionTools import  ExtractElementByDimensionalityNoCopy
+from BasicTools.Containers.UnstructuredMeshInspectionTools import  ExtractElementByDimensionalityNoCopy, ExtractElementsByElementFilter
 
 
 def ApplyRotationMatrixTensorField(fields,fieldstoTreat, baseNames=["v1","v2"],inplace=False,prefix="new_",inverse=False):
@@ -58,7 +58,7 @@ def CopyFieldsFromOriginalMeshToTargetMesh(inmesh,outmesh):
     Work(inmesh.elemFields,outmesh.elemFields, outmesh.GetElementsOriginalIDs() )
 
 
-def GetFieldTransferOp(inputField,targetPoints,method=None,verbose=False):
+def GetFieldTransferOp(inputField,targetPoints,method=None,verbose=False,elementfilter=None):
     """
         op : sparcematrix to do the transfer
         status: vector with the status of the transfer (1:interp, 2: extrap, 3:clamp, 4:ZeroFill, 0:nearest)
@@ -76,7 +76,17 @@ def GetFieldTransferOp(inputField,targetPoints,method=None,verbose=False):
         if inputField.mesh.GetNumberOfElements(i):
             imeshdim = i
 
-    imesh = ExtractElementByDimensionalityNoCopy(inputField.mesh,imeshdim)
+    originalmesh = inputField.mesh 
+
+    if elementfilter == None:
+        elementfilter = ElementFilter(mesh = originalmesh, dimensionality=imeshdim)
+
+    from BasicTools.Containers.UnstructuredMeshModificationTools import CleanLonelyNodes
+    imesh = ExtractElementsByElementFilter(originalmesh, elementfilter )
+    CleanLonelyNodes(imesh)    
+
+    inodes = imesh.nodes    
+
     numbering = inputField.numbering
     space = inputField.space
     inodes = imesh.nodes
@@ -87,6 +97,7 @@ def GetFieldTransferOp(inputField,targetPoints,method=None,verbose=False):
 
     if method == "Nearest/Nearest" :
         dist, ids = kdt.query(targetPoints)
+        ids = imesh.originalIDNodes[ids]
 
         if numbering is None or numbering["fromConnectivity"]:
             cols = ids
@@ -121,7 +132,7 @@ def GetFieldTransferOp(inputField,targetPoints,method=None,verbose=False):
     def GetElement(imesh,enb):
         for name,data in imesh.elements.items():
             if enb < data.GetNumberOfElements():
-                return data, enb
+                return originalmesh.elements[name], data.originalIds[enb]
             else:
                 enb -= data.GetNumberOfElements()
 
@@ -162,16 +173,15 @@ def GetFieldTransferOp(inputField,targetPoints,method=None,verbose=False):
 
         from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
         for cpt,e in enumerate(potentialElements):
-            data, lenb = GetElement(imesh,e)
-            localnumbering = numbering[data.elementType]
-            localspace = space[data.elementType]
+            origial_data, lenb = GetElement(imesh,e)
+            localnumbering = numbering[origial_data.elementType]
+            localspace = space[origial_data.elementType]
             localspace.Create()
 
-            posnumbering = data.connectivity
-            posspace = LagrangeSpaceGeo[data.elementType]
+            posnumbering = origial_data.connectivity
+            posspace = LagrangeSpaceGeo[origial_data.elementType]
             posspace.Create()
-            localspace.Create()
-            coordAtDofs = imesh.nodes[posnumbering[lenb,:],:]
+            coordAtDofs = originalmesh.nodes[posnumbering[lenb,:],:]
 
             #inside, shapeFunc, shapeFuncClamped = ComputeShapeFunctionsOnElement(coordAtDofs,localspace ,localnumbering,TP)
 
