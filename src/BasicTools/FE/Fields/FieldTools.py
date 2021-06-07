@@ -373,7 +373,7 @@ class FieldsMeshTransportation():
             res = FEField(name = name, mesh=newmesh, space=space, numbering=numbering)
             res.Allocate()
             for name,data in newmesh.elements.items():
-                res.data[numbering.numbering[data].flatten()] = infield.data[infield.numbering[name][data.originalIds,:].flatten()]
+                res.data[numbering.numbering[name].flatten()] = infield.data[infield.numbering[name][data.originalIds,:].flatten()]
         return res
 
     def TransportIPFieldToOldMesh(self,oldmesh,ipfield):
