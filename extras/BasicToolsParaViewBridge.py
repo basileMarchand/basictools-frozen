@@ -294,8 +294,7 @@ try:
 
         def RequestData(self, request, inInfoVec, outInfoVec):
             inMesh = GetInputBasicTools(request, inInfoVec, outInfoVec, True)
-#for elem in :
-#    print elem
+            
             if self.onPointTags:
                 tagsToDelete = list(filter(lambda x: x.find(self.prefix) == -1, inMesh.nodesTags.keys()))
                 print("tagsToDelete",tagsToDelete)
@@ -307,15 +306,11 @@ try:
                     print(elemtype +" tagsToDelete",tagsToDelete)
                     data.tags.DeleteTags(tagsToDelete)
 
-
             if self.onPointFields:
                 inMesh.nodeFields =dict(filter(lambda x: x[0].find(self.prefix) == 0, inMesh.nodeFields.items()))
 
             if self.onCellFields:
                 inMesh.elemFields =dict(filter(lambda x: x[0].find(self.prefix) == 0, inMesh.elemFields.items()))
-
-
-                #inMesh.nodeFields = {(k if (k.find(self.prefix) == 0) ):v for k,v in inMesh.nodeFields.items()  }
             SetOutputBasicTools(request,inInfoVec,outInfoVec,inMesh)
             return 1
 
