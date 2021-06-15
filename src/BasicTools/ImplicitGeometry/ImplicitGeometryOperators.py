@@ -17,7 +17,10 @@ class ImplicitGeometryUnion(ImplicitGeometryBase):
     """
     def __init__(self,a=None):
         super(ImplicitGeometryUnion,self).__init__()
-        self.Zones = a
+        if a is None:
+            self.Zones = []
+        else:
+            self.Zones = a
         self.smoothControl = 0.0
 
 
@@ -45,8 +48,9 @@ class ImplicitGeometryUnion(ImplicitGeometryBase):
     def __str__(self):
         res = "ImplicitGeometryUnion:\n"
         for z in self.Zones:
-            res += str(z)
+            res += "    "+ str(z) + "\n"
         return res
+        
 RegisterClass("Union",ImplicitGeometryUnion)
 
 def CreateImplicitGeometryIntersection(ops):
