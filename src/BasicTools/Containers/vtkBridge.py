@@ -355,6 +355,12 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
         #    print('please use the a vtkUnstructuredGrid container to transfert all the fields')
         #return output
     else:
+        if mesh.GetNumberOfNodes() == 0 :
+            return output
+
+        if mesh.GetNumberOfElements() == 0 :
+            return output
+
         output.Allocate(mesh.GetNumberOfElements())
         ##copy points
 
@@ -375,7 +381,6 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
         VTK_originalIDsEl = NumpyFieldToVtkField(mesh,mesh.GetElementsOriginalIDs(),"originalIds")
         output.GetCellData().AddArray(VTK_originalIDsEl)
 
-        cpt = 0
         for elementsname,elementContainer in mesh.elements.items():
             pointIds = vtkIdList()
             npe = elementContainer.GetNumberOfNodesPerElement()
@@ -385,7 +390,6 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
                 for i in range(npe):
                     pointIds.SetId(i,elementContainer.connectivity[e,i])
                 output.InsertNextCell(vtknumber, pointIds)
-                cpt += 1
 
     if hasattr(mesh,"nodeFields"):
         for name,data in mesh.nodeFields.items():
@@ -746,4 +750,4 @@ def CheckIntegrity(GUI=False):
     return 'ok'
 
 if __name__ == '__main__':
-    print(CheckIntegrity(True))# pragma: no cover
+    print(CheckIntegrity(False))# pragma: no cover
