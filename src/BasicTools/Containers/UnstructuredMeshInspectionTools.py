@@ -192,7 +192,7 @@ def GetVolume(inmesh) :
 def GetDualGraphNodeToElement(inmesh, maxNumConnections=200):
     # generation of the dual graph
     dualGraph = np.zeros((inmesh.GetNumberOfNodes(),maxNumConnections), dtype=int )-1
-    usedPoints = np.zeros(inmesh.GetNumberOfNodes(), dtype=int );
+    usedPoints = np.zeros(inmesh.GetNumberOfNodes(), dtype=int )
 
     cpt =0
 
@@ -213,7 +213,7 @@ def GetDualGraph(inmesh, maxNumConnections=200):
 
     # generation of the dual graph
     dualGraph = np.zeros((inmesh.GetNumberOfNodes(),maxNumConnections), dtype=int )-1
-    usedPoints = np.zeros(inmesh.GetNumberOfNodes(), dtype=int );
+    usedPoints = np.zeros(inmesh.GetNumberOfNodes(), dtype=int )
 
     for name,elems in inmesh.elements.items():
         size = elems.GetNumberOfNodesPerElement()
@@ -248,6 +248,7 @@ def GetDualGraph(inmesh, maxNumConnections=200):
     return dualGraph,usedPoints
 
 def ExtractElementsByImplicitZone(inmesh,op,allNodes=True,cellCenter=False):
+    inmesh.ComputeGlobalOffset()
 
     mask = op(inmesh.nodes) <= 0.
 
@@ -269,6 +270,7 @@ def ExtractElementsByImplicitZone(inmesh,op,allNodes=True,cellCenter=False):
 
 def ExtractElementsByElementFilter(inmesh,ff):
 
+    inmesh.ComputeGlobalOffset()
     outmesh = type(inmesh)()
     outmesh.CopyProperties(inmesh)
 
@@ -284,6 +286,8 @@ def ExtractElementsByElementFilter(inmesh,ff):
     return outmesh
 
 def ExtractElementsByMask(inelems, _mask):
+    
+
     outelems = type(inelems)(inelems.elementType)
 
     newIndex = np.empty(inelems.GetNumberOfElements(),dtype=np.int)
@@ -298,7 +302,7 @@ def ExtractElementsByMask(inelems, _mask):
     else:
         nbels = len(_mask)
         mask = np.zeros(inelems.GetNumberOfElements(),dtype=np.bool)
-        cpt =0;
+        cpt =0
         for index in _mask:
            newIndex[index ] = cpt
            mask[index] = True
@@ -391,7 +395,7 @@ def ExtractElementByTags(inmesh,tagsToKeep, allNodes=False,dimensionalityFilter=
            #    toKeep[:] = True
 
        newIndex = np.empty(elems.GetNumberOfElements(), dtype=np.int )
-       cpt =0;
+       cpt =0
        for i in range(elems.GetNumberOfElements()):
            newIndex[i] = cpt
            cpt += 1 if toKeep[i] else 0
@@ -566,8 +570,8 @@ def CheckIntegrity_GetVolume(GUI=False):
 
     from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearMesh
     myMesh = ConstantRectilinearMesh()
-    myMesh.SetDimensions([3,3,3]);
-    myMesh.SetSpacing([0.5, 0.5,0.5]);
+    myMesh.SetDimensions([3,3,3])
+    myMesh.SetSpacing([0.5, 0.5,0.5])
     print(myMesh)
     vol  = GetVolume(CreateMeshFromConstantRectilinearMesh(myMesh))
     if abs(vol-1.) > 1e-8 :
@@ -580,9 +584,9 @@ def CheckIntegrity_ExtractElementsByImplicitZone(GUI=False):
     from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearMesh
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshFromConstantRectilinearMesh
     myMesh = ConstantRectilinearMesh(dim=3)
-    myMesh.SetDimensions([20,30,40]);
-    myMesh.SetOrigin([-1.0,-1.0,-1.0]);
-    myMesh.SetSpacing([2., 2.,2]/myMesh.GetDimensions());
+    myMesh.SetDimensions([20,30,40])
+    myMesh.SetOrigin([-1.0,-1.0,-1.0])
+    myMesh.SetSpacing([2., 2.,2]/myMesh.GetDimensions())
     print(myMesh)
     res2 = CreateMeshFromConstantRectilinearMesh(myMesh,ofTetras=False)
     print(res2)
