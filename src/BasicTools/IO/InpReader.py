@@ -38,6 +38,7 @@ InpNumber['S3'] = EN.Triangle_3
 InpNumber['CONN3D2'] = EN.Bar_2
 InpNumber['C3D4'] = EN.Tetrahedron_4
 InpNumber['CPS4R'] = EN.Quadrangle_4
+InpNumber['C3D8'] = EN.Hexaedron_8
 InpNumber['C3D8R'] = EN.Hexaedron_8
 
 def JoinInp(filename):
