@@ -111,12 +111,12 @@ elementNameByVtkNumber[11] = ElementNames.Hexaedron_8   #voxel
 tagsTypes = [np.int8, np.uint8, int]
 
 def VtkFieldToNumpyField(support,vtkField):
-    from vtk.util import numpy_support
-    import vtk 
+    from vtkmodules.util import numpy_support
+    from vtkmodules.vtkCommonCore import vtkStringArray
 
     name = vtkField.GetName()
 
-    if isinstance(vtkField, vtk.vtkStringArray):
+    if isinstance(vtkField, vtkStringArray):
         return (name, np.array([vtkField.GetValue(x) for x in range(vtkField.GetNumberOfValues() )], dtype=object))
 
     data = numpy_support.vtk_to_numpy(vtkField)
@@ -132,14 +132,13 @@ def VtkFieldToNumpyField(support,vtkField):
     return (name,data)
 
 def NumpyFieldToVtkField(support,fielddata,fieldname):
-    from vtk.util import numpy_support
-
+    from vtkmodules.util import numpy_support
+    from vtkmodules.vtkCommonCore import vtkStringArray
 
     isimagedata = support.IsConstantRectilinear()
     if type(fielddata[0]) in [ str, object, np.str_ ]: # working on list of string or numpy of objects
         # for the moment only work for scalar (1 components fields )
-        import vtk
-        VTK_data = vtk.vtkStringArray()
+        VTK_data = vtkStringArray()
         VTK_data.SetNumberOfComponents(1)
         VTK_data.SetNumberOfTuples(len(fielddata))
         for i,v in enumerate(fielddata):
@@ -188,24 +187,33 @@ def ApplyVtkPipeline(mesh,op):
     return VtkToMesh(vtkOuputMesh)
 
 def PlotMesh(mesh):# pragma: no cover
-    import vtk
+    from vtkmodules.vtkFiltersGeometry import vtkGeometryFilter
+    from vtkmodules.vtkRenderingCore import vtkPolyDataMapper, vtkActor, vtkRenderer, vtkRenderWindow, vtkRenderWindowInteractor, vtkColorTransferFunction
+    from vtkmodules.vtkFiltersCore import vtkAssignAttribute
+    from vtkmodules.vtkInteractionStyle import vtkInteractorStyleTrackballCamera
+    from vtkmodules.vtkInteractionWidgets import vtkButtonWidget, vtkTexturedButtonRepresentation2D, vtkOrientationMarkerWidget
+    from vtkmodules.vtkIOImage import vtkPNGReader
+    from vtkmodules.vtkRenderingAnnotation import vtkAxesActor
+    import vtkmodules.vtkRenderingOpenGL2
+    import vtkmodules.vtkRenderingFreeType
+
 
     from BasicTools.Containers.MeshBase import MeshBase
+    
     if isinstance(mesh,MeshBase):
         vtkMesh = MeshToVtk(mesh)
     else:
         vtkMesh = mesh
 
-    vGF = vtk.vtkGeometryFilter()
+    vGF = vtkGeometryFilter()
     vGF.SetInputData(vtkMesh)
     vGF.Update()
 
     nbArrays = vtkMesh.GetPointData().GetNumberOfArrays()
 
-
-    cylinderMapper = vtk.vtkPolyDataMapper()
+    cylinderMapper = vtkPolyDataMapper()
     if nbArrays > 0:
-        out2 = vtk.vtkAssignAttribute()
+        out2 = vtkAssignAttribute()
         out2.SetInputConnection(vGF.GetOutputPort())
 
         array = vtkMesh.GetPointData().GetArray(0)
@@ -214,17 +222,17 @@ def PlotMesh(mesh):# pragma: no cover
     else:
         cylinderMapper.SetInputConnection(vGF.GetOutputPort())
 
-    cylinderActor = vtk.vtkActor()
+    cylinderActor = vtkActor()
     cylinderActor.SetMapper(cylinderMapper)
 
-    ren = vtk.vtkRenderer()
-    renWin = vtk.vtkRenderWindow()
+    ren = vtkRenderer()
+    renWin = vtkRenderWindow()
     renWin.AddRenderer(ren)
 
-    iren = vtk.vtkRenderWindowInteractor()
+    iren = vtkRenderWindowInteractor()
     iren.SetRenderWindow(renWin)
 
-    style = vtk.vtkInteractorStyleTrackballCamera()
+    style = vtkInteractorStyleTrackballCamera()
     style.SetDefaultRenderer(ren)
     iren.SetInteractorStyle(style)
 
@@ -234,7 +242,7 @@ def PlotMesh(mesh):# pragma: no cover
     ren.SetBackground2(0,0,0.1647)
     renWin.SetSize(800, 600)
 
-    buttonWidget = vtk.vtkButtonWidget()
+    buttonWidget = vtkButtonWidget()
     buttonWidget.SetInteractor(iren)
 
     class Listener():
@@ -259,7 +267,7 @@ def PlotMesh(mesh):# pragma: no cover
                lo,hi = array.GetRange()
                self.minmaxs[arrayName] = (lo,hi)
 
-            lut = vtk.vtkColorTransferFunction()
+            lut = vtkColorTransferFunction()
             lut.SetColorSpaceToHSV()
             lut.SetColorSpaceToDiverging()
             lut.AddRGBPoint(lo,0.23137254902000001, 0.298039215686, 0.75294117647100001)
@@ -283,9 +291,9 @@ def PlotMesh(mesh):# pragma: no cover
 
     buttonWidget.AddObserver( 'StateChangedEvent', listener.processStateChangeEvent )
 
-    buttonRepresentation= vtk.vtkTexturedButtonRepresentation2D()
+    buttonRepresentation= vtkTexturedButtonRepresentation2D()
     buttonRepresentation.SetNumberOfStates(1);
-    r = vtk.vtkPNGReader()
+    r = vtkPNGReader()
 
     fileName  = GetTestDataPath()+"Next.png"
 
@@ -303,8 +311,8 @@ def PlotMesh(mesh):# pragma: no cover
 
     iren.Initialize()
 
-    axesActor = vtk.vtkAxesActor()
-    axes = vtk.vtkOrientationMarkerWidget()
+    axesActor = vtkAxesActor()
+    axes = vtkOrientationMarkerWidget()
     axes.SetOrientationMarker(axesActor)
     axes.SetInteractor(iren)
     axes.EnabledOn()
@@ -326,7 +334,10 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
     try:
         from paraview.vtk import vtkPolyData, vtkUnstructuredGrid, vtkPoints,vtkIdList, vtkImageData
     except :
-        from vtk import vtkPolyData, vtkUnstructuredGrid, vtkPoints, vtkIdList, vtkImageData
+        #faster import only needed classes
+        from vtkmodules.vtkCommonCore import vtkPoints, vtkIdList
+        from vtkmodules.vtkCommonDataModel import vtkPolyData, vtkUnstructuredGrid, vtkImageData
+        from vtkmodules.util import numpy_support
 
     isimagedata = False
     if vtkobject is None:
@@ -350,10 +361,6 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
         output.SetDimensions(mesh.GetDimensions())
         output.SetOrigin(mesh.GetOrigin())
         output.SetSpacing(mesh.GetSpacing())
-        #if (hasattr(mesh,"nodeFields") and len(mesh.nodeFields) ) or (hasattr(mesh,"elemFields") and len(mesh.elemFields) ):
-        #    print("Warning for the moment only the mesh is converted (no field)")
-        #    print('please use the a vtkUnstructuredGrid container to transfert all the fields')
-        #return output
     else:
         if mesh.GetNumberOfNodes() == 0 :
             return output
@@ -367,7 +374,6 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
         VTK_originalIDNodes = NumpyFieldToVtkField(mesh,mesh.originalIDNodes,"originalIds")
         output.GetPointData().AddArray(VTK_originalIDNodes)
 
-        from vtk.util import numpy_support
         pts = vtkPoints()
         if mesh.nodes.shape[1] == 3 :
             pts.SetData(numpy_support.numpy_to_vtk(num_array=mesh.nodes, deep=False))
@@ -395,14 +401,11 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
         for name,data in mesh.nodeFields.items():
             if data is None: # pragma: no cover
                 continue
-            #VTK_data = numpy_support.numpy_to_vtk(num_array=np.swapaxes(phi,0,2).ravel(), deep=True, array_type=vtk.VTK_FLOAT)
-            #VTK_data.SetName(name)
             if np.size(data) != mesh.GetNumberOfNodes() and np.size(data) != 2*mesh.GetNumberOfNodes() and np.size(data) != 3*mesh.GetNumberOfNodes(): # pragma: no cover
                 print("field ("+str(name)+") is not consistent : it has " + str(np.size(data)) +" values and the mesh has " +str(mesh.GetNumberOfNodes())+ " nodes" )
                 raise
                 continue
 
-            #print("name : ", name )
             VTK_data = NumpyFieldToVtkField(mesh,data,name)
             output.GetPointData().AddArray(VTK_data)
             continue
@@ -430,14 +433,12 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
                 raise
                 continue
 
-            #print("name : ", name )
             VTK_data = NumpyFieldToVtkField(mesh,data,name)
             output.GetCellData().AddArray(VTK_data)
             continue
 
     if TagsAsFields:
         elementTags = mesh.GetNamesOfElemTags()
-        #print(elementTags)
         for tagname in elementTags:
             ids = mesh.GetElementsInTag(tagname)
             tagMask = np.zeros(mesh.GetNumberOfElements(),dtype=tagsTypes[0] )
@@ -449,7 +450,7 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
     return output
 
 def VtkToMeshOnlyMeta(vtkmesh, FieldsAsTags=False):
-    from vtk.util import numpy_support
+    from vtkmodules.util import numpy_support
 
     class UnstructuredMeshMetaData():
         def __init__(self):
@@ -519,7 +520,7 @@ def VtkToMesh(vtkmesh, meshobject=None, FieldsAsTags=True):
     else:
         out = meshobject
 
-    from vtk.util import numpy_support
+    from vtkmodules.util import numpy_support
     if vtkmesh.IsA("vtkImageData"):
         out.SetOrigin(vtkmesh.GetOrigin() )
         out.SetSpacing(vtkmesh.GetSpacing() )
@@ -725,13 +726,14 @@ def checkIntegrity_ApplyVtkPipeline(GUI):
     res = CreateMeshOfTriangles([[0,0,0],[1,0,0],[0,1,0],[0,0,1] ], [[0,1,2],[0,2,3]])
     class op():
         def __call__(self,vtkinput):
-            import vtk
-            extrude = vtk.vtkLinearExtrusionFilter()
+            from vtkmodules.vtkFiltersModeling import vtkLinearExtrusionFilter 
+            from vtkmodules.vtkFiltersCore import vtkTriangleFilter 
+            extrude = vtkLinearExtrusionFilter()
             extrude.SetInputData(vtkinput)
             extrude.SetExtrusionTypeToNormalExtrusion()
             extrude.SetVector(2., 2., 2.0)
             extrude.Update()
-            cleaner = vtk.vtkTriangleFilter()
+            cleaner = vtkTriangleFilter()
             cleaner.SetInputData(extrude.GetOutput())
             cleaner.Update()
             return cleaner.GetOutput()
@@ -750,4 +752,4 @@ def CheckIntegrity(GUI=False):
     return 'ok'
 
 if __name__ == '__main__':
-    print(CheckIntegrity(False))# pragma: no cover
+    print(CheckIntegrity(True))# pragma: no cover

@@ -685,11 +685,13 @@ class ImplicitGeometryStl(ImplicitGeometryBase):
 
     def LoadFromFile(self,filenameSTL):
 
-        import vtk
+        from vtkmodules.vtkIOGeometry import vtkSTLReader
+        from vtkmodules.vtkIOXML import vtkXMLPolyDataReader
+
         if filenameSTL.split(".")[-1] == "stl":
-            readerSTL = vtk.vtkSTLReader()
+            readerSTL = vtkSTLReader()
         else:
-            readerSTL = vtk.vtkXMLPolyDataReader()
+            readerSTL = vtkXMLPolyDataReader()
 
         readerSTL.SetFileName(filenameSTL)
 
@@ -715,11 +717,11 @@ class ImplicitGeometryStl(ImplicitGeometryBase):
              return self.SetSurface(mesh)
 
 
-        import vtk
+        from vtkmodules.vtkFiltersGeometry import vtkDataSetSurfaceFilter
         from BasicTools.Containers.vtkBridge import MeshToVtk
         vtkmesh = MeshToVtk(mesh)
 
-        filt = vtk.vtkDataSetSurfaceFilter()
+        filt = vtkDataSetSurfaceFilter()
         filt.SetInputData(vtkmesh)
         filt.Update()
         self.SetSurfaceUsingVtkPolyData(filt.GetOutput())
@@ -738,7 +740,8 @@ class ImplicitGeometryStl(ImplicitGeometryBase):
         self.SetSurfaceUsingVtkPolyData(vtkmesh)
 
     def SetSurfaceUsingVtkPolyData(self,polydata):
-        import vtk
+        from vtkmodules.vtkFiltersCore import vtkFeatureEdges, vtkImplicitPolyDataDistance
+        from vtkmodules.vtkCommonDataModel import vtkSpheres
 
         if polydata.GetNumberOfPoints() == 0:# pragma: no cover
             raise ValueError( "No points " )
@@ -749,7 +752,7 @@ class ImplicitGeometryStl(ImplicitGeometryBase):
         self.boundingMax = np.array([bounds[1],  bounds[3], bounds[5]])
 
         # check if we have a closed surface or not
-        checkFilter = vtk.vtkFeatureEdges()
+        checkFilter = vtkFeatureEdges()
         checkFilter.SetInputData(polydata)
         checkFilter.SetFeatureEdges(False)
         checkFilter.SetBoundaryEdges(True)
@@ -757,21 +760,21 @@ class ImplicitGeometryStl(ImplicitGeometryBase):
         checkFilter.SetManifoldEdges(False)
         checkFilter.Update()
 
-        numberOfOpenEdges = checkFilter.GetOutput().GetNumberOfCells();
+        numberOfOpenEdges = checkFilter.GetOutput().GetNumberOfCells()
         if numberOfOpenEdges > 0  :
             self.ismanifold = False
         else:
             self.ismanifold = True
 
         if polydata.GetNumberOfPolys() > 0:
-            self.implicitFunction = vtk.vtkImplicitPolyDataDistance()
+            self.implicitFunction = vtkImplicitPolyDataDistance()
             self.implicitFunction.SetNoValue(-100.)
             self.implicitFunction.SetInput(polydata);
             self.onLines = False
         elif polydata.GetNumberOfLines() >0:
             #we are working on lines only
             # The current installation of tk does not have thevtkSpheres() class
-            self.implicitFunction = vtk.vtkSpheres()
+            self.implicitFunction = vtkSpheres()
             self.implicitFunction.SetCenters(polydata.GetPoints())
             self.onLines = True
             self.ismanifold = False
@@ -779,6 +782,7 @@ class ImplicitGeometryStl(ImplicitGeometryBase):
             raise(Exception("internal Error"))
 
     def GetDistanceToPoint(self,pos):
+
         if len(pos.shape) == 1:
             res = np.zeros(1,dtype=np.float)
         else:
@@ -787,11 +791,11 @@ class ImplicitGeometryStl(ImplicitGeometryBase):
         if len(pos.shape) == 1:
             res[0]  =  self.implicitFunction.EvaluateFunction(pos)
         else:
-            import vtk
-            from vtk.util import numpy_support
+            from vtkmodules.vtkCommonCore import vtkDoubleArray
+            from vtkmodules.util import numpy_support
 
             VTK_pos = numpy_support.numpy_to_vtk(num_array=pos, deep=False)
-            out = vtk.vtkDoubleArray()
+            out = vtkDoubleArray()
             self.implicitFunction.EvaluateFunction(VTK_pos,out)
             res = numpy_support.vtk_to_numpy(out)
 

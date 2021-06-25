@@ -16,8 +16,9 @@ class VtkReader(ReaderBase):
         super(VtkReader,self).__init__()
 
     def Read(self, fileName=None,string=None,out=None):
-      import vtk
-      reader = vtk.vtkGenericDataObjectReader()
+      from  vtkmodules.vtkIOLegacy import vtkGenericDataObjectReader
+
+      reader = vtkGenericDataObjectReader()
       reader.SetFileName(self.fileName)
       reader.Update()
       res = reader.GetUnstructuredGridOutput()
@@ -29,8 +30,9 @@ class VtkReader(ReaderBase):
 RegisterReaderClass(".vtk",VtkReader)
 
 def LoadVtuWithVTK(filename):
-    import vtk
-    readerVTU = vtk.vtkXMLUnstructuredGridReader()
+    from vtkmodules.vtkIOXML import vtkXMLUnstructuredGridReader
+
+    readerVTU = vtkXMLUnstructuredGridReader()
     readerVTU.SetFileName(filename)
     readerVTU.Update()
 

@@ -18,8 +18,8 @@ def ReadStl(fileName=None,string=None):
     return res
 
 def LoadSTLWithVTK(filenameSTL):
-    import vtk
-    readerSTL = vtk.vtkSTLReader()
+    from vtkmodules.vtkIOGeometry import vtkSTLReader
+    readerSTL = vtkSTLReader()
     readerSTL.SetFileName(filenameSTL)
     # 'update' the reader i.e. read the .stl file
     readerSTL.Update()
