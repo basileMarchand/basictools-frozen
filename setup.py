@@ -139,10 +139,8 @@ class build_ext_compiler_check(build_ext):
         if compiler != "msvc":
             if enable_MKL:
                 link_args.append("-lmkl_core")
-                link_args.append("-lmkl_avx")
                 link_args.append("-lmkl_intel_lp64")
                 link_args.append("-lmkl_sequential")
-                link_args.append("-lmkl_def")
             if useOpenmp:
                 link_args.append("-lgomp")
         return link_args
