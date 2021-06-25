@@ -106,6 +106,7 @@ cdef class NativeDofNumbering:
     #@cython.boundscheck(False)  # Deactivate bounds checking
     #@cython.wraparound(False)   # Deactivate negative indexing.
     def ComputeNumberingFromConnectivity(self,mesh,notused):
+        self.mesh = mesh
         cdef cNUM.CUnstructuredMesh obj = NUM.CUnstructuredMesh()
         obj.SetDataFromPython(mesh)
         self.dn_cpp.ComputeNumberingFromConnectivity(obj.GetCppPointer()[0])
