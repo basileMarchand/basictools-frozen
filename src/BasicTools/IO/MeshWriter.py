@@ -116,7 +116,7 @@ class MeshWriter(WriterBase):
             if elementContainer == EN.Point_1:
                print("MeshWriter warning: ignoring EN.Point_1 elements ")
                globalOffset += data.GetNumberOfElements()
-               continue 
+               continue
 
             elemtype = BinaryNumber[elementContainer]
 
@@ -445,14 +445,6 @@ class MeshWriter(WriterBase):
                   self.filePointer.write("{} \n\n".format(len(tag)) )
                   (tag.GetIds()+1).tofile(self.filePointer, sep=" ")
                   self.filePointer.write("\n" )
-
-#        if "Corners" in meshObject.nodesTags:
-#            tag = meshObject.nodesTags['Corners']
-#            if len(tag):
-#                self.filePointer.write("Corners\n");
-#                self.filePointer.write("{} \n\n".format(len(tag)) )
-#                (tag.GetIds()+1).tofile(self.filePointer, sep=" ")
-#                self.filePointer.write("\n" )
 
         for TagNameInFile,(ElementType,TagName) in ASCIITags.items():
             elements = meshObject.GetElementsOfType(ElementType)
