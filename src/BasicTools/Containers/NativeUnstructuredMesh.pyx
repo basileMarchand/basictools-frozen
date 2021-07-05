@@ -48,6 +48,8 @@ cdef class CUnstructuredMesh():
                                     FlattenedMap[Matrix, int_DTYPE_t, Dynamic, _1](v.originalIds) )
 
             for tn in v.tags.keys():
+                if len(v.tags[tn].GetIds()) == 0 :
+                    continue
                 self.cpp_object.AddElementTag(k.encode(),tn.encode(),
                                    FlattenedMap[Matrix, int_DTYPE_t, Dynamic, _1](v.tags[tn].GetIds()) )
 
