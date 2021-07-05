@@ -253,6 +253,14 @@ class MeshReader(ReaderBase):
                     res.elemFields[fieldname+str(i)]  =  data[i]
                 continue
 
+            if l in ["Tangents","NormalAtVertices","TangentAtVertices","Normals"]:
+                self.PrintVerbose("ignoring line :->" + l +"<-")
+                line = self.filePointer.readline()
+                nls = int( line.strip('\n').lstrip().rstrip())
+                for i in range(nls):
+                    line = self.filePointer.readline()
+                continue
+
             if l.find("End")>-1 :
                 break
 
