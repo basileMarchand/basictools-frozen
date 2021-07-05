@@ -31,16 +31,17 @@ class ConstantRectilinearElementContainer(BaseOutputObject):
     def connectivity(self):
         if(self._connectivity is None):
             self._connectivity = self.GetConnectivityForElements(np.arange(self.GetNumberOfElements()))
+            self._connectivity.flags.writeable = False
         return self._connectivity
 
     def SetDimensions(self,data):
         if self.__dimensions is None:
-            self.__dimensions = np.array(data,int);
+            self.__dimensions = np.array(data,int)
         else:
             if len(self.__dimensions) != len(data):
                 raise(Exception("Cant change the dimensionality after creation "))
             else:
-                self.__dimensions = np.array(data,int);
+                self.__dimensions = np.array(data,int)
 
         self.nodesPerElement = 2**len(self.__dimensions)
 
@@ -113,7 +114,7 @@ class ConstantRectilinearElementContainer(BaseOutputObject):
         if dim is None:
             dim = len(self.__dimensions)
 
-        res = 1;
+        res = 1
 
         if self.__dimensions[0] >= 1:
             res = res * (self.__dimensions[0]-1)
@@ -154,7 +155,7 @@ class ConstantRectilinearMesh(MeshBase):
     def __init__(self,dim = 3):
         super(ConstantRectilinearMesh,self).__init__()
         #Number of nodes
-        self.__dimensions = np.ones((dim,),dtype=int)*2;
+        self.__dimensions = np.ones((dim,),dtype=int)*2
         self.__origin = np.zeros((dim,) )
         self.__spacing = np.ones((dim,))
         self.nodes = None
@@ -195,7 +196,7 @@ class ConstantRectilinearMesh(MeshBase):
         return self.structElements.tags[tagname].GetIds()
 
     def SetDimensions(self,data):
-        self.__dimensions = np.array(data,int);
+        self.__dimensions = np.array(data,int)
         self.structElements.SetDimensions(self.__dimensions)
         self.nodes = None
         self.originalIDNodes = None
@@ -204,22 +205,22 @@ class ConstantRectilinearMesh(MeshBase):
         return np.array(self.__dimensions)
 
     def SetSpacing(self,data):
-        self.__spacing = np.array(data, "float");
+        self.__spacing = np.array(data, float)
         self.nodes = None
 
     def GetSpacing(self):
-        return self.__spacing;
+        return self.__spacing
 
     def GetdV(self):
         """Get the volume of one element."""
         return np.prod(self.GetSpacing())
 
     def SetOrigin(self,data):
-        self.__origin = np.array(data);
+        self.__origin = np.array(data)
         self.nodes = None
 
     def GetOrigin(self):
-        return self.__origin;
+        return self.__origin
 
     @property
     def boundingMin(self):
@@ -552,8 +553,8 @@ def CheckIntegrity():
         pass
 
     myMesh = ConstantRectilinearMesh()
-    myMesh.SetDimensions([1,1,1]);
-    myMesh.SetSpacing([1, 1, 1]);
+    myMesh.SetDimensions([1,1,1])
+    myMesh.SetSpacing([1, 1, 1])
 
 
     try:
@@ -565,9 +566,9 @@ def CheckIntegrity():
 
 
     myMesh = ConstantRectilinearMesh()
-    myMesh.SetDimensions([2,2,2]);
-    myMesh.SetSpacing([1, 1, 1]);
-    #myMesh.SetOrigin([-2.5,-1.2,-1.5]);
+    myMesh.SetDimensions([2,2,2])
+    myMesh.SetSpacing([1, 1, 1])
+    #myMesh.SetOrigin([-2.5,-1.2,-1.5])
 
     print(myMesh)
     print(myMesh.elements[ElementNames.Hexaedron_8].GetNumberOfElements())
@@ -609,9 +610,9 @@ def CheckIntegrity():
 
     print("-----------------2D const rectilinear mesh------------------------")
     myMesh = ConstantRectilinearMesh(dim=2)
-    myMesh.SetDimensions([3,3]);
-    myMesh.SetSpacing([1, 1]);
-    myMesh.SetOrigin([0.,0.]);
+    myMesh.SetDimensions([3,3])
+    myMesh.SetSpacing([1, 1])
+    myMesh.SetOrigin([0.,0.])
 
     print(myMesh)
 
