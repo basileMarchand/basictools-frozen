@@ -4,6 +4,8 @@
 # file 'LICENSE.txt', which is part of this source code package.
 #
 
+import numpy as np
+
 import BasicTools.Containers.ElementNames as EN
 from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
 
@@ -121,10 +123,11 @@ def MeshIOToMesh(mesh, TagsAsFields=False):
         elems.cpt = nbelems
         for tagname,tagdata in mesh.cell_sets.items():
             #ids = list(filter(lambda x : x >= cpt and x < nbelems +cpt ,tagdata))
-            ids = [t for t in tagdata if t >= cpt and t < nbelems +cpt ]
+            mask = np.logical_and(tagdata >= cpt, tagdata < nbelems + cpt )
+            ids = tagdata[mask] - cpt
             if len(ids) :
                 elems.tags.CreateTag(tagname).SetIds(ids)
-        cpt += nbelems
+        cpt += elems.GetNumberOfElements()
 
     res.GenerateManufacturedOriginalIDs()
     res.PrepareForOutput()
@@ -240,7 +243,7 @@ def CheckIntegrity():
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshOfTriangles
 
     res = CreateMeshOfTriangles([[0,0,0],[1,2,3],[0,1,0]], [[0,1,2]])
-    res.nodesTags.CreateTag('point3').SetIds([3])
+    res.nodesTags.CreateTag('point3').SetIds([2])
     elements = res.GetElementsOfType(EN.Bar_2)
     elements.AddNewElement([1,2],1)
 
