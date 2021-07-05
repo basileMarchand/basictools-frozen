@@ -350,7 +350,7 @@ def ExtractElementByTags(inmesh,tagsToKeep, allNodes=False,dimensionalityFilter=
     outmesh.CopyProperties(inmesh)
 
     outmesh.nodes = np.copy(inmesh.nodes)
-    outmesh.originalIDNodes = None
+    outmesh.originalIDNodes = np.copy(inmesh.originalIDNodes)
 
     import copy
     for tag in inmesh.nodesTags:
