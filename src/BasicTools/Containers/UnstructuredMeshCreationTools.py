@@ -100,10 +100,10 @@ def CreateSquare(dimensions=[2,2], origin=[-1.0,-1.0], spacing=[1.,1.], ofTris=F
 
     if ofTris:
         tris = mesh.GetElementsOfType(EN.Triangle_3)
-        tris.GetTag("2D").SetIds(range(tris.GetNumberOfElements()))
+        tris.GetTag("2D").SetIds(np.arange(tris.GetNumberOfElements()))
     else:
         quads = mesh.GetElementsOfType(EN.Quadrangle_4)
-        quads.GetTag("2D").SetIds(range(quads.GetNumberOfElements()))
+        quads.GetTag("2D").SetIds(np.arange(quads.GetNumberOfElements()))
     skin = mesh.GetElementsOfType(EN.Bar_2)
     #face tags
 
@@ -517,9 +517,12 @@ def MirrorMesh(inmesh,x=None,y=None,z=None) :
         d += 1
 
     outmesh.nodes = np.empty((nbpoints*(2**d),inmesh.GetDimensionality()), dtype=np.float)
+    outmesh.originalIDNodes = np.empty((nbpoints*(2**d),), dtype=int)
 
     #copy of points:
     outmesh.nodes[0:nbpoints,:] = inmesh.nodes
+    #copy of points:
+    outmesh.originalIDNodes[0:nbpoints] = inmesh.originalIDNodes
     import copy
     outmesh.nodesTags = copy.deepcopy(inmesh.nodesTags)
     cpt = nbpoints
@@ -529,22 +532,24 @@ def MirrorMesh(inmesh,x=None,y=None,z=None) :
             ids = tag.GetIds()[:]  # make a copy
             tag.SetIds(np.hstack((ids,ids+oldSize)) )
 
-
     if x is not None:
         vec = np.array([ [  -1,1,1], ],dtype=np.float)
         outmesh.nodes[cpt:(2*cpt),:] = (outmesh.nodes[0:cpt,:]-[x,0,0])*vec+ [x,0,0]
+        outmesh.originalIDNodes[cpt:(2*cpt)] = outmesh.originalIDNodes[0:cpt]
         increaseTags(outmesh.nodesTags,cpt)
         cpt = cpt*2
 
     if y is not None:
         vec = np.array([ [  1,-1,1], ],dtype=np.float)
         outmesh.nodes[cpt:(2*cpt),:] = (outmesh.nodes[0:cpt,:]-[0,y,0])*vec+ [0,y,0]
+        outmesh.originalIDNodes[cpt:(2*cpt)] = outmesh.originalIDNodes[0:cpt]
         increaseTags(outmesh.nodesTags,cpt)
         cpt = cpt*2
 
     if z is not None:
         vec = np.array([ [  1,1,-1], ],dtype=np.float)
         outmesh.nodes[cpt:(2*cpt),:] = (outmesh.nodes[0:cpt,:]-[0,0,z])*vec+ [0,0,z]
+        outmesh.originalIDNodes[cpt:(2*cpt)] = outmesh.originalIDNodes[0:cpt]
         increaseTags(outmesh.nodesTags,cpt)
         cpt = cpt*2
 
