@@ -5,8 +5,7 @@
 #
 import numpy as np
 
-from scipy.spatial import cKDTree
-from scipy.sparse import coo_matrix
+
 
 import BasicTools.Containers.ElementNames as ElementNames
 from BasicTools.Containers.Filters import ElementFilter
@@ -65,6 +64,9 @@ def GetFieldTransferOp(inputField,targetPoints,method=None,verbose=False,element
         return op, status
     """
     possibleMethods =["Interp/Nearest","Nearest/Nearest","Interp/Clamp","Interp/Extrap","Interp/ZeroFill"]
+
+    from scipy.spatial import cKDTree
+    from scipy.sparse import coo_matrix
 
     if method is None:
         method = possibleMethods[0]
