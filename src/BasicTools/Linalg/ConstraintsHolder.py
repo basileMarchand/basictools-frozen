@@ -218,8 +218,8 @@ class ConstraintsHolder(BOO):
 
         if purePython == False:
             try:
-                import BasicTools.Linalg.EigenSolver as EigenSolver
-                LS = EigenSolver.EigenSolvers()
+                import BasicTools.Linalg.NativeEigenSolver as NativeEigenSolver
+                LS = NativeEigenSolver.CEigenSolvers()
             except: # pragma: no cover
                 purePython = True
                 print("Warning!!! Eigen SPQR decomposition not available using slower algorithm (scipy.linalg.qr)")
