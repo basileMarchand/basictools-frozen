@@ -216,10 +216,9 @@ def DeleteInternalFaces(mesh):
             ehash = np.sum(lc*key)
             if ehash in surf2:
                 mask[i] = True
-
-        datatochange[name] = ExtractElementsByMask(data,mask)
-
-
+    
+        if np.any(mask):
+            datatochange[name] = ExtractElementsByMask(data,mask)
 
     for name, data in datatochange.items():
         mesh.elements[name] = data
@@ -472,8 +471,10 @@ def ComputeFeatures(inputmesh,FeatureAngle=90,skin=None):
     numberOfNodes = inputmesh.GetNumberOfNodes()
 
     for name in surf:
-        data = edgemesh.GetElementsOfType(name)
         surf2 = surf[name]
+        if len(surf2) == 0:
+            continue
+        data = edgemesh.GetElementsOfType(name)
         for hashh,data2 in surf2.items():
             if data2[0] == 1 or data2[0] > 2:
                 #print(data2)
@@ -483,6 +484,8 @@ def ComputeFeatures(inputmesh,FeatureAngle=90,skin=None):
 
 
     for eltype in [ElementNames.Bar_2, ElementNames.Bar_3]:
+        if eltype not in edgemesh.elements:
+            continue
         bars = edgemesh.GetElementsOfType(eltype)
         bars.tags.CreateTag("Ridges").SetIds(np.arange(bars.GetNumberOfElements()))
     skinmesh.PrepareForOutput()
