@@ -333,6 +333,7 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
 
     try:
         from paraview.vtk import vtkPolyData, vtkUnstructuredGrid, vtkPoints,vtkIdList, vtkImageData
+        from paraview.vtk.util import numpy_support
     except :
         #faster import only needed classes
         from vtkmodules.vtkCommonCore import vtkPoints, vtkIdList
