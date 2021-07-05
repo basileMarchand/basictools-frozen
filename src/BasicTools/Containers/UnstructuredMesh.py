@@ -292,11 +292,14 @@ class UnstructuredMesh(MeshBase):
         """
         return self.nodes.shape[0]
 
-    def SetNodes(self,array_like,originalIDNodes=None):
+    def SetNodes(self,array_like,originalIDNodes=None, generateOriginalIDs = False):
+
         self.nodes = np.require(array_like,dtype=float,requirements=['C','A'])
         if originalIDNodes is not None:
             self.originalIDNodes = np.require(originalIDNodes,dtype=int,requirements=['C','A'])
-
+        elif generateOriginalIDs:
+            self.originalIDNodes = np.arange(self.GetNumberOfNodes())
+            
     def GetDimensionality(self):
         """
         return the dimensionality 2/3
@@ -552,10 +555,10 @@ class UnstructuredMesh(MeshBase):
                 print(v.connectivity.shape[1])    
                 raise Exception("Incompatible number of columns of the connectivity array")
 
-            if np.amin(v.connectivity) < 0:
+            if len(v.connectivity) and  np.amin(v.connectivity) < 0:
                 raise Exception("connectivity of '"+k+"' out of bound (<0)")
 
-            if np.amax(v.connectivity) >= nbnodes:
+            if len(v.connectivity) and np.amax(v.connectivity) >= nbnodes:
                 print(v.connectivity)
                 print(nbnodes)
                 raise Exception("connecitivty of '"+k+"' out of bound > nbnodes")
