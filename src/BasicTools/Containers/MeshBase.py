@@ -167,6 +167,9 @@ class Tags(BaseOutputObject):
 
     def __len__(self):
         return len(self.storage)
+    
+    def items(self):
+        return [(v.name,v) for v in self.storage]
 
     def __str__(self):
         res = ''
