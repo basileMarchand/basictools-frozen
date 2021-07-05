@@ -611,8 +611,7 @@ class FemReader(ReaderBase):
             print("key " + str(key) ) # pragma: no cover
             raise(ValueError("string '" + str(line) + "' not treated"))# pragma: no cover
 
-        res.nodes = np.array([xs,ys,zs],dtype=np.float).T
-        res.originalIDNodes = np.array(ids,dtype=np.int)
+        res.SetNodes(np.array([xs,ys,zs],dtype=float).T, ids )
         self.EndReading()
         res.PrepareForOutput()
         self.output = res
