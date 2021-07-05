@@ -37,10 +37,10 @@ class ElementsContainer(BaseOutputObject):
     def __init__(self,elementType):
         super(ElementsContainer,self).__init__()
         self.elementType = elementType
-        self.connectivity = np.empty((0,0),dtype=np.int)
+        self.connectivity = np.empty((0,ElementNames.numberOfNodes[elementType]),dtype=np.int)
         self.globaloffset   = 0
         self.tags = Tags()
-        self.cpt = 0;
+        self.cpt = 0
 
         self.originalIds = np.empty((0,),dtype=np.int)
         self.originalOffset = 0
@@ -272,9 +272,9 @@ class UnstructuredMesh(MeshBase):
         super(UnstructuredMesh, self).__init__()
         self.nodes = np.empty((0,3),dtype=np.double)
         self.originalIDNodes = np.empty((0,),dtype=np.int)
-        self.elements = AllElements();
-        self.boundingMin = np.array([0.,0,0]);
-        self.boundingMax = np.array([0.,0,0]);
+        self.elements = AllElements()
+        self.boundingMin = np.array([0.,0,0])
+        self.boundingMax = np.array([0.,0,0])
 
     def __copy__(self):
         res = UnstructuredMesh()
@@ -291,6 +291,11 @@ class UnstructuredMesh(MeshBase):
         return the total number of nodes in the mesh
         """
         return self.nodes.shape[0]
+
+    def SetNodes(self,array_like,originalIDNodes=None):
+        self.nodes = np.require(array_like,dtype=float,requirements=['C','A'])
+        if originalIDNodes is not None:
+            self.originalIDNodes = np.require(originalIDNodes,dtype=int,requirements=['C','A'])
 
     def GetDimensionality(self):
         """
@@ -343,8 +348,8 @@ class UnstructuredMesh(MeshBase):
         """
         to recumpute the bounding box
         """
-        self.boundingMin = np.amin(self.nodes, axis=0);
-        self.boundingMax = np.amax(self.nodes, axis=0);
+        self.boundingMin = np.amin(self.nodes, axis=0)
+        self.boundingMax = np.amax(self.nodes, axis=0)
 
     def AddNodeToTagUsingOriginalId(self,oid,tagname):
         """
@@ -454,9 +459,9 @@ class UnstructuredMesh(MeshBase):
             if tagname in elem.tags:
                 tag = elem.tags[tagname].GetIds()
                 if useOriginalId:
-                    res[cpt:cpt+len(tag) ] = elem.originalIds[tag];
+                    res[cpt:cpt+len(tag) ] = elem.originalIds[tag]
                 else:
-                    res[cpt:cpt+len(tag) ] = elem.globaloffset+tag;
+                    res[cpt:cpt+len(tag) ] = elem.globaloffset+tag
                 cpt +=  len(tag)
         return res[0:cpt]
 
@@ -470,6 +475,7 @@ class UnstructuredMesh(MeshBase):
              data.tighten()
         self.ComputeGlobalOffset()
 
+        self.VerifyIntegrity()
 
 
     def __str__(self):
@@ -485,6 +491,91 @@ class UnstructuredMesh(MeshBase):
         if len(self.elemFields.keys()):
             res += "  elemFields         : " + str(list(self.elemFields.keys())) + "\n"
         return res
+
+    def VerifyIntegrity(self):
+        #verification nodes an originalIdNodes are compatible
+        if len(self.nodes.shape) !=2:
+            raise Exception("Error in the shape of nodes")
+        
+        if self.nodes.flags['C_CONTIGUOUS'] == False:
+            raise Exception("Error in the order of nodes")
+        
+        if len(self.originalIDNodes.shape) !=1:
+            print(self.originalIDNodes.shape)
+            raise Exception("Error in the shape of originalIDNodes")
+
+        if self.originalIDNodes.flags['C_CONTIGUOUS'] == False:
+            raise Exception("Error in the order of originalIDNodes")
+
+        if self.originalIDNodes.shape[0] != self.nodes.shape[0]:
+            print(self.originalIDNodes.shape)
+            print(self.nodes)
+            raise Exception("nodes and originalIDNodes are incompatible")
+
+        nbnodes = self.nodes.shape[0]
+
+        #verification of min max in nodes tags
+        for k,v in self.nodesTags.items():
+            ids = v.GetIds()
+            if len(ids) == 0:
+                continue
+            if ids[0] < 0:
+                raise Exception("Ids of '"+ k +"' tag out of bound (<0)")
+            if ids[-1] >= nbnodes:
+                print(ids)
+                print(nbnodes)
+                raise Exception("Ids of '"+ k +"' tag out of bound > nbnodes")
+
+        # verification of elements        
+        for k,v in self.elements.items():
+
+            if v.connectivity.flags['C_CONTIGUOUS'] == False:
+                raise Exception("Error in the order of connectivity")
+
+            if len(v.connectivity.shape) != 2:
+                raise Exception("Wrong shape of connetivity of elements '"+ k +"'")
+            
+            if v.connectivity.shape == False:
+                raise Exception("Error in the order of connecitivty")
+
+            if v.originalIds.shape[0] != v.connectivity.shape[0]:
+                print(v.originalIds.shape[0])
+                print(v.connectivity.shape[0])
+                raise Exception("connectivity and originalIds are incompatible '"+k+"'")
+
+            if v.originalIds.flags['C_CONTIGUOUS'] == False:
+                raise Exception("Error in the order of originalIds")
+
+            if ElementNames.numberOfNodes[k] != v.connectivity.shape[1]:
+                print(k)
+                print(ElementNames.numberOfNodes[k])
+                print(v.connectivity.shape[1])    
+                raise Exception("Incompatible number of columns of the connectivity array")
+
+            if np.amin(v.connectivity) < 0:
+                raise Exception("connectivity of '"+k+"' out of bound (<0)")
+
+            if np.amax(v.connectivity) >= nbnodes:
+                print(v.connectivity)
+                print(nbnodes)
+                raise Exception("connecitivty of '"+k+"' out of bound > nbnodes")
+
+            nbelements = v.connectivity.shape[0]
+
+
+            #verification of min max in nodes tags
+            for tn,tv in v.tags.items():
+                ids = tv.GetIds()
+                if len(ids) == 0:
+                    continue
+                if ids[0] < 0:
+                    print(nbelements)
+                    print(ids)
+                    raise Exception("Ids of '"+ tn +"' tag out of bound (<0)")
+                if ids[-1] >= nbelements:
+                    print(nbelements)
+                    print(ids)
+                    raise Exception("Ids of '"+ tn +"' tag out of bound > nbelements")
 
 def CheckIntegrity():
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshOfTriangles
