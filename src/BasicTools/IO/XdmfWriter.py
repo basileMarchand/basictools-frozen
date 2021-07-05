@@ -1154,7 +1154,7 @@ def CheckIntegrity(GUI=False):
     elements.AddNewElement([1,2],1)
     elements = res.GetElementsOfType(EN.Point_1)
     elements.AddNewElement([0],2)
-    res.nodes = res.nodes[:,0:2]
+    res.nodes = np.ascontiguousarray(res.nodes[:,0:2])
     res.GetNodalTag("First_Point").AddToTag(0)
 
     res.AddElementToTagUsingOriginalId(1,"bars")
@@ -1167,19 +1167,18 @@ def CheckIntegrity(GUI=False):
     res = UM.UnstructuredMesh()
     WriteMeshToXdmf(tempdir+"TestUnstructured_EmptyMesh.xdmf", res)
 
-    res.nodes = np.array([[0,0,0],[1,0,0]],dtype=np.float32)
+    res.SetNodes([[0,0,0],[1,0,0]],np.arange(2))
     elements = res.GetElementsOfType(EN.Point_1)
     elements.AddNewElement([0],1)
+    
     WriteMeshToXdmf(tempdir+"TestUnstructured_OnlyPoints.xdmf", res)
 
     res = UM.UnstructuredMesh()
     res.nodes = np.array([[0,0,0],[1,0,0]],dtype=np.float32)
+    res.originalIDNodes = np.arange(res.GetNumberOfNodes())
     elements = res.GetElementsOfType(EN.Bar_2)
     elements.AddNewElement([0,1],1)
     WriteMeshToXdmf(tempdir+"TestUnstructured_OnlyBars.xdmf", res)
-
-
-
     #----------------------
 
     WriteTest(tempdir, False, False, False)

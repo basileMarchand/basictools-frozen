@@ -529,7 +529,7 @@ class DatReader(ReaderBase):
             self.PrintVerbose("----------------------------------------------------------")
             raise
 
-        res.nodes = np.array([xs,ys,zs],dtype=np.float).T
+        res.SetNodes(np.array([xs,ys,zs],dtype=np.float).T)
         res.originalIDNodes = np.array(originalsids,dtype=np.int)
         res.PrepareForOutput()
 
