@@ -706,6 +706,7 @@ def CheckIntegrity_GetValueAtPosLinearSymplecticMesh(GUI=False):
 def CheckIntegrity_PointToCellData(GUI = False):
     myMesh = UnstructuredMesh()
     myMesh.nodes = np.array([[0,0,0],[1,0,0],[2,0,0]] ,dtype=np.float)
+    myMesh.originalIDNodes = np.array([0,1,2] ,dtype=int)
     tag = myMesh.GetNodalTag("linPoints")
     tag.AddToTag(0)
     tag.AddToTag(1)
