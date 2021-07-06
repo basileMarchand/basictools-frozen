@@ -74,26 +74,12 @@ In the case you whant to use the compiled tools (using the --inplace option) you
 For Windows
 ^^^^^^^^^^^
 
-Install Microsoft Visual C++ Build Tools to use eigen.
 Scikit-sparse package not available in anaconda for windows, should be able to compile it for windows following [#scikitwindows]_.
+I good stating point for the installation is https://github.com/EmJay276/scikit-sparse .
 
-
-The ParaView Plugin
-###################
-
-ParaView can benefits from some functionalities of BasicTools.
-This can be achieved using the BasicToolsParaView plugin.
-The plugin to be loaded (``BasicToolsParaViewBridge.py``) is located on the ``extras`` folder.
-Please read the ParaView documentation for how to load this plugin.
-Be aware that your Python installation version may not be compatible with Python version of ParaView.
-
-Three type of object are added to ParaView by the plugin:
-
-* Readers: The BasicTools capabilities to reading data from different file formats.
-* Writers: The BasicTools capabilities to export data to different file formats.
-* Filters: Some of the mesh treatment functionalities of BasicTools are exposed as vtk filter.
-
-Be aware that the use of this functionalities involve a format conversion between the vtk and the BasicTools internal format.
+Extra pre-requirement:
+    - Microsoft Build Tools for C++.
+    - suitesparse package 
 
 To contribute to BasicTools
 ###########################

@@ -13,8 +13,8 @@ Welcome to BasicTools's documentation!
     :alt: Basic Tools Logo
     :figclass: align-center
 
-Contents:
-
+Contents
+========
 .. toctree::
    :maxdepth: 4
 
@@ -24,7 +24,17 @@ Contents:
    Containers
    Kinematics
    Examples
+   ParaViewAndOthersExternalTools
+   
 
+BasicTools Package Tree
+=======================
+
+.. toctree::
+   :maxdepth: 4
+
+   _source/BasicTools
+   
 Indices and tables
 ==================
 
