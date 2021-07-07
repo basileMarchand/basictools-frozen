@@ -13,10 +13,14 @@ from BasicTools.IO.IOFactory import RegisterReaderClass
 
 class VtkReader(ReaderBase):
     def __init__(self,fileName = None):
-        super(VtkReader,self).__init__()
+        super(VtkReader,self).__init__(fileName=fileName)
 
-    def Read(self, fileName=None,string=None,out=None):
+    def Read(self, fileName=None):
+      from vtkmodules.vtkCommonDataModel import vtkUnstructuredGrid, vtkPolyData
       from  vtkmodules.vtkIOLegacy import vtkGenericDataObjectReader
+
+      if fileName is not None:
+          self.SetFileName(fileName)
 
       reader = vtkGenericDataObjectReader()
       reader.SetFileName(self.fileName)
@@ -30,6 +34,7 @@ class VtkReader(ReaderBase):
 RegisterReaderClass(".vtk",VtkReader)
 
 def LoadVtuWithVTK(filename):
+    from vtkmodules.vtkCommonDataModel import vtkUnstructuredGrid, vtkPolyData
     from vtkmodules.vtkIOXML import vtkXMLUnstructuredGridReader
 
     readerVTU = vtkXMLUnstructuredGridReader()
@@ -46,7 +51,7 @@ def LoadVtuWithVTK(filename):
 
 class VtuReader(ReaderBase):
     def __init__(self,fileName = None):
-        super(VtuReader,self).__init__()
+        super(VtuReader,self).__init__(fileName =fileName)
 
     def Read(self, fileName=None,string=None,out=None):
 
@@ -55,7 +60,6 @@ class VtuReader(ReaderBase):
 
       self.output = VtkToMesh(LoadVtuWithVTK(self.fileName))
       return self.output
-
 
 RegisterReaderClass(".vtu",VtuReader)
 
