@@ -37,6 +37,7 @@ Three type of object are added to ParaView by the plugin:
 * Filters: Some of the mesh treatment functionalities of BasicTools are exposed as vtk filters.
 
 Be aware that the use of this functionalities involve a format conversion between the vtk and the BasicTools internal format.
+Be aware that your Python installation version may not be compatible with Python version of ParaView.
 
 
 MeshIO [#meshio]_
