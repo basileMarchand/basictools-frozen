@@ -121,13 +121,13 @@ class MeshWriter(WriterBase):
             self.filePointer.write(struct.pack('i', endOfInformation ))# end of information
             self.filePointer.write(struct.pack('i', nbelements))# GetNumberOfElements
 
-            dataformat = "i"*nbNodes
-            for i in range(nbelements):
-                (data.connectivity[i,:]+1).astype(np.int32).tofile(self.filePointer, format=dataformat,sep='')
-                if elemRefNumber is None :
-                    self.filePointer.write(struct.pack("i", 0 ))#
-                else:
-                    self.filePointer.write(struct.pack("i", elemRefNumber[globalOffset+i] ))#
+            tempcoon =  np.zeros( (data.connectivity.shape[0],data.connectivity.shape[1]+1),dtype=np.int32,order="c"  )
+            tempcoon[:,0:data.connectivity.shape[1]] = data.connectivity.astype(np.int32) 
+            tempcoon[:,0:data.connectivity.shape[1]] += 1
+            if elemRefNumber is not None:
+                tempcoon[:,data.connectivity.shape[1]] = elemRefNumber[globalOffset: globalOffset+nbelements]
+            tempcoon.tofile(self.filePointer, format=dataformat,sep='') 
+
 
             globalOffset += data.GetNumberOfElements()
 
@@ -415,13 +415,24 @@ class MeshWriter(WriterBase):
             globalOffset += data.GetNumberOfElements()
             self.filePointer.write("\n")
 
-        if "Corners" in meshObject.nodesTags:
-            tag = meshObject.nodesTags['Corners']
-            if len(tag):
-                self.filePointer.write("Corners\n");
-                self.filePointer.write("{} \n\n".format(len(tag)) )
-                (tag.GetIds()+1).tofile(self.filePointer, sep=" ")
-                self.filePointer.write("\n" )
+        nTags = [RequiredVertices,Corners]
+
+        for tagname in nTags:
+            if tagname in meshObject.nodesTags:
+               tag = meshObject.nodesTags[tagname]
+               if len(tag):
+                  self.filePointer.write(tagname+" \n");
+                  self.filePointer.write("{} \n\n".format(len(tag)) )
+                  (tag.GetIds()+1).tofile(self.filePointer, sep=" ")
+                  self.filePointer.write("\n" )
+
+#        if "Corners" in meshObject.nodesTags:
+#            tag = meshObject.nodesTags['Corners']
+#            if len(tag):
+#                self.filePointer.write("Corners\n");
+#                self.filePointer.write("{} \n\n".format(len(tag)) )
+#                (tag.GetIds()+1).tofile(self.filePointer, sep=" ")
+#                self.filePointer.write("\n" )
 
         for TagNameInFile,(ElementType,TagName) in ASCIITags.items():
             elements = meshObject.GetElementsOfType(ElementType)
@@ -466,29 +477,30 @@ def CheckIntegrity():
     tempdir = TestTempDir.GetTempPath()
 
     mymesh = UM.UnstructuredMesh()
-    mymesh.nodes = np.array([[0.00000000001,0,0],[1,0,0],[0,1,0],[1,1,0],[0,0,1]],dtype=np.float)
-    mymesh.originalIDNodes = np.array([1, 3, 4, 5,6],dtype=np.int)
+    with mymesh.WithModification():
+        mymesh.nodes = np.array([[0.00000000001,0,0],[1,0,0],[0,1,0],[1,1,0],[0,0,1]],dtype=np.float)
+        mymesh.originalIDNodes = np.array([1, 3, 4, 5,6],dtype=np.int)
 
-    mymesh.nodesTags.CreateTag("coucou").AddToTag(0)
-    mymesh.nodesTags.CreateTag(Corners).AddToTag(0)
-    mymesh.nodesTags.CreateTag(MT.RequiredVertices).SetIds([0])
+        mymesh.nodesTags.CreateTag("coucou").AddToTag(0)
+        mymesh.nodesTags.CreateTag(Corners).AddToTag(0)
+        mymesh.nodesTags.CreateTag(MT.RequiredVertices).SetIds([0])
 
-    tets = mymesh.GetElementsOfType(EN.Tetrahedron_4)
-    tets.AddNewElement([0,1,2,4],0)
+        tets = mymesh.GetElementsOfType(EN.Tetrahedron_4)
+        tets.AddNewElement([0,1,2,4],0)
 
-    tris = mymesh.GetElementsOfType(EN.Triangle_3)
-    tris.AddNewElement([0,1,2],0)
-    tris.AddNewElement([2,1,3],3)
-    tris.originalIds = np.array([3, 5],dtype=np.int)
+        tris = mymesh.GetElementsOfType(EN.Triangle_3)
+        tris.AddNewElement([0,1,2],0)
+        tris.AddNewElement([2,1,3],3)
+        tris.originalIds = np.array([3, 5],dtype=np.int)
 
-    tris.tags.CreateTag("RequiredTriangles").AddToTag(0)
+        tris.tags.CreateTag("RequiredTriangles").AddToTag(0)
 
-    tris = mymesh.GetElementsOfType(EN.Bar_3)
+        tris = mymesh.GetElementsOfType(EN.Bar_3)
 
-    bars = mymesh.GetElementsOfType(EN.Bar_2)
-    bars.AddNewElement([0,1],0)
-    bars.tags.CreateTag("Ridges").AddToTag(0)
-    bars.tags.CreateTag(MT.RequiredEdges).AddToTag(0)
+        bars = mymesh.GetElementsOfType(EN.Bar_2)
+        bars.AddNewElement([0,1],0)
+        bars.tags.CreateTag("Ridges").AddToTag(0)
+        bars.tags.CreateTag(MT.RequiredEdges).AddToTag(0)
 
     nodalRefNumber = np.arange(mymesh.GetNumberOfNodes())
     elemRefNumber = np.arange(mymesh.GetNumberOfElements())
