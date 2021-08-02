@@ -278,8 +278,10 @@ def FillIPField(field,fieldDefinition):
 
 def FillFEField(field,fieldDefinition):
     for f,val in fieldDefinition:
+        needPos = False
         if callable(val):
             fval = val
+            needPos = True
         else:
             fval = lambda x: val
 
@@ -292,13 +294,20 @@ def FillFEField(field,fieldDefinition):
                 nbsf = sp.GetNumberOfShapeFunctions()
                 geospace_ipvalues  = geoSpace.SetIntegrationRule(sp.posN,np.ones(nbsf) )
 
+                if needPos == False:
+                    iddofs = field.numbering[name][ids,:].flatten()
+                    field.data[iddofs] = fval(None)
+                    continue
                 for elid in ids:
                     for i in range(nbsf):
                         dofid = field.numbering[name][elid,i]
-                        valN = geospace_ipvalues.valN[i]
-                        xcoor = field.mesh.nodes[elements.connectivity[elid,:],:]
-                        pos = np.dot(valN ,xcoor).T
-                        field.data[dofid] = fval(pos)
+                        if needPos:
+                            valN = geospace_ipvalues.valN[i]
+                            xcoor = field.mesh.nodes[elements.connectivity[elid,:],:]
+                            pos = np.dot(valN ,xcoor).T
+                            field.data[dofid] = fval(pos)
+                        else:
+                            field.data[dofid] = fval(None)
 
         elif isinstance(f,NodeFilter):
             ids = f.GetIdsToTreat()
