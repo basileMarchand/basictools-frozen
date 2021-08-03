@@ -322,10 +322,11 @@ def inv22(A):
     c = A[1,0]
     d = A[1,1]
     invA = np.zeros_like(A)
-    invA[0,0] = d/(a*d-b*c);
-    invA[0,1] = -b/(a*d-b*c);
-    invA[1,0] = -c/(a*d-b*c);
-    invA[1,1] = a/(a*d-b*c);
+    invA[0,0] = d
+    invA[0,1] = -b
+    invA[1,0] = -c
+    invA[1,1] = a
+    invA /= (a*d-b*c)
     return invA
 
 def ComputeBarycentricCoordinateOnElement(coordAtDofs,localspace,localnumbering,point,linear):
@@ -339,16 +340,19 @@ def ComputeBarycentricCoordinateOnElement(coordAtDofs,localspace,localnumbering,
         f = point - N.dot(coordAtDofs)
         df_num = df(f,dN,coordAtDofs)
 
-        if df_num.dot(df_num) < 1e-10:
-            break
         H = ddf(f,xietaphi,point,dN,localspace.GetShapeFuncDerDer,coordAtDofs,linear)
         if H.shape[0] == 2:
-            xietaphi -=inv22(H).dot(df_num)
+            dxietaphi = inv22(H).dot(df_num)
         elif H.shape[0] == 3:
-            xietaphi -=hdinv(H).dot(df_num)
+            dxietaphi = hdinv(H).dot(df_num)
         else:
-            xietaphi -= np.linalg.inv(H).dot(df_num)
-
+            dxietaphi = np.linalg.inv(H).dot(df_num)
+        xietaphi -= dxietaphi
+        
+        # if the cell is linear only one iteration is needed
+        if linear or np.linalg.norm(dxietaphi) < 1e-6 :
+            print (xietaphi)
+            break
     else:
         return None, xietaphi,localspace.ClampParamCoorninates(xietaphi)
 
