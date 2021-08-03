@@ -351,7 +351,6 @@ def ComputeBarycentricCoordinateOnElement(coordAtDofs,localspace,localnumbering,
         
         # if the cell is linear only one iteration is needed
         if linear or np.linalg.norm(dxietaphi) < 1e-6 :
-            print (xietaphi)
             break
     else:
         return None, xietaphi,localspace.ClampParamCoorninates(xietaphi)
