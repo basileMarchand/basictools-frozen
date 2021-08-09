@@ -209,7 +209,13 @@ class MeshWriter(WriterBase):
         self._isOpen = True
 
         self.filePointer.write("MeshVersionFormatted 2\n\n")
-        dimension = support.GetDimensionality()
+        dimension = 3 
+
+        if support.nodes.shape[1] == 3 :
+            mmax = np.max(support.nodes[:,2])
+            mmin = np.min(support.nodes[:,2])
+            if  mmax ==  mmin and mmax == 0.:
+               dimension = 2 
         self.filePointer.write("Dimension {}\n\n".format(dimension))
 
     def WriteSolutionsFieldsAscii(self,meshObject,PointFields=None,SolsAtTriangles=None,SolsAtTetrahedra=None):
@@ -294,7 +300,14 @@ class MeshWriter(WriterBase):
         #
         #key Dimension (3)
         self.filePointer.write(struct.pack('i', 3))
-        dimension = support.GetDimensionality()
+        dimension = 3 #support.GetDimensionality()
+
+        if support.nodes.shape[1] == 3 :
+            mmax = np.max(support.nodes[:,2])
+            mmin = np.min(support.nodes[:,2])
+            if  mmax ==  mmin:
+               dimension = 2 
+
         self.filePointer.write(struct.pack('i', self.filePointer.tell()+4*2))# end of information
         self.filePointer.write(struct.pack('i', dimension)) #dimension
 
