@@ -92,10 +92,9 @@ def GetFieldTransferOp(inputField,targetPoints,method=None,verbose=False,element
     numbering = inputField.numbering
     space = inputField.space
     inodes = imesh.nodes
-
-    kdt = cKDTree(inodes)
-
     nbtp = targetPoints.shape[0]
+ 
+    kdt = cKDTree(inodes)
 
     if method == "Nearest/Nearest" :
         dist, ids = kdt.query(targetPoints)
@@ -116,6 +115,7 @@ def GetFieldTransferOp(inputField,targetPoints,method=None,verbose=False,element
     from BasicTools.Containers.MeshTools import  GetElementsCenters
 
     centers = GetElementsCenters(imesh)
+    kdtcenters = cKDTree(centers)
 
     # 30 to be sure to hold exa27 coefficients
     cols = np.empty(nbtp*30, dtype=int )
@@ -141,6 +141,7 @@ def GetFieldTransferOp(inputField,targetPoints,method=None,verbose=False,element
         raise(Exception("Element not found"))
 
     distTP, idsTP = kdt.query(targetPoints)
+    distTPcenters, idsTPcenters = kdtcenters.query(targetPoints)
 
     if verbose:
         from BasicTools.Helpers.ProgressBar import printProgressBar
@@ -152,15 +153,20 @@ def GetFieldTransferOp(inputField,targetPoints,method=None,verbose=False,element
         if verbose:
             printProgressBar(p+1, nbtp, prefix = 'Building Transfer '+method+':', suffix = 'Complete', length = 50)
 
-        TP = targetPoints[p,:]
-        CP =  idsTP[p]
-        LPE = nused[CP]
-        potentialElements = dualGraph[CP,0:LPE]
+        TP = targetPoints[p,:]  # target point posicion 
+        CP =  idsTP[p]          # closest point posicion
 
+        ## we use the closest element (in the sens of cells center )
+        origial_data, lenb = GetElement(imesh,idsTPcenters[p])
+        ## construct the potentialElements list (all element touching the closest element)
+        potentialElements = []
+        for elempoint in  origial_data.connectivity[lenb,:]:
+            potentialElements.extend(dualGraph[elempoint,0:nused[elempoint]])
+        potentialElements = np.unique(potentialElements)
         # compute distance to elements
         # for the moment we use the distance to the center, this gives a good estimate
         # of the order to check the elements
-        dist = np.empty(LPE)
+        dist = np.empty(len(potentialElements))
         for cpt,e in enumerate(potentialElements):
             data, lenb = GetElement(imesh,e)
             diff = centers[e,:]-TP
@@ -356,7 +362,8 @@ def ComputeBarycentricCoordinateOnElement(coordAtDofs,localspace,localnumbering,
         return None, xietaphi,localspace.ClampParamCoorninates(xietaphi)
 
     xichietaClamped = localspace.ClampParamCoorninates(xietaphi)
-    inside = not np.any(xichietaClamped-xietaphi  )
+    # we treat very closes point as inside 
+    inside = np.linalg.norm(xichietaClamped-xietaphi) < 1e-6 
     return inside, xietaphi, xichietaClamped
 
 
