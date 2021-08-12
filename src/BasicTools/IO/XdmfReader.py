@@ -116,7 +116,8 @@ class XdmfGrid(Xdmfbase):
             res = ConstantRectilinearMesh()
             res.SetOrigin(self.geometry.GetOrigin())
             res.SetSpacing(self.geometry.GetSpacing())
-            res.SetDimensions(self.topology.GetDimensions())
+            swaper = [2,1,0]
+            res.SetDimensions(self.topology.GetDimensions()[swaper])
             return res
         if self.geometry.Type == "XYZ":
             from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
@@ -184,7 +185,8 @@ class XdmfGrid(Xdmfbase):
                     if a.Type == "Vector":
                         data = data.transpose(2,1,0,3)
                     else:
-                        data = data.T
+                        data.shape = self.topology.GetDimensions()
+                        data = data.transpose(2,1,0).ravel()
                 res.append(np.copy(data))
         return res ;
 
@@ -193,7 +195,6 @@ class XdmfGrid(Xdmfbase):
         for a in self.attributes:
             if a.Name == name :
                 data = a.dataitems[0].GetData();
-                #print(data.shape)
                 if self.geometry.Type == "ORIGIN_DXDYDZ":
                     if a.Type == "Vector":
                         if noTranspose:
