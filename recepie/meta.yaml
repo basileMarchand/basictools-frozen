@@ -1,0 +1,72 @@
+{% set name = "basictools" %}
+{% set version = "1.6.1" %}
+{% set data = load_setup_py_data() %}
+
+package:
+  name: "{{ name|lower }}"
+  version: "{{ version }}"
+
+source:
+  path: ../.
+
+build:
+  number: 0
+
+  skip_compile_pyc:
+    "BasicToolsParaViewBridge.py"
+
+  script_env:
+    - BASICTOOLS_DISABLE_MKL
+    - BASICTOOLS_DISABLE_OPENMP
+    - BASICTOOLS_DISABLE_EIGENCYEIGEN
+
+requirements:
+  build:
+    - {{ compiler('c') }}
+    - {{ compiler('cxx') }}
+  host:
+    - python
+    - numpy
+    - cython 
+    - eigency=1.78
+    - mkl
+    - mkl-include
+    - setuptools-scm
+  run:
+    - python
+    - pyparsing
+    - numpy 
+    - scipy
+    - sympy
+    - eigency=1.78
+    - mkl
+    - scikit-learn
+    - vtk
+    - meshio
+    - h5py
+    - pyvista
+    - scikit-sparse 
+
+test:
+  requirements:
+    - coverage
+  imports:
+     -  BasicTools
+  commands :
+    - python -u -m BasicTools.Helpers.Tests -k Catalyst 
+#  downstreams:
+#    - TopoTools
+
+   
+
+about:
+    home: {{ data['url'] }} 
+    license: {{ data['license'] }}
+    license_file: LICENSE.txt
+    license_family: BSD
+    summary: {{ data['description'] }}
+    description: {{ data['long_description'] }}
+
+extra:
+  recipe-maintainers:
+    - felipebordeu
