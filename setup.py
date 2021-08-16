@@ -15,6 +15,7 @@ import configparser
 enable_MKL = "BASICTOOLS_DISABLE_MKL" not in os.environ
 annotate = False # to generate annotation (HTML files)
 useOpenmp = "BASICTOOLS_DISABLE_OPENMP" not in os.environ
+useEigencyEigen = "BASICTOOLS_DISABLE_EIGENCYEIGEN" not in os.environ
 __config = configparser.ConfigParser()
 __config.read('setup.cfg')
 debug = True if __config["build_ext"]["debug"].lower()  in ["1","true"] else False 
@@ -51,10 +52,11 @@ try:
     import eigency
     from Cython.Compiler import Options
 
-    from BasicTools.Containers.ElementNames import GeneratertElementNamesCpp
-
-    GeneratertElementNamesCpp()
-
+    code = compile(open("src/BasicTools/Containers/ElementNames.py").read(),"src/BasicTools/Containers/ElementNames.py","exec")
+    res = {}
+    exec(code,res)
+    res["GeneratertElementNamesCpp"]()
+    
     Options.fast_fail = True
     Options.embed = True
 
@@ -71,7 +73,7 @@ try:
     cython_src_with_path  = [os.path.join(basictools_src_path, src) for src in cython_src]
     
     for n,m in zip(cython_src,cython_src_with_path):
-        cythonextension.append(Extension("BasicTools."+n.split(".pyx")[0].replace("/","."), [m],libraries=["CppBasicTools"], include_dirs=["./cpp_src/"]))
+        cythonextension.append(Extension("BasicTools."+n.split(".pyx")[0].replace("/","."), [m],libraries=["CppBasicTools"], include_dirs=["./cpp_src/"])) 
         
     modules.extend(cythonize(cythonextension, gdb_debug=debug, annotate=annotate, force=force))
 
@@ -148,7 +150,7 @@ class build_ext_compiler_check(build_ext):
     def _include_dirs(self, _):
         import numpy
         include_dirs =[numpy.get_include(),"cpp_src" ,"."]
-        include_dirs.extend(eigency.get_includes(include_eigen=False) )
+        include_dirs.extend(eigency.get_includes(include_eigen=useEigencyEigen) )
         if "EIGEN_INC" in os.environ:
             include_dirs.append(os.environ.get('EIGEN_INC'))
         if "CONDA_PREFIX" in os.environ:
