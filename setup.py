@@ -151,14 +151,17 @@ class build_ext_compiler_check(build_ext):
         import numpy
         include_dirs =[numpy.get_include(),"cpp_src" ,"."]
         include_dirs.extend(eigency.get_includes(include_eigen=useEigencyEigen) )
-        if "EIGEN_INC" in os.environ:
-            include_dirs.append(os.environ.get('EIGEN_INC'))
+        if not useEigencyEigen:
+            if "EIGEN_INC" in os.environ:
+                include_dirs.append(os.environ.get('EIGEN_INC'))
         if "CONDA_PREFIX" in os.environ:
             conda_prefix = os.environ["CONDA_PREFIX"]
+        if "PREFIX" in os.environ:
+            conda_prefix = os.environ["PREFIX"]
+        if len(conda_prefix):
             include_dirs.append(os.path.join(conda_prefix, "include"))
             include_dirs.append(os.path.join(conda_prefix, "include", "eigen3"))
             include_dirs.append(os.path.join(conda_prefix, "Library", "include"))
-        include_dirs.append(os.path.join("src", "BasicTools"))
         return include_dirs
         
 if __name__ == '__main__':

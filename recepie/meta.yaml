@@ -1,16 +1,14 @@
-{% set name = "basictools" %}
-{% set version = "1.6.1" %}
 {% set data = load_setup_py_data() %}
 
 package:
-  name: "{{ name|lower }}"
-  version: "{{ version }}"
+  name: "basictools"
+  version: {{ GIT_DESCRIBE_TAG }}
 
 source:
   path: ../.
 
 build:
-  number: 0
+  number: {{ GIT_DESCRIBE_NUMBER }}
 
   skip_compile_pyc:
     "BasicToolsParaViewBridge.py"
@@ -18,7 +16,7 @@ build:
   script_env:
     - BASICTOOLS_DISABLE_MKL
     - BASICTOOLS_DISABLE_OPENMP
-    - BASICTOOLS_DISABLE_EIGENCYEIGEN
+    - BASICTOOLS_USE_EIGENCYEIGEN
 
 requirements:
   build:
@@ -28,10 +26,11 @@ requirements:
     - python
     - numpy
     - cython 
-    - eigency=1.78
+    - eigency
     - mkl
     - mkl-include
     - setuptools-scm
+    - eigen
   run:
     - python
     - pyparsing
