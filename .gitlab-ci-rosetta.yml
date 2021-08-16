@@ -31,6 +31,7 @@ build_Python3:
     script:
         - module load PISCO/Python3Dev
         - export PYTHONPATH=$PWD/src:$PYTHONPATH
+        - export BASICTOOLS_DISABLE_EIGENCYEIGEN=True
         - python setup.py build_ext --inplace
     artifacts:
         paths:
