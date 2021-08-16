@@ -533,7 +533,7 @@ class UnstructuredMesh(MeshBase):
         for k,v in self.elements.items():
 
             if v.connectivity.flags['C_CONTIGUOUS'] == False:
-                raise Exception("Error in the order of connectivity")
+                raise Exception("Error :  connectivity not C_CONTIGUOUS")
 
             if len(v.connectivity.shape) != 2:
                 raise Exception("Wrong shape of connetivity of elements '"+ k +"'")
