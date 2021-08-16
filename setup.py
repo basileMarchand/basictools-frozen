@@ -15,7 +15,7 @@ import configparser
 enable_MKL = "BASICTOOLS_DISABLE_MKL" not in os.environ
 annotate = False # to generate annotation (HTML files)
 useOpenmp = "BASICTOOLS_DISABLE_OPENMP" not in os.environ
-useEigencyEigen = "BASICTOOLS_DISABLE_EIGENCYEIGEN" not in os.environ
+useEigencyEigen = "BASICTOOLS_USE_EIGENCYEIGEN" in os.environ
 __config = configparser.ConfigParser()
 __config.read('setup.cfg')
 debug = True if __config["build_ext"]["debug"].lower()  in ["1","true"] else False 
