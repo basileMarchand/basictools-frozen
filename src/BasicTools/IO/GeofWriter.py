@@ -183,6 +183,7 @@ class GeofWriter(WriterBase):
                         tag = elems.tags[tagname]
                         if tag.cpt :
                             self.filePointer.write(" ".join([str(x+1+cpt) for x in tag.GetIds()]))
+                            self.filePointer.write(" ")
                     cpt += elems.GetNumberOfElements()
 
                 self.filePointer.write("\n")
@@ -193,8 +194,10 @@ class GeofWriter(WriterBase):
                 data = meshObject.GetElementsInTag(tagname,useOriginalId=useOriginalId)
                 if useOriginalId :
                     self.filePointer.write(" ".join([str(x) for x in data]))
+                    self.filePointer.write(" ")
                 else:
                     self.filePointer.write(" ".join([str(x+1) for x in data]))
+                    self.filePointer.write(" ")
                 self.filePointer.write("\n")
 
         # Dotsets, lisets, facets
