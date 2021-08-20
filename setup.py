@@ -156,12 +156,16 @@ class build_ext_compiler_check(build_ext):
                 include_dirs.append(os.environ.get('EIGEN_INC'))
         if "CONDA_PREFIX" in os.environ:
             conda_prefix = os.environ["CONDA_PREFIX"]
-        if "PREFIX" in os.environ:
-            conda_prefix = os.environ["PREFIX"]
-        if len(conda_prefix):
             include_dirs.append(os.path.join(conda_prefix, "include"))
             include_dirs.append(os.path.join(conda_prefix, "include", "eigen3"))
             include_dirs.append(os.path.join(conda_prefix, "Library", "include"))
+        if "PREFIX" in os.environ:
+            conda_prefix = os.environ["PREFIX"]
+            include_dirs.append(os.path.join(conda_prefix, "include"))
+            include_dirs.append(os.path.join(conda_prefix, "include", "eigen3"))
+            include_dirs.append(os.path.join(conda_prefix, "Library", "include"))
+        
+
         return include_dirs
         
 if __name__ == '__main__':
