@@ -537,6 +537,49 @@ def ComputeMeshMinMaxLengthScale(mesh):
             resMax = min(resMax,mmax)
     return (2*resMin,2*resMax)
 
+def PrintMeshInformation(mesh):
+    from BasicTools.Helpers.TextFormatHelper import TFormat as TF
+
+    def L25(text):
+        return TF.Left(text ,fill=" ",width=25)
+    def L15(text):
+        return TF.Left(text ,fill=" ",width=15)
+
+    mesh.VerifyIntegrity()
+
+    print(TF.Center("Nodes information"))
+    print(L25("nodes.shape:") , str(mesh.nodes.shape) )
+    print(L25("nodes.dtype:") , str(mesh.nodes.dtype) )
+    mesh.ComputeBoundingBox()
+    print(L25("boundingMin:") + str(mesh.boundingMin) )
+    print(L25("boundingMax:") + str(mesh.boundingMax) )
+    print(L25("originalIDNodes.shape:") , str(mesh.originalIDNodes.shape) )
+    print(L25("min(originalIDNodes):") , str(min(mesh.originalIDNodes) )  )
+    print(L25("max(originalIDNodes):") , str(max(mesh.originalIDNodes) )  )
+    print("---- nodes tags ---- " )
+    print(mesh.nodesTags)
+    for tag in mesh.nodesTags:
+        res = L15(tag.name) + L15(" size:"+ str(len(tag)))
+        if len(tag):
+            res +=L15(" min:"+str(min(tag.GetIds()) ) )+ "  max:"+str(max(tag.GetIds()) )
+        print(res)
+
+
+    print(TF.Center("Elements information"))
+
+    for name,data in mesh.elements.items():
+        res = L25(str(type(data)).split("'")[1].split(".")[-1]+ " " + name+" ")
+        res += L15("size:" + str(data.GetNumberOfElements()))
+        res += L25("min(connectivity):" + str(min(data.connectivity.ravel())))
+        res += L25("max(connectivity):" +  str(max(data.connectivity.ravel())))
+        print(res)
+        for tag in data.tags:
+            res = L15(tag.name) + L15(" size:"+ str(len(tag)))
+            if len(tag):
+                res +=L15(" min:"+str(min(tag.GetIds()) ) )+ "  max:"+str(max(tag.GetIds()) )
+            print("  Tag: " +res)
+
+    print(TF.Center("")) 
 #------------------------- CheckIntegrity ------------------------
 def CheckIntegrity_ExtractElementByTags(GUI=False):
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshOfTriangles
@@ -666,6 +709,7 @@ def CheckIntegrity_ComputeMeshMinMaxLengthScale(GUI=False):
     tets = [[0,1,2,3],[3,1,0,2]]
     mesh = CreateMeshOf(points,tets,ElementNames.Tetrahedron_4)
     print(ComputeMeshMinMaxLengthScale(mesh))
+    PrintMeshInformation(mesh)
     return "ok"
 
 def CheckIntegrity_ExtractElementsByMask(GUI=False):
