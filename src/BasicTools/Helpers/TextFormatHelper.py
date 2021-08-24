@@ -160,11 +160,12 @@ class TFormat(object):
     def Center(text,fill= "*",width=60):
 
         if fill != " ":
-            if (width - TFormat.__nonAnsiStringLen(text)) > 0 :
-                text = ' ' + text
+            if len(text):
+                if (width - TFormat.__nonAnsiStringLen(text)) > 0 :
+                    text = ' ' + text
 
-            if (width - TFormat.__nonAnsiStringLen(text)) > 0 :
-                text = text + ' '
+                if (width - TFormat.__nonAnsiStringLen(text)) > 0 :
+                    text = text + ' '
 
         #if width < len(text)  :
         #    text = text[0:width-1] + '.'
