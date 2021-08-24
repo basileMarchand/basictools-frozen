@@ -5,39 +5,54 @@
 #
 
 
-from BasicTools.Helpers.TextFormatHelper import TFormat as TF
+from BasicTools.Containers.UnstructuredMeshInspectionTools import PrintMeshInformation
 from BasicTools.IO.UniversalReader import ReadMesh
 from BasicTools.IO.UniversalWriter import WriteMesh
 import  BasicTools.IO.IOFactory as IOF
 
-IOF.InitAllReaders()
-IOF.InitAllWriters()
+def LoadReadersAndWriters(ops):
+    if ops["OnlyAbaqusReader"]:
+        from BasicTools.IO.OdbReader import OdbReader
+        import BasicTools.IO.PickleTools
+    else:
+        IOF.InitAllReaders()
+        IOF.InitAllWriters()
 
+    if ops["MeshIO"]:
+        from BasicTools.Containers.MeshIOBridge import InitAllReaders,InitAllWriters,AddReadersToBasicToolsFactory,AddWritersToBasicToolsFactory
+        InitAllReaders()
+        InitAllWriters()
+        AddReadersToBasicToolsFactory()
+        AddWritersToBasicToolsFactory()
 
-def PrintHelp():
-  print( 'python  MeshFileConverter -i <inputfile> -o <outputfile>')
-  print( 'options :')
-  print( '       -i    Input file name')
-  print( '       -o    output file name')
-  print( '       -h    this help')
-  print( '       -t    time to read (if the input file can handle time) (default last time step is writen)')
-  print( '       -p    print availables time to read ')
-  print( '       -v    more verbose output ')
-  print( '       -m    Activate MeshIO Readers and Writers ')
-  print( '       -s    Plot mesh before continue (press key "q" exit)')
+def PrintHelp(ops):
+    LoadReadersAndWriters(ops)
 
-  print("Available Readers : ", IOF.GetAvailableReaders())
-  print("Available Writers : ", IOF.GetAvailableWriter())
+    print( 'python  MeshFileConverter -i <inputfile> -o <outputfile>')
+    print( 'options :')
+    print( '       -i    Input file name')
+    print( '       -o    output file name')
+    print( '       -h    this help')
+    print( '       -t    time to read (if the input file can handle time) (default last time step is writen)')
+    print( '       -p    print availables time to read ')
+    print( '       -v    more verbose output ')
+    print( '       -m    Activate MeshIO Readers and Writers ')
+    print( '       -s    Plot mesh before continue (press key "q" exit)')
+    print( '       -a    Abaqus Mode (python2). Load only the abaqus reader and pickle writer')
+    print( '       -c    (reserved)')
+
+    print("Available Readers : ", IOF.GetAvailableReaders())
+    print("Available Writers : ", IOF.GetAvailableWriter())
 
 #MeshFileConverter -i meshfile.meshb -o .PIPE > toto
 
 from BasicTools.Helpers.PrintBypass import PrintBypass
 
 def Convert(inputfilename,outputfilename,ops):
-      IOF.InitAllReaders()
-      IOF.InitAllWriters()
 
-      with PrintBypass() as f:
+    LoadReadersAndWriters(ops)
+
+    with PrintBypass() as f:
 
           if ".PIPE" in outputfilename :
               f.ToDisk("MeshFileConverter.log")
@@ -83,46 +98,7 @@ def Convert(inputfilename,outputfilename,ops):
           WriteMesh(outputfilename,mesh,writer=writer)
           print("DONE")
 
-def PrintMeshInformation(mesh):
 
-      def L25(text):
-          return TF.Left(text ,fill=" ",width=25)
-      def L15(text):
-          return TF.Left(text ,fill=" ",width=15)
-
-      print(TF.Center("check the integrity of the mesh"))
-      print(L25("nodes.shape:") , str(mesh.nodes.shape) )
-      mesh.ComputeBoundingBox()
-      print(L25("boundingMin:") + str(mesh.boundingMin) )
-      print(L25("boundingMax:") + str(mesh.boundingMax) )
-      print(L25("originalIDNodes.shape:") , str(mesh.originalIDNodes.shape) )
-      print(L25("min(originalIDNodes):") , str(min(mesh.originalIDNodes) )  )
-      print(L25("max(originalIDNodes):") , str(max(mesh.originalIDNodes) )  )
-      print("---- node tags ---- " )
-      print(mesh.nodesTags)
-      for tag in mesh.nodesTags:
-          res = L15(tag.name) + L15(" size:"+ str(len(tag)))
-          if len(tag):
-              res +=L15(" min:"+str(min(tag.GetIds()) ) )+ "  max:"+str(max(tag.GetIds()) )
-          print(res)
-
-
-      print("---- Elements ---- " )
-      for name,data in mesh.elements.items():
-          res = L25(str(type(data)).split("'")[1].split(".")[-1]+ " " + name+" ")
-          res += L15("size:" + str(data.GetNumberOfElements()))
-          res += L25("min(connectivity):" + str(min(data.connectivity.ravel())))
-          res += L25("max(connectivity):" +  str(max(data.connectivity.ravel())))
-          print(res)
-          #if len(data.tags):
-          #    print("  ---- Element tags for "+name+" ---- " )
-          for tag in data.tags:
-              res = L15(tag.name) + L15(" size:"+ str(len(tag)))
-              if len(tag):
-                  res +=L15(" min:"+str(min(tag.GetIds()) ) )+ "  max:"+str(max(tag.GetIds()) )
-              print("  Tag: " +res)
-
-      print(TF.Center("check the integrity of the mesh DONE"))
 
 def CheckIntegrity(GUI=False):
     from BasicTools.Helpers.Tests import TestTempDir
@@ -152,6 +128,9 @@ def CheckIntegrity(GUI=False):
             ops["timeToRead"] = -1
             ops["printTimes"] = False
             ops["PlotOnScreen"] = GUI
+            ops["OnlyAbaqusReader"] = False
+            ops["OnHelp"] = False
+            ops["MeshIO"] = False
             Convert(inputfilename,outputfilename,ops)
 
     return "ok"
@@ -164,7 +143,7 @@ def Main():
     else:
       #try:
       if True:
-          opts, args = getopt.getopt(sys.argv[1:],"svphmt:i:o:")
+          opts, args = getopt.getopt(sys.argv[1:],"svphmat:i:o:")
       #except getopt.GetoptError:
       #    PrintHelp()
       #    sys.exit(2)
@@ -174,18 +153,18 @@ def Main():
       ops["timeToRead"] = -1
       ops["printTimes"] = False
       ops["PlotOnScreen"] = False
+      ops["OnlyAbaqusReader"] = False
+      ops["OnHelp"] = False
+      ops["MeshIO"] = False
       for opt, arg in opts:
          if opt == '-h':
-             PrintHelp()
-             sys.exit()
+             ops["OnHelp"] = True
          elif opt in ("-i"):
             inputfilename = arg
          elif opt in ("-o"):
             outputfilename = arg
          elif opt in ("-t"):
             ops["timeToRead"] = float(arg)
-            print(ops)
-            #raise
          elif opt in ("-p"):
             ops["printTimes"] = bool(True)
          elif opt in ("-v"):
@@ -195,16 +174,18 @@ def Main():
             print(CheckIntegrity(GUI=True))
             sys.exit(0)
          elif opt in ("-m"):
-             from BasicTools.Containers.MeshIOBridge import InitAllReaders,InitAllWriters,AddReadersToBasicToolsFactory,AddWritersToBasicToolsFactory
-             InitAllReaders()
-             InitAllWriters()
-             AddReadersToBasicToolsFactory()
-             AddWritersToBasicToolsFactory()
+             ops["MeshIO"] = True
+
          elif opt in ("-s"):
              ops["PlotOnScreen"] = True
+         elif opt in ("-a"):
+             ops["OnlyAbaqusReader"] = True
 
-
-    Convert(inputfilename,outputfilename,ops )
+    if ops["OnHelp"]:
+        PrintHelp(ops)
+        sys.exit()
+    else:
+        Convert(inputfilename,outputfilename,ops )
 
 if __name__ == '__main__' :
     Main()
