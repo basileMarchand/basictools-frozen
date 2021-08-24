@@ -37,19 +37,6 @@ try:
     import BasicTools.Containers.ElementNames as EN
     PrintDebug("Loading")
 
-    try :
-        PrintDebug("loading meshio interface Done")
-        import BasicTools.Containers.MeshIOBridge as MeshIOBridge
-        MeshIOBridge.InitAllReaders()
-        MeshIOBridge.InitAllWriters()
-        MeshIOBridge.AddReadersToBasicToolsFactory()
-        MeshIOBridge.AddWritersToBasicToolsFactory()
-        PrintDebug("loading meshio interface Done")
-    except:
-        print("Error loading meshio interface ")
-        if debug:
-            raise
-
     paraview_plugin_name = "BasicTools ParaView Bridge"
     paraview_plugin_version = "5.7"
 
@@ -57,6 +44,18 @@ try:
     PrintDebug("Init readers ")
     InitAllReaders()
     PrintDebug("Init readers Done")
+    try :
+        PrintDebug("loading meshio readers")
+
+        import BasicTools.Containers.MeshIOBridge as MeshIOBridge
+        MeshIOBridge.InitAllReaders()
+        MeshIOBridge.AddReadersToBasicToolsFactory()
+        PrintDebug("loading meshio readers Done")
+    except:
+        print("Error in the registration of meshio readers")
+        if debug:
+            raise
+
 
     for pext,readerClass,_ in ReaderFactory.AllEntries():
         if pext==".PIPE":
@@ -159,10 +158,12 @@ try:
                    )
 
         name = " files [BasicTools Reader]"
+        extraname = ""
         if readerClassName.find("MeshIO") >=0 :
-            name = " files [BasicTools MeshIO Reader]"
+            extraname = "MeshIO "
+            name = " files [BasicTools "+extraname+"Reader]"
 
-        obj2 = smproxy.reader(name=wrapperClassName, label="BasicTools Python-based "+ ext.upper() +" Reader",
+        obj2 = smproxy.reader(name=wrapperClassName, label="BasicTools "+extraname+"Python-based "+ ext.upper() +" Reader",
                     extensions=ext, file_description=ext+name)(obj)
 
         locals()[wrapperClassName] = obj2
@@ -174,6 +175,18 @@ try:
     PrintDebug("InitAllWriters")
     InitAllWriters()
     PrintDebug('InitAllWriters Done')
+
+    try :
+        PrintDebug("loading meshio  Done")
+        import BasicTools.Containers.MeshIOBridge as MeshIOBridge
+        MeshIOBridge.InitAllWriters()
+        MeshIOBridge.AddWritersToBasicToolsFactory()
+        PrintDebug("loading meshio writers Done")
+    except:
+        print("Error in the registration of meshio writers")
+        if debug:
+            raise
+
     for pext in WriterFactory.keys():
         if pext==".PIPE":
             continue
