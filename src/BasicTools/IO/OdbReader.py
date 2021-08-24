@@ -8,18 +8,7 @@ import os
 import numpy as np
 
 from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
-import BasicTools.Containers.ElementNames as EN
-
-eltype = {}
-eltype["S3"] = EN.Triangle_3
-eltype["C3D4"] = EN.Tetrahedron_4
-eltype["C3D8"] = EN.Hexaedron_8
-eltype["C3D10"] = EN.Tetrahedron_10
-eltype["C3D10M"] = EN.Tetrahedron_10
-eltype["C3D20"] = EN.Hexaedron_20
-
-permutation = {}
-#permutation["C3D4"] = [0, 1, 3, 2]
+from BasicTools.IO.AbaqusTools import InpNameToBasicTools, permutation
 
 abaqus_EXEC = os.environ.get("ABAQUS_EXEC","abaqus")
 
@@ -67,7 +56,7 @@ class OdbReader(object):
                     import subprocess
                     script = GetPipeWormholeScript()
                     fn = WriteTempFile("WormholeServer.py",script)
-                    self.proc = subprocess.Popen([abaqus_EXEC,"python",fn], stdout=subprocess.PIPE,stdin=subprocess.PIPE)
+                    self.proc = subprocess.Popen([abaqus_EXEC,"python","-B",fn], stdout=subprocess.PIPE,stdin=subprocess.PIPE)
                     self.client = WormholeClient(proc=self.proc)
                     self.client.RemoteExec("from BasicTools.IO.OdbReader import OdbReader")
                     self.client.RemoteExec("reader = OdbReader()")
@@ -166,14 +155,15 @@ class OdbReader(object):
         elemToMeshElem = {}
 
         for elem in elements:
+            eltype = InpNameToBasicTools[elem.type]
             conn = [abaToMeshNode[n] for n in elem.connectivity ]
-            elems = res.GetElementsOfType(eltype[elem.type])
+            elems = res.GetElementsOfType(eltype)
             per = permutation.get(elem.type,None)
             if per is None:
                 enum = elems.AddNewElement(conn,elem.label) - 1
             else:
                 enum = elems.AddNewElement([conn[x] for x in per],elem.label) - 1
-            elemToMeshElem[elem.label] = (eltype[elem.type],enum)
+            elemToMeshElem[elem.label] = (eltype,enum)
 
         print("Reading Elements Keys")
         res.PrepareForOutput()
@@ -182,7 +172,7 @@ class OdbReader(object):
             eSet =eSets[eSetK]
             name = eSet.name
             for elem in eSet.elements:
-                elems = res.GetElementsOfType(eltype[elem.type])
+                elems = res.GetElementsOfType(InpNameToBasicTools[elem.type])
                 enum = elemToMeshElem[elem.label][1]
                 elems.GetTag(elem.instanceName).AddToTag(enum)
                 elems.GetTag(name).AddToTag(enum)

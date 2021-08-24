@@ -14,7 +14,7 @@ from BasicTools.Helpers.Timer import Timer
 import BasicTools.Containers.ElementNames as EN
 from BasicTools.Containers.Filters import ElementFilter
 from BasicTools.IO.ReaderBase import ReaderBase
-
+from BasicTools.IO.AbaqusTools import InpNameToBasicTools, permutation
 
 KeywordToIgnore = ["INITIAL CONDITIONS",
                    "AMPLITUDE",
@@ -31,15 +31,6 @@ KeywordToIgnore = ["INITIAL CONDITIONS",
                    "END INSTANCE",
                    "END ASSEMBLY"
                    ]
-
-InpNumber = {}
-
-InpNumber['S3'] = EN.Triangle_3
-InpNumber['CONN3D2'] = EN.Bar_2
-InpNumber['C3D4'] = EN.Tetrahedron_4
-InpNumber['CPS4R'] = EN.Quadrangle_4
-InpNumber['C3D8'] = EN.Hexaedron_8
-InpNumber['C3D8R'] = EN.Hexaedron_8
 
 def JoinInp(filename):
     fII = open("join_"+filename,"w")
@@ -159,6 +150,7 @@ class InpReader(ReaderBase):
 
     def Read(self,fileName=None,string=None, out=None):
         import BasicTools.FE.ProblemData as ProblemData
+        from BasicTools.Linalg.Transform  import Transform
         import BasicTools.Containers.UnstructuredMesh as UM
 
         if fileName is not None:
@@ -255,7 +247,8 @@ class InpReader(ReaderBase):
             if self.find(l,"*ELEMENT")>-1:
                 data = LineToDic(l)
                 etype = data["TYPE"]
-                nametype = InpNumber[etype]
+                nametype = InpNameToBasicTools[etype]
+                per = permutation.get(etype,None)
 
                 l = self.ReadCleanLine()
                 elements = res.GetElementsOfType(nametype)
@@ -272,6 +265,9 @@ class InpReader(ReaderBase):
                     filetointernalidElement[oid] = (elements,cid)
 
                     l = self.ReadCleanLine()
+                    
+                if per is not None:
+                    elements.connectivity = elements.connectivity[:,per]
 
                 finalcid = elements.GetNumberOfElements()
 
@@ -416,7 +412,7 @@ class InpReader(ReaderBase):
 
             if self.find(l,"*ORIENTATION")>-1:
                 data = LineToDic(l)
-                orient = ProblemData.Transform()
+                orient = Transform()
 
                 name = data["NAME"]
                 orient.system = data["SYSTEM"]
