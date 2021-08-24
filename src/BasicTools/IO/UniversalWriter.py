@@ -4,46 +4,9 @@
 # file 'LICENSE.txt', which is part of this source code package.
 #
                        
-
-#externalWriters = {}
-#
-#def WriterFactory(nameOrFilename,ops={"default":"xmf"}):
-#
-#    import os.path
-#    dirname = os.path.dirname(nameOrFilename)
-#    basename,extention = os.path.splitext(os.path.basename(nameOrFilename))
-#
-#    res = None
-#    if extention == ".geof" or nameOrFilename == "geof":
-#        from BasicTools.IO.GeofWriter import GeofWriter
-#        res = GeofWriter()
-#        res.SetWriteLowerDimElementsAsSets(True)
-#    elif extention ==  ".gmsh" or nameOrFilename == "gmsh":
-#        from  BasicTools.IO.GmshWriter import GmshWriter
-#        res = GmshWriter()
-#    elif extention ==  ".mesh" or nameOrFilename == "mesh":
-#        from BasicTools.IO.MeshWriter import MeshWriter
-#        res = MeshWriter()
-#    elif extention ==  ".xmf" or extention ==  ".xdmf" or nameOrFilename == "xmf":
-#        from BasicTools.IO.XdmfWriter import XdmfWriter
-#        res = XdmfWriter()
-#
-#    elif extention ==  ".ut" :
-#
-#        import BasicTools.IO.UtWriter as UW
-#        res = UW.UtWriter()
-#        import numpy as np
-#        res.AttachSequence(np.array([[0,0,0,0,0]]))
-#    else:
-#        if extention in externalWriters:
-#            res = externalWriters[extention]()
-#        else:
-#            raise("Unable to find a suitable writer for the file  :"+str() )
-#            #res = WriterFactory(ops["default"])
-#
-#    res.SetFileName(nameOrFilename)
-#    return res
-
+def InitAllWriters():
+    from BasicTools.IO.IOFactory import InitAllWriters as IAW
+    IAW()
 
 def WriteMesh(filename,outmesh,binary=None,writer=None):# pragma: no cover
 
@@ -69,21 +32,6 @@ def WriteMesh(filename,outmesh,binary=None,writer=None):# pragma: no cover
 
     writer.Write(outmesh,PointFieldsNames=PointFieldsNames,PointFields=PointFields,CellFieldsNames=CellFieldsNames,CellFields=CellFields )
     writer.Close()
-
-## to use this function add this lines to the
-## programmmable filter in paraview, and change the output type to UnstructuredGrid
-##
-#
-#filename = "here you put your filename"
-#from BasicTools.IO.UniversalWriter import PopulateMeshFromVtkAndWriteMesh
-#PopulateMeshFromVtkAndWriteMesh(filename,self.GetInput())
-
-def PopulateMeshFromVtkAndWriteMesh(filename, vtkobject):# pragma: no cover
-
-    from BasicTools.Containers.vtkBridge import VtkToMesh
-    mesh = VtkToMesh(vtkobject)
-
-    WriteMesh(filename,mesh)
 
 def CheckIntegrity():
     from BasicTools.IO.IOFactory import CreateWriter, InitAllWriters, RegisterWriterClass
