@@ -297,32 +297,32 @@ std::map<std::string,ElementInfo> InitElementNames() {
 """)
             for elemtype in geoSupport:
             #for elemtype in ['tet4']:
-               file.write(f"""
+               file.write("""
     ElementNames["{elemtype}"] = ElementInfo();
-    ElementNames["{elemtype}"].numberOfNodes = {numberOfNodes[elemtype]};
-    ElementNames["{elemtype}"].geoSupport = Geo{geoSupport[elemtype].name.capitalize()};
+    ElementNames["{elemtype}"].numberOfNodes = {non};
+    ElementNames["{elemtype}"].geoSupport = Geo{geoname};
     ElementNames["{elemtype}"].name = "{elemtype}";
-    ElementNames["{elemtype}"].mirrorPermutation.resize({len(mirrorPermutation.get(elemtype,""))},1);\n""")
+    ElementNames["{elemtype}"].mirrorPermutation.resize({nbpnodes},1);\n""".format(elemtype=elemtype,non = numberOfNodes[elemtype],geoname=geoSupport[elemtype].name.capitalize(),nbpnodes=len(mirrorPermutation.get(elemtype,""))))
                #if len(mirrorPermutation.get(elemtype,"")):
                #   print(f"""ElementNames["{elemtype}"].mirrorPermutation <<  {", ".join(map(str,mirrorPermutation.get(elemtype,[])))};""")
 
                for n,v in enumerate(mirrorPermutation.get(elemtype,[])):
-                  file.write(f"""    ElementNames["{elemtype}"].mirrorPermutation({n},0)= {v};\n""")
+                  file.write("""    ElementNames["{elemtype}"].mirrorPermutation({n},0)= {v};\n""".format(n=n,elemtype=elemtype,v=v))
 
 
-               file.write(f"""    ElementNames["{elemtype}"].linear = {('true' if linear[elemtype] else 'false'  )};\n""")
+               file.write("""    ElementNames["{elemtype}"].linear = {l};\n""".format(elemtype=elemtype,l=('true' if linear[elemtype] else 'false'  )))
 
                for e,n in faces.get(elemtype,[]):
                    file.write("    {\n")
-                   file.write(f"""        MatrixID1 matA({len(n)}, 1);
-        matA << """+ ", ".join(map(str,n)) + ";\n")
-                   file.write(f"""        ElementNames["{elemtype}"].faces.push_back(std::pair<ElementInfo,MatrixID1>(ElementNames["{e}"],matA) );\n""" )
+                   file.write("""        MatrixID1 matA({x}, 1);
+        matA << """.format(x=len(n))+ ", ".join(map(str,n)) + ";\n")
+                   file.write("""        ElementNames["{elemtype}"].faces.push_back(std::pair<ElementInfo,MatrixID1>(ElementNames["{e}"],matA) );\n""".format(elemtype=elemtype, e=e) )
                    file.write("    }\n")
                for e,n in faces2.get(elemtype,[]):
                    file.write("    {\n")
-                   file.write(f"""        MatrixID1 matA({len(n)}, 1);
-        matA << """+ ", ".join(map(str,n)) + ";\n")
-                   file.write(f"""        ElementNames["{elemtype}"].faces2.push_back(std::pair<ElementInfo,MatrixID1>(ElementNames["{e}"],matA) );\n""" )
+                   file.write("""        MatrixID1 matA({x}, 1);
+        matA << """.format(x=len(n))+ ", ".join(map(str,n)) + ";\n")
+                   file.write("""        ElementNames["{elemtype}"].faces2.push_back(std::pair<ElementInfo,MatrixID1>(ElementNames["{e}"],matA) );\n""".format(elemtype=elemtype,e=e) )
                    file.write("    }\n")
             file.write("""
     return ElementNames;
@@ -337,7 +337,6 @@ std::map<std::string,ElementInfo> ElementNames = InitElementNames();
 
     except Exception:
         print('Unable to create file '+ filename)
-     #continue if file not found
 
 def CheckIntegrity(GUI=False):
     print(GeoPoint)

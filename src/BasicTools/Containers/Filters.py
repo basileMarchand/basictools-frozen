@@ -493,7 +493,7 @@ class ElementFilter(Filter):
         if zt in ["center", "allnodes", "leastonenode"]:
             self.zoneTreatment = zt
         else:
-            raise(Exception(f"Zone treatment not valide ({zt}), possible options are : center, allnodes, leastonenode"))
+            raise(Exception("Zone treatment not valide ({zt}), possible options are : center, allnodes, leastonenode".format(zt=zt)))
 
     def SetDimensionality(self,dim):
         """

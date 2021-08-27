@@ -38,7 +38,7 @@ def LoadData(filename):
        return None if not ok
     """
     with open(filename,'rb') as pickle_file:
-        unpickler = __pickle.Unpickler(pickle_file)
+        unpickler = __pickle.Unpickler(pickle_file,encoding='latin1')
         data = unpickler.load()
         return  IOHelper(data)
     return None # pragma: no cover
@@ -55,7 +55,7 @@ class PickleReader(ReaderBase):
         self.output = internalReader.named["mesh"]
         return self.output
 
-class PickleWriter():
+class PickleWriter(object):
     def __init__(self):
         super(PickleWriter,self).__init__()
         self.filename = ""
