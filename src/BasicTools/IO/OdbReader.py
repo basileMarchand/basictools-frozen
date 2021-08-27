@@ -6,13 +6,15 @@
 
 import os
 import numpy as np
+from collections import defaultdict
 
+from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
 from BasicTools.IO.AbaqusTools import InpNameToBasicTools, permutation
 
 abaqus_EXEC = os.environ.get("ABAQUS_EXEC","abaqus")
 
-class OdbReader(object):
+class OdbReader(BaseOutputObject):
     def __init__(self):
         super(OdbReader,self).__init__()
         self.canHandleTemporal = True
@@ -131,27 +133,29 @@ class OdbReader(object):
         res.originalIDNodes = np.empty((nbnodes),dtype=int)
         abaToMeshNode = {}
         cpt = 0
-        print("Reading Nodes")
+        self.PrintDebug("Reading Nodes")
         for i in nodes:
             res.nodes[cpt,:] = i.coordinates
             res.originalIDNodes[cpt] = i.label
             abaToMeshNode[i.label] = cpt
             cpt += 1
 
-        print("Reading Nodes Keys")
+        self.PrintDebug("Reading Nodes Keys")
         res.PrepareForOutput()
         nSets = instance.nodeSets
         for nSetK in nSets.keys():
             nSet = nSets[nSetK]
             name = nSet.name
             tag = res.nodesTags.CreateTag(name,False)
+            buffer = []
             for node in nSet.nodes:
-                enum = abaToMeshNode[node.label]
-                tag.AddToTag(enum)
+                buffer.append(node.label)
+            enum = [abaToMeshNode[x] for x in buffer ]
+            tag.AddToTag(enum)
             tag.RemoveDoubles()
 
         elements = instance.elements
-        print("Reading Elements")
+        self.PrintDebug("Reading Elements")
         elemToMeshElem = {}
 
         for elem in elements:
@@ -159,24 +163,28 @@ class OdbReader(object):
             conn = [abaToMeshNode[n] for n in elem.connectivity ]
             elems = res.GetElementsOfType(eltype)
             per = permutation.get(elem.type,None)
-            if per is None:
-                enum = elems.AddNewElement(conn,elem.label) - 1
-            else:
-                enum = elems.AddNewElement([conn[x] for x in per],elem.label) - 1
+            enum = elems.AddNewElement(conn,elem.label)-1
             elemToMeshElem[elem.label] = (eltype,enum)
 
-        print("Reading Elements Keys")
+        for name,data in res.elements.items():
+            per = permutation.get(name,None)
+            if per is not None :
+                data.connectivity = data.connectivity[:,per]
+
+        self.PrintDebug("Reading Elements Keys")
         res.PrepareForOutput()
         eSets = instance.elementSets
         for eSetK in eSets.keys():
             eSet =eSets[eSetK]
+            self.PrintDebug("Reading set {eSetK}".format(eSetK=eSetK))
             name = eSet.name
+            cpt = 0
+            temptagdata = defaultdict(lambda : list() )
             for elem in eSet.elements:
-                elems = res.GetElementsOfType(InpNameToBasicTools[elem.type])
-                enum = elemToMeshElem[elem.label][1]
-                elems.GetTag(elem.instanceName).AddToTag(enum)
-                elems.GetTag(name).AddToTag(enum)
+                temptagdata[elem.type].append(elem.label)  
 
+            for elemstype,label in  temptagdata.items():
+                res.GetElementsOfType(InpNameToBasicTools[elemstype]).GetTag(name).SetIds( [ elemToMeshElem[x][1] for x in label ] )
 
         for name,data in res.elements.items():
             for tag in data.tags:
@@ -200,7 +208,7 @@ class OdbReader(object):
             self.elemMap = elemToMeshElem
             self.output = res
 
-        print("Reading Fields")
+        self.PrintDebug("Reading Fields")
         self.output.nodeFields,self.output.elemFields = self.ReadFields(self.abatomesh,self.elemMap,self.output)
 
         return self.output
@@ -231,9 +239,16 @@ class OdbReader(object):
         s1 = 0
         s2 = 1
         for name,data in frame.fieldOutputs.items():
+            
             if len(self.fieldsNamesToRead) != 0  and name not in self.fieldsNamesToRead:
                 continue
 
+            if len(self.fieldsNamesToRead) == 0:
+                if name in [ "COORD" ]:
+                    self.PrintDebug("skip field {}".format(name))
+                    continue
+
+            self.PrintDebug("Reading {name} (type:{type})".format(name=name,type=str(data.type)))
             if data.type == OA.SCALAR:
               s2 = 1
             elif data.type == OA.VECTOR:
@@ -241,7 +256,7 @@ class OdbReader(object):
             elif data.type == OA.TENSOR_3D_FULL:
               s2 = 6
             else:
-                print("do not how to treat {}".format(data.type))
+                self.PrintDebug("do not how to treat {}".format(data.type))
                 raise(Exception("error"))
 
             if data.locations[0].position == OA.CENTROID:
@@ -263,6 +278,7 @@ class OdbReader(object):
                 s1 = len(nodeMap)
                 storage = nodalFields
                 storage[name] = self.ReadFieldWithMapNode(nodeMap,sdata,s1,s2)
+        self.PrintDebug("Done Reading fields")
         return nodalFields, elemFields
 
     def ReadFieldWithMapNode(self,entityMap,field,s1,s2):

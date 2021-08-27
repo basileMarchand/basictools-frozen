@@ -20,4 +20,4 @@ InpNameToBasicTools["C3D10M"] = EN.Tetrahedron_10
 InpNameToBasicTools["C3D20"] = EN.Hexaedron_20
 
 permutation = {}
-#permutation["C3D4"] = [0, 1, 3, 2]
+#permutation[ EN.Tetrahedron_4] = [0, 1, 3, 2]
