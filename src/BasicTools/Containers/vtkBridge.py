@@ -111,6 +111,12 @@ elementNameByVtkNumber[11] = ElementNames.Hexaedron_8   #voxel
 tagsTypes = [np.int8, np.uint8, int]
 
 def VtkFieldToNumpyField(support,vtkField):
+    if support.IsConstantRectilinear():
+        return VtkFieldToNumpyFieldWithDims(vtkField,dimensions=support.GetDimensions())
+    else:
+        return VtkFieldToNumpyFieldWithDims(vtkField)
+
+def VtkFieldToNumpyFieldWithDims(vtkField,dimensions=None):
     from vtkmodules.util import numpy_support
     from vtkmodules.vtkCommonCore import vtkStringArray
 
@@ -120,8 +126,10 @@ def VtkFieldToNumpyField(support,vtkField):
         return (name, np.array([vtkField.GetValue(x) for x in range(vtkField.GetNumberOfValues() )], dtype=object))
 
     data = numpy_support.vtk_to_numpy(vtkField)
-    if support.IsConstantRectilinear():
-        dims = list(support.GetDimensions())[::-1]
+
+    # ConstantRectilinear case 
+    if dimensions is not None:
+        dims = list(dimensions)[::-1]
         if len(data.shape) > 1:
             dims.append(data.shape[1])
         else:
@@ -130,12 +138,17 @@ def VtkFieldToNumpyField(support,vtkField):
         data = np.swapaxes(data,0,2)
 
     return (name,data)
-
 def NumpyFieldToVtkField(support,fielddata,fieldname):
+    if support.IsConstantRectilinear():
+        return NumpyFieldToVtkFieldWithDims(fielddata, fieldname, support.GetDimensions())
+    else:
+        return NumpyFieldToVtkFieldWithDims(fielddata, fieldname)
+
+def NumpyFieldToVtkFieldWithDims(fielddata,fieldname,dimensions=None):
     from vtkmodules.util import numpy_support
     from vtkmodules.vtkCommonCore import vtkStringArray
 
-    isimagedata = support.IsConstantRectilinear()
+    isimagedata = dimensions is not None
     if type(fielddata[0]) in [ str, object, np.str_ ]: # working on list of string or numpy of objects
         # for the moment only work for scalar (1 components fields )
         VTK_data = vtkStringArray()
@@ -152,10 +165,10 @@ def NumpyFieldToVtkField(support,fielddata,fieldname):
       if isimagedata:
           dataView = fielddata.view()
           #automatic detection if is a nodeField or a elemField
-          if np.prod(dataView.shape[:-1]) == np.prod(support.GetDimensions()):
-              dims = list(support.GetDimensions())
+          if np.prod(dataView.shape[:-1]) == np.prod(dimensions):
+              dims = list(dimensions)
           else:
-              newshape= list([ (x-1 if x-1 >0 else 1 )  for x in support.GetDimensions()])
+              newshape= list([ (x-1 if x-1 >0 else 1 )  for x in dimensions])
               dims  = newshape
           dims.append(fielddata.shape[1])
           dataView.shape = tuple(dims)
@@ -168,12 +181,12 @@ def NumpyFieldToVtkField(support,fielddata,fieldname):
       if isimagedata:
           dataView = fielddata.view()
           #automatic detection if is a nodeField or a elemField
-          if np.prod(dataView.shape) == np.prod(support.GetDimensions()):
+          if np.prod(dataView.shape) == np.prod(dimensions):
               #nodefield
-              dataView.shape = support.GetDimensions()
+              dataView.shape = dimensions
           else:
               #elemfield
-              newshape= tuple([ (x-1 if x-1 >0 else 1 )  for x in support.GetDimensions()])
+              newshape= tuple([ (x-1 if x-1 >0 else 1 )  for x in dimensions])
               dataView.shape = newshape
           VTK_data = numpy_support.numpy_to_vtk(num_array=np.swapaxes(dataView,0,2).ravel(), deep=True, array_type=outputtype)
       else:
