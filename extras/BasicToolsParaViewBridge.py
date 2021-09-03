@@ -28,7 +28,7 @@ try:
     from vtkmodules.vtkCommonDataModel import vtkUnstructuredGrid
 
     PrintDebug("Loading libs")
-    from BasicTools.Containers.vtkBridge import GetInputVtk, GetInputBasicTools,  SetOutputBasicTools
+    from BasicTools.Containers.vtkBridge import GetInputVtk, GetOutputVtk, GetInputBasicTools,  SetOutputBasicTools, VtkFieldToNumpyFieldWithDims
     from BasicTools.IO.IOFactory import InitAllReaders
     from BasicTools.IO.IOFactory import ReaderFactory
     from BasicTools.IO.IOFactory import InitAllWriters
@@ -290,6 +290,109 @@ try:
         locals()[wrapperClassName] = obj3
 
     #----------------------------- The Filters ------------------------------------
+    
+    def ConstructSkeletonForTensorVectorFields(data, sep="_",sufix = [{"x":0,"y":1,"z":2},{"X":0,"Y":1,"Z":2},{"XX":0, "YY":1, "ZZ":2, "XY":3, "XZ":4, "YZ":5},{"xx":0, "yy":1, "zz":2, "xy":3, "xz":4, "yz":5}]):
+        from collections import defaultdict
+        res = defaultdict(lambda : dict())
+        for name in data:
+            done = False
+            for family in sufix:
+                for i,(s,pos) in enumerate(family.items()):
+                    ss = sep+s
+                    index= name.find(ss)
+                    if index > -1 and index == len(name)-len(ss):
+                        newname = name[0:len(name)-len(ss)]
+                        if pos in res[newname]:
+                            raise(Exception(f"field {name} confict with {res[newname][pos]}"))
+                        res[newname][pos] = name
+                
+                        done = True
+            if not done:
+                if 0 in res[name]:
+                    raise(Exception(f"field {name} confict with {res[newname][0]}"))
+                res[name][0] = name
+        return res
+        
+    
+    @smproxy.filter(name="Scalar To Tensor/Vector")
+    @smhint.xml("""<ShowInMenu category="BasicTools" />""")
+    @smproperty.input(name="Input", port_index=0)
+    @smdomain.datatype(dataTypes=["vtkUnstructuredGrid","vtkPolyData"], composite_data_supported=False)
+    class ScalarToTensorVector(VTKPythonAlgorithmBase):
+        def __init__(self):
+            VTKPythonAlgorithmBase.__init__(self, nInputPorts=1, nOutputPorts=1, outputType="vtkUnstructuredGrid")
+            self.onCellData =  True
+            self.onPointData =  True
+        
+        def RequestData(self, request, inInfoVec, outInfoVec):
+
+            def TreatDataSet(inputData,outputData,nbtuples):
+                nbarrays = outputData.GetNumberOfArrays()
+                arraynames = []
+                for x in range(nbarrays):
+                    array = inputData.GetArray(x)
+                    if array.GetNumberOfComponents() == 1:
+                        arraynames.append(array.GetName() )
+
+                res = ConstructSkeletonForTensorVectorFields(arraynames)
+
+                for name, data in res.items():
+                    nbcomponents = max(data.keys())+1
+                    npdata = np.zeros((nbtuples,nbcomponents), dtype=float)
+                    for index, fn in data.items():
+                        npdata[:,index] = VtkFieldToNumpyFieldWithDims(inputData.GetArray(fn) )[1]
+                        outputData.RemoveArray(fn)
+                    newdata = numpy_support.numpy_to_vtk(num_array=npdata, deep=True)
+                    newdata.SetNumberOfComponents(nbcomponents)
+                    newdata.SetName(name)
+                    if nbcomponents == 3: 
+                        for i in range(3):
+                            newdata.SetComponentName(i,["X","Y","Z"][i])
+                    elif nbcomponents == 6: 
+                        for i in range(6):
+                            newdata.SetComponentName(i,["XX","YY","ZZ","XY","XZ","YZ"][i])
+                    outputData.AddArray(newdata)
+
+            from vtkmodules.util import numpy_support
+            inputMesh = GetInputVtk(request, inInfoVec, outInfoVec)
+            outputMesh = GetOutputVtk(request, inInfoVec, outInfoVec, copyAttr = False, outputNumber= 0)
+            outputMesh.ShallowCopy(inputMesh)
+            from vtkmodules.vtkCommonDataModel import vtkPointData
+
+            if self.onCellData:
+                TreatDataSet(inputMesh.GetCellData(), outputMesh.GetCellData(), inputMesh.GetNumberOfCells())
+
+            if self.onPointData:
+                TreatDataSet(inputMesh.GetPointData(), outputMesh.GetPointData(), inputMesh.GetNumberOfPoints())
+
+            return 1
+
+        @smproperty.xml("""<IntVectorProperty name="OnCellData" command="SetOnCellData"
+                             number_of_elements="1" default_values="1">
+                             <BooleanDomain name="bool"/>
+        <Documentation>
+          This property indicates if the cell data must be treated 
+        </Documentation>
+                             </IntVectorProperty>""")
+        def SetOnCellData(self, val):
+            val = int(val)
+            if self.onCellData != val :
+                self.onCellData = val
+                self.Modified()
+
+        @smproperty.xml("""<IntVectorProperty name="OnPointData" command="SetOnPointData"
+                             number_of_elements="1" default_values="1">
+                             <BooleanDomain name="bool"/>
+        <Documentation>
+          This property indicates if the point data must be treated 
+        </Documentation>
+                             </IntVectorProperty>""")
+        def SetOnPointData(self, val):
+            val = int(val)
+            if self.onPointData != val :
+                self.onPointData = val
+                self.Modified()
+
     # this is experimental
     @smproxy.filter(name="Prefix Filter")
     @smhint.xml("""<ShowInMenu category="BasicTools" />""")
