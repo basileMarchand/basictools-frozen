@@ -286,6 +286,11 @@ class UnstructuredMesh(MeshBase):
         res.boundingMax = self.boundingMax
         return res
 
+    def ConvertDataForNativeTreatment(self):
+        self.nodes = np.asarray(self.nodes, dtype=float, order="C")
+        for elemtype, data in self.elements.items():
+            data.connectivity = np.asarray(data.connectivity, dtype=int, order="C")
+
     def GetNumberOfNodes(self):
         """
         return the total number of nodes in the mesh
@@ -585,6 +590,7 @@ def CheckIntegrity():
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshFromConstantRectilinearMesh
 
     res = CreateMeshOfTriangles([[0,0,0],[1,2,3],[0,1,0]], [[0,1,2]])
+    res.ConvertDataForNativeTreatment()
 
     elements = res.GetElementsOfType(ElementNames.Triangle_3)
 
