@@ -173,9 +173,16 @@ void DofNumbering::ComputeNumberingGeneral(UnstructuredMesh& mesh, Space& space,
 }
 
 bool DofNumbering::HasNumberingFor(const std::string & elemtype){
-    return this->numbering.count(elemtype)>0;
+    if (this->numbering.count(elemtype)>0){
+        return this->numbering[elemtype].rows() >0 && this->numbering[elemtype].cols() >0;
+    }
+    return false;
 }
 void DofNumbering::InitNumberingFor(const std::string & elemtype, const long int& nbOfElement, const long int& nbOfShapeFuntions ){
+    if (nbOfElement == 0){
+        this->numbering.erase(elemtype);
+        return ;
+    }
     this->numbering[elemtype].resize(nbOfElement,nbOfShapeFuntions);
     this->numbering[elemtype].fill(-1);
 }
