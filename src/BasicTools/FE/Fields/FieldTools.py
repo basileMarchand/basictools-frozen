@@ -15,44 +15,48 @@ from BasicTools.FE.DofNumbering import ComputeDofNumbering
 from BasicTools.FE.Fields.IPField import FieldBase
 
 
-def NodeFieldToFEField(mesh):
+def NodeFieldToFEField(mesh, nodeFields=None):
+    if nodeFields is None:
+        nodeFields = mesh.nodeFields
     numbering = ComputeDofNumbering(mesh,LagrangeSpaceGeo,fromConnectivity=True)
     res = {}
     for name,values in mesh.nodeFields.items():
         if len(values.shape) == 2:
             for i in range(values.shape[1]):
-                res[name+"_"+str(i)] = FEField(name=name+"_"+str(i), mesh=mesh, space=LagrangeSpaceGeo, numbering=numbering,data=values[:,i])
+                res[name+"_"+str(i)] = FEField(name=name+"_"+str(i), mesh=mesh, space=LagrangeSpaceGeo, numbering=numbering, data=np.asarray(values[:,i], dtype=float, order="C") )
         else:
-            res[name] = FEField(name=name, mesh=mesh, space=LagrangeSpaceGeo, numbering=numbering,data=values)
+            res[name] = FEField(name=name, mesh=mesh, space=LagrangeSpaceGeo, numbering=numbering,data=np.asarray(values, dtype=float, order="C"))
     return res
 
-def ElemFieldsToFEField(mesh):
+def ElemFieldsToFEField(mesh, elemFields=None):
+    if elemFields is None:
+        elemFields = mesh.elemFields
     from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceP0
     numbering = ComputeDofNumbering(mesh,LagrangeSpaceP0)
     res = {}
-    for name,values in mesh.nodeFields.items():
+    for name,values in elemFields.items():
         if len(values.shape) == 2:
             for i in range(values.shape[1]):
-                res[name+"_"+str(i)] = FEField(name=name+"_"+str(i), mesh=mesh, space=LagrangeSpaceP0, numbering=numbering, data=values[:,i])
+                res[name+"_"+str(i)] = FEField(name=name+"_"+str(i), mesh=mesh, space=LagrangeSpaceP0, numbering=numbering, data=np.asarray(values[:,i], dtype=float, order="C"))
         else:
-            res[name] = FEField(name=name, mesh=mesh, space=LagrangeSpaceP0, numbering=numbering, data=values)
+            res[name] = FEField(name=name, mesh=mesh, space=LagrangeSpaceP0, numbering=numbering, data=np.asarray(values, dtype=float, order="C"))
     return res
 
 def FEFieldsDataToVector(listOfFields,outvec=None):
     if outvec is None:
-        s = sum([f.numbering["size"] for f in listOfFields])
+        s = sum([f.numbering.size for f in listOfFields])
         outvec = np.zeros(s)
     offset = 0
     for f in listOfFields:
-        outvec[offset:offset+f.numbering["size"]] = f.data
-        offset += f.numbering["size"]
+        outvec[offset:offset+f.numbering.size] = f.data
+        offset += f.numbering.size
     return outvec
 
 def VectorToFEFieldsData(invec,listOfFields):
     offset = 0
     for f in listOfFields:
-        f.data = invec[offset:offset+f.numbering["size"]]
-        offset += f.numbering["size"]
+        f.data = invec[offset:offset+f.numbering.size]
+        offset += f.numbering.size
 
 def GetPointRepresentation(listOfFEFields,fillvalue=0):
 
