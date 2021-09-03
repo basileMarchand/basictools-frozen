@@ -93,6 +93,22 @@ def Gradient(arg,sdim=3):
     else :
         return Matrix(res)
 
+def Cross(a,b):
+    shape = a.shape[0]
+    res = [[0]*shape]
+
+    if shape == 3:
+        res[0][0] =   a[1]*b[2]-a[2]*b[1]
+        res[0][1] = -(a[0]*b[2]-a[2]*b[0])
+        res[0][2] =   a[0]*b[2]-a[1]*b[0]
+    else:
+        raise
+
+    if type(a).__module__ == np.__name__:
+       return np.array(res)
+    else :
+        return Matrix(res) 
+
 def Strain(arg ,sdim=3):
     G = Gradient(arg,sdim)
     return (G+G.T)/2
