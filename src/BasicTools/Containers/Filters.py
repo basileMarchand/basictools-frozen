@@ -250,6 +250,7 @@ class FilterOP(BOO):
     def __init__(self,mesh=None,filters=None):
         super(FilterOP,self).__init__()
 
+        self._mesh= None
         if filters is not None:
             self.filters = filters
         else:
@@ -293,7 +294,17 @@ class FilterOP(BOO):
             f.mesh = m
 
     def Complementary(self):
+        # the complementary of the complementary is the original filter
+        if isinstance(self,ComplementaryObject): 
+            return self.filters[0]
         return ComplementaryObject(mesh=self.mesh,filters=[self])
+
+    def GetFrozenFilter(self):
+        if isinstance(self,FrozenFilter):
+            return self
+        if self.mesh is None:
+            raise(Exception("Need to set the mesh first on the filter"))
+        return FrozenFilter(mesh=self.mesh, filters=[self])
 
     def __iter__(self):
         """
@@ -341,6 +352,8 @@ class FilterOP(BOO):
         pc = getattr(op,"PostCondition",None)
         if callable(pc):
             pc(self.mesh)
+            
+        return op
 
     def ApplyOnNodes(self,op):
         """
@@ -618,7 +631,17 @@ class ElementFilter(Filter):
             return res3
 
     def Complementary(self):
+        # the complementary of the complementary is the original filter
+        if isinstance(self,ComplementaryObject): 
+            return self.filters[0]
         return ComplementaryObject(mesh=self.mesh,filters=[self])
+
+    def GetFrozenFilter(self):
+        if isinstance(self,FrozenFilter):
+            return self
+        if self.mesh is None:
+            raise(Exception("Need to set the mesh first on the filter"))
+        return FrozenFilter(mesh=self.mesh, filters=[self])
 
     def __iter__(self):
         """
@@ -664,6 +687,55 @@ class ElementFilter(Filter):
         pc = getattr(op,"PostCondition",None)
         if callable(pc):
             pc(self.mesh)
+
+        return op
+
+class FrozenFilter(FilterOP):
+    def __init__(self,mesh=None,filters=None):
+        self.__frozenData = {}
+        super(FrozenFilter,self).__init__(mesh=mesh,filters=filters)
+        if len(self.filters) > 1 :
+            raise(Exception("ComplementaryObject Error!: filters must be of len = 1"))
+    
+    @property
+    def mesh(self):
+        return super(FrozenFilter,self).mesh 
+
+    @mesh.setter
+    def mesh(self, m):
+        if m is None:
+            return 
+        if self._mesh is not None :
+            if m is self._mesh:
+                return 
+            raise(Exception("You cant set the mesh 2 times"))
+        self._mesh = m
+
+        for name,data in self.filters[0].mesh.elements.items():
+            self.__frozenData[name] = (data,self.filters[0].GetIdsToTreat(data) )
+    
+    def IsEquivalent(self, other):
+        return self.filters[0].IsEquivalent(other)
+
+    def GetIdsToTreat(self, elements):
+        return self.__frozenData[elements.elementType][1] # (data, ids)
+
+    def __iter__(self):
+        """
+        Iteration interface to ease the use of the filter
+
+        :example:
+
+            myFilter = ElementFilter(myMesh,dimensionality=2)
+
+            for name,elements,ids in myFilter:
+
+                print("This function is called only for 2D elements")
+
+                print("Number of 2D element of type " + str(name)+ " is : "  + str(len(ids) )
+        """
+        for name,(data,ids) in self.__frozenData.items():
+            yield name, data, ids
 
 def ElementFilterToImplicitField(ff, pseudoDistance=2):
     """ Function to generate a iso zero levelset on the mesh to represent
