@@ -47,11 +47,14 @@ class Timer():
     def Stop(self):
         self.stoptime = time.time()
         data = Timer.almanac[self.name]
-        data[0] += self.stoptime-self.starttime
+        data[0] += self.GetDiffTime()
         data[1] += 1
 
     def Reset(self):
         Timer.almanac = {}
+
+    def GetDiffTime(self):
+        return self.stoptime - self.starttime
 
 def CheckIntegrity(GUI=False):
 
