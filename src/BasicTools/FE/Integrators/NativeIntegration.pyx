@@ -262,25 +262,7 @@ cdef class PyMonoElementsIntegralCpp():
 
       for monom in wform:
         for term in monom:
-            if "Normal" in term.fieldName :
-                term.internalType = term.EnumNormal
-
-            elif term.constant:
-                if term.fieldName in self.constantsNames:
-                    term.valuesIndex_ = self.constantsNames.index(term.fieldName)
-                    term.internalType = term.EnumConstant
-                elif term.fieldName in [f.name for f in self.__efs__]:
-                    term.spaceIndex_= spacesNames[term.fieldName]
-                    term.numberingIndex_= numberingNames[term.fieldName]
-                    term.valuesIndex_= valuesNames[term.fieldName]
-                    term.internalType = term.EnumExtraField
-                elif term.fieldName in [f.name for f in self.__ipefs__]:
-                    term.valuesIndex_= [ipef.name for ipef in  self.__ipefs__ ].index(term.fieldName)
-                    term.internalType = term.EnumExtraIPField
-                else:
-                    raise(Exception("Field : '{}' not found in Constants nor FEField nor IPFIelds".format(term.fieldName)))
-
-            elif term.fieldName in [f.name for f in self.__ufs__] :
+            if term.fieldName in [f.name for f in self.__ufs__] :
                 term.spaceIndex_= spacesNames[term.fieldName]
                 term.numberingIndex_= numberingNames[term.fieldName]
                 #used for the offset
@@ -303,6 +285,23 @@ cdef class PyMonoElementsIntegralCpp():
                 term.valuesIndex_= [ipef.name for ipef in  self.__ipefs__ ].index(term.fieldName)
                 term.internalType = term.EnumExtraIPField
 
+            elif "Normal" in term.fieldName :
+                term.internalType = term.EnumNormal
+
+            elif term.constant:
+                if term.fieldName in self.constantsNames:
+                    term.valuesIndex_ = self.constantsNames.index(term.fieldName)
+                    term.internalType = term.EnumConstant
+                elif term.fieldName in [f.name for f in self.__efs__]:
+                    term.spaceIndex_= spacesNames[term.fieldName]
+                    term.numberingIndex_= numberingNames[term.fieldName]
+                    term.valuesIndex_= valuesNames[term.fieldName]
+                    term.internalType = term.EnumExtraField
+                elif term.fieldName in [f.name for f in self.__ipefs__]:
+                    term.valuesIndex_= [ipef.name for ipef in  self.__ipefs__ ].index(term.fieldName)
+                    term.internalType = term.EnumExtraIPField
+                else:
+                    raise(Exception("Field : '{}' not found in Constants nor FEField nor IPFIelds".format(term.fieldName)))
             else :
                 term.internalType = term.EnumError
                 raise(Exception("Term " +str(term.fieldName) + " not found in the database " ))
