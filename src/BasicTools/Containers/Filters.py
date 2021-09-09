@@ -105,18 +105,12 @@ class Filter(BOO):
         """
         if len(self.tags) == 0:
             return None
-        if len(self.tags) > 10:
-            res = np.zeros(numberOfObjects,dtype=bool)
-            for tag in self.tags:
-                if tag in tags:
-                    res[tags[tag].GetIds()] = True 
-            return np.where(res)[0]
-        else:
-            res = np.zeros(0,dtype=int)
-            for tag in self.tags:
-                if tag in tags:
-                    res = np.union1d(res,tags[tag].GetIds())
-            return res
+        res = np.zeros(numberOfObjects,dtype=bool)
+        for tag in self.tags:
+            if tag in tags:
+                res[tags[tag].GetIds()] = True 
+        return np.nonzero(res)[0]
+               
 
     def intersect1D(self,first,second):
         """
@@ -299,12 +293,20 @@ class FilterOP(BOO):
             return self.filters[0]
         return ComplementaryObject(mesh=self.mesh,filters=[self])
 
-    def GetFrozenFilter(self):
+    def GetFrozenFilter(self, mesh=None):
         if isinstance(self,FrozenFilter):
-            return self
+            if mesh is None:
+                return self
+            else:
+                raise(Exception("Can't freeze a FrozenFilter with a new mesh"))
+        
+        if mesh is not None:
+            return FrozenFilter(mesh=mesh, filters=[self])
+
         if self.mesh is None:
-            raise(Exception("Need to set the mesh first on the filter"))
-        return FrozenFilter(mesh=self.mesh, filters=[self])
+            raise(Exception("Need to set the mesh first on the filter or provide one"))
+        else:
+            return FrozenFilter(mesh=self.mesh, filters=[self])
 
     def __iter__(self):
         """
@@ -341,18 +343,10 @@ class FilterOP(BOO):
             functions are called (if exist) (with the mesh as the first argument)
             before and after the main call ( op(name,elements,ids) )
         """
-        pc = getattr(op,"PreCondition",None)
-
-        if callable(pc):
-            pc(self.mesh)
-
+        op.PreCondition(self.mesh)
         for name,elements,ids in self:
             op(name,elements,ids)
-
-        pc = getattr(op,"PostCondition",None)
-        if callable(pc):
-            pc(self.mesh)
-            
+        op.PostCondition(self.mesh)
         return op
 
     def ApplyOnNodes(self,op):
@@ -402,7 +396,7 @@ class IntersectionElementFilter(FilterOP):
             if ids is None:
                 ids = ff.GetIdsToTreat(data)
             else:
-                ids = np.intersect1d(ids,ff.GetIdsToTreat(data) )
+                ids = np.intersect1d(ids,ff.GetIdsToTreat(data),assume_unique=True )
             if len(ids) == 0:
                 return []
         if ids is None :
@@ -636,12 +630,20 @@ class ElementFilter(Filter):
             return self.filters[0]
         return ComplementaryObject(mesh=self.mesh,filters=[self])
 
-    def GetFrozenFilter(self):
+    def GetFrozenFilter(self, mesh=None):
         if isinstance(self,FrozenFilter):
-            return self
+            if mesh is None:
+                return self
+            else:
+                raise(Exception("Can't freeze a FrozenFilter with a new mesh"))
+        
+        if mesh is not None:
+            return  FrozenFilter(mesh=mesh, filters=[self])
+
         if self.mesh is None:
-            raise(Exception("Need to set the mesh first on the filter"))
-        return FrozenFilter(mesh=self.mesh, filters=[self])
+            raise(Exception("Need to set the mesh first on the filter or provide one"))
+        else:
+            return FrozenFilter(mesh=self.mesh, filters=[self])
 
     def __iter__(self):
         """
@@ -736,6 +738,26 @@ class FrozenFilter(FilterOP):
         """
         for name,(data,ids) in self.__frozenData.items():
             yield name, data, ids
+
+class ElementFilterBaseOperator():
+    def PreCondition(self,mesh):
+        pass
+
+    def __call__(self,name,data,ids):
+        pass
+
+    def PostCondition(self,mesh):
+        pass
+
+class ElementCounter(ElementFilterBaseOperator):
+    def __init__(self):
+        self.cpt = 0
+
+    def PreCondition(self,mesh):
+        self.cpt = 0
+
+    def __call__(self,name,data,ids):
+        self.cpt += len(ids)
 
 def ElementFilterToImplicitField(ff, pseudoDistance=2):
     """ Function to generate a iso zero levelset on the mesh to represent
@@ -837,8 +859,6 @@ def CheckIntegrity( GUI=False):
     mesh = CreateCube(dimensions=[nx,ny,nz],origin=[0,0,0.], spacing=[1./(nx-1),1./(ny-1), 10./(nz-1)], ofTetras=True )
     print(mesh)
 
-
-
     class NOP():
         def __init__(self):
             self.cpt = 0
@@ -895,15 +915,12 @@ def CheckIntegrity( GUI=False):
 
     # example of counting the number of element in the eTag ZZ0
 
-    class OP():
+    class OP(ElementCounter):
         def __init__(self):
-            self.cpt = -1
-
-        def PreCondition(self,mesh):
-            self.cpt = 0
+            super(OP,self).__init__()
 
         def __call__(self,name,data,ids):
-            self.cpt += len(ids)
+            super(OP,self).__call__(name,data,ids)
             print(name)
 
         def PostCondition(self,mesh):
@@ -940,11 +957,9 @@ def CheckIntegrity( GUI=False):
     f2 = ElementFilter(mesh,elementType=EN.Triangle_3)
     f2.AddTag("ZZ0")
 
-    op = OP()
-
     ff.SetDimensionality(2)
 
-    f2.ApplyOnElements(op)
+    op = f2.ApplyOnElements(OP())
 
     if op.cpt != (2*(nx-1)*(ny-1)) : # pragma: no cover
         raise(Exception("Error in the number of elements in the tag = " + str(op.cpt)+ " must be " + str((2*(nx-1)*(ny-1)))))
