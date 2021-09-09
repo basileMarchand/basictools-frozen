@@ -3,371 +3,471 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
+import concurrent.futures
+import time
 
 import numpy as np
-
 from scipy.sparse import coo_matrix
+
+from BasicTools.Helpers.CPU import GetNumberOfAvailableCpus
+from BasicTools.Helpers.BaseOutputObject import froze_it
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
+
 import BasicTools.Containers.ElementNames as EN
-from BasicTools.Containers.Filters import ElementFilter, NodeFilter, ElementCounter
+from BasicTools.Containers.Filters import ElementFilter, ElementCounter
 
 from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
 from BasicTools.FE.Fields.FEField import FEField
+from BasicTools.FE.Fields.IPField import IPField
+from BasicTools.FE.DofNumbering import ComputeDofNumbering
+from BasicTools.FE.FETools import PrepareFEComputation
 
-#UseCpp = False
+from BasicTools.FE.SymWeakForm import GetField, GetTestField, GetNormal
+import BasicTools.FE.WeakForms.NumericalWeakForm as WeakForm
+from BasicTools.FE.IntegrationsRules import LagrangeIsoParam
+from BasicTools.FE.IntegrationsRules import IntegrationRulesAlmanac
+
+
 UseCpp = True
 UseMultiThread =  True
 MultiThreadThreshold = 100
 
-def Integrate( mesh, wform, constants, fields, dofs,spaces,numbering, integrationRuleName=None,onlyEvaluation=False,elementFilter=None):
-    #conversion of the old api to the new one
-    print("BasicTools.FE.Integration:Integrate(...) Warging!! This function will be removed in future versions")
-
-    UnkownFields = []
-    for i in range(len(dofs)):
-        field = FEField()
-        field.numbering = numbering[i]
-        field.name = dofs[i]
-        field.data = None
-        field.mesh = mesh
-        field.space = spaces[i]
-        UnkownFields.append(field)
-
-
-    return IntegrateGeneral( mesh,
-                            wform,
-                            constants,
-                            list(fields.values()),
-                            unkownFields=UnkownFields,
-                            testFields=None,
-                            integrationRuleName=integrationRuleName,
-                            onlyEvaluation=onlyEvaluation,
-                            elementFilter=elementFilter)
-
-
 def IntegrateGeneralMonoThread( mesh, wform, constants, fields, unkownFields=None, testFields=None, integrationRuleName=None,onlyEvaluation=False, elementFilter=None,userIntegrator=None, integrationRule=None):
-    from BasicTools.FE.SymWeakForm import testcharacter
+    """Integration of a weak formulation using only one thread
 
-    if unkownFields is None and testFields is None:
-        raise(Exception(""))
-        
-    if unkownFields is None:
-        unkownFields = []
-        for f in testFields:
-            if f.name[-1] != testcharacter:
-                raise(Exception("error in the name of the testField named: " + f.name))
-            unkownFields.append(FEField(name=f.name[0:-1],mesh=f.mesh,space=f.space,numbering=f.numbering,data=f.data) )
+    For more information about the argument please refert to IntegrationClass
 
+    Returns
+    -------
+    K : coo_matrix
+        the asembled matrix
+    rhs : ndarray
+        Array with the values of the right hand side term
+    """
 
-    if elementFilter is None:
-        # if no filter the the integral is over the bulk element
-        # 3D elements if the mesh is 3D
-        # 2D elements if the mesh is 2D
-        elementFilter = ElementFilter()
-        elementFilter.SetDimensionality(mesh.GetDimensionality())
-
-    elementFilter.mesh = mesh
-    import BasicTools.FE.WeakForms.NumericalWeakForm as WeakForm
-    if wform is None :
-        return
-
-    if userIntegrator is None:
-        ttest = [WeakForm.PyWeakForm]
-        try:
-            import BasicTools.FE.WearForms.NativeNumericalWeakForm as NativeNumericalWeakForm
-            ttest.append(NativeNumericalWeakForm.PyWeakForm)
-        except :
-            pass
-
-        if not isinstance(wform, tuple(ttest) ):
-            from BasicTools.FE.WeakForms.NumericalWeakForm import SymWeakToNumWeak
-            wform = SymWeakToNumWeak(wform)
-
-        try:
-            from BasicTools.FE.WeakForms.NativeNumericalWeakForm import PyWeakForm
-            typeCpp = (type(wform) == PyWeakForm)
-            import BasicTools.FE.Integrators.NativeIntegration
-        except Exception as err :
-            typeCpp = False
-            print("Error loading c++ integration")
-            print(str(err))
-            print("Warning : Using Python Integration (very slow)")
-
-        if UseCpp and typeCpp:
-            import BasicTools.FE.Integrators.NativeIntegration as NI
-            integrator = NI.PyMonoElementsIntegralCpp()
-        else:
-            import BasicTools.FE.Integrators.PythonIntegration as PI
-            integrator = PI.MonoElementsIntegral()
-    else:
-        integrator = userIntegrator
-
-    if integrationRuleName is None:
-       if integrationRule is None:
-           from BasicTools.FE.IntegrationsRules import LagrangeIsoParam
-           integrationRule = LagrangeIsoParam
-    else:
-       if integrationRule is None:
-           from BasicTools.FE.IntegrationsRules import IntegrationRulesAlmanac as IntegrationRulesAlmanac
-           integrationRule = IntegrationRulesAlmanac[integrationRuleName]
-       else:
-           raise(Exception("must give integrationRuleName or integrationRule not both"))
-
-    ## verification of the integration rule for the ip fields:
-    from BasicTools.FE.Fields.IPField import IPField
-    for f in fields:
-        if isinstance(f,IPField):
-            if f.rule != integrationRule:
-                print("f.rule")
-                print(f.rule)
-                print("integrationRule")
-                print(integrationRule)
-                if integrationRuleName is not None:
-                    print("integrationRuleName")
-                    print(integrationRuleName)
-                raise(Exception(f"Integration rule of field {f.GetName()} not compatible with the integration" ))
-
-    integrator.SetOnlyEvaluation(onlyEvaluation)
-    integrator.SetUnkownFields(unkownFields)
-    integrator.SetTestFields(testFields)
-    integrator.SetExtraFields(fields )
-    integrator.SetConstants(constants)
-    integrator.SetIntegrationRule(integrationRule)
-
-    numberOfVIJ = integrator.ComputeNumberOfVIJ(mesh,elementFilter)
-    if numberOfVIJ == 0:
-        nodalFilter = NodeFilter(mesh=elementFilter.mesh,
-                                  tags=elementFilter.tags,
-                                  zones=elementFilter.zones)
-        numberOfVIJ =  len(nodalFilter.GetIdsToTreat())
-
-    if numberOfVIJ == 0:
-        print("Warning!!! System with zero dofs")
-        raise(Exception("Error!!! System with zero dofs"))
-
-    vK = np.zeros(numberOfVIJ,dtype=np.float)
-    iK = np.empty(numberOfVIJ,dtype=np.int)
-    jK = np.empty(numberOfVIJ,dtype=np.int)
-
-    F = np.zeros(integrator.GetTotalTestDofs(),dtype=np.float)
-
-    from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
-    if not isinstance(mesh, UnstructuredMesh):
-        mesh.GetPosOfNodes()
-
-    integrator.PrepareFastIntegration(mesh,wform,vK,iK,jK,0,F)
-
-    tagFound = False
-    from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearElementContainer
-
-    for name,data,idstotreat in elementFilter:
-
-        if data.GetNumberOfElements() == 0:
-            continue
-        tagFound = True
-        if isinstance(data, ConstantRectilinearElementContainer):
-            #TODO : Generate the elementary matrix
-            #
-            nodesPerElement = data.nodesPerElement
-            dofpernode = len(unkownFields)
-
-            nt = (nodesPerElement*dofpernode)**2*len(idstotreat)
-
-            offset = 0
-            offsets = []
-            for uf in unkownFields:
-                offsets.append(offset)
-                offset += uf.numbering["size"]
-
-            from BasicTools.FE.FETools import GetElementaryMatrixForFormulation
-            elementaryMatrix, rhs = GetElementaryMatrixForFormulation(name,wform, unknownNames = [f.name for f in unkownFields], geoFactor= mesh.GetSpacing())
-            #
-            edofMat = np.concatenate( [f.numbering[name][idstotreat,:]+offset for f,offset in zip(unkownFields,offsets)] ,axis=1)
-            from BasicTools.Containers.UnstructuredMeshInspectionTools import GetElementsFractionInside
-            if elementFilter.zonesField is None:
-                Eeff = np.ones(len(idstotreat))
-            else:
-                Eeff = GetElementsFractionInside(elementFilter.zoneField,mesh.nodes,name,data,idstotreat)
-
-            minthreshold = 0.9e-3
-            bool_Eeff = (Eeff>=minthreshold)
-            nEeff = Eeff[bool_Eeff]
-            #TODO check numbering "f" or "c" ???
-            sM = ((elementaryMatrix.flatten()[np.newaxis]).T * nEeff.ravel()).flatten(order='F')
-            sF = ((rhs.flatten()[np.newaxis]).T * nEeff.ravel()).flatten(order='F')
-            nnt = nodesPerElement*dofpernode
-            one = np.ones((nnt, 1), dtype=np.int_)
-            local_iK = np.kron(edofMat[bool_Eeff,:], one).flatten()
-            one.shape = (1,nnt)
-            local_jK = np.kron(edofMat[bool_Eeff,:], one).flatten()
-
-            totalvijcpt = integrator.GetNumberOfUsedIvij()
-            vK[totalvijcpt:totalvijcpt+nt] = sM
-            iK[totalvijcpt:totalvijcpt+nt] = local_iK
-            jK[totalvijcpt:totalvijcpt+nt] = local_jK
-            np.add.at(F, edofMat.flatten(), sF)
-            integrator.AddToNumbefOfUsedIvij(nt)
-
-        else:
-
-            ids = np.array(idstotreat,dtype=int,copy=False)
-            if len(ids ) == 0:
-                continue
-            integrator.ActivateElementType(data)
-            integrator.Integrate(wform,ids)
-
-    # in case we have zero element treated, we try to do integrate an integration
-    # by points
-    # for now only work on rhs terms with no external field
-    if tagFound == False:
-        ids = nodalFilter.GetIdsToTreat()
-        if len(ids) == 0:
-            raise(Exception("Tag not found to do the integration"))
-
-        from BasicTools.FE.SymWeakForm import testcharacter
-
-        if testFields is None:
-           testFields = []
-           for f in unkownFields:
-              testFields.append(FEField(name=f.name+testcharacter,mesh=f.mesh,space=f.space,numbering=f.numbering,data=f.data) )
-
-        for monom in wform:
-            factor = monom.prefactor
-            for term in monom:
-                if term.internalType == term.EnumNormal :
-                    raise(Exception("no normal"))
-                elif  term.internalType == term.EnumConstant :
-                    raise(Exception("no constant numerical"))
-                elif  term.internalType == term.EnumUnknownField :
-                    raise(Exception("no right unknown"))
-                elif  term.internalType == term.EnumTestField :
-                    if term.derDegree == 1:
-                        raise(Exception("No derivative"))
-                    offset = 0
-                    for tf in testFields:
-                        if tf.name == term.fieldName:
-                            break
-                        offset += tf.numbering["size"]
-                    #idx = testFields.find(lambda x:x.name == term.fieldName)
-                    for x in ids:
-                        leftNumbering = tf.numbering.GetDofOfPoint(x) + offset
-                    continue
-                else:
-                    print("type " + str(term.internalType) + "Not coded yet")
-                    raise(Exception("not coded yet"))
-
-            F[leftNumbering] += factor
-
-
-    if userIntegrator is None:
-        numberOfUsedvij = integrator.GetNumberOfUsedIvij()
-        data = (vK[0:numberOfUsedvij], (iK[0:numberOfUsedvij],jK[0:numberOfUsedvij]))
-        K = coo_matrix(data, shape=(integrator.GetTotalTestDofs(), integrator.GetTotalUnkownDofs())) .tocsr()
-        return K,F
-    else:
-        return
+    intClass = IntegrationClass()
+    intClass.SetIntegrator(userIntegrator)
+    intClass.SetMesh(mesh)
+    intClass.SetOnlyEvaluation(onlyEvaluation)
+    intClass.SetElementFilter(elementFilter)
+    intClass.SetConstants(constants)
+    intClass.SetUnkownFields(unkownFields)
+    intClass.SetTestFields(testFields)
+    intClass.SetExtraFields(fields)
+    intClass.SetIntegrationRule(integrationRuleName=integrationRuleName,integrationRule=integrationRule)
+    intClass.SetWeakForm(wform)
+    intClass.PreStartCheck()
+    intClass.Allocate()
+    intClass.Compute(forceMonoThread=True)
+    return intClass.GetK(),intClass.GetRhs()
 
 
 def IntegrateGeneral( mesh, wform, constants, fields, unkownFields=None, testFields=None,
                              integrationRuleName=None,onlyEvaluation=False, elementFilter=None,
                              userIntegrator=None, integrationRule=None):
 
-    BaseOutputObject().PrintDebug("Integration ")
-    if not UseMultiThread or not UseCpp:
-        return IntegrateGeneralMonoThread(mesh=mesh, wform=wform, constants=constants, fields=fields, unkownFields=unkownFields,
-                         testFields=testFields,onlyEvaluation=onlyEvaluation,
-                         elementFilter=elementFilter,userIntegrator=userIntegrator,integrationRuleName=integrationRuleName, integrationRule=integrationRule)
+    """Integration of a weak formulation
 
+    For more information about the argument please refert to IntegrationClass
 
-    if elementFilter is None:
-        elementFilter = ElementFilter()
-        elementFilter.SetDimensionality(mesh.GetDimensionality())
+    Returns
+    -------
+    K : coo_matrix
+        the asembled matrix
+    rhs : ndarray
+        Array with the values of the right hand side term
+    """
 
-    elementFilter.mesh = mesh
+    intClass = IntegrationClass()
+    intClass.SetIntegrator(userIntegrator)
+    intClass.SetMesh(mesh)
+    intClass.SetOnlyEvaluation(onlyEvaluation)
+    intClass.SetElementFilter(elementFilter)
+    intClass.SetConstants(constants)
+    intClass.SetUnkownFields(unkownFields)
+    intClass.SetTestFields(testFields)
+    intClass.SetExtraFields(fields)
+    intClass.SetIntegrationRule(integrationRuleName=integrationRuleName,integrationRule=integrationRule)
+    intClass.SetWeakForm(wform)
+    intClass.PreStartCheck()
+    intClass.Allocate()
+    intClass.Compute()
+    return intClass.GetK(),intClass.GetRhs()
 
-    op = elementFilter.ApplyOnElements(ElementCounter())
+@froze_it
+class IntegrationClass(BaseOutputObject):
+    """ Class to define and execute an integration of a weak form
 
-    if op.cpt < MultiThreadThreshold:
-        return IntegrateGeneralMonoThread(mesh=mesh, wform=wform, constants=constants, fields=fields, unkownFields=unkownFields,
-                         testFields=testFields,onlyEvaluation=onlyEvaluation,
-                         elementFilter=elementFilter,userIntegrator=userIntegrator,integrationRuleName=integrationRuleName, integrationRule=integrationRule)
+    """
+    def __init__(self):
+        super(IntegrationClass,self).__init__()
+        #inputs
+        self.mesh = None
+        self.elementFilter = None
+        self.weakForm = None
+        self.numericalWeakForm = None
+        self.integrator = None
+        self.integrationRule = None
+        self.extraFields = []
+        self.unkownFields = None
+        self.testFields = None
+        self.nbCPUs = GetNumberOfAvailableCpus()
+        self.onlyEvaluation = False
+        self.constants = {}
+        #----
+        self.vK = None
+        self.iK = None
+        self.jK = None
+        self.numberOfUsedvij = 0
+        self.rhs = None
+        #----
 
-    if integrationRuleName is None:
-       if integrationRule is None:
-           from BasicTools.FE.IntegrationsRules import LagrangeIsoParam
-           integrationRule = LagrangeIsoParam
-    else:
-       if integrationRule is None:
-           from BasicTools.FE.IntegrationsRules import IntegrationRulesAlmanac as IntegrationRulesAlmanac
-           integrationRule = IntegrationRulesAlmanac[integrationRuleName]
-       else:
-           raise(Exception("must give integrationRuleName or integrationRule not both"))
+        self.SetIntegrator()
 
-    from BasicTools.FE.Fields.IPField import IPField
-    def InitSpaces(fs):
-        for f in fs:
+    def SetConstants(self, constants):
+        """Set the contants to be used in the weak form
+
+        Parameters
+        ----------
+
+        constant : dict
+            dictionary with the constants key : string , value: float
+        """
+        self.constants = constants
+        self.integrator.SetConstants(constants)
+
+    def SetOnlyEvaluation(self, onlyEvaluation):
+        """Set the onlyEvaluation option. If true the contribution of the determinant of the
+        tranformation and the weight of the integration points is ignored. the user is
+        responsible of dividing by the mass matrix (if necessary) to get the correct values.
+
+        Parameters
+        ----------
+        onlyEvaluation : bool
+            True to activate this option
+
+        """
+        self.onlyEvaluation = onlyEvaluation
+        self.integrator.SetOnlyEvaluation(onlyEvaluation)
+
+    def SetUnkownFields(self, unkownFields):
+        """Set the fields used for the unkown space
+
+        Parameters
+        ----------
+        unkownFields : list(FEField) list of fields
+        """
+        self.unkownFields = unkownFields
+        self.integrator.SetUnkownFields(unkownFields)
+
+    def SetTestFields(self, testFields):
+        """Set the fields used for the test space
+
+        Parameters
+        ----------
+        tfs : list(FEField) list of fields
+            if tfs is none then the unkown fields are used (Galerkin projection)
+        """
+        self.testFields = testFields
+        self.integrator.SetTestFields(testFields)
+
+    def SetExtraFields(self, fields ):
+        """Set the extra fields used in the weak formulation
+
+        Parameters
+        ----------
+        efs : list(FEField or IPField) list of fields
+        """
+        self.extraFields = fields
+        self.integrator.SetExtraFields(fields )
+
+    def SetIntegrationRule(self,integrationRuleName=None, integrationRule=None ):
+        """Set the Integration rule to be used during integration
+
+        Parameters
+        ----------
+        integrationRuleName : str, optional
+            name of the integrationRule
+
+        integrationRule : dict, optional
+            integraton rule for every element type key->str: value: tuple(intPoints ndarray, intWeights )
+        """
+        if integrationRuleName is None:
+            if integrationRule is None:
+                self.integrationRule = LagrangeIsoParam
+            else:
+                self.integrationRule = integrationRule
+        else:
+            if integrationRule is None:
+                self.integrationRule = IntegrationRulesAlmanac[integrationRuleName]
+            else:
+                raise Exception("must give integrationRuleName or integrationRule not both")
+        self.integrator.SetIntegrationRule(integrationRule)
+
+    def SetIntegrator(self,userIntegrator=None, forceUseCpp=True):
+        """Set the internal integrator (only for advance users) """
+        if userIntegrator is None:
+            typeCpp = True
+            try:
+                from BasicTools.FE.WeakForms.NativeNumericalWeakForm import PyWeakForm
+                import BasicTools.FE.Integrators.NativeIntegration
+            except ImportError as err :
+                typeCpp = False
+                print("Error loading c++ integration")
+                print(str(err))
+                print("Warning : Using Python Integration (very slow)")
+
+            if forceUseCpp and typeCpp:
+                import BasicTools.FE.Integrators.NativeIntegration as NI
+                self.integrator = NI.PyMonoElementsIntegralCpp()
+            else:
+                import BasicTools.FE.Integrators.PythonIntegration as PI
+                self.integrator = PI.MonoElementsIntegral()
+        else:
+            self.integrator = userIntegrator
+
+    def SetMesh(self,mesh):
+        """Set the mesh defining the integration domain
+        Parameters
+        ----------
+        mesh : UnstructuredMesh
+            mesh containing the geometry
+        """
+        self.mesh = mesh
+
+    def SetElementFilter(self, elementFilter=None):
+        """Set the element filter to select the elements of the integration
+        """
+        if elementFilter is None:
+            if self.mesh is None:
+                raise Exception("Need a mesh")
+            else:
+                self.elementFilter = ElementFilter( dimensionality=self.mesh.GetDimensionality()).GetFrozenFilter(mesh=self.mesh)
+        else:
+            self.elementFilter = elementFilter.GetFrozenFilter(mesh=self.mesh)
+
+    def SetWeakForm(self,weakForm):
+        """Set the weak form to be integrated
+        Parameters
+        ----------
+
+        wfrom :  NativeNumericalWeakForm or PyWeakForm
+            Weak form to be integrated
+        """
+
+        if weakForm is None :
+            raise Exception("Weak form can't be None")
+        self.weakForm = weakForm
+
+        ttest = [WeakForm.PyWeakForm]
+        try:
+            import BasicTools.FE.WearForms.NativeNumericalWeakForm as NativeNumericalWeakForm
+            ttest.append(NativeNumericalWeakForm.PyWeakForm)
+        except ImportError :
+            pass
+
+        if not isinstance(self.weakForm, tuple(ttest) ):
+            from BasicTools.FE.WeakForms.NumericalWeakForm import SymWeakToNumWeak
+            self.numericalWeakForm = SymWeakToNumWeak(self.weakForm)
+        else:
+            self.numericalWeakForm = self.weakForm
+
+    def PreStartCheck(self):
+        """ verification of the integration rule for the ip fields:
+        """
+        for f in self.extraFields:
             if isinstance(f,IPField):
-                continue
-            for n,s in f.space.items():
-                s.Create()
+                if f.rule != self.integrationRule:
+                    print("f.rule")
+                    print(f.rule)
+                    print("integrationRule")
+                    print(self.integrationRule)
+                    if self.integrationRuleName is not None:
+                        print("integrationRuleName")
+                        print(self.integrationRuleName)
+                    raise Exception(f"Integration rule of field {f.GetName()} not compatible with the integration" )
 
-    for n,s in LagrangeSpaceGeo.items():
-        s.Create()
-    if unkownFields is not None:    
-        InitSpaces(unkownFields)
-    InitSpaces(fields)
-    if testFields is not None:
-        InitSpaces(testFields)
+        from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
+        if not isinstance(self.mesh, UnstructuredMesh):
+            self.mesh.GetPosOfNodes()
 
-    def ToIntegrate():
+    def Allocate(self):
+        """ Function to allocate the memory to do the integration
+        This function must be called right before the integation
 
-        def toDo(elementFilterII):
-            return IntegrateGeneralMonoThread(mesh=mesh, wform=wform, constants=constants, fields=fields, unkownFields=unkownFields,
-                         testFields=testFields,onlyEvaluation=onlyEvaluation,
-                         elementFilter=elementFilterII,userIntegrator=userIntegrator, integrationRule=integrationRule)
-        return toDo
+        """
+        numberOfVIJ = self.integrator.ComputeNumberOfVIJ(self.mesh,self.elementFilter)
+        print(f" Computed number of ComputeNumberOfVIJ : {numberOfVIJ}")
+        if numberOfVIJ == 0:
+            print("Warning!!! System with zero dofs")
+            raise Exception("Error!!! System with zero dofs")
 
+        self.vK = np.zeros(numberOfVIJ,dtype=float)
+        self.iK = np.empty(numberOfVIJ,dtype=int)
+        self.jK = np.empty(numberOfVIJ,dtype=int)
 
-    from BasicTools.Helpers.CPU import GetNumberOfAvailableCpus
+        self.rhs = np.zeros(self.integrator.GetTotalTestDofs(),dtype=float)
 
-    ncpu = GetNumberOfAvailableCpus()
+    def Compute(self, forceMonoThread=False):
+        """Execute the integration in multitrhead
 
-    class PartialElementFilter(ElementFilter):
-        def __init__(self,elementFilter,partitions,nb):
-            self.partitions = partitions
-            self.parentfilter = elementFilter
-            self.nb = nb
-            self.mesh = elementFilter.mesh
+        Parameters
+        ----------
+        forceMonoThread : bool
+            true to force the use of only one thread
 
-        def GetIdsToTreat(self,elements):
-            res = self.parentfilter.GetIdsToTreat(elements)
-            return np.array_split(res,self.partitions)[self.nb]
+        """
+        self.PrintDebug(f"Integration forceMonoThread={forceMonoThread}, nbCPUs={self.nbCPUs}")
+        if forceMonoThread or self.nbCPUs == 1:
+            return self.ComputeMonoThread()
 
-        def Complementary(self):
-            for name,data,ids  in self.parentfilter.Complementary():
-                ids = np.array_split(ids,self.partitions)[self.nb]
-                if len(ids) == 0:
+        if self.elementFilter.ApplyOnElements(ElementCounter()).cpt < MultiThreadThreshold:
+            return self.ComputeMonoThread()
+
+        def InitSpaces(fields):
+            for f in fields:
+                if isinstance(f,IPField):
                     continue
-                yield name, data, ids
+                for space in f.space.values():
+                    space.Create()
 
-    allworkload = [ PartialElementFilter(elementFilter,ncpu,i) for i in range(ncpu)  ]
-    workload = []
+        for space in LagrangeSpaceGeo.values():
+            space.Create()
 
-    for f in allworkload:
-        if f.ApplyOnElements(ElementCounter()).cpt:
-            workload.append(f)
+        if self.unkownFields is not None:
+            InitSpaces(self.unkownFields)
+        InitSpaces(self.extraFields)
+        if self.testFields is not None:
+            InitSpaces(self.testFields)
 
-    import concurrent.futures
-    with concurrent.futures.ThreadPoolExecutor(max_workers=ncpu) as executor:
-        results =  executor.map(ToIntegrate(),workload)
-        ks = []
-        fs = []
-        for r in results:
-            if r == None:
-                return
-            ks.append(r[0])
-            fs.append(r[1])
-        return np.add.reduce(ks), np.add.reduce(fs)
+        class PartialElementFilter(ElementFilter):
+            """ Utility class to create a partition of a ElementFilter"""
+
+            def __init__(self,elementFilter,partitions,partitionNumber):
+                super(PartialElementFilter,self).__init__()
+                self.partitions = partitions
+                self.parentfilter = elementFilter
+                self.partitionNumber = partitionNumber
+                self.mesh = elementFilter.mesh
+
+            def GetIdsToTreat(self,elements):
+                res = self.parentfilter.GetIdsToTreat(elements)
+                return np.array_split(res,self.partitions)[self.partitionNumber]
+
+            def Complementary(self):
+                for name,data,ids  in self.parentfilter.Complementary():
+                    ids = np.array_split(ids,self.partitions)[self.partitionNumber]
+                    if len(ids) == 0:
+                        continue
+                    yield name, data, ids
+
+        allworkload = [ PartialElementFilter(self.elementFilter,self.nbCPUs,i) for i in range(self.nbCPUs)  ]
+        workload = []
+
+        for f in allworkload:
+            if f.ApplyOnElements(ElementCounter()).cpt > 0:
+                workload.append(f)
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=self.nbCPUs) as executor:
+            results =  executor.map(self._InternalComputeMonoThreadSafe,workload)
+            cpt = 0
+            for kvij, rhs in results:
+                if kvij is None:
+                    return
+                v,(i,j) = kvij
+                sizeOfvij = len(v)
+                self.vK[cpt:cpt+sizeOfvij] = v
+                self.iK[cpt:cpt+sizeOfvij] = i
+                self.jK[cpt:cpt+sizeOfvij] = j
+                cpt += sizeOfvij
+                self.rhs += rhs
+
+        self.numberOfUsedvij = cpt
+
+    def _InternalComputeMonoThreadSafe(self,elementFilter):
+        res = IntegrationClass()
+        res.nbCPUs = 1
+        res.SetMesh(self.mesh)
+        res.SetOnlyEvaluation(self.onlyEvaluation)
+        res.SetConstants(self.constants)
+        res.SetUnkownFields(self.unkownFields)
+        res.SetTestFields(self.testFields)
+        res.SetExtraFields(self.extraFields)
+        res.SetIntegrationRule(integrationRule=self.integrationRule)
+        res.SetElementFilter(elementFilter)
+        res.SetWeakForm(self.numericalWeakForm)
+        res.PreStartCheck()
+        res.Allocate()
+        res.ComputeMonoThread()
+        return res.GetKvij(), res.GetRhs()
+
+    def ComputeMonoThread(self,elementFilter=None):
+        """Execute the integration using only one tread (this function is no threadsafe)
+
+        """
+
+        self.integrator.PrepareFastIntegration(self.mesh,self.numericalWeakForm,self.vK,self.iK,self.jK,0,self.rhs)
+
+        totalNumberOfElementTreated = 0
+        if elementFilter is None:
+            elementFilter = self.elementFilter
+
+        for _name, data, idstotreat in elementFilter:
+            if len(idstotreat) == 0:
+                continue
+            totalNumberOfElementTreated += len(idstotreat)
+            ids = np.asarray(idstotreat,dtype=int)
+            self.integrator.ActivateElementType(data)
+            self.integrator.Integrate(self.numericalWeakForm,ids)
+
+        self.numberOfUsedvij = self.integrator.GetNumberOfUsedIvij()
+
+    def GetKvij(self):
+        """Get the values to build the operator
+
+        Returns
+        -------
+            values : ndarray
+                values of the operator
+            tuple : (ndarray,ndarray)
+                indices (i,j)
+
+        """
+        data = (self.vK[0:self.numberOfUsedvij], (self.iK[0:self.numberOfUsedvij],self.jK[0:self.numberOfUsedvij]))
+        return data
+
+    def GetLinearSystemSize(self):
+        """Get the size of the Linear System
+
+        Returns
+        -------
+        nbrows : int
+            Number of rows of the linear system
+        nbcols : int
+            Number of columns of the linear system
+        """
+        return (self.integrator.GetTotalTestDofs(), self.integrator.GetTotalUnkownDofs())
+
+    def GetK(self):
+        """ Get K as a scipy.sparse.coo_matrix
+
+        Returns
+        -------
+        K : coo_matrix
+            the asembled matrix
+        """
+        return coo_matrix(self.GetKvij(), shape=self.GetLinearSystemSize())
+
+    def GetRhs(self):
+        """ Get the right hand side term
+
+        Returns
+        -------
+        rhs : ndarray
+            Array with the values of the right hand side term
+        """
+        return self.rhs
+
 
 def CheckIntegrityNormalFlux(GUI=False):
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshOf
@@ -378,37 +478,29 @@ def CheckIntegrityNormalFlux(GUI=False):
     sdim = 3
 
     space = LagrangeSpaceGeo
-    from BasicTools.FE.DofNumbering import ComputeDofNumbering
     numbering = ComputeDofNumbering(mesh,space)
     dofs= ["u_" + str(i) for i in range(sdim)]
     spaces = [space]*sdim
     numberings = [numbering]*sdim
 
-    from BasicTools.FE.SymWeakForm import GetField
-    from BasicTools.FE.SymWeakForm import GetTestField
-    from BasicTools.FE.SymWeakForm import GetNormal
-    from BasicTools.FE.WeakForms.NumericalWeakForm import SymWeakToNumWeak
-
-
-    u = GetField("u",sdim)
     ut = GetTestField("u",sdim)
     p = GetField("p",1)
 
-    Normal = GetNormal(3)
+    normal = GetNormal(3)
 
-    wformflux = p*Normal.T*ut
+    wformflux = p*normal.T*ut
 
     constants = {"alpha":1.0}
 
-    pf = FEField("p",mesh,space,numbering)
-    pf.Allocate(1)
+    pressField = FEField("p",mesh,space,numbering)
+    pressField.Allocate(1)
 
     print(mesh)
-    ff = ElementFilter(mesh=mesh) # all elements
+    elemfilt = ElementFilter(mesh=mesh) # all elements
     unkownFields = [FEField(dofs[n],mesh=mesh,space=spaces[n],numbering=numberings[n]) for n in range(len(dofs)) ]
-    K,F = IntegrateGeneral(mesh=mesh,wform=wformflux, constants=constants, fields=[pf],
+    _matrix,F = IntegrateGeneral(mesh=mesh,wform=wformflux, constants=constants, fields=[pressField],
                     unkownFields = unkownFields,
-                    elementFilter=ff )
+                    elementFilter=elemfilt )
     if GUI :
         from BasicTools.Actions.OpenInParaView import OpenInParaView
         F.shape = (3,3)
@@ -419,14 +511,8 @@ def CheckIntegrityNormalFlux(GUI=False):
     return "ok"
 
 def CheckIntegrityKF(edim, sdim,testCase):
-    from math import sqrt
-    import numpy as np
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshOfTriangles, CreateMeshOf
-    import BasicTools.Containers.ElementNames as EN
-    from BasicTools.FE.IntegrationsRules import LagrangeP1
-
     from BasicTools.FE.MaterialHelp import HookeIso
-
 
     if edim == 1:
         nu = 0.25
@@ -435,7 +521,7 @@ def CheckIntegrityKF(edim, sdim,testCase):
             E = 1
             A = 1
             points = np.array([[0,],[2,],])
-            L = sqrt(np.sum((points[1,:] - points[0,:])**2))
+            L = np.sqrt(np.sum((points[1,:] - points[0,:])**2))
             K = np.array([[E],])
 
             KValidation = (E*A/L)*np.array([[1, -1],[-1, 1]])
@@ -445,7 +531,7 @@ def CheckIntegrityKF(edim, sdim,testCase):
             E = 1000.
             A = 5.
             points = np.array([[0,0],[30,40], ])
-            L = sqrt(np.sum((points[1,:] - points[0,:])**2))
+            L = np.sqrt(np.sum((points[1,:] - points[0,:])**2))
             K = A*E*np.array([[1 ,1,0],[1,1 ,0],[0 ,0,0]])
             KValidation = np.array([[36,48,-36,-48],
                                  [48,64,-48,-64],
@@ -456,7 +542,7 @@ def CheckIntegrityKF(edim, sdim,testCase):
 
         elif sdim == 3:
             points = np.array([[0,0,0],[2.,3.,6.], ])
-            L = sqrt(np.sum((points[1,:] - points[0,:])**2))
+            L = np.sqrt(np.sum((points[1,:] - points[0,:])**2))
             E = 343.
             A = 10.
             K = A*E*np.array([[1,1,1,0,0,0],
@@ -527,7 +613,7 @@ def CheckIntegrityKF(edim, sdim,testCase):
                 KValidation = KValidation[permut,:][:,permut]
 
             else:
-                raise
+                raise RuntimeError
 
 
         elif sdim == 3:
@@ -541,14 +627,14 @@ def CheckIntegrityKF(edim, sdim,testCase):
                 permut = [0,3,6,1,4,7,2,5,8]
 
             else:
-                raise
+                raise RuntimeError
 
     elif edim == 3:
         ## https://www.colorado.edu/engineering/CAS/courses.d/AFEM.d/AFEM.Ch09.d/AFEM.Ch09.pdf
         ## page  9-17
         points = [[2.,3.,4],[6,3,2],[2,5,1],[4,3,6]]
         mesh = CreateMeshOf(points,[[0,1,2,3]],EN.Tetrahedron_4)
-        E = 480;
+        E = 480
         nu = 1./3.
 
         K = HookeIso(E,nu,dim=sdim)
@@ -571,12 +657,11 @@ def CheckIntegrityKF(edim, sdim,testCase):
 
 
     else :
-        raise
+        raise RuntimeError
 
 
     #CompureVolume(mesh)
     space = LagrangeSpaceGeo
-    from BasicTools.FE.DofNumbering import ComputeDofNumbering
     numbering = ComputeDofNumbering(mesh,space)
 
     if sdim == 1:
@@ -587,47 +672,37 @@ def CheckIntegrityKF(edim, sdim,testCase):
     spaces = [space]*sdim
     numberings = [numbering]*sdim
 
-    from BasicTools.FE.SymWeakForm import GetField
-    from BasicTools.FE.SymWeakForm import GetTestField
-
-    from BasicTools.FE.SymWeakForm import Gradient
     from BasicTools.FE.SymWeakForm import Strain
     from BasicTools.FE.SymWeakForm import ToVoigtEpsilon
     from BasicTools.FE.WeakForms.NumericalWeakForm import SymWeakToNumWeak
-
-    from sympy import pprint
-    from sympy import Symbol
 
     u = GetField("u",sdim)
     ut = GetTestField("u",sdim)
 
     weak = ToVoigtEpsilon(Strain(u,sdim)).T@K@ToVoigtEpsilon(Strain(ut,sdim))
 
-    wf = SymWeakToNumWeak(weak)
+    numericakWeakForm = SymWeakToNumWeak(weak)
 
-    rwf = wf.GetRightPart(dofs)
+    _rwf = numericakWeakForm.GetRightPart(dofs)
 
-    lwf = wf.GetLeftPart(dofs)
-
-    import numpy as np
-
+    lwf = numericakWeakForm.GetLeftPart(dofs)
 
     constants = {}
     fields  = {}
 
-    import time
     startt = time.time()
 
-    ff = ElementFilter(mesh,tag=(str(edim)+"D"))
+    elemFilt = ElementFilter(mesh,tag=(str(edim)+"D"))
 
     unkownFields = [FEField(dofs[n],mesh=mesh,space=spaces[n],numbering=numberings[n]) for n in range(len(dofs)) ]
-    Kinteg,F = IntegrateGeneral(mesh=mesh,wform=lwf, constants=constants, fields=fields,
+    kInteg, _rhs = IntegrateGeneral(mesh=mesh,wform=lwf, constants=constants, fields=fields,
                     unkownFields = unkownFields,
-                    elementFilter=ff )
+                    elementFilter=elemFilt )
 
     stopt = time.time() - startt
+    print(stopt)
 
-    KK = Kinteg.todense()
+    kDense = kInteg.todense()
 
     permut = []
     offset = 0
@@ -636,138 +711,140 @@ def CheckIntegrityKF(edim, sdim,testCase):
             permut.append(f.numbering.GetDofOfPoint(p)+offset)
         offset += f.numbering.size
     if permut is not None:
-        KK = KK[:,permut][permut,:]
+        kDense = kDense[:,permut][permut,:]
 
-    error = np.sum(abs(KK-KValidation))/(np.sum(abs(KValidation))  )
+    error = np.sum(abs(kDense-KValidation))/(np.sum(abs(KValidation))  )
 
     if error > 1e-14 or error is np.nan:
 
-          print((edim,sdim,testCase))
-          print("K Validation")
-          print(KValidation)
-          print("K Calcul")
-          print(KK)
+        print((edim,sdim,testCase))
+        print("K Validation")
+        print(KValidation)
+        print("K Calcul")
+        print(kDense)
 
-          print("ERROR : "),
-          print(error)
+        print("ERROR : ")
+        print(error)
 
-          print(KK-KValidation)
-          print(numbering)
+        print(kDense-KValidation)
+        print(numbering)
 
-          raise
+        return "KO"
 
     return "ok"
 
-def ComputeVolume(mesh):
+def CheckIntegrityComputeVolume(mesh):
 
-    from BasicTools.FE.DofNumbering import ComputeDofNumbering
     numbering = ComputeDofNumbering(mesh,LagrangeSpaceGeo)
 
     dofs= ["T"]
     spaces = [LagrangeSpaceGeo]
     numberings = [numbering]
 
-
-    from BasicTools.FE.SymWeakForm import GetField
-    from BasicTools.FE.SymWeakForm import GetTestField
-    from BasicTools.FE.WeakForms.NumericalWeakForm import SymWeakToNumWeak
-
-
-    T = GetField("T",1)
+    tField = GetField("T",1)
     F = GetField("F",1)
-    Tt = GetTestField("T",1)
+    tFieldTest = GetTestField("T",1)
 
-    ener = T.T*Tt + F.T*Tt
-
-
-    wf = SymWeakToNumWeak(ener)
+    weakForm = tField.T*tFieldTest + F.T*tFieldTest
 
     constants = {}
     fields  = {}
-    from BasicTools.FE.Fields.FEField import FEField
     f = FEField("F",mesh,LagrangeSpaceGeo,numbering)
     f.Allocate(1)
     fields["F"] = f
 
-    import time
     startt = time.time()
     unkownFields = [FEField(dofs[n],mesh=mesh,space=spaces[n],numbering=numberings[n]) for n in range(len(dofs)) ]
-    K,F = IntegrateGeneral(mesh=mesh,wform=wf, constants=constants, fields=fields,
+    K,F = IntegrateGeneral(mesh=mesh,wform=weakForm, constants=constants, fields=fields,
                     unkownFields = unkownFields, elementFilter=ElementFilter() )
-    stopt = time.time() - startt
+    _stopt = time.time() - startt
     volk = np.sum(K)
     print("volume (k): " + str(volk))
     volf = np.sum(F)
     print("volume (f): " + str(volf))
     if abs(volk - volf) > 1e-15 :
         print(volk-volf)
-        raise
+        raise RuntimeError
 
 def CheckIntegrityIntegrationWithIntegrationPointField(GUI=False):
     from BasicTools.FE.IntegrationsRules import LagrangeP1
-    #from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
 
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateCube
     mesh = CreateCube([2.,3.,4.],[-1.0,-1.0,-1.0],[2./10, 2./10,2./10])
 
-    from BasicTools.FE.FETools import PrepareFEComputation
-    space, numberings, offset, NGauss = PrepareFEComputation(mesh,numberOfComponents=1)
-    from BasicTools.FE.Fields.IPField import IPField
+    space, numberings, _offset, _NGauss = PrepareFEComputation(mesh,numberOfComponents=1)
 
-    rho_field = IPField("rho",mesh=mesh,rule=LagrangeP1)
+    rhoField = IPField("rho",mesh=mesh,rule=LagrangeP1)
     factor = .1
-    rho_field.Allocate(factor)
+    rhoField.Allocate(factor)
 
-    from BasicTools.FE.Fields.FEField import FEField
-
-
-
-    from BasicTools.FE.SymWeakForm import GetField
-    from BasicTools.FE.SymWeakForm import GetTestField
-    T = GetField("T",1)
+    tField = GetField("T",1)
     rho = GetField("rho",1)
-    Tt = GetTestField("T",1)
+    tFieldTest = GetTestField("T",1)
 
-    wf = T.T*Tt + rho.T*Tt
-
+    weakForm = tField.T*tFieldTest + rho.T*tFieldTest
 
     constants = {}
-    fields  = {}
-    fields = [ rho_field]
+    fields = [ rhoField]
     unkownFields = [FEField("T",mesh=mesh,space=space,numbering=numberings[0]) ]
-    import time
+
     startt = time.time()
-    ff = ElementFilter(mesh,tag="3D")
+    elemFilt = ElementFilter(mesh,tag="3D")
     K,F = IntegrateGeneral(mesh=mesh,
-                    wform=wf,
+                    wform=weakForm,
                     constants=constants,
                     fields=fields,
                     unkownFields=unkownFields,
                     integrationRuleName="LagrangeP1",
-                    elementFilter=ff)
+                    elementFilter=elemFilt)
 
-    stopt = time.time() - startt
+    intClass = IntegrationClass()
+    intClass.SetMesh(mesh)
+    intClass.SetOnlyEvaluation(False)
+    intClass.SetElementFilter(elemFilt)
+    intClass.SetConstants(constants)
+    intClass.SetUnkownFields(unkownFields)
+    intClass.SetTestFields(None)
+    intClass.SetExtraFields(fields)
+    intClass.SetIntegrationRule(integrationRuleName="LagrangeP1")
+    intClass.SetWeakForm(weakForm)
+    intClass.PreStartCheck()
+    intClass.Allocate()
+    intClass.Compute()
+    matrixKII = intClass.GetK()
+    vectorFII = intClass.GetRhs()
+
+    _stopt = time.time() - startt
     volk = np.sum(K)
     print("volume (k): " + str(volk))
+    print("volume class (k): " + str(np.sum(matrixKII)))
     volf = np.sum(F)
     print("volume (f): " + str(volf))
-    if volk*factor - volf <   volf/100000000:
-        return "ok"
+    print("volume class (f): " + str(np.sum(vectorFII)))
 
-    return "KO"
+    if abs(volk*factor - volf) >=  volf/100000000:
+        return "KO"
+
+    volkII = np.sum(intClass.GetK())
+    volfII = np.sum(intClass.GetRhs())
+
+    if abs(volkII*factor - volfII) >=  volfII/100000000:
+        return "KO"
+
+    return "ok"
 
 
 
 def CheckIntegrity(GUI=False):
-    global UseCpp
-    saveOldeStateOfUseCpp = UseCpp
-    UseCpp = False
+    import BasicTools.FE.Integration as BTFEI
+    saveOldeStateOfUseCpp = BTFEI.UseCpp
+    BTFEI.UseCpp = False
     if CheckIntegrityNormalFlux(GUI).lower() != "ok":
         return "Not ok in the Normal Calculation"
     if CheckIntegrityIntegrationWithIntegrationPointField() != "ok":
         return "Not ok in the integration with IPField"
 
-    UseCpp = True
+    BTFEI.UseCpp = True
     if CheckIntegrityNormalFlux(GUI).lower() != "ok":
         return "Not ok in the Normal Calculation"
     if CheckIntegrityIntegrationWithIntegrationPointField() != "ok":
@@ -787,23 +864,22 @@ def CheckIntegrity(GUI=False):
                  (3,3,"A tet in 3D"),
 
                 ]
-    import time
     startt = time.time()
 
-    for ed,sd,m in problems:
+    for edim,sdim,testCase in problems:
         print("*-"*80)
         print("*-"*80)
-        print((ed,sd,m))
+        print((edim,sdim,testCase))
 
-        UseCpp = False
+        BTFEI.UseCpp = False
         print(" --- python  integration --")
-        if CheckIntegrityKF(edim=ed,sdim = sd,testCase=m).lower() !=  "ok":
+        if CheckIntegrityKF(edim=edim,sdim = sdim,testCase=testCase).lower() !=  "ok":
             return "not ok python "
         else :
             print(" --- python  integration -- OK ")
-        print(" --- cpp integration --",(ed,sd,m ))
-        UseCpp = True
-        if CheckIntegrityKF(edim=ed,sdim = sd,testCase=m).lower() !=  "ok":
+        print(" --- cpp integration --",(edim,sdim,testCase ))
+        BTFEI.UseCpp = True
+        if CheckIntegrityKF(edim=edim,sdim = sdim,testCase=testCase).lower() !=  "ok":
             return "not ok cpp"
         else:
             print(" --- cpp integration -- OK")
@@ -817,7 +893,7 @@ def CheckIntegrity(GUI=False):
         return "CheckIntegrityConstantRectilinearIntegration not ok"
     else:
         print(" --- CheckIntegrityConstantRectilinearIntegration -- OK")
-    UseCpp = saveOldeStateOfUseCpp
+    BTFEI.UseCpp = saveOldeStateOfUseCpp
 
     return "ok"
 
@@ -825,95 +901,73 @@ def CheckIntegrityConstantRectilinearIntegrationII(GUI = False):
     print("Test integrator on Constant rectilinear mesh")
     from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearMesh
     myCRMesh = ConstantRectilinearMesh(3)
-    nx = 3; ny = 4; nz =5;
+    nNodesX = 3
+    nNodesY = 4
+    nNodesZ =5
 
-    myCRMesh.SetDimensions([nx,ny,nz]);
-    myCRMesh.SetSpacing([1./(nx-1), 1./(ny-1), 1./(nz-1)]);
-    myCRMesh.SetOrigin([0, 0, 0]);
+    myCRMesh.SetDimensions([nNodesX,nNodesY,nNodesZ])
+    myCRMesh.SetSpacing([1./(nNodesX-1), 1./(nNodesY-1), 1./(nNodesZ-1)])
+    myCRMesh.SetOrigin([0, 0, 0])
 
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshFromConstantRectilinearMesh
     mesh = CreateMeshFromConstantRectilinearMesh(myCRMesh)
-    from BasicTools.FE.FETools import PrepareFEComputation
     from BasicTools.FE.Spaces.FESpaces import ConstantSpaceGlobal
-    from BasicTools.FE.DofNumbering import ComputeDofNumbering
     testNumbering = ComputeDofNumbering(mesh,ConstantSpaceGlobal)
 
-    space, numberings, offset, NGauss = PrepareFEComputation(mesh,numberOfComponents=1)
+    from BasicTools.FE.SymWeakForm import testcharacter
+    tFieldTest= GetTestField("T",1)
 
-    from BasicTools.FE.Fields.FEField import FEField
-    from BasicTools.FE.SymWeakForm import GetField
-    from BasicTools.FE.SymWeakForm import GetTestField, testcharacter
-    Tt = GetTestField("T",1)
-
-    wf = 1*Tt
+    weakForm = 1*tFieldTest
 
     constants = {}
     fields = [ ]
     testFields = [FEField("T"+testcharacter,mesh=mesh,space=ConstantSpaceGlobal,numbering=testNumbering) ]
-    import time
     startt = time.time()
-    ff = ElementFilter(mesh)
+    elemFilter = ElementFilter(mesh)
     print(startt)
     K,F = IntegrateGeneral(mesh=mesh,
-                    wform=wf,
+                    wform=weakForm,
                     constants=constants,
                     fields=fields,
                     testFields = testFields,
                     integrationRuleName="LagrangeP1",
-                    elementFilter=ff)
+                    elementFilter=elemFilter)
     print("K " , K)
     print("F " ,F)
     return "ok"
-    stopt = time.time() - startt
-    volk = np.sum(K)
-    print("volume (k): " + str(volk))
-    volf = np.sum(F)
-    print("volume (f): " + str(volf))
-    print(stopt)
-    if volk*1 - volf <   volf/100000000:
-        return "ok"
-    print("volk: "+str(volk))
-    print("volf: "+str(volf))
-
-    return "Not Ok"
-
-
 
 def CheckIntegrityConstantRectilinearIntegration(GUI=False):
     print("Test integrator on Constant rectilinear mesh")
     from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearMesh
     myCRMesh = ConstantRectilinearMesh(3)
-    nx = 3; ny = 4; nz =5;
+    nNodesY = 3
+    nNodesY = 4
+    nNodesZ =5
 
-    myCRMesh.SetDimensions([nx,ny,nz]);
-    myCRMesh.SetSpacing([1./(nx-1), 1./(ny-1), 1./(nz-1)]);
-    myCRMesh.SetOrigin([0, 0, 0]);
+    myCRMesh.SetDimensions([nNodesY,nNodesY,nNodesZ])
+    myCRMesh.SetSpacing([1./(nNodesY-1), 1./(nNodesY-1), 1./(nNodesZ-1)])
+    myCRMesh.SetOrigin([0, 0, 0])
 
-    from BasicTools.FE.FETools import PrepareFEComputation
-    space, numberings, offset, NGauss = PrepareFEComputation(myCRMesh,numberOfComponents=1)
+    space, numberings, _offset, _NGauss = PrepareFEComputation(myCRMesh,numberOfComponents=1)
 
-    from BasicTools.FE.Fields.FEField import FEField
-    from BasicTools.FE.SymWeakForm import GetField
-    from BasicTools.FE.SymWeakForm import GetTestField
-    T = GetField("T",1)
-    Tt = GetTestField("T",1)
+    tField = GetField("T",1)
+    tFieldTest = GetTestField("T",1)
 
-    wf = T.T*Tt + 1*Tt
+    weakForm = tField.T*tFieldTest + 1*tFieldTest
 
     constants = {}
     fields = [ ]
     unkownFields = [FEField("T",mesh=myCRMesh,space=space,numbering=numberings[0]) ]
-    import time
     startt = time.time()
-    ff = ElementFilter(myCRMesh)
+    elemFilter = ElementFilter(myCRMesh)
     print(startt)
     K,F = IntegrateGeneral(mesh=myCRMesh,
-                    wform=wf,
+                    wform=weakForm,
                     constants=constants,
                     fields=fields,
                     unkownFields=unkownFields,
                     integrationRuleName="LagrangeP1",
-                    elementFilter=ff)
+                    elementFilter=elemFilter)
 
     stopt = time.time() - startt
     volk = np.sum(K)
@@ -929,6 +983,6 @@ def CheckIntegrityConstantRectilinearIntegration(GUI=False):
     return "Not Ok"
 if __name__ == '__main__':
     #print("Start")# pragma: no cover
-    #print(CheckIntegrity(True))# pragma: no cover
+    print(CheckIntegrity(False))# pragma: no cover
     #print("Stop")# pragma: no cover
     print(CheckIntegrityConstantRectilinearIntegrationII())
