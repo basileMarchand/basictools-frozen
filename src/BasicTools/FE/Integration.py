@@ -9,7 +9,7 @@ import numpy as np
 from scipy.sparse import coo_matrix
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 import BasicTools.Containers.ElementNames as EN
-from BasicTools.Containers.Filters import ElementFilter, NodeFilter
+from BasicTools.Containers.Filters import ElementFilter, NodeFilter, ElementCounter
 
 from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
 from BasicTools.FE.Fields.FEField import FEField
@@ -273,16 +273,7 @@ def IntegrateGeneral( mesh, wform, constants, fields, unkownFields, testFields=N
 
     elementFilter.mesh = mesh
 
-    class OP():
-        def __init__(self):
-            self.cpt = 0
-        def PreCondition(self,mesh):
-            self.cpt = 0
-        def __call__(self,mesh,data,ids):
-            self.cpt += len(ids)
-
-    op = OP()
-    elementFilter.ApplyOnElements(op)
+    op = elementFilter.ApplyOnElements(ElementCounter())
 
     if op.cpt < MultiThreadThreshold:
         return IntegrateGeneralMonoThread(mesh=mesh, wform=wform, constants=constants, fields=fields, unkownFields=unkownFields,
@@ -350,9 +341,7 @@ def IntegrateGeneral( mesh, wform, constants, fields, unkownFields, testFields=N
     workload = []
 
     for f in allworkload:
-        op = OP()
-        f.ApplyOnElements(op)
-        if op.cpt:
+        if f.ApplyOnElements(ElementCounter()).cpt:
             workload.append(f)
 
     import concurrent.futures
