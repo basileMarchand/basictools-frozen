@@ -87,14 +87,17 @@ def PrepareFEComputation(mesh, elementFilter = None, numberOfComponents = None):
     return spaces, numberings, offset, NGauss
 
 
-def ComputeL2ScalarProducMatrix(mesh, numberOfComponents):
+
+def ComputeL2ScalarProducMatrix(mesh, numberOfComponents, elementFilter = None):
 
     dim = mesh.GetDimensionality()
 
-    ff = Filters.ElementFilter(mesh)
-    ff.SetDimensionality(dim)
+    if elementFilter == None:
+        elementFilter = Filters.ElementFilter(mesh)
+        elementFilter.SetDimensionality(dim)
 
-    spaces, numberings, offset, NGauss = PrepareFEComputation(mesh, ff, numberOfComponents)
+
+    spaces, numberings, offset, NGauss = PrepareFEComputation(mesh, elementFilter, numberOfComponents)
 
     from BasicTools.FE.SymWeakForm import GetField
     from BasicTools.FE.SymWeakForm import GetTestField
@@ -114,10 +117,9 @@ def ComputeL2ScalarProducMatrix(mesh, numberOfComponents):
         unkownFields = [FEField("T_"+str(i),mesh=mesh,space=spaces,numbering=numberings[i]) for i in range(numberOfComponents)]
 
     K,_ = IntegrateGeneral(mesh=mesh,wform=wf, constants=constants, fields=fields,
-                    unkownFields = unkownFields, elementFilter = ff)
+                    unkownFields = unkownFields, elementFilter = elementFilter)
 
     return K
-
 
 
 
@@ -311,6 +313,68 @@ def ComputePhiAtIntegPoint(mesh, elementSets = None, relativeDimension = 0):
                 phiAtIntegPointValues.extend(left)
                 row.extend(countTotal*ones)
                 countTotal += 1
+
+    phiAtIntegPointMatrix = coo_matrix((phiAtIntegPointValues, (row, phiAtIntegPointIndices)), shape=(NGauss, nbNodes))
+
+    return integrationWeights, phiAtIntegPointMatrix
+
+
+def ComputePhiAtIntegPointFromElFilter(mesh, elFilter):
+    """
+    Computes the shape functions on the integration
+    points and the integration weights associated with the integration scheme
+
+    Parameters
+    ----------
+    mesh : UnstructuredMesh
+    elFilter : elementFilter
+
+
+    Returns
+    -------
+    np.ndarray
+        integrationWeights
+
+    coo_matrix of size (NGauss, nbNodes)
+        phiAtIntegPointMatrix
+    """
+
+    numbering = ComputeDofNumbering(mesh,LagrangeSpaceGeo,fromConnectivity=True)
+
+    nbNodes = mesh.GetNumberOfNodes()
+
+    phiAtIntegPointIndices = []
+    phiAtIntegPointValues = []
+    row = []
+    integrationWeights = []
+
+    countTotal = 0
+    for name,data,ids in elFilter:
+
+        p,w =  LagrangeIsoParam[name]
+        NGaussperEl = len(w)
+        lenNumbering = len(numbering[name][0,:])
+
+        ones = np.ones(lenNumbering,dtype=int)
+
+        for el in ids:
+            xcoor = mesh.nodes[data.connectivity[el],:]
+            space_ipvalues = LagrangeSpaceGeo[name].SetIntegrationRule(p,w)
+            for ip in range(NGaussperEl):
+                Jack, Jdet, Jinv = space_ipvalues.GetJackAndDetI(ip,xcoor)
+
+                integrationWeights.append(w[ip]*Jdet)
+
+                leftNumbering = numbering[name][el,:]
+                left = space_ipvalues.valN[ip]
+
+                phiAtIntegPointIndices.extend(leftNumbering)
+                phiAtIntegPointValues.extend(left)
+                row.extend(countTotal*ones)
+                countTotal += 1
+
+    NGauss = len(integrationWeights)
+    integrationWeights = np.array(integrationWeights)
 
     phiAtIntegPointMatrix = coo_matrix((phiAtIntegPointValues, (row, phiAtIntegPointIndices)), shape=(NGauss, nbNodes))
 
