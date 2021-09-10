@@ -425,6 +425,7 @@ def GetValueAtPosLinearSymplecticMesh(fields,mesh,constantRectilinearMesh):
         import math
         from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
         from BasicTools.FE.DofNumbering import ComputeDofNumbering
+        from BasicTools.Helpers.ProgressBar import printProgressBar
 
         numbering = ComputeDofNumbering(mesh,LagrangeSpaceGeo,fromConnectivity =True)
 
@@ -455,8 +456,10 @@ def GetValueAtPosLinearSymplecticMesh(fields,mesh,constantRectilinearMesh):
             #print("ElementNames.linear[name] =", ElementNames.linear[name])
             if (ElementNames.dimension[name] == mesh.GetDimensionality() and ElementNames.linear[name] == True):
 
+                printProgressBar(0, data.GetNumberOfElements(), prefix = 'Field transfert element '+name+':', suffix = 'Complete', length = 50)
                 for el in range(data.GetNumberOfElements()):
 
+                    printProgressBar(el, data.GetNumberOfElements(), prefix = 'Field transfert element '+name+':', suffix = 'Complete', length = 50)
                     localNumbering = numbering[name][el,:]
 
                     localNodes = mesh.nodes[data.connectivity[el,:]]
