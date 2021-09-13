@@ -45,7 +45,19 @@ def Integrate( mesh, wform, constants, fields, dofs,spaces,numbering, integratio
                             elementFilter=elementFilter)
 
 
-def IntegrateGeneralMonoThread( mesh, wform, constants, fields, unkownFields, testFields=None, integrationRuleName=None,onlyEvaluation=False, elementFilter=None,userIntegrator=None, integrationRule=None):
+def IntegrateGeneralMonoThread( mesh, wform, constants, fields, unkownFields=None, testFields=None, integrationRuleName=None,onlyEvaluation=False, elementFilter=None,userIntegrator=None, integrationRule=None):
+    from BasicTools.FE.SymWeakForm import testcharacter
+
+    if unkownFields is None and testFields is None:
+        raise(Exception(""))
+        
+    if unkownFields is None:
+        unkownFields = []
+        for f in testFields:
+            if f.name[-1] != testcharacter:
+                raise(Exception("error in the name of the testField named: " + f.name))
+            unkownFields.append(FEField(name=f.name[0:-1],mesh=f.mesh,space=f.space,numbering=f.numbering,data=f.data) )
+
 
     if elementFilter is None:
         # if no filter the the integral is over the bulk element
@@ -256,7 +268,7 @@ def IntegrateGeneralMonoThread( mesh, wform, constants, fields, unkownFields, te
         return
 
 
-def IntegrateGeneral( mesh, wform, constants, fields, unkownFields, testFields=None,
+def IntegrateGeneral( mesh, wform, constants, fields, unkownFields=None, testFields=None,
                              integrationRuleName=None,onlyEvaluation=False, elementFilter=None,
                              userIntegrator=None, integrationRule=None):
 
@@ -301,7 +313,8 @@ def IntegrateGeneral( mesh, wform, constants, fields, unkownFields, testFields=N
 
     for n,s in LagrangeSpaceGeo.items():
         s.Create()
-    InitSpaces(unkownFields)
+    if unkownFields is not None:    
+        InitSpaces(unkownFields)
     InitSpaces(fields)
     if testFields is not None:
         InitSpaces(testFields)
@@ -808,6 +821,64 @@ def CheckIntegrity(GUI=False):
 
     return "ok"
 
+def CheckIntegrityConstantRectilinearIntegrationII(GUI = False):
+    print("Test integrator on Constant rectilinear mesh")
+    from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearMesh
+    myCRMesh = ConstantRectilinearMesh(3)
+    nx = 3; ny = 4; nz =5;
+
+    myCRMesh.SetDimensions([nx,ny,nz]);
+    myCRMesh.SetSpacing([1./(nx-1), 1./(ny-1), 1./(nz-1)]);
+    myCRMesh.SetOrigin([0, 0, 0]);
+
+    from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshFromConstantRectilinearMesh
+    mesh = CreateMeshFromConstantRectilinearMesh(myCRMesh)
+    from BasicTools.FE.FETools import PrepareFEComputation
+    from BasicTools.FE.Spaces.FESpaces import ConstantSpaceGlobal
+    from BasicTools.FE.DofNumbering import ComputeDofNumbering
+    testNumbering = ComputeDofNumbering(mesh,ConstantSpaceGlobal)
+
+    space, numberings, offset, NGauss = PrepareFEComputation(mesh,numberOfComponents=1)
+
+    from BasicTools.FE.Fields.FEField import FEField
+    from BasicTools.FE.SymWeakForm import GetField
+    from BasicTools.FE.SymWeakForm import GetTestField, testcharacter
+    Tt = GetTestField("T",1)
+
+    wf = 1*Tt
+
+    constants = {}
+    fields = [ ]
+    testFields = [FEField("T"+testcharacter,mesh=mesh,space=ConstantSpaceGlobal,numbering=testNumbering) ]
+    import time
+    startt = time.time()
+    ff = ElementFilter(mesh)
+    print(startt)
+    K,F = IntegrateGeneral(mesh=mesh,
+                    wform=wf,
+                    constants=constants,
+                    fields=fields,
+                    testFields = testFields,
+                    integrationRuleName="LagrangeP1",
+                    elementFilter=ff)
+    print("K " , K)
+    print("F " ,F)
+    return "ok"
+    stopt = time.time() - startt
+    volk = np.sum(K)
+    print("volume (k): " + str(volk))
+    volf = np.sum(F)
+    print("volume (f): " + str(volf))
+    print(stopt)
+    if volk*1 - volf <   volf/100000000:
+        return "ok"
+    print("volk: "+str(volk))
+    print("volf: "+str(volf))
+
+    return "Not Ok"
+
+
+
 def CheckIntegrityConstantRectilinearIntegration(GUI=False):
     print("Test integrator on Constant rectilinear mesh")
     from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearMesh
@@ -857,6 +928,7 @@ def CheckIntegrityConstantRectilinearIntegration(GUI=False):
 
     return "Not Ok"
 if __name__ == '__main__':
-    print("Start")# pragma: no cover
-    print(CheckIntegrity(True))# pragma: no cover
-    print("Stop")# pragma: no cover
+    #print("Start")# pragma: no cover
+    #print(CheckIntegrity(True))# pragma: no cover
+    #print("Stop")# pragma: no cover
+    print(CheckIntegrityConstantRectilinearIntegrationII())
