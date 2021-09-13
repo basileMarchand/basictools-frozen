@@ -10,15 +10,15 @@ from BasicTools.IO.UniversalReader import ReadMesh
 from BasicTools.IO.UniversalWriter import WriteMesh
 import  BasicTools.IO.IOFactory as IOF
 
-def LoadReadersAndWriters(ops):
-    if ops["OnlyAbaqusReader"]:
+def LoadReadersAndWriters(ops = None):
+    if ops is not None and ops.get("OnlyAbaqusReader",False):
         from BasicTools.IO.OdbReader import OdbReader
         import BasicTools.IO.PickleTools
     else:
         IOF.InitAllReaders()
         IOF.InitAllWriters()
 
-    if ops["MeshIO"]:
+    if ops is not None and ops.get("MeshIO",False):
         from BasicTools.Containers.MeshIOBridge import InitAllReaders,InitAllWriters,AddReadersToBasicToolsFactory,AddWritersToBasicToolsFactory
         InitAllReaders()
         InitAllWriters()
