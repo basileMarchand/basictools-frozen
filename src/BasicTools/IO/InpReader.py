@@ -373,9 +373,14 @@ class InpReader(ReaderBase):
                 continue
               
             if self.find(l,"*HEADING")>-1:
-                HEADING = self.ReadCleanLine()
-                meta.HEADING = HEADING
                 l = self.ReadCleanLine()
+                HEADING = ""
+                while(True):
+                    if l is None or l.find("*") > -1 or not l:
+                        break
+                    HEADING += str(l) + "\n"
+                    l = self.ReadCleanLine()
+
                 continue
 
             if self.find(l,"*MATERIAL") > -1:

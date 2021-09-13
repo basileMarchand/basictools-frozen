@@ -11,6 +11,7 @@ InpNameToBasicTools = {}
 
 InpNameToBasicTools["S3"] = EN.Triangle_3
 InpNameToBasicTools['CONN3D2'] = EN.Bar_2
+InpNameToBasicTools['T2D2'] = EN.Bar_2
 InpNameToBasicTools['CPS4R'] = EN.Quadrangle_4
 InpNameToBasicTools["C3D4"] = EN.Tetrahedron_4
 InpNameToBasicTools["C3D8"] = EN.Hexaedron_8
