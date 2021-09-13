@@ -367,17 +367,21 @@ def ComputeBarycentricCoordinateOnElement(coordAtDofs,localspace,localnumbering,
     return inside, xietaphi, xichietaClamped
 
 
+def TransportPosToPoints(imesh,points): 
+    from BasicTools.FE.Fields.FEField import FEField
+    from BasicTools.FE.FETools import PrepareFEComputation
+    space, numberings, offset, NGauss = PrepareFEComputation(imesh,numberOfComponents=1)
+    field = FEField("",mesh=imesh,space=space,numbering=numberings[0])
+    op,status = GetFieldTransferOp(field,points,method="Interp/Clamp")
+    return op.dot(imesh.nodes)
+
 def TransportPos(imesh,tmesh,tspace,tnumbering):
     """
     Function to transport the position from the input mesh (imesh)
     to a target FEField target mesh, target space, tnumbering
     """
     from BasicTools.FE.Fields.FEField import FEField
-    from BasicTools.FE.FETools import PrepareFEComputation
-    space, numberings, offset, NGauss = PrepareFEComputation(imesh,numberOfComponents=1)
-    field = FEField("",mesh=imesh,space=space,numbering=numberings[0])
-    op,status = GetFieldTransferOp(field,tmesh.nodes,method="Interp/Clamp")
-    pos = op.dot(field.mesh.nodes)
+    pos = TransportPosToPoints(imesh, tmesh.nodes)
     names = ["x","y","z"]
     posFields = np.array([ FEField("ipos_"+names[x],tmesh, space=tspace, numbering=tnumbering,data=pos[:,x]) for x in [0,1,2] ])
     return posFields
