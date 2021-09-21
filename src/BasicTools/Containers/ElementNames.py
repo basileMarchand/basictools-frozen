@@ -166,6 +166,23 @@ numberOfNodes[Wedge_6] = 6
 mirrorPermutation[Wedge_6] = [0,2,1,3,5,4]
 dimension[Wedge_6] = 3
 linear[Wedge_6] = True
+faces[Wedge_6] = [  (Triangle_3,[0, 2, 1]),
+                      (Triangle_3,[3, 4, 5]),
+                      (Quadrangle_4,[0, 1, 4,3]),
+                      (Quadrangle_4,[1, 2, 5,4]),
+                      (Quadrangle_4,[0, 3, 5,2]), 
+     ]
+
+faces2[Wedge_6] = [  (Bar_2,[0, 1]),
+                      (Bar_2,[1, 2]),
+                      (Bar_2,[2, 0]),
+                      (Bar_2,[0, 3]),
+                      (Bar_2,[1, 4]), 
+                      (Bar_2,[2, 5]), 
+                      (Bar_2,[3, 4]), 
+                      (Bar_2,[4, 5]), 
+                      (Bar_2,[5, 3]), 
+     ]
 
 Hexaedron_8 = 'hex8'
 geoSupport[Hexaedron_8] = GeoHex
