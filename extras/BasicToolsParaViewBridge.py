@@ -527,6 +527,76 @@ try:
             SetOutputBasicTools(request, inInfoVec, outInfoVec,outputmesh )
             return 1
 
+    @smproxy.filter(name="Transfer Data")
+    @smhint.xml("""<ShowInMenu category="BasicTools" />""")
+    @smproperty.input(name="Target Points", port_index=1)
+    @smdomain.datatype(dataTypes=["vtkUnstructuredGrid","vtkPolyData"], composite_data_supported=False)
+    @smproperty.input(name="Source of Data", port_index=0)
+    @smdomain.datatype(dataTypes=["vtkUnstructuredGrid","vtkPolyData"], composite_data_supported=False)
+    class TransferData(VTKPythonAlgorithmBase):
+        def __init__(self):
+            VTKPythonAlgorithmBase.__init__(self, nInputPorts=2, nOutputPorts=1, outputType="vtkUnstructuredGrid")
+            self.__method = 2
+
+        def FillInputPortInformation(self, port, info):
+            if port == 0:
+                info.Set(self.INPUT_REQUIRED_DATA_TYPE(), "vtkUnstructuredGrid")
+                info.Append(self.INPUT_REQUIRED_DATA_TYPE(), "vtkPolyData")
+            else:
+                info.Set(self.INPUT_REQUIRED_DATA_TYPE(), "vtkUnstructuredGrid")
+                info.Append(self.INPUT_REQUIRED_DATA_TYPE(), "vtkPolyData")
+            return 1
+
+        def RequestData(self, request, inInfoVec, outInfoVec):
+            possibleMethods =["Interp/Nearest","Nearest/Nearest","Interp/Clamp","Interp/Extrap","Interp/ZeroFill"]
+
+            from vtkmodules.vtkCommonDataModel import  vtkDataSet
+            input0 = GetInputBasicTools(request, inInfoVec, outInfoVec,FieldsAsTags=True,connection=0)
+            input1 = GetInputBasicTools(request, inInfoVec, outInfoVec,FieldsAsTags=False,connection=1)
+            input0.ConvertDataForNativeTreatment()
+            input1.ConvertDataForNativeTreatment()
+
+            from BasicTools.FE.Fields.FEField import FEField
+            from BasicTools.FE.FETools import PrepareFEComputation
+            from BasicTools.Containers.UnstructuredMeshFieldOperations import GetFieldTransferOp
+            space, numberings, offset, NGauss = PrepareFEComputation(input0,numberOfComponents=1)
+            field = FEField("",mesh=input0,space=space,numbering=numberings[0])
+            op,status = GetFieldTransferOp(field,input1.nodes,method=possibleMethods[self.__method], verbose= False)
+
+            # the user must not modify the inputs
+            outputmesh = copy.copy(input1)
+            outputmesh.nodeFields["status"] = status
+            for n,v in input0.nodeFields.items(): 
+                outputmesh.nodeFields[n] = op.dot(v) 
+            outputmesh.nodeFields["SourceCoords"] = op.dot(input0.nodes)
+            SetOutputBasicTools(request, inInfoVec, outInfoVec,outputmesh )
+            return 1
+
+        @smproperty.xml("""<IntVectorProperty
+                            name="Method inside/outside"
+                            command="SetMethod"
+                            number_of_elements="1"
+                            default_values="2">
+            <EnumerationDomain name="enum">
+              <Entry value="0" text="Interp/Nearest"/>
+              <Entry value="1" text="Nearest/Nearest"/>
+              <Entry value="2" text="Interp/Clamp"/>
+              <Entry value="3" text="Interp/Extrap"/>
+              <Entry value="4"  text="Interp/ZeroFill"/>
+
+            </EnumerationDomain>
+            <Documentation>
+              This property indicates the type of method to use when a point is inside/outside of the Source Data
+            </Documentation>
+             </IntVectorProperty>""")
+        def SetMethod(self, val):
+            val = int(val)
+            if val < 0 or val > 4:
+                raise(Exception("Method must be between 0 and 4"))
+            if self.__method != val :
+                self.__method  = val
+                self.Modified()
+
     @smproxy.filter(name="Tensor Rotation")
     @smhint.xml("""<ShowInMenu category="BasicTools" />""")
     @smproperty.input(name="Input", port_index=0)
