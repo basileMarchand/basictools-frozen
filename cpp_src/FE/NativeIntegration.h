@@ -189,6 +189,10 @@ struct MonoElementsIntegralCpp{
             delete this->lnumbering[i];
       }
       this->lnumbering.resize(i,0);
+      for(unsigned int i=0; i < this->lnumbering.size() ; ++i){
+        this->lnumbering[i] = nullptr;
+      }
+
   };
   //
   void SetNumberingI(int i, int n, int m, INT_TYPE* ip){
