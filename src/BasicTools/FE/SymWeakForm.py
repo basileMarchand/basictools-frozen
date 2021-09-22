@@ -30,7 +30,7 @@ def GetScalarField(alpha):
         a = 1.
     elif isinstance(alpha,str):
         a = GetConstant(alpha)
-    elif isinstance(float,int):
+    elif isinstance(alpha,(float,int)):
         a = float(alpha)
     else:
         a = alpha
@@ -47,14 +47,24 @@ def GetField(name,size,star=False,sdim=3,extraCoordinates=[]):
     s = space[0:sdim]
     s.extend(extraCoordinates)
 
-    if size == 1:
-        if len(s) == 0:
-            res.append(Function(name+suffix))
+    if type(size) == int:
+        if size == 1:
+            if len(s) == 0:
+                res.append(Function(name+suffix))
+            else:
+                res.append(Function(name+suffix)(*s))
         else:
-            res.append(Function(name+suffix)(*s))
+            for i in range(size):
+                res.append(Function(name+"_"+str(i)+suffix)(*s))
     else:
-        for i in range(size):
-            res.append(Function(name+"_"+str(i)+suffix)(*s))
+        res = [[None]*size[1] for x in range(size[0])]
+        for i in range(size[0]):
+            for j in range(size[1]):
+                t = Function(name+"_"+str(i)+"_"+str(j)+suffix)(*s)
+                res[i][j] = t
+        return Matrix(res).T
+
+
     return (Matrix([res])).T
 
 ########################## Mathematical operators ##############################
