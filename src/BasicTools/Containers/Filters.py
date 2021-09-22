@@ -412,6 +412,23 @@ class IntersectionElementFilter(FilterOP):
             return []
         return list(ids)
 
+class DifferenceElementFilter(FilterOP):
+    """
+      Specialized class to compute the difference between two filters
+    """
+    def __init__(self,mesh=None,filters=None):
+        if filters is not None and len(filters) != 2:
+            raise(Exception("Need exactly 2 filter to compute the difference"))
+        super(DifferenceElementFilter,self).__init__(mesh=mesh,filters=filters)
+
+    def GetIdsToTreat(self, data):
+        ids = None
+
+        idsA = self.filters[0].GetIdsToTreat(data)
+        idsB = self.filters[1].GetIdsToTreat(data)
+
+        return np.setdiff1d(idsA, idsB) 
+
 class ComplementaryObject(FilterOP):
         def __init__(self,mesh=None,filters=None):
             super(ComplementaryObject,self).__init__(mesh=mesh,filters=filters)
