@@ -16,10 +16,9 @@ class ReaderBase(BaseOutputObject):
     def __init__(self,fileName = None)    :
         super(ReaderBase,self).__init__()
         self.fileName = None;
-        self.SetFileName(fileName)
+        self.readFormat = 'r'
         self.nodalFields = {}
         self.elementsFields = {}
-        self.readFormat = 'r'
         self.binary = False
         self.string = None
         self.commentChar = None
@@ -31,8 +30,18 @@ class ReaderBase(BaseOutputObject):
         self.output = None
         self.extraOutput = None
 
+        self.SetFileName(fileName)
+
     def SetBinary(self,binary=True):
         self.binary = binary
+        if binary:
+            if self.readFormat.find("b") >= 0:
+                return 
+            self.readFormat += "b"
+        else:
+            if self.readFormat.find("b") >= 0:
+                self.readFormat = self.readFormat.replace("b","")
+
 
     def StartReading(self):
 
@@ -53,8 +62,8 @@ class ReaderBase(BaseOutputObject):
             if self.readFormat.find('b') > -1 :
 
                 from io import BytesIO
-                self.filePointer =  BytesIO(bytearray(self.string,"ascii"))
-
+                self.filePointer =  BytesIO(self.string)
+                #bytearray(self.string,"ascii")
                 self.text_stream = self.filePointer
             else:
                 import io # Python3
@@ -62,7 +71,6 @@ class ReaderBase(BaseOutputObject):
 
                 self.text_stream = self.filePointer
         elif self.pipe:
-            print("Opening a Pipe")
             import os
             r, w = os.pipe()
             if self.readFormat.find('b') > -1 :
@@ -75,7 +83,6 @@ class ReaderBase(BaseOutputObject):
                 #import sys
                 self.filePointer =  sys.stdin
                 #os.fdopen(r, self.readFormat)
-                print(self.readFormat)
         else:
             raise ('Need a file or a string to read')
 
@@ -112,8 +119,23 @@ class ReaderBase(BaseOutputObject):
 
     def SetReadFromPipe(self):
         self.SetFileName(None)
-        self.SetFileName(None)
+        self.SetStringToRead(None)
         self.pipe = True
+
+    def PeekLine(self,withError=False):
+        """Read a line without advancing"""
+
+        pos = self.filePointer.tell()
+        line = self.filePointer.readline()
+        self.filePointer.seek(pos)
+        return line
+
+    def Peek(self,length=1):
+        """Read a length number of chars without advancing the file """
+        pos = self.filePointer.tell()
+        data = self.filePointer.read(length) # Might try/except this line, and finally: f.seek(pos)
+        self.filePointer.seek(pos)
+        return data
 
     def ReadCleanLine(self,withError=False):
         while(True):
@@ -195,11 +217,81 @@ class ReaderBase(BaseOutputObject):
 def CheckIntegrity():
 
     obj = ReaderBase()
+    obj.commentChar = "#" 
+    obj.SetBinary(False)
     try:
         obj.StartReading()
         raise # pragma: no cover
     except :
         pass
+    testString = """0
+1
+
+2
+3
+#this is a comment   
+4"""
+    obj.SetStringToRead(testString)
+
+    def checkBaseReaderAscii(obj):
+        obj.StartReading()
+        print("file Pointer: ", str(obj.GetFilePointer() ) )
+        if obj.PeekLine() != "0\n":
+            raise
+        if obj.Peek() != "0":
+            raise
+
+        for i in range(5):
+            if i != int(obj.ReadCleanLine()):
+                raise
+        #before last 
+        if obj.ReadCleanLine() != None:
+            raise
+
+        error = False
+        try:
+            obj.ReadCleanLine(True) # this line must fail 
+            error = True 
+        except:
+            pass
+
+        if error:
+            raise(Exception("Must fail ") )
+
+        obj.EndReading()
+
+    checkBaseReaderAscii(obj)
+    from BasicTools.Helpers.Tests import WriteTempFile
+    fn = WriteTempFile('ReaderBaseTestString',testString)
+    obj.SetFileName(fn)
+    checkBaseReaderAscii(obj)
+   
+
+    binarydata = np.array([0], dtype=np.int32).tobytes()
+    binarydata += np.array([1], dtype=np.int64).tobytes()
+    binarydata += np.array([2], dtype=np.float32).tobytes()
+    binarydata += np.array([3], dtype=np.float64).tobytes()
+
+    fn = WriteTempFile('ReaderBaseTestbinary',binarydata,mode='wb')
+    obj.SetBinary(False)
+    obj.SetBinary(True)
+    obj.SetBinary(False)
+    obj.SetBinary(False)
+    obj.SetBinary(True)
+    obj.SetBinary(True)
+    obj.SetFileName(fn)
+    print(obj.readFormat)
+    def checkBaseReaderBinary(obj):
+        obj.StartReading()
+        if obj.readInt32() != 0: raise
+        if obj.readInt64() != 1: raise
+        if obj.readFloats32(1) != 2.: raise
+        if obj.readFloats64(1) != 3.: raise
+        obj.EndReading()
+    checkBaseReaderBinary(obj)
+    obj.SetStringToRead(binarydata)
+    checkBaseReaderBinary(obj)
+
     return "ok"
 
 
