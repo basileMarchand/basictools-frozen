@@ -16,9 +16,11 @@ InpNameToBasicTools['CPS4R'] = EN.Quadrangle_4
 InpNameToBasicTools["C3D4"] = EN.Tetrahedron_4
 InpNameToBasicTools["C3D8"] = EN.Hexaedron_8
 InpNameToBasicTools["C3D8R"] = EN.Hexaedron_8
+InpNameToBasicTools["C3D8I"] = EN.Hexaedron_8
 InpNameToBasicTools["C3D10"] = EN.Tetrahedron_10
 InpNameToBasicTools["C3D10M"] = EN.Tetrahedron_10
 InpNameToBasicTools["C3D20"] = EN.Hexaedron_20
+InpNameToBasicTools["C3D6"] = EN.Wedge_6
 
 permutation = {}
 #permutation[ EN.Tetrahedron_4] = [0, 1, 3, 2]

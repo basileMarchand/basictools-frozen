@@ -20,7 +20,6 @@ KeywordToIgnore = ["INITIAL CONDITIONS",
                    "AMPLITUDE",
                    "EXPANSION",
                    "DISTRIBUTION TABLE",
-                   "DISTRIBUTION",
                    "COUPLING",
                    "SOLID SECTION",
                    "CONNECTOR SECTION",
@@ -148,6 +147,17 @@ class InpReader(ReaderBase):
         res = l.upper().find(expr.upper())
         return res
 
+    def ReadCleanLine(self):
+        # in the inp abaqus the lines ending in ',' are splited in multiple lines
+        res =  super(InpReader,self).ReadCleanLine()
+        if res is None:
+            return res
+        if res[-1] == ",":
+            nline = self.PeekLine()
+            if nline[0] != "*":
+                return res + " "+  super(InpReader,self).ReadCleanLine()
+        return res 
+
     def Read(self,fileName=None,string=None, out=None):
         import BasicTools.FE.ProblemData as ProblemData
         from BasicTools.Linalg.Transform  import Transform
@@ -177,6 +187,10 @@ class InpReader(ReaderBase):
             print(l)
             if not l: break
             ldata = LineToDic(l)
+
+            if  "KEYWORD" in ldata and ldata["KEYWORD"] in KeywordToIgnore:
+                l = DischardTillNextStar(self.ReadCleanLine )
+                continue
 
             if self.find(l,"*ELSET")>-1:
                 elsetName = ldata['ELSET']
@@ -318,6 +332,8 @@ class InpReader(ReaderBase):
                 elif table == "DistributionTable_Density":
                     NumberOfData = 1
                 elif table == "DistributionTable_Elastic":
+                    NumberOfData = 9
+                elif table == "DISTRIB_TABLE":
                     NumberOfData = 9
                 else:
                     raise Exception("Error! ")
@@ -487,9 +503,6 @@ class InpReader(ReaderBase):
                     l = DischardTillNextStar(self.ReadCleanLine)
                 continue
 
-            if ldata["KEYWORD"] in KeywordToIgnore:
-                l = DischardTillNextStar(self.ReadCleanLine )
-                continue
 
             print(l)
             print(ldata)
