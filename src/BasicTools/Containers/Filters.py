@@ -287,6 +287,15 @@ class FilterOP(BOO):
         for f in self.filters:
             f.mesh = m
 
+    @property
+    def zoneTreatment(self, zt):
+        raise(Exception("Cant ask zoneTreatment to a FilterOP") )
+
+    @zoneTreatment.setter
+    def zoneTreatment(self, zt):
+        for f in self.filters:
+            f.zoneTreatment = zt
+
     def Complementary(self):
         # the complementary of the complementary is the original filter
         if isinstance(self,ComplementaryObject): 
