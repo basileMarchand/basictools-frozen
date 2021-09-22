@@ -110,7 +110,8 @@ ElementCenter[EN.Hexaedron_8] = ( 1./2.*np.array([[1., 1., 1.] ]),
                                   np.array([1. ]))
 ElementCenter[EN.Hexaedron_20] = ElementCenter[EN.Hexaedron_8]
 ElementCenter[EN.Hexaedron_27] = ElementCenter[EN.Hexaedron_8]
-
+ElementCenter[EN.Wedge_6] = ( np.array([[1./3, 1./3, 0.5] ]),
+                                  np.array([0.5 ]))
 
 ################# Lagrange P1 ##################################
 LagrangeP1 = {}
@@ -133,6 +134,8 @@ LagrangeP1[EN.Quadrangle_9] = LagrangeP1[EN.Quadrangle_4]
 LagrangeP1[EN.Hexaedron_8]  = TensorProductGauss(dim=3,npoints=2)
 LagrangeP1[EN.Hexaedron_20] = LagrangeP1[EN.Hexaedron_8]
 LagrangeP1[EN.Hexaedron_27] = LagrangeP1[EN.Hexaedron_8]
+LagrangeP1[EN.Wedge_6] = TensorProd(LagrangeP1[EN.Triangle_3][0][:,0:2],LagrangeP1[EN.Triangle_3][1],
+                                       LagrangeP1[EN.Bar_2][0],LagrangeP1[EN.Bar_2][1])
 
 ################# Lagrange P2 ##################################
 LagrangeP2 = {}
@@ -173,6 +176,8 @@ w = np.array([0.1116907948390 ,0.1116907948390 ,0.1116907948390 ,0.0549758718276
 
 LagrangeP2[EN.Triangle_3] = (p,w)
 LagrangeP2[EN.Triangle_6] = LagrangeP2[EN.Triangle_3]
+LagrangeP2[EN.Wedge_6] = TensorProd(LagrangeP2[EN.Triangle_3][0][:,0:2],LagrangeP2[EN.Triangle_3][1],
+                                       LagrangeP2[EN.Bar_2][0],LagrangeP2[EN.Bar_2][1])
 
 LagrangeIsoParam  = {}
 for name in LagrangeP1:
@@ -204,6 +209,10 @@ NodalEvaluationP1[EN.Hexaedron_8] = (hexa.posN , np.ones(hexa.posN.shape[0]) )
 #NodalEvaluationP1[EN.Hexaedron_20] = NodalEvaluationP1[EN.Hexaedron_8]
 NodalEvaluationP1[EN.Hexaedron_27] = NodalEvaluationP1[EN.Hexaedron_8]
 
+import BasicTools.FE.Spaces.WedgeSpaces as WS
+wedge = WS.Wedge_P1_Lagrange()
+NodalEvaluationP1[EN.Wedge_6] = (wedge.posN , np.ones(wedge.posN.shape[0]) )
+
 ##### Nodal P2 Itegration points for the evaluation of post quantities at nodes  ######
 NodalEvaluationP2 = {}
 IntegrationRulesAlmanac["NodalEvalP2"] = NodalEvaluationP2
@@ -228,6 +237,12 @@ hexa = HS.Hexa_P2_Lagrange()
 NodalEvaluationP2[EN.Hexaedron_8] = (hexa.posN , np.ones(hexa.posN.shape[0]) )
 #NodalEvaluationP2[EN.Hexaedron_20] = NodalEvaluationP2[EN.Hexaedron_8]
 NodalEvaluationP2[EN.Hexaedron_27] = NodalEvaluationP2[EN.Hexaedron_8]
+
+import BasicTools.FE.Spaces.WedgeSpaces as WS
+wedgep2 = WS.Wedge_P2_Lagrange()
+NodalEvaluationP2[EN.Wedge_6] = (wedgep2.posN , np.ones(wedgep2.posN.shape[0]) )
+
+
 
 import BasicTools.FE.Spaces.QuadSpaces as QS
 quad = QS.Quad_P2_Lagrange()
@@ -296,6 +311,7 @@ for i in range(1,trapezoidalOrderGenerated):
         p = np.array(p)
     traprule[EN.Triangle_3] = (p,w)
     traprule[EN.Triangle_6] = (p,w)
+    traprule[EN.Wedge_6] = TensorProd(p[:,0:2],w,traprule[EN.Bar_2][0],traprule[EN.Bar_2][1])
 
 def CheckIntegrity(GUI=False):
     GetRule()
