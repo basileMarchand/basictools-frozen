@@ -417,8 +417,7 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
                 continue
             if np.size(data) != mesh.GetNumberOfNodes() and np.size(data) != 2*mesh.GetNumberOfNodes() and np.size(data) != 3*mesh.GetNumberOfNodes(): # pragma: no cover
                 print("field ("+str(name)+") is not consistent : it has " + str(np.size(data)) +" values and the mesh has " +str(mesh.GetNumberOfNodes())+ " nodes" )
-                raise
-                continue
+                raise(Exception("field ("+str(name)+") is not consistent : it has " + str(np.size(data)) +" values and the mesh has " +str(mesh.GetNumberOfNodes())+ " nodes" ))
 
             VTK_data = NumpyFieldToVtkField(mesh,data,name)
             output.GetPointData().AddArray(VTK_data)
