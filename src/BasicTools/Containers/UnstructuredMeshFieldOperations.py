@@ -4,8 +4,7 @@
 # file 'LICENSE.txt', which is part of this source code package.
 #
 import numpy as np
-
-
+import math
 
 import BasicTools.Containers.ElementNames as ElementNames
 from BasicTools.Containers.Filters import ElementFilter
@@ -146,12 +145,16 @@ def GetFieldTransferOp(inputField,targetPoints,method=None,verbose=False,element
     if verbose:
         from BasicTools.Helpers.ProgressBar import printProgressBar
         printProgressBar(0, nbtp, prefix = 'Building Transfer '+method+':', suffix = 'Complete', length = 50)
+        verbosecpt = 0
 
     status = np.zeros(nbtp)
     ones = np.ones(50)
     for p in range(nbtp):
         if verbose:
-            printProgressBar(p+1, nbtp, prefix = 'Building Transfer '+method+':', suffix = 'Complete', length = 50)
+            nvc = int(p/nbtp*1000)
+            if verbosecpt != nvc:
+                printProgressBar(p+1, nbtp, prefix = 'Building Transfer '+method+':', suffix = 'Complete', length = 50)
+                verbosecpt = nvc
 
         TP = targetPoints[p,:]  # target point posicion 
         CP =  idsTP[p]          # closest point posicion
@@ -198,7 +201,6 @@ def GetFieldTransferOp(inputField,targetPoints,method=None,verbose=False,element
             if inside is None:
                 continue
 
-            posShapeFunc = posspace.GetShapeFunc(bary)
             posShapeFuncClamped = posspace.GetShapeFunc(baryClamped)
 
             #update the distance**2 with a *exact* distance
@@ -356,23 +358,25 @@ def ComputeBarycentricCoordinateOnElement(coordAtDofs,localspace,localnumbering,
         xietaphi -= dxietaphi
         
         # if the cell is linear only one iteration is needed
-        if linear or np.linalg.norm(dxietaphi) < 1e-6 :
+        if linear or  normsquared(dxietaphi) < 1e-3:
             break
     else:
         return None, xietaphi,localspace.ClampParamCoorninates(xietaphi)
 
     xichietaClamped = localspace.ClampParamCoorninates(xietaphi)
     # we treat very closes point as inside 
-    inside = np.linalg.norm(xichietaClamped-xietaphi) < 1e-6 
+    inside = normsquared(xichietaClamped-xietaphi) < 1e-3
     return inside, xietaphi, xichietaClamped
 
+def normsquared(v):
+    return sum([x*x for x in v])
 
-def TransportPosToPoints(imesh,points): 
+def TransportPosToPoints(imesh,points,verbose=None): 
     from BasicTools.FE.Fields.FEField import FEField
     from BasicTools.FE.FETools import PrepareFEComputation
     space, numberings, offset, NGauss = PrepareFEComputation(imesh,numberOfComponents=1)
     field = FEField("",mesh=imesh,space=space,numbering=numberings[0])
-    op,status = GetFieldTransferOp(field,points,method="Interp/Clamp")
+    op,status = GetFieldTransferOp(field,points,method="Interp/Clamp", verbose=verbose)
     return op.dot(imesh.nodes)
 
 def TransportPos(imesh,tmesh,tspace,tnumbering):
