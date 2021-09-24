@@ -95,10 +95,14 @@ class DatReader(ReaderBase):
         if res is None:
             return None
         res = res.split("!")[0]
-        #if "&" in res:
-        #    res = res.split("&")[1]
+
         if len(res) == 0:
             return self.ReadCleanLine(withError=withError)
+        # read multiline blocks 
+        if res[-1] == "$":
+            nline = self.PeekLine()
+            if nline[0] != ".":
+                return res[:-1] + " " + self.ReadCleanLine()
         return res
 
 
@@ -260,9 +264,18 @@ class DatReader(ReaderBase):
 
                         if fields[0] == "GROUP":
                             break
+                        ldata = l.split()
 
-                        lis = l.replace("I","").replace("$","").split()
-                        ids.extend(map(int,lis))
+                        if ldata[0] == "I":
+                            ids.extend(map(int,ldata[1:-1]))
+                        elif ldata[0] == "UNION":
+                            for name,data in res.elements.items():
+                                if "Group"+str(ldata[1]) in data.tags:
+                                    tag = data.tags["Group"+str(ldata[1])]
+                                    ids.extend(data.originalIds[tag.GetIds()] ) 
+                        else:
+                            ids.extend(map(int,ldata))
+
 
                     if tagname is None:
                        tagname = "G"+str(group)
@@ -336,6 +349,7 @@ class DatReader(ReaderBase):
                     __origin = np.array([0.,0.,0.])
                     __V1 = np.array([1.,0.,0.])
                     __V2 = np.array([0.,1.,0.])
+                    __V3 = np.array([0.,0.,1.])
                     __TYPE = "CARTESIAN"
                     oid = -1
 
@@ -376,8 +390,13 @@ class DatReader(ReaderBase):
                                 __V2 = np.array(list(map(float,fields[fcpt:fcpt+3])))
                                 fcpt += 3
                                 continue
-                            #print(fcpt)
-                            #print(fields)
+                            if fields[fcpt] == "V3":
+                                fcpt += 1
+                                __V3 = np.array(list(map(float,fields[fcpt:fcpt+3])))
+                                fcpt += 3
+                                continue
+                            print(fcpt)
+                            print(fields)
                             raise
                         else:
                             l = self.ReadCleanLine()
