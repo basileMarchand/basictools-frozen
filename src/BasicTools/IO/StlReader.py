@@ -50,10 +50,13 @@ class StlReader(ReaderBase):
       self.StartReading()
 
       header = ""
-      #read the first non space caracters
+      #read the first non space caracters to detect if binary or not
       while len(header) < 5:
-          header += "".join([ x.decode("utf-8",'ignore') for x in self.filePointer.read(1).split() ])
-      self.EndReading()
+          data = self.filePointer.read(1)
+          if data[0] < 128:
+            if chr(data[0]) == " ":
+              continue
+            header += chr(data[0]) 
 
       if header == "solid":
           self.PrintVerbose("Ascii File")
@@ -168,7 +171,7 @@ RegisterReaderClass(".stl",StlReader)
 
 
 def CheckIntegrity():
-    data = u"""   solid cube_corner
+    data = """   solid cube_corner
           facet normal 0.0 -1.0 0.0
             outer loop
               vertex 0.0 0.0 0.0

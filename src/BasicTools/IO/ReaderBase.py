@@ -62,8 +62,10 @@ class ReaderBase(BaseOutputObject):
             if self.readFormat.find('b') > -1 :
 
                 from io import BytesIO
-                self.filePointer =  BytesIO(self.string)
-                #bytearray(self.string,"ascii")
+                if type(self.string) is str:
+                    self.filePointer =  BytesIO(bytearray(self.string,"ascii"))
+                else:
+                    self.filePointer =  BytesIO(self.string)
                 self.text_stream = self.filePointer
             else:
                 import io # Python3
