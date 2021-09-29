@@ -104,6 +104,7 @@ for key,vtknumber in vtkNumberByElementName.items():
     elementNameByVtkNumber[vtknumber] = key
 
 elementNameByVtkNumber[4] = ElementNames.Bar_2
+elementNameByVtkNumber[8] = ElementNames.Quadrangle_4   #voxel
 elementNameByVtkNumber[11] = ElementNames.Hexaedron_8   #voxel
 
 #if a field is of type [..] and the min max are 0 and 1 then the field is
@@ -564,6 +565,11 @@ def VtkToMesh(vtkmesh, meshobject=None, FieldsAsTags=True):
                 #https://vtk.org/wp-content/uploads/2015/04/file-formats.pdf
                 original_coonectivity = np.array([cell.GetPointId(j) for j in range(nps)])
                 connectivity = original_coonectivity[[0,1,3,2,4,5,7,6]]
+                out.GetElementsOfType(et).AddNewElement(connectivity  ,i)
+            elif ct ==  8:
+                # 8 is a pixel and the numbering is not the same as the quad
+                original_coonectivity = np.array([cell.GetPointId(j) for j in range(nps)])
+                connectivity = original_coonectivity[[0,1,3,2]]
                 out.GetElementsOfType(et).AddNewElement(connectivity  ,i)
             else:
                 out.GetElementsOfType(et).AddNewElement([cell.GetPointId(j) for j in range(nps)] ,i)
