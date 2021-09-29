@@ -21,6 +21,18 @@ class Tag(object):
         self._id = np.empty(0,dtype=np.int)
         self.cpt =0
 
+    def __eq__(self, other):
+
+        if self.name != other.name:
+            return False
+        
+        self.Tighten()
+        other.Tighten()
+
+        if not np.array_equal(self._id,other._id):
+            return False
+
+        return True
 
     def AddToTag(self,tid):
         if hasattr(tid, '__iter__'): 
@@ -102,6 +114,17 @@ class Tags(BaseOutputObject):
     def __init__(self):
         super(Tags,self).__init__()
         self.storage = []
+
+    def __eq__(self, other):
+
+        if len(self.storage) != len(other.storage):
+            for t in self.storage:
+                if t.name in other:
+                    if t != other[t.name]:
+                        return False
+                else:
+                    return False
+        return True
 
     def Tighten(self):
         for tag in self:
@@ -198,6 +221,38 @@ class MeshBase(BaseOutputObject):
         self.nodeFields = other.nodeFields
         self.elemFields = other.elemFields
         self.props = other.props
+
+    def __eq__(self, other):
+        if other is None:
+            return False
+
+        if self.nodesTags != other.nodesTags:
+            return False
+        
+        if len(self.nodeFields) != len(other.nodeFields):
+            return False
+
+        for k,v in self.nodeFields.items():
+            if k in other.nodeFields:
+                if not np.array_equal(v, other.nodeFields[k]):
+                    return False
+            else:
+                return False
+
+        if len(self.elemFields) != len(other.elemFields):
+            return False
+
+        for k,v in self.elemFields.items():
+            if k in other.elemFields:
+                if not np.array_equal(v, other.elemFields[k]):
+                    return False
+            else:
+                return False
+
+        if self.props != other.props:
+            return False
+
+        return True
 
     def GetElementsOfType(self,typename):
         """
