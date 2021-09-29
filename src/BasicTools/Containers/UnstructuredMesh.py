@@ -46,6 +46,28 @@ class ElementsContainer(BaseOutputObject):
         self.originalOffset = 0
         self.mutable = True
 
+    def __eq__(self, other):
+
+        if self.elementType != other.elementType:
+            return False
+            
+        self.tighten()
+        other.tighten()
+        
+        if not np.array_equal(self.connectivity, other.connectivity):
+            return False
+
+        if not np.array_equal(self.originalIds, other.originalIds):
+            return False
+        
+        if self.tags != other.tags:
+            return False
+        
+        if self.originalOffset != other.originalOffset:
+            return False
+
+        return True
+
     def GetNumberOfElements(self):
         """
         return the number of elements in this container
@@ -208,6 +230,18 @@ class AllElements(object):
     def __init__(self):
         super(AllElements,self).__init__()
         self.storage = {}
+    
+    def __eq__(self, other):
+        if len(self.storage) != len(other.storage):
+            return False
+
+        for i in self:
+            if i in other:
+                if self[i] != other[i]:
+                    return False
+            else:
+                return False
+        return True
 
     def keys(self):
         return sorted(self.storage.keys())
@@ -285,6 +319,21 @@ class UnstructuredMesh(MeshBase):
         res.boundingMin = self.boundingMin
         res.boundingMax = self.boundingMax
         return res
+
+    def __eq__(self, other):
+        if not super(UnstructuredMesh,self).__eq__(other):
+            return False
+
+        if not np.array_equal(self.nodes,other.nodes):
+            return False
+
+        if not np.array_equal(self.originalIDNodes, other.originalIDNodes):
+            return False
+
+        if self.elements != other.elements:
+            return False
+
+        return True
 
     def ConvertDataForNativeTreatment(self):
         self.nodes = np.asarray(self.nodes, dtype=float, order="C")
