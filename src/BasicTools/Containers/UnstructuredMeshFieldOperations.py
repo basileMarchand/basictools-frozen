@@ -371,21 +371,21 @@ def ComputeBarycentricCoordinateOnElement(coordAtDofs,localspace,localnumbering,
 def normsquared(v):
     return sum([x*x for x in v])
 
-def TransportPosToPoints(imesh,points,verbose=None): 
+def TransportPosToPoints(imesh,points,method="Interp/Clamp",verbose=None): 
     from BasicTools.FE.Fields.FEField import FEField
     from BasicTools.FE.FETools import PrepareFEComputation
     space, numberings, offset, NGauss = PrepareFEComputation(imesh,numberOfComponents=1)
     field = FEField("",mesh=imesh,space=space,numbering=numberings[0])
-    op,status = GetFieldTransferOp(field,points,method="Interp/Clamp", verbose=verbose)
+    op,status = GetFieldTransferOp(field,points,method=method, verbose=verbose)
     return op.dot(imesh.nodes)
 
-def TransportPos(imesh,tmesh,tspace,tnumbering):
+def TransportPos(imesh,tmesh,tspace,tnumbering,method="Interp/Clamp",verbose=None):
     """
     Function to transport the position from the input mesh (imesh)
     to a target FEField target mesh, target space, tnumbering
     """
     from BasicTools.FE.Fields.FEField import FEField
-    pos = TransportPosToPoints(imesh, tmesh.nodes)
+    pos = TransportPosToPoints(imesh, tmesh.nodes,method=method,verbose=verbose)
     names = ["x","y","z"]
     posFields = np.array([ FEField("ipos_"+names[x],tmesh, space=tspace, numbering=tnumbering,data=pos[:,x]) for x in [0,1,2] ])
     return posFields
