@@ -23,6 +23,12 @@ KeywordToIgnore = ["INITIAL CONDITIONS",
                    "COUPLING",
                    "SOLID SECTION",
                    "CONNECTOR SECTION",
+                   "SURFACE",
+                   "SURFACE INTERACTION",
+                   "FRICTION",
+                   "CONTACT PAIR",
+                   "CLEARANCE",
+                   "PARAMETER",
                    "PART",
                    "END PART",
                    "ASSEMBLY",
@@ -189,6 +195,7 @@ class InpReader(ReaderBase):
             ldata = LineToDic(l)
 
             if  "KEYWORD" in ldata and ldata["KEYWORD"] in KeywordToIgnore:
+                print("Ignoring keyword: '" + str(ldata["KEYWORD"]) +"' jumping to the next star" )
                 l = DischardTillNextStar(self.ReadCleanLine )
                 continue
 
@@ -304,7 +311,13 @@ class InpReader(ReaderBase):
                     d = LineToList(l)
                     d = (list(map(int,d) ))
                     nset = range(d[0],d[1]+1,d[2])
+                    tag = res.nodesTags.CreateTag(nsetName,False)    
+                    tagsids = [filetointernalid[x] for x in  nset if x in filetointernalid ]
+                    if len(tagsids) != len(nset):
+                        print("Warning NSET GENERATE : not all the nset generated are present in the mesh ")
+                    tag.AddToTag(tagsids) 
                     l = self.ReadCleanLine()
+                    continue
                 else:
                     while(True):
                         if l is None:
@@ -317,8 +330,8 @@ class InpReader(ReaderBase):
                         l = self.ReadCleanLine()
                         continue
 
-                tag = res.nodesTags.CreateTag(nsetName)
-                tag.SetIds([filetointernalid[x] for x in  nset ])
+                tag = res.nodesTags.CreateTag(nsetName,False)
+                tag.AddToTag([filetointernalid[x] for x in  nset ])
                 continue
 
             if self.find(l,"*DISTRIBUTION")>-1:
@@ -418,7 +431,8 @@ class InpReader(ReaderBase):
                         break
 
                     if t == "EXPANSION":
-                        mat.AddProperty(t,"ZERO",data["ZERO"])
+                        if "ZERO" in data: 
+                            mat.AddProperty(t,"ZERO",data["ZERO"])
 
                     if "TYPE" in data:
                         st = data["TYPE"]
