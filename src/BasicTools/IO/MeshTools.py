@@ -138,6 +138,9 @@ BinaryNumber[EN.Tetrahedron_4] = BinaryKeywords["GmfTetrahedra"]
 BinaryNumber[EN.Hexaedron_8] = BinaryKeywords["GmfHexahedra"]
 BinaryNumber[EN.Pyramid_5] = BinaryKeywords["GmfReserved30"]
 BinaryNumber[EN.Wedge_6] = BinaryKeywords["GmfPentahedra"]
+BinaryNumber[EN.Hexaedron_20] = BinaryKeywords["GmfHexahedraP2"]
+BinaryNumber[EN.Quadrangle_8] = BinaryKeywords["GmfQuadrilateralsP2"]
+
 
 BinaryTypes = {}
 for types,number in BinaryNumber.items():
