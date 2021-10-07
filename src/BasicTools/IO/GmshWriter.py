@@ -37,6 +37,8 @@ def WriteMeshToGmsh(filename,mesh, useOriginalId=False):
 class GmshWriter(WriterBase):
     def __init__(self):
         super(GmshWriter,self).__init__()
+        self.SetBinary(False)
+        self.canHandleBinaryChange = False
 
     def __str__(self):
         res  = 'GmshWriter : \n'
