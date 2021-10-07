@@ -39,6 +39,7 @@ def PrintHelp(ops):
     print( '       -m    Activate MeshIO Readers and Writers ')
     print( '       -s    Plot mesh before continue (press key "q" exit)')
     print( '       -a    Abaqus Mode (python2). Load only the abaqus reader and pickle writer')
+    print( '       -b    Force binary output on the writer')
     print( '       -c    (reserved)')
 
     print("Available Readers : ", IOF.GetAvailableReaders())
@@ -95,7 +96,7 @@ def Convert(inputfilename,outputfilename,ops):
               writer = CreateWriter("."+outputfilename.split(".")[-1])
               writer.outbuffer = f.stdout_.buffer
 
-          WriteMesh(outputfilename,mesh,writer=writer)
+          WriteMesh(outputfilename,mesh,writer=writer,binary=ops["binary"])
           print("DONE")
 
 
@@ -122,16 +123,18 @@ def CheckIntegrity(GUI=False):
 
     for iff in inputfiles:
         for off in outputext:
-            inputfilename = GetTestDataPath() + iff
-            outputfilename = TestTempDir().GetTempPath()+iff+"." + off
-            ops= {}
-            ops["timeToRead"] = -1
-            ops["printTimes"] = False
-            ops["PlotOnScreen"] = GUI
-            ops["OnlyAbaqusReader"] = False
-            ops["OnHelp"] = False
-            ops["MeshIO"] = False
-            Convert(inputfilename,outputfilename,ops)
+            for binary in [True,False]:
+                inputfilename = GetTestDataPath() + iff
+                outputfilename = TestTempDir().GetTempPath()+iff+"." + off
+                ops= {}
+                ops["timeToRead"] = -1
+                ops["printTimes"] = False
+                ops["PlotOnScreen"] = GUI
+                ops["OnlyAbaqusReader"] = False
+                ops["OnHelp"] = False
+                ops["MeshIO"] = False
+                ops["binary"] = binary
+                Convert(inputfilename,outputfilename,ops)
 
     return "ok"
 
@@ -143,7 +146,7 @@ def Main():
     else:
       #try:
       if True:
-          opts, args = getopt.getopt(sys.argv[1:],"svphmat:i:o:")
+          opts, args = getopt.getopt(sys.argv[1:],"bsvphmat:i:o:")
       #except getopt.GetoptError:
       #    PrintHelp()
       #    sys.exit(2)
@@ -156,6 +159,7 @@ def Main():
       ops["OnlyAbaqusReader"] = False
       ops["OnHelp"] = False
       ops["MeshIO"] = False
+      ops["binary"] = None
       for opt, arg in opts:
          if opt == '-h':
              ops["OnHelp"] = True
@@ -180,6 +184,8 @@ def Main():
              ops["PlotOnScreen"] = True
          elif opt in ("-a"):
              ops["OnlyAbaqusReader"] = True
+         elif opt in ("-b"):
+             ops["binary"] = True
 
     if ops["OnHelp"]:
         PrintHelp(ops)
