@@ -83,3 +83,13 @@
 
     An example is available in the file BasicTools/FE/ZmatFemProblem.py at the
     beginning of the CheckIntegrity() function.
+
+4) DOCUMENTATION
+
+    The documentation for BasicTools can be compiled using sphinx
+
+        > python setup.py build_sphinx
+
+    Also the documentation can be found at 
+
+        https://basictools.readthedocs.io/en/latest/
