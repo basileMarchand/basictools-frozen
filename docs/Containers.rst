@@ -64,4 +64,10 @@ Each type of element is only defined by it geometrical definition (e.i. linear t
 
 A variable named :py:attr:`BasicTools.Containers.UnstructuredMesh.UnstructuredMesh.elements`` (of type :py:class:`BasicTools.Containers.UnstructuredMesh.AllElements`), analog to a dictionary in python, store for each element type all the information.
 
-
+.. figure:: images/Elements.svg
+    :width: 1600px
+    :align: center
+    :alt: Element names and numbering 
+    :figclass: align-center
+    
+    Elements name and numbering (the numbering is the same as vtk for compatibillity).
