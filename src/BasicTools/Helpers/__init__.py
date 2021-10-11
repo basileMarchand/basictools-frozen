@@ -22,7 +22,8 @@ _test = [
 "Timer",
 "MPIInterface",
 "Profiler",
-"Search"
+"Search",
+"Cache"
  ]
 
 
