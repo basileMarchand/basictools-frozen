@@ -7,6 +7,7 @@
 
 _test = [
 'AnsysReader',
+'AnsysWriter',
 'AscReader',
 'Catalyst',
 'CodeInterface',
