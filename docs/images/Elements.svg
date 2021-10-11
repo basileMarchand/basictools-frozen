@@ -26,11 +26,11 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="0.5341791"
-     inkscape:cx="16.443814"
-     inkscape:cy="273.12913"
+     inkscape:zoom="2.1367164"
+     inkscape:cx="234.41092"
+     inkscape:cy="729.53324"
      inkscape:document-units="mm"
-     inkscape:current-layer="g6210-8-1"
+     inkscape:current-layer="layer2"
      showgrid="false"
      inkscape:window-width="1920"
      inkscape:window-height="1017"
@@ -49,7 +49,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -2035,7 +2035,7 @@
          id="tspan4776-2-7-3-1-28-6"
          x="100.54695"
          y="198.18616"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.52777767px;font-family:Terminal;-inkscape-font-specification:'Terminal, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:center;writing-mode:lr-tb;text-anchor:middle;stroke-width:0.40673825">Pyramid_15='pyr15'</tspan></text>
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.52777767px;font-family:Terminal;-inkscape-font-specification:'Terminal, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:center;writing-mode:lr-tb;text-anchor:middle;stroke-width:0.40673825">Pyramid_13='pyr13'</tspan></text>
     <g
        id="g5733-7"
        transform="translate(-23.591746,4.7577744)">
@@ -2375,7 +2375,7 @@
     </g>
     <g
        id="g5846-6"
-       transform="translate(79.379492,6.797291)">
+       transform="translate(79.503319,5.1875391)">
       <path
          sodipodi:nodetypes="cccccc"
          inkscape:connector-curvature="0"
