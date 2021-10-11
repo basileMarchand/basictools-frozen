@@ -33,9 +33,6 @@ cpp_src = ("LinAlg/EigenTools.cpp",
            "FE/Space.cpp",
            )
 
-#Cpp sources generated files
-cpp_src += ("Containers/ElementNames.cpp", # <-- this files is generated from ElementNames.py
-               )
 
 # Cython modules
 cython_src = (
@@ -47,6 +44,10 @@ cython_src = (
     "FE/Spaces/NativeSpace.pyx",
     "Containers/NativeFilters.pyx",)
 
+cpp_generators = ["cpp_generators/IntegrationRuleGenerator.py",
+                  "cpp_generators/ElementNameGenerator.py",
+                  "cpp_generators/SpaceGenerator.py",
+                  ]
 def GetBasicToolsIncludeDirs():
     try:
         import numpy
@@ -75,16 +76,19 @@ def GetBasicToolsIncludeDirs():
     except :
         return include_dirs
 
-
 try:
     from Cython.Build import cythonize
     from Cython.Compiler import Options
     import eigency
 
-    code = compile(open("src/BasicTools/Containers/ElementNames.py").read(),"src/BasicTools/Containers/ElementNames.py","exec")
-    res = {}
-    exec(code,res)
-    res["GeneratertElementNamesCpp"]()
+    for generator in cpp_generators:
+        code = compile(open(generator).read(),generator,"exec")
+        res = {}
+        exec(code,res)
+        generated_file  = res["GetGeneratedFiles"]("")
+        print("generation of files : \n"+ "\n".join("cpp_src/"+str(gf)for gf in generated_file))
+        res["Generate"]("cpp_src/")
+        cpp_src = generated_file + cpp_src
 
     Options.fast_fail = True
     Options.embed = True
@@ -124,6 +128,9 @@ except ImportError as e:
     print(f"Compilation disabled since {e.name} package is missing")
     modules = []
     ext_libraries = []
+except Exception as e:
+    print("Error during generation of cpp sources ")
+    print(e)
 
 if __name__ == '__main__':
     setup(
