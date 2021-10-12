@@ -159,10 +159,10 @@ p=np.array([[p1,p1,p1],
             [p2,p1,p1],
             [p1,p2,p1],
             [p1,p1,p2],
-            [p0,p0,p0]]);
+            [p0,p0,p0]])
 w0 = -2./15
 w1 = 3./40
-w= np.array([w1, w1, w1, w1, w0]);
+w= np.array([w1, w1, w1, w1, w0])
 LagrangeP2[EN.Tetrahedron_4] = (p,w)
 LagrangeP2[EN.Tetrahedron_10] = LagrangeP2[EN.Tetrahedron_4]
 
@@ -258,7 +258,7 @@ for name in NodalEvaluationP1:
     else:
         NodalEvalIsoGeo[name] = NodalEvaluationP2[name]
 
-trapezoidalOrderGenerated = 10
+trapezoidalOrderGenerated = 3
 # trapezoidal Rules
 for i in range(1,trapezoidalOrderGenerated):
     traprule = {}
