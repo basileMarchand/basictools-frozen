@@ -1,7 +1,7 @@
 #from sympy.utilities.codegen import codegen
 #from sympy.codegen.cutils import render_as_source_file
 # bigviz01:/home/fbordeu-weld/PythonLibs/BasicTools/cpp_generators> python SpaceGenerator.py && g++ GeneratedSpaces.cpp -I "../cpp_src/LinAlg/"
-from sympy import ccode
+from sympy import cse, ccode
 
 import BasicTools.FE.Spaces.FESpaces as FES
 
@@ -63,11 +63,17 @@ const int {FEspn}_{spn}_GetDimensionality(){{ return {nbDim}; }};""")
 MatrixDDD {FEspn}_{spn}_GetShapeFunctions(const double& phi, const double&  xi, const double&  eta  ){{ 
     MatrixDDD res = MatrixDDD::Zero({NOSF},1);
 """)
+                repl, redu = cse(spd.symN)
+                for i, v in repl:
+                    cppfile.write(f"    const double {i} = " +  ccode(v) + ";\n" )
                 for ns in range(NOSF):
-                    #text = render_as_source_file(spd.symN[ns])
-                    text = ccode(spd.symN[ns])
-                    cppfile.write( f"    res.coeffRef({ns},1) =  "+ text)
+                    cppfile.write( f"    res.coeffRef({ns},1) =  "+ ccode(redu[0][ns]) )
                     cppfile.write(";\n")
+                #for ns in range(NOSF):
+                #    #text = render_as_source_file(spd.symN[ns])
+                #    text = ccode(spd.symN[ns])
+                #    cppfile.write( f"    res.coeffRef({ns},1) =  "+ text)
+                #    cppfile.write(";\n")
                 cppfile.write(f"""    return res;
 }};
 """)
@@ -75,11 +81,20 @@ MatrixDDD {FEspn}_{spn}_GetShapeFunctions(const double& phi, const double&  xi, 
 MatrixDDD {FEspn}_{spn}_GetShapeFunctionsDer(const double& phi, const double&  xi, const double&  eta  ){{ 
     MatrixDDD res = MatrixDDD::Zero({NOSF},3);
 """)
-                    
+                repl, redu = cse(spd.symdNdxi)
+                for i, v in repl:
+                    cppfile.write(f"    const double {i} = " +  ccode(v) + ";\n" )
+
                 for j in range(NOSF):
                     for i in range(nbDim):
-                        text = ccode(spd.symdNdxi[i,j])
+                        text = ccode(redu[0][i,j])
                         cppfile.write( f"    res.coeffRef({i},{j}) =  "+ text + ";\n")
+
+                #for j in range(NOSF):
+                #    for i in range(nbDim):
+                #        text = ccode(spd.symdNdxi[i,j])
+                #        cppfile.write( f"    res.coeffRef({i},{j}) =  "+ text + ";\n")
+
                 cppfile.write(f"""    return res;\n}};
 """)
                 #break
