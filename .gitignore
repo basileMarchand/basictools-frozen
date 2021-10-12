@@ -17,6 +17,10 @@ src/BasicTools/Containers/NativeUnstructuredMesh.cpp
 src/BasicTools/Containers/NativeFilters.cpp
 src/BasicTools/FE/Spaces/NativeSpace.cpp
 cpp_src/Containers/ElementNames.cpp
+cpp_src/FE/GeneratedIntegrationsRules.cpp
+cpp_src/FE/GeneratedSpaces.cpp
+cpp_src/FE/GeneratedSpaces.h
+cpp_src/Containers/GeneratedElementNames.cpp
 *.html
 *.obj
 *.exp
