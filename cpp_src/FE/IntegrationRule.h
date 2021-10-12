@@ -14,6 +14,9 @@ class IntegrationRule {
 public:
     MatrixDDD p;
     MatrixDDD w;
+    inline int GetNumberOfPoints() const {
+        return this->p.rows();
+    }
 };
 
 class SpaceIntegrationRule {
