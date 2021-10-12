@@ -1,5 +1,5 @@
 from BasicTools.Containers.ElementNames import ElementsInfo
-from cpp_generators.aux import PrintHeader, PrintToFile, PrintFillMatrix, PrintBool
+from cpp_generators.aux import PrintHeader, PrintToFile, PrintFillMatrix, PrintBool, PrintFillVMatrix
 
 def GetGeneratedFiles(prefix = "cpp_src/"):
     return ( prefix+ "Containers/GeneratedElementNames.cpp",)
@@ -59,13 +59,13 @@ std::map<std::string,ElementInfo> InitElementNames() {
             for e,n in ei.faces:
                     PrintToFile(cppfile,"    {")
                     PrintToFile(cppfile,"        MatrixID1 faces;")
-                    PrintFillMatrix(cppfile,f"""        faces""",n)
+                    PrintFillVMatrix(cppfile,f"""        faces""",n)
                     PrintToFile(cppfile,f"""        ElementNames["{elemtype}"].faces.push_back(std::pair<ElementInfo,MatrixID1>(ElementNames["{e}"],faces) );""" )
                     PrintToFile(cppfile,"    }")
             for e,n in ei.faces2:
                     PrintToFile(cppfile,"    {")
                     PrintToFile(cppfile,"        MatrixID1 faces2;")
-                    PrintFillMatrix(cppfile,f"""        faces2""",n)
+                    PrintFillVMatrix(cppfile,f"""        faces2""",n)
                     PrintToFile(cppfile,f"""        ElementNames["{elemtype}"].faces2.push_back(std::pair<ElementInfo,MatrixID1>(ElementNames["{e}"],faces2) );""" )
                     PrintToFile(cppfile,"    }")
         PrintToFile(cppfile,"""
