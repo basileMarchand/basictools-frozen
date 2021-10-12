@@ -38,6 +38,7 @@ public:
     std::string name;
     MatrixID1 mirrorPermutation;
     bool linear;
+    int degree;
     std::vector<std::pair<ElementInfo,MatrixID1> > faces;
     std::vector<std::pair<ElementInfo,MatrixID1> > faces2;
     ElementInfo(): geoSupport("NA",-1){}

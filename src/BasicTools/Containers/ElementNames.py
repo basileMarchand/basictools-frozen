@@ -42,7 +42,7 @@ class ElementInformation():
         self.geoSupport = geosupport
         # dimensionality 0,1,2,3
         self.dimension = geosupport.dimensionality
-        #number of points 
+        #number of points
         self.numberOfNodes = 0
         # if the jacobian matrix is constant in the element
         self.linear = True
@@ -102,7 +102,7 @@ mirrorPermutation[Bar_3] = [1,0,2]
 dimension[Bar_3] = 1
 linear[Bar_3] = False
 degree[Bar_3] = 2
-faces[Bar_3] = [(Point_1,[0]), 
+faces[Bar_3] = [(Point_1,[0]),
                 (Point_1,[1])]
 faces2[Bar_3] = []
 faces3[Bar_3] = []
@@ -479,92 +479,6 @@ faces3[Hexaedron_27] = [(Point_1,[0]),
                         (Point_1,[5]),
                         (Point_1,[6]),
                         (Point_1,[7])]
-
-def GeneratertElementNamesCpp(filename = "cpp_src/Containers/ElementNames.cpp"):
-    try:
-        with open(filename,"w") as file:
-            file.write("""//
-// This file is subject to the terms and conditions defined in
-// file 'LICENSE.txt', which is part of this source code package.
-//
-
-#include <Containers/ElementNames.h>
-#include <map>
-
-namespace BasicTools{
-
-GeoSupport GeoNA("NA",-1);
-GeoSupport GeoPoint("point",0);
-GeoSupport GeoBar("bar"  ,1);
-GeoSupport GeoTri("tri"  ,2);
-GeoSupport GeoQuad("quad" ,2);
-GeoSupport GeoTet("tet"  ,3);
-GeoSupport GeoPyr("pyr"  ,3);
-GeoSupport GeoWed("wed"  ,3);
-GeoSupport GeoHex("hex"  ,3 );
-
-const std::string Point_1 = "point1";
-const std::string Bar_2 = "bar2";
-const std::string Bar_3 = "bar3";
-const std::string Triangle_6 = "tri6";
-const std::string Quadrangle_8 = "quad8";
-const std::string Quadrangle_9 = "quad9";
-const std::string Tetrahedron_4 = "tet4";
-const std::string Pyramid_5 = "pyr5";
-const std::string Wedge_6 = "wed6";
-const std::string Hexaedron_8 = "hex8";
-const std::string Tetrahedron_10 = "tet10";
-const std::string Pyramid_13 = "pyr13";
-const std::string Wedge_15 = "wed15";
-const std::string Wedge_18 = "wed18";
-const std::string Hexaedron_20 = "hex20";
-const std::string Hexaedron_27 = "hex27";
-
-std::map<std::string,ElementInfo> InitElementNames() {
-    std::map<std::string,ElementInfo> ElementNames;
-""")
-            for elemtype in geoSupport:
-            #for elemtype in ['tet4']:
-               file.write("""
-    ElementNames["{elemtype}"] = ElementInfo();
-    ElementNames["{elemtype}"].numberOfNodes = {non};
-    ElementNames["{elemtype}"].geoSupport = Geo{geoname};
-    ElementNames["{elemtype}"].name = "{elemtype}";
-    ElementNames["{elemtype}"].mirrorPermutation.resize({nbpnodes},1);\n""".format(elemtype=elemtype,non = numberOfNodes[elemtype],geoname=geoSupport[elemtype].name.capitalize(),nbpnodes=len(mirrorPermutation.get(elemtype,""))))
-               #if len(mirrorPermutation.get(elemtype,"")):
-               #   print(f"""ElementNames["{elemtype}"].mirrorPermutation <<  {", ".join(map(str,mirrorPermutation.get(elemtype,[])))};""")
-
-               for n,v in enumerate(mirrorPermutation.get(elemtype,[])):
-                  file.write("""    ElementNames["{elemtype}"].mirrorPermutation({n},0)= {v};\n""".format(n=n,elemtype=elemtype,v=v))
-
-
-               file.write("""    ElementNames["{elemtype}"].linear = {l};\n""".format(elemtype=elemtype,l=('true' if linear[elemtype] else 'false'  )))
-
-               for e,n in faces.get(elemtype,[]):
-                   file.write("    {\n")
-                   file.write("""        MatrixID1 matA({x}, 1);
-        matA << """.format(x=len(n))+ ", ".join(map(str,n)) + ";\n")
-                   file.write("""        ElementNames["{elemtype}"].faces.push_back(std::pair<ElementInfo,MatrixID1>(ElementNames["{e}"],matA) );\n""".format(elemtype=elemtype, e=e) )
-                   file.write("    }\n")
-               for e,n in faces2.get(elemtype,[]):
-                   file.write("    {\n")
-                   file.write("""        MatrixID1 matA({x}, 1);
-        matA << """.format(x=len(n))+ ", ".join(map(str,n)) + ";\n")
-                   file.write("""        ElementNames["{elemtype}"].faces2.push_back(std::pair<ElementInfo,MatrixID1>(ElementNames["{e}"],matA) );\n""".format(elemtype=elemtype,e=e) )
-                   file.write("    }\n")
-            file.write("""
-    return ElementNames;
-};
-
-std::map<std::string,ElementInfo> InitElementNames() ;
-std::map<std::string,ElementInfo> ElementNames = InitElementNames();
-
-}; // namespace BasicTools
-
-\n""")
-
-    except Exception:
-        print('Unable to create file '+ filename)
 
 ElementsInfo = {}
 for name,geo in geoSupport.items():

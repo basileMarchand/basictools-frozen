@@ -186,7 +186,6 @@ for name in LagrangeP1:
     else:
         LagrangeIsoParam[name] = LagrangeP2[name]
 
-
 IntegrationRulesAlmanac["LagrangeIsoParam"] = LagrangeIsoParam
 
 ##### Nodal P1 Itegration points for the evaluation of post quantities at nodes  ######
