@@ -23,7 +23,6 @@ class ElementsContainer(BaseOutputObject):
     * connectivity : the connectivity matrix starting form 0
     * tags : the tags holder class
     * originalIds : the id or number from the previous mesh/file
-    * originalOffset : the offset from the previous mesh/file
 
     The user can use this data to find the mapping from the inintial mesh/file
     to the currect mesh (self).
@@ -492,7 +491,7 @@ class UnstructuredMesh(MeshBase):
         cpt = 0
         from BasicTools.Containers.Filters import ElementFilter
         for name,data,ids in ElementFilter(self,dimensionality = dim):
-            res[0+cpt:len(ids)+cpt] = data.originalIds[ids]+data.originalOffset
+            res[0+cpt:len(ids)+cpt] = data.originalIds[ids]
             cpt += len(ids)
         return res
 

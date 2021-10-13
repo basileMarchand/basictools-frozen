@@ -185,7 +185,7 @@ class ConstantRectilinearMesh(MeshBase):
         cpt = 0
         from BasicTools.Containers.Filters import ElementFilter
         for name,data,ids in ElementFilter(self,dimensionality = dim):
-            res[0+cpt:len(ids)+cpt] = data.originalIds[ids]+data.originalOffset
+            res[0+cpt:len(ids)+cpt] = data.originalIds[ids]
             cpt += len(ids)
         return res
 
