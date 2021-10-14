@@ -30,7 +30,7 @@ public:
     CBasicIndexType GetNumberOfElements() const ;
 
     MAPSETGET_MatrixIDD(Connectivity,connectivity)
-    MAPSETGET_MatrixID1(Ids,originalIds)
+    MAPSETGET_MatrixID1(OriginalIds,originalIds)
 
     std::string GetElementType() const ;
     template<typename T>

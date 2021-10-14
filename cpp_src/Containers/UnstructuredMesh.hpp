@@ -28,7 +28,7 @@ template<typename T, typename T2>
 void UnstructuredMesh::AddElemens(std::string& elementType, T& arg1, T2& arg2){
     ElementsContainer& ec = this->elements.GetElementsOfType(elementType);
     ec.SetConnectivity(arg1);
-    ec.SetIds(arg2);
+    ec.SetOriginalIds(arg2);
 };
 
 template<typename T>
