@@ -11,7 +11,7 @@ def Generate(prefix = "cpp_src/"):
 
     cppfile = open(filename,"w")
     PrintHeader(cppfile)
-    PrintToFile(cppfile,"#include <memory>")
+    PrintToFile(cppfile,"#include <map>")
     PrintToFile(cppfile,"#include <stdexcept>")
     PrintToFile(cppfile,"#include <cmath>")
     PrintToFile(cppfile,"#include <LinAlg/EigenTypes.h>")
