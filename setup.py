@@ -21,7 +21,8 @@ debug = True if __config["build_ext"]["debug"].lower()  in ["1","true"] else Fal
 force = True if __config["build_ext"]["force"].lower()  in ["1","true"] else False
 
 #Cpp sources (relative to the cpp_src folder)
-cpp_src = ("LinAlg/EigenTools.cpp",
+cpp_src = ("LinAlg/BasicOperations.cpp",
+           "LinAlg/EigenTools.cpp",
            "ImplicitGeometry/ImplicitGeometryBase.cpp",
            "Containers/ElementFilter.cpp",
            "Containers/UnstructuredMesh.cpp",
@@ -105,6 +106,9 @@ try:
     if enable_MKL or True:
         define_macros.append(("MKL_DIRECT_CALL",""))
         define_macros.append(("EIGEN_USE_MKL_VML",""))
+
+    if debug:
+        cpp_src_with_path = sorted(cpp_src_with_path,key=os.path.getmtime,reverse=True )
 
     ext_libraries = [['libCppBasicTools', {
                'sources': cpp_src_with_path,
