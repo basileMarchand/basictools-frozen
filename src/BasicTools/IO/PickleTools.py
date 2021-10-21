@@ -46,8 +46,8 @@ def LoadData(filename):
 from BasicTools.IO.ReaderBase import ReaderBase
 
 class PickleReader(ReaderBase):
-    def __init__(self):
-        super(PickleReader,self).__init__()
+    def __init__(self,fileName = None):
+        super(PickleReader,self).__init__(fileName=fileName)
         self.canHandleTemporal = False
 
     def Read(self):
