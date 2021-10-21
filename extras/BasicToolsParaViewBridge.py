@@ -10,6 +10,7 @@
 import copy
 import time
 
+from BasicTools.Containers.Filters import ElementFilter
 _startTime = time.time()
 debug = False
 if debug :
@@ -561,7 +562,8 @@ try:
             from BasicTools.Containers.UnstructuredMeshFieldOperations import GetFieldTransferOp
             space, numberings, offset, NGauss = PrepareFEComputation(input0,numberOfComponents=1)
             field = FEField("",mesh=input0,space=space,numbering=numberings[0])
-            op,status = GetFieldTransferOp(field,input1.nodes,method=possibleMethods[self.__method], verbose= False)
+
+            op,status = GetFieldTransferOp(field,input1.nodes,method=possibleMethods[self.__method], verbose= False,elementfilter=ElementFilter(input0))
 
             # the user must not modify the inputs
             outputmesh = copy.copy(input1)
