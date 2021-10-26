@@ -181,7 +181,7 @@ LagrangeP2[EN.Wedge_6] = TensorProd(LagrangeP2[EN.Triangle_3][0][:,0:2],Lagrange
 
 LagrangeIsoParam  = {}
 for name in LagrangeP1:
-    if EN.linear[name]:
+    if EN.degree[name] == 1:
         LagrangeIsoParam[name] = LagrangeP1[name]
     else:
         LagrangeIsoParam[name] = LagrangeP2[name]
@@ -254,7 +254,7 @@ NodalEvaluationP2[EN.Quadrangle_9] = NodalEvaluationP2[EN.Quadrangle_4]
 NodalEvalIsoGeo  = {}
 IntegrationRulesAlmanac["NodalEvalGeo"] = NodalEvalIsoGeo
 for name in NodalEvaluationP1:
-    if EN.linear[name]:
+    if EN.degree[name] == 1:
         NodalEvalIsoGeo[name] = NodalEvaluationP1[name]
     else:
         NodalEvalIsoGeo[name] = NodalEvaluationP2[name]
