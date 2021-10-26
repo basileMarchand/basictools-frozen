@@ -9,20 +9,19 @@ import numpy as np
 from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
 from BasicTools.Containers.Filters import ElementFilter, IntersectionElementFilter
 import BasicTools.Containers.ElementNames as EN
+from BasicTools.Containers.UnstructuredMeshFieldOperations import TransportPosToPoints
 
-def DistanceToSurface(mesh,surfMesh,out = None):
+
+def DistanceToSurface(mesh,surfMesh,out = None,method="Interp/Extrap"):
     from BasicTools.Containers.UnstructuredMeshFieldOperations import TransportPos
     from BasicTools.FE.FETools import PrepareFEComputation
     from BasicTools.FE.Fields.FEField import FEField
-
-    space, numberings, offset, NGauss = PrepareFEComputation(surfMesh,numberOfComponents=1)
-
 
     tspace, tnumbering,_,_ = PrepareFEComputation(mesh,numberOfComponents=1)
     tnumbering = tnumbering[0]
 
     names = ["x","y","z"]
-    InterfacePosFields = TransportPos(surfMesh,mesh,tspace,tnumbering)
+    InterfacePosFields = TransportPos(surfMesh,mesh,tspace,tnumbering,method=method)
     MeshPosFields = np.array([ FEField("pos_"+names[x],mesh, space=tspace, numbering=tnumbering,data=mesh.nodes[:,x]) for x in [0,1,2] ])
 
     if out is None:
@@ -32,15 +31,18 @@ def DistanceToSurface(mesh,surfMesh,out = None):
         out[:] = np.sqrt(np.sum((InterfacePosFields - MeshPosFields)**2)).data
         return out
 
-def Redistance(mesh,phi,out=None):
+def Redistance(mesh,phi,method="Interp/Extrap"):
 
-    IGTM = IGToMesh(mesh,phi )
-#    IGTM.meshPartition = False
-    interfaceMesh = IGTM.ComputeInterfaceMesh()
     sign = np.sign(phi)
-    res = DistanceToSurface(mesh,interfaceMesh,out=out)
+    res = ComputeDistanceToIsoZero(mesh, phi, mesh.nodes,method=method)
     res *= sign
     return res
+
+def ComputeDistanceToIsoZero(mesh, phi, targetPoints,method="Interp/Extrap"):
+    IGTM = IGToMesh(mesh,phi )
+    interfaceMesh = IGTM.ComputeInterfaceMesh()
+    pos = TransportPosToPoints(interfaceMesh,targetPoints,method=method)
+    return np.sqrt(np.sum((targetPoints - pos)**2,axis=1))
 
 class IGToMesh:
     def __init__(self,imesh=None,phi=None):
@@ -72,8 +74,8 @@ class IGToMesh:
         xyz = []
         vxyz = []
         omesh = UnstructuredMesh()
-        ef1 = ElementFilter(self.inputMesh,dimensionality=3,zones=[lambda x: phi<=0] )
-        ef2 = ElementFilter(self.inputMesh,dimensionality=3,zones=[lambda x: -phi<=0] )
+        ef1 = ElementFilter(self.inputMesh,zones=[lambda x: phi<=0] )
+        ef2 = ElementFilter(self.inputMesh,zones=[lambda x: -phi<=0] )
         ef1.zoneTreatment = "leastonenode"
         ef2.zoneTreatment = "leastonenode"
         ef = IntersectionElementFilter(self.inputMesh,[ef1,ef2])
@@ -93,6 +95,30 @@ class IGToMesh:
                     raise
 
         for name, data, ids in ef:
+            if EN.dimension[name] == 1 :
+                #continue
+                pointElements = omesh.elements.GetElementsOfType(EN.Point_1)
+                for eid in ids:    
+                    lcoon = data.connectivity[eid,:]    
+                    phi0 = self.phi[lcoon[0]]
+                    phi1 = self.phi[lcoon[1]]
+                    x = phi0/(phi0-phi1)
+                    xpos = self.inputMesh.nodes[lcoon[0],:]*(1-x) + self.inputMesh.nodes[lcoon[1],:]*(x)
+                    xyz.append(xpos)
+                    cpt +=1
+                    pointElements.AddNewElement(len(xyz)-1,0)
+
+                continue
+
+            barElements = omesh.elements.GetElementsOfType(EN.Bar_2)
+            trisElements = omesh.elements.GetElementsOfType(EN.Triangle_3)
+            quadElements = omesh.elements.GetElementsOfType(EN.Quadrangle_4)
+
+            if EN.dimension[name] == 2:
+                faces = EN.faces[name]
+            else:
+                faces = EN.faces2[name]
+
             for eid in ids:
                 cutpoints = []
                 neg_pointsO = []
@@ -124,7 +150,7 @@ class IGToMesh:
                         pos_pointsO.append(n)
 
                 #if zero on a bars
-                for n,d in EN.faces2[name]:
+                for n,d in faces:
                     llcon=lcoon[d[0:2]]
                     lphi = phi[llcon]
                     pphi = lphi > 0
@@ -148,6 +174,16 @@ class IGToMesh:
                         cutpoints.append(nid)
                         neg_pointsG.append(vnid)
                         pos_pointsG.append(vnid)
+
+                if EN.dimension[name] == 2 :
+                    if len(cutpoints) > 2:
+                        raise(Exception("More than 2 point of intersection"))
+                    if len(cutpoints) < 2:
+                        continue
+
+                    barElements.AddNewElement(cutpoints,0)
+                    continue
+                    
 
                 if len(cutpoints) < 3:
                     continue
@@ -173,53 +209,17 @@ class IGToMesh:
                     s = np.argsort(ang)
                     cutpoints2 = [cutpoints[x] for x in s]
                     if len(cutpoints)==3:
-                        td = omesh.elements.GetElementsOfType(EN.Triangle_3)
+                        AddElement(pos_id,neg_id,trisElements,cutpoints2)
                     else:
-                        td = omesh.elements.GetElementsOfType(EN.Quadrangle_4)
-                    AddElement(pos_id,neg_id,td,cutpoints2)
+                        AddElement(pos_id,neg_id,quadElements,cutpoints2)
+
+                    
                 else:
                     tri = Delaunay(XX)
-                    td = omesh.elements.GetElementsOfType(EN.Triangle_3)
                     for simple in tri.simplices:
                         p = [cutpoints[x] for x in simple]
-                        AddElement(pos_id,neg_id,td,p)
+                        AddElement(pos_id,neg_id,trisElements,p)
 
-
-#                this algorithm is local and generate incompatible meshes of tets
-#                if self.meshPartition:
-#                    P = np.vstack( (self.inputMesh.nodes[neg_pointsO],
-#                                    [vxyz[x] for x in neg_pointsG]))
-#                    index = np.hstack( (neg_pointsO,
-#                                    [self.inputMesh.GetNumberOfNodes()+x for x in neg_pointsG]))
-#                    tets = Delaunay(P)
-#                    td = self.volMesh.elements.GetElementsOfType(EN.Tetrahedron_4)
-#                    for simple in tets.simplices:
-#                        p = [index[x] for x in simple]
-#                        n= td.AddNewElement(p,0)
-#                        td.tags.CreateTag("Inside",False).AddToTag(n-1)
-#
-#                    P = np.vstack( (self.inputMesh.nodes[pos_pointsO],
-#                                    [vxyz[x] for x in pos_pointsG]))
-#                    index = np.hstack( (pos_pointsO,
-#                                    [self.inputMesh.GetNumberOfNodes()+x for x in pos_pointsG]))
-#                    tets = Delaunay(P)
-#                    td = self.volMesh.elements.GetElementsOfType(EN.Tetrahedron_4)
-#                    for simple in tets.simplices:
-#                        p = [index[x] for x in simple]
-#                        n= td.AddNewElement(p,0)
-#                        td.tags.CreateTag("Outside",False).AddToTag(n-1)
-#
-#        self.volMesh.PrepareForOutput()
-
-#        if self.meshPartition:
-#            vmesh = UnstructuredMesh()
-#            #print(self.inputMesh.nodes)
-#            #print( np.array(vxyz) )
-#            vmesh.nodes = np.vstack( (self.inputMesh.nodes, np.array(vxyz) ) )
-#            vmesh.MergeElements(self.inputMesh,force=True)
-#            vmesh.MergeElements(self.volMesh,force=True)
-#            vmesh.PrepareForOutput()
-#            self.volMesh = vmesh
 
         omesh.nodes = np.array(xyz)
         omesh.GenerateManufacturedOriginalIDs()
