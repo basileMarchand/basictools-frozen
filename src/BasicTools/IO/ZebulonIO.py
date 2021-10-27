@@ -637,7 +637,12 @@ def ReadBinaryFile(fileName):
 
 def GetDensity(materialFileName):
     res = ReadInp2(materialFileName, startingNstar=3)
-    return float(GetFromInp(res,{'3':['behavior'], '2':['coefficient']})[0][1][1])
+    try:
+        density = float(GetFromInp(res,{'3':['behavior'], '2':['coefficient']})[0][1][1])
+    except IndexError:
+        print("cannot retrieve density")
+        density = None
+    return density
 
 
 def GetBehavior(materialFileName):
