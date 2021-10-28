@@ -7,6 +7,7 @@ import numpy as np
 
 import BasicTools.Containers.ElementNames as ElementNames
 from BasicTools.Containers.Filters import ElementFilter
+from BasicTools.Containers.MeshBase import Tags
 from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
 
 
@@ -35,7 +36,7 @@ def CleanDoubleNodes(res, tol = None, nodesToTestMask= None):
                 database[point] = cpt
                 newindex[i] = cpt
                 cpt +=1
-                toKeep[i] = True;
+                toKeep[i] = True
             else:
                 newindex[i] = ni
 
@@ -69,7 +70,7 @@ def CleanDoubleNodes(res, tol = None, nodesToTestMask= None):
                 tree.add_item(cpt, point )
                 newindex[i] = cpt
                 cpt += 1
-                toKeep[i] = True;
+                toKeep[i] = True
 
 
     else:
@@ -78,7 +79,7 @@ def CleanDoubleNodes(res, tol = None, nodesToTestMask= None):
             if not nodesToTestMask[i]:
                   newindex[i] = cpt
                   cpt += 1
-                  toKeep[i] = True;
+                  toKeep[i] = True
                   continue
 
             posi = res.nodes[i,:]
@@ -95,7 +96,7 @@ def CleanDoubleNodes(res, tol = None, nodesToTestMask= None):
             else:
                 newindex[i] = cpt
                 cpt += 1
-                toKeep[i] = True;
+                toKeep[i] = True
 
 
     res.nodes = res.nodes[toKeep,:]
@@ -113,9 +114,9 @@ def CleanLonelyNodes(res,out=None):
 
     usedNodes = np.zeros(res.GetNumberOfNodes(),dtype=np.bool )
     for name, data in res.elements.items():
-        usedNodes[data.connectivity.ravel()] = True;
+        usedNodes[data.connectivity.ravel()] = True
 
-    cpt = 0 ;
+    cpt = 0
     NewIndex =  np.zeros(res.GetNumberOfNodes(),dtype=np.int )-1
     originalIDNodes = np.zeros(res.GetNumberOfNodes(),dtype=np.int)
     for n in range(res.GetNumberOfNodes()):
@@ -131,9 +132,13 @@ def CleanLonelyNodes(res,out=None):
     if out is None:
         res.nodes = res.nodes[usedNodes ,:]
         res.originalIDNodes = np.where(usedNodes)[0]
+        from BasicTools.Containers.MeshBase import Tags
+        newTags = Tags()
         #node tags
         for tag in res.nodesTags :
             tag.SetIds(NewIndex[np.extract(usedNodes[tag.GetIds()],tag.GetIds() )])
+            newTags.CreateTag(tag.name).SetIds(NewIndex[np.extract(usedNodes[tag.GetIds()],tag.GetIds() )])
+        res.nodesTags = newTags
 
         #renumbering the connectivity matrix
         for elementName in res.elements:
@@ -868,9 +873,9 @@ def CheckIntegrity_ComputeFeatures(GUI =False):
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshFromConstantRectilinearMesh
 
     myMesh = ConstantRectilinearMesh(dim=3)
-    myMesh.SetDimensions([2,3,4]);
-    myMesh.SetOrigin([-1.0,-1.0,-1.0]);
-    myMesh.SetSpacing([2., 2.,2]/myMesh.GetDimensions());
+    myMesh.SetDimensions([2,3,4])
+    myMesh.SetOrigin([-1.0,-1.0,-1.0])
+    myMesh.SetSpacing([2., 2.,2]/myMesh.GetDimensions())
     print("ConstantRectilinearMesh")
     print(myMesh)
     res2 = CreateMeshFromConstantRectilinearMesh(myMesh,ofTetras=True)
@@ -902,9 +907,9 @@ def CheckIntegrity_ComputeSkin(GUI=False):
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshFromConstantRectilinearMesh
 
     myMesh = ConstantRectilinearMesh(dim=3)
-    myMesh.SetDimensions([2,3,4]);
-    myMesh.SetOrigin([-1.0,-1.0,-1.0]);
-    myMesh.SetSpacing([2., 2.,2]/myMesh.GetDimensions());
+    myMesh.SetDimensions([2,3,4])
+    myMesh.SetOrigin([-1.0,-1.0,-1.0])
+    myMesh.SetSpacing([2., 2.,2]/myMesh.GetDimensions())
     print(myMesh)
     res2 = CreateMeshFromConstantRectilinearMesh(myMesh,ofTetras=True)
     print(res2)
