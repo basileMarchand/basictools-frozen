@@ -188,6 +188,7 @@ class InpReader(ReaderBase):
         filetointernalid = {}
         filetointernalidElement = {}
         l = self.ReadCleanLine()
+        FENames = {}
 
         while(True):
             print(l)
@@ -283,6 +284,9 @@ class InpReader(ReaderBase):
                     conn = [filetointernalid[x] for x in  map(int,s[1:]) ]
 
                     cid = elements.AddNewElement(conn,oid)-1
+                    if nametype not in FENames:
+                        FENames[nametype] = []
+                    FENames[nametype].append(etype)
                     filetointernalidElement[oid] = (elements,cid)
 
                     l = self.ReadCleanLine()
@@ -485,6 +489,9 @@ class InpReader(ReaderBase):
 
                         elements = res.GetElementsOfType(typeAndConnectivity[0])
                         cid = elements.AddNewElement(faceconn,-1)
+                        if nametype not in FENames:
+                            FENames[typeAndConnectivity[0]] = []
+                        FENames[typeAndConnectivity[0]].append("NA")
 
                         elements.GetTag(name).AddToTag(cid-1)
                         l = self.ReadCleanLine()
@@ -526,6 +533,10 @@ class InpReader(ReaderBase):
 
         self.EndReading()
         res.originalIDNodes = np.squeeze(res.originalIDNodes)
+        fenames = []
+        for elname in res.elements:
+            fenames.extend(FENames[elname])
+        res.elemFields["FE Names"] = np.array(fenames) 
         res.PrepareForOutput()
         self.output = (res,meta)
         return res
