@@ -52,6 +52,7 @@ _test = [
 "PipeIO",
 "ZsetTools",
 "VtuReader",
+"InpWriter"
 ]
 
 __author__ = "Felipe Bordeu"
