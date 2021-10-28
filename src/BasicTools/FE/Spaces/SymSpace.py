@@ -75,8 +75,8 @@ class SymSpaceBase(SpaceBase):
 
         for i in range(nbSF) :
             self.symdNdxidxi[i] = [[0]*nbDim for j in range(nbDim ) ]
-            for j in range(nbDim ) :
-                for k in range(self.GetDimensionality() ) :
+            for j in range(nbDim):
+                for k in range(nbDim):
                     func = self.symN[i].diff(self.lcoords[j]).diff(self.lcoords[k])
                     self.symdNdxidxi[i][j][k] = func
             self.symdNdxidxi[i] = Matrix(self.symdNdxidxi[i])
