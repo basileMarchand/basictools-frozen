@@ -24,3 +24,12 @@ InpNameToBasicTools["C3D6"] = EN.Wedge_6
 
 permutation = {}
 #permutation[ EN.Tetrahedron_4] = [0, 1, 3, 2]
+
+BasicToolsToInpName = {}
+
+for k,v in InpNameToBasicTools.items():
+    if k in BasicToolsToInpName:
+        continue
+    BasicToolsToInpName[v] = k
+
+
