@@ -10,12 +10,12 @@ import BasicTools.Containers.ElementNames as ElementNames
 from BasicTools.Containers.Filters import ElementFilter
 from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
 from BasicTools.Containers.UnstructuredMeshCreationTools import QuadToLin
-from BasicTools.Containers.UnstructuredMeshInspectionTools import  ExtractElementByDimensionalityNoCopy, ExtractElementsByElementFilter
-
+from BasicTools.Containers.UnstructuredMeshInspectionTools import ExtractElementsByElementFilter
+from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
+from BasicTools.Linalg.Transform import Transform
 
 def ApplyRotationMatrixTensorField(fields,fieldstoTreat, baseNames=["v1","v2"],inplace=False,prefix="new_",inverse=False):
     nbentries = fields[fieldstoTreat[0][0]].shape[0]
-    from BasicTools.Linalg.Transform import Transform
 
     bs =  Transform()
     bs.keepNormalised = True
@@ -40,7 +40,7 @@ def ApplyRotationMatrixTensorField(fields,fieldstoTreat, baseNames=["v1","v2"],i
             output[fieldstoTreat[i][j]]  = tempdata[:,i,j]
 
     output = {(prefix+x):v for x,v in output.items()}
-    
+
     if inplace:
         fields.update(output)
 
@@ -63,6 +63,7 @@ def GetFieldTransferOp(inputField,targetPoints,method=None,verbose=False,element
         return op, status
     """
     possibleMethods =["Interp/Nearest","Nearest/Nearest","Interp/Clamp","Interp/Extrap","Interp/ZeroFill"]
+    possibleMethodsDict = {"Nearest":0, "Interp":1, "Extrap":2, "Clamp":3, "ZeroFill":4  }
 
     from scipy.spatial import cKDTree
     from scipy.sparse import coo_matrix
@@ -70,39 +71,53 @@ def GetFieldTransferOp(inputField,targetPoints,method=None,verbose=False,element
     if method is None:
         method = possibleMethods[0]
     elif method not in possibleMethods:
-        raise(Exception("Method for transfert operator not know '{}' possible options are : {}".format(method,possibleMethods) ))
+        raise(Exception(f"Method for transfert operator not know '{method}' possible options are : {possibleMethods}" ))
+
+    insideMethod = possibleMethodsDict[method.split("/")[0]]
+    outsideMethod = possibleMethodsDict[method.split("/")[1]]
 
     imeshdim = 0
     for i in range(4):
         if inputField.mesh.GetNumberOfElements(i):
             imeshdim = i
 
-    originalmesh = inputField.mesh 
+    originalmesh = inputField.mesh
 
     if elementfilter == None:
         elementfilter = ElementFilter(mesh = originalmesh, dimensionality=imeshdim)
 
     from BasicTools.Containers.UnstructuredMeshModificationTools import CleanLonelyNodes
     imesh = ExtractElementsByElementFilter(originalmesh, elementfilter )
-    CleanLonelyNodes(imesh)    
+    CleanLonelyNodes(imesh)
 
-    inodes = imesh.nodes    
+    inodes = imesh.nodes
 
     numbering = inputField.numbering
     space = inputField.space
     inodes = imesh.nodes
     nbtp = targetPoints.shape[0]
- 
+
+    # be sure to create the spaces
+    for elementType, data in inputField.mesh.elements.items():
+        space[elementType].Create()
+        LagrangeSpaceGeo[elementType].Create()
+
+        facestoTreat = [ElementNames.faces[elementType],
+                        ElementNames.faces2[elementType],
+                        ElementNames.faces3[elementType]]
+        for tt in facestoTreat:
+            for elementType2, num in tt:
+                LagrangeSpaceGeo[elementType2].Create()
     kdt = cKDTree(inodes)
 
-    if method == "Nearest/Nearest" :
+    if insideMethod == 0 and  outsideMethod == 0:
         dist, ids = kdt.query(targetPoints)
         ids = imesh.originalIDNodes[ids]
 
         if numbering is None or numbering["fromConnectivity"]:
             cols = ids
         else:
-            cols = [ numbering["almanac"][('P',pid,None)] for pid in ids ]
+            cols = [ numbering.GetDofOfPoint(pid) for pid in ids ]
         row = np.arange(nbtp)
         data = np.ones(nbtp)
         return coo_matrix((data, (row, cols)), shape=(nbtp , inodes.shape[0])), np.zeros(nbtp)
@@ -117,8 +132,8 @@ def GetFieldTransferOp(inputField,targetPoints,method=None,verbose=False,element
     kdtcenters = cKDTree(centers)
 
     # 30 to be sure to hold exa27 coefficients
-    cols = np.empty(nbtp*30, dtype=int )
-    rows = np.empty(nbtp*30, dtype=int )
+    cols = np.empty(nbtp*30, dtype=int)
+    rows = np.empty(nbtp*30, dtype=int)
     datas = np.empty(nbtp*30 )
     fillcpt = 0
     cood = [cols,rows,datas, fillcpt]
@@ -156,13 +171,16 @@ def GetFieldTransferOp(inputField,targetPoints,method=None,verbose=False,element
                 printProgressBar(p+1, nbtp, prefix = 'Building Transfer '+method+':', suffix = 'Complete', length = 50)
                 verbosecpt = nvc
 
-        TP = targetPoints[p,:]  # target point posicion 
+        TP = targetPoints[p,:]  # target point posicion
         CP =  idsTP[p]          # closest point posicion
 
         ## we use the closest element (in the sens of cells center )
         origial_data, lenb = GetElement(imesh,idsTPcenters[p])
         ## construct the potentialElements list (all element touching the closest element)
         potentialElements = []
+        #Element connected to the closest point
+        potentialElements.extend(dualGraph[idsTP[p],0:nused[idsTP[p]]])
+        #Elements connected to the closest element (bases on the element center)
         for elempoint in  origial_data.connectivity[lenb,:]:
             potentialElements.extend(dualGraph[elempoint,0:nused[elempoint]])
         potentialElements = np.unique(potentialElements)
@@ -181,31 +199,19 @@ def GetFieldTransferOp(inputField,targetPoints,method=None,verbose=False,element
         potentialElements = potentialElements[index]
         distmem = 1e10
 
-
-        from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
         for cpt,e in enumerate(potentialElements):
             origial_data, lenb = GetElement(imesh,e)
             localnumbering = numbering[origial_data.elementType]
             localspace = space[origial_data.elementType]
-            localspace.Create()
 
             posnumbering = origial_data.connectivity
             posspace = LagrangeSpaceGeo[origial_data.elementType]
-            posspace.Create()
             coordAtDofs = originalmesh.nodes[posnumbering[lenb,:],:]
 
-            #inside, shapeFunc, shapeFuncClamped = ComputeShapeFunctionsOnElement(coordAtDofs,localspace ,localnumbering,TP)
-
-            inside, bary, baryClamped = ComputeBarycentricCoordinateOnElement(coordAtDofs,posspace ,posnumbering,TP,ElementNames.linear[data.elementType])
-
-            if inside is None:
-                continue
-
-            posShapeFuncClamped = posspace.GetShapeFunc(baryClamped)
+            inside, distv, bary, baryClamped = ComputeInterpolationExtrapolationsBarycentricCoordinates(TP, origial_data.elementType ,coordAtDofs, LagrangeSpaceGeo)
 
             #update the distance**2 with a *exact* distance
-            distElemToTP =  posShapeFuncClamped.dot(coordAtDofs) -TP
-            dist[cpt] = distElemToTP.dot(distElemToTP)
+            dist[cpt] = dmin2 = distv.dot(distv)
 
             #compute shape function of the incomming space using the xi eta phi
             shapeFunc = localspace.GetShapeFunc(bary)
@@ -216,34 +222,37 @@ def GetFieldTransferOp(inputField,targetPoints,method=None,verbose=False,element
                 status[p] = 1
                 break
 
-            # store the best elements (closest)
+            # store the best element (closest)
             if dist[cpt] < distmem:
                 distmem = dist[cpt]
-                memshapeFunc = shapeFunc
+                if inside is None:
+                    # non is error in the inverse mapping, only clamp is available
+                    memshapeFunc = None
+                else:
+                    memshapeFunc = shapeFunc
                 memshapeFuncClamped =  shapeFuncClamped
-                memdata = data
                 memlenb = lenb
                 memlocalnumbering = localnumbering
         else:
-            if distmem == 1e10 or method == "Interp/Nearest":
+            # we are outside
+            if distmem == 1e10 or outsideMethod == 0 or (outsideMethod == 2 and memshapeFunc is None):
+                # not a single element found
                 col = [CP]
                 row = [p]
                 dat = [1.]
                 AddToOutput(len(col),col,row,dat,cood)
-                #status[p] = 0
                 continue
-            elif method == "Interp/Clamp":
-                sF = memshapeFuncClamped
-                status[p] = 3
-            elif method == "Interp/Extrap":
-                # we use the shapeFunction in extrapolation
+
+            if outsideMethod == 2 and memshapeFunc is not None:
                 sF = memshapeFunc
                 status[p] = 2
+            elif outsideMethod == 3:
+                sF = memshapeFuncClamped
+                status[p] = 3
             else:
                 status[p] = 4
                 continue
 
-            data = memdata
             lenb = memlenb
             localnumbering = memlocalnumbering
 
@@ -255,43 +264,115 @@ def GetFieldTransferOp(inputField,targetPoints,method=None,verbose=False,element
 
     return coo_matrix((cood[2][0:cood[3]], (cood[1][0:cood[3]], cood[0][0:cood[3]])), shape=(nbtp , inputField.numbering["size"])), status
 
+def ComputeInterpolationExtrapolationsBarycentricCoordinates(TP,elementType,coordAtDofs,posspace):
+    if ElementNames.dimension[elementType]==0:
+        distv = coordAtDofs[0,:] - TP
+        inside = np.all(distv == 0)
+        bary = np.array([])
+        baryClamped = np.array([])
+        return inside, distv, bary, baryClamped
 
+    localspace = posspace[elementType]
 
+    # we compute the baricentric coordinate of the target point (TP) on the current element
+    inside, bary, baryClamped = ComputeBarycentricCoordinateOnElement(coordAtDofs,localspace,TP,elementType)
+    if inside :
+        # the point is inside, we compute the distance vector
+        distv = localspace.GetShapeFunc(bary).dot(coordAtDofs) - TP
+        return inside, distv, bary, baryClamped
+    else :
+        if inside is None:
+            bary = np.zeros_like(bary)
+        #compute distance to the points
+        dist2 = np.sum((coordAtDofs - TP)**2,axis=1)
+        minidx = np.argmin(dist2)
+        mask = (-dist2 + dist2[minidx]) >= 0
+        facestoTreat = [ElementNames.faces[elementType],
+                        ElementNames.faces2[elementType],
+                        ElementNames.faces3[elementType]]
 
+        for faces in facestoTreat:
+            if len(faces) == 0:
+                break
+            if faces[0][0] == ElementNames.Point_1:
+                return False, coordAtDofs[minidx] - TP, bary, localspace.posN[minidx]
+            faceInside, faceDistv, fbaryClamped =  ComputeInterpolationCoefficients(mask, TP, faces, coordAtDofs, posspace, localspace)
+            if faceInside:
+                return False, faceDistv, bary, fbaryClamped
+        raise
+    return None, 0, 0,0
 
-def ComputeShapeFunctionsOnElement(coordAtDofs,localspace,localnumbering,point):
-    inside, xietaphi, xietaphiClamped = ComputeBarycentricCoordinateOnElement(coordAtDofs,localspace,localnumbering,point)
+def ComputeInterpolationCoefficients(mask, TP, elementsdata, coordAtDofs, posspace, localspace):
+    ft = True
+    for cpt, (faceElementType, faceLocalConnectivity) in enumerate(elementsdata):
+
+        # work only on element touching the mask
+        if not np.any(mask[faceLocalConnectivity]):
+            continue
+
+        faceInside, fbary, fbaryClamped = ComputeBarycentricCoordinateOnElement(coordAtDofs[faceLocalConnectivity,:],posspace[faceElementType],TP,faceElementType)
+        faceDistv = posspace[faceElementType].GetShapeFunc(fbary).dot(coordAtDofs[faceLocalConnectivity,:]) - TP
+        faceDist = faceDistv.dot(faceDistv)
+        if faceInside:
+            if ft:
+                ft =False
+                faceDistvMem = faceDistv
+                faceDistMem = faceDist
+                fbaryMem = fbary
+                faceLocalConnectivityMem = faceLocalConnectivity
+                faceElementTypeMem = faceElementType
+            else:
+                if faceDist < faceDistMem:
+                    faceDistMem = faceDist
+                    faceDistvMem = faceDistv
+                    fbaryMem = fbary
+                    faceLocalConnectivityMem = faceLocalConnectivity
+                    faceElementTypeMem = faceElementType
+    if ft:
+        return False, None,None
+    else:
+        flocalspace = posspace[faceElementTypeMem]
+        fshapeFunc = flocalspace.GetShapeFunc(fbaryMem)
+        baryClamped = fshapeFunc.dot(localspace.posN[faceLocalConnectivityMem,:])
+        return True, faceDistvMem,  baryClamped
+
+def ComputeShapeFunctionsOnElement(coordAtDofs,localspace,localnumbering,point,faceElementType):
+    inside, xietaphi, xietaphiClamped = ComputeBarycentricCoordinateOnElement(coordAtDofs,localspace,point,faceElementType)
     N = localspace.GetShapeFunc(xietaphi)
     NClamped = localspace.GetShapeFunc(xietaphiClamped)
     return inside, N , NClamped
 
-def ddf(f,xietaphi,point,dN,GetShapeFuncDerDer,coordAtDofs,linear):
+def ddf(f,xietaphi,dN,GetShapeFuncDerDer,coordAtDofs,linear):
     dNX = dN.dot(coordAtDofs)
-    res = 2*dNX.dot(dNX.T)
+    res = dNX.dot(dNX.T)
+    # After some investigation the Newton is more stable using only the first part
+    # of the hessian we comment this part only for historic reasons. of if someone
+    # can implement a better (without bugs) version.
+    return res
 
     if linear :
-        for i in range(len(res) ):
-            if res[i,i] == 0:
-                res[i,i] = 1
         return res
 
-    # TODO need Check this part not sure if is correct
-    ddN = GetShapeFuncDerDer(xietaphi)
-    for ccpt in range(coordAtDofs.shape[1]):
-        for cpt,fct in enumerate(ddN):
-           c = coordAtDofs[cpt,ccpt]
-           res -= 2*f[ccpt]*(c*fct)
 
-    for i in range(len(res) ):
-        if res[i,i] == 0:
-            res[i,i] = 1
+
+    ddN = GetShapeFuncDerDer(xietaphi)
+    # we work for every coordinate
+    for ccpt in range(coordAtDofs.shape[1]):
+        #error of the component ccpt
+        fx = f[ccpt]
+        coordx = coordAtDofs[:,ccpt]
+        # we build the derivative of the pos field with respect of xi chi
+        # d2f_i/dxidchi * pos[i,ccpt]
+        pp = [ ddNi.dot(xi) for ddNi,xi in zip(ddN,coordx ) ]
+        p = np.add.reduce(pp)
+        res -= fx*p
+
     return res
 
 def df(f,dN,coordAtDofs):
     dNX = dN.dot(coordAtDofs)
-    res = 2*f.dot(-dNX.T)
+    res = -f.dot(dNX.T)
     return res
-
 
 def vdet(A):
     detA = A[0, 0] * (A[1, 1] * A[2, 2] - A[1, 2] * A[2, 1]) -\
@@ -323,7 +404,6 @@ def hdinv(A):
                   A[0, 0] * A[1, 1]) / detA
     return invA
 
-
 def inv22(A):
     a = A[0,0]
     b = A[0,1]
@@ -337,46 +417,53 @@ def inv22(A):
     invA /= (a*d-b*c)
     return invA
 
-def ComputeBarycentricCoordinateOnElement(coordAtDofs,localspace,localnumbering,point,linear):
+def ComputeBarycentricCoordinateOnElement(coordAtDofs,localspace,targetPoint,elementType):
 
-    xietaphi = np.array([0.5]*localspace.GetDimensionality())
+    linear = ElementNames.linear[elementType]
+    spacedim = localspace.GetDimensionality()
 
+    xietaphi = np.array([0.5]*spacedim)
+    N = localspace.GetShapeFunc(xietaphi)
+    currentPoint = N.dot(coordAtDofs)
+    f = targetPoint - currentPoint
     for x in range(10):
-        N = localspace.GetShapeFunc(xietaphi)
-        #print("x {} : {} ".format(x,xietaphi) )
         dN = localspace.GetShapeFuncDer(xietaphi)
-        f = point - N.dot(coordAtDofs)
         df_num = df(f,dN,coordAtDofs)
-
-        H = ddf(f,xietaphi,point,dN,localspace.GetShapeFuncDerDer,coordAtDofs,linear)
-        if H.shape[0] == 2:
+        H = ddf(f, xietaphi, dN, localspace.GetShapeFuncDerDer, coordAtDofs, linear)
+        if spacedim == 2:
             dxietaphi = inv22(H).dot(df_num)
-        elif H.shape[0] == 3:
+        elif spacedim == 3:
             dxietaphi = hdinv(H).dot(df_num)
         else:
-            dxietaphi = np.linalg.inv(H).dot(df_num)
+            dxietaphi = df_num/H[0,0]
         xietaphi -= dxietaphi
-        
+
         # if the cell is linear only one iteration is needed
-        if linear or  normsquared(dxietaphi) < 1e-3:
+        if linear :
+            break
+
+        N = localspace.GetShapeFunc(xietaphi)
+        f = targetPoint - N.dot(coordAtDofs)
+
+        if normsquared(dxietaphi) < 1e-3 and normsquared(f) < 1e-3 :
             break
     else:
         return None, xietaphi,localspace.ClampParamCoorninates(xietaphi)
 
     xichietaClamped = localspace.ClampParamCoorninates(xietaphi)
-    # we treat very closes point as inside 
-    inside = normsquared(xichietaClamped-xietaphi) < 1e-3
+    # we treat very closes point as inside
+    inside = normsquared(xichietaClamped-xietaphi) < 1e-5
     return inside, xietaphi, xichietaClamped
 
 def normsquared(v):
     return sum([x*x for x in v])
 
-def TransportPosToPoints(imesh,points,method="Interp/Clamp",verbose=None): 
+def TransportPosToPoints(imesh,points,method="Interp/Clamp",verbose=None):
     from BasicTools.FE.Fields.FEField import FEField
     from BasicTools.FE.FETools import PrepareFEComputation
     space, numberings, offset, NGauss = PrepareFEComputation(imesh,numberOfComponents=1)
     field = FEField("",mesh=imesh,space=space,numbering=numberings[0])
-    op,status = GetFieldTransferOp(field,points,method=method, verbose=verbose)
+    op, status = GetFieldTransferOp(field,points,method=method, verbose=verbose, elementfilter = ElementFilter(imesh) )
     return op.dot(imesh.nodes)
 
 def TransportPos(imesh,tmesh,tspace,tnumbering,method="Interp/Clamp",verbose=None):
@@ -427,101 +514,84 @@ def QuadFieldToLinField(quadMesh, quadField, linMesh = None):
     return(quadField[extractIndices])
 
 def GetValueAtPosLinearSymplecticMesh(fields,mesh,constantRectilinearMesh, verbose=False):
-        """
-        Works only for linear symplectic meshes
-        """
-        import math
-        from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
-        from BasicTools.FE.DofNumbering import ComputeDofNumbering
+    """
+    Works only for linear symplectic meshes
+    """
+    import math
+    from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
+    from BasicTools.FE.DofNumbering import ComputeDofNumbering
 
-        if verbose:
-            from BasicTools.Helpers.ProgressBar import printProgressBar
+    if verbose:
+        from BasicTools.Helpers.ProgressBar import printProgressBar
 
-        numbering = ComputeDofNumbering(mesh,LagrangeSpaceGeo,fromConnectivity =True)
+    numbering = ComputeDofNumbering(mesh,LagrangeSpaceGeo,fromConnectivity =True)
 
-        mesh.ComputeBoundingBox()
+    mesh.ComputeBoundingBox()
 
-        origin = constantRectilinearMesh.GetOrigin()
-        spacing = constantRectilinearMesh.GetSpacing()
-        dimensions = constantRectilinearMesh.GetDimensions()
+    origin = constantRectilinearMesh.GetOrigin()
+    spacing = constantRectilinearMesh.GetSpacing()
+    dimensions = constantRectilinearMesh.GetDimensions()
 
-        #print("origin =", origin)
-        #print("spacing =", spacing)
-        #print("dimensions =", dimensions)
+    kmin, kmax = 0, 1
 
-        kmin, kmax = 0, 1
+    shapeRes = [fields.shape[0]]
+    for d in dimensions:
+        shapeRes.append(d)
+    result = np.zeros(tuple(shapeRes))
+    mask = np.zeros(tuple(dimensions))
 
-        shapeRes = [fields.shape[0]]
-        for d in dimensions:
-            shapeRes.append(d)
-        result = np.zeros(tuple(shapeRes))
-        mask = np.zeros(tuple(dimensions))
-        
-        numbering = ComputeDofNumbering(mesh, LagrangeSpaceGeo,fromConnectivity = True)
+    numbering = ComputeDofNumbering(mesh, LagrangeSpaceGeo,fromConnectivity = True)
 
-        for name, data in mesh.elements.items():
-            #print("name =", name)
-            #print("ElementNames.dimension[name] =", ElementNames.dimension[name])
-            #print("mesh.GetDimensionality() =", mesh.GetDimensionality())
-            #print("ElementNames.linear[name] =", ElementNames.linear[name])
-            if (ElementNames.dimension[name] == mesh.GetDimensionality() and ElementNames.linear[name] == True):
+    for name, data in mesh.elements.items():
+        if (ElementNames.dimension[name] == mesh.GetDimensionality() and ElementNames.linear[name] == True):
 
+            if verbose:
+                printProgressBar(0, data.GetNumberOfElements(), prefix = 'Field transfert element '+name+':', suffix = 'Complete', length = 50)
+
+            for el in range(data.GetNumberOfElements()):
                 if verbose:
-                    printProgressBar(0, data.GetNumberOfElements(), prefix = 'Field transfert element '+name+':', suffix = 'Complete', length = 50)
+                    printProgressBar(el, data.GetNumberOfElements(), prefix = 'Field transfert element '+name+':', suffix = 'Complete', length = 50)
 
-                for el in range(data.GetNumberOfElements()):
-                    if verbose:
-                        printProgressBar(el, data.GetNumberOfElements(), prefix = 'Field transfert element '+name+':', suffix = 'Complete', length = 50)
+                localNumbering = numbering[name][el,:]
 
-                    localNumbering = numbering[name][el,:]
+                localNodes = mesh.nodes[data.connectivity[el,:]]
+                nodesCoords = localNodes - mesh.boundingMin
+                localBoundingMin = np.amin(localNodes, axis=0)
+                localBoundingMax = np.amax(localNodes, axis=0)
 
-                    localNodes = mesh.nodes[data.connectivity[el,:]]
-                    nodesCoords = localNodes - mesh.boundingMin
-                    localBoundingMin = np.amin(localNodes, axis=0)
-                    localBoundingMax = np.amax(localNodes, axis=0)
-                    #print("nodesCoords =", nodesCoords)
-                    #print("localBoundingMin =", localBoundingMin)
-                    #print("localBoundingMax =", localBoundingMax)
+                imin, imax = max(int(math.floor((localBoundingMin[0]-origin[0])/spacing[0])),0),min(int(math.floor((localBoundingMax[0]-origin[0])/spacing[0])+1),dimensions[0])
+                jmin, jmax = max(int(math.floor((localBoundingMin[1]-origin[1])/spacing[1])),0),min(int(math.floor((localBoundingMax[1]-origin[1])/spacing[1])+1),dimensions[1])
 
+                if mesh.GetDimensionality()>2:
+                    kmin, kmax = min(int(math.floor((localBoundingMin[2]-origin[2])/spacing[2])),0),max(int(math.floor((localBoundingMax[2]-origin[2])/spacing[2])+1),dimensions[2])
 
-                    imin, imax = max(int(math.floor((localBoundingMin[0]-origin[0])/spacing[0])),0),min(int(math.floor((localBoundingMax[0]-origin[0])/spacing[0])+1),dimensions[0])
-                    jmin, jmax = max(int(math.floor((localBoundingMin[1]-origin[1])/spacing[1])),0),min(int(math.floor((localBoundingMax[1]-origin[1])/spacing[1])+1),dimensions[1])
-                    #print("imin, imax =", imin, imax)
-                    #print("jmin, jmax =", jmin, jmax)
+                """imin, imax = math.floor((localBoundingMin[0])/spacing[0]),math.floor((localBoundingMax[0])/spacing[0])+1
+                jmin, jmax = math.floor((localBoundingMin[1])/spacing[1]),math.floor((localBoundingMax[1])/spacing[1])+1
 
-                    if mesh.GetDimensionality()>2:
-                        kmin, kmax = min(int(math.floor((localBoundingMin[2]-origin[2])/spacing[2])),0),max(int(math.floor((localBoundingMax[2]-origin[2])/spacing[2])+1),dimensions[2])
+                if mesh.GetDimensionality()>2:
+                    kmin, kmax = math.floor((localBoundingMin[2])/spacing[2]),math.floor((localBoundingMax[2])/spacing[2])+1"""
 
-                    """imin, imax = math.floor((localBoundingMin[0])/spacing[0]),math.floor((localBoundingMax[0])/spacing[0])+1
-                    jmin, jmax = math.floor((localBoundingMin[1])/spacing[1]),math.floor((localBoundingMax[1])/spacing[1])+1
+                for i in range(imin,imax):
+                    for j in range(jmin,jmax):
+                        for k in range(kmin,kmax):
+                            if mesh.GetDimensionality()==2:
+                                point = np.asarray([i*spacing[0],j*spacing[1]]) + origin - mesh.boundingMin
+                            else:
+                                point = np.asarray([i*spacing[0],j*spacing[1],k*spacing[2]]) + origin - mesh.boundingMin
 
-                    if mesh.GetDimensionality()>2:
-                        kmin, kmax = math.floor((localBoundingMin[2])/spacing[2]),math.floor((localBoundingMax[2])/spacing[2])+1"""
-
-                    for i in range(imin,imax):
-                        for j in range(jmin,jmax):
-                            for k in range(kmin,kmax):
+                            rhs = np.hstack((point,np.asarray([1.])))
+                            M = np.vstack((nodesCoords.T,np.ones(ElementNames.numberOfNodes[name])))
+                            qcoord = np.linalg.solve(M,rhs)        # coordonnees barycentriques pour evaluer les fct de forme
+                            if (qcoord>=-1.e-12).all() == True:
                                 if mesh.GetDimensionality()==2:
-                                    point = np.asarray([i*spacing[0],j*spacing[1]]) + origin - mesh.boundingMin
+                                    mask[i,j] = 1.
+                                    for l in range(fields.shape[0]):
+                                        result[l,i,j] = np.dot(qcoord,fields[l][localNumbering])
                                 else:
-                                    point = np.asarray([i*spacing[0],j*spacing[1],k*spacing[2]]) + origin - mesh.boundingMin
-
-                                rhs = np.hstack((point,np.asarray([1.])))
-                                M = np.vstack((nodesCoords.T,np.ones(ElementNames.numberOfNodes[name])))
-                                qcoord = np.linalg.solve(M,rhs)        # coordonnees barycentriques pour evaluer les fct de forme
-                                #print(point, rhs, qcoord)
-                                if (qcoord>=-1.e-12).all() == True:
-                                    if mesh.GetDimensionality()==2:
-                                        mask[i,j] = 1.
-                                        for l in range(fields.shape[0]):
-                                          result[l,i,j] = np.dot(qcoord,fields[l][localNumbering])
-                                    else:
-                                        mask[i,j,k] = 1.
-                                        for l in range(fields.shape[0]):
-                                          result[l,i,j,k] = np.dot(qcoord,fields[l][localNumbering])
-        return result, mask
-
-
+                                    mask[i,j,k] = 1.
+                                    for l in range(fields.shape[0]):
+                                        result[l,i,j,k] = np.dot(qcoord,fields[l][localNumbering])
+    return result, mask
 
 #------------------------- CheckIntegrity ------------------------
 def CheckIntegrityApplyRotationMatrixTensorField(GUI=False):
@@ -539,7 +609,7 @@ def CheckIntegrityApplyRotationMatrixTensorField(GUI=False):
     inputmesh.nodeFields["v1"][:,0] = 1
     inputmesh.nodeFields["v2"] = np.zeros((nn,3))
     inputmesh.nodeFields["v2"][:,2] = 1
-    
+
 
     res = ApplyRotationMatrixTensorField(inputmesh.nodeFields,[["Sxx","Sxy","Sxz"],["Sxy","Syy","Syz"],["Sxz","Syz","Szz"]], baseNames=["v1","v2"],inplace=False,prefix="new_",inverse=False)
 
@@ -572,7 +642,6 @@ def RunTransfer(inputFEField,data,outmesh):
                     outmesh,
                     PointFields = PointFields,
                     PointFieldsNames = PointFieldsNames)
-
 
 def CheckIntegrity1D(GUI=False):
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateUniformMeshOfBars
@@ -630,7 +699,6 @@ def CheckIntegrity2D(GUI=False):
     data = (x -0.5)**2-y*0.5+x*y*0.25
     RunTransfer(inputFEField,data,b)
     return "ok"
-
 
 def CheckIntegrity1DTo2D(GUI=False):
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateSquare
@@ -772,7 +840,6 @@ def CheckIntegrity(GUI=False):
         if str(res).lower() != "ok":
             return "error in "+str(f) + " res"
     return "ok"
-
 
 if __name__ == '__main__':
     print(CheckIntegrity(True))# pragma: no cover
