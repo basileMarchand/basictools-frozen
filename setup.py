@@ -5,11 +5,10 @@
 #
 #
 
-import os, sys
+import os
 from setuptools.command.build_ext import build_ext
 from setuptools import setup, Extension
-from setuptools.config import read_configuration
-import configparser 
+import configparser
 
 # Compilation options
 enable_MKL = "BASICTOOLS_DISABLE_MKL" not in os.environ
@@ -18,8 +17,8 @@ useOpenmp = "BASICTOOLS_DISABLE_OPENMP" not in os.environ
 useEigencyEigen = "BASICTOOLS_USE_EIGENCYEIGEN" in os.environ
 __config = configparser.ConfigParser()
 __config.read('setup.cfg')
-debug = True if __config["build_ext"]["debug"].lower()  in ["1","true"] else False 
-force = True if __config["build_ext"]["force"].lower()  in ["1","true"] else False 
+debug = True if __config["build_ext"]["debug"].lower()  in ["1","true"] else False
+force = True if __config["build_ext"]["force"].lower()  in ["1","true"] else False
 
 #Cpp sources (relative to the cpp_src folder)
 cpp_src = ("LinAlg/EigenTools.cpp",
@@ -49,14 +48,14 @@ cython_src = (
 
 try:
     from Cython.Build import cythonize
-    import eigency
     from Cython.Compiler import Options
+    import eigency
 
     code = compile(open("src/BasicTools/Containers/ElementNames.py").read(),"src/BasicTools/Containers/ElementNames.py","exec")
     res = {}
     exec(code,res)
     res["GeneratertElementNamesCpp"]()
-    
+
     Options.fast_fail = True
     Options.embed = True
 
@@ -71,10 +70,10 @@ try:
 
     basictools_src_path = os.path.join("src", "BasicTools")
     cython_src_with_path  = [os.path.join(basictools_src_path, src) for src in cython_src]
-    
+
     for n,m in zip(cython_src,cython_src_with_path):
-        cythonextension.append(Extension("BasicTools."+n.split(".pyx")[0].replace("/","."), [m],libraries=["CppBasicTools"], include_dirs=["./cpp_src/"])) 
-        
+        cythonextension.append(Extension("BasicTools."+n.split(".pyx")[0].replace("/","."), [m],libraries=["CppBasicTools"], include_dirs=["./cpp_src/"]))
+
     modules.extend(cythonize(cythonextension, gdb_debug=debug, annotate=annotate, force=force))
 
 except ImportError as e:
@@ -89,7 +88,7 @@ class build_ext_compiler_check(build_ext):
         filename = super().get_ext_filename(ext_name)
         if filename.find("libCppBasicTools") == 0 :
             return filename.split(".")[0]+"."+filename.split(".")[-1]
-        return filename 
+        return filename
 
     def finalize_options(self):
         super().finalize_options()
@@ -164,10 +163,10 @@ class build_ext_compiler_check(build_ext):
             include_dirs.append(os.path.join(conda_prefix, "include"))
             include_dirs.append(os.path.join(conda_prefix, "include", "eigen3"))
             include_dirs.append(os.path.join(conda_prefix, "Library", "include"))
-        
+
 
         return include_dirs
-        
+
 if __name__ == '__main__':
     setup(
         ext_modules=modules,
