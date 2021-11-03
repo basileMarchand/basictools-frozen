@@ -38,19 +38,20 @@ def Redistance(mesh,phi,method="Interp/Extrap"):
     res *= sign
     return res
 
-def ComputeDistanceToIsoZero(mesh, phi, targetPoints,method="Interp/Extrap"):
+def ComputeDistanceToIsoZero(mesh, phi, targetPoints, method="Interp/Extrap"):
     IGTM = IGToMesh(mesh,phi )
     interfaceMesh = IGTM.ComputeInterfaceMesh()
     pos = TransportPosToPoints(interfaceMesh,targetPoints,method=method)
     return np.sqrt(np.sum((targetPoints - pos)**2,axis=1))
 
 class IGToMesh:
-    def __init__(self,imesh=None,phi=None):
+    def __init__(self, imesh=None, phi=None):
         self.inputMesh = imesh
         self.SetPhi(phi)
 #        self.meshPartition = False
+        self.volMesh = None
 
-    def SetPhi(self,phi,snapValues=True, snapTol = 1e-5):
+    def SetPhi(self,phi, snapValues=True, snapTol = 1e-5):
         if phi is None:
             self.phi = None
             return
@@ -81,25 +82,25 @@ class IGToMesh:
         ef = IntersectionElementFilter(self.inputMesh,[ef1,ef2])
 
         def AddElement(pos_id,neg_id,td,p):
-                if pos_id is not None:
-                    if np.cross(xyz[p[2]]-xyz[p[1]],xyz[p[0]]-xyz[p[1]]).dot(inputNodes[pos_id,:]-pcontrol_point ) > 0:
-                        td.AddNewElement(p,0)
-                    else:
-                        td.AddNewElement(np.flip(p),0)
-                elif neg_id is not None:
-                    if np.cross(xyz[p[2]]-xyz[p[1]],xyz[p[0]]-xyz[p[1]]).dot(inputNodes[neg_id,:]-ncontrol_point ) > 0:
-                        td.AddNewElement(np.flip(p),0)
-                    else:
-                        td.AddNewElement(p,0)
+            if pos_id is not None:
+                if np.cross(xyz[p[2]]-xyz[p[1]],xyz[p[0]]-xyz[p[1]]).dot(inputNodes[pos_id,:]-pcontrol_point ) > 0:
+                    td.AddNewElement(p,0)
                 else:
-                    raise
+                    td.AddNewElement(np.flip(p),0)
+            elif neg_id is not None:
+                if np.cross(xyz[p[2]]-xyz[p[1]],xyz[p[0]]-xyz[p[1]]).dot(inputNodes[neg_id,:]-ncontrol_point ) > 0:
+                    td.AddNewElement(np.flip(p),0)
+                else:
+                    td.AddNewElement(p,0)
+            else:
+                raise
 
         for name, data, ids in ef:
             if EN.dimension[name] == 1 :
                 #continue
                 pointElements = omesh.elements.GetElementsOfType(EN.Point_1)
-                for eid in ids:    
-                    lcoon = data.connectivity[eid,:]    
+                for eid in ids:
+                    lcoon = data.connectivity[eid,:]
                     phi0 = self.phi[lcoon[0]]
                     phi1 = self.phi[lcoon[1]]
                     x = phi0/(phi0-phi1)
@@ -183,7 +184,6 @@ class IGToMesh:
 
                     barElements.AddNewElement(cutpoints,0)
                     continue
-                    
 
                 if len(cutpoints) < 3:
                     continue
@@ -213,7 +213,6 @@ class IGToMesh:
                     else:
                         AddElement(pos_id,neg_id,quadElements,cutpoints2)
 
-                    
                 else:
                     tri = Delaunay(XX)
                     for simple in tri.simplices:
@@ -256,7 +255,7 @@ def CheckIntegrity(GUI=False):
     WriteMeshToXdmf(tempdir+'SphereIsoZero.xdmf',omesh)
     print("Iso zero mesh in " +tempdir+'SphereIsoZero.xdmf')
     phi2 = phi*2
-    NewPhi = Redistance(myMesh,phi2)
+    NewPhi = Redistance(myMesh,phi2,method="Interp/Clamp")
 
     #print("NewPhi")
     #print(NewPhi)
