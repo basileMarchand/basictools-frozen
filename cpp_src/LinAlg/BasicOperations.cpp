@@ -20,7 +20,7 @@ void inv22(MatrixDDD& m,MatrixDDD &minv,double& det ){
         minv(1,0) = -m(1,0)* invdet;
         minv(0,1) = -m(0,1)* invdet;
         minv(1,1) =  m(0,0)* invdet;
-}; 
+};
 
 void inv33(MatrixDDD& m,MatrixDDD &minv,double& det ){
         det = m(0, 0) * (m(1, 1) * m(2, 2) - m(2, 1) * m(1, 2)) -
@@ -40,7 +40,7 @@ void inv33(MatrixDDD& m,MatrixDDD &minv,double& det ){
         minv *=  (1./det);
 };
 
-void Inv_Jacobian_Det(MapMatrixDDD& valdphidxi,
+void GetInv_Jacobian_Det(MapMatrixDDD& valdphidxi,
                    MatrixDDD&  xcoor,
                    int& Dimensionality,
                    MatrixDDD&  Jack,
@@ -167,7 +167,7 @@ void Inv_Jacobian_Det(MapMatrixDDD& valdphidxi,
   };
 
 //
-void Inv_Jacobian_Det(MapMatrixDDD& valdphidxi,
+void GetInv_Jacobian_Det(MapMatrixDDD& valdphidxi,
                    MatrixDD3&  xcoor,
                    int& Dimensionality,
                    MatrixDDD&  Jack,
