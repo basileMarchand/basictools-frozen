@@ -1,13 +1,21 @@
+# -*- coding: utf-8 -*-
+#
+# This file is subject to the terms and conditions defined in
+# file 'LICENSE.txt', which is part of this source code package.
+#
+#
 from BasicTools.Containers.ElementNames import ElementsInfo
 from cpp_generators.aux import PrintHeader, PrintToFile, PrintFillMatrix, PrintBool, PrintFillVMatrix
 
 def GetGeneratedFiles(prefix = "cpp_src/"):
+    """Get the list of generated files for this generator"""
     return ( prefix+ "Containers/GeneratedElementNames.cpp",)
 
 def Generate(prefix = "cpp_src/"):
+    """Run the generation of cpp file using the prefix"""
     filename = prefix + "Containers/GeneratedElementNames.cpp"
-    
-    with open(filename,"w") as cppfile:
+
+    with open(filename,"w", encoding="utf8") as cppfile:
         PrintHeader(cppfile)
         cppfile.write("""
 #include <Containers/ElementNames.h>
@@ -52,22 +60,22 @@ std::map<std::string,ElementInfo> InitElementNames() {
     ElementNames["{elemtype}"].numberOfNodes = {non};
     ElementNames["{elemtype}"].geoSupport = Geo{geoname};
     ElementNames["{elemtype}"].name = "{elemtype}";""".format(elemtype=elemtype,non = ei.numberOfNodes,geoname=ei.geoSupport.name.capitalize()))
- 
+
             PrintFillMatrix(cppfile,f"""    ElementNames["{elemtype}"].mirrorPermutation""",ei.mirrorPermutation)
             PrintBool(cppfile,f"""    ElementNames["{elemtype}"].linear """, ei.linear)
             PrintToFile(cppfile,f"""    ElementNames["{elemtype}"].degree = {ei.degree}; """ )
             for e,n in ei.faces:
-                    PrintToFile(cppfile,"    {")
-                    PrintToFile(cppfile,"        MatrixID1 faces;")
-                    PrintFillVMatrix(cppfile,f"""        faces""",n)
-                    PrintToFile(cppfile,f"""        ElementNames["{elemtype}"].faces.push_back(std::pair<ElementInfo,MatrixID1>(ElementNames["{e}"],faces) );""" )
-                    PrintToFile(cppfile,"    }")
+                PrintToFile(cppfile,"    {")
+                PrintToFile(cppfile,"        MatrixID1 faces;")
+                PrintFillVMatrix(cppfile,"""        faces""",n)
+                PrintToFile(cppfile,f"""        ElementNames["{elemtype}"].faces.push_back(std::pair<ElementInfo,MatrixID1>(ElementNames["{e}"],faces) );""" )
+                PrintToFile(cppfile,"    }")
             for e,n in ei.faces2:
-                    PrintToFile(cppfile,"    {")
-                    PrintToFile(cppfile,"        MatrixID1 faces2;")
-                    PrintFillVMatrix(cppfile,f"""        faces2""",n)
-                    PrintToFile(cppfile,f"""        ElementNames["{elemtype}"].faces2.push_back(std::pair<ElementInfo,MatrixID1>(ElementNames["{e}"],faces2) );""" )
-                    PrintToFile(cppfile,"    }")
+                PrintToFile(cppfile,"    {")
+                PrintToFile(cppfile,"        MatrixID1 faces2;")
+                PrintFillVMatrix(cppfile,"""        faces2""",n)
+                PrintToFile(cppfile,f"""        ElementNames["{elemtype}"].faces2.push_back(std::pair<ElementInfo,MatrixID1>(ElementNames["{e}"],faces2) );""" )
+                PrintToFile(cppfile,"    }")
         PrintToFile(cppfile,"""
     return ElementNames;
 };
