@@ -9,6 +9,7 @@
 
 import copy
 import time
+import locale
 
 from BasicTools.Containers.Filters import ElementFilter
 _startTime = time.time()
@@ -116,6 +117,36 @@ try:
             self.__TagsAsFields = bool(val)
             self.Modified()
 
+        @smproperty.xml("""<IntVectorProperty
+                            name="Encoding"
+                            command="SetEncoding"
+                            panel_visibility="advanced"
+                            number_of_elements="1"
+                            default_values="-1">
+            <EnumerationDomain name="enum">
+              <Entry value="-1" text="locale"/>
+              <Entry value="0" text="utf-8"/>
+              <Entry value="1" text="ascii"/>
+              <Entry value="2" text="latin-1"/>
+            </EnumerationDomain>
+            <Documentation>
+              This property indicates with which encoding to use to open the file
+            </Documentation>
+             </IntVectorProperty>""")
+        def SetEncoding(self, val):
+            reader =  self.basicToolsReader
+            val = int(val)
+            data = {-1:locale.getpreferredencoding(False),
+                     0:"utf-8",
+                     1:"ascii",
+                     2:"latin-1"}
+            val = data[val]
+
+            if reader.encoding == val:
+                return
+            reader.encoding = val
+            self.Modified()
+
         def RequestInformation(self, request, inInfoVec, outInfoVec):
             executive = self.GetExecutive()
             outInfo = outInfoVec.GetInformationObject(0)
@@ -154,6 +185,7 @@ try:
                    "SetFileName": SetFileName,
                    "GetTimestepValues": GetTimestepValues,
                    "SetTagsAsFields":SetTagsAsFields,
+                   "SetEncoding":SetEncoding,
                    "RequestData":RequestData,
                    "RequestInformation":RequestInformation}
                    )
@@ -291,7 +323,7 @@ try:
         locals()[wrapperClassName] = obj3
 
     #----------------------------- The Filters ------------------------------------
-    
+
     def ConstructSkeletonForTensorVectorFields(data, sep="_",sufix = [{"x":0,"y":1,"z":2},{"X":0,"Y":1,"Z":2},{"XX":0, "YY":1, "ZZ":2, "XY":3, "XZ":4, "YZ":5},{"xx":0, "yy":1, "zz":2, "xy":3, "xz":4, "yz":5}]):
         from collections import defaultdict
         res = defaultdict(lambda : dict())
@@ -306,15 +338,15 @@ try:
                         if pos in res[newname]:
                             raise(Exception(f"field {name} confict with {res[newname][pos]}"))
                         res[newname][pos] = name
-                
+
                         done = True
             if not done:
                 if 0 in res[name]:
                     raise(Exception(f"field {name} confict with {res[newname][0]}"))
                 res[name][0] = name
         return res
-        
-    
+
+
     @smproxy.filter(name="Scalar To Tensor/Vector")
     @smhint.xml("""<ShowInMenu category="BasicTools" />""")
     @smproperty.input(name="Input", port_index=0)
@@ -324,7 +356,7 @@ try:
             VTKPythonAlgorithmBase.__init__(self, nInputPorts=1, nOutputPorts=1, outputType="vtkUnstructuredGrid")
             self.onCellData =  True
             self.onPointData =  True
-        
+
         def RequestData(self, request, inInfoVec, outInfoVec):
 
             def TreatDataSet(inputData,outputData,nbtuples):
@@ -346,10 +378,10 @@ try:
                     newdata = numpy_support.numpy_to_vtk(num_array=npdata, deep=True)
                     newdata.SetNumberOfComponents(nbcomponents)
                     newdata.SetName(name)
-                    if nbcomponents == 3: 
+                    if nbcomponents == 3:
                         for i in range(3):
                             newdata.SetComponentName(i,["X","Y","Z"][i])
-                    elif nbcomponents == 6: 
+                    elif nbcomponents == 6:
                         for i in range(6):
                             newdata.SetComponentName(i,["XX","YY","ZZ","XY","XZ","YZ"][i])
                     outputData.AddArray(newdata)
@@ -372,7 +404,7 @@ try:
                              number_of_elements="1" default_values="1">
                              <BooleanDomain name="bool"/>
         <Documentation>
-          This property indicates if the cell data must be treated 
+          This property indicates if the cell data must be treated
         </Documentation>
                              </IntVectorProperty>""")
         def SetOnCellData(self, val):
@@ -385,7 +417,7 @@ try:
                              number_of_elements="1" default_values="1">
                              <BooleanDomain name="bool"/>
         <Documentation>
-          This property indicates if the point data must be treated 
+          This property indicates if the point data must be treated
         </Documentation>
                              </IntVectorProperty>""")
         def SetOnPointData(self, val):
@@ -411,7 +443,7 @@ try:
 
         def RequestData(self, request, inInfoVec, outInfoVec):
             inMesh = GetInputBasicTools(request, inInfoVec, outInfoVec, True)
-            
+
             if self.onPointTags:
                 tagsToDelete = list(filter(lambda x: x.find(self.prefix) == -1, inMesh.nodesTags.keys()))
                 print("tagsToDelete",tagsToDelete)
@@ -568,8 +600,8 @@ try:
             # the user must not modify the inputs
             outputmesh = copy.copy(input1)
             outputmesh.nodeFields["status"] = status
-            for n,v in input0.nodeFields.items(): 
-                outputmesh.nodeFields[n] = op.dot(v) 
+            for n,v in input0.nodeFields.items():
+                outputmesh.nodeFields[n] = op.dot(v)
             outputmesh.nodeFields["SourceCoords"] = op.dot(input0.nodes)
             SetOutputBasicTools(request, inInfoVec, outInfoVec,outputmesh )
             return 1
@@ -637,14 +669,14 @@ try:
             fieldstoTreat = [ [ part1+x for x in p] for p in part2]
 
             newfields = ApplyRotationMatrixTensorField(data, fieldstoTreat, baseNames=[self.V1Name,self.V2Name],inplace=False,prefix="new_",inverse=self.__inverse)
-            
+
             if self.WorkOnCells:
                 data.update(newfields)
                 outputmesh.elemFields = data
             else:
                 data = input0.nodeFields
                 outputmesh.elemFields = data
-                
+
             SetOutputBasicTools(request, inInfoVec, outInfoVec, outputmesh, TagsAsFields=True )
             return 1
 
@@ -674,7 +706,7 @@ Select the input array to use for orienting the glyphs.
                 self.V1Name = val[4]
                 self.WorkOnCells = val[3]
                 self.Modified()
-    
+
         @smproperty.xml("""<StringVectorProperty command="SetV2Array"
                             default_values="1"
                             element_types="0 0 0 0 2"
@@ -698,7 +730,7 @@ Select the input array to use for orienting the glyphs.
                 self.V2Name = val[4]
                 self.WorkOnCells = val[3]
                 self.Modified()
-        
+
         @smproperty.xml("""<StringVectorProperty command="SetStressArray"
                             default_values="1"
                             element_types="0 0 0 0 2"
@@ -730,7 +762,7 @@ Select the input array to use for orienting the glyphs.
                              default_values="0">
                              <BooleanDomain name="bool"/>
             <Documentation>
-              This property indicates if we need to apply the invers of the transformation. 
+              This property indicates if we need to apply the invers of the transformation.
             </Documentation>
             </IntVectorProperty>""")
         def SetInverse(self, val):
@@ -876,7 +908,7 @@ Select the input array to use for orienting the glyphs.
             the mesh.</Documentation>
           </StringVectorProperty>""")
         def SetElementTagsArrayStatus(self,key, val):
-            if self.__elemTagsFilter[key] != int(val):
+            if (key in self.__elemTagsFilter) and (self.__elemTagsFilter[key] != int(val)) :
                 self.__elemTagsFilter[key] = int(val)
                 self.Modified()
 
