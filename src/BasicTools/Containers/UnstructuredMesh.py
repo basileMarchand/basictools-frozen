@@ -6,11 +6,10 @@
 
 import numpy as np
 
-
 import BasicTools.Containers.ElementNames as ElementNames
 from BasicTools.Containers.MeshBase import MeshBase
-from BasicTools.Containers.MeshBase import Tag
 from BasicTools.Containers.MeshBase import Tags
+from BasicTools.Containers.Filters import ElementFilter
 
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject, froze_it
 
@@ -50,19 +49,19 @@ class ElementsContainer(BaseOutputObject):
 
         if self.elementType != other.elementType:
             return False
-            
+
         self.tighten()
         other.tighten()
-        
+
         if not np.array_equal(self.connectivity, other.connectivity):
             return False
 
         if not np.array_equal(self.originalIds, other.originalIds):
             return False
-        
+
         if self.tags != other.tags:
             return False
-        
+
         if self.originalOffset != other.originalOffset:
             return False
 
@@ -146,7 +145,8 @@ class ElementsContainer(BaseOutputObject):
         """
         return the number of nodes per element for the elements in this container
         """
-        if  self.connectivity.shape[1] : return self.connectivity.shape[1]
+        if  self.connectivity.shape[1]:
+            return self.connectivity.shape[1]
         return ElementNames.numberOfNodes[self.elementType]
 
     def GetNodesIdFor(self,ids):
@@ -173,12 +173,10 @@ class ElementsContainer(BaseOutputObject):
         matrix after the population
 
         """
-        if (nbElements != self.connectivity.shape[0]):
+        if nbElements != self.connectivity.shape[0]:
             self.connectivity =  np.resize(self.connectivity, (nbElements,self.GetNumberOfNodesPerElement()))
             self.originalIds =  np.resize(self.originalIds, (nbElements,))
 
-            #self.connectivity = np.empty((nbElements,self.GetNumberOfNodesPerElement()),dtype=np.int)
-            #self.originalIds = np.empty((nbElements,),dtype=np.int)
     def Allocate(self,nbElements):
         """
         Allocate the storage for nbElements
@@ -230,7 +228,7 @@ class AllElements(object):
     def __init__(self):
         super(AllElements,self).__init__()
         self.storage = {}
-    
+
     def __eq__(self, other):
         if len(self.storage) != len(other.storage):
             return False
@@ -246,6 +244,9 @@ class AllElements(object):
     def keys(self):
         return sorted(self.storage.keys())
 
+    def values(self):
+        return [ values for key,values in sorted(self.storage.items()) ]
+
     def __iter__(self):
         return iter(self.keys())
 
@@ -254,7 +255,7 @@ class AllElements(object):
 
     #send basis functions calls to the storage dictionary
     def __setitem__(self, key, value):
-            self.storage[key] = value
+        self.storage[key] = value
 
     def __len__(self):
         return len(self.storage)
@@ -275,14 +276,14 @@ class AllElements(object):
 
     def GetTagsNames(self):
         res = set()
-        for name,data in self.items():
+        for data in self.values():
             res.update(data.tags.keys() )
 
         return list(res)
 
     def __str__(self):
         res = ""
-        for name,data in self.storage.items():
+        for data in self.storage.values():
             res += str(data)
         return res
 
@@ -337,7 +338,7 @@ class UnstructuredMesh(MeshBase):
 
     def ConvertDataForNativeTreatment(self):
         self.nodes = np.asarray(self.nodes, dtype=float, order="C")
-        for elemtype, data in self.elements.items():
+        for data in self.elements.values():
             data.connectivity = np.asarray(data.connectivity, dtype=int, order="C")
 
     def GetNumberOfNodes(self):
@@ -346,34 +347,35 @@ class UnstructuredMesh(MeshBase):
         """
         return self.nodes.shape[0]
 
-    def SetNodes(self,array_like,originalIDNodes=None, generateOriginalIDs = False):
-
-        self.nodes = np.require(array_like,dtype=float,requirements=['C','A'])
+    def SetNodes(self, arrayLike, originalIDNodes=None, generateOriginalIDs = False):
+        """
+        Set nodes and original Ids in the correct internal data
+        """
+        self.nodes = np.require(arrayLike,dtype=float,requirements=['C','A'])
         if originalIDNodes is not None:
             self.originalIDNodes = np.require(originalIDNodes,dtype=int,requirements=['C','A'])
         elif generateOriginalIDs:
             self.originalIDNodes = np.arange(self.GetNumberOfNodes())
-            
+
     def GetDimensionality(self):
         """
         return the dimensionality 2/3
         """
         return self.nodes.shape[1]
 
-    def GetNumberOfElements(self,dim = None):
+    def GetNumberOfElements(self, dim = None):
         """
         Compute and return the total number of elements in the mesh
         """
-        n = 0
-        for elemname, data in self.elements.items():
-            if dim == None:
-                n += data.GetNumberOfElements()
-            else:
+        numberOfElements = 0
+        if dim == None:
+            for elemname, data in self.elements.items():
+                numberOfElements += data.GetNumberOfElements()
+        else:
+            for elemname, data in self.elements.items():
                 if ElementNames.dimension[elemname] == dim:
-                    n += data.GetNumberOfElements()
-        return n
-
-
+                    numberOfElements += data.GetNumberOfElements()
+        return numberOfElements
 
     def MergeElements(self,other,force=False):
         """
@@ -396,10 +398,9 @@ class UnstructuredMesh(MeshBase):
         """
 
         cpt = 0
-        for type, data in self.elements.items():
+        for data in self.elements.values():
             data.globaloffset = cpt
-            n = data.GetNumberOfElements()
-            cpt = cpt + n
+            cpt += data.GetNumberOfElements()
 
     def ComputeBoundingBox(self):
         """
@@ -423,7 +424,7 @@ class UnstructuredMesh(MeshBase):
         """
         add a element (using the originalid) to a tag (tagname)
         """
-        for ntype, data in self.elements.items():
+        for data in self.elements.values():
             w = np.where(data.originalIds[:data.cpt] == oid)
             if len(w[0]) > 0 :
                 data.tags.CreateTag(tagname,False).AddToTag(w[0])
@@ -438,7 +439,7 @@ class UnstructuredMesh(MeshBase):
         """
         elementNotTreated = np.unique(globalElemNumbers)
         cpt = 0
-        for ntype, data in self.elements.items():
+        for data in self.elements.values():
             cpt2 = data.GetNumberOfElements() +cpt
             f = elementNotTreated < cpt2
             dataToTreat = elementNotTreated[f]
@@ -456,7 +457,7 @@ class UnstructuredMesh(MeshBase):
         add a element (using the global element number) to a tag (tagname)
         # you must compute the globaloffset first to make this function work
         """
-        for ntype, data in self.elements.items():
+        for data in self.elements.values():
             if data.AddElementToTag(globalElemNumber,tagname):
                 return
         raise Exception("No element found") #pragma: no cover
@@ -467,7 +468,7 @@ class UnstructuredMesh(MeshBase):
         """
         #check not a string but a list like
         assert not isinstance(tagNames, str)
-        for ntype, data in self.elements.items():
+        for data in self.elements.values():
             data.tags.DeleteTags(tagNames)
 
     def GetPosOfNode(self, i ):
@@ -499,7 +500,7 @@ class UnstructuredMesh(MeshBase):
         Set from a single list all the originalid
         """
         cpt = 0
-        for ntype, data in self.elements.items():
+        for data in self.elements.values():
             data.originalIds = originalIDs[cpt:data.GetNumberOfElements()+cpt]
             cpt += data.GetNumberOfElements()
 
@@ -509,16 +510,15 @@ class UnstructuredMesh(MeshBase):
         return a list with the ids of the elements in a tag
         The user must compute the globaloffset first to make this function work
         """
-        ne = self.GetNumberOfElements()
-        res = np.zeros((ne,),dtype=np.int)
+        res = np.zeros((self.GetNumberOfElements(),),dtype=np.int)
         cpt =0
-        for ntype, elem in self.elements.items():
-            if tagname in elem.tags:
-                tag = elem.tags[tagname].GetIds()
+        for data in self.elements.values():
+            if tagname in data.tags:
+                tag = data.tags[tagname].GetIds()
                 if useOriginalId:
-                    res[cpt:cpt+len(tag) ] = elem.originalIds[tag]
+                    res[cpt:cpt+len(tag) ] = data.originalIds[tag]
                 else:
-                    res[cpt:cpt+len(tag) ] = elem.globaloffset+tag
+                    res[cpt:cpt+len(tag) ] = data.globaloffset+tag
                 cpt +=  len(tag)
         return res[0:cpt]
 
@@ -528,12 +528,10 @@ class UnstructuredMesh(MeshBase):
         and final treatement (offset computation)
         """
         self.nodesTags.Tighten()
-        for ntype, data in self.elements.items():
-             data.tighten()
+        for data in self.elements.values():
+            data.tighten()
         self.ComputeGlobalOffset()
-
         self.VerifyIntegrity()
-
 
     def __str__(self):
         res  = "UnstructuredMesh \n"
@@ -541,11 +539,11 @@ class UnstructuredMesh(MeshBase):
         res += "    Tags : " + " ".join( ["("+x.name+":"+str(len(x))+")" for x in  self.nodesTags ]) + "\n"
 
         res += "  Number Of Elements : {} \n".format(self.GetNumberOfElements())
-        for name,data in self.elements.items():
+        for data in self.elements.values():
             res += str(data)
-        if len(self.nodeFields.keys()):
+        if len(self.nodeFields.keys()) > 0:
             res += "  nodeFields         : " + str(list(self.nodeFields.keys())) + "\n"
-        if len(self.elemFields.keys()):
+        if len(self.elemFields.keys()) > 0:
             res += "  elemFields         : " + str(list(self.elemFields.keys())) + "\n"
         return res
 
@@ -553,90 +551,88 @@ class UnstructuredMesh(MeshBase):
         #verification nodes an originalIdNodes are compatible
         if len(self.nodes.shape) !=2:
             raise Exception("Error in the shape of nodes")
-        
-        if self.nodes.flags['C_CONTIGUOUS'] == False:
+
+        if self.nodes.flags['C_CONTIGUOUS'] is False:
             raise Exception("Error in the order of nodes")
-        
+
         if len(self.originalIDNodes.shape) !=1:
             print(self.originalIDNodes.shape)
             raise Exception("Error in the shape of originalIDNodes")
 
-        if self.originalIDNodes.flags['C_CONTIGUOUS'] == False:
+        if self.originalIDNodes.flags['C_CONTIGUOUS'] is False:
             raise Exception("Error in the order of originalIDNodes")
 
         if self.originalIDNodes.shape[0] != self.nodes.shape[0]:
             print(self.originalIDNodes.shape)
-            print(self.nodes)
+            print(self.nodes.shape)
             raise Exception("nodes and originalIDNodes are incompatible")
 
         nbnodes = self.nodes.shape[0]
 
         #verification of min max in nodes tags
-        for k,v in self.nodesTags.items():
-            ids = v.GetIds()
+        for elemtype,data in self.nodesTags.items():
+            ids = data.GetIds()
             if len(ids) == 0:
                 continue
             if ids[0] < 0:
-                raise Exception("Ids of '"+ k +"' tag out of bound (<0)")
+                raise Exception("Ids of '"+ elemtype +"' tag out of bound (<0)")
             if ids[-1] >= nbnodes:
                 print(ids)
                 print(nbnodes)
-                raise Exception("Ids of '"+ k +"' tag out of bound > nbnodes")
+                raise Exception("Ids of '"+ elemtype +"' tag out of bound > nbnodes")
 
-        # verification of elements        
-        for k,v in self.elements.items():
-
-            if v.connectivity.flags['C_CONTIGUOUS'] == False:
+        # verification of elements
+        for elemtype, data in self.elements.items():
+            if data.connectivity.flags['C_CONTIGUOUS'] is False:
                 raise Exception("Error :  connectivity not C_CONTIGUOUS")
 
-            if len(v.connectivity.shape) != 2:
-                raise Exception("Wrong shape of connetivity of elements '"+ k +"'")
-            
-            if v.connectivity.shape == False:
+            if len(data.connectivity.shape) != 2:
+                raise Exception("Wrong shape of connetivity of elements '"+ elemtype +"'")
+
+            if data.connectivity.shape is False:
                 raise Exception("Error in the order of connecitivty")
 
-            if v.originalIds.shape[0] != v.connectivity.shape[0]:
-                print(v.originalIds.shape[0])
-                print(v.connectivity.shape[0])
-                raise Exception("connectivity and originalIds are incompatible '"+k+"'")
+            if data.originalIds.shape[0] != data.connectivity.shape[0]:
+                print(data.originalIds.shape[0])
+                print(data.connectivity.shape[0])
+                raise Exception("connectivity and originalIds are incompatible '"+elemtype+"'")
 
-            if v.originalIds.flags['C_CONTIGUOUS'] == False:
+            if data.originalIds.flags['C_CONTIGUOUS'] is False:
                 raise Exception("Error in the order of originalIds")
 
-            if ElementNames.numberOfNodes[k] != v.connectivity.shape[1]:
-                print(k)
-                print(ElementNames.numberOfNodes[k])
-                print(v.connectivity.shape[1])    
+            if ElementNames.numberOfNodes[elemtype] != data.connectivity.shape[1]:
+                print(elemtype)
+                print(ElementNames.numberOfNodes[elemtype])
+                print(data.connectivity.shape[1])
                 raise Exception("Incompatible number of columns of the connectivity array")
 
-            if len(v.connectivity) and  np.amin(v.connectivity) < 0:
-                raise Exception("connectivity of '"+k+"' out of bound (<0)")
+            if len(data.connectivity) and  np.amin(data.connectivity) < 0:
+                raise Exception("connectivity of '"+elemtype+"' out of bound (<0)")
 
-            if len(v.connectivity) and np.amax(v.connectivity) >= nbnodes:
-                print(v.connectivity)
+            if len(data.connectivity) and np.amax(data.connectivity) >= nbnodes:
+                print(data.connectivity)
                 print(nbnodes)
-                raise Exception("connecitivty of '"+k+"' out of bound > nbnodes")
+                raise Exception("connecitivty of '"+elemtype+"' out of bound > nbnodes")
 
-            nbelements = v.connectivity.shape[0]
+            nbelements = data.connectivity.shape[0]
 
 
             #verification of min max in nodes tags
-            for tn,tv in v.tags.items():
-                ids = tv.GetIds()
+            for tagName,tagData in data.tags.items():
+                ids = tagData.GetIds()
                 if len(ids) == 0:
                     continue
                 if ids[0] < 0:
                     print(nbelements)
                     print(ids)
-                    raise Exception("Ids of '"+ tn +"' tag out of bound (<0)")
+                    raise Exception("Ids of '"+ tagName +"' tag out of bound (<0)")
                 if ids[-1] >= nbelements:
                     print(nbelements)
                     print(ids)
-                    raise Exception("Ids of '"+ tn +"' tag out of bound > nbelements")
+                    raise Exception("Ids of '"+ tagName +"' tag out of bound > nbelements")
 
 def CheckIntegrity():
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshOfTriangles
-    from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshFromConstantRectilinearMesh
 
     res = CreateMeshOfTriangles([[0,0,0],[1,2,3],[0,1,0]], [[0,1,2]])
     res.ConvertDataForNativeTreatment()
@@ -653,7 +649,8 @@ def CheckIntegrity():
     res.ComputeGlobalOffset()
     res.AddElementToTag(1,"SecondElement")
 
-    if res.GetNumberOfElements() != 2: raise Exception()
+    if res.GetNumberOfElements() != 2:
+        raise Exception()
     res.ComputeGlobalOffset()
 
     print(res.GetDimensionality())
@@ -667,7 +664,8 @@ def CheckIntegrity():
 
     res.AddElementToTagUsingOriginalId(1,"bars")
 
-    if res.GetPosOfNodes()[1,1] != 2: raise Exception()
+    if res.GetPosOfNodes()[1,1] != 2:
+        raise Exception()
 
     print(res.PrepareForOutput())
     print(res.GetElementsInTag("bars"))
@@ -685,9 +683,10 @@ def CheckIntegrity():
 
     try:
         resII.MergeElements(res)
-        raise#pragma: no cover
+        raise #pragma: no cover
     except:
         pass
+
     resII.MergeElements(res,force=True)
     print("----")
     print(resII)
