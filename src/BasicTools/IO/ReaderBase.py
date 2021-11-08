@@ -5,7 +5,9 @@
 #
 
 import os
+import sys
 import struct
+import locale
 
 import numpy as np
 
@@ -15,7 +17,7 @@ class ReaderBase(BaseOutputObject):
 
     def __init__(self,fileName = None)    :
         super(ReaderBase,self).__init__()
-        self.fileName = None;
+        self.fileName = None
         self.readFormat = 'r'
         self.nodalFields = {}
         self.elementsFields = {}
@@ -25,6 +27,7 @@ class ReaderBase(BaseOutputObject):
         self.filePointer = None
         self.lineCounter = 0
         self.pipe = False
+        self.encoding = locale.getpreferredencoding(False)
         self.canHandleTemporal = False
 
         self.output = None
@@ -36,7 +39,7 @@ class ReaderBase(BaseOutputObject):
         self.binary = binary
         if binary:
             if self.readFormat.find("b") >= 0:
-                return 
+                return
             self.readFormat += "b"
         else:
             if self.readFormat.find("b") >= 0:
@@ -45,16 +48,15 @@ class ReaderBase(BaseOutputObject):
 
     def StartReading(self):
 
-        import sys
         if not(self.fileName is None):
             if self.readFormat.find('b') > -1 :
-                self.filePointer =  open(self.fileName, self.readFormat)
+                self.filePointer = open(self.fileName, self.readFormat)
                 self.text_stream = self.filePointer
             else:
                 #I have some problems reading with numpy fromfile if the file is
                 #open with the codecs.open
                 #import sys
-                self.filePointer =  open(self.fileName, self.readFormat)
+                self.filePointer = open(self.fileName, self.readFormat,encoding=self.encoding)
                 #import codecs
                 #if sys.version_info[0] == 2:
                 #    self.filePointer = codecs.open(self.fileName, self.readFormat, 'utf-8')
@@ -63,20 +65,20 @@ class ReaderBase(BaseOutputObject):
 
                 from io import BytesIO
                 if type(self.string) is str:
-                    self.filePointer =  BytesIO(bytearray(self.string,"ascii"))
+                    self.filePointer = BytesIO(bytearray(self.string,self.encoding))
                 else:
-                    self.filePointer =  BytesIO(self.string)
+                    self.filePointer = BytesIO(self.string)
                 self.text_stream = self.filePointer
             else:
                 import io # Python3
-                self.filePointer =  io.StringIO(self.string)
+                self.filePointer = io.StringIO(self.string)
 
                 self.text_stream = self.filePointer
         elif self.pipe:
             import os
             r, w = os.pipe()
             if self.readFormat.find('b') > -1 :
-                self.filePointer =  sys.stdin.buffer
+                self.filePointer = sys.stdin.buffer
                 #os.fdopen(r, self.readFormat)
                 self.text_stream = self.filePointer
             else:
@@ -219,7 +221,7 @@ class ReaderBase(BaseOutputObject):
 def CheckIntegrity():
 
     obj = ReaderBase()
-    obj.commentChar = "#" 
+    obj.commentChar = "#"
     obj.SetBinary(False)
     try:
         obj.StartReading()
@@ -231,7 +233,7 @@ def CheckIntegrity():
 
 2
 3
-#this is a comment   
+#this is a comment
 4"""
     obj.SetStringToRead(testString)
 
@@ -246,14 +248,14 @@ def CheckIntegrity():
         for i in range(5):
             if i != int(obj.ReadCleanLine()):
                 raise
-        #before last 
+        #before last
         if obj.ReadCleanLine() != None:
             raise
 
         error = False
         try:
-            obj.ReadCleanLine(True) # this line must fail 
-            error = True 
+            obj.ReadCleanLine(True) # this line must fail
+            error = True
         except:
             pass
 
@@ -267,7 +269,7 @@ def CheckIntegrity():
     fn = WriteTempFile('ReaderBaseTestString',testString)
     obj.SetFileName(fn)
     checkBaseReaderAscii(obj)
-   
+
 
     binarydata = np.array([0], dtype=np.int32).tobytes()
     binarydata += np.array([1], dtype=np.int64).tobytes()

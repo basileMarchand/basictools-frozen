@@ -73,7 +73,6 @@ class InputIterator:
             raise StopIteration()
         return line
 
-
 class Session:
     def __init__(self, iterator, out=None):
         self.iterator = iterator
@@ -294,6 +293,13 @@ def discriminate_tri_or_quad(nodes):
             unique_nodes = nodes
     return internal_element_type, unique_nodes
 
+def discriminate_shell181(nodes):
+    return discriminate_tri_or_quad(nodes)
+    # SHELL181: EN.Quandrangle_4
+    repeated_kl = nodes[2] == nodes[3]
+    repeated_mn = nodes[4] == nodes[5]
+    repeated_op = nodes[6] == nodes[7]
+
 def discriminate_solid185(nodes):
     # SOLID185: EN.Hexaedron_8
     # May degenerate to EN.Wedge_6, EN.Pyramid_5 or EN_Tetrahedron_4
@@ -334,6 +340,7 @@ internal_element_type_from_ansys = {
         '170': discriminate_tri_or_quad,
         '174': discriminate_tri_or_quad,
         '154': discriminate_tri_or_quad,
+        '181': discriminate_shell181,
         '185': discriminate_solid185,
         '187': discriminate_solid187
         }
