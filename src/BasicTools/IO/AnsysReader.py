@@ -28,6 +28,7 @@ class AnsysReader(ReaderBase):
         super(AnsysReader, self).__init__()
         self.commentChar = '!'
         self.readFormat = 'r'
+        self.encoding = "latin-1"
 
     def Read(self, fileName=None, string=None, out=None):
         if fileName is not None:
@@ -89,6 +90,7 @@ class Session:
         self.element_type_and_rank_from_id = dict()
         self.element_type_ids = dict() # Local to global element type numbering
         self.current_element_type = None
+        self.elementSelectoin = None
 
         # Variables
         self.substitutions = LocalVariables(prePostChars=('',''))
@@ -100,7 +102,9 @@ class Session:
                 'en': self.ParseUnblockedElement,
                 'et': self.ParseElementTypeDefinition,
                 'type': self.ParseElementTypeSelection,
-                'CMBLOCK': self.ParseTagDefinition
+                'CMBLOCK': self.ParseTagDefinition,
+                'esel': self.ParseEselDefinition,
+                'cm': self.ParseCMDefinition
                 }
 
         def Pass(args): pass
@@ -181,6 +185,49 @@ class Session:
         et = int(self.substitutions.Apply(args[0]))
         self.current_element_type = et
 
+    def ParseCMDefinition(self,args):
+        #cm,PEAU_MAT_COMPOSITE_SKIN_SPAR_B_3,elem
+        if args[1].lower() != "elem":
+            return
+        tagname = args[0]
+        for selection in self.elementSelection:
+            for names, data in self.result.elements.items():
+                if selection in data.tags:
+                    data.tags.CreateTag(tagname,False).AddToTag(data.tags[selection].GetIds())
+
+    def ParseEselDefinition(self,args):
+        #esel,s,type,,2
+        #esel,a,type,,3,18
+        #esel,a,type,,22,29
+        if args[0].lower() == "none":
+            self.elementSelection = []
+            return
+
+        if args[0].lower() == "all":
+            self.elementSelection = None
+            return
+
+        if args[0].lower() == "s":
+            self.elementSelection = []
+        elif args[0].lower() == "a":
+            pass
+
+        if args[1].lower() =="type":
+            VMIN = int(args[3])
+            if len(args) > 4:
+                VMAX = int(args[4])
+            else:
+                VMAX = VMIN
+
+            if len(args) > 5:
+                VINC = int(args[5])
+            else:
+                VINC = 1
+
+            for et in range(VMIN,VMAX+1,VINC):
+                self.elementSelection.append(f"et_{et}")
+
+
     def ParseTagDefinition(self, args):
         tag_name = args[0].strip()
         kind = args[1]
@@ -204,7 +251,7 @@ class Session:
             tag = self.result.nodesTags.CreateTag(tag_name)
             tag.SetIds([self.node_rank_from_id[n] for n in items])
         else:
-            assert(kind == 'ELEMENT')
+            assert(kind in ('ELEMENT','ELEM') )
             for element_id in items:
                 element_type, rank = self.element_type_and_rank_from_id[element_id]
                 container = self.result.GetElementsOfType(element_type)
@@ -295,10 +342,7 @@ def discriminate_tri_or_quad(nodes):
 
 def discriminate_shell181(nodes):
     return discriminate_tri_or_quad(nodes)
-    # SHELL181: EN.Quandrangle_4
-    repeated_kl = nodes[2] == nodes[3]
-    repeated_mn = nodes[4] == nodes[5]
-    repeated_op = nodes[6] == nodes[7]
+
 
 def discriminate_solid185(nodes):
     # SOLID185: EN.Hexaedron_8
