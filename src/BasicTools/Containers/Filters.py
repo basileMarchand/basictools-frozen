@@ -9,10 +9,6 @@ import numpy as np
 
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject  as BOO
 import BasicTools.Containers.ElementNames as EN
-"""
-Filter classes of elements
-
-"""
 class Filter(BOO):
     """
     Base class to construct node and element filters
@@ -108,9 +104,9 @@ class Filter(BOO):
         res = np.zeros(numberOfObjects,dtype=bool)
         for tag in self.tags:
             if tag in tags:
-                res[tags[tag].GetIds()] = True 
+                res[tags[tag].GetIds()] = True
         return np.nonzero(res)[0]
-               
+
 
     def intersect1D(self,first,second):
         """
@@ -190,18 +186,18 @@ class NodeFilter(Filter):
         :return: the filtered ids
         :rtype: list(int)
         """
-        if len(self.etags):
+        if len(self.etags) > 0:
             ff =ElementFilter(self.mesh,tags=self.etags)
             class OP():
-                 def __init__(self):
-                     self.set = set()
+                def __init__(self):
+                    self.set = set()
 
-                 def __call__(self,name,data,ids):
-                     self.set.update(data.GetNodesIdFor(ids))
+                def __call__(self,name,data,ids):
+                    self.set.update(data.GetNodesIdFor(ids))
             op = OP()
             ff.ApplyOnElements(op)
-            if len(op.set):
-               resE = list(op.set)
+            if len(op.set) > 0:
+                resE = list(op.set)
             else:
                 resE = None
         else:
@@ -289,7 +285,7 @@ class FilterOP(BOO):
 
     @property
     def zoneTreatment(self, zt):
-        raise(Exception("Cant ask zoneTreatment to a FilterOP") )
+        raise Exception("Cant ask zoneTreatment to a FilterOP")
 
     @zoneTreatment.setter
     def zoneTreatment(self, zt):
@@ -298,7 +294,7 @@ class FilterOP(BOO):
 
     def Complementary(self):
         # the complementary of the complementary is the original filter
-        if isinstance(self,ComplementaryObject): 
+        if isinstance(self,ComplementaryObject):
             return self.filters[0]
         return ComplementaryObject(mesh=self.mesh,filters=[self])
 
@@ -307,13 +303,13 @@ class FilterOP(BOO):
             if mesh is None:
                 return self
             else:
-                raise(Exception("Can't freeze a FrozenFilter with a new mesh"))
-        
+                raise Exception("Can't freeze a FrozenFilter with a new mesh")
+
         if mesh is not None:
             return FrozenFilter(mesh=mesh, filters=[self])
 
         if self.mesh is None:
-            raise(Exception("Need to set the mesh first on the filter or provide one"))
+            raise Exception("Need to set the mesh first on the filter or provide one")
         else:
             return FrozenFilter(mesh=self.mesh, filters=[self])
 
@@ -340,7 +336,7 @@ class FilterOP(BOO):
             elementsFound = True
             yield name, data, ids
 
-        if elementsFound == False and self.withError:
+        if elementsFound is False and self.withError:
             raise Exception("Error!! Zero element in the element filter : \n" + str(self))
 
     def ApplyOnElements(self,op):
@@ -418,7 +414,7 @@ class DifferenceElementFilter(FilterOP):
     """
     def __init__(self,mesh=None,filters=None):
         if filters is not None and len(filters) != 2:
-            raise(Exception("Need exactly 2 filter to compute the difference"))
+            raise Exception("Need exactly 2 filter to compute the difference")
         super(DifferenceElementFilter,self).__init__(mesh=mesh,filters=filters)
 
     def GetIdsToTreat(self, data):
@@ -427,30 +423,30 @@ class DifferenceElementFilter(FilterOP):
         idsA = self.filters[0].GetIdsToTreat(data)
         idsB = self.filters[1].GetIdsToTreat(data)
 
-        return np.setdiff1d(idsA, idsB) 
+        return np.setdiff1d(idsA, idsB)
 
 class ComplementaryObject(FilterOP):
-        def __init__(self,mesh=None,filters=None):
-            super(ComplementaryObject,self).__init__(mesh=mesh,filters=filters)
-            if len(self.filters) > 1 :
-                raise(Exception("ComplementaryObject Error!: filters must be of len = 1"))
+    def __init__(self,mesh=None,filters=None):
+        super(ComplementaryObject,self).__init__(mesh=mesh,filters=filters)
+        if len(self.filters) > 1 :
+            raise Exception("ComplementaryObject Error!: filters must be of len = 1")
 
-        def GetIdsToTreat(self,data):
-            if len(self.filters)  > 1:
-                raise(Exception("ComplementaryObject Error!: filters must be of len = 1"))
+    def GetIdsToTreat(self,data):
+        if len(self.filters)  > 1:
+            raise Exception("ComplementaryObject Error!: filters must be of len = 1")
 
-            f = self.filters[0]
-            ids = f.GetIdsToTreat(data)
-            if len(ids) == data.GetNumberOfElements(): return []
-            mask = np.ones(data.GetNumberOfElements(),dtype=bool)
-            mask[ids] = False
-            return np.where(mask)[0]
+        f = self.filters[0]
+        ids = f.GetIdsToTreat(data)
+        if len(ids) == data.GetNumberOfElements(): return []
+        mask = np.ones(data.GetNumberOfElements(),dtype=bool)
+        mask[ids] = False
+        return np.where(mask)[0]
 
 class IdsAsNumpyMask(FilterOP):
     def __init__(self,mesh=None,filters=None):
         super(IdsAsNumpyMask,self).__init__(mesh=mesh,filters=filters)
         if len(self.filters) > 1 :
-            raise(Exception("IdsToMask Error!: filters must be of len = 1"))
+            raise Exception("IdsToMask Error!: filters must be of len = 1")
 
     def __iter__(self):
         for name, data, ids  in self.filters[0]:
@@ -526,7 +522,7 @@ class ElementFilter(Filter):
         if zt in ["center", "allnodes", "leastonenode"]:
             self.zoneTreatment = zt
         else:
-            raise(Exception("Zone treatment not valide ({zt}), possible options are : center, allnodes, leastonenode".format(zt=zt)))
+            raise Exception("Zone treatment not valide ({zt}), possible options are : center, allnodes, leastonenode".format(zt=zt))
 
     def SetDimensionality(self,dim):
         """
@@ -566,7 +562,7 @@ class ElementFilter(Filter):
                 if eldim != self.dimensionality:
                     return False
             else:
-                if eldim == -self.dimensionality:
+                if eldim == (-self.dimensionality):
                     return False
         return True
 
@@ -618,7 +614,7 @@ class ElementFilter(Filter):
                 z = zone(self.mesh.nodes)<=0
                 res2 = np.sum(z[elements.connectivity],axis=1) > 0
             else:#pragma: no cover
-                raise(Exception("zoneTreatment unknown"))
+                raise Exception("zoneTreatment unknown")
 
             np.logical_or(res, res2 ,out=res)
 
@@ -652,7 +648,7 @@ class ElementFilter(Filter):
 
     def Complementary(self):
         # the complementary of the complementary is the original filter
-        if isinstance(self,ComplementaryObject): 
+        if isinstance(self,ComplementaryObject):
             return self.filters[0]
         return ComplementaryObject(mesh=self.mesh,filters=[self])
 
@@ -661,13 +657,13 @@ class ElementFilter(Filter):
             if mesh is None:
                 return self
             else:
-                raise(Exception("Can't freeze a FrozenFilter with a new mesh"))
-        
+                raise Exception("Can't freeze a FrozenFilter with a new mesh")
+
         if mesh is not None:
             return  FrozenFilter(mesh=mesh, filters=[self])
 
         if self.mesh is None:
-            raise(Exception("Need to set the mesh first on the filter or provide one"))
+            raise Exception("Need to set the mesh first on the filter or provide one")
         else:
             return FrozenFilter(mesh=self.mesh, filters=[self])
 
@@ -723,25 +719,26 @@ class FrozenFilter(FilterOP):
         self.__frozenData = {}
         super(FrozenFilter,self).__init__(mesh=mesh,filters=filters)
         if len(self.filters) > 1 :
-            raise(Exception("ComplementaryObject Error!: filters must be of len = 1"))
-    
+            raise Exception("ComplementaryObject Error!: filters must be of len = 1")
+
     @property
     def mesh(self):
-        return super(FrozenFilter,self).mesh 
+        return super(FrozenFilter,self).mesh
 
     @mesh.setter
     def mesh(self, m):
         if m is None:
-            return 
+            return
         if self._mesh is not None :
             if m is self._mesh:
-                return 
-            raise(Exception("You cant set the mesh 2 times"))
+                return
+            raise Exception("You cant set the mesh 2 times")
         self._mesh = m
 
+        self.filters[0].mesh = m
         for name,data in self.filters[0].mesh.elements.items():
             self.__frozenData[name] = (data,self.filters[0].GetIdsToTreat(data) )
-    
+
     def IsEquivalent(self, other):
         return self.filters[0].IsEquivalent(other)
 
@@ -881,8 +878,10 @@ def CheckIntegrity( GUI=False):
        :pyobject: CheckIntegrity
     """
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateCube
-    nx = 11; ny = 12; nz = 13;
-    mesh = CreateCube(dimensions=[nx,ny,nz],origin=[0,0,0.], spacing=[1./(nx-1),1./(ny-1), 10./(nz-1)], ofTetras=True )
+    nNodesX = 11
+    nNodesY = 12
+    nNodesZ = 13
+    mesh = CreateCube(dimensions=[nNodesX,nNodesY,nNodesZ],origin=[0,0,0.], spacing=[1./(nNodesX-1),1./(nNodesY-1), 10./(nNodesZ-1)], ofTetras=True )
     print(mesh)
 
     class NOP():
@@ -911,7 +910,7 @@ def CheckIntegrity( GUI=False):
     ff.ApplyOnNodes(op)
 
     if op.cpt != 4:#pragma: no cover
-        raise(Exception("Error finding the point"))
+        raise Exception("Error finding the point")
 
     ff.AddZone(lambda p: -1)
 
@@ -919,7 +918,7 @@ def CheckIntegrity( GUI=False):
     print(ff)
     ff.ApplyOnNodes(op)
     if op.cpt != 4:#pragma: no cover
-        raise(Exception("Error finding the point"))
+        raise Exception("Error finding the point")
 
     # example of counting the number of element in the eTag X0
     cpt = 0
@@ -987,8 +986,8 @@ def CheckIntegrity( GUI=False):
 
     op = f2.ApplyOnElements(OP())
 
-    if op.cpt != (2*(nx-1)*(ny-1)) : # pragma: no cover
-        raise(Exception("Error in the number of elements in the tag = " + str(op.cpt)+ " must be " + str((2*(nx-1)*(ny-1)))))
+    if op.cpt != (2*(nNodesX-1)*(nNodesY-1)) : # pragma: no cover
+        raise Exception("Error in the number of elements in the tag = " + str(op.cpt)+ " must be " + str((2*(nNodesX-1)*(nNodesY-1))))
 
     IF = IntersectionElementFilter(mesh=mesh,filters=[ff,f2])
     IF.ApplyOnElements(OP())
