@@ -12,7 +12,6 @@ from BasicTools.FE.WeakForms.NumericalWeakForm import SymWeakToNumWeak
 import BasicTools.FE.SymWeakForm as SWF
 
 from BasicTools.FE.Integration import IntegrateGeneral
-from BasicTools.FE.Integration import Integrate
 from BasicTools.FE.Fields.FEField import FEField
 
 
