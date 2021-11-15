@@ -12,8 +12,6 @@ from scipy.sparse import coo_matrix
 
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject as BOO,froze_it
 
-import BasicTools.Containers.ElementNames as EN
-
 from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
 from BasicTools.FE.SymWeakForm import testcharacter
 from BasicTools.FE.Fields.FEField import FEField
@@ -107,31 +105,31 @@ class MonoElementsIntegral(BOO):
         self.totalUnkownDofs = 0
         cpt = 0
         for uf in ufs:
-          self.unkownDofsOffset[cpt] = self.totalUnkownDofs
-          self.totalUnkownDofs += uf.numbering["size"]
-          cpt += 1
+            self.unkownDofsOffset[cpt] = self.totalUnkownDofs
+            self.totalUnkownDofs += uf.numbering["size"]
+            cpt += 1
 
     def SetTestFields(self,tfs=None):
-      """
-      Set the fields used for the test space
+        """
+        Set the fields used for the test space
 
-      tfs : list(FEField) list of fields
-      if tfs is none then the unkown fields are used (Galerkin projection)
-      """
-      if tfs is None:
-         tfs = []
-         for f in self.__ufs__:
-            tfs.append(FEField(name=f.name+testcharacter,mesh=f.mesh,space=f.space,numbering=f.numbering,data=f.data) )
+        tfs : list(FEField) list of fields
+        if tfs is none then the unkown fields are used (Galerkin projection)
+        """
+        if tfs is None:
+            tfs = []
+            for f in self.__ufs__:
+                tfs.append(FEField(name=f.name+testcharacter,mesh=f.mesh,space=f.space,numbering=f.numbering,data=f.data) )
 
-      self.__tfs__ = tfs
+        self.__tfs__ = tfs
 
-      self.testDofsOffset = np.zeros(len(tfs),dtype=int)
-      self.totalTestDofs = 0
-      cpt =0
-      for tf in tfs:
-          self.testDofsOffset[cpt] = self.totalTestDofs
-          self.totalTestDofs += tf.numbering["size"]
-          cpt += 1
+        self.testDofsOffset = np.zeros(len(tfs),dtype=int)
+        self.totalTestDofs = 0
+        cpt =0
+        for tf in tfs:
+            self.testDofsOffset[cpt] = self.totalTestDofs
+            self.totalTestDofs += tf.numbering["size"]
+            cpt += 1
 
     def SetExtraFields(self,efs):
         """
@@ -156,13 +154,13 @@ class MonoElementsIntegral(BOO):
         """
         self.__cfs__ = cfs
 
-    def ComputeNumberOfVIJ(self,mesh,elementFilter):
+    def ComputeNumberOfVIJ(self, mesh, elementFilter):
         """
         Compute and return the number triplets to be calculated during integration
         """
         self.numberOfVIJ = 0
         self.maxNumberOfElementVIJ = 0
-        for name,data,ids in elementFilter:
+        for name, _data, ids in elementFilter:
             if len(ids) == 0:
                 continue
             numberOfUsedElements = len(ids)
@@ -181,108 +179,133 @@ class MonoElementsIntegral(BOO):
         if itegrationRuleOrName is None :
             from BasicTools.FE.IntegrationsRules import LagrangeP1
             self.integrationRule = LagrangeP1
-        elif  type(itegrationRuleOrName) == dict :
+        elif isinstance( itegrationRuleOrName, dict):
             self.integrationRule = itegrationRuleOrName
-        elif  type(itegrationRuleOrName) == str :
+        elif isinstance(itegrationRuleOrName, str):
             from BasicTools.FE.IntegrationsRules import IntegrationRulesAlmanac
             self.integrationRule = IntegrationRulesAlmanac[itegrationRuleOrName]
         else:
-            raise(Exception("Error seting the integration rule.."))
+            raise Exception("Error seting the integration rule..")
 
     def PrepareFastIntegration(self,mesh,wform,vK,iK,jK,cpt,F):
-      """
-      Function to prepare the integration procedure, this function checks:
-          - if the weak form needs the normal at each integration point
-          - prepare the fields to be used
-          - fills each term in the weak formulation with the data about the
-            fields for fast acces
+        """
+        Function to prepare the integration procedure, this function checks:
+            - if the weak form needs the normal at each integration point
+            - prepare the fields to be used
+            - fills each term in the weak formulation with the data about the
+                fields for fast acces
 
-      mesh : a mesh
-      wform: the weak form to be integrated
-      vK,iK,jK = the vectors to store the calculated values for the K op
-      cpt
-      """
+        mesh : a mesh
+        wform: the weak form to be integrated
+        vK,iK,jK = the vectors to store the calculated values for the K op
+        cpt
+        """
 
-      self.vK = vK
-      self.iK = iK
-      self.jK = jK
-      self.F = F
+        self.vK = vK
+        self.iK = iK
+        self.jK = jK
+        self.F = F
 
-      ##we modified the internal structure (varialbe ending with _) for fast access
-      self.hasnormal = False
-      for monom in wform:
-         for term in monom:
-             if "Normal" in term.fieldName:
-                 self.hasnormal = True
-                 break
-         if self.hasnormal == True:
-             break
+        ##we modified the internal structure (varialbe ending with _) for fast access
+        self.hasnormal = False
+        for monom in wform:
+            for term in monom:
+                if "Normal" in term.fieldName:
+                    self.hasnormal = True
+                    break
+            if self.hasnormal is True:
+                break
 
-      constantNames = []
-      for x in self.__cfs__:
-          constantNames.append(x)
+        constantNames = []
+        for x in self.__cfs__:
+            constantNames.append(x)
 
-      ## spaces treatement
-      spacesId = {}
-      spacesNames = {}
-      spacesId[id(self.geoSpace)] = self.geoSpace
-      spacesNames["Geometry_Space_internal"] = id(self.geoSpace)
+        ## spaces treatement
+        spacesId = {}
+        spacesNames = {}
+        spacesId[id(self.geoSpace)] = self.geoSpace
+        spacesNames["Geometry_Space_internal"] = id(self.geoSpace)
 
-      for uf in self.__ufs__:
-          spacesId[id(uf.space)] = uf.space
-          spacesNames[uf.name] = id(uf.space)
-      for tf in self.__tfs__:
-          spacesId[id(tf.space)] = tf.space
-          spacesNames[tf.name] = id(tf.space)
-      for ef in self.__efs__:
-          spacesId[id(ef.space)] = ef.space
-          spacesNames[ef.name] = id(ef.space)
+        for uf in self.__ufs__:
+            spacesId[id(uf.space)] = uf.space
+            spacesNames[uf.name] = id(uf.space)
+        for tf in self.__tfs__:
+            spacesId[id(tf.space)] = tf.space
+            spacesNames[tf.name] = id(tf.space)
+        for ef in self.__efs__:
+            spacesId[id(ef.space)] = ef.space
+            spacesNames[ef.name] = id(ef.space)
 
-      sId = list(spacesId.keys())
-      self.__usedSpaces__ =  [ spacesId[k] for k in sId]
-      self.geoSpaceNumber = sId.index(spacesNames["Geometry_Space_internal"])
-      spacesNames = { sn:sId.index(spacesNames[sn]) for sn in spacesNames }
+        sId = list(spacesId.keys())
+        self.__usedSpaces__ =  [ spacesId[k] for k in sId]
+        self.geoSpaceNumber = sId.index(spacesNames["Geometry_Space_internal"])
+        spacesNames = { sn:sId.index(spacesNames[sn]) for sn in spacesNames }
 
-      # Numbering treatement
-      numberingId = {}
-      numberingNames = {}
-      for uf in self.__ufs__:
-          numberingId[id(uf.numbering)] = uf.numbering
-          numberingNames[uf.name] = id(uf.numbering)
-      for tf in self.__tfs__:
-          numberingId[id(tf.numbering)] = tf.numbering
-          numberingNames[tf.name] = id(tf.numbering)
-      for ef in self.__efs__:
-          numberingId[id(ef.numbering)] = ef.numbering
-          numberingNames[ef.name] = id(ef.numbering)
+        # Numbering treatement
+        numberingId = {}
+        numberingNames = {}
+        for uf in self.__ufs__:
+            numberingId[id(uf.numbering)] = uf.numbering
+            numberingNames[uf.name] = id(uf.numbering)
+        for tf in self.__tfs__:
+            numberingId[id(tf.numbering)] = tf.numbering
+            numberingNames[tf.name] = id(tf.numbering)
+        for ef in self.__efs__:
+            numberingId[id(ef.numbering)] = ef.numbering
+            numberingNames[ef.name] = id(ef.numbering)
 
-      nId = list(numberingId.keys())
-      self.__usedNumbering__ =  [ numberingId[k] for k in nId]
+        nId = list(numberingId.keys())
+        self.__usedNumbering__ =  [ numberingId[k] for k in nId]
 
-      numberingNames = { sn:nId.index(numberingNames[sn]) for sn in numberingNames}
+        numberingNames = { sn:nId.index(numberingNames[sn]) for sn in numberingNames}
 
-      # Values treatement
-      valuesId = {}
-      valuesNames = {}
-      for ef in self.__efs__:
-          valuesId[id(ef.data)] = ef.data
-          valuesNames[ef.name] = id(ef.data)
+        # Values treatement
+        valuesId = {}
+        valuesNames = {}
+        for ef in self.__efs__:
+            valuesId[id(ef.data)] = ef.data
+            valuesNames[ef.name] = id(ef.data)
 
-      vId = list(valuesId.keys())
-      self.__usedValues__ =  [ valuesId[k] for k in vId]
+        vId = list(valuesId.keys())
+        self.__usedValues__ =  [ valuesId[k] for k in vId]
 
-      valuesNames = { sn:vId.index(valuesNames[sn]) for sn in valuesNames}
+        valuesNames = { vnk:vId.index(vnv) for vnk, vnv in valuesNames.items() }
 
-      self.maxNumberOfTerms = 0;
-      for monom in wform:
-        self.maxNumberOfTerms = max(self.maxNumberOfTerms, monom.GetNumberOfProds())
-        for term in monom:
-            if "Normal" in term.fieldName :
-                term.internalType = term.EnumNormal
-            elif term.constant:
-                if term.fieldName in constantNames:
-                    term.valuesIndex_ = constantNames.index(term.fieldName)
-                    term.internalType = term.EnumConstant
+        self.maxNumberOfTerms = 0
+        for monom in wform:
+            self.maxNumberOfTerms = max(self.maxNumberOfTerms, monom.GetNumberOfProds())
+            for term in monom:
+                if "Normal" in term.fieldName :
+                    term.internalType = term.EnumNormal
+                elif term.constant:
+                    if term.fieldName in constantNames:
+                        term.valuesIndex_ = constantNames.index(term.fieldName)
+                        term.internalType = term.EnumConstant
+                    elif term.fieldName in [f.name for f in self.__efs__]:
+                        term.spaceIndex_= spacesNames[term.fieldName]
+                        term.numberingIndex_= numberingNames[term.fieldName]
+                        term.valuesIndex_= valuesNames[term.fieldName]
+                        term.internalType = term.EnumExtraField
+                    elif term.fieldName in [f.name for f in self.__ipefs__]:
+                        term.valuesIndex_= [ef.name for ef in  self.__ipefs__ ].index(term.fieldName)
+                        term.internalType = term.EnumExtraIPField
+                    else:
+                        raise Exception( f"Field : '{term.fieldName}' not found in Constants nor FEField nor IPFIelds" )
+
+                elif term.fieldName in [f.name for f in self.__ufs__] :
+                    term.spaceIndex_= spacesNames[term.fieldName]
+                    term.numberingIndex_= numberingNames[term.fieldName]
+                    #used for the offset
+                    term.valuesIndex_= [uf.name for uf in  self.__ufs__ ].index(term.fieldName)
+
+                    term.internalType = term.EnumUnknownField
+                elif term.fieldName in [f.name for f in self.__tfs__]:
+                    term.spaceIndex_= spacesNames[term.fieldName]
+                    term.numberingIndex_= numberingNames[term.fieldName]
+                    #term.valuesIndex_= valuesNames[term.fieldName]
+                    term.valuesIndex_= [uf.name for uf in  self.__tfs__ ].index(term.fieldName)
+
+                    term.internalType = term.EnumTestField
                 elif term.fieldName in [f.name for f in self.__efs__]:
                     term.spaceIndex_= spacesNames[term.fieldName]
                     term.numberingIndex_= numberingNames[term.fieldName]
@@ -291,36 +314,11 @@ class MonoElementsIntegral(BOO):
                 elif term.fieldName in [f.name for f in self.__ipefs__]:
                     term.valuesIndex_= [ef.name for ef in  self.__ipefs__ ].index(term.fieldName)
                     term.internalType = term.EnumExtraIPField
-                else:
-                    raise(Exception("Field : '{}' not found in Constants nor FEField nor IPFIelds".format(term.fieldName)))
+                else :
+                    term.internalType = term.EnumError
+                    raise(Exception("Term " +str(term.fieldName) + " not found in the database " ))
 
-            elif term.fieldName in [f.name for f in self.__ufs__] :
-                term.spaceIndex_= spacesNames[term.fieldName]
-                term.numberingIndex_= numberingNames[term.fieldName]
-                #used for the offset
-                term.valuesIndex_= [uf.name for uf in  self.__ufs__ ].index(term.fieldName)
-
-                term.internalType = term.EnumUnknownField
-            elif term.fieldName in [f.name for f in self.__tfs__]:
-                term.spaceIndex_= spacesNames[term.fieldName]
-                term.numberingIndex_= numberingNames[term.fieldName]
-                #term.valuesIndex_= valuesNames[term.fieldName]
-                term.valuesIndex_= [uf.name for uf in  self.__tfs__ ].index(term.fieldName)
-
-                term.internalType = term.EnumTestField
-            elif term.fieldName in [f.name for f in self.__efs__]:
-                term.spaceIndex_= spacesNames[term.fieldName]
-                term.numberingIndex_= numberingNames[term.fieldName]
-                term.valuesIndex_= valuesNames[term.fieldName]
-                term.internalType = term.EnumExtraField
-            elif term.fieldName in [f.name for f in self.__ipefs__]:
-                term.valuesIndex_= [ef.name for ef in  self.__ipefs__ ].index(term.fieldName)
-                term.internalType = term.EnumExtraIPField
-            else :
-                term.internalType = term.EnumError
-                raise(Exception("Term " +str(term.fieldName) + " not found in the database " ))
-
-      self.SetPoints(mesh.nodes)
+        self.SetPoints(mesh.nodes)
 
     def SetPoints(self,nodes):
         """
@@ -338,13 +336,13 @@ class MonoElementsIntegral(BOO):
         return None
 
     def SetOnlyEvaluation(self,onlyEvaluation= True):
-      """
-      To activate the Only Evaluation functionality
-          For the evaluation we only add the constribution without doing the integration (multiplication by the detjac )
-          the user is responsible of dividing by the mass matrix to get the correct values
-          . Ffr example  the user can use a discontinues field to generate element surface stress
-      """
-      self.onlyEvaluation = onlyEvaluation
+        """
+        To activate the Only Evaluation functionality
+            For the evaluation we only add the constribution without doing the integration (multiplication by the detjac )
+            the user is responsible of dividing by the mass matrix to get the correct values
+            . Ffr example  the user can use a discontinues field to generate element surface stress
+        """
+        self.onlyEvaluation = onlyEvaluation
 
     def ActivateElementType(self,domain):
         """
@@ -358,7 +356,7 @@ class MonoElementsIntegral(BOO):
             self.localNumbering.append( numbering.get(domain.elementType,None) )
 
 
-        self.p, self.w = self.integrationRule[domain.elementType];
+        self.p, self.w = self.integrationRule[domain.elementType]
 
         self.geoSpace = LagrangeSpaceGeo[domain.elementType].SetIntegrationRule(self.p,self.w)
 
@@ -386,16 +384,16 @@ class MonoElementsIntegral(BOO):
         idstotreat:  list like (int) ids of the element to treat
         """
         constantsNumerical = np.empty(len(self.__cfs__))
-        cpt =0;
+        cpt =0
         for x in self.__cfs__:
             constantsNumerical[cpt] = self.__cfs__[x]
             cpt += 1
 
-        NumberOfIntegrationPoints = len(self.w)
+        numberOfIntegrationPoints = len(self.w)
 
-        ev = np.empty(self.maxNumberOfElementVIJ*wform.GetNumberOfTerms()*NumberOfIntegrationPoints,dtype=np.float)
-        ei = np.empty(self.maxNumberOfElementVIJ*wform.GetNumberOfTerms()*NumberOfIntegrationPoints,dtype=np.int)
-        ej = np.empty(self.maxNumberOfElementVIJ*wform.GetNumberOfTerms()*NumberOfIntegrationPoints,dtype=np.int)
+        ev = np.empty(self.maxNumberOfElementVIJ*wform.GetNumberOfTerms()*numberOfIntegrationPoints,dtype=np.float)
+        ei = np.empty(self.maxNumberOfElementVIJ*wform.GetNumberOfTerms()*numberOfIntegrationPoints,dtype=np.int)
+        ej = np.empty(self.maxNumberOfElementVIJ*wform.GetNumberOfTerms()*numberOfIntegrationPoints,dtype=np.int)
 
         numberOfFields = len(self.__usedSpaces__)
 
@@ -407,16 +405,14 @@ class MonoElementsIntegral(BOO):
 
             xcoor = self.nodes[self.connectivity[n],:]
 
-
-            for ip in range(NumberOfIntegrationPoints):
-                """ we recover the jacobian matrix """
+            for ip in range(numberOfIntegrationPoints):
+                #we recover the jacobian matrix
                 Jack, Jdet, Jinv = self.geoSpace.GetJackAndDetI(ip,xcoor)
 
                 for i in range(numberOfFields):
-                     if self.localSpaces[i] is not None:
-                         NxNyNzI[i] = self.localSpaces[i].valN[ip]
-
-                         BxByBzI[i] = Jinv(self.localSpaces[i].valdphidxi[ip])
+                    if self.localSpaces[i] is not None:
+                        NxNyNzI[i] = self.localSpaces[i].valN[ip]
+                        BxByBzI[i] = Jinv(self.localSpaces[i].valdphidxi[ip])
 
                 if self.hasnormal:
                     normal = self.geoSpace.GetNormal(Jack)
@@ -474,7 +470,7 @@ class MonoElementsIntegral(BOO):
                             continue
                         elif term.internalType == term.EnumExtraIPField :
                             if term.derDegree == 1:
-                                raise(Exception("Integration point field cant be derivated"))
+                                raise Exception("Integration point field cant be derivated")
                             val = self.__usedValuesAtIP__[term.valuesIndex_][n,ip]
                             factor *= val
                         else :
@@ -482,9 +478,6 @@ class MonoElementsIntegral(BOO):
 
                     if factor == 0:
                         continue
-
-
-
                     if hasright:
                         l = l1*l2
 
@@ -497,18 +490,18 @@ class MonoElementsIntegral(BOO):
                         l2cpt = fillcpt
                         for i in range(l1):
                             for j in range(l2) :
-                              ej[l2cpt] = rightNumbering[j]
-                              l2cpt += 1
+                                ej[l2cpt] = rightNumbering[j]
+                                l2cpt += 1
 
                         l2cpt = fillcpt
                         for j in range(l2) :
-                             for i in range(l1):
-                                  ei[l2cpt] = leftNumbering[j]
-                                  l2cpt += 1
+                            for i in range(l1):
+                                ei[l2cpt] = leftNumbering[j]
+                                l2cpt += 1
                         fillcpt += l
                     else:
                         for i in range(l1):
-                          self.F[leftNumbering[i]] += left[i]*factor
+                            self.F[leftNumbering[i]] += left[i]*factor
 
             if fillcpt:
                 data = coo_matrix((ev[:fillcpt], (ei[:fillcpt],ej[:fillcpt])), shape=( self.totalTestDofs,self.totalUnkownDofs))
@@ -528,6 +521,8 @@ class MonoElementsIntegral(BOO):
         return self.totalvijcpt
 
     def AddToNumbefOfUsedIvij(self,data):
+        """ add a value to the  UsedIvij
+        """
         self.totalvijcpt += data
 
     def GetTotalTestDofs(self):
