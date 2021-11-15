@@ -128,8 +128,13 @@ class Session:
         assert(solid_key == '')
 
         expected_node_count = self.node_count + max_new_node_count
-        self.result.nodes.resize((expected_node_count, 3))
-        self.result.originalIDNodes.resize((expected_node_count,))
+        oldNodes = self.result.nodes
+        self.result.nodes = np.zeros((expected_node_count,3))
+        self.result.nodes[0:oldNodes.shape[0],:] = oldNodes
+
+        oldOriginalIDNodes = self.result.originalIDNodes
+        self.result.originalIDNodes = np.zeros(expected_node_count,dtype=int)
+        self.result.originalIDNodes[0:oldOriginalIDNodes.shape[0]] = oldOriginalIDNodes
 
         # Skip format line
         line = next(self.iterator)
