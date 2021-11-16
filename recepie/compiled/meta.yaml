@@ -5,7 +5,7 @@ package:
   version: {{ GIT_DESCRIBE_TAG }}
 
 source:
-  path: ../.
+  path: ../../.
 
 build:
   number: {{ GIT_DESCRIBE_NUMBER }}
@@ -25,7 +25,7 @@ requirements:
   host:
     - python
     - numpy
-    - cython 
+    - cython
     - eigency
     - mkl
     - mkl-include
@@ -34,7 +34,7 @@ requirements:
   run:
     - python
     - pyparsing
-    - numpy 
+    - numpy
     - scipy
     - sympy
     - eigency=1.78
@@ -44,7 +44,7 @@ requirements:
     - meshio
     - h5py
     - pyvista
-    - scikit-sparse 
+    - scikit-sparse
 
 test:
   requirements:
@@ -52,14 +52,11 @@ test:
   imports:
      -  BasicTools
   commands :
-    - python -u -m BasicTools.Helpers.Tests -k Catalyst 
-#  downstreams:
-#    - TopoTools
+    - python -u -m BasicTools.Helpers.Tests -k Catalyst
 
-   
 
 about:
-    home: {{ data['url'] }} 
+    home: {{ data['url'] }}
     license: {{ data['license'] }}
     license_file: LICENSE.txt
     license_family: BSD
