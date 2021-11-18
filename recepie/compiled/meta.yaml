@@ -43,7 +43,7 @@ requirements:
     - vtk
     - meshio
     - h5py
-    - pyvista
+    - pyvista [not py==36]
     - scikit-sparse
 
 test:
@@ -52,7 +52,8 @@ test:
   imports:
      -  BasicTools
   commands :
-    - python -u -m BasicTools.Helpers.Tests -k Catalyst
+    - python -u -m BasicTools.Helpers.Tests -k Catalyst # [not py==36]
+    - python -u -m BasicTools.Helpers.Tests -k Catalyst -k PyVistaBridge -k MeshIOBridge # [py==36]
 
 
 about:
