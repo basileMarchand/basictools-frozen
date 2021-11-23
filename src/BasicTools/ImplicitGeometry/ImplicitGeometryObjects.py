@@ -687,6 +687,7 @@ class ImplicitGeometryStl(ImplicitGeometryBase):
 
         from vtkmodules.vtkIOGeometry import vtkSTLReader
         from vtkmodules.vtkIOXML import vtkXMLPolyDataReader
+        from vtkmodules.vtkCommonDataModel import vtkPolyData, vtkUnstructuredGrid
 
         if filenameSTL.split(".")[-1] == "stl":
             readerSTL = vtkSTLReader()
