@@ -164,7 +164,7 @@ void ElementFilter::AddTag(const std::string& tagName) {
 }
 //
 void ElementFilter::SetDimensionality(const int& dim) {
-    if ((dim == -100 or dim > -4) and dim < 4) {
+    if ((dim == -100 || dim > -4) && dim < 4) {
         this->dimensionality = dim;
     }
     throw "Value of dim in SetDimensionality not valid: ";
@@ -189,14 +189,14 @@ const  MatrixID1 ElementFilter::GetIdsToTreat(UnstructuredMesh& mesh,  const std
     MatrixID1 res;
     bool active=false;
     bool bool_res = this->CheckDimensionality(elemtype,active);
-    if (active and !bool_res) return res;
+    if (active && !bool_res) return res;
 
     bool_res = this->CheckElementTypes(elemtype,active);
-    if (active and !bool_res) return res;
+    if (active && !bool_res) return res;
 
 
     res  = this->CheckTags(mesh.elements[elemtype].tags,mesh.elements[elemtype].GetNumberOfElements(),active);
-    if (active and res.rows()==0) return res;
+    if (active && res.rows()==0) return res;
 
     bool activeZone = false;
     MatrixID1 res2 = CheckZones(mesh, elemtype, activeZone);

@@ -10,7 +10,7 @@
 
 namespace BasicTools
 {
-    
+
 MatrixID1 NonZero(const MatrixBD1& input){
     const INT_TYPE& rows = input.array().count();
     MatrixID1 res(rows,1);
@@ -29,12 +29,12 @@ MatrixID1 Intersect1D(const MatrixID1& A, const MatrixID1& B){
     INT_TYPE cptA= 0;
     INT_TYPE cptB= 0;
     INT_TYPE cpt= 0;
-    while(cptA < A.rows() or cptB < B.rows() ){
+    while((cptA < A.rows() ) || (cptB < B.rows() ) ){
        if( A(cptA,0) < B(cptB,0)){
            ++cptA;
        } else if( A(cptA,0) > B(cptB,0)){
            ++cptB;
-       } else{
+       } else {
            res(cpt,0) = B(cptB,0);
            ++cpt;
            ++cptA;
@@ -50,7 +50,7 @@ MatrixID1 Union1D(const MatrixID1& A, const MatrixID1& B){
     INT_TYPE cptA= 0;
     INT_TYPE cptB= 0;
     INT_TYPE cpt= 0;
-    while(cptA < A.rows() or cptB < B.rows() ){
+    while((cptA < A.rows() ) || ( cptB < B.rows() ) ){
        if( A(cptA,0) < B(cptB,0)){
            res(cpt,0) = A(cptA,0);
            ++cpt;
