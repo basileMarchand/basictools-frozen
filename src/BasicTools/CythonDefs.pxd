@@ -3,11 +3,11 @@
 # file 'LICENSE.txt', which is part of this source code package.
 #
 
-from numpy import int64, float
-from numpy cimport int64_t, float64_t
+IF UNAME_SYSNAME == "Linux":
+    from numpy cimport int64_t as CBasicIndexType
+ELIF UNAME_SYSNAME == "Darwin":
+    from numpy cimport int64_t as CBasicIndexType
+ELSE:
+    from numpy cimport int32_t as CBasicIndexType
 
-int_DTYPE   = int64
-float_DTYPE = float
-
-ctypedef int64_t     int_DTYPE_t
-ctypedef float64_t float_DTYPE_t
+from numpy cimport float64_t as CBasicFloatType

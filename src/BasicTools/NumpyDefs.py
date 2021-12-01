@@ -2,11 +2,11 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
+import platform
+if platform.system() == "Windows":
+    from numpy import int32 as PBasicIndexType
+else:
+    from numpy import int64 as PBasicIndexType
 
-
-
-import numpy  as np 
-
-int_DTYPE   = np.int64
-float_DTYPE = np.float
+from numpy import float64 as PBasicFloatType
 
