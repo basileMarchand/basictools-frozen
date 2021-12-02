@@ -546,7 +546,7 @@ class XdmfDataItem(Xdmfbase):
             self.CDATA = ''
 
         elif self.Format  == 'Binary':
-            if self.Type.lower() =='float':
+            if self.Type.lower() == 'float':
                 if self.Precision == 4 :
                     numpytype = 'float32'
                 else:
@@ -558,6 +558,8 @@ class XdmfDataItem(Xdmfbase):
                     numpytype = np.int64
                 else:
                     raise Exception(f"Dont know how to treat this type of Precision: {self.Precision}" )
+            elif self.Type.lower() == 'char':
+                numpytype = 'int8'
 
             binfilename  = str(self.CDATA).lstrip().rstrip()
             binfile = open (os.path.join(self.path, binfilename ), "rb")
