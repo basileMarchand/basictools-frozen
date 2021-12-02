@@ -16,7 +16,7 @@
 
 
 namespace BasicTools {
-    
+
 using Eigen::Success;
 using Eigen::Upper;
 using Eigen::Lower;
@@ -25,27 +25,27 @@ using Eigen::Lower;
 
 struct proxy;
 struct container;
-struct iterator;
+class iterator;
 
 struct proxy {
     const container* cont;
-    long int c_pos;
+    CBasicIndexType c_pos;
 
-    proxy(const container* cont, long int c_pos) : cont(cont), c_pos(c_pos) {}
+    proxy(const container* cont, CBasicIndexType c_pos) : cont(cont), c_pos(c_pos) {}
 
     proxy* operator->() { return this; }
     const proxy* operator->() const { return this; }
 
     const double& value() const; // the value
-    INT_TYPE row() const;   // the row index i
-    INT_TYPE col() const;   // the column index j
+    CBasicIndexType row() const;   // the row index i
+    CBasicIndexType col() const;   // the column index j
  };
 
 class iterator {
 public:
     typedef iterator self_type;
 
-    iterator(const container* cont, long int c_pos) : cont(cont), c_pos(c_pos) {}
+    iterator(const container* cont, CBasicIndexType c_pos) : cont(cont), c_pos(c_pos) {}
 
     const self_type& operator++() { ++c_pos; return *this; }
     self_type operator++(int) { const auto i = *this; ++c_pos; return i; }
@@ -57,37 +57,37 @@ public:
 
 private:
     const container* cont;
-    long int c_pos;
+    CBasicIndexType c_pos;
 };
 
 struct container {
     double* ev;
-    int* ei;
-    int* ej;
-    long int size;
+    CBasicIndexType* ei;
+    CBasicIndexType* ej;
+    CBasicIndexType size;
 
     iterator begin() const { return iterator(this, 0); }
     iterator end() const { return iterator(this, size); }
-    const double& value(long int cpt) const { return ev[cpt]; }; // the value
-    double& value(long int cpt) { return ev[cpt]; }; // the value
-    INT_TYPE row(long int cpt) const { return ei[cpt]; };   // the row index i
-    INT_TYPE col(long int cpt) const { return ej[cpt]; };   // the column index j
+    const double& value(CBasicIndexType cpt) const { return ev[cpt]; }; // the value
+    double& value(CBasicIndexType cpt) { return ev[cpt]; }; // the value
+    CBasicIndexType row(CBasicIndexType cpt) const { return ei[cpt]; };   // the row index i
+    CBasicIndexType col(CBasicIndexType cpt) const { return ej[cpt]; };   // the column index j
 };
 
 const double& proxy::value() const { return cont->value(c_pos); } // the value
-INT_TYPE proxy::row() const { return cont->row(c_pos); }   // the row index i
-INT_TYPE proxy::col() const { return cont->col(c_pos); }   // the column index j
+CBasicIndexType proxy::row() const { return cont->row(c_pos); }   // the row index i
+CBasicIndexType proxy::col() const { return cont->col(c_pos); }   // the column index j
 
 template<typename T>
-void CopyMatrix(INT_TYPE* sizei, INT_TYPE* sizej, FLOAT_TYPE* ev, INT_TYPE* ei, INT_TYPE* ej, T& mat) {
-    *sizei = mat.rows();
-    *sizej = mat.cols();
+void CopyMatrix(CBasicIndexType* sizei, CBasicIndexType* sizej, CBasicFloatType* ev, CBasicIndexType* ei, CBasicIndexType* ej, T& mat) {
+    *sizei = static_cast<CBasicIndexType>(mat.rows());
+    *sizej = static_cast<CBasicIndexType>(mat.cols());
     int cpt = 0;
     for (int k = 0; k < mat.outerSize(); ++k) {
         for (Eigen::SparseMatrix<double>::InnerIterator it(mat, k); it; ++it) {
             ev[cpt] = it.value();
-            ei[cpt] = it.row();   // row index
-            ej[cpt] = it.col();   // col index (here it is equal to k)
+            ei[cpt] = static_cast<CBasicIndexType>(it.row());   // row index
+            ej[cpt] = static_cast<CBasicIndexType>(it.col());   // col index (here it is equal to k)
             ++cpt;
         }
     }
@@ -153,7 +153,7 @@ struct EigenSolvers {
         }
     }
 
-    void SetOp(const int& sizem, const int& sizen, const int& ev_size, FLOAT_TYPE* ev, int* ei, int* ej, const double& tolerance) {
+    void SetOp(const CBasicIndexType& sizem, const CBasicIndexType& sizen, const CBasicIndexType& ev_size, CBasicFloatType* ev, CBasicIndexType* ei, CBasicIndexType* ej, const double& tolerance) {
         container cont;
         cont.ev = ev;
         cont.ei = ei;
@@ -211,7 +211,7 @@ struct EigenSolvers {
         }
     }
 
-    void Solve(int size, FLOAT_TYPE* _rhs, FLOAT_TYPE* _sol) {
+    void Solve(CBasicIndexType size, CBasicFloatType* _rhs, CBasicFloatType* _sol) {
         MapMatrixDD1 rhs(_rhs, size, 1);
         MapMatrixDD1 sol(_sol, size, 1);
 
@@ -226,31 +226,31 @@ struct EigenSolvers {
         }
     }
 
-    int GetSPQRRank() {
+    CBasicIndexType GetSPQRRank() {
         if (this->solverType != 3) {
             std::cout << "spqr decomposition not avilable Please Set solver to EigenSPQR " << std::endl;
             return 0;
         }
-        return this->spqrSolver->rank();
+        return static_cast<CBasicIndexType>(this->spqrSolver->rank());
     }
 
-    int GetSPQR_R_nonZeros() {
+    CBasicIndexType GetSPQR_R_nonZeros() {
         if (this->solverType != 3) {
             std::cout << "spqr decomposition not avilable Please Set solver to EigenSPQR" << std::endl;
             return 0;
         }
         this->R = this->spqrSolver->matrixR();
-        return this->R.nonZeros();
+        return static_cast<CBasicIndexType>(this->R.nonZeros());
     }
 
-    void GetSPQR_R(INT_TYPE* sizei, INT_TYPE* sizej, FLOAT_TYPE* ev, INT_TYPE* ei, INT_TYPE* ej) {
+    void GetSPQR_R(CBasicIndexType* sizei, CBasicIndexType* sizej, CBasicFloatType* ev, CBasicIndexType* ei, CBasicIndexType* ej) {
         if (this->solverType != 3) {
             std::cout << "spqr decomposition not avilable Please Set solver to EigenSPQR" << std::endl;
         }
         CopyMatrix(sizei, sizej, ev, ei, ej, this->R);
     }
 
-    void GetSPQR_P(INT_TYPE* p) {
+    void GetSPQR_P(CBasicIndexType* p) {
         if (this->solverType != 3) {
             std::cout << "spqr decomposition not avilable Please Set solver to EigenSPQR" << std::endl;
         }
@@ -260,17 +260,17 @@ struct EigenSolvers {
         }
     }
 
-    int GetSPQR_Q_nonZeros() {
+    CBasicIndexType GetSPQR_Q_nonZeros() {
         if (this->solverType != 3) {
             std::cout << "spqr decomposition not avilable Please Set solver to EigenSPQR" << std::endl;
             return 0;
         }
 
         this->Q = this->spqrSolver->matrixQ();
-        return this->Q.nonZeros();
+        return static_cast<CBasicIndexType>(this->Q.nonZeros());
     }
 
-    void GetSPQR_Q(INT_TYPE* sizei, INT_TYPE* sizej, FLOAT_TYPE* ev, INT_TYPE* ei, INT_TYPE* ej) {
+    void GetSPQR_Q(CBasicIndexType* sizei, CBasicIndexType* sizej, CBasicFloatType* ev, CBasicIndexType* ei, CBasicIndexType* ej) {
         if (this->solverType != 3) {
             std::cout << "spqr decomposition not avilable Please Set solver to EigenSPQR" << std::endl;
             return;

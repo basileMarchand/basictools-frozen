@@ -12,10 +12,10 @@ namespace BasicTools
 {
 
 MatrixID1 NonZero(const MatrixBD1& input){
-    const INT_TYPE& rows = input.array().count();
+    const CBasicIndexType rows = static_cast<CBasicIndexType>(input.array().count());
     MatrixID1 res(rows,1);
-    INT_TYPE cpt=0;
-    for(INT_TYPE i=0; i < input.cols();++i  ){
+    CBasicIndexType cpt=0;
+    for(CBasicIndexType i=0; i < input.cols();++i  ){
         if (input(i,0)){
             res(cpt++,0) = i;
         }
@@ -26,9 +26,9 @@ MatrixID1 NonZero(const MatrixBD1& input){
 
 MatrixID1 Intersect1D(const MatrixID1& A, const MatrixID1& B){
     MatrixID1 res(std::min(A.rows(),B.rows()),1);
-    INT_TYPE cptA= 0;
-    INT_TYPE cptB= 0;
-    INT_TYPE cpt= 0;
+    CBasicIndexType cptA = 0;
+    CBasicIndexType cptB = 0;
+    CBasicIndexType cpt = 0;
     while((cptA < A.rows() ) || (cptB < B.rows() ) ){
        if( A(cptA,0) < B(cptB,0)){
            ++cptA;
@@ -47,9 +47,9 @@ MatrixID1 Intersect1D(const MatrixID1& A, const MatrixID1& B){
 //
 MatrixID1 Union1D(const MatrixID1& A, const MatrixID1& B){
     MatrixID1 res(A.rows()+B.rows(),1);
-    INT_TYPE cptA= 0;
-    INT_TYPE cptB= 0;
-    INT_TYPE cpt= 0;
+    CBasicIndexType cptA = 0;
+    CBasicIndexType cptB = 0;
+    CBasicIndexType cpt = 0;
     while((cptA < A.rows() ) || ( cptB < B.rows() ) ){
        if( A(cptA,0) < B(cptB,0)){
            res(cpt,0) = A(cptA,0);
@@ -77,6 +77,5 @@ MatrixID1 Union1D(const MatrixID1& A, const MatrixID1& B){
     res.conservativeResize(cpt,1);
     return res;
 }
-//  from http://eigen.tuxfamily.org/dox/TopicCustomizing_NullaryExpr.html
 
 } // namespace BasicTools
