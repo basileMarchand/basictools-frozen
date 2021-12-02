@@ -7,13 +7,13 @@
 
 import os
 from setuptools.command.build_ext import build_ext
+from setuptools.command.build_clib import build_clib
 from setuptools import setup, Extension
 import configparser
 
 # Compilation options
 enable_MKL = "BASICTOOLS_DISABLE_MKL" not in os.environ
 annotate = False # to generate annotation (HTML files)
-useOpenmp = "BASICTOOLS_DISABLE_OPENMP" not in os.environ
 useEigencyEigen = "BASICTOOLS_USE_EIGENCYEIGEN" in os.environ
 __config = configparser.ConfigParser()
 __config.read('setup.cfg')
@@ -28,6 +28,7 @@ cpp_src = ("LinAlg/EigenTools.cpp",
            "Containers/UnstructuredMeshTools.cpp",
            "Containers/Tags.cpp",
            "FE/NativeIntegration.cpp",
+           "FE/NativeNumericalWeakForm.cpp",
            "FE/DofNumbering.cpp",
            "FE/Space.cpp",
            )
@@ -45,6 +46,35 @@ cython_src = (
     "FE/Numberings/NativeDofNumbering.pyx",
     "FE/Spaces/NativeSpace.pyx",
     "Containers/NativeFilters.pyx",)
+
+def GetBasicToolsIncludeDirs():
+    try:
+        import numpy
+        include_dirs =[numpy.get_include(),"cpp_src" ,"."]
+
+
+        import eigency
+        include_dirs.extend(eigency.get_includes(include_eigen=useEigencyEigen) )
+        if not useEigencyEigen:
+            if "EIGEN_INC" in os.environ:
+                include_dirs.append(os.environ.get('EIGEN_INC'))
+        if "CONDA_PREFIX" in os.environ:
+            conda_prefix = os.environ["CONDA_PREFIX"]
+            include_dirs.append(os.path.join(conda_prefix, "include"))
+            include_dirs.append(os.path.join(conda_prefix, "include", "eigen3"))
+            include_dirs.append(os.path.join(conda_prefix, "Library", "include"))
+            include_dirs.append(os.path.join(conda_prefix, "Library", "include", "eigen3"))
+
+        if "PREFIX" in os.environ:
+            conda_prefix = os.environ["PREFIX"]
+            include_dirs.append(os.path.join(conda_prefix, "include"))
+            include_dirs.append(os.path.join(conda_prefix, "include", "eigen3"))
+            include_dirs.append(os.path.join(conda_prefix, "Library", "include"))
+            include_dirs.append(os.path.join(conda_prefix, "Library", "include", "eigen3"))
+        return include_dirs
+    except :
+        return include_dirs
+
 
 try:
     from Cython.Build import cythonize
@@ -65,109 +95,38 @@ try:
 
     basictools_cpp_src_path = os.path.join("cpp_src")
     cpp_src_with_path = [os.path.join(basictools_cpp_src_path, src) for src in cpp_src]
-    cppextensions = [Extension("libCppBasicTools", cpp_src_with_path)]
-    cythonextension.extend(cppextensions)
+
+    define_macros = []
+    libraries = ["libCppBasicTools"]
+    if enable_MKL or True:
+        define_macros.append(("MKL_DIRECT_CALL",""))
+        define_macros.append(("EIGEN_USE_MKL_VML",""))
+
+    ext_libraries = [['libCppBasicTools', {
+               'sources': cpp_src_with_path,
+               'include_dirs':GetBasicToolsIncludeDirs(),
+               'macros': define_macros,
+               }
+    ]]
 
     basictools_src_path = os.path.join("src", "BasicTools")
     cython_src_with_path  = [os.path.join(basictools_src_path, src) for src in cython_src]
 
     for n,m in zip(cython_src,cython_src_with_path):
-        cythonextension.append(Extension("BasicTools."+n.split(".pyx")[0].replace("/","."), [m],libraries=["CppBasicTools"], include_dirs=["./cpp_src/"]))
-
-    modules.extend(cythonize(cythonextension, gdb_debug=debug, annotate=annotate, force=force))
+        cythonextension.append(Extension("BasicTools."+n.split(".pyx")[0].replace("/","."), [m],
+        libraries=libraries,
+        include_dirs=GetBasicToolsIncludeDirs(),
+        define_macros=define_macros,
+        language="c++"  ))
+    modules.extend(cythonextension)
 
 except ImportError as e:
     print(f"Compilation disabled since {e.name} package is missing")
     modules = []
-
-# Compiler-dependent configuration
-# See https://stackoverflow.com/questions/30985862
-class build_ext_compiler_check(build_ext):
-    def get_ext_filename(self, ext_name):
-        #strip sufix for the libCppBasicTools.xxxxx.so
-        filename = super().get_ext_filename(ext_name)
-        if filename.find("libCppBasicTools") == 0 :
-            return filename.split(".")[0]+"."+filename.split(".")[-1]
-        return filename
-
-    def finalize_options(self):
-        super().finalize_options()
-        self.library_dirs.append(self.build_temp)
-        self.library_dirs.append(self.build_temp.replace("temp.","lib."))
-
-    def build_extensions(self):
-        if os.name == 'nt':
-            compiler = os.path.basename(self.compiler.compiler_type)
-        else:
-            compiler = os.path.basename(self.compiler.compiler[0])
-        compiler_type = self.compiler.compiler_type
-        print(f"Using compiler {compiler} of type {compiler_type}")
-        compile_args = self._compile_args(compiler)
-        link_args = self._link_args(compiler)
-        include_dirs = self._include_dirs(compiler)
-        for ext in self.extensions:
-            ext.extra_compile_args.extend(compile_args)
-            ext.extra_link_args.extend(link_args)
-            ext.include_dirs.extend(include_dirs)
-        build_ext.build_extensions(self)
-
-    def _compile_args(self, compiler):
-        if debug:
-            if compiler =="msvc":
-                compile_args = ['/Od']
-            else:
-                compile_args = ['-g', '-O', '-std=c++11']
-        else:
-            if compiler =="msvc":
-                compile_args = ['/O2']
-            else:
-                compile_args = ['-O3', '-std=c++11']
-        if useOpenmp:
-            if compiler == "icc":
-                compile_args.append("-fopenmp")
-                compile_args.append("-inline-forceinline")
-            elif compiler == "msvc":
-                compile_args.append("/openmp")
-            else:
-                compile_args.append("-fopenmp")
-        if enable_MKL:
-            compile_args.append("-DMKL_DIRECT_CALL")
-            compile_args.append("-DEIGEN_USE_MKL_VML")
-        return compile_args
-
-    def _link_args(self, compiler):
-        link_args = []
-        if compiler != "msvc":
-            if enable_MKL:
-                link_args.append("-lmkl_core")
-                link_args.append("-lmkl_intel_lp64")
-                link_args.append("-lmkl_sequential")
-            if useOpenmp:
-                link_args.append("-lgomp")
-        return link_args
-
-    def _include_dirs(self, _):
-        import numpy
-        include_dirs =[numpy.get_include(),"cpp_src" ,"."]
-        include_dirs.extend(eigency.get_includes(include_eigen=useEigencyEigen) )
-        if not useEigencyEigen:
-            if "EIGEN_INC" in os.environ:
-                include_dirs.append(os.environ.get('EIGEN_INC'))
-        if "CONDA_PREFIX" in os.environ:
-            conda_prefix = os.environ["CONDA_PREFIX"]
-            include_dirs.append(os.path.join(conda_prefix, "include"))
-            include_dirs.append(os.path.join(conda_prefix, "include", "eigen3"))
-            include_dirs.append(os.path.join(conda_prefix, "Library", "include"))
-        if "PREFIX" in os.environ:
-            conda_prefix = os.environ["PREFIX"]
-            include_dirs.append(os.path.join(conda_prefix, "include"))
-            include_dirs.append(os.path.join(conda_prefix, "include", "eigen3"))
-            include_dirs.append(os.path.join(conda_prefix, "Library", "include"))
-
-
-        return include_dirs
+    ext_libraries = []
 
 if __name__ == '__main__':
     setup(
         ext_modules=modules,
-        cmdclass={'build_ext': build_ext_compiler_check})
+        libraries=ext_libraries,
+)
