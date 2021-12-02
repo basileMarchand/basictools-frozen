@@ -26,10 +26,10 @@ MatrixDD1 ImplicitGeometryBase::GetDistanceToMesh(UnstructuredMesh& mesh,bool ce
     if(cellCenter){
         MatrixDD1 res;
         res.resize(mesh.elements.GetNumberOfElements());
-        INT_TYPE cpt = 0;
+        CBasicIndexType cpt = 0;
         for( auto& x : mesh.elements){
-            MatrixDDD  centers = GetElementsCenters(mesh.GetNodesMatrix(),x.second);    
-            res.block(cpt,0,x.second.GetNumberOfElements(),1) = this->GetDistanceToPoints(centers);    
+            MatrixDDD centers = GetElementsCenters(mesh.GetNodesMatrix(),x.second);
+            res.block(cpt,0,x.second.GetNumberOfElements(),1) = this->GetDistanceToPoints(centers);
             cpt += x.second.GetNumberOfElements();
         }
         return res;
