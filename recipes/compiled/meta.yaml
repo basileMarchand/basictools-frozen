@@ -8,7 +8,12 @@ source:
   path: ../../.
 
 build:
+  skip : True # [py==36]
+  skip : True # [py==37]
+  skip : True # [py==39]
   number: {{ GIT_DESCRIBE_NUMBER }}
+  entry_points:
+    - "MeshFileConvert = BasicTools.IO.MeshFileConverter:Main"
 
   skip_compile_pyc:
     "BasicToolsParaViewBridge.py"
@@ -44,7 +49,7 @@ requirements:
     - meshio
     - h5py
     - pyvista [not py==36]
-    - scikit-sparse
+    - scikit-sparse [not win]
 
 test:
   requirements:

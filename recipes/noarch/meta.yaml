@@ -1,7 +1,7 @@
 {% set data = load_setup_py_data() %}
 
 package:
-  name: "basictools-noarch"
+  name: "basictools"
   version: {{ GIT_DESCRIBE_TAG }}
 
 source:
@@ -10,20 +10,22 @@ source:
 build:
   number: {{ GIT_DESCRIBE_NUMBER }}
   noarch: python
+  entry_points:
+    - "MeshFileConvert = BasicTools.IO.MeshFileConverter:Main"
 
   skip_compile_pyc:
     "BasicToolsParaViewBridge.py"
 
   script_env:
     - BASICTOOLS_DISABLE_MKL
-    - BASICTOOLS_DISABLE_OPENMP
     - BASICTOOLS_USE_EIGENCYEIGEN
 
 requirements:
-  host:
+  build:
     - python=3.8
     - numpy
     - setuptools-scm
+    - conda-forge-pinning-feedstock
   run:
     - python
     - pyparsing
