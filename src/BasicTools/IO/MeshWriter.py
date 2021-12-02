@@ -361,9 +361,15 @@ class MeshWriter(WriterBase):
             size = sol.shape[1]
             if size == 1:
                 self.filePointer.write(struct.pack('i',1))#
-            else:
+            elif size == 3:
                 ## vectors
                 self.filePointer.write(struct.pack('i',2))#
+            elif size == 6:
+                ## tensors 
+                self.filePointer.write(struct.pack('i',3))#
+            else:
+                raise Exception("Solution fields must be scalars, vectors or tensors.")
+
 
         for i in range(NumberOfEntries):
             for sol in Sols:
