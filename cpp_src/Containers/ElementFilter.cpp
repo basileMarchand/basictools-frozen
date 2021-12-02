@@ -13,9 +13,9 @@ const MatrixID1 ElementFilterBase::GetIdsToTreatComplementaty( UnstructuredMesh&
     const MatrixID1& ids =  this->GetIdsToTreat(mesh, elemtype);
     //std::cout << "line:" << __LINE__  << ": ids "<< ids << std::endl;
     MatrixID1 cids;
-    const long int nbelements = mesh.elements[elemtype].GetNumberOfElements();
+    const CBasicIndexType nbelements = mesh.elements[elemtype].GetNumberOfElements();
 
-    INT_TYPE cpt = 0;
+    CBasicIndexType cpt = 0;
     if(ids.rows()==0 ) {
         PRINTDEBUG(elemtype)
         PRINTDEBUG(nbelements)
@@ -27,19 +27,19 @@ const MatrixID1 ElementFilterBase::GetIdsToTreatComplementaty( UnstructuredMesh&
 
     PRINTDEBUG( ": id "<< ids.rows() << "  cid" << cids.rows() <<  " " << cids.cols())
 
-    for(INT_TYPE j = 0; j < ids(0,0); ++j ) {
+    for(CBasicIndexType j = 0; j < ids(0,0); ++j ) {
         cids(cpt,0) = j;
         ++cpt ;
     }
 
-    for(INT_TYPE i = 0; i < ids.rows()-1; ++i ) {
-        for(INT_TYPE j = ids(i)+1; j < ids(i+1,0); ++j ) {
+    for(CBasicIndexType i = 0; i < ids.rows()-1; ++i ) {
+        for(CBasicIndexType j = ids(i)+1; j < ids(i+1,0); ++j ) {
             cids(cpt,0) = j;
             ++cpt ;
         }
     }
 
-    for(INT_TYPE j = ids(ids.rows()-1,0)+1; j < nbelements; ++j ) {
+    for(CBasicIndexType j = ids(ids.rows()-1,0)+1; j < nbelements; ++j ) {
         cids(cpt,0) = j;
         ++cpt ;
     }
@@ -147,12 +147,12 @@ MatrixID1 ElementFilter::CheckZones( UnstructuredMesh& mesh,  const std::string&
         if (this->zoneTreatment == CENTER) {
             res2 = (zone->GetDistanceToPoints(centers).array()<=0);
         } else if (this->zoneTreatment == ALLNODES) {
-            MatrixID1 z = (zone->GetDistanceToPoints(mesh.GetNodesMatrix()).array()<=0).cast<INT_TYPE>().matrix();
+            MatrixID1 z = (zone->GetDistanceToPoints(mesh.GetNodesMatrix()).array()<=0).cast<CBasicIndexType>().matrix();
             MatrixID1 AA = indexingm(z, elements.GetConnectivityMatrix()).rowwise().sum().eval();
 
             res2 =  AA.array() == (long int)ElementNames[elemtype].numberOfNodes;
         } else if (this->zoneTreatment == LEASTONENODE ) {
-            MatrixID1 z = (zone->GetDistanceToPoints(mesh.GetNodesMatrix()).array() <=0).cast<INT_TYPE>().matrix();
+            MatrixID1 z = (zone->GetDistanceToPoints(mesh.GetNodesMatrix()).array() <=0).cast<CBasicIndexType>().matrix();
             res2 = indexingm(z,elements.GetConnectivityMatrix()).rowwise().sum().array() > 0;
         }
         res = (res && res2).eval();
@@ -170,7 +170,7 @@ void ElementFilter::SetDimensionality(const int& dim) {
     throw "Value of dim in SetDimensionality not valid: ";
 };
 //
-const  MatrixID1 ElementFilter::CheckTags(Tags& tags,const INT_TYPE& ts, bool& active) const {
+const  MatrixID1 ElementFilter::CheckTags(Tags& tags,const CBasicIndexType& ts, bool& active) const {
     MatrixID1 res;
 
     if (this->tags.size() == 0) {

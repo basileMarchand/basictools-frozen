@@ -7,7 +7,7 @@
 
 namespace BasicTools
 {
-    
+
 Tag::Tag() {
     this->ids.reset(new std::shared_ptr<MapMatrixID1 >::element_type(nullptr, 0, 1));
 };
@@ -20,9 +20,9 @@ std::string Tag::GetName() const {
 };
 
 
-INT_TYPE Tag::GetSize()const {
+CBasicIndexType Tag::GetSize()const {
     if (this->ids== 0) return 0;
-    return this->ids->rows();
+    return static_cast<CBasicIndexType>(this->ids->rows());
 };
 //**********************************
 std::string Tags::ToStr() const {

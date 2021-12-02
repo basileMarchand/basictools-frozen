@@ -7,7 +7,7 @@
 
 namespace BasicTools
 {
-    
+
 //////////// ElementsContainer
 ElementsContainer::ElementsContainer(const std::string& elemtype ){
     this->elementType = elemtype;
@@ -16,8 +16,8 @@ ElementsContainer::ElementsContainer(const std::string& elemtype ){
     this->originalIds.reset(new MapMatrixID1(nullptr, 0, 1));
 }
 
-INT_TYPE ElementsContainer::GetNumberOfElements() const {
-    return this->connectivity->rows();
+CBasicIndexType ElementsContainer::GetNumberOfElements() const {
+    return static_cast<CBasicIndexType>(this->connectivity->rows());
 }
 
 std::string ElementsContainer::GetElementType() const {
@@ -33,8 +33,8 @@ ElementsContainer& AllElements::GetElementsOfType(const std::string& elemtype){
     return this->storage[elemtype];
 };
 //
-INT_TYPE AllElements::GetNumberOfElements() const {
-    INT_TYPE res = 0;
+CBasicIndexType AllElements::GetNumberOfElements() const {
+    CBasicIndexType res = 0;
     for (auto const& x : this->storage){
         res += x.second.GetNumberOfElements();
     }
@@ -60,8 +60,8 @@ UnstructuredMesh::UnstructuredMesh():
      originalIDNodes(std::make_shared<MapMatrixID1>(nullptr,0,1) ){
 };
 
-INT_TYPE UnstructuredMesh::GetNumberOfNodes() const {
-    return this->nodes->rows();
+CBasicIndexType UnstructuredMesh::GetNumberOfNodes() const {
+    return static_cast<CBasicIndexType>(this->nodes->rows());
 };
 
 void UnstructuredMesh::Print(){

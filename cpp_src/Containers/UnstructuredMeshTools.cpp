@@ -8,7 +8,7 @@
 
 namespace BasicTools
 {
-    
+
 MatrixDDD GetElementsCenters(const MapMatrixDDD& nodes, const ElementsContainer& elements){
 
      auto& connectivity = elements.GetConnectivityMatrix();
@@ -23,7 +23,7 @@ MatrixDDD GetElementsCenters(const MapMatrixDDD& nodes, const ElementsContainer&
          res.col(i) = (b.col(0)+ res.col(i)).eval();
          //res.col(i) += indexingi(nodes,connectivity,i).rowwise().sum();
      }
-     res /= connectivity.cols();
+     res /= double(connectivity.cols());
      return res;
 
 };

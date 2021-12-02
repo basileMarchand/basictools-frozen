@@ -21,13 +21,13 @@ namespace BasicTools
 
 class ElementsContainer{
     std::string elementType;
-    INT_TYPE globaloffset;
+    CBasicIndexType globaloffset;
     std::shared_ptr<MapMatrixIDD > connectivity;
     std::shared_ptr<MapMatrixID1 > originalIds;
 public:
     Tags tags;
     ElementsContainer(const std::string& elemtype = "" );
-    INT_TYPE GetNumberOfElements() const ;
+    CBasicIndexType GetNumberOfElements() const ;
 
     MAPSETGET_MatrixIDD(Connectivity,connectivity)
     MAPSETGET_MatrixID1(Ids,originalIds)
@@ -48,7 +48,7 @@ public:
     std::map<std::string, ElementsContainer, sortbyName > storage;
     ElementsContainer& GetElementsOfType(const std::string& elemtype);
     //
-    INT_TYPE GetNumberOfElements() const ;
+    CBasicIndexType GetNumberOfElements() const ;
     //
     std::string ToStr();
 
@@ -70,7 +70,7 @@ public:
     MAPSETGET_MatrixID1(OriginalIds,originalIDNodes)
     MAPSETGET_MatrixDDD(Nodes,nodes)
 
-    INT_TYPE GetNumberOfNodes() const ;
+    CBasicIndexType GetNumberOfNodes() const ;
     template<typename T>
     void AddNodalTag(std::string& name, T& arg1);
 

@@ -18,7 +18,7 @@
 
 namespace BasicTools
 {
-    
+
 class ElementFilterBase {
 public:
     virtual const MatrixID1 GetIdsToTreat(UnstructuredMesh& mesh, const std::string& elemtype)  =0;
@@ -26,8 +26,8 @@ public:
 };
 
 class ElementFilterEvaluated : public ElementFilterBase {
-    std::map<std::string,MatrixID1 > ids;
-    std::map<std::string,INT_TYPE> nbelements;
+    std::map<std::string,MatrixID1> ids;
+    std::map<std::string,CBasicIndexType> nbelements;
 public:
     const MatrixID1 GetIdsToTreat(UnstructuredMesh& mesh, const std::string& elemtype);
     //
@@ -60,7 +60,7 @@ public:
     void AddTag(const std::string& tagName);
     void SetDimensionality(const int& dim);
     //
-    virtual const  MatrixID1 CheckTags(Tags& tags,const INT_TYPE& ts, bool& active) const ;
+    virtual const  MatrixID1 CheckTags(Tags& tags,const CBasicIndexType& ts, bool& active) const ;
     //
     virtual const  MatrixID1 GetIdsToTreat(UnstructuredMesh& mesh,  const std::string& elemtype) const ;
     //
@@ -77,6 +77,4 @@ public:
     const MatrixID1 GetIdsToTreat(UnstructuredMesh& mesh, const std::string& elemtype);
 };
 
-
 }// namespace BasicTools
-

@@ -11,7 +11,7 @@
 
 namespace BasicTools
 {
-    
+
 class Tag {
     std::string name;
     std::shared_ptr<MapMatrixID1 >  ids;
@@ -20,7 +20,7 @@ public:
     MAPSETGET_MatrixID1(Ids,ids)
     void SetName(const std::string& name);
     std::string GetName() const ;
-    INT_TYPE GetSize()const ;
+    CBasicIndexType GetSize()const ;
 
     template<typename T>
     void SetIds(T& ids);
