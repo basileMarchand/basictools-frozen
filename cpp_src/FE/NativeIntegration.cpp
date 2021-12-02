@@ -5,6 +5,8 @@
 
 #include "NativeIntegration.h"
 #include <Eigen/SparseCore>
+#include <LinAlg/EigenTypes.h>
+
 //http://cython.readthedocs.io/en/latest/src/userguide/wrapping_CPlusPlus.html
 
 #include <iostream>
@@ -12,7 +14,7 @@
 
 namespace BasicTools
 {
-    
+
 //typedef Eigen::SparseMatrix<double> SpMat; // declares a column-major sparse matrix type of double
 
 const int EnumError = -1;
@@ -88,7 +90,7 @@ void MonoElementsIntegralCpp::SetTestOffset(const int& n, const int& s){
      this->testDofsOffset(n,0) = s ;
 }
 ///////////////// constants ///////////////////////////////////
-void MonoElementsIntegralCpp::SetNumberOfConstants(const int& n){
+void MonoElementsIntegralCpp::SetNumberOfConstants(const CBasicIndexType& n){
      this->constants.resize(n,1);
 }
 //
@@ -124,7 +126,7 @@ void MonoElementsIntegralCpp::SetPoints(double* pd, const int& rows, const int& 
     this->nodes = new MapMatrixDDD(pd,rows,columns);
 }
 //
-void MonoElementsIntegralCpp::SetConnectivity( INT_TYPE* pd, const int& rows, const int& columns){
+void MonoElementsIntegralCpp::SetConnectivity( CBasicIndexType* pd, const int& rows, const int& columns){
     if(this->connectivity) delete this->connectivity;
     this->connectivity = new MapMatrixIDD(pd,rows,columns);
 }
@@ -363,9 +365,9 @@ void MonoElementsIntegralCpp::Integrate( WeakForm* wform, std::vector<int>& idst
 
 
     bool hasright = false;
-    const int NumberOfTerms = wform->GetNumberOfTerms();
-    const int NumberOfIntegrationPoints = this->iw.rows();
-    const int nbcols = this->connectivity->cols();
+    const CBasicIndexType NumberOfTerms = wform->GetNumberOfTerms();
+    const CBasicIndexType NumberOfIntegrationPoints = static_cast<CBasicIndexType>(this->iw.rows());
+    const CBasicIndexType nbcols = static_cast<CBasicIndexType>(this->connectivity->cols());
     int l1 = 0;
     int l2 = 0;
     MatrixID1 leftNumbering;
@@ -388,20 +390,16 @@ void MonoElementsIntegralCpp::Integrate( WeakForm* wform, std::vector<int>& idst
     LocalSpace& geoSpace = this->lspaces[this->geoSpaceNumber];
     const int elemdim = geoSpace.dimensionality;
 
-    const int idstotreat_s = idstotreat.size();
+    const CBasicIndexType idstotreat_s = static_cast<CBasicIndexType>(idstotreat.size());
     QRType Jinv;
     int n;
     int rightIndex=0;
     int leftIndex=0;
-//    std::cout << "maxsizelocalTestDofs " << maxsizelocalTestDofs<< std::endl;
-//    std::cout << "maxsizelocalUnkownDofs " << maxsizelocalUnkownDofs<< std::endl;
     for(int elem_counter =0; elem_counter< idstotreat_s; ++elem_counter){
         ElementMatrix =  MatrixDDD::Zero(maxsizelocalTestDofs,maxsizelocalUnkownDofs);
 
         n = idstotreat[elem_counter];
-//        INT_TYPE fillcpt = 0;
-
-//         the coordinates of the nodes
+//      the coordinates of the nodes
         for( int j = 0; j < nbcols;++j){
             xcoor.row(j) = this->nodes->row((*this->connectivity)(n,j));
         }
@@ -444,18 +442,12 @@ void MonoElementsIntegralCpp::Integrate( WeakForm* wform, std::vector<int>& idst
                 }
                 hasright = false;
 
-                const int numberOfProds = monom.prod.size();
-                //if(elem_counter==0 && ip == 0){
-                //	std::cout << "monom " << termn << " : " << monom << std::endl;
-                //}
+                const CBasicIndexType numberOfProds = static_cast<CBasicIndexType>(monom.prod.size());
 
-                for(int prodn=0; prodn< numberOfProds; ++prodn){
+                for(CBasicIndexType prodn=0; prodn< numberOfProds; ++prodn){
 
 
                     WeakTerm& term = monom.prod[prodn];
-                    //if(elem_counter==0 && ip == 0){
-	                //    std::cout << " working on term : " << term << std::endl;
-               	    //}
 
                     if(term.internalType == EnumNormal){
                         factor *= normal(term.derDegree,0);
@@ -496,9 +488,9 @@ void MonoElementsIntegralCpp::Integrate( WeakForm* wform, std::vector<int>& idst
                             center = cs.GetNxNyNz();
                         }
                         centerNumbering = this->lnumbering[term.numberingIndex_]->row(n);
-                        const int ss = centerNumbering.rows();
+                        const CBasicIndexType ss = static_cast<CBasicIndexType>(centerNumbering.rows());
                         vals.resize(ss,1);
-                        for(int c=0; c < ss; ++c){
+                        for(CBasicIndexType c=0; c < ss; ++c){
                             vals(c,0) = (*(this->values[term.valuesIndex_]))(centerNumbering(c),0);
                         }
 
@@ -538,8 +530,8 @@ void MonoElementsIntegralCpp::Integrate( WeakForm* wform, std::vector<int>& idst
 //                        }
 //                    }
 //                    fillcpt += l;
-                    const int loff =   this->localTestDofsOffset[leftIndex];
-                    const int roff =   this->localUnkownDofsOffset[rightIndex];
+                    const CBasicIndexType loff =   this->localTestDofsOffset[leftIndex];
+                    const CBasicIndexType roff =   this->localUnkownDofsOffset[rightIndex];
                     for(int i=0;i<l1;++i){
                         for(int j=0;j<l2;++j){
                             ElementMatrix(i+loff,j+roff) += left[i]*right[j]*factor;
@@ -565,8 +557,8 @@ void MonoElementsIntegralCpp::Integrate( WeakForm* wform, std::vector<int>& idst
                     for (int j=0; j<rightNumbering.rows(); ++j){
                         double val = ElementMatrix(localTestDofsOffset[vi]+i,localUnkownDofsOffset[vj]+j);
                         if (val != 0){
-                            const int ii = leftNumbering[i];
-                            const int jj = rightNumbering[j];
+                            const CBasicIndexType ii = leftNumbering[i];
+                            const CBasicIndexType jj = rightNumbering[j];
 
                             if(this->onlyUpper && ii > jj ){
                                 continue;
@@ -578,42 +570,14 @@ void MonoElementsIntegralCpp::Integrate( WeakForm* wform, std::vector<int>& idst
                             ++totalvijcpt;
 
                         }
-//                        std::cout << "mII[" << leftNumbering[i] <<
-//                                        "," << rightNumbering[j] <<
-//                                        "] = "  << ElementMatrix(localTestDofsOffset[vi]+i,localUnkownDofsOffset[vj]+j)<< std::endl;
 
                     }
                 }
             }
         }
-
-//        if( fillcpt){
-//            SpMat A(this->totalTestDofs,this->totalUnkownDofs);
-//            container cont;
-//            cont.ev = &ev[0];
-//            cont.ei = &ei[0];
-//            cont.ej = &ej[0];
-//            cont.size = fillcpt;
-//
-//            A.setFromTriplets(cont.begin(), cont.end());
-//            A.makeCompressed ();
-////            std::cout << "A" << std::endl;
-//            std::cout << A ;
-//            for (int k=0; k<A.outerSize(); ++k){
-//                for (SpMat::InnerIterator it(A,k); it; ++it){
-//                    std::cout << "m[" << it.row() << "," <<it.col() << "] = "  << it.value() << std::endl;
-//                    vK[totalvijcpt] = it.value();
-//                    iK[totalvijcpt] = it.row();
-//                    jK[totalvijcpt] = it.col();
-//                    ++totalvijcpt;
-//                }
-//            }
-//        exit(0);
-//        }
-
     }
 
 };
-    
+
 
 } // namespace BasicTools

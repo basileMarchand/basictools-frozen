@@ -12,7 +12,6 @@
 #include <LinAlg/EigenTypes.h>
 namespace BasicTools
 {
-    
 
 template<typename T>
 MatrixDDD solve(T& Jinv,MapMatrixDDD &valdphidxi);
@@ -77,17 +76,12 @@ struct LocalSpace{
            return this->BxByBz;
    }
 
-
-
    void SetActiveIntegrationPoint(const int& ip,QRType& Jinv ){
        this->activeIntegrationPoint = ip;
        if(this->valdphidxi[ip])
            this->BxByBz = solve(Jinv,*this->valdphidxi[ip]);
-
    }
-
 };
-//
 
 //
 struct MonoElementsIntegralCpp{
@@ -111,10 +105,10 @@ struct MonoElementsIntegralCpp{
   MatrixDD3 ip;
 
   int totalvijcpt;
-  FLOAT_TYPE *vK;
-  INT_TYPE *iK;
-  INT_TYPE *jK;
-  FLOAT_TYPE *F;
+  CBasicFloatType *vK;
+  CBasicIndexType *iK;
+  CBasicIndexType *jK;
+  CBasicFloatType *F;
 
   bool hasnormal;
   bool onlyEvaluation;
@@ -142,14 +136,14 @@ struct MonoElementsIntegralCpp{
   std::vector<MapMatrixDDD*>  ipvalues;
 
   void SetLocalOffsets(const int& maxSizeUDof,
-                       const std::vector<double>& ludof,
+                       const std::vector<int>& ludof,
                        const std::vector<int>& luNumberingindex,
                        const int& maxSizeTDof,
-                       const std::vector<double>& ltdof,
+                       const std::vector<int>& ltdof,
                        const std::vector<int>& ltNumberingindex){
       this->maxsizelocalUnkownDofs = maxSizeUDof;
       for(unsigned int i =0; i < ludof.size(); ++i){
-          this->localUnkownDofsOffset[i] =ludof[i];
+          this->localUnkownDofsOffset[i] = ludof[i];
           this->unkownDofsNumbering[i] =luNumberingindex[i];
           }
       this->maxsizelocalTestDofs = maxSizeTDof;
@@ -195,12 +189,9 @@ struct MonoElementsIntegralCpp{
 
   };
   //
-  void SetNumberingI(int i, int n, int m, INT_TYPE* ip){
+  void SetNumberingI(int i, int n, int m, CBasicIndexType* ip){
      if(this->lnumbering[i]) delete this->lnumbering[i];
-     //std::cout << "size of the numbering "  << n << "  " << m << std::endl;
      this->lnumbering[i] = new MapMatrixIDD(ip,n,m);
-     //int test = (*this->lnumbering[i])(0,0);
-     //int test2 = (*this->lnumbering[i])(n-1,m-1);
    }
   //////////////////////////////////////////
   void SetNumberOfValues(int i);
@@ -216,7 +207,7 @@ struct MonoElementsIntegralCpp{
   void SetTotalTestDofs(const int& n);
   void SetTestOffset(const int& n, const int& s);
   ///////////////// constants ///////////////////////////////////
-  void SetNumberOfConstants(const int& n);
+  void SetNumberOfConstants(const CBasicIndexType& n);
   void SetConstants(const int& n,const double& val);
   //////////////// Working Memory ///////////////////////////////
   void AllocateWorkingElementVIJ(int size);
@@ -226,7 +217,7 @@ struct MonoElementsIntegralCpp{
   void SetNumberOfIntegrationPoints(const int& n);
   void SetIntegrationPointI(const int& n,const double& w,const double& p0,const double& p1,const double& p2);
   void SetPoints(double* pd, const int& rows, const int& columns);
-  void SetConnectivity(INT_TYPE* pd, const int& rows, const int& columns);
+  void SetConnectivity(CBasicIndexType* pd, const int& rows, const int& columns);
   void ProcessWeakForm(WeakForm* wform);
   void Integrate( WeakForm* wform, std::vector<int>& idstotreat);
 

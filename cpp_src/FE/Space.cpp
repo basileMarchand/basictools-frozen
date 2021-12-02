@@ -5,12 +5,12 @@
 
 #include <FE/Space.h>
 
-namespace BasicTools 
+namespace BasicTools
 {
 
 // ************ ElementSpace ****************
-int ElementSpace::GetNumberOfShapeFunctions(){
-    return this->storage.size();
+CBasicIndexType ElementSpace::GetNumberOfShapeFunctions(){
+    return static_cast<CBasicIndexType>(this->storage.size());
 }
 //
 const DofAttachment& ElementSpace::GetDofAttachment(const int& dofnumber) const {
@@ -21,7 +21,7 @@ void ElementSpace::AppendDofAttachement(const char& entity, const int& entityNum
     storage.push_back( DofAttachment(entity,entityNumber, extraKey) ) ;
 }
 // ***************  Space ******************
-int Space::GetNumberOfShapeFunctionsFor(const std::string& elemtype){
+CBasicIndexType Space::GetNumberOfShapeFunctionsFor(const std::string& elemtype){
     return this->storage[elemtype].GetNumberOfShapeFunctions();
 };
 //

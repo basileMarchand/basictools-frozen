@@ -14,12 +14,7 @@ const std::string IntegrationPoint = "I";
 
 //****************** DofKey ***************
 
-DofKey::DofKey(const std::string s,const int& id0, const int& id1): s(s), id1(id1){
-    this->id0.resize(1,1);
-    this->id0(0,0)= id0;
-};
-
-DofKey::DofKey(const std::string s,const INT_TYPE& id0, const int& id1): s(s), id1(id1){
+DofKey::DofKey(const std::string s,const CBasicIndexType& id0, const int& id1): s(s), id1(id1){
     this->id0.resize(1,1);
     this->id0(0,0)= id0;
 };
@@ -35,8 +30,8 @@ bool DofKey::operator<( DofKey const& b) const {
            if( this->id0.rows() < b.id0.rows() ) return true;
            //if( this->id0.rows() >= b.id0.rows() ) return false;
            if( this->id0.rows() == b.id0.rows() ) {
-               const int& m = this->id0.rows();
-               for(int i =0;  i < m ; ++i){
+               const CBasicIndexType& m = static_cast<CBasicIndexType>(this->id0.rows());
+               for(CBasicIndexType i =0;  i < m ; ++i){
                    if( this->id0(i,0) < b.id0(i,0) ) return true;
                    if( this->id0(i,0) ==  b.id0(i,0) ) continue;
                    return false;
@@ -56,11 +51,11 @@ void DofKey::Print() const {
 bool DofKey::IsPointDof()const{
     return Point == this->s;
 }
-INT_TYPE DofKey::GetPoit()const {
+CBasicIndexType DofKey::GetPoit()const {
     return this->id0(0,0);
 }
 //------------------------------------------------------------
-DofKey GetPointDofKey(const INT_TYPE&pid ) {
+DofKey GetPointDofKey(const CBasicIndexType&pid ) {
     return DofKey(Point,pid,0);
 }
 
@@ -73,7 +68,7 @@ DofNumbering::DofNumbering(){
     this->dofToCellComputed=false;
 };
 //
-INT_TYPE DofNumbering::GetSize() const {
+CBasicIndexType DofNumbering::GetSize() const {
     return this->size;
 };
 //
@@ -92,43 +87,42 @@ void DofNumbering::ComputeNumberingFromConnectivity(UnstructuredMesh& mesh){
         this->numbering[x.first] = x.second.GetConnectivityMatrix();
     }
     this->almanac.clear();
-    for(INT_TYPE i =0; i<this->size; i++ ){
+    for(CBasicIndexType i =0; i<this->size; i++ ){
         this->almanac[GetPointDofKey(i)] = i ;
     }
 }
 
 void DofNumbering::ComputeNumberingGeneral(UnstructuredMesh& mesh, Space& space, ElementFilterBase& elementFilter){
-    INT_TYPE& size = this->size;
-    
-    INT_TYPE useddim = 0;
-    INT_TYPE cctt = 0;
+    CBasicIndexType& size = this->size;
+
+    CBasicIndexType useddim = 0;
+    CBasicIndexType cctt = 0;
     for (auto& x : mesh.elements.storage){
         MatrixID1 ids = elementFilter.GetIdsToTreat(mesh, x.first);
-        INT_TYPE  nel = ids.rows();
+        CBasicIndexType  nel = static_cast<CBasicIndexType>(ids.rows());
         if (nel == 0) continue;
-        const INT_TYPE dim = ElementNames[x.first].dimension();
+        const CBasicIndexType dim = ElementNames[x.first].dimension();
         useddim = std::max(useddim, dim);
         cctt += nel;
-        const int& nbOfShapeFuntions = space.GetNumberOfShapeFunctionsFor(x.first) ;
-        const int& nbOfElement = x.second.GetNumberOfElements();
-        
+        const CBasicIndexType& nbOfShapeFuntions = space.GetNumberOfShapeFunctionsFor(x.first) ;
+        const CBasicIndexType& nbOfElement = x.second.GetNumberOfElements();
+
         if ( !this->HasNumberingFor(x.first) ){
             this->InitNumberingFor(x.first, nbOfElement,nbOfShapeFuntions);
         }
-        
+
         auto& localNumbering = this->GetNumberingFor(x.first);
         const auto& localspace = space.GetSpaceFor(x.first);
-        
-        
+
         const auto& localConnectivity = x.second.GetConnectivityMatrix();
-        INT_TYPE d;
+        CBasicIndexType d;
         for(int j = 0 ; j < nbOfShapeFuntions; ++j){
-            for(INT_TYPE el=0;el < nel; ++el){
-                
-                const INT_TYPE& currentElementId = ids(el,0);
+            for(CBasicIndexType el=0;el < nel; ++el){
+
+                const CBasicIndexType& currentElementId = ids(el,0);
                 const auto& elcoon = localConnectivity.row(currentElementId);
                 const auto& key = this->GetKeyFor(x.first,currentElementId, j,x.second,localspace.GetDofAttachment(j), elcoon );
-                
+
                 if (this->almanac.count(key)){
                     d = this->almanac[key];
                 } else {
@@ -142,28 +136,28 @@ void DofNumbering::ComputeNumberingGeneral(UnstructuredMesh& mesh, Space& space,
     }
     for (auto& x : mesh.elements.storage){
         if ( useddim <= ElementNames[x.first].dimension()) continue;
-        
+
         MatrixID1 ids = elementFilter.GetIdsToTreatComplementaty(mesh, x.first);
-        
-        INT_TYPE  nel = ids.rows();
+
+        CBasicIndexType  nel = static_cast<CBasicIndexType>(ids.rows());
         if (nel == 0) continue;
-        
+
         const auto& localspace = space.GetSpaceFor(x.first);
-        const int& nbOfShapeFuntions = space.GetNumberOfShapeFunctionsFor(x.first) ;
-        const int& nbOfElement = x.second.GetNumberOfElements();
-        
+        const CBasicIndexType& nbOfShapeFuntions = space.GetNumberOfShapeFunctionsFor(x.first) ;
+        const CBasicIndexType& nbOfElement = x.second.GetNumberOfElements();
+
         if ( !this->HasNumberingFor(x.first) ){
             this->InitNumberingFor(x.first, nbOfElement,nbOfShapeFuntions);
         }
         auto& localNumbering = this->GetNumberingFor(x.first);
-        
+
         const auto localConnectivity = x.second.GetConnectivityMatrix();
-        for(INT_TYPE el=0;el < nel; ++el){
-            const INT_TYPE& currentElementId = ids(el,0);
+        for(CBasicIndexType el=0;el < nel; ++el){
+            const CBasicIndexType& currentElementId = ids(el,0);
             const auto& elcoon = localConnectivity.row(currentElementId);
             for(int j = 0 ; j < nbOfShapeFuntions; ++j){
                 const auto& key = this->GetKeyFor(x.first,currentElementId, j,x.second,localspace.GetDofAttachment(j), elcoon );
-                //INT_TYPE d =-1;
+                //CBasicIndexType d =-1;
                 if (this->almanac.count(key)){
                     localNumbering(currentElementId,j) = this->almanac[key];
                 }
@@ -178,7 +172,7 @@ bool DofNumbering::HasNumberingFor(const std::string & elemtype){
     }
     return false;
 }
-void DofNumbering::InitNumberingFor(const std::string & elemtype, const long int& nbOfElement, const long int& nbOfShapeFuntions ){
+void DofNumbering::InitNumberingFor(const std::string & elemtype, const CBasicIndexType& nbOfElement, const CBasicIndexType& nbOfShapeFuntions ){
     if (nbOfElement == 0){
         this->numbering.erase(elemtype);
         return ;
@@ -198,7 +192,7 @@ MatrixIDD& DofNumbering::GetNumberingFor(const std::string & elemtype){
     throw "no numbering for" + elemtype;
 }
 
-INT_TYPE DofNumbering::GetDofOfPoint(const INT_TYPE& pid){
+CBasicIndexType DofNumbering::GetDofOfPoint(const CBasicIndexType& pid){
     if(this->almanac.count(GetPointDofKey(pid)))
         return this->almanac[GetPointDofKey(pid)];
     else
@@ -217,9 +211,9 @@ MatrixID1& DofNumbering::GetdoftopointRight(){
 //
 void DofNumbering::computeDofToPoint(){
     if (this->dofToPointComputed) return ;
-    
-    INT_TYPE cpt =0;
-    for(const  auto dof : this->almanac){
+
+    CBasicIndexType cpt =0;
+    for(const  auto& dof : this->almanac){
         if (dof.first.IsPointDof()){
             cpt += 1;
         }
@@ -227,9 +221,9 @@ void DofNumbering::computeDofToPoint(){
     if (cpt == 0) return;
     this->doftopointLeft.resize(cpt,1);
     this->doftopointRight.resize(cpt,1);
-    
+
     cpt =0;
-    for(const  auto dof : this->almanac){
+    for(const  auto& dof : this->almanac){
         if (dof.first.IsPointDof() ){
             this->doftopointLeft(cpt,0) = dof.first.GetPoit();
             this->doftopointRight(cpt,0) = dof.second;
@@ -239,38 +233,37 @@ void DofNumbering::computeDofToPoint(){
     this->dofToPointComputed = true;
 }
 
-INT_TYPE DofNumbering::GetDofOfkey(const DofKey& key){
+CBasicIndexType DofNumbering::GetDofOfkey(const DofKey& key){
     if(this->almanac.count(key))
         return this->almanac[key];
     else
         return -1;
 }
 
-INT_TYPE DofNumbering::GetSizeOfDofToPoint()   {
+CBasicIndexType DofNumbering::GetSizeOfDofToPoint()   {
     this->computeDofToPoint();
-    return this->doftopointLeft.rows();
+    return static_cast<CBasicIndexType>(this->doftopointLeft.rows());
 }
 
-INT_TYPE DofNumbering::GetSizeOfDofToCell()  {
-    return this->doftocellLeft.rows();
+CBasicIndexType DofNumbering::GetSizeOfDofToCell()  {
+    return static_cast<CBasicIndexType>(this->doftocellLeft.rows());
 }
 
 void DofNumbering::computeDofToCell(UnstructuredMesh& mesh){
     if (this->dofToCellComputed) return ;
-   
-    INT_TYPE dofcpt = mesh.elements.GetNumberOfElements();
+
+    CBasicIndexType dofcpt = mesh.elements.GetNumberOfElements();
     this->doftocellLeft.resize(dofcpt,1);
     this->doftocellRight.resize(dofcpt,1);
     dofcpt = 0;
-    INT_TYPE elemcpt = 0;
-    //for (auto&& [elemtype, elemdata] : mesh.elements.storage){
+    CBasicIndexType elemcpt = 0;
     for (auto& x : mesh.elements.storage){
         const auto& connectivityMatrix = x.second.GetConnectivityMatrix();
-        const INT_TYPE nbel = x.second.GetNumberOfElements();
-        for(INT_TYPE el = 0; el < nbel; ++el ){
+        const CBasicIndexType nbel = x.second.GetNumberOfElements();
+        for(CBasicIndexType el = 0; el < nbel; ++el ){
             DofKey key = DofKey(x.first,connectivityMatrix.row(el),0);
             key.SortId0();
-            INT_TYPE dofnb = GetDofOfkey(key);
+            CBasicIndexType dofnb = GetDofOfkey(key);
             if(dofnb == -1) continue;
             this->doftocellLeft(dofcpt,0) = el + elemcpt;
             this->doftocellRight(dofcpt,0) = dofnb;
@@ -297,7 +290,7 @@ MatrixID1& DofNumbering::GetdoftocellRight(){
 std::string DofNumbering::ToStr(){
     std::string res = "";
     return res;
-    
+
 }
-    
+
 } // namespace BasicTools

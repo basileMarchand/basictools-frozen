@@ -15,21 +15,21 @@
 
 namespace BasicTools
 {
-    
+
 extern const std::string Point;
 extern const std::string Global;
 extern const std::string IntegrationPoint;
 
 class DofKey{
     std::string s;
-    //INT_TYPE id0;
+    //CBasicIndexType id0;
     MatrixID1 id0;
-    INT_TYPE id1;
+    CBasicIndexType id1;
 public:
-    DofKey(const std::string s,const int& id0, const int& id1);
-    DofKey(const std::string s,const INT_TYPE& id0, const int& id1);
-    template<typename T>
-    DofKey(const std::string s,const T& id0, const int& id1): s(s), id1(id1){
+    DofKey(const std::string s,const CBasicIndexType& id0, const int& id1);
+
+    template<typename Derived>
+    DofKey(const std::string s,const Eigen::EigenBase<Derived>& id0, const int& id1): s(s), id1(id1){
         this->id0 = id0;
     };
     bool operator<( DofKey const& b) const ;
@@ -37,17 +37,17 @@ public:
     void Print() const ;
     //
     bool IsPointDof()const;
-    INT_TYPE GetPoit()const ;
+    CBasicIndexType GetPoit()const ;
 };
 
-DofKey GetPointDofKey(const INT_TYPE&pid ) ;
+DofKey GetPointDofKey(const CBasicIndexType&pid ) ;
 
 class DofNumbering{
-    INT_TYPE size;
+    CBasicIndexType size;
     bool fromConnectivity;
     bool discontinuous;
     std::map<std::string,MatrixIDD> numbering;
-    std::map<DofKey,INT_TYPE > almanac;
+    std::map<DofKey,CBasicIndexType > almanac;
     MatrixID1 doftopointLeft;
     MatrixID1 doftopointRight;
     bool dofToPointComputed;
@@ -56,7 +56,7 @@ class DofNumbering{
     bool dofToCellComputed;
 public:
     DofNumbering();
-    INT_TYPE GetSize() const ;
+    CBasicIndexType GetSize() const ;
     bool GetFromConnectivity() const ;
     void SetFromConnectivity(const bool& val);
     void ComputeNumberingFromConnectivity(UnstructuredMesh& mesh);
@@ -65,29 +65,29 @@ public:
     //
     bool HasNumberingFor(const std::string & elemtype);
     //
-    void InitNumberingFor(const std::string & elemtype, const long int& nbOfElement, const long int& nbOfShapeFuntions );
+    void InitNumberingFor(const std::string & elemtype, const CBasicIndexType& nbOfElement, const CBasicIndexType& nbOfShapeFuntions );
     //
     MatrixIDD& GetNumberingFor(const std::string & elemtype);
     //
-    INT_TYPE GetDofOfkey(const DofKey& key);
+    CBasicIndexType GetDofOfkey(const DofKey& key);
     //
-    INT_TYPE GetDofOfPoint(const INT_TYPE& pid);
-    INT_TYPE GetSizeOfDofToPoint();
+    CBasicIndexType GetDofOfPoint(const CBasicIndexType& pid);
+    CBasicIndexType GetSizeOfDofToPoint();
     MatrixID1& GetdoftopointLeft();
     MatrixID1& GetdoftopointRight();
     void computeDofToPoint();
     //
     void computeDofToCell(UnstructuredMesh& mesh);
-    INT_TYPE GetSizeOfDofToCell();
+    CBasicIndexType GetSizeOfDofToCell();
     MatrixID1& GetdoftocellLeft();
     MatrixID1& GetdoftocellRight();
     //
-    
+
     template< typename S>
-    DofKey GetKeyFor(const std::string & elemtype,const INT_TYPE& elid,const int& sf, const ElementsContainer& data,const DofAttachment& da, const S & elcoon) const {
-    //DofKey GetKeyFor(const std::string & elemtype,const INT_TYPE& elid,const int& sf, const ElementsContainer& data,const DofAttachment& da, const Eigen::Ref<const MatrixIDD> & elcoon) const ;        
+    DofKey GetKeyFor(const std::string & elemtype,const CBasicIndexType& elid,const int& sf, const ElementsContainer& data,const DofAttachment& da, const S & elcoon) const {
+
     if(da.entity == 'P'){
-        const INT_TYPE& pid = da.entityNumber;
+        const CBasicIndexType& pid = da.entityNumber;
         return GetPointDofKey(elcoon(0,pid));
     } else if (da.entity == 'C'){
         DofKey res = DofKey(elemtype,elcoon,da.entityNumber);

@@ -8,9 +8,12 @@
 #include <ostream>
 #include <vector>
 
+#include <LinAlg/EigenTypes.h>
+
+
 namespace BasicTools
 {
-    
+
 struct WeakTerm {
     WeakTerm ():fieldName("None"),derCoordName("None"),derDegree(0),constant(false),normal(false){};
     std::string fieldName;
@@ -39,32 +42,11 @@ struct WeakMonom {
 
 struct WeakForm{
     std::vector<WeakMonom> form;
-    int GetNumberOfTerms(){return this->form.size();}
+    CBasicIndexType GetNumberOfTerms(){return static_cast<CBasicIndexType>(this->form.size());}
 };
 
-std::ostream& operator <<(std::ostream& stream, const WeakTerm& term) {
+std::ostream& operator <<(std::ostream& stream, const WeakTerm& term);
 
-    if (term.derDegree){
-        stream << "Derivative(" << term.fieldName <<"," << term.derCoordName<< ")"  ;
-    } else {
-        stream << term.fieldName ;
-    }
-    return stream;
-}
-
-std::ostream& operator <<(std::ostream& stream, const WeakMonom& monom) {
-
-    if (monom.prefactor != 0) {
-        stream << monom.prefactor << "*";
-    }
-    for(unsigned int prodn=0; prodn<  monom.prod.size(); ++prodn){
-        const WeakTerm& term = monom.prod[prodn];
-        if(prodn ) stream << "*";
-        stream << term;
-
-    }
-
-    return stream;
-}
+std::ostream& operator <<(std::ostream& stream, const WeakMonom& monom) ;
 
 } // namespace BasicTools
