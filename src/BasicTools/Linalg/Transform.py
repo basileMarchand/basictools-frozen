@@ -5,13 +5,15 @@
 #
 
 import numpy as np
+
+from BasicTools.NumpyDefs import PBasicFloatType, PBasicIndexType
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 
 class Transform(BaseOutputObject):
     def __init__(self, offset=None, first=None, second=None):
        super(Transform,self).__init__()
-       self.offset  = np.array([0.0, 0.0, 0.0], dtype=np.float)
-       self.RMatrix = np.array([[1.0,0,0],[0,1,0],[0,0,1]])
+       self.offset  = np.array([0.0, 0.0, 0.0], dtype=PBasicFloatType)
+       self.RMatrix = np.array([[1.0,0,0],[0,1,0],[0,0,1]], dtype=PBasicFloatType)
        self.keepOrthogonal = True
        self.keepNormalised = True
 
@@ -30,11 +32,11 @@ class Transform(BaseOutputObject):
 
     def SetOffset(self,data):
         # this point define the origin of the new coordinate system
-        self.offset  = np.array(data, dtype=np.float)
+        self.offset  = np.array(data, dtype=PBasicFloatType)
 
     def SetFirst(self,data):
         # this point define the x coordinate (direction) with respect to the new origin
-        first  = np.array(data, dtype=np.float)
+        first  = np.array(data, dtype=PBasicFloatType)
         if self.keepNormalised :
             first /= np.linalg.norm(first)
         self.RMatrix[0,:] = first
@@ -59,11 +61,11 @@ class Transform(BaseOutputObject):
                     second[0] += 1
                 return self.SetSecond(second)
         else:
-            second = np.array(data, dtype=np.float)
+            second = np.array(data, dtype=PBasicFloatType)
 
         if self.keepOrthogonal:
             second -= first*np.dot(first,second)/np.dot(first,first)
- 
+
         second_norm = np.linalg.norm(second)
         if  second_norm == 0:
             raise Exception("cat set second to " + str(data) + " This vector ir colinear to first :" + str(first))
@@ -80,17 +82,17 @@ class Transform(BaseOutputObject):
         if data is None:
             third = np.cross(first, second)
         else:
-            third = np.array(data, dtype=np.float)
+            third = np.array(data, dtype=PBasicFloatType)
             if self.keepOrthogonal:
                 third -= first*np.dot(first,third)/np.dot(first,first)
                 third -= second*np.dot(second,third)/np.dot(second,second)
 
         third_norm = np.linalg.norm(third)
         if  third_norm == 0:
-            raise Exception("cat set third to " + str(data) + " This vector ir colinear to first and/or sencond :" + str(first) + " " + str(second))
+            raise Exception("cant set third to " + str(data) + " This vector ir colinear to first and/or sencond :" + str(first) + " " + str(second))
 
         if self.keepNormalised :
-            third /= third_norm 
+            third /= third_norm
         self.RMatrix[2,:] = third
 
     def SetOpUsingThird(self,third):
@@ -122,7 +124,7 @@ class Transform(BaseOutputObject):
             op = np.linalg.inv(self.RMatrix)
         else:
             op = self.RMatrix.T
-        
+
         return self.__ApplyOpForEveryLine(op,point)+self.offset
 
     def ApplyTransformDirection(self,point):
@@ -169,31 +171,31 @@ class Transform(BaseOutputObject):
         return Transform(self.offset, self.RMatrix[0,:], self.RMatrix[1,:])
 
     def __str__(self):
-        res = "Transform : \n"    
+        res = "Transform : \n"
         res += "    keepNormalised : " + str(self.keepNormalised)+ "\n"
         res += "    keepOrthogonal : " + str(self.keepOrthogonal)+ "\n"
         res += "    offset : " + str(self.offset)+ "\n"
         res += "    first  : " + str(self.RMatrix[0,:])+ "\n"
         res += "    second : " + str(self.RMatrix[1,:])+ "\n"
-        res += "    third : " + str(self.RMatrix[2,:]) + "\n" 
+        res += "    third : " + str(self.RMatrix[2,:]) + "\n"
         return res
 def CheckIntegrity(GUI=False):
     orient = Transform()
     orient.SetOpUsingThird([5,2,1])
     orient.SetOperator(op=orient.RMatrix)
 
-    orient = Transform(offset=[1,1,1], 
-                        first=[1,0,0], 
+    orient = Transform(offset=[1,1,1],
+                        first=[1,0,0],
                         second =[0,1,0])
 
-    print(orient.GetDirection(0) ) 
+    print(orient.GetDirection(0) )
     #test with a list of points
     orient.ApplyTransform([[0,1,2],[3,4,5]])
     print(orient.GetOrthoNormalBase())
     def CheckOperations(orient,p,v,t):
         pt = orient.ApplyTransform(p)
         pr = orient.ApplyInvTransform(pt)
-    
+
         if np.linalg.norm(p-pr) > 1e-14:# pragma: no cover
             print(orient)
             print("Error ", np.linalg.norm(p-pr) )
@@ -202,7 +204,7 @@ def CheckIntegrity(GUI=False):
             print('pt ',pt)
             print('pr ',pr)
             raise Exception("Error in the position transform")
-        
+
         vt = orient.ApplyTransformDirection(v)
         vr = orient.ApplyInvTransformDirection(vt)
 
@@ -214,7 +216,7 @@ def CheckIntegrity(GUI=False):
             print('vt ',vt)
             print('vr ',vr)
             raise Exception("Error in the direction transform")
-        
+
         tt = orient.ApplyTransformTensor(t)
         tr = orient.ApplyInvTransformTensor(tt)
 
@@ -226,7 +228,7 @@ def CheckIntegrity(GUI=False):
             print('tt ',tt)
             print('tr ',tr)
             raise Exception("Error in the tensor transform")
-        
+
     for nor in (True,False):
         for ort in (True,False):
             orient = Transform()

@@ -12,6 +12,7 @@ import scipy.linalg as sp_linalg
 from scipy.sparse import coo_matrix
 from scipy.sparse.csgraph import connected_components
 
+from BasicTools.NumpyDefs import PBasicFloatType, PBasicIndexType
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject as BOO
 
 methodFactory = {}
@@ -67,7 +68,7 @@ class ConstraintsHolder(BOO):
         self.Reset()
         for cons in self.constraints:
             cons.GenerateEquations(mesh,unkownFields,self)
-        self.PrintVerbose(self.nbdof)    
+        self.PrintVerbose(self.nbdof)
         self.PrintVerbose(len(self.constraints) )
         self.PrintVerbose(self.numberOfEquations )
 
@@ -176,7 +177,7 @@ class ConstraintsHolder(BOO):
         mat = mat.tocoo()
         nbdof = mat.shape[1]-1
 
-        usedDofs = np.unique(mat.col).astype(dtype=np.int64)
+        usedDofs = np.unique(mat.col).astype(dtype=PBasicIndexType)
         if len(usedDofs) == 0:
             return coo_matrix(([], ([], [])), shape=((0, 0 )), copy= True ), usedDofs
 
@@ -186,7 +187,7 @@ class ConstraintsHolder(BOO):
 
         nbUsedDofs = len(usedDofs)
         # map fron global to the reduced matrix
-        mapGToR = np.zeros(mat.shape[1],dtype=float)
+        mapGToR = np.zeros(mat.shape[1],dtype=PBasicIndexType)
         mapGToR[usedDofs] = range(nbUsedDofs)
         col = mapGToR[mat.col]
         res = coo_matrix((mat.data, (mat.row, col)), shape=((mat.shape[0], nbUsedDofs )), copy= True )
@@ -589,7 +590,7 @@ class Projection(BOO):
 
         mat = mat.tocsr()
 
-        self.slaves = np.array(slaveIds,dtype=int)
+        self.slaves = np.array(slaveIds,dtype=PBasicIndexType)
 
         masterMatMask = np.ones(mat.shape[1]-1,dtype=bool )
         masterMatMask[slavesInMat] = False
@@ -612,7 +613,7 @@ class Projection(BOO):
 
         self.X = sparse.coo_matrix( (Xdata,(Xrow,Xcol )), shape=(nbdof,self.nbMaster )   )
 
-        self.D = np.zeros( (nbdof), dtype=float )
+        self.D = np.zeros( (nbdof), dtype=PBasicFloatType )
         v = mat[:,-1].toarray()
         self.D[self.slaves] =   self.Ms_1.solve(v).ravel()
 
@@ -656,15 +657,15 @@ def CheckIntegrityTTC(ttc,GUI=False):
     CH.SetNumberOfDofs(4)
 
     # Reference solution
-    refsol = np.array([0,1,2,3],dtype=float )
+    refsol = np.array([0,1,2,3],dtype=PBasicFloatType )
 
 
     sys = 100*np.array([[ 1,-1, 0, 0],
                          [-1, 1, 0, 0],
                          [ 0, 0, 1,-1],
-                         [ 0, 0,-1, 1]],dtype=float )
+                         [ 0, 0,-1, 1]],dtype=PBasicFloatType )
 
-    rhs = np.array([0,0,0,0],dtype=float)
+    rhs = np.array([0,0,0,0],dtype=PBasicFloatType)
     # Dirichlet zero left
     CH.AddEquation([1,0,0,0],0)
     CH.AddEquationsFromIJV([0],[0],[1])
@@ -733,7 +734,7 @@ def CheckIntegrityTTC(ttc,GUI=False):
     from scipy.sparse import linalg
 
     contrainedSysNbDofs = CH.GetNumberOfDofsOnCSystem()
-    op = linalg.LinearOperator((contrainedSysNbDofs,contrainedSysNbDofs),matvec=CH.matvec,rmatvec=CH.rmatvec,dtype=float)
+    op = linalg.LinearOperator((contrainedSysNbDofs,contrainedSysNbDofs),matvec=CH.matvec,rmatvec=CH.rmatvec,dtype=PBasicFloatType)
 
     # the penalisation is not a good method with a iterative solver so we need
     # a simple precoditioning to help the solver

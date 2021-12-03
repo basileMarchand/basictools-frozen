@@ -8,6 +8,7 @@ import numpy as np
 import scipy.sparse as sps
 import scipy.sparse.linalg as spslin
 
+from BasicTools.NumpyDefs import PBasicFloatType, PBasicIndexType
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject as BOO
 from BasicTools.Helpers.TextFormatHelper import TFormat as TF
 
@@ -179,7 +180,6 @@ class LinearProblem(BOO):
         self.PrintDebug("Done Linear solver")
 
         if self.HasConstraints():
-            res = np.empty(self.constraints.nbdof, dtype=float)
             self.u = self.constraints.RestoreSolution(self.u)
 
         return self.u
@@ -196,7 +196,7 @@ def CheckSolver(GUI,solver):
     LS.SetGlobalDebugMode()
     LS.SetAlgo(solver)
 
-    LS.SetOp(sps.csc_matrix(np.array([[0.5,0],[0,1]])) )
+    LS.SetOp(sps.csc_matrix(np.array([[0.5,0],[0,1]]),dtype=PBasicFloatType))
     sol = LS.Solve(np.array([[1.],[2.]]))
     # second run
     sol = LS.Solve(np.array([[1.],[2.]]))
@@ -213,7 +213,7 @@ def CheckSolver(GUI,solver):
                                      [0.51,0.5,0.5,0,10],
                                      [0.5,0.5,0.5,0,10],
                                      [0,1,0,0,5],
-                                     ]))
+                                     ]),dtype=PBasicFloatType)
 
         def QRTest(A):
             LS.SetTolerance(1e-5)

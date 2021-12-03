@@ -11,25 +11,27 @@ cimport numpy as np
 import numpy as np
 from scipy.sparse import coo_matrix
 
+from BasicTools.CythonDefs cimport CBasicIndexType, CBasicFloatType
+from BasicTools.NumpyDefs import PBasicIndexType, PBasicFloatType
 
 cdef extern from "LinAlg/EigenSolvers.h"  namespace "BasicTools"  :
     cdef cppclass EigenSolvers:
         EigenSolvers() except +
         void SetSolverType(int)
-        void SetOp(int, int,int, double*,int*,int*, const double& ) nogil
-        void Solve(int,double*,double*) nogil
-        int GetSPQRRank()
-        void GetSPQR_R(long*, long*, double*,long*,long*)
-        void GetSPQR_Q(long*, long*, double*, long*, long*)
-        int GetSPQR_R_nonZeros()
-        int GetSPQR_Q_nonZeros()
-        void GetSPQR_P(long*)
+        void SetOp(int, int,int, CBasicFloatType*,CBasicIndexType*,CBasicIndexType*, const CBasicFloatType& ) nogil
+        void Solve(CBasicIndexType,CBasicFloatType*,CBasicFloatType*) nogil
+        CBasicIndexType GetSPQRRank()
+        void GetSPQR_R(CBasicIndexType*, CBasicIndexType*, CBasicFloatType*, CBasicIndexType*, CBasicIndexType*)
+        void GetSPQR_Q(CBasicIndexType*, CBasicIndexType*, CBasicFloatType*, CBasicIndexType*, CBasicIndexType*)
+        CBasicIndexType GetSPQR_R_nonZeros()
+        CBasicIndexType GetSPQR_Q_nonZeros()
+        void GetSPQR_P(CBasicIndexType*)
 
 cdef class CEigenSolvers():
      cdef EigenSolvers cpp_object  # Hold a C++ instance which we're wrapping
-     cdef int m
-     cdef int n
-     cdef double tol
+     cdef CBasicIndexType m
+     cdef CBasicIndexType n
+     cdef CBasicFloatType tol
      def __cinit__(self):
         self.m = 0
         self.n = 0
@@ -55,29 +57,29 @@ cdef class CEigenSolvers():
          data = coo_matrix(matrix)
          self.m = matrix.shape[0]
          self.n = matrix.shape[1]
-         cdef np.ndarray[double, ndim=1, mode="c"] ddata =  data.data
-         cdef np.ndarray[int, ndim=1, mode="c"] drow =  data.row
-         cdef np.ndarray[int, ndim=1, mode="c"] dcol =  data.col
-         self.SetOp_internal(self.m,self.n,data.data,data.row,data.col)
+         cdef np.ndarray[CBasicFloatType, ndim=1, mode="c"] ddata =  data.data
+         cdef np.ndarray[CBasicIndexType, ndim=1, mode="c"] drow =  np.asarray(data.row, dtype= PBasicIndexType)
+         cdef np.ndarray[CBasicIndexType, ndim=1, mode="c"] dcol =  np.asarray(data.col, dtype= PBasicIndexType)
+         self.SetOp_internal(self.m,self.n, data.data, drow, dcol)
 
 
      def SetOp_internal(self,int m,int n,
-               np.ndarray[double, ndim=1, mode="c"] data,
-               np.ndarray[int, ndim=1, mode="c"] row,
-               np.ndarray[int, ndim=1, mode="c"] col):
+               np.ndarray[CBasicFloatType, ndim=1, mode="c"] data,
+               np.ndarray[CBasicIndexType, ndim=1, mode="c"] row,
+               np.ndarray[CBasicIndexType, ndim=1, mode="c"] col):
 
-         cdef int data_shape = data.shape[0]
-         cdef double* datap =  &data[0]
-         cdef int* rowp =  &row[0]
-         cdef int* colp =  &col[0]
-         cdef double tol  = self.tol
+         cdef CBasicIndexType data_shape = data.shape[0]
+         cdef CBasicFloatType* datap =  &data[0]
+         cdef CBasicIndexType* rowp =  &row[0]
+         cdef CBasicIndexType* colp =  &col[0]
+         cdef CBasicFloatType tol  = self.tol
          with nogil:
              self.cpp_object.SetOp(m,n,data_shape,datap,rowp,colp,tol)
 
-     def Solve(self,np.ndarray[double, ndim=1, mode="c"] rhs,np.ndarray[double, ndim=1, mode="c"] sol ) :
-         cdef int s = rhs.shape[0]
-         cdef double* rhsp = &rhs[0]
-         cdef double* solp = &sol[0]
+     def Solve(self,np.ndarray[CBasicFloatType, ndim=1, mode="c"] rhs,np.ndarray[CBasicFloatType, ndim=1, mode="c"] sol ) :
+         cdef CBasicIndexType s = rhs.shape[0]
+         cdef CBasicFloatType* rhsp = &rhs[0]
+         cdef CBasicFloatType* solp = &sol[0]
          cdef EigenSolvers* solver = &self.cpp_object
          with nogil:
              solver.Solve(s, rhsp, solp)
@@ -91,52 +93,52 @@ cdef class CEigenSolvers():
 
          cdef EigenSolvers* solver = &self.cpp_object
          nzsize = solver.GetSPQR_R_nonZeros();
-         cdef np.ndarray[double, ndim=1, mode="c"] vals = np.ndarray(nzsize,dtype=np.double);
-         cdef np.ndarray[long, ndim=1, mode="c"] rows = np.ndarray(nzsize,dtype=int);
-         cdef np.ndarray[long, ndim=1, mode="c"]cols = np.ndarray(nzsize,dtype=int);
-         cdef np.ndarray[long, ndim=1, mode="c"] sizes = np.ndarray(2,dtype=int);
+         cdef np.ndarray[CBasicFloatType, ndim=1, mode="c"] vals = np.ndarray(nzsize,dtype=PBasicFloatType)
+         cdef np.ndarray[CBasicIndexType, ndim=1, mode="c"] rows = np.ndarray(nzsize,dtype=PBasicIndexType)
+         cdef np.ndarray[CBasicIndexType, ndim=1, mode="c"]cols = np.ndarray(nzsize,dtype=PBasicIndexType)
+         cdef np.ndarray[CBasicIndexType, ndim=1, mode="c"] sizes = np.ndarray(2,dtype=PBasicIndexType)
          from scipy.sparse import coo_matrix
 
          if nzsize == 0:
              return coo_matrix(([],([],[])), shape=(sizes[0],sizes[1] ))
 
-         cdef long* si = &sizes[0]
-         cdef long* sj = &sizes[1]
-         cdef double* vp = &vals[0]
-         cdef long* rp = &rows[0]
-         cdef long* cp = &cols[0]
+         cdef CBasicIndexType* si = &sizes[0]
+         cdef CBasicIndexType* sj = &sizes[1]
+         cdef CBasicFloatType* vp = &vals[0]
+         cdef CBasicIndexType* rp = &rows[0]
+         cdef CBasicIndexType* cp = &cols[0]
 
-         solver.GetSPQR_R(si,sj, vp,rp,cp);
+         solver.GetSPQR_R(si,sj, vp,rp,cp)
          data = (vals, (rows,cols))
          K = coo_matrix(data, shape=(sizes[0],sizes[1] ))
          return K
 
      def GetSPQR_P(self):
-        cdef np.ndarray[long, ndim=1, mode="c"] p = np.ndarray(self.n,dtype=int);
-        cdef long* pp = &p[0]
+        cdef np.ndarray[CBasicIndexType, ndim=1, mode="c"] p = np.ndarray(self.n,dtype=PBasicIndexType)
+        cdef CBasicIndexType* pp = &p[0]
         cdef EigenSolvers* solver = &self.cpp_object
-        solver.GetSPQR_P(pp);
+        solver.GetSPQR_P(pp)
         return p
 
      def GetSPQR_Q(self):
 
          cdef EigenSolvers* solver = &self.cpp_object
-         nzsize = solver.GetSPQR_Q_nonZeros();
-         cdef np.ndarray[double, ndim=1, mode="c"] vals = np.ndarray(nzsize,dtype=np.double);
-         cdef np.ndarray[long, ndim=1, mode="c"] rows = np.ndarray(nzsize,dtype=int);
-         cdef np.ndarray[long, ndim=1, mode="c"] cols = np.ndarray(nzsize,dtype=int);
-         cdef np.ndarray[long, ndim=1, mode="c"] sizes = np.ndarray(2,dtype=int);
+         nzsize = solver.GetSPQR_Q_nonZeros()
+         cdef np.ndarray[CBasicFloatType, ndim=1, mode="c"] vals = np.ndarray(nzsize,dtype=PBasicFloatType)
+         cdef np.ndarray[CBasicIndexType, ndim=1, mode="c"] rows = np.ndarray(nzsize,dtype=PBasicIndexType)
+         cdef np.ndarray[CBasicIndexType, ndim=1, mode="c"] cols = np.ndarray(nzsize,dtype=PBasicIndexType)
+         cdef np.ndarray[CBasicIndexType, ndim=1, mode="c"] sizes = np.ndarray(2,dtype=PBasicIndexType)
 
          from scipy.sparse import coo_matrix
 
          if nzsize == 0:
              return coo_matrix(([],([],[])), shape=(sizes[0],sizes[1] ))
 
-         cdef long* si = &sizes[0]
-         cdef long* sj = &sizes[1]
-         cdef double* vp = &vals[0]
-         cdef long* rp = &rows[0]
-         cdef long* cp = &cols[0]
+         cdef CBasicIndexType* si = &sizes[0]
+         cdef CBasicIndexType* sj = &sizes[1]
+         cdef CBasicFloatType* vp = &vals[0]
+         cdef CBasicIndexType* rp = &rows[0]
+         cdef CBasicIndexType* cp = &cols[0]
 
          solver.GetSPQR_Q(si,sj, vp,rp,cp);
 
