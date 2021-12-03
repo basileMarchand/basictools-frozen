@@ -8,7 +8,7 @@ from sympy import cse, ccode
 
 import BasicTools.FE.Spaces.FESpaces as FES
 
-from cpp_generators.aux import PrintHeader, PrintToFile
+from cpp_generators.Tools import PrintHeader, PrintToFile
 
 def GetGeneratedFiles(prefix = "cpp_src"):
     return (prefix + "FE/GeneratedSpaces.cpp",)

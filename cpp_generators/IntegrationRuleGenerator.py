@@ -7,7 +7,7 @@
 
 import BasicTools.FE.IntegrationsRules as IR
 
-from cpp_generators.aux import PrintHeader, PrintToFile, PrintFillMatrix
+from cpp_generators.Tools import PrintHeader, PrintToFile, PrintFillMatrix
 
 def GetGeneratedFiles(prefix = "cpp_src/"):
     """Get the list of generated files for this generator"""

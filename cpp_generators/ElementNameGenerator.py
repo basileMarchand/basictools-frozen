@@ -5,7 +5,7 @@
 #
 #
 from BasicTools.Containers.ElementNames import ElementsInfo
-from cpp_generators.aux import PrintHeader, PrintToFile, PrintFillMatrix, PrintBool, PrintFillVMatrix
+from cpp_generators.Tools import PrintHeader, PrintToFile, PrintFillMatrix, PrintBool, PrintFillVMatrix
 
 def GetGeneratedFiles(prefix = "cpp_src/"):
     """Get the list of generated files for this generator"""
