@@ -5,6 +5,7 @@
 #
 import numpy as np
 
+from BasicTools.NumpyDefs import PBasicIndexType, PBasicFloatType
 import BasicTools.Containers.ElementNames as ElementNames
 from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
 from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearMesh
@@ -34,8 +35,8 @@ def CreateUniformMeshOfBars(pmin,pmax,npoints,secondOrder=False):
         res = CreateMeshOf(points,bars,elemName = ElementNames.Bar_2 )
 
     elements = res.GetElementsOfType(ElementNames.Point_1)
-    elements.connectivity = np.array([[0],[npoints-1]],dtype=np.int)
-    elements.originalIds = np.arange(2,dtype=np.int)
+    elements.connectivity = np.array([[0],[npoints-1]],dtype=PBasicIndexType)
+    elements.originalIds = np.arange(2,dtype=PBasicIndexType)
     elements.cpt = elements.connectivity.shape[0]
     elements.tags.CreateTag("L",).SetIds([0])
     elements.tags.CreateTag("H",).SetIds([1])
@@ -56,11 +57,11 @@ def CreateMeshOf(points,connectivity,elemName = None,out=None):
         res = out # pragma: no cover
 
     res.nodes = np.array(points, dtype=np.double)
-    res.originalIDNodes = np.arange(0,res.GetNumberOfNodes(),dtype=np.int)
+    res.originalIDNodes = np.arange(0,res.GetNumberOfNodes(),dtype=PBasicIndexType)
 
     elements = res.GetElementsOfType(elemName)
-    elements.connectivity = np.array(connectivity,dtype=np.int)
-    elements.originalIds = np.arange(0,elements.connectivity.shape[0],dtype=np.int)
+    elements.connectivity = np.array(connectivity,dtype=PBasicIndexType)
+    elements.originalIds = np.arange(0,elements.connectivity.shape[0],dtype=PBasicIndexType)
     elements.cpt = elements.connectivity.shape[0]
     elements.tags.CreateTag(str(ElementNames.dimension[elemName])+"D").SetIds(np.arange(elements.GetNumberOfElements() ) )
     res.PrepareForOutput()
@@ -249,7 +250,7 @@ def CreateMeshFromConstantRectilinearMesh(CRM, ofTetras= False,out=None, legacy=
     res.CopyProperties(CRM)
 
     res.nodes = CRM.GetPosOfNodes();
-    res.originalIDNodes = np.arange(0,res.GetNumberOfNodes(),dtype=np.int);
+    res.originalIDNodes = np.arange(0,res.GetNumberOfNodes(),dtype=PBasicIndexType)
     res.nodesTags = CRM.nodesTags
 
     from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearElementContainer
@@ -261,7 +262,7 @@ def CreateMeshFromConstantRectilinearMesh(CRM, ofTetras= False,out=None, legacy=
             eres.connectivity = data.connectivity
             eres.tags = data.tags
             eres.cpt = data.GetNumberOfElements()
-            eres.originalIds = np.arange(0,data.GetNumberOfElements(),dtype=np.int)
+            eres.originalIds = np.arange(0,data.GetNumberOfElements(),dtype=PBasicIndexType)
         else:
             eres = data
 
@@ -278,7 +279,7 @@ def QuadToLin(inputmesh, divideQuadElements=True,lineariseMiddlePoints=False):
     res.CopyProperties(inputmesh)
 
     res.nodes = inputmesh.GetPosOfNodes();
-    res.originalIDNodes = np.arange(0,res.GetNumberOfNodes(),dtype=np.int);
+    res.originalIDNodes = np.arange(0,res.GetNumberOfNodes(),dtype=PBasicIndexType)
     import copy
     res.nodesTags = copy.deepcopy(inputmesh.nodesTags)
 
@@ -516,8 +517,8 @@ def MirrorMesh(inmesh,x=None,y=None,z=None) :
     if z is not None:
         d += 1
 
-    outmesh.nodes = np.empty((nbpoints*(2**d),inmesh.GetDimensionality()), dtype=np.float)
-    outmesh.originalIDNodes = np.empty((nbpoints*(2**d),), dtype=int)
+    outmesh.nodes = np.empty((nbpoints*(2**d),inmesh.GetDimensionality()), dtype=PBasicFloatType)
+    outmesh.originalIDNodes = np.empty((nbpoints*(2**d),), dtype=PBasicIndexType)
 
     #copy of points:
     outmesh.nodes[0:nbpoints,:] = inmesh.nodes
@@ -533,21 +534,21 @@ def MirrorMesh(inmesh,x=None,y=None,z=None) :
             tag.SetIds(np.hstack((ids,ids+oldSize)) )
 
     if x is not None:
-        vec = np.array([ [  -1,1,1], ],dtype=np.float)
+        vec = np.array([ [  -1,1,1], ],dtype=float)
         outmesh.nodes[cpt:(2*cpt),:] = (outmesh.nodes[0:cpt,:]-[x,0,0])*vec+ [x,0,0]
         outmesh.originalIDNodes[cpt:(2*cpt)] = outmesh.originalIDNodes[0:cpt]
         increaseTags(outmesh.nodesTags,cpt)
         cpt = cpt*2
 
     if y is not None:
-        vec = np.array([ [  1,-1,1], ],dtype=np.float)
+        vec = np.array([ [  1,-1,1], ],dtype=float)
         outmesh.nodes[cpt:(2*cpt),:] = (outmesh.nodes[0:cpt,:]-[0,y,0])*vec+ [0,y,0]
         outmesh.originalIDNodes[cpt:(2*cpt)] = outmesh.originalIDNodes[0:cpt]
         increaseTags(outmesh.nodesTags,cpt)
         cpt = cpt*2
 
     if z is not None:
-        vec = np.array([ [  1,1,-1], ],dtype=np.float)
+        vec = np.array([ [  1,1,-1], ],dtype=float)
         outmesh.nodes[cpt:(2*cpt),:] = (outmesh.nodes[0:cpt,:]-[0,0,z])*vec+ [0,0,z]
         outmesh.originalIDNodes[cpt:(2*cpt)] = outmesh.originalIDNodes[0:cpt]
         increaseTags(outmesh.nodesTags,cpt)
@@ -627,28 +628,24 @@ def SubDivideMesh(mesh,level=1):
     from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo, LagrangeSpaceP2
     from BasicTools.FE.DofNumbering import ComputeDofNumbering
     from BasicTools.FE.IntegrationsRules import NodalEvaluationP2
-
     numberingGeo = ComputeDofNumbering(mesh,LagrangeSpaceGeo,fromConnectivity=True)
     numberingP2 = ComputeDofNumbering(mesh,LagrangeSpaceP2)
 
     ## Generation of nodes
-
-    res.nodes = np.empty((numberingP2.size,3), dtype=float)
-    res.originalIDNodes = np.zeros(res.nodes.shape[0],dtype=int)-1
+    res.nodes = np.empty((numberingP2.size,3), dtype=PBasicFloatType)
+    res.originalIDNodes = np.zeros(res.nodes.shape[0],dtype=PBasicIndexType)-1
 
     oldToNewDofs = []
 
     for i in range(mesh.GetNumberOfNodes()):
         oldToNewDofs.append(numberingP2.GetDofOfPoint(i))
 
-    oldToNewDofs = np.array(oldToNewDofs,dtype=int)
+    oldToNewDofs = np.array(oldToNewDofs,dtype=PBasicIndexType)
     res.originalIDNodes[oldToNewDofs] = mesh.originalIDNodes
-
     for tag in mesh.nodesTags.keys():
         name = mesh.nodesTags[tag].name
         ids = mesh.nodesTags[tag].GetIds()
         res.nodesTags.CreateTag(name).SetIds(oldToNewDofs[ids])
-
     for elemType, data in mesh.elements.items():
         spaceGeo = LagrangeSpaceGeo[elemType]
         spaceGeo.Create()
@@ -691,12 +688,15 @@ def CheckIntegrity_SubDivideMesh(GUI=False):
               [1,1,1],
               [0,1,1.5]]
     hexa= [[0,1,2,3,4,5,6,7],]
-
     mesh = CreateMeshOf(points,hexa,ElementNames.Hexaedron_8)
     mesh.nodesTags.CreateTag("FirstPoint").AddToTag(0)
-    mesh.GetElementsOfType(ElementNames.Hexaedron_8).tags.CreateTag("OnlyHex").AddToTag(0)
+    mesh.GetElementsOfType(ElementNames.Hexaedron_8)
+    mesh.GetElementsOfType(ElementNames.Hexaedron_8).tags
+    mesh.GetElementsOfType(ElementNames.Hexaedron_8).tags.CreateTag("OnlyHex")
+    mesh.GetElementsOfType(ElementNames.Hexaedron_8).tags.CreateTag("OnlyHex",False).AddToTag(0)
 
     outmesh = SubDivideMesh(mesh,1)
+
     print(mesh)
     print(outmesh)
     if GUI:
@@ -748,7 +748,7 @@ def CheckIntegrity_MirrorMesh(GUI=False):
 
 def CheckIntegrity_QuadToLin(GUI=False):
     myMesh = UnstructuredMesh()
-    myMesh.nodes = np.array([[0,0,0],[1,0,0],[0,1,0],[0,0,1],[0.5,0,0],[0.5,0.5,0],[0,0.5,0],[0,0,0.5],[0.5,0,0.5],[0,0.5,0.5]] ,dtype=np.float)
+    myMesh.nodes = np.array([[0,0,0],[1,0,0],[0,1,0],[0,0,1],[0.5,0,0],[0.5,0.5,0],[0,0.5,0],[0,0,0.5],[0.5,0,0.5],[0,0.5,0.5]] ,dtype=float)
     tag = myMesh.GetNodalTag("linPoints")
     tag.AddToTag(0)
     tag.AddToTag(1)

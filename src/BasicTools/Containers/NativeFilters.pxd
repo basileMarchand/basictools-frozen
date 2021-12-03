@@ -13,8 +13,8 @@ cnp.import_array()
 
 from eigency.core cimport *
 
-from BasicTools.CythonDefs cimport int_DTYPE_t,float_DTYPE_t
-from BasicTools.NumpyDefs import int_DTYPE,float_DTYPE
+from BasicTools.CythonDefs cimport CBasicIndexType, CBasicFloatType
+from BasicTools.NumpyDefs import PBasicIndexType, PBasicFloatType
 
 cdef extern from "Containers/ElementFilter.h" namespace "BasicTools":
     cdef cppclass ElementFilterBase:
@@ -22,11 +22,10 @@ cdef extern from "Containers/ElementFilter.h" namespace "BasicTools":
 
     cdef cppclass ElementFilterEvaluated(ElementFilterBase):
        ElementFilterEvaluated() except +
-       void SetIdsToTreatFor(string& elemtype, FlattenedMap[Matrix, int_DTYPE_t, Dynamic, _1]& ids )
+       void SetIdsToTreatFor(string& elemtype, FlattenedMap[Matrix, CBasicIndexType, Dynamic, _1]& ids )
        void Clear()
-       string ToStr() 
+       string ToStr()
 
 cdef class CElementFilterEvaluated:
     cdef ElementFilterEvaluated cpp_object
     cdef ElementFilterEvaluated* GetCppPointer(self) nogil
-    

@@ -6,6 +6,7 @@
 
 import numpy as np
 
+from BasicTools.NumpyDefs import PBasicFloatType, PBasicIndexType
 import BasicTools.Containers.ElementNames as ElementNames
 from BasicTools.Containers.MeshBase import MeshBase
 from BasicTools.Containers.MeshBase import Tags
@@ -36,12 +37,12 @@ class ElementsContainer(BaseOutputObject):
     def __init__(self,elementType):
         super(ElementsContainer,self).__init__()
         self.elementType = elementType
-        self.connectivity = np.empty((0,ElementNames.numberOfNodes[elementType]),dtype=np.int)
+        self.connectivity = np.empty((0,ElementNames.numberOfNodes[elementType]),dtype=PBasicIndexType)
         self.globaloffset   = 0
         self.tags = Tags()
         self.cpt = 0
 
-        self.originalIds = np.empty((0,),dtype=np.int)
+        self.originalIds = np.empty((0,),dtype=PBasicIndexType)
         self.originalOffset = 0
         self.mutable = True
 
@@ -305,8 +306,8 @@ class UnstructuredMesh(MeshBase):
 
     def __init__(self):
         super(UnstructuredMesh, self).__init__()
-        self.nodes = np.empty((0,3),dtype=np.double)
-        self.originalIDNodes = np.empty((0,),dtype=np.int)
+        self.nodes = np.empty((0,3),dtype=PBasicFloatType)
+        self.originalIDNodes = np.empty((0,),dtype=PBasicIndexType)
         self.elements = AllElements()
         self.boundingMin = np.array([0.,0,0])
         self.boundingMax = np.array([0.,0,0])
@@ -337,9 +338,9 @@ class UnstructuredMesh(MeshBase):
         return True
 
     def ConvertDataForNativeTreatment(self):
-        self.nodes = np.asarray(self.nodes, dtype=float, order="C")
+        self.nodes = np.asarray(self.nodes, dtype=PBasicFloatType, order="C")
         for data in self.elements.values():
-            data.connectivity = np.asarray(data.connectivity, dtype=int, order="C")
+            data.connectivity = np.asarray(data.connectivity, dtype=PBasicIndexType, order="C")
 
     def GetNumberOfNodes(self):
         """
@@ -353,7 +354,7 @@ class UnstructuredMesh(MeshBase):
         """
         self.nodes = np.require(arrayLike,dtype=float,requirements=['C','A'])
         if originalIDNodes is not None:
-            self.originalIDNodes = np.require(originalIDNodes,dtype=int,requirements=['C','A'])
+            self.originalIDNodes = np.require(originalIDNodes,dtype=PBasicIndexType,requirements=['C','A'])
         elif generateOriginalIDs:
             self.originalIDNodes = np.arange(self.GetNumberOfNodes())
 
@@ -487,7 +488,7 @@ class UnstructuredMesh(MeshBase):
         """
         return a single list with all the originalid concatenated
         """
-        res = np.empty(self.GetNumberOfElements(dim=dim),dtype=np.int)
+        res = np.empty(self.GetNumberOfElements(dim=dim),dtype=PBasicIndexType)
         cpt = 0
         from BasicTools.Containers.Filters import ElementFilter
         for name,data,ids in ElementFilter(self,dimensionality = dim):
@@ -510,7 +511,7 @@ class UnstructuredMesh(MeshBase):
         return a list with the ids of the elements in a tag
         The user must compute the globaloffset first to make this function work
         """
-        res = np.zeros((self.GetNumberOfElements(),),dtype=np.int)
+        res = np.zeros((self.GetNumberOfElements(),),dtype=PBasicIndexType)
         cpt =0
         for data in self.elements.values():
             if tagname in data.tags:

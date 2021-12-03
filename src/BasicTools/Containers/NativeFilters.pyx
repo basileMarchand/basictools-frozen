@@ -13,8 +13,8 @@ cnp.import_array()
 
 from eigency.core cimport *
 
-from BasicTools.CythonDefs cimport int_DTYPE_t,float_DTYPE_t
-from BasicTools.NumpyDefs import int_DTYPE,float_DTYPE
+from BasicTools.CythonDefs cimport CBasicIndexType, CBasicFloatType
+from BasicTools.NumpyDefs import  PBasicFloatType, PBasicIndexType
 
 cimport BasicTools.Containers.NativeFilters as cNF
 
@@ -24,9 +24,9 @@ cdef class CElementFilterEvaluated:
     cdef cNF.ElementFilterEvaluated* GetCppPointer(self) nogil:
         return &(self.cpp_object)
 
-    def callnumpysure(self, elemtype, cnp.ndarray[int_DTYPE_t, ndim=1, mode="c"] ids not None) :
+    def callnumpysure(self, elemtype, cnp.ndarray[CBasicIndexType, ndim=1, mode="c"] ids not None) :
         self.cpp_object.SetIdsToTreatFor(elemtype,
-                                         FlattenedMap[Matrix, int_DTYPE_t, Dynamic, _1](ids) )
+                                         FlattenedMap[Matrix, CBasicIndexType, Dynamic, _1](ids) )
 
     def SetIdsToTreat(self,mesh,elementFilter ):
         self.GetCppPointer()[0].Clear()
@@ -37,7 +37,7 @@ cdef class CElementFilterEvaluated:
             elementFilter.mesh = mesh
             for elemtype, data in   mesh.elements.items():
                 ids= elementFilter.GetIdsToTreat(data)
-                ids = np.asarray(ids, dtype=int_DTYPE)
+                ids = np.asarray(ids, dtype=PBasicIndexType)
                 self.callnumpysure(elemtype.encode(), ids )
 
     def __str__(self):

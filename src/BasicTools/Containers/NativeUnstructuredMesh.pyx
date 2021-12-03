@@ -13,8 +13,7 @@ cnp.import_array()
 
 from eigency.core cimport *
 
-from BasicTools.CythonDefs cimport int_DTYPE_t,float_DTYPE_t
-from BasicTools.NumpyDefs import int_DTYPE,float_DTYPE
+from BasicTools.CythonDefs cimport CBasicIndexType, CBasicFloatType
 
 cimport BasicTools.Containers.NativeUnstructuredMesh as cNUM
 
@@ -25,14 +24,14 @@ cdef class CUnstructuredMesh():
     cdef cNUM.UnstructuredMesh* GetCppPointer(self) nogil:
         return &(self.cpp_object)
 
-    def SetNodes(self, cnp.ndarray[float_DTYPE_t, ndim=2,mode="c"] nodes not None):
-        self.cpp_object.SetNodes(FlattenedMapWithOrder[Matrix, float_DTYPE_t, Dynamic, Dynamic, RowMajor](nodes))
+    def SetNodes(self, cnp.ndarray[CBasicFloatType, ndim=2,mode="c"] nodes not None):
+        self.cpp_object.SetNodes(FlattenedMapWithOrder[Matrix, CBasicFloatType, Dynamic, Dynamic, RowMajor](nodes))
 
-    def SetOriginalIds(self, cnp.ndarray[int_DTYPE_t, ndim=1, mode="c"] originalIds not None):
-        self.cpp_object.SetOriginalIds(FlattenedMap[Matrix, int_DTYPE_t, Dynamic, _1](originalIds))
+    def SetOriginalIds(self, cnp.ndarray[CBasicIndexType, ndim=1, mode="c"] originalIds not None):
+        self.cpp_object.SetOriginalIds(FlattenedMap[Matrix, CBasicIndexType, Dynamic, _1](originalIds))
 
-    def AddNodalTag(self, name,  cnp.ndarray[int_DTYPE_t, ndim=1, mode="c"] ids not None):
-        self.cpp_object.AddNodalTag(name, FlattenedMap[Matrix, int_DTYPE_t, Dynamic, _1](ids))
+    def AddNodalTag(self, name,  cnp.ndarray[CBasicIndexType, ndim=1, mode="c"] ids not None):
+        self.cpp_object.AddNodalTag(name, FlattenedMap[Matrix, CBasicIndexType, Dynamic, _1](ids))
 
     def SetDataFromPython(self,pyUM):
         pyUM.GetPosOfNodes()
@@ -44,14 +43,14 @@ cdef class CUnstructuredMesh():
 
         for k,v in pyUM.elements.items():
             self.cpp_object.AddElemens(k.encode(),
-                                    FlattenedMapWithOrder[Matrix, int_DTYPE_t, Dynamic, Dynamic, RowMajor](v.connectivity),
-                                    FlattenedMap[Matrix, int_DTYPE_t, Dynamic, _1](v.originalIds) )
+                                    FlattenedMapWithOrder[Matrix, CBasicIndexType, Dynamic, Dynamic, RowMajor](v.connectivity),
+                                    FlattenedMap[Matrix, CBasicIndexType, Dynamic, _1](v.originalIds) )
 
             for tn in v.tags.keys():
                 if len(v.tags[tn].GetIds()) == 0 :
                     continue
                 self.cpp_object.AddElementTag(k.encode(),tn.encode(),
-                                   FlattenedMap[Matrix, int_DTYPE_t, Dynamic, _1](v.tags[tn].GetIds()) )
+                                   FlattenedMap[Matrix, CBasicIndexType, Dynamic, _1](v.tags[tn].GetIds()) )
 
     def Print(self):
         self.cpp_object.Print()

@@ -6,7 +6,7 @@
 
 import numpy as np
 
-
+from BasicTools.NumpyDefs import PBasicIndexType, PBasicFloatType
 from BasicTools.Containers.MeshBase import MeshBase
 from BasicTools.Containers.MeshBase import Tags
 from BasicTools.Containers.UnstructuredMesh import AllElements as AllElements
@@ -24,7 +24,7 @@ class ConstantRectilinearElementContainer(BaseOutputObject):
         self._connectivity = None
         self.mutable = False
         self.space = None
-        self.originalIds = np.empty((0,),dtype=np.int)
+        self.originalIds = np.empty((0,),dtype=PBasicIndexType)
         self.originalOffset = 0
 
     @property
@@ -36,12 +36,12 @@ class ConstantRectilinearElementContainer(BaseOutputObject):
 
     def SetDimensions(self,data):
         if self.__dimensions is None:
-            self.__dimensions = np.array(data,int)
+            self.__dimensions = np.array(data,dtype=PBasicIndexType)
         else:
             if len(self.__dimensions) != len(data):
                 raise(Exception("Cant change the dimensionality after creation "))
             else:
-                self.__dimensions = np.array(data,int)
+                self.__dimensions = np.array(data,dtype=PBasicIndexType)
 
         self.nodesPerElement = 2**len(self.__dimensions)
 
@@ -56,7 +56,7 @@ class ConstantRectilinearElementContainer(BaseOutputObject):
         else:
              raise(Exception("cant build a mesh of this dimensionality"))
         self.space.Create()
-        self.originalIds = np.arange(self.GetNumberOfElements(),dtype=np.int)
+        self.originalIds = np.arange(self.GetNumberOfElements(),dtype=PBasicIndexType)
 
 
     def GetDimensionality(self):
@@ -67,7 +67,7 @@ class ConstantRectilinearElementContainer(BaseOutputObject):
         exyz = self.GetMultiIndexOfElements(np.asarray(indices))
 
         if self.GetDimensionality() == 3:
-            res = np.empty((exyz.shape[0],8),dtype=int)
+            res = np.empty((exyz.shape[0],8),dtype=PBasicIndexType)
             #n0
             res[:,0] = exyz[:,0]*self.__dimensions[1]*self.__dimensions[2] +exyz[:,1]*self.__dimensions[2] + exyz[:,2]
             #n1
@@ -78,7 +78,7 @@ class ConstantRectilinearElementContainer(BaseOutputObject):
             res[:,4:8] = res[:,0:4] + 1
             return res
         else:
-            res = np.empty((exyz.shape[0],4),dtype=int)
+            res = np.empty((exyz.shape[0],4),dtype=PBasicIndexType)
             res[:,0] = exyz[:,0]*self.__dimensions[1] +exyz[:,1]
             res[:,1] = res[:,0] + self.__dimensions[1]
             res[:,2] = res[:,1] + 1
@@ -89,11 +89,11 @@ class ConstantRectilinearElementContainer(BaseOutputObject):
         return self.GetConnectivityForElements([index])[0,:]
 
     def GetMultiIndexOfElements(self,indices):
-        indices =  np.asarray(indices,dtype=int)
+        indices = np.asarray(indices,dtype=PBasicIndexType)
         if self.GetDimensionality() == 3:
             planesize = (self.__dimensions[1]-1) *(self.__dimensions[2]-1)
 
-            res = np.empty((len(indices),3),dtype=int)
+            res = np.empty((len(indices),3),dtype=PBasicIndexType)
             res[:,0] = indices // planesize
             resyz = indices - res[:,0]*(planesize)
             res[:,1] = resyz //(self.__dimensions[2]-1)
@@ -101,7 +101,7 @@ class ConstantRectilinearElementContainer(BaseOutputObject):
             return res
 
         else:
-            res = np.empty((len(indices),2),dtype=int)
+            res = np.empty((len(indices),2),dtype=PBasicIndexType)
             planesize = (self.__dimensions[1]-1)
             res[:,0] = indices // planesize
             res[:,1] = indices - res[:,0]*(planesize)
@@ -155,7 +155,7 @@ class ConstantRectilinearMesh(MeshBase):
     def __init__(self,dim = 3):
         super(ConstantRectilinearMesh,self).__init__()
         #Number of nodes
-        self.__dimensions = np.ones((dim,),dtype=int)*2
+        self.__dimensions = np.ones((dim,),dtype=PBasicIndexType)*2
         self.__origin = np.zeros((dim,) )
         self.__spacing = np.ones((dim,))
         self.nodes = None
@@ -181,7 +181,7 @@ class ConstantRectilinearMesh(MeshBase):
         """
         return a single list with all the originalid concatenated
         """
-        res = np.empty(self.GetNumberOfElements(dim=dim),dtype=np.int)
+        res = np.empty(self.GetNumberOfElements(dim=dim),dtype=PBasicIndexType)
         cpt = 0
         from BasicTools.Containers.Filters import ElementFilter
         for name,data,ids in ElementFilter(self,dimensionality = dim):
@@ -246,18 +246,18 @@ class ConstantRectilinearMesh(MeshBase):
         return len(self.__dimensions)
 
     def GetMultiIndexOfNodes(self,indices):
-        indices =  np.asarray(indices,dtype=int)
+        indices = np.asarray(indices,dtype=PBasicIndexType)
 
         if self.GetDimensionality() == 3:
             planesize = self.__dimensions[1] *self.__dimensions[2]
-            res = np.empty((len(indices),3),dtype=int)
+            res = np.empty((len(indices),3),dtype=PBasicIndexType)
             res[:,0] = indices // planesize
             resyz = indices - res[:,0]*(planesize)
             res[:,1] = resyz // self.__dimensions[2]
             res[:,2] =  resyz - res[:,1]*self.__dimensions[2]
             return res
         else:
-            res = np.empty((len(indices),2),dtype=int)
+            res = np.empty((len(indices),2),dtype=PBasicIndexType)
             res[:,0] = indices // self.__dimensions[1]
             res[:,1] = indices - res[:,0]*(self.__dimensions[1])
             return res
@@ -284,7 +284,7 @@ class ConstantRectilinearMesh(MeshBase):
             return planesize*indexs[:,0]+indexs[:,1]
 
     def GetMonoIndexOfElements(self,indices):
-        indices = np.asarray(indices,dtype=int)
+        indices = np.asarray(indices,dtype=PBasicIndexType)
         if self.GetDimensionality() == 3:
             planesize = (self.__dimensions[1]-1) *(self.__dimensions[2]-1)
             return indices[:,0]*planesize+indices[:,1]*(self.__dimensions[2]-1) +indices[:,2]
@@ -321,7 +321,7 @@ class ConstantRectilinearMesh(MeshBase):
             y = np.arange(self.__dimensions[1])*self.__spacing[1]+self.__origin[1]
             if self.GetDimensionality() == 2:
               xv, yv = np.meshgrid(x, y,indexing='ij')
-              self.nodes = np.empty((self.GetNumberOfNodes(),2))
+              self.nodes = np.empty((self.GetNumberOfNodes(),2),dtype=PBasicFloatType)
               self.nodes[:,0] = xv.ravel()
               self.nodes[:,1] = yv.ravel()
               return self.nodes
@@ -329,13 +329,13 @@ class ConstantRectilinearMesh(MeshBase):
             z = np.arange(self.__dimensions[2])*self.__spacing[2]+self.__origin[2]
             xv, yv, zv = np.meshgrid(x, y,z,indexing='ij')
 
-            self.nodes = np.empty((self.GetNumberOfNodes(),3))
+            self.nodes = np.empty((self.GetNumberOfNodes(),3),dtype=PBasicFloatType)
             self.nodes[:,0] = xv.ravel()
             self.nodes[:,1] = yv.ravel()
             self.nodes[:,2] = zv.ravel()
 
         if self.originalIDNodes is None:
-            self.originalIDNodes = np.arange(self.GetNumberOfNodes(),dtype=int)
+            self.originalIDNodes = np.arange(self.GetNumberOfNodes(),dtype=PBasicIndexType)
 
         return self.nodes
 
@@ -346,8 +346,8 @@ class ConstantRectilinearMesh(MeshBase):
         """
         if tagname in self.structElements.tags:
             return self.structElements.tags[tagname].GetIds()
-        return np.zeros((0,),dtype=int)
-        
+        return np.zeros((0,),dtype=PBasicIndexType)
+
     def GetNodalIndicesOfBorder(self,border=0):
 
         dim =  np.maximum(self.__dimensions-border*2,0)
@@ -378,7 +378,7 @@ class ConstantRectilinearMesh(MeshBase):
             #the faces, the edges, the corners
             res = np.empty(dim[0]*dim[1]*2+
                            dim[1]*d2[2]*2+
-                           d2[0]*d2[2]*2,dtype=np.int)
+                           d2[0]*d2[2]*2,dtype=PBasicIndexType)
 
 
             face = GetMonoIndexOfIndexTensorProduct3D(range(f,l[0]),range(f,l[1]),[f, l[2]-1])
@@ -394,7 +394,7 @@ class ConstantRectilinearMesh(MeshBase):
         else:
             #the faces, the edges, the corners
             res = np.empty(dim[0]*2+
-                           d2[1]*2,dtype=np.int)
+                           d2[1]*2,dtype=PBasicIndexType)
 
 
             face = GetMonoIndexOfIndexTensorProduct2D(range(f,l[0]),[f, l[1]-1])

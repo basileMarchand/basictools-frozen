@@ -15,7 +15,7 @@ import numpy as np
  #       zones = filter.zones
 
 
-
+from BasicTools.NumpyDefs import PBasicIndexType, PBasicFloatType
 import BasicTools.Containers.ElementNames as ElementNames
 from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
 from BasicTools.Containers.UnstructuredMeshModificationTools import CleanLonelyNodes
@@ -183,7 +183,7 @@ def GetVolume(inmesh) :
     wform = GetField("F",1).T*GetTestField("T",1)
 
     F = FEField("F",inmesh,LagrangeSpaceGeo,numbering)
-    F.Allocate(1)
+    F.Allocate(1.)
     gnumbering = ComputeDofNumbering(inmesh,ConstantSpaceGlobal)
     unkownFields = [ FEField("T",mesh=inmesh,space=ConstantSpaceGlobal,numbering=gnumbering) ]
     _,f  = IntegrateGeneral( mesh=inmesh, wform=wform, constants={}, fields=[F], unkownFields=unkownFields)
@@ -191,8 +191,8 @@ def GetVolume(inmesh) :
 
 def GetDualGraphNodeToElement(inmesh, maxNumConnections=200):
     # generation of the dual graph
-    dualGraph = np.zeros((inmesh.GetNumberOfNodes(),maxNumConnections), dtype=int )-1
-    usedPoints = np.zeros(inmesh.GetNumberOfNodes(), dtype=int )
+    dualGraph = np.zeros((inmesh.GetNumberOfNodes(),maxNumConnections), dtype=PBasicIndexType )-1
+    usedPoints = np.zeros(inmesh.GetNumberOfNodes(), dtype=PBasicIndexType )
 
     cpt =0
 
@@ -212,8 +212,8 @@ def GetDualGraphNodeToElement(inmesh, maxNumConnections=200):
 def GetDualGraph(inmesh, maxNumConnections=200):
 
     # generation of the dual graph
-    dualGraph = np.zeros((inmesh.GetNumberOfNodes(),maxNumConnections), dtype=int )-1
-    usedPoints = np.zeros(inmesh.GetNumberOfNodes(), dtype=int )
+    dualGraph = np.zeros((inmesh.GetNumberOfNodes(),maxNumConnections), dtype=PBasicIndexType )-1
+    usedPoints = np.zeros(inmesh.GetNumberOfNodes(), dtype=PBasicIndexType )
 
     for name,elems in inmesh.elements.items():
         size = elems.GetNumberOfNodesPerElement()
@@ -286,7 +286,7 @@ def ExtractElementsByElementFilter(inmesh,ff):
     return outmesh
 
 def ExtractElementsByMask(inelems, _mask):
-    
+
 
     outelems = type(inelems)(inelems.elementType)
 
@@ -394,7 +394,7 @@ def ExtractElementByTags(inmesh,tagsToKeep, allNodes=False,dimensionalityFilter=
            #if len(tagsToKeep)  == 0:
            #    toKeep[:] = True
 
-       newIndex = np.empty(elems.GetNumberOfElements(), dtype=np.int )
+       newIndex = np.empty(elems.GetNumberOfElements(), dtype=PBasicIndexType )
        cpt =0
        for i in range(elems.GetNumberOfElements()):
            newIndex[i] = cpt
@@ -579,7 +579,7 @@ def PrintMeshInformation(mesh):
                 res +=L15(" min:"+str(min(tag.GetIds()) ) )+ "  max:"+str(max(tag.GetIds()) )
             print("  Tag: " +res)
 
-    print(TF.Center("")) 
+    print(TF.Center(""))
 #------------------------- CheckIntegrity ------------------------
 def CheckIntegrity_ExtractElementByTags(GUI=False):
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshOfTriangles
