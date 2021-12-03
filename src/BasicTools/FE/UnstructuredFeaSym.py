@@ -191,6 +191,8 @@ def CheckIntegrityFlexion(P,tetra,GUI=False):
     nz = nz//2
 
     mesh = CreateCube(dimensions=[nx,ny,nz],origin=[0,0,0.], spacing=[1./(nx-1),1./(ny-1), 10./(nz-1)], ofTetras=tetra )
+    mesh.ConvertDataForNativeTreatment()
+
     problem.SetMesh(mesh)
     print(mesh)
     # we compute the numbering

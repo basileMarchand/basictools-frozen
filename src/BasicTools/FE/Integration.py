@@ -9,6 +9,7 @@ import time
 import numpy as np
 from scipy.sparse import coo_matrix
 
+from BasicTools.NumpyDefs import PBasicIndexType, PBasicFloatType
 from BasicTools.Helpers.CPU import GetNumberOfAvailableCpus
 from BasicTools.Helpers.BaseOutputObject import froze_it
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
@@ -302,11 +303,11 @@ class IntegrationClass(BaseOutputObject):
             print("Warning!!! System with zero dofs")
             raise Exception("Error!!! System with zero dofs")
 
-        self.vK = np.zeros(numberOfVIJ,dtype=float)
-        self.iK = np.empty(numberOfVIJ,dtype=int)
-        self.jK = np.empty(numberOfVIJ,dtype=int)
+        self.vK = np.zeros(numberOfVIJ,dtype=PBasicFloatType)
+        self.iK = np.empty(numberOfVIJ,dtype=PBasicIndexType)
+        self.jK = np.empty(numberOfVIJ,dtype=PBasicIndexType)
 
-        self.rhs = np.zeros(self.integrator.GetTotalTestDofs(),dtype=float)
+        self.rhs = np.zeros(self.integrator.GetTotalTestDofs(),dtype=PBasicFloatType)
 
     def Compute(self, forceMonoThread=False):
         """Execute the integration in multitrhead
@@ -416,7 +417,7 @@ class IntegrationClass(BaseOutputObject):
             if len(idstotreat) == 0:
                 continue
             totalNumberOfElementTreated += len(idstotreat)
-            ids = np.asarray(idstotreat,dtype=int)
+            ids = np.asarray(idstotreat,dtype=PBasicIndexType)
             self.integrator.ActivateElementType(data)
             self.integrator.Integrate(self.numericalWeakForm,ids)
 
@@ -474,6 +475,7 @@ def CheckIntegrityNormalFlux(GUI=False):
 
     points = [[0,0,0],[1,0,1],[0,1,1] ]
     mesh = CreateMeshOf(points,[[0,1,2]],EN.Triangle_3)
+    mesh.ConvertDataForNativeTreatment()
 
     sdim = 3
 
@@ -661,6 +663,7 @@ def CheckIntegrityKF(edim, sdim,testCase):
 
 
     #CompureVolume(mesh)
+    mesh.ConvertDataForNativeTreatment()
     space = LagrangeSpaceGeo
     numbering = ComputeDofNumbering(mesh,space)
 
@@ -771,7 +774,7 @@ def CheckIntegrityIntegrationWithIntegrationPointField(GUI=False):
 
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateCube
     mesh = CreateCube([2.,3.,4.],[-1.0,-1.0,-1.0],[2./10, 2./10,2./10])
-
+    mesh.ConvertDataForNativeTreatment()
     space, numberings, _offset, _NGauss = PrepareFEComputation(mesh,numberOfComponents=1)
 
     rhoField = IPField("rho",mesh=mesh,rule=LagrangeP1)

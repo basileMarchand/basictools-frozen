@@ -14,6 +14,7 @@ import scipy.sparse.linalg as linalg
 import scipy.linalg as denselinalg
 import  scipy.sparse as sps
 
+from BasicTools.NumpyDefs import PBasicIndexType, PBasicFloatType
 import BasicTools.Containers.ElementNames as EN
 import BasicTools.FE.FeaBase as FeaBase
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
@@ -24,9 +25,9 @@ class BundaryCondition(BaseOutputObject):
     def __init__(self,dim=3, size= 1):
         super(BundaryCondition,self).__init__()
         self.sz = size
-        self.nodes = np.empty((self.sz,dim),dtype=int)
-        self.dofs = np.empty((self.sz,),dtype=int)
-        self.vals = np.empty((self.sz,1),dtype=float)
+        self.nodes = np.empty((self.sz,dim),dtype=PBasicIndexType)
+        self.dofs = np.empty((self.sz,),dtype=PBasicIndexType)
+        self.vals = np.empty((self.sz,1),dtype=PBasicFloatType)
         self.dim = dim
         self.cpt = 0
 
@@ -211,7 +212,7 @@ class Fea(FeaBase.FeaBase):
 
         # FE: Build the index vectors for the for coo matrix format
         self.PrintDebug("Building Connectivity matrix")
-        self.edofMat = np.zeros((self.support.GetNumberOfElements(), self.nodesPerElement*self.dofpernode), dtype=np.int_)
+        self.edofMat = np.zeros((self.support.GetNumberOfElements(), self.nodesPerElement*self.dofpernode), dtype=PBasicIndexType)
         self.PrintDebug("Building Connectivity matrix 2")
         for i in  range(self.support.GetNumberOfElements()):
             coon = self.support.GetConnectivityForElement(i)
@@ -222,11 +223,11 @@ class Fea(FeaBase.FeaBase):
         self.iK = None
         self.jK = None
 
-        self.fixedValues = np.zeros((self.ndof, 1), dtype=np.double)
+        self.fixedValues = np.zeros((self.ndof, 1), dtype=PBasicFloatType)
 
         self.PrintDebug("Treating Dirichlet 1/4")
 
-        self.fixed = np.zeros(self.ndof, dtype=np.bool)
+        self.fixed = np.zeros(self.ndof, dtype=bool)
         if self.dirichlet_bcs is not None :
             self.dirichlet_bcs.tighten()
             self.dirichlet_bcs.eliminate_double()
@@ -236,12 +237,12 @@ class Fea(FeaBase.FeaBase):
             self.fixed[indexs] = True
             self.fixedValues[self.fixed.T,0:] = self.dirichlet_bcs.vals
 
-        self.free = np.ones(self.ndof, dtype=np.bool)
+        self.free = np.ones(self.ndof, dtype=bool)
         self.free[self.fixed] = False
 
         # Solution and RHS vectors
-        self.f = np.zeros((self.ndof, 1), dtype=np.double)
-        self.u = np.zeros((self.ndof, 1), dtype=np.double)
+        self.f = np.zeros((self.ndof, 1), dtype=PBasicFloatType)
+        self.u = np.zeros((self.ndof, 1), dtype=PBasicFloatType)
         self.PrintDebug("Treating Dirichlet Done")
         self.PrintDebug("Treating Neumann")
 
@@ -262,7 +263,7 @@ class Fea(FeaBase.FeaBase):
         if  self.neumann_nodal is not  None:
             self.neumann_nodal.tighten()
 
-            nodal_f = np.zeros((self.ndof, 1), dtype=np.double)
+            nodal_f = np.zeros((self.ndof, 1), dtype=PBasicFloatType)
 
             nodal_f[self.support.GetMonoIndexOfNode(self.neumann_nodal.nodes)*self.dofpernode + self.neumann_nodal.dofs] += self.neumann_nodal.vals
             self.f[:,0] += nodal_f[:,0]
@@ -275,17 +276,17 @@ class Fea(FeaBase.FeaBase):
             Eeff = np.ones(self.support.GetNumberOfElements())
             sM = ((Op.flatten()[np.newaxis]).T * Eeff.ravel()).flatten(order='F')
             self.GenerateIJs()
-            M = coo_matrix((sM, (self.iK, self.jK)), shape=(self.ndof, self.ndof),dtype=float)
+            M = coo_matrix((sM, (self.iK, self.jK)), shape=(self.ndof, self.ndof),dtype=PBasicFloatType)
         else:
             self.PrintDebug(" Eeff is known")
             bool_Eeff = (Eeff>=self.minthreshold)
             nEeff = Eeff[bool_Eeff]
             sM = ((Op.flatten()[np.newaxis]).T * nEeff.ravel()).flatten(order='F')
-            one = np.ones((self.nodesPerElement*self.dofpernode, 1), dtype=np.int_)
+            one = np.ones((self.nodesPerElement*self.dofpernode, 1), dtype=PBasicIndexType)
             local_iK = np.kron(self.edofMat[bool_Eeff,:], one).flatten()
             one.shape = (1,self.nodesPerElement*self.dofpernode)
             local_jK = np.kron(self.edofMat[bool_Eeff,:], one).flatten()
-            M = coo_matrix((sM, (local_iK, local_jK)), shape=(self.ndof, self.ndof),dtype=float).tocsr()
+            M = coo_matrix((sM, (local_iK, local_jK)), shape=(self.ndof, self.ndof),dtype=PBasicFloatType).tocsr()
         return M.tocsr()
 
     def BuildTangentMatrix(self, Eeff = None):
@@ -335,7 +336,7 @@ class Fea(FeaBase.FeaBase):
         self.PrintDebug(" Start solver (" + str(self.linearSolver) + ")")
         rhs = self.f[self.free, 0]-rhsfixed[self.free, 0]
 
-        self.u = np.zeros((self.ndof, 1), dtype=np.double)
+        self.u = np.zeros((self.ndof, 1), dtype=PBasicFloatType)
 
         if K.nnz > 0 :
             from BasicTools.Linalg.LinearSolver import LinearProblem
@@ -368,7 +369,7 @@ class Fea(FeaBase.FeaBase):
         self.PrintDebug("GenerateIJs")
         if self.iK is None:
                 nodesPerElement = 2**self.support.GetDimensionality()
-                ones = np.ones((nodesPerElement*self.dofpernode, 1), dtype=np.int_)
+                ones = np.ones((nodesPerElement*self.dofpernode, 1), dtype=PBasicIndexType)
                 self.iK = np.kron(self.edofMat, ones).flatten()
                 ones.shape = (1, nodesPerElement*self.dofpernode)
                 self.jK = np.kron(self.edofMat, ones).flatten()
