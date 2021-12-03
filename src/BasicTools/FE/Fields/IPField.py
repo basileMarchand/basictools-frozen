@@ -6,6 +6,7 @@
 
 import numpy as np
 
+from BasicTools.NumpyDefs import PBasicIndexType, PBasicFloatType
 from BasicTools.FE.IntegrationsRules import GetRule
 from BasicTools.Containers import ElementNames as EN
 from BasicTools.FE.Fields.FieldBase import FieldBase
@@ -37,7 +38,7 @@ class IPField(FieldBase):
         for name,data in self.mesh.elements.items():
             nbItegPoints = len(self.GetRuleFor(name)[1])
             nbElements = data.GetNumberOfElements()
-            self.data[name] = np.zeros((nbElements,nbItegPoints), dtype=np.float)+val
+            self.data[name] = np.zeros((nbElements,nbItegPoints), dtype=PBasicFloatType)+val
 
     def CheckCompatiblility(self,B):
         if isinstance(B,type(self)):
@@ -88,9 +89,9 @@ class IPField(FieldBase):
         the mesh (for visualisation for example).
         """
         if fillvalue==0.:
-            res = np.zeros(self.mesh.GetNumberOfElements(),dtype=float)
+            res = np.zeros(self.mesh.GetNumberOfElements(),dtype=PBasicFloatType)
         else:
-            res = np.ones(self.mesh.GetNumberOfElements(),dtype=float)*fillvalue
+            res = np.ones(self.mesh.GetNumberOfElements(),dtype=PBasicFloatType)*fillvalue
 
         cpt =0
         for name,data in self.mesh.elements.items():
@@ -130,11 +131,11 @@ class IPField(FieldBase):
     def GetPointRepresentation(self,fillvalue=0, method="mean",dim=None):
         cellData = self.GetCellRepresentation(fillvalue=fillvalue,method=method)
         if fillvalue==0.:
-            res = np.zeros(self.mesh.GetNumberOfNodes(),dtype=float)
+            res = np.zeros(self.mesh.GetNumberOfNodes(),dtype=PBasicFloatType)
         else:
-            res = np.ones(self.mesh.GetNumberOfNodes(),dtype=float)*fillvalue
+            res = np.ones(self.mesh.GetNumberOfNodes(),dtype=PBasicFloatType)*fillvalue
 
-        pntcpt = np.zeros(self.mesh.GetNumberOfNodes(),dtype=int)
+        pntcpt = np.zeros(self.mesh.GetNumberOfNodes(),dtype=PBasicIndexType)
         cpt = 0
         for name,data in self.mesh.elements.items():
             if dim is not None:
@@ -154,7 +155,7 @@ class IPField(FieldBase):
         nbvalues = 0
         for elemType,data,ids in elements3D:
             nbvalues += np.prod(self.data[elemType].shape)
-        res = np.empty(nbvalues,dtype=float)
+        res = np.empty(nbvalues,dtype=PBasicFloatType)
         cpt = 0
         for elemType,data,ids in elements3D:
             lsize= np.prod(self.data[elemType].shape)
@@ -198,7 +199,7 @@ class RestrictedIPField(IPField):
         for name,data,ids in self.efmask :
             nbItegPoints = len(self.GetRuleFor(name)[1])
             nbElements = len(ids)
-            self.data[name] = np.zeros((nbElements,nbItegPoints), dtype=np.float)+val
+            self.data[name] = np.zeros((nbElements,nbItegPoints), dtype=PBasicFloatType)+val
 
     def GetRestrictedIPField(self,efmask):
         from BasicTools.Containers.Filters import IntersectionElementFilter
@@ -223,7 +224,7 @@ class RestrictedIPField(IPField):
             for name,data,ids in self.efmask :
                 print('toto')
                 idsII =  ipField.efmask.GetIdsToTreat(data)
-                idds = np.empty(data.GetNumberOfElements(),dtype=int)
+                idds = np.empty(data.GetNumberOfElements(),dtype=PBasicIndexType)
                 idds[idsII] = np.arange(len(idsII))
                 self.data[name] = ipField.data[name][idds[ids],:]
         else:
@@ -274,9 +275,9 @@ class RestrictedIPField(IPField):
         the mesh (for visualisation for example).
         """
         if fillvalue==0.:
-            res = np.zeros(self.mesh.GetNumberOfElements(),dtype=float)
+            res = np.zeros(self.mesh.GetNumberOfElements(),dtype=PBasicFloatType)
         else:
-            res = np.ones(self.mesh.GetNumberOfElements(),dtype=float)*fillvalue
+            res = np.ones(self.mesh.GetNumberOfElements(),dtype=PBasicFloatType)*fillvalue
 
         cpt =0
         self.efmask.SetMesh(self.mesh)
@@ -309,7 +310,7 @@ class RestrictedIPField(IPField):
             else:
                 col = min(int(method),self.data[name].shape[1])
                 data = self.data[name][:,col]
-            res[cpt+np.array(ids,dtype=int)]=data
+            res[cpt+np.asarray(ids,dtype=PBasicIndexType)]=data
             cpt += nbelems
 
         return res

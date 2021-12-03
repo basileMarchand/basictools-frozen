@@ -6,6 +6,7 @@
 
 import numpy as np
 
+from BasicTools.NumpyDefs import PBasicFloatType, PBasicIndexType
 from BasicTools.Containers.Filters import ElementFilter,NodeFilter, IntersectionElementFilter
 import BasicTools.Containers.ElementNames as EN
 from BasicTools.FE.Fields.FEField import FEField
@@ -23,9 +24,9 @@ def NodeFieldToFEField(mesh, nodeFields=None):
     for name,values in mesh.nodeFields.items():
         if len(values.shape) == 2:
             for i in range(values.shape[1]):
-                res[name+"_"+str(i)] = FEField(name=name+"_"+str(i), mesh=mesh, space=LagrangeSpaceGeo, numbering=numbering, data=np.asarray(values[:,i], dtype=float, order="C") )
+                res[name+"_"+str(i)] = FEField(name=name+"_"+str(i), mesh=mesh, space=LagrangeSpaceGeo, numbering=numbering, data=np.asarray(values[:,i], dtype=PBasicFloatType, order="C") )
         else:
-            res[name] = FEField(name=name, mesh=mesh, space=LagrangeSpaceGeo, numbering=numbering,data=np.asarray(values, dtype=float, order="C"))
+            res[name] = FEField(name=name, mesh=mesh, space=LagrangeSpaceGeo, numbering=numbering,data=np.asarray(values, dtype=PBasicFloatType, order="C"))
     return res
 
 def ElemFieldsToFEField(mesh, elemFields=None):
@@ -37,9 +38,9 @@ def ElemFieldsToFEField(mesh, elemFields=None):
     for name,values in elemFields.items():
         if len(values.shape) == 2:
             for i in range(values.shape[1]):
-                res[name+"_"+str(i)] = FEField(name=name+"_"+str(i), mesh=mesh, space=LagrangeSpaceP0, numbering=numbering, data=np.asarray(values[:,i], dtype=float, order="C"))
+                res[name+"_"+str(i)] = FEField(name=name+"_"+str(i), mesh=mesh, space=LagrangeSpaceP0, numbering=numbering, data=np.asarray(values[:,i], dtype=PBasicFloatType, order="C"))
         else:
-            res[name] = FEField(name=name, mesh=mesh, space=LagrangeSpaceP0, numbering=numbering, data=np.asarray(values, dtype=float, order="C"))
+            res[name] = FEField(name=name, mesh=mesh, space=LagrangeSpaceP0, numbering=numbering, data=np.asarray(values, dtype=PBasicFloatType, order="C"))
     return res
 
 def FEFieldsDataToVector(listOfFields,outvec=None):
@@ -634,7 +635,7 @@ def CheckIntegrity(GUI=False):
 
     res = FE.Compute(op,"FEField",usesympy=True)
     print(res.data)
-    mesh.nodeFields["FEField_onPoints"] = GetPointRepresentation((res,)) 
+    mesh.nodeFields["FEField_onPoints"] = GetPointRepresentation((res,))
 
     GetCellRepresentation((res,))
 

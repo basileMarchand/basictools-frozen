@@ -5,6 +5,8 @@
 #
 
 import numpy as np
+
+from BasicTools.NumpyDefs import PBasicFloatType
 from BasicTools.Helpers.TextFormatHelper import TFormat
 from BasicTools.FE.Fields.FieldBase import FieldBase
 
@@ -18,9 +20,9 @@ class FEField(FieldBase):
 
     def Allocate(self,val=0):
         if val == 0:
-            self.data = np.zeros(self.numbering["size"],dtype=np.float)
+            self.data = np.zeros(self.numbering["size"],dtype=PBasicFloatType)
         else:
-            self.data = np.ones(self.numbering["size"],dtype=np.float)*val
+            self.data = np.ones(self.numbering["size"],dtype=PBasicFloatType)*val
 
 #    def GetValueAtIP(self,elemtype,el,ip):
 #        sp = self.space[elemtype]
@@ -44,9 +46,9 @@ class FEField(FieldBase):
         """
 
         if fillvalue==0.:
-            res = np.zeros(self.mesh.GetNumberOfNodes(),dtype=float)
+            res = np.zeros(self.mesh.GetNumberOfNodes(),dtype=PBasicFloatType)
         else:
-            res = np.ones(self.mesh.GetNumberOfNodes(),dtype=float)*fillvalue
+            res = np.ones(self.mesh.GetNumberOfNodes(),dtype=PBasicFloatType)*fillvalue
 
         if len(self.numbering["doftopointLeft"]) == 0:
             print("Warning : transfert vector is empty")
@@ -71,9 +73,9 @@ class FEField(FieldBase):
         """
 
         if fillvalue==0.:
-            res = np.zeros(self.mesh.GetNumberOfElements(),dtype=float)
+            res = np.zeros(self.mesh.GetNumberOfElements(),dtype=PBasicFloatType)
         else:
-            res = np.ones(self.mesh.GetNumberOfElements(),dtype=float)*fillvalue
+            res = np.ones(self.mesh.GetNumberOfElements(),dtype=PBasicFloatType)*fillvalue
 
         if len(self.numbering["doftocellLeft"]) == 0:
             print("Warning : transfert vector is empty")
