@@ -13,13 +13,12 @@ cnp.import_array()
 
 from eigency.core cimport *
 
-from BasicTools.CythonDefs cimport int_DTYPE_t,float_DTYPE_t
-from BasicTools.NumpyDefs import int_DTYPE,float_DTYPE
+from BasicTools.CythonDefs cimport CBasicIndexType, CBasicFloatType
+from BasicTools.NumpyDefs import PBasicIndexType, PBasicFloatType
 
 cimport BasicTools.FE.Spaces.NativeSpace as cNS
 
 cdef class CSpace:
-    #cdef cNS.Space cpp_object 
 
     cdef cNS.Space* GetCppPointer(self):
         return &(self.cpp_object)
@@ -34,4 +33,4 @@ cdef class CSpace:
                     idxII = -1
                 if on == "F2" :
                     on = "E"
-                self.cpp_object.AddDofTo(name.encode(),ord(on[0].encode()), int(idxI),int(idxII) )
+                self.cpp_object.AddDofTo(name.encode(),ord(on[0].encode()), PBasicIndexType(idxI), PBasicIndexType(idxII) )

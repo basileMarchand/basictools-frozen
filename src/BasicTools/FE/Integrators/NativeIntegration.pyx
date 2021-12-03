@@ -14,14 +14,12 @@ cimport BasicTools.FE.Integrators.NativeIntegration as NI
 from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 
+
+from BasicTools.CythonDefs cimport CBasicIndexType, CBasicFloatType
+from BasicTools.NumpyDefs import PBasicIndexType
+
 cimport numpy as cnp
 cimport cython
-
-int_DTYPE   = np.int
-float_DTYPE = np.float
-
-ctypedef cnp.int_t     int_DTYPE_t
-ctypedef cnp.float64_t float_DTYPE_t
 
 from libcpp.vector cimport vector
 from libcpp.string cimport string
@@ -176,11 +174,11 @@ cdef class PyMonoElementsIntegralCpp():
     def PrepareFastIntegration(self,
                                mesh,
                                wform,
-                               cnp.ndarray[float_DTYPE_t, ndim=1, mode="c"] vK not None ,
-                               cnp.ndarray[int_DTYPE_t, ndim=1, mode="c"] iK not None ,
-                               cnp.ndarray[int_DTYPE_t, ndim=1, mode="c"] jK not None ,
+                               cnp.ndarray[CBasicFloatType, ndim=1, mode="c"] vK not None ,
+                               cnp.ndarray[CBasicIndexType, ndim=1, mode="c"] iK not None ,
+                               cnp.ndarray[CBasicIndexType, ndim=1, mode="c"] jK not None ,
                                int cpt,
-                               cnp.ndarray[float_DTYPE_t, ndim=1, mode="c"] F not None):
+                               cnp.ndarray[CBasicFloatType, ndim=1, mode="c"] F not None):
 
         self.__vK = vK
         self.__iK = iK
@@ -247,8 +245,8 @@ cdef class PyMonoElementsIntegralCpp():
 
         numberingNames = { sn:nId.index(numberingNames[sn]) for sn in numberingNames}
 
-        self.testDofsNumbering = np.array([ numberingNames[f.name] for f in self.__tfs__], dtype=int)
-        self.unkownDofsNumbering = np.array([ numberingNames[f.name] for f in self.__ufs__] ,dtype=int)
+        self.testDofsNumbering = np.array([ numberingNames[f.name] for f in self.__tfs__], dtype=PBasicIndexType)
+        self.unkownDofsNumbering = np.array([ numberingNames[f.name] for f in self.__ufs__] ,dtype=PBasicIndexType)
 
         # Values treatement
         valuesId = {}
@@ -317,7 +315,7 @@ cdef class PyMonoElementsIntegralCpp():
         self.NativeIntegrator.SetNumberOfValues(len(self.__usedValues__))
         self.__values = [None]*len(self.__usedValues__)
         self.__ipvalues = [None]*len(self.__ipefs__)
-        cdef cnp.ndarray[float_DTYPE_t, ndim=1, mode = 'c' ] vdata
+        cdef cnp.ndarray[CBasicFloatType, ndim=1, mode = 'c' ] vdata
         for i in range(len(self.__usedValues__)):
             try:
                 self.SetValues(i,self.__usedValues__[i])
@@ -328,21 +326,21 @@ cdef class PyMonoElementsIntegralCpp():
 
                 raise
 
-    def SetValues(self,int i,cnp.ndarray[float_DTYPE_t, ndim=1,mode="c"] vdata not None):
+    def SetValues(self,int i,cnp.ndarray[CBasicFloatType, ndim=1,mode="c"] vdata not None):
         self.__values[i] = vdata
         self.NativeIntegrator.SetValueI(i,vdata.shape[0],vdata.shape[1], &vdata[0])
 
-    def SetIPValues(self,int i,cnp.ndarray[float_DTYPE_t, ndim=2,mode="c"] vdata not None):
+    def SetIPValues(self,int i,cnp.ndarray[CBasicFloatType, ndim=2,mode="c"] vdata not None):
         self.__ipvalues[i] = vdata
         self.NativeIntegrator.SetIPValueI(i,vdata.shape[0],vdata.shape[1], &vdata[0,0])
 
     #@cython.boundscheck(False)
     #@cython.wraparound(False)
-    def SetPoints(self,cnp.ndarray[float_DTYPE_t, ndim=2,mode="c"] nodes not None):
+    def SetPoints(self,cnp.ndarray[CBasicFloatType, ndim=2,mode="c"] nodes not None):
         ## we make a copy in case is not continuous
         self.__nodes = nodes
 
-        cdef int m, n
+        cdef CBasicIndexType m, n
         m, n = self.__nodes.shape[0], self.__nodes.shape[1]
         self.NativeIntegrator.SetPoints(&nodes[0,0],m,n)
 
@@ -362,15 +360,15 @@ cdef class PyMonoElementsIntegralCpp():
             print("Integration rule incomplete for this type of geo element : "+  str(elementType) + "  integration rule : "+ str(list(self.integrationrule.keys())))
 
         p, w = self.integrationRule[elementType]
-        cdef int numberOfIntegrationPoints = len(w)
+        cdef CBasicIndexType numberOfIntegrationPoints = len(w)
 
 
         ufssize = [f.space[elementType].GetNumberOfShapeFunctions() for f in self.__ufs__]
         tfssize = [f.space[elementType].GetNumberOfShapeFunctions() for f in self.__tfs__]
 
-        self.__localUnkownDofsOffset = np.zeros(len(ufssize))
-        self.__localtTestDofsOffset = np.zeros(len(tfssize))
-        su = 0.
+        self.__localUnkownDofsOffset = np.zeros(len(ufssize),dtype=PBasicIndexType)
+        self.__localtTestDofsOffset = np.zeros(len(tfssize),dtype=PBasicIndexType)
+        su = 0
         for i in range(len(ufssize)):
             self.__localUnkownDofsOffset[i] = su
             su += ufssize[i]
@@ -399,14 +397,14 @@ cdef class PyMonoElementsIntegralCpp():
         m = domain.connectivity.shape[0]
         n = domain.connectivity.shape[1]
 
-        cdef cnp.ndarray[int_DTYPE_t, ndim=2, mode="c"] conn = domain.connectivity
+        cdef cnp.ndarray[CBasicIndexType, ndim=2, mode="c"] conn = domain.connectivity
         self.__conn = conn
 
         self.NativeIntegrator.SetConnectivity(&conn[0,0],m,n)
 
         self.NativeIntegrator.SetNumberOfSpaces(len(self.__usedSpaces__))
-        cdef cnp.ndarray[float_DTYPE_t , ndim=1, mode = 'c' ] valN
-        cdef cnp.ndarray[float_DTYPE_t , ndim=2, mode = 'c' ] dphidxi
+        cdef cnp.ndarray[CBasicFloatType , ndim=1, mode = 'c' ] valN
+        cdef cnp.ndarray[CBasicFloatType , ndim=2, mode = 'c' ] dphidxi
 
         #self.BOO.PrintDebug("InitSpaceS ")
 
@@ -436,7 +434,7 @@ cdef class PyMonoElementsIntegralCpp():
                     self.NativeIntegrator.SetSpaceSvaldphidxiI(s,i,&dphidxi[0,0])
         ############ sending lnumbering ###############################
         self.NativeIntegrator.SetNumberOfNumberings(len(self.__usedNumbering__))
-        cdef cnp.ndarray[int_DTYPE_t , ndim=2, mode = 'c' ] ndata
+        cdef cnp.ndarray[CBasicIndexType , ndim=2, mode = 'c' ] ndata
         #print(self.__usedNumbering__[0][elementType].flags)
 
         self.__numbering = [None] * len(self.__usedNumbering__)
@@ -454,7 +452,7 @@ cdef class PyMonoElementsIntegralCpp():
     @cython.boundscheck(False)  # Deactivate bounds checking
     @cython.wraparound(False)   # Deactivate negative indexing.
     def Integrate(self,NNWF.PyWeakForm wform,
-                  cnp.ndarray[int_DTYPE_t, ndim=1, mode="c"] idstotreat not None ):
+                  cnp.ndarray[CBasicIndexType, ndim=1, mode="c"] idstotreat not None ):
 
         cdef vector[int] im_buff = idstotreat
         cdef NNWF.WeakForm* wfobject =  wform.GetCppPointer()

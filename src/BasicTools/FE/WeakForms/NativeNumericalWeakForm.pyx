@@ -13,7 +13,7 @@ from cython.operator cimport dereference as deref
 testcharacter = "'"
 
 cimport BasicTools.FE.WeakForms.NativeNumericalWeakForm as NNWF
-
+from BasicTools.CythonDefs cimport CBasicIndexType
 
 cdef class PyWeakTerm:
     #cdef NNWF.WeakTerm* _c_WeakTerm
@@ -44,7 +44,7 @@ cdef class PyWeakTerm:
         res.valuesIndex_ = self.valuesIndex_
         res.internalType = self.internalType
         res.spaceIndex_ = self.spaceIndex_
-        return res        
+        return res
 
     @staticmethod
     cdef PyWeakTerm create(NNWF.WeakTerm* ptr):
@@ -188,7 +188,7 @@ cdef class PyWeakTerm:
 
 
 
-cdef class PyWeakMonom: 
+cdef class PyWeakMonom:
     #cdef NNWF.WeakMonom* _c_WeakMonom
 
     def __cinit__(self):
@@ -203,11 +203,11 @@ cdef class PyWeakMonom:
 
     def copy(self):
         res = PyWeakMonom()
-        res._c_WeakMonom.prefactor = self._c_WeakMonom.prefactor 
+        res._c_WeakMonom.prefactor = self._c_WeakMonom.prefactor
         for i in range(self.GetNumberOfProds()):
             res._c_WeakMonom.prod.push_back(deref(self.GetProd(i).copy().GetCppPointer() ))
         return res
-        
+
     cpdef  hasVariable(self,str var):
         for m in self :
             if m.fieldName == str(var):
@@ -218,10 +218,10 @@ cdef class PyWeakMonom:
         term.pointerOwner = False
         self._c_WeakMonom.prod.push_back(deref(term.GetCppPointer()))
 
-    cpdef int GetNumberOfProds(self):
+    cpdef CBasicIndexType GetNumberOfProds(self):
         return self._c_WeakMonom.prod.size()
 
-    cdef PyWeakTerm GetProd(self, int n):
+    cdef PyWeakTerm GetProd(self, CBasicIndexType n):
         cdef NNWF.WeakTerm* res = &self._c_WeakMonom.prod[n]
         return PyWeakTerm.create(res)
 
@@ -256,7 +256,7 @@ cdef class PyWeakMonom:
 
 cdef class PyWeakForm:
     #cdef NNWF.WeakForm* _c_WeakForm
-    
+
     def __cinit__(self):
         self.pointerOwner = False
         self._c_WeakForm = new NNWF.WeakForm()
@@ -274,7 +274,7 @@ cdef class PyWeakForm:
         monom.pointerOwner = False
         self._c_WeakForm.form.push_back(deref(monom.GetCppPointer()))
 
-    cpdef int GetNumberOfTerms(self):
+    cpdef CBasicIndexType GetNumberOfTerms(self):
         return self._c_WeakForm.GetNumberOfTerms()
 
     cpdef PyWeakMonom GetMonom(self, int n):

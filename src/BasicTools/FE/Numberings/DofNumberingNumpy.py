@@ -6,6 +6,7 @@
 
 import numpy as np
 
+from BasicTools.NumpyDefs import PBasicIndexType
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 import BasicTools.Containers.ElementNames as EN
 from BasicTools.Containers import Filters
@@ -149,7 +150,7 @@ class DofNumberingNumpy(BaseOutputObject ):
         storage = {}
         for k,v in sizes.items():
             nn = GetNumberingColsSize(k)
-            storage[k] = np.zeros((v,nn),dtype=int)-1
+            storage[k] = np.zeros((v,nn),dtype=PBasicIndexType)-1
             sizes[k] = 0
 
         self.PrintDebug("Numbering generation dofs keys")
@@ -185,8 +186,8 @@ class DofNumberingNumpy(BaseOutputObject ):
         #push the new dofs to the almanac
         maxuseddim = 0
 
-        extractorLeftSide = np.empty(self.size,dtype=np.int)
-        extractorRightSide = np.empty(self.size,dtype=np.int)
+        extractorLeftSide = np.empty(self.size,dtype=PBasicIndexType)
+        extractorRightSide = np.empty(self.size,dtype=PBasicIndexType)
         extractorcpt = 0
 
         elementcpt = 0
@@ -200,7 +201,7 @@ class DofNumberingNumpy(BaseOutputObject ):
 
             sp = space[elemName]
             nsf= sp.GetNumberOfShapeFunctions()
-            self.numbering[elemName] = np.zeros((data.GetNumberOfElements(),nsf),dtype=int)-1
+            self.numbering[elemName] = np.zeros((data.GetNumberOfElements(),nsf),dtype=PBasicIndexType)-1
             done = False
             for sf in range(nsf):
                 nn = GetNumberingColsSize(k)
@@ -241,7 +242,7 @@ class DofNumberingNumpy(BaseOutputObject ):
             sp = space[elemName]
             nsf= sp.GetNumberOfShapeFunctions()
             if elemName not in self.numbering:
-                self.numbering[elemName] = np.zeros((data.GetNumberOfElements(),nsf),dtype=int)
+                self.numbering[elemName] = np.zeros((data.GetNumberOfElements(),nsf),dtype=PBasicIndexType)
             elidsConnectivity  = data.connectivity[ids,:]
             for sf in range(nsf):
                 nn = GetNumberingColsSize(k)
@@ -253,7 +254,7 @@ class DofNumberingNumpy(BaseOutputObject ):
                 name, idxI, idxII = self.GetHashFor(data,sp,ids,sf,False,elidsConnectivity=elidsConnectivity)
                 v = np.vstack((unique,idxI))
                 uniqueII, indices, inverse = np.unique(np.sort(v,axis=1),return_index=True,return_inverse=True,axis=0)
-                newnewdofs = np.hstack((newdofs,np.zeros(len(idxI))-1 ))[inverse][len(unique):]
+                newnewdofs = np.hstack((newdofs,np.zeros(len(idxI),dtype=PBasicIndexType)-1 ))[inverse][len(unique):]
                 self.numbering[elemName][ids,sf] = newnewdofs
         self.PrintVerbose("Numbering Done")
         self._almanac = tempAlmanac
@@ -273,7 +274,7 @@ class DofNumberingNumpy(BaseOutputObject ):
 
     def computeDofToPoint(self):
         #print(self._almanac.keys())
-        self.pointDofs = np.zeros(self.totalNumberOfPoints,dtype=int)-1
+        self.pointDofs = np.zeros(self.totalNumberOfPoints,dtype=PBasicIndexType)-1
         if ('P','P') not in self._almanac:
             return
 
@@ -303,8 +304,8 @@ class DofNumberingNumpy(BaseOutputObject ):
 
     def computeDofToCell(self):
         raise
-        extractorLeftSide = np.empty(self.size,dtype=np.int)
-        extractorRightSide = np.empty(self.size,dtype=np.int)
+        extractorLeftSide = np.empty(self.size,dtype=PBasicIndexType)
+        extractorRightSide = np.empty(self.size,dtype=PBasicIndexType)
 
         tmpcpt = 0
         for elem,data in self.mesh.elements.items():
@@ -366,10 +367,10 @@ class DofNumberingNumpy(BaseOutputObject ):
 
         if on == "G":
             """G is for global """
-            return key, np.zeros((len(elids),1)), idxII
+            return key, np.zeros((len(elids),1),dtype=PBasicIndexType), idxII
 
         if on == "IP" :
-            return key, np.hstack((elidsConnectivity,-idxI*np.ones(len(elids))[:,None] ) ),idxI
+            return key, np.hstack((elidsConnectivity,-idxI*np.ones(len(elids),dtype=PBasicIndexType)[:,None] ) ),idxI
 
         return res
 

@@ -5,23 +5,22 @@
 # file 'LICENSE.txt', which is part of this source code package.
 #
 from libcpp.vector cimport vector
-
-cimport numpy as cnp
+from BasicTools.CythonDefs cimport CBasicIndexType
 
 cimport BasicTools.FE.WeakForms.NativeNumericalWeakForm as NNWF
 
 cdef extern from "FE/NativeIntegration.h" namespace "BasicTools" :
     cdef cppclass MonoElementsIntegralCpp:
         MonoElementsIntegralCpp() except +
-        void SetNumberOfUnkownFields(int)
+        void SetNumberOfUnkownFields(CBasicIndexType)
         void SetUnkownOffset(int,int)
         void SetTotalUnkownDofs(int)
 
-        void SetNumberOfTestFields(int)
+        void SetNumberOfTestFields(CBasicIndexType)
         void SetTestOffset(int,int)
         void SetTotalTestDofs(int)
 
-        void SetNumberOfConstants(int)
+        void SetNumberOfConstants(CBasicIndexType)
         void SetConstants(int,double)
 
         void AllocateWorkingElementVIJ(int size)
@@ -33,7 +32,7 @@ cdef extern from "FE/NativeIntegration.h" namespace "BasicTools" :
         void SetComputeNormal(int)
         void SetDomainToTreat()
         void SetPoints(double*, int, int)
-        void SetConnectivity(cnp.int_t*, int, int)
+        void SetConnectivity(CBasicIndexType*, int, int)
 
         void SetNumberOfSpaces(int)
         void InitSpaceS(const int& s,
@@ -49,20 +48,20 @@ cdef extern from "FE/NativeIntegration.h" namespace "BasicTools" :
 
 
         void SetNumberOfNumberings(int i)
-        void SetNumberingI(int i, int n, int m, cnp.int_t* ip)
-        void SetNumberOfValues(int i)
+        void SetNumberingI(int i, int n, int m, CBasicIndexType* ip)
+        void SetNumberOfValues(CBasicIndexType i)
         void SetValueI(int i, int n, int m, double* dp)
 
         void SetNumberOfIPValues(int i)
         void SetIPValueI(int i, int n, int m, double* dp)
 
-        void SetLocalOffsets(int, vector[double]&,vector[int]&,int, vector[double]&,vector[int]&)
+        void SetLocalOffsets(int, vector[int]&,vector[int]&,int, vector[int]&,vector[int]&)
         void Integrate(NNWF.WeakForm*, vector[int]) nogil
         int GetNumberOfUsedIvij()
         int AddToNumbefOfUsedIvij(int)
         double* vK
-        cnp.int_t* iK
-        cnp.int_t* jK
+        CBasicIndexType* iK
+        CBasicIndexType* jK
         double* F
         int totalvijcpt
         bint onlyEvaluation

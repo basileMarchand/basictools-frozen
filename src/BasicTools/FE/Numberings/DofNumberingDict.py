@@ -5,6 +5,7 @@
 #
 
 import numpy as np
+from BasicTools.NumpyDefs import PBasicIndexType, PBasicFloatType
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 import BasicTools.Containers.ElementNames as EN
 from BasicTools.Containers import Filters
@@ -101,7 +102,7 @@ class DofNumberingDict(BaseOutputObject ):
             if name in self.numbering:
                 dofs = self.numbering[name]
             else:
-                dofs = np.zeros((data.GetNumberOfElements(),space[name].GetNumberOfShapeFunctions()), dtype=np.int_) -1
+                dofs = np.zeros((data.GetNumberOfElements(),space[name].GetNumberOfShapeFunctions()), dtype=PBasicIndexType) -1
 
             self.PrintDebug(name + " Done")
             for i in range(len(res)):
@@ -125,7 +126,7 @@ class DofNumberingDict(BaseOutputObject ):
             if name in self.numbering:
                 dofs = self.numbering[name]
             else:
-                dofs = self.numbering.setdefault(name,np.zeros((data.GetNumberOfElements(),space[name].GetNumberOfShapeFunctions()), dtype=np.int_) -1)
+                dofs = self.numbering.setdefault(name,np.zeros((data.GetNumberOfElements(),space[name].GetNumberOfShapeFunctions()), dtype=PBasicIndexType) -1)
             for i in range(len(res)):
                 lres = res[i]
                 ldofs = dofs[:,i]
@@ -157,8 +158,8 @@ class DofNumberingDict(BaseOutputObject ):
         return self._doftopointRight
 
     def computeDofToPoint(self):
-        extractorLeftSide = np.empty(self.size,dtype=np.int)
-        extractorRightSide = np.empty(self.size,dtype=np.int)
+        extractorLeftSide = np.empty(self.size,dtype=PBasicIndexType)
+        extractorRightSide = np.empty(self.size,dtype=PBasicIndexType)
 
         tmpcpt = 0
         # if k[0] is 'P' then k[1] is the node number
@@ -186,8 +187,8 @@ class DofNumberingDict(BaseOutputObject ):
 
     def computeDofToCell(self):
         mesh = self.mesh
-        extractorLeftSide = np.empty(self.size,dtype=np.int)
-        extractorRightSide = np.empty(self.size,dtype=np.int)
+        extractorLeftSide = np.empty(self.size,dtype=PBasicIndexType)
+        extractorRightSide = np.empty(self.size,dtype=PBasicIndexType)
 
         tmpcpt = 0
         # if k[0] is the elementname then k[1] is the connecivity

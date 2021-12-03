@@ -7,6 +7,7 @@
 cimport numpy as np
 from libcpp.string cimport string
 from libcpp.vector cimport vector
+from BasicTools.CythonDefs cimport CBasicIndexType
 
 cdef extern from "FE/NativeNumericalWeakForm.h" namespace "BasicTools" :
     cdef cppclass WeakTerm:
@@ -35,7 +36,7 @@ cdef extern from "FE/NativeNumericalWeakForm.h" namespace "BasicTools" :
     cdef cppclass WeakForm:
         WeakForm() except     +
         vector[WeakMonom] form
-        int GetNumberOfTerms()
+        CBasicIndexType GetNumberOfTerms()
 
 cdef class PyWeakTerm:
     cdef WeakTerm* _c_WeakTerm
@@ -50,11 +51,10 @@ cdef class PyWeakMonom:
     cdef WeakMonom* _c_WeakMonom
     cdef bint pointerOwner
     cpdef AddProd(self,PyWeakTerm)
-    cpdef int GetNumberOfProds(self)
-    cdef PyWeakTerm GetProd(self, int)
+    cpdef CBasicIndexType GetNumberOfProds(self)
+    cdef PyWeakTerm GetProd(self, CBasicIndexType)
     cdef WeakMonom* GetCppPointer(self)
     cpdef hasVariable(self,str)
-    #def PyWeakMonom copy(self)
 
     @staticmethod
     cdef PyWeakMonom create(WeakMonom*)
@@ -63,7 +63,7 @@ cdef class PyWeakMonom:
 cdef class PyWeakForm:
     cdef WeakForm* _c_WeakForm
     cdef bint pointerOwner
-    cpdef int GetNumberOfTerms(self)
+    cpdef CBasicIndexType GetNumberOfTerms(self)
     cpdef PyWeakMonom GetMonom(self, int n)
     cpdef AddTerm(self,PyWeakMonom)
     cdef WeakForm* GetCppPointer(self)

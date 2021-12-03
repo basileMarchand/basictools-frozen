@@ -13,13 +13,12 @@ cnp.import_array()
 
 from eigency.core cimport *
 
-from BasicTools.CythonDefs cimport int_DTYPE_t,float_DTYPE_t
-from BasicTools.NumpyDefs import int_DTYPE,float_DTYPE
+from BasicTools.CythonDefs cimport CBasicIndexType, CBasicFloatType
 
 cdef extern from "FE/Space.h" namespace "BasicTools" :
     cdef cppclass Space:
        Space() except +
-       int GetNumberOfShapeFunctionsFor(const string&  elemtype);
+       int GetNumberOfShapeFunctionsFor(const string&  elemtype)
        void AddDofTo(const string& elemtype, const char& entity, const int& entityNumber, const int& extraKey)
        void Print()
        string  ToStr()

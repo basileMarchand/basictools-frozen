@@ -14,8 +14,7 @@ cnp.import_array()
 
 from eigency.core cimport *
 
-from BasicTools.CythonDefs cimport int_DTYPE_t,float_DTYPE_t
-from BasicTools.NumpyDefs import int_DTYPE,float_DTYPE
+from BasicTools.CythonDefs cimport CBasicIndexType, CBasicFloatType
 
 
 cimport BasicTools.Containers.NativeUnstructuredMesh as cNUM
@@ -28,21 +27,21 @@ import BasicTools.FE.Spaces.NativeSpace as NS
 cdef extern from "FE/DofNumbering.h" namespace "BasicTools" :
     cdef cppclass DofNumbering:
         DofNumbering() except +
-        int GetSize()
-        int GetDofOfPoint(int)
+        CBasicIndexType GetSize()
+        CBasicIndexType GetDofOfPoint(int)
         int GetFromConnectivity()
         void SetFromConnectivity(bool )
         void ComputeNumberingFromConnectivity(cNUM.UnstructuredMesh& )
         void ComputeNumberingGeneral(cNUM.UnstructuredMesh&, cNS.Space&, cNF.ElementFilterBase&)
         void computeDofToPoint()
 
-        PlainObjectBase & GetNumberingFor(const string & elemtype) 
-        int_DTYPE_t GetSizeOfDofToPoint()
+        MatrixXd & GetNumberingFor(const string & elemtype)
+        CBasicIndexType GetSizeOfDofToPoint()
         PlainObjectBase & GetdoftopointLeft()
         PlainObjectBase & GetdoftopointRight()
 
         void computeDofToCell(cNUM.UnstructuredMesh)
-        int_DTYPE_t GetSizeOfDofToCell()
+        CBasicIndexType GetSizeOfDofToCell()
         PlainObjectBase & GetdoftocellLeft()
         PlainObjectBase & GetdoftocellRight()
         bool HasNumberingFor(const string & elemtype)
