@@ -5,7 +5,7 @@
 #
 #
 
-import os
+import os, sys
 from setuptools.command.build_ext import build_ext
 from setuptools.command.build_clib import build_clib
 from setuptools import setup, Extension
@@ -76,20 +76,32 @@ def GetBasicToolsIncludeDirs():
         return include_dirs
     except :
         return include_dirs
+class add_path():
+    def __init__(self, path):
+        self.path = path
+
+    def __enter__(self):
+        sys.path.insert(0, self.path)
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        try:
+            sys.path.remove(self.path)
+        except ValueError:
+            pass
 
 try:
     from Cython.Build import cythonize
     from Cython.Compiler import Options
     import eigency
-
-    for generator in cpp_generators:
-        code = compile(open(generator).read(),generator,"exec")
-        res = {}
-        exec(code,res)
-        generated_file  = res["GetGeneratedFiles"]("")
-        print("generation of files : \n"+ "\n".join("cpp_src/"+str(gf)for gf in generated_file))
-        res["Generate"]("cpp_src/")
-        cpp_src = generated_file + cpp_src
+    with add_path('./src/'):
+        for generator in cpp_generators:
+            code = compile(open(generator).read(),generator,"exec")
+            res = {}
+            exec(code,res)
+            generated_file  = res["GetGeneratedFiles"]("")
+            print("generation of files : \n"+ "\n".join("cpp_src/"+str(gf)for gf in generated_file))
+            res["Generate"]("cpp_src/")
+            cpp_src = generated_file + cpp_src
 
     Options.fast_fail = True
     Options.embed = True
