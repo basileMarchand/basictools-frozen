@@ -1,2 +1,4 @@
-$PYTHON -m pip install --no-deps . -vv --use-feature=in-tree-build
-ln -s $SP_DIR/libCppBasicTools$SHLIB_EXT $STDLIB_DIR/../.
+set -x
+$PYTHON setup.py generate
+$PYTHON setup.py build_clib
+$PYTHON -m pip install --no-deps . -vv

@@ -9,8 +9,7 @@ source:
 
 build:
   skip : True # [py==36]
-  skip : True # [py==37]
-  skip : True # [py==39]
+
   number: {{ GIT_DESCRIBE_NUMBER }}
   entry_points:
     - "MeshFileConvert = BasicTools.IO.MeshFileConverter:Main"
@@ -20,7 +19,6 @@ build:
 
   script_env:
     - BASICTOOLS_DISABLE_MKL
-    - BASICTOOLS_DISABLE_OPENMP
     - BASICTOOLS_USE_EIGENCYEIGEN
 
 requirements:
@@ -36,6 +34,7 @@ requirements:
     - mkl-include
     - setuptools-scm
     - eigen
+    - sympy
   run:
     - python
     - pyparsing

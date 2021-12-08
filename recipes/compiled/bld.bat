@@ -1,4 +1,7 @@
+
+%python% setup.py generate
+if errorlevel 1 exit 1
+%python% setup.py build_clib
 if errorlevel 1 exit 1
 %python% -m pip install --no-deps . -vv
-rem if errorlevel 1 exit 1
-rem move %SP_DIR%/libCppBasicTools%SHLIB_EXT% %STDLIB_DIR%/.
+if errorlevel 1 exit 1
