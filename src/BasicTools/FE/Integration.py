@@ -298,7 +298,6 @@ class IntegrationClass(BaseOutputObject):
 
         """
         numberOfVIJ = self.integrator.ComputeNumberOfVIJ(self.mesh,self.elementFilter)
-        print(f" Computed number of ComputeNumberOfVIJ : {numberOfVIJ}")
         if numberOfVIJ == 0:
             print("Warning!!! System with zero dofs")
             raise Exception("Error!!! System with zero dofs")
