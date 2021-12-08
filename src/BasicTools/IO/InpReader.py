@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 
 """ Inp file reader (Abaqus simulation file)
 """
@@ -43,13 +43,13 @@ def JoinInp(filename):
     def copycontent(filename):
         for l in open(filename,"r"):
             if len(l) >=8 and l[0:8]  == "*INCLUDE":
-                copycontent( l.split("=")[1].strip()) 
+                copycontent( l.split("=")[1].strip())
                 pass
             else:
                 fII.write(l)
 
     copycontent(filename)
-    
+
 def SplitInp(filename):
     import os
     f = InpReader()
@@ -162,7 +162,7 @@ class InpReader(ReaderBase):
             nline = self.PeekLine()
             if nline[0] != "*":
                 return res + " "+  super(InpReader,self).ReadCleanLine()
-        return res 
+        return res
 
     def Read(self,fileName=None,string=None, out=None):
         import BasicTools.FE.ProblemData as ProblemData
@@ -211,7 +211,7 @@ class InpReader(ReaderBase):
                         for d in ds:
                             elems, id = filetointernalidElement[d]
                             if elems.elementType not in tags:
-                                tag = elems.tags.CreateTag(elsetName)
+                                tag = elems.tags.CreateTag(elsetName,False)
                                 tags[elems.elementType] = tag
                             else:
                                 tag = tags[elems.elementType]
@@ -259,7 +259,7 @@ class InpReader(ReaderBase):
                         l = self.ReadCleanLine()
 
                     if s is not None:
-                        # we use the last point to detect the dimensionality of the mesh 
+                        # we use the last point to detect the dimensionality of the mesh
                         dim = len(s)-1
                     res.nodes = np.array(nodes,dtype=float)
                     res.nodes.shape = (cpt,dim)
@@ -290,7 +290,7 @@ class InpReader(ReaderBase):
                     filetointernalidElement[oid] = (elements,cid)
 
                     l = self.ReadCleanLine()
-                    
+
                 if per is not None:
                     elements.connectivity = elements.connectivity[:,per]
 
@@ -304,7 +304,7 @@ class InpReader(ReaderBase):
 
                 res.ComputeGlobalOffset()
                 continue
-         
+
             if self.find(l,"*NSET")>-1:
                 data = LineToDic(l)
                 nsetName = data['NSET']
@@ -315,11 +315,11 @@ class InpReader(ReaderBase):
                     d = LineToList(l)
                     d = (list(map(int,d) ))
                     nset = range(d[0],d[1]+1,d[2])
-                    tag = res.nodesTags.CreateTag(nsetName,False)    
+                    tag = res.nodesTags.CreateTag(nsetName,False)
                     tagsids = [filetointernalid[x] for x in  nset if x in filetointernalid ]
                     if len(tagsids) != len(nset):
                         print("Warning NSET GENERATE : not all the nset generated are present in the mesh ")
-                    tag.AddToTag(tagsids) 
+                    tag.AddToTag(tagsids)
                     l = self.ReadCleanLine()
                     continue
                 else:
@@ -385,7 +385,7 @@ class InpReader(ReaderBase):
                             data[elids+eldata.globaloffset,:] = s
 
                         l = self.ReadCleanLine()
-                    
+
                     if table == "DistributionTable_Orientation":
                         res.elemFields["V1"] = data[:,0:3]
                         res.elemFields["V2"] = data[:,3:]
@@ -402,9 +402,9 @@ class InpReader(ReaderBase):
                         res.elemFields["G12"]  = data[:,6]
                         res.elemFields["G13"]  = data[:,7]
                         res.elemFields["G23"]  = data[:,8]
-                    
+
                 continue
-              
+
             if self.find(l,"*HEADING")>-1:
                 l = self.ReadCleanLine()
                 HEADING = ""
@@ -435,7 +435,7 @@ class InpReader(ReaderBase):
                         break
 
                     if t == "EXPANSION":
-                        if "ZERO" in data: 
+                        if "ZERO" in data:
                             mat.AddProperty(t,"ZERO",data["ZERO"])
 
                     if "TYPE" in data:
@@ -520,7 +520,7 @@ class InpReader(ReaderBase):
                         break
 
                     if "KEYWORD" in data and data["KEYWORD"] == "STATIC":
-                        cs.type = "STATIC"   
+                        cs.type = "STATIC"
                     l = DischardTillNextStar(self.ReadCleanLine)
                 continue
 
@@ -536,7 +536,7 @@ class InpReader(ReaderBase):
         fenames = []
         for elname in res.elements:
             fenames.extend(FENames[elname])
-        res.elemFields["FE Names"] = np.array(fenames) 
+        res.elemFields["FE Names"] = np.array(fenames)
         res.PrepareForOutput()
         self.output = (res,meta)
         return res
