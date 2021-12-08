@@ -17,6 +17,7 @@
     pytest
     pytest-cov
     setuptools
+    eigency
 
     C++ OPEN-SOURCE DEPENDENCIES
     Eigen (http://eigen.tuxfamily.org)
@@ -34,17 +35,31 @@
 
 2) INSTALLATION
 
-    SETUP:
+    FOR USER:
 
-    An environement variable with the path to the EIGEN library must be defined:
+    For conda you can create packages using the recipes available on the sources:
 
-     > export EIGEN_INC=/Path/To/Eigen/Library
+        recipes/compiled/  -> for compiled version of BasicTools
+        recipes/noarch/  -> (not recomended) for a pure python (slower) version of BasicTools
+
+    FOR DEVELOPERS:
+
+    For development using a conda or other type of enviroment manager :
+
+        create an enviroment with all the requirements
+
+
+    if the compilation script cant find eigen please add the environement variable with the path to the EIGEN library must be defined (normaly you dont have to do this):
+
+        > export EIGEN_INC=/Path/To/Eigen/Library
 
     COMPILATION:,
 
     Run the following command in the root directory :
 
-     > python setup.py build_ext --inplace
+        > python setup.py generate
+        > python setup.py build_clib
+        > python setup.py build_ext --inplace
 
 
 3) TESTING INFRASTRUCTURE
@@ -90,6 +105,6 @@
 
         > python setup.py build_sphinx
 
-    Also the documentation can be found at 
+    Also the documentation can be found at
 
         https://basictools.readthedocs.io/en/latest/

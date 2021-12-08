@@ -5,7 +5,7 @@ Solving linear systems
 Finite element computation make use of a linear solvers to solve assembled linear system of equations.
 The libraries Numpy [#numpyurl]_, Scipy [#scipyurl]_ and Eigen [#eigenurl]_ offer capabilities to solve sparse linear systems by different methods.
 BasicTools propose a single class to wrap all this solvers into one unique simple interface.
- 
+
 Treatment of kinematic constraints
 ##################################
 
@@ -16,7 +16,7 @@ Treatment of kinematic constraints
     \end{matrix}
     \end{equation}
     :label: KUF
-	
+
 .. math::
     \begin{equation}
     \begin{matrix}
@@ -24,12 +24,12 @@ Treatment of kinematic constraints
     \end{matrix}
     \end{equation}
     :label: CUG
-	
+
 Equation :eq:`KUF` represent the assembled finite element system to be solved under the kinematic constraints defined the equation :eq:`CUG`.
 This problem can be solved by four different approaches.
 
 The constrains represented by the equation :eq:`CUG` are created from the Dirichlet like boundary conditions (like RBE2 and RBE3).
-In some cases, this system can have linearly dependent equations, for example when a user specified twice some boundary condition in the same entity (e.g. the shared edge in the case of :math:`u_x=0` on 2 adjacent faces). 
+In some cases, this system can have linearly dependent equations, for example when a user specified twice some boundary condition in the same entity (e.g. the shared edge in the case of :math:`u_x=0` on 2 adjacent faces).
 
 To be able to treat correctly the constraint defined by :eq:`CUG`, we must clean the linearly dependent equations, and find (in some cases) a reduced number of dof to eliminate .
 
@@ -38,29 +38,29 @@ Let extract from :math:`\CFE` only the non zero columns  (:math:`\CFE^*`) and de
 .. math::
     \begin{equation}
     \CPFE :=  \left[ \begin{array}{c|c}
-    \CFE^* &  \GFE 
+    \CFE^* &  \GFE
     \end{array} \right]
-    \end{equation}  
+    \end{equation}
 
 The :math:`\CPFE^T`  matrix can be then decompose using a QR decomposition to extract a the suitable (orthonormal) base.
-This is done using the routine of EIGEN SpQR. 
+This is done using the routine of EIGEN SpQR.
 SpQR is only available if the c++ interface was compiled, a pure Python (using `scipy.linalg.qr`) backup algorithm is available.
 This backup approach uses dense linear and can be expensive (in terms of memory and cpu time).
 This algorithm is capable of finding the rank of the matrix :math:`\CPFE^T` (using a prescribed tolerance).
 
 .. math::
     \begin{equation}
-    \CPFE \mathbf{P} = \mathbf{Q} \mathbf{R} 
+    \CPFE \mathbf{P} = \mathbf{Q} \mathbf{R}
     \end{equation}
 
-With, 
+With,
 :math:`\mathbf{P}` is the column permutation,
 :math:`\mathbf{Q}` is the orthogonal matrix represented as Householder reflectors (in the case using Eigen).
-:math:`\mathbf{R}` is the sparse triangular factor. 
+:math:`\mathbf{R}` is the sparse triangular factor.
 
 In many cases the constraints are on single nodes or only in a reduced number of nodes.
 This make the matrix :math:`\CPFE^T` very sparse, and we can compute the :math:`\mathbf{QR}` decomposition block by block.
-For this the adjacency matrix of the matrix :math:`\CFE^*` is computed (:math:`abs(\CFE^*)abs(\CFE^*)^T`). 
+For this the adjacency matrix of the matrix :math:`\CFE^*` is computed (:math:`abs(\CFE^*)abs(\CFE^*)^T`).
 A not zero :math:`(i,j)` term of the adjacency matrix means the row :math:`i` and :math:`j` of :math:`\CPFE` share at least one degree of freedom in common.
 Then we can calculate the connected components of the adjacency matrix and work on each block independently.
 As each block is treated (computation of the QR decomposition), the rank is identified to remove redundant equations.
@@ -75,27 +75,27 @@ For example:
     :align: center
     :alt: 2 Springs
     :figclass: align-center
-    
+
     Two springs system with 4 degrees of freedom, A) initial state B) constrained solution.
 
 
-For the system of 2 independent springs (4 degrees of freedom) represented in figure, the 
-tangent matrix and the right hand side member are,  
+For the system of 2 independent springs (4 degrees of freedom) represented in figure, the
+tangent matrix and the right hand side member are,
 
 .. math::
     \begin{equation}
-   \KFE = 
+   \KFE =
    \begin{bmatrix}
     1000 & -1000 &    0  &    0 \\
    -1000 &  1000 &    0  &    0 \\
        0 &     0 & 1000  &-1000 \\
-       0 &     0 &-1000  & 1000 
-   \end{bmatrix}, \FFE = 
+       0 &     0 &-1000  & 1000
+   \end{bmatrix}, \FFE =
    \begin{bmatrix}
    0 \\
-   0 \\ 
    0 \\
-   0 
+   0 \\
+   0
    \end{bmatrix}.
    \end{equation}
 
@@ -104,31 +104,31 @@ The constraint imposed to the problem are: 1) blockage of the first dof (:math:`
 
 .. math::
     \begin{equation}
-    \CFE = 
+    \CFE =
     \begin{bmatrix}
     1 & 0 &0 &0 \\
     1 & 0 &0 &0 \\
     0 &-1 &1 &0 \\
     0 &-2 &2 &0 \\
     0 & 0 &0 &1\\
-    0 & 0 &0 &1 
-    \end{bmatrix}, \GFE = 
+    0 & 0 &0 &1
+    \end{bmatrix}, \GFE =
     \begin{bmatrix}
     0 \\
-    0 \\ 
+    0 \\
     1 \\
     2 \\
     3 \\
-    3 
+    3
     \end{bmatrix}
     \end{equation}
 
 In this case all degrees of freedom are present in matrix :math:`\CFE`, this means :math:`\CFE^* = \CFE`.
-We start by building the adjacency matrix :math:`\CFE\CFE^T`, we are interested in only the non zero values so we really calculate :math:`abs(\CFE)abs(\CFE^T) != 0`. 
+We start by building the adjacency matrix :math:`\CFE\CFE^T`, we are interested in only the non zero values so we really calculate :math:`abs(\CFE)abs(\CFE^T) != 0`.
 
 .. math::
     \begin{equation}
-    \mathbf{AM} := abs(\CFE)abs(\CFE^T)!=0  \to 
+    \mathbf{AM} := abs(\CFE)abs(\CFE^T)!=0  \to
     \begin{bmatrix}
     1 & 1 &0 &0 &0 &0 \\
     1 & 1 &0 &0 &0 &0 \\
@@ -143,26 +143,26 @@ The computation of the connected components can be expressed by the solution vec
 
 .. math::
     \begin{equation}
-    Connected Component Of(\mathbf{AM}) = 
+    Connected Component Of(\mathbf{AM}) =
     \begin{bmatrix}
     0 & 0& 1 & 1 &2 &2
     \end{bmatrix}
     \end{equation}
 
 We can see 3 connected components (rows of A).
-Each of this component can be treated independent (they are orthogonal). 
-For the first component (line 1 and 2), it is evident that the lines are linearly dependent and we have only one \emph{real} constraint. 
+Each of this component can be treated independent (they are orthogonal).
+For the first component (line 1 and 2), it is evident that the lines are linearly dependent and we have only one \emph{real} constraint.
 This can be detected by the SpQr routine and only the relevant base vector are kept (we also normalize the vectors).
 We also store the rank first dofs of each component to define the slave indices.
 At the end we obtain 1) a vector of slave dofs of the system :math:`[0,1,3]`, and a clean constants system defined by :
- 
+
 .. math::
     \begin{equation}
     \MFE = \begin{bmatrix}
     1 &0 &0 &0 \\
     0 &-\sqrt{\frac{1}{2}} &\sqrt{\frac{1}{2}} &0 \\
     0 &0 &0 &1 \\
-    \end{bmatrix}, \VFE = 
+    \end{bmatrix}, \VFE =
     \begin{bmatrix}
     0 \\
     \sqrt{\frac{1}{2}} \\
@@ -174,7 +174,7 @@ At the end we obtain 1) a vector of slave dofs of the system :math:`[0,1,3]`, an
 Penalization
 ############
 
-The penalization approach is the simplest way to solve the contained system (in terms of programming). 
+The penalization approach is the simplest way to solve the contained system (in terms of programming).
 The idea of this method is to add to the original system to be solve a penalization term scaled by a really large value (:math:`\alpha_p = 10^8`).
 The perturbed system becomes :
 
@@ -191,7 +191,7 @@ The perturbed system becomes :
 
 
 Because the modified system has the same number of dofs and no base transformation was done the solution
-of this system gives directly an original system (equations :eq:`KUF` and :eq:`CUG`) solution approximation 
+of this system gives directly an original system (equations :eq:`KUF` and :eq:`CUG`) solution approximation
 
 
 .. note: This technique has the disadvantage of altering heavily the condition number of the system to be solved, making it (in some case) impossible to solve using an iterative solver.
@@ -202,7 +202,7 @@ Lagrange Multipliers
 
 This method impose the constraints  by adding one extra dof for each row of equation :eq:`CUG`.
 This yield to the following modified system:
- 
+
 .. math::
     \begin{equation}
     \KFE_{\lambda} = \begin{bmatrix}
@@ -211,7 +211,7 @@ This yield to the following modified system:
     \end{bmatrix},
     \FFE_{\lambda} = \begin{bmatrix}
     \FFE \\
-    \VFE 
+    \VFE
     \end{bmatrix},
     \end{equation}
 
@@ -221,7 +221,7 @@ The resolution of this linear system gives the solution vector:
     \begin{equation}
     \UFE_{\lambda} = \begin{bmatrix}
     \UFE \\
-    \lambda 
+    \lambda
     \end{bmatrix},
     \end{equation}
 
@@ -244,7 +244,7 @@ In the case that we have an initial a solution :math:`\UFE^0`, and we want to so
 Substitution
 ############
 
-Let decompose the :math:`\MFE` (using the indices colleted durint the QR decomposition) into slave (:math:`s`) and master (:math:`m`) dofs : 
+Let decompose the :math:`\MFE` (using the indices colleted durint the QR decomposition) into slave (:math:`s`) and master (:math:`m`) dofs :
 
 .. math::
     \begin{equation}
@@ -262,20 +262,20 @@ The the original system becomes:
     \begin{equation}
     \begin{bmatrix}%[l]
     \KFE_s & \KFE_{s,m}  \\
-    \KFE_{m,s}   & \KFE_{m}   
+    \KFE_{m,s}   & \KFE_{m}
     \end{bmatrix}
     \begin{bmatrix}
-    \UFE_{s} \\ 
-    \UFE_{m}  
+    \UFE_{s} \\
+    \UFE_{m}
     \end{bmatrix}
-    = 
+    =
     \begin{bmatrix}
-    \FFE_{s} \\ 
-    \FFE_{m}  
+    \FFE_{s} \\
+    \FFE_{m}
     \end{bmatrix}
     \end{equation}
 
-Then the constraint equation :eq:`CUG` can be rewritten to solve :math:`\UFE_s` : 
+Then the constraint equation :eq:`CUG` can be rewritten to solve :math:`\UFE_s` :
 
 .. math::
     \begin{equation}
@@ -292,7 +292,7 @@ Now we can rewrite the :math:`\UFE` in the form of :
     \UFE = \begin{bmatrix}
     \UFE_s \\
     \UFE_m \\
-    \end{bmatrix}= 
+    \end{bmatrix}=
     \begin{bmatrix}
     \MFE_{s}^{-1} (\VFE - \MFE_m \UFE_m  ) \\
     \UFE_m \\
@@ -325,7 +325,7 @@ And injection this expression on the original system we obtain:
 
 .. math::
     \begin{equation}
-    \XFE^T \KFE \XFE \UFE_m = 
+    \XFE^T \KFE \XFE \UFE_m =
     \XFE^T \left( \FFE - \KFE \DFE  \right)
     \end{equation}
 
@@ -336,28 +336,28 @@ And injection this expression on the original system we obtain:
     \begin{bmatrix}
     -\MFE_{s}^{-1} ( \MFE_m   ) \\
      I \\
-    \end{bmatrix}^T }_{X^T} 
+    \end{bmatrix}^T }_{X^T}
     \begin{bmatrix}%[l]
     \KFE_s & \KFE_{s,m}  \\
-    \KFE_{m,s}   & \KFE_{m}   
+    \KFE_{m,s}   & \KFE_{m}
     \end{bmatrix}
     \underbrace{
     \begin{bmatrix}
     -\MFE_{s}^{-1} ( \MFE_m   ) \\
     I \\
-    \end{bmatrix} }_{X} 
-    \UFE_m = \dotsb \\ 
+    \end{bmatrix} }_{X}
+    \UFE_m = \dotsb \\
     \dotsb \underbrace{
     \begin{bmatrix}
     -\MFE_{s}^{-1} ( \MFE_m   ) \\
     I \\
-    \end{bmatrix}^T }_{X^T} 
+    \end{bmatrix}^T }_{X^T}
     \left(\begin{bmatrix}
     \FFE_{s}\\
     \FFE_{m} \\
     \end{bmatrix} - \begin{bmatrix}%[l]
     \KFE_s & \KFE_{s,m}  \\
-    \KFE_{m,s}   & \KFE_{m}   
+    \KFE_{m,s}   & \KFE_{m}
     \end{bmatrix}
     \underbrace{\begin{bmatrix}
     \MFE_{s}^{-1} (\VFE  ) \\
@@ -370,12 +370,10 @@ The modified system involves only :math:`\UFE_m` dofs, and can be solved using a
 The solution to the original system is then calculates using equation :eq:`Ulambda`.
 
 
-Ainsworth Metod
-###############
+Ainsworth Method
+################
 
-The Ainsworth metod #[Ainsworth]_ propose a general approach to solve the original system of equations without chnging the number of degrees of freedom of the system. 
-
-
+The Ainsworth metod [#ainsworth]_ propose a general approach to solve the original system of equations without chnging the number of degrees of freedom of the system.
 
 
 
@@ -384,4 +382,4 @@ The Ainsworth metod #[Ainsworth]_ propose a general approach to solve the origin
 .. [#numpyurl] https://numpy.org/
 .. [#scipyurl] https://www.scipy.org/
 .. [#eigenurl] https://eigen.tuxfamily.org/dox-devel/classEigen\_1\_1SPQR.html
-.. [#Ainsworth] https://doi.org/10.1016/S0045-7825(01)00236-5
+.. [#ainsworth] https://doi.org/10.1016/S0045-7825(01)00236-5
