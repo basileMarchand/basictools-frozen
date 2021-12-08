@@ -1,4 +1,4 @@
-import numpy as np
+
 
 cpp_header = """//
 // This file is subject to the terms and conditions defined in
@@ -25,6 +25,7 @@ def PrintFillVMatrix(fp, prefix, data):
     PrintToFile(fp,f"""{prefix}  << """ + ", ".join(map(str,data)) + ";")
 
 def PrintFillMatrix(fp, prefix, data):
+    import numpy as np
     data = np.asarray(data)
     if len(data.shape) == 1:
         PrintToFile(fp,f"""{prefix}.resize(1,{len(data)});""")

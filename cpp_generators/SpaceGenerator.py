@@ -4,16 +4,14 @@
 # file 'LICENSE.txt', which is part of this source code package.
 #
 #
-from sympy import cse, ccode
-
-import BasicTools.FE.Spaces.FESpaces as FES
-
-from cpp_generators.Tools import PrintHeader, PrintToFile
 
 def GetGeneratedFiles(prefix = "cpp_src"):
     return (prefix + "FE/GeneratedSpaces.cpp",)
 
 def Generate(prefix = "cpp_src"):
+    from cpp_generators.Tools import PrintHeader, PrintToFile
+    from sympy import cse, ccode
+    import BasicTools.FE.Spaces.FESpaces as FES
 
     hfilename = prefix + "/FE/GeneratedSpaces.h"
     with open(hfilename,"w", encoding="utf8") as hfile:

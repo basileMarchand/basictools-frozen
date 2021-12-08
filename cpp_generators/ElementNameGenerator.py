@@ -4,14 +4,15 @@
 # file 'LICENSE.txt', which is part of this source code package.
 #
 #
-from BasicTools.Containers.ElementNames import ElementsInfo
-from cpp_generators.Tools import PrintHeader, PrintToFile, PrintFillMatrix, PrintBool, PrintFillVMatrix
 
 def GetGeneratedFiles(prefix = "cpp_src/"):
     """Get the list of generated files for this generator"""
     return ( prefix+ "Containers/GeneratedElementNames.cpp",)
 
 def Generate(prefix = "cpp_src/"):
+    from BasicTools.Containers.ElementNames import ElementsInfo
+    from cpp_generators.Tools import PrintHeader, PrintToFile, PrintFillMatrix, PrintBool, PrintFillVMatrix
+
     """Run the generation of cpp file using the prefix"""
     filename = prefix + "Containers/GeneratedElementNames.cpp"
 

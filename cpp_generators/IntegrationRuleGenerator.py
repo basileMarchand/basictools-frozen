@@ -5,15 +5,14 @@
 #
 #from BasicTools.Containers.ElementNames import ElementsInfo
 
-import BasicTools.FE.IntegrationsRules as IR
-
-from cpp_generators.Tools import PrintHeader, PrintToFile, PrintFillMatrix
-
 def GetGeneratedFiles(prefix = "cpp_src/"):
     """Get the list of generated files for this generator"""
     return (prefix + "FE/GeneratedIntegrationsRules.cpp",)
 
 def Generate(prefix = "cpp_src/"):
+    from cpp_generators.Tools import PrintHeader, PrintToFile, PrintFillMatrix
+    import BasicTools.FE.IntegrationsRules as IR
+
     """Run the generation of cpp file using the prefix"""
     filename = prefix +  "FE/GeneratedIntegrationsRules.cpp"
 
