@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 """ ASC file reader
 """
 
@@ -14,7 +14,7 @@ from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 import BasicTools.Containers.ElementNames as EN
 import BasicTools.Containers.UnstructuredMesh as UM
 from BasicTools.IO.ReaderBase import ReaderBase
-
+from BasicTools.NumpyDefs import PBasicIndexType
 
 
 AscNumber = {}
@@ -155,8 +155,8 @@ class AscReader(ReaderBase):
                     if s[2] == '1' :
                         #node group
                         tag = res.GetNodalTag(tagname)
-                        tag.SetIds(np.array( [filetointernalid[x] for x in  map(int,s[7:]) ] ,dtype=np.int))
-                        #tag.ids = np.zeros(len(s[7:]),dtype=np.int)
+                        tag.SetIds(np.array( [filetointernalid[x] for x in  map(int,s[7:]) ] ,dtype=PBasicIndexType))
+                        #tag.ids = np.zeros(len(s[7:]),dtype=PBasicIndexType)
                         #cpt =0
                         #for i in s[7:]:
                         #    tag.ids[cpt] = filetointernalid[int(i)]

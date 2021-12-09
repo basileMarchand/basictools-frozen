@@ -7,6 +7,7 @@
 import numpy as np
 
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
+from BasicTools.NumpyDefs import PBasicFloatType
 
 class SpaceBase(BaseOutputObject):
     def __init__(self):
@@ -42,12 +43,12 @@ class SpaceBase(BaseOutputObject):
     def GetNormal(self,Jack):
         # Edge in 2D
         if Jack.shape[0] == 1 and Jack.shape[1] == 2 :
-            res = np.array([Jack[0,1],-Jack[0,0]],dtype =np.float)
-            #res = np.array([Jack[1,:] -Jack[0,:]],dtype =np.float) #ANCIENNE VERSION
+            res = np.array([Jack[0,1],-Jack[0,0]],dtype =PBasicFloatType)
+            #res = np.array([Jack[1,:] -Jack[0,:]],dtype =PBasicFloatType) #ANCIENNE VERSION
 
         # Edge in 3D, we return the xy projection of the normal
         elif Jack.shape[0] == 1 and Jack.shape[1] == 3 :
-            res = np.array([Jack[0,1],-Jack[0,0]],dtype =np.float)
+            res = np.array([Jack[0,1],-Jack[0,0]],dtype =PBasicFloatType)
 
         # surface in 3D
         elif Jack.shape[0] == 2 and Jack.shape[1] == 3 :

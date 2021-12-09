@@ -19,6 +19,7 @@ from BasicTools.NumpyDefs import PBasicIndexType, PBasicFloatType
 import BasicTools.Containers.ElementNames as ElementNames
 from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
 from BasicTools.Containers.UnstructuredMeshModificationTools import CleanLonelyNodes
+from BasicTools.NumpyDefs import PBasicIndexType
 
 def GetElementsFractionInside(field, points, name, elements, ids):
 
@@ -290,10 +291,10 @@ def ExtractElementsByMask(inelems, _mask):
 
     outelems = type(inelems)(inelems.elementType)
 
-    newIndex = np.empty(inelems.GetNumberOfElements(),dtype=np.int)
+    newIndex = np.empty(inelems.GetNumberOfElements(),dtype=PBasicIndexType)
 
     _mask = np.asarray(_mask)
-    if _mask.dtype == np.bool:
+    if _mask.dtype == bool:
         nbels =0
         for i in range(inelems.GetNumberOfElements()):
            newIndex[i] = nbels
@@ -301,7 +302,7 @@ def ExtractElementsByMask(inelems, _mask):
         mask = _mask
     else:
         nbels = len(_mask)
-        mask = np.zeros(inelems.GetNumberOfElements(),dtype=np.bool)
+        mask = np.zeros(inelems.GetNumberOfElements(),dtype=bool)
         cpt =0
         for index in _mask:
            newIndex[index ] = cpt
@@ -356,7 +357,7 @@ def ExtractElementByTags(inmesh,tagsToKeep, allNodes=False,dimensionalityFilter=
         outmesh.nodesTags.AddTag(copy.deepcopy(tag) )
 
 
-    nodalMask = np.zeros(inmesh.GetNumberOfNodes(),dtype = np.bool)
+    nodalMask = np.zeros(inmesh.GetNumberOfNodes(),dtype = bool)
     for name,elems in inmesh.elements.items():
 
        #if dimensionalityFilter is not None:
@@ -368,7 +369,7 @@ def ExtractElementByTags(inmesh,tagsToKeep, allNodes=False,dimensionalityFilter=
                continue# pragma: no cover
 
 
-       toKeep = np.zeros(elems.GetNumberOfElements(), dtype=np.bool)
+       toKeep = np.zeros(elems.GetNumberOfElements(), dtype=bool)
        # check elements tags
        for tagToKeep in tagsToKeep:
            if tagToKeep in elems.tags:
@@ -635,7 +636,7 @@ def CheckIntegrity_ExtractElementsByImplicitZone(GUI=False):
 
     class OPSphere(object):
         def __init__(self):
-            self.center = np.array([0.0,0.0,0.0],dtype=np.float)
+            self.center = np.array([0.0,0.0,0.0],dtype=float)
             self.radius = 0.5
         def __call__(self,pos):
             res = np.sqrt(np.sum((pos-self.center)**2,axis=1))-self.radius
@@ -721,8 +722,8 @@ def CheckIntegrity_ExtractElementsByMask(GUI=False):
     #print(tri.connectivity)
     print(res.GetElementsOfType(ElementNames.Triangle_3).connectivity)
 
-    tri = ExtractElementsByMask(res.GetElementsOfType(ElementNames.Triangle_3),np.array([0],dtype=np.int))
-    tri = ExtractElementsByMask(res.GetElementsOfType(ElementNames.Triangle_3),np.array([0,1],dtype=np.bool))
+    tri = ExtractElementsByMask(res.GetElementsOfType(ElementNames.Triangle_3),np.array([0],dtype=PBasicIndexType))
+    tri = ExtractElementsByMask(res.GetElementsOfType(ElementNames.Triangle_3),np.array([0,1],dtype=bool))
 
     print(tri.connectivity)
     print(tri.originalIds)

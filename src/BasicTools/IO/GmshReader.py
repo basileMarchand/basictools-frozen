@@ -12,7 +12,7 @@ import numpy as np
 import BasicTools.Containers.ElementNames as EN
 import BasicTools.Containers.UnstructuredMesh  as UM
 from BasicTools.IO.ReaderBase import ReaderBase
-
+from BasicTools.NumpyDefs import PBasicIndexType
 
 gmshNumber = {}
 gmshNumber['1'] = EN.Bar_2
@@ -82,7 +82,7 @@ class GmshReader(ReaderBase):
                 nbNodes = int(l.split()[0])
                 #print("Reading "+str(nbNodes)+ " Nodes")
                 res.nodes = np.empty((nbNodes,3))
-                res.originalIDNodes= np.empty((nbNodes,),dtype=np.int)
+                res.originalIDNodes= np.empty((nbNodes,),dtype=PBasicIndexType)
                 cpt =0;
                 while(True):
                     line = self.ReadCleanLine()

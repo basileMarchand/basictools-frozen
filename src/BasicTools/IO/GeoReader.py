@@ -12,10 +12,10 @@
 import numpy as np
 import struct
 
-import BasicTools.Containers.ElementNames as EN
 from BasicTools.IO.ReaderBase import ReaderBase
 import BasicTools.Containers.UnstructuredMesh as UM
 from BasicTools.IO.ZsetTools import GeofNumber,PermutationZSetToBasicTools, nbIntegrationsPoints
+from BasicTools.NumpyDefs import PBasicIndexType
 
 def ReadGeo(fileName=None,out=None,readElset=True,readFaset=True):
     reader = GeoReader()
@@ -80,7 +80,7 @@ class GeoReader(ReaderBase):
                    self.filePointer.seek((dims*8+4)*nbNodes,1 )
                else:
                    res.nodes = np.zeros((nbNodes,3))
-                   res.originalIDNodes = np.empty((nbNodes,),dtype=np.int)
+                   res.originalIDNodes = np.empty((nbNodes,),dtype=PBasicIndexType)
 
                    for i in range(nbNodes):
                        data = self.rawread((dims*8+4))
@@ -91,7 +91,7 @@ class GeoReader(ReaderBase):
             elif tag == u"element":
                 n_elem = self.readInt32()
                 metadata['nbElements'] = int(n_elem)
-                IPPerElement = np.empty(metadata['nbElements'],dtype= np.int)
+                IPPerElement = np.empty(metadata['nbElements'],dtype=PBasicIndexType)
 
                 n_grp = self.readInt32()
                 for i in range(n_grp):
@@ -102,12 +102,12 @@ class GeoReader(ReaderBase):
                         elements = res.GetElementsOfType(nametype)
                         elementsInContainerCpt = elements.GetNumberOfElements()
                         elements.Allocate(n_in_grp+elementsInContainerCpt)
-                        
+
                     n_node = self.readInt32()
 
                     if nametype not in FENames:
                         FENames[nametype] = []
-                   
+
                     FENames_etype = FENames[nametype]
 
                     nintegpoints =  nbIntegrationsPoints[ltype]
@@ -128,7 +128,7 @@ class GeoReader(ReaderBase):
                             conn = self.readInts32(n_node)
                             IPPerElement[cpt] = nintegpoints
                             if onlyMeta:
-                                cpt += 1    
+                                cpt += 1
                                 continue
 
                             if perm:
@@ -217,7 +217,7 @@ class GeoReader(ReaderBase):
 
 
                     else:
-                        raise(Exception("Error I dont know how to treat bset of type "   + str(eltype) )) 
+                        raise(Exception("Error I dont know how to treat bset of type "   + str(eltype) ))
 
             elif tag == "ipset":
                 d = self.readInt32()
@@ -243,11 +243,11 @@ class GeoReader(ReaderBase):
                     fenames = []
                     for elname in res.elements:
                         if elname not in FENames:
-                            fenames.extend(["NA"]*res.elements[elname].GetNumberOfElements())  
+                            fenames.extend(["NA"]*res.elements[elname].GetNumberOfElements())
                         else:
                             fenames.extend(FENames[elname])
-                   
-                    res.elemFields["FE Names"] = np.array(fenames) 
+
+                    res.elemFields["FE Names"] = np.array(fenames)
                     return res
             else:
                 print(res)

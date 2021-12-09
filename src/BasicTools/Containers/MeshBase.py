@@ -8,6 +8,7 @@
 import numpy as np
 
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject, froze_it
+from BasicTools.NumpyDefs import PBasicIndexType
 
 allElements = object()
 bulkElements = object() # element of dimensionality for meshdim (Tetra in 3D, Tri in 2D)
@@ -18,14 +19,14 @@ borderborderElements = object() # element of dimensionality for meshdim-2 (Edge 
 class Tag(object):
     def __init__(self,tagname):
         self.name = tagname
-        self._id = np.empty(0,dtype=np.int)
+        self._id = np.empty(0,dtype=PBasicIndexType)
         self.cpt =0
 
     def __eq__(self, other):
 
         if self.name != other.name:
             return False
-        
+
         self.Tighten()
         other.Tighten()
 
@@ -35,7 +36,7 @@ class Tag(object):
         return True
 
     def AddToTag(self,tid):
-        if hasattr(tid, '__iter__'): 
+        if hasattr(tid, '__iter__'):
             if len(self._id) <= self.cpt+len(tid):
                 self._id = np.resize(self._id, (len(self._id)*2+len(tid),))
             self._id[self.cpt:self.cpt+len(tid)] = tid
@@ -59,7 +60,7 @@ class Tag(object):
         self.SetIds(self._id)
 
     def SetIds(self, ids):
-        self._id = np.unique(np.asarray(ids,dtype=np.int))
+        self._id = np.unique(np.asarray(ids,dtype=PBasicIndexType))
         self.cpt = len(self._id)
 
     def SetId(self, pos, ids):
@@ -190,7 +191,7 @@ class Tags(BaseOutputObject):
 
     def __len__(self):
         return len(self.storage)
-    
+
     def items(self):
         return [(v.name,v) for v in self.storage]
 
@@ -228,7 +229,7 @@ class MeshBase(BaseOutputObject):
 
         if self.nodesTags != other.nodesTags:
             return False
-        
+
         if len(self.nodeFields) != len(other.nodeFields):
             return False
 

@@ -13,6 +13,7 @@ import numpy as np
 import BasicTools.Containers.ElementNames as EN
 
 from BasicTools.IO.WriterBase import WriterBase as WriterBase
+from BasicTools.NumpyDefs import  PBasicFloatType, PBasicIndexType
 
 GeofName = {}
 GeofSetName= {}
@@ -148,7 +149,7 @@ class GeofWriter(WriterBase):
             if len(tag) == 0:
                 continue
             self.filePointer.write("  **nset {} \n".format(tag.name))
-            data = np.zeros((meshObject.GetNumberOfNodes(),1),dtype=np.int)
+            data = np.zeros((meshObject.GetNumberOfNodes(),1),dtype=PBasicIndexType)
             if useOriginalId:
                 self.filePointer.write(" ".join([str(int(meshObject.originalIDNodes[x])) for x in tag.GetIds()]))
             else:
@@ -266,8 +267,8 @@ def CheckIntegrity():
                              [0.5,0,0.1],
                              [0,0.5,0.1],
                              [0.5,0.5,0.1],
-    ],dtype=np.float)
-    mymesh.originalIDNodes = np.array([1, 3, 4, 5, 6, 7, 8],dtype=np.int)
+    ],dtype=PBasicFloatType)
+    mymesh.originalIDNodes = np.array([1, 3, 4, 5, 6, 7, 8],dtype=PBasicIndexType)
 
     mymesh.nodesTags.CreateTag("coucou").AddToTag(0)
 
@@ -278,7 +279,7 @@ def CheckIntegrity():
     tris = mymesh.GetElementsOfType(EN.Triangle_3)
     tris.AddNewElement([0,1,2],0)
     tris.AddNewElement([2,1,3],3)
-    tris.originalIds = np.array([3, 5],dtype=np.int)
+    tris.originalIds = np.array([3, 5],dtype=PBasicIndexType)
 
     bars = mymesh.GetElementsOfType(EN.Bar_2)
     bars.AddNewElement([0,1],0)

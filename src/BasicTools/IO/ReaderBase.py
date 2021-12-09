@@ -200,7 +200,7 @@ class ReaderBase(BaseOutputObject):
         except:
             s = np.dtype(datatype).itemsize*cpt
             data = self.filePointer.read(s)
-            return np.fromstring(data,dtype=datatype)
+            return np.frombuffer(data,dtype=datatype)
 
     def reshapeData(self,data,finalShape=None):
         if finalShape is None:

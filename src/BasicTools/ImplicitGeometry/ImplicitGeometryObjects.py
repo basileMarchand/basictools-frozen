@@ -375,11 +375,11 @@ class ImplicitGeometryCylinder(ImplicitGeometryBase):
         if center1 is None:
            self.center1 = np.zeros((3,))
         else:
-           self.center1 = np.array(center1,copy=True,dtype=np.float)
+           self.center1 = np.array(center1,copy=True,dtype=float)
         if center2 is None:
            self.center2 = np.array([1.,0.,0.])
         else:
-           self.center2 = np.array(center2,copy=True,dtype=np.float)
+           self.center2 = np.array(center2,copy=True,dtype=float)
 
         self.radius = radius
         self.wcups = wcups
@@ -400,7 +400,7 @@ class ImplicitGeometryCylinder(ImplicitGeometryBase):
         else:
             pos = _pos
 
-        u = (self.center2 -self.center1).astype(np.float) # director vector
+        u = (self.center2 -self.center1).astype(float) # director vector
         nu = np.linalg.norm(u)
         u /= nu
 
@@ -785,9 +785,9 @@ class ImplicitGeometryStl(ImplicitGeometryBase):
     def GetDistanceToPoint(self,pos):
 
         if len(pos.shape) == 1:
-            res = np.zeros(1,dtype=np.float)
+            res = np.zeros(1,dtype=float)
         else:
-            res = np.zeros(pos.shape[0],dtype=np.float)
+            res = np.zeros(pos.shape[0],dtype=float)
 
         if len(pos.shape) == 1:
             res[0]  =  self.implicitFunction.EvaluateFunction(pos)
@@ -834,10 +834,10 @@ class ImplicitGeometryAnalytical(ImplicitGeometryBase):
     def GetDistanceToPoint(self,pos):
 
         if len(pos.shape) == 1:
-            res = np.zeros(1,dtype=np.float)
+            res = np.zeros(1,dtype=float)
             x, y, z = pos
         else:
-            res = np.zeros(pos.shape[0],dtype=np.float)
+            res = np.zeros(pos.shape[0],dtype=float)
             x = pos[:,0]
             y = pos[:,1]
             z = pos[:,2]
@@ -914,7 +914,7 @@ class ImplicitGeometryHoles(ImplicitGeometryBase):
 
         if self.type == "Original":
             if len(pos.shape) == 1:
-                res = np.zeros(1,dtype=np.float)
+                res = np.zeros(1,dtype=float)
                 res[0] = -np.cos(pos[0]) * np.cos(pos[1]) * np.cos(pos[2]) + self.r - 1.0
             else:
                 res = -np.cos(self.offset[0] + (self.n[0]*np.pi/l[0])*pos[:,0]) * \
@@ -975,7 +975,7 @@ def CheckIntegrity(GUI=False):
     print(myMesh)
 
     OnePoint3D = np.array([1,2,3])
-    TwoPoints3D = np.array([[0.,0.,0.],[1.,2.,3.]], dtype=np.float)
+    TwoPoints3D = np.array([[0.,0.,0.],[1.,2.,3.]], dtype=float)
 
     import BasicTools.TestData as TestData
     from BasicTools.Helpers.Tests import TestTempDir

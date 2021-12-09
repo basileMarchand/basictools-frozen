@@ -18,6 +18,7 @@ from BasicTools.IO.MeshTools import BinaryKeywords as BKeys
 from BasicTools.IO.MeshTools import BinaryTags
 from BasicTools.IO.MeshTools import BinaryFields
 import BasicTools.IO.MeshTools as MT
+from BasicTools.NumpyDefs import PBasicIndexType
 
 def ReadMesh(fileName=None,string=None,ReadRefsAsField=False ):
     reader = MeshReader()
@@ -161,7 +162,7 @@ class MeshReader(ReaderBase):
                 self.PrintVerbose("Reading "+str(nbNodes)+ " Nodes")
                 res.nodes = np.empty((nbNodes,dimension),dtype = dataType)
                 #ref = UM.Tag('ref')
-                res.originalIDNodes= np.empty((nbNodes,),dtype=np.int)
+                res.originalIDNodes= np.empty((nbNodes,),dtype=PBasicIndexType)
                 cpt =0;
                 while(True):
                     line = self.filePointer.readline()
@@ -369,7 +370,7 @@ class MeshReader(ReaderBase):
               self.PrintVerbose("Reading " + str(nbNodes) + " nodes ")
 
               res.nodes = np.empty((nbNodes,dimension),dtype=dataType)
-              res.originalIDNodes= np.empty((nbNodes,),dtype=np.int)
+              res.originalIDNodes= np.empty((nbNodes,),dtype=PBasicIndexType)
               dt =  np.dtype([('pos', dataType,(dimension,) ), ('ref', np.int32, (1,))])
 
 
@@ -472,7 +473,7 @@ class MeshReader(ReaderBase):
       res.PrepareForOutput()
 
       if self.refsAsAField:
-         elemRefs = np.empty(globalElementCounter,dtype=np.int )
+         elemRefs = np.empty(globalElementCounter,dtype=PBasicIndexType )
          cpt =0
          for name,val in res.elements.items():
              elemRefs[cpt:cpt+val.GetNumberOfElements()] = elemRefsDic[name].ravel()
@@ -489,7 +490,7 @@ class MeshReader(ReaderBase):
       nbEntities = myFile._ReadBinaryInt()
       nbfields = myFile._ReadBinaryInt()
 
-      fieldSizes = np.empty(nbfields, dtype=np.int)
+      fieldSizes = np.empty(nbfields, dtype=PBasicIndexType)
       res = []
       for i in range(nbfields):
           fieldSizes[i] =  myFile._ReadBinaryInt()

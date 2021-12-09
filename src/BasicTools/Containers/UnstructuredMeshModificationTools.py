@@ -11,6 +11,7 @@ import BasicTools.Containers.ElementNames as ElementNames
 from BasicTools.Containers.Filters import ElementFilter
 from BasicTools.Containers.MeshBase import Tags
 from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
+from BasicTools.NumpyDefs import PBasicIndexType
 
 def CleanDoubleNodes(res, tol = None, nodesToTestMask= None):
 
@@ -19,8 +20,8 @@ def CleanDoubleNodes(res, tol = None, nodesToTestMask= None):
         tol = np.linalg.norm(res.boundingMax - res.boundingMin)*1e-7
 
     nbnodes = res.GetNumberOfNodes()
-    toKeep = np.zeros(nbnodes, dtype=np.bool )
-    newindex = np.zeros(nbnodes, dtype=np.int )
+    toKeep = np.zeros(nbnodes, dtype=bool )
+    newindex = np.zeros(nbnodes, dtype=PBasicIndexType)
     tol2 = tol**2
     def dist2(array,value):
         d = array-value
@@ -108,13 +109,13 @@ def CleanDoubleNodes(res, tol = None, nodesToTestMask= None):
 
 def CleanLonelyNodes(res,out=None):
 
-    usedNodes = np.zeros(res.GetNumberOfNodes(),dtype=np.bool )
+    usedNodes = np.zeros(res.GetNumberOfNodes(),dtype=bool )
     for data in res.elements.values():
         usedNodes[data.connectivity.ravel()] = True
 
     cpt = 0
-    NewIndex =  np.zeros(res.GetNumberOfNodes(),dtype=np.int )-1
-    originalIDNodes = np.zeros(res.GetNumberOfNodes(),dtype=np.int)
+    NewIndex =  np.zeros(res.GetNumberOfNodes(),dtype=PBasicIndexType )-1
+    originalIDNodes = np.zeros(res.GetNumberOfNodes(),dtype=PBasicIndexType)
     for n in range(res.GetNumberOfNodes()):
         if usedNodes[n]:
             NewIndex[n] = cpt
@@ -261,7 +262,7 @@ def DeleteInternalFaces(mesh):
         if ElementNames.dimension[name] != 2:
             continue
         ne = data.GetNumberOfElements()
-        mask = np.zeros(ne, dtype=np.bool)
+        mask = np.zeros(ne, dtype=bool)
 
         data2 = skin.elements[name]
         ne2 =data2.GetNumberOfElements()
@@ -575,7 +576,7 @@ def AddTagPerBody(inmesh):
 
     # Connectivity walk
     nbOfNodes = inmesh.GetNumberOfNodes()
-    treated = np.zeros(inmesh.GetNumberOfNodes(),dtype=np.bool)
+    treated = np.zeros(inmesh.GetNumberOfNodes(),dtype=bool)
     nextpoint = np.zeros(inmesh.GetNumberOfNodes(),dtype=np.int_)
 
     # we start from the first point and body number 0
@@ -844,7 +845,7 @@ def CheckIntegrity_CleanDoubleNodes(GUI=False):
     tets = [[0,1,2,3],]
     mesh = CreateMeshOf(points,tets,ElementNames.Tetrahedron_4)
 
-    CleanDoubleNodes(mesh, nodesToTestMask= np.array([True,False,True,False,True],dtype=np.bool) )
+    CleanDoubleNodes(mesh, nodesToTestMask= np.array([True,False,True,False,True],dtype=bool) )
     if mesh.GetNumberOfNodes() != 4:
         raise# pragma: no cover
 

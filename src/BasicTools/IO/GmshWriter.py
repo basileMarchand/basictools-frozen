@@ -12,6 +12,7 @@ import BasicTools.Containers.ElementNames as EN
 
 from BasicTools.Containers.MeshBase import Tag as Tag
 from BasicTools.IO.WriterBase import WriterBase as WriterBase
+from BasicTools.NumpyDefs import PBasicFloatType, PBasicIndexType
 
 gmshName = {}
 gmshName[EN.Bar_2]         = '1'
@@ -116,8 +117,8 @@ def CheckIntegrity():
     tempdir = TestTempDir.GetTempPath()
 
     mymesh = UM.UnstructuredMesh()
-    mymesh.nodes = np.array([[0.00000000001,0,0],[1,0,0],[0,1,0],[1,1,0]],dtype=np.float)
-    mymesh.originalIDNodes = np.array([1, 3, 4, 5],dtype=np.int)
+    mymesh.nodes = np.array([[0.00000000001,0,0],[1,0,0],[0,1,0],[1,1,0]],dtype=PBasicFloatType)
+    mymesh.originalIDNodes = np.array([1, 3, 4, 5],dtype=PBasicIndexType)
 
 
     mymesh.nodesTags.CreateTag("coucou").AddToTag(0)
@@ -125,7 +126,7 @@ def CheckIntegrity():
     tris = mymesh.GetElementsOfType('tri3')
     tris.AddNewElement([0,1,2],0)
     tris.AddNewElement([2,1,3],3)
-    tris.originalIds = np.array([3, 5],dtype=np.int)
+    tris.originalIds = np.array([3, 5],dtype=PBasicIndexType)
 
     mymesh.AddElementToTagUsingOriginalId(3,"Tag1")
     mymesh.AddElementToTagUsingOriginalId(5,"Tag3")

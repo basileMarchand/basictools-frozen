@@ -50,7 +50,7 @@ class ImplicitGeometryUnion(ImplicitGeometryBase):
         for z in self.Zones:
             res += "    "+ str(z) + "\n"
         return res
-        
+
 RegisterClass("Union",ImplicitGeometryUnion)
 
 def CreateImplicitGeometryIntersection(ops):
@@ -250,7 +250,7 @@ def CheckIntegrity(GUI=False):
     print(myMesh)
 
     OnePoint3D = np.array([1,2,3])
-    TwoPoints3D = np.array([[0.,0.,0.],[1.,2.,3.]], dtype=np.float)
+    TwoPoints3D = np.array([[0.,0.,0.],[1.,2.,3.]], dtype=float)
 
     import BasicTools.TestData as TestData
     from functools import partial

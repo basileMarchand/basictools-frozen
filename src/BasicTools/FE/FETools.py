@@ -11,6 +11,7 @@ from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceP1
 from BasicTools.FE.Fields.FEField import FEField
 from BasicTools.FE.DofNumbering import ComputeDofNumbering
 import BasicTools.Containers.ElementNames as EN
+from BasicTools.NumpyDefs import PBasicIndexType
 
 from scipy.sparse import coo_matrix, csr_matrix
 from BasicTools.FE.IntegrationsRules import LagrangeIsoParam
@@ -32,15 +33,15 @@ def GetElementaryMatrixForFormulation(elemName, wform, unknownNames, space=Lagra
     mesh.nodes = np.asarray(space[elemName].posN,dtype=float)
     if geoFactor is not None:
         mesh.nodes = mesh.nodes*geoFactor
-    mesh.originalIDNodes = np.arange(0,mesh.GetNumberOfNodes(),dtype=np.int)
+    mesh.originalIDNodes = np.arange(0,mesh.GetNumberOfNodes(),dtype=PBasicIndexType)
 
     elements = mesh.GetElementsOfType(elemName)
-    elements.connectivity = np.arange(space[elemName].GetNumberOfShapeFunctions(),dtype=np.int)
+    elements.connectivity = np.arange(space[elemName].GetNumberOfShapeFunctions(),dtype=PBasicIndexType)
 
     elements.connectivity.shape = (1,space[elemName].GetNumberOfShapeFunctions())
     elements.GetTag("3D").AddToTag(0)
 
-    elements.originalIds = np.arange(0,1,dtype=np.int)
+    elements.originalIds = np.arange(0,1,dtype=PBasicIndexType)
     elements.cpt = elements.connectivity.shape[0]
 
     mesh.PrepareForOutput()

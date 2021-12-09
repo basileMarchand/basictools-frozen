@@ -10,6 +10,7 @@ import numpy as np
 import math
 
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
+from BasicTools.NumpyDefs import PBasicFloatType
 
 
 class LocalVariables(BaseOutputObject):
@@ -91,13 +92,13 @@ def ReadFloat(string):
     return ReadScalar(string,float)
 
 def ReadFloats(string):
-    return ReadVector(string,np.float)
+    return ReadVector(string,float)
 
 def ReadInt(string):
-    return ReadScalar(string,np.int)
+    return ReadScalar(string,int)
 
 def ReadInts(string):
-    return ReadVector(string,np.int)
+    return ReadVector(string,int)
 
 def ReadBool(string):
     if type(string) is bool:

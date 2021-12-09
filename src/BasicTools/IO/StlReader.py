@@ -8,7 +8,7 @@ import numpy as np
 
 import BasicTools.Containers.ElementNames as EN
 from BasicTools.IO.ReaderBase import ReaderBase
-
+from BasicTools.NumpyDefs import PBasicIndexType
 
 def ReadStl(fileName=None,string=None):
     obj = StlReader()
@@ -56,7 +56,7 @@ class StlReader(ReaderBase):
           if data[0] < 128:
             if chr(data[0]) == " ":
               continue
-            header += chr(data[0]) 
+            header += chr(data[0])
 
       if header == "solid":
           self.PrintVerbose("Ascii File")
@@ -98,9 +98,9 @@ class StlReader(ReaderBase):
         resUM.nodes.shape = (nbTriangles*3,3)
 
         elements = resUM.GetElementsOfType(EN.Triangle_3)
-        elements.connectivity = np.array(range(resUM.GetNumberOfNodes()),dtype=np.int)
+        elements.connectivity = np.array(range(resUM.GetNumberOfNodes()),dtype=PBasicIndexType)
         elements.connectivity.shape = (nbTriangles,3)
-        elements.originalIds = np.arange(nbTriangles,dtype=np.int )
+        elements.originalIds = np.arange(nbTriangles,dtype=PBasicIndexType)
         elements.cpt = nbTriangles
         resUM.elemFields["normals"] = normals
         self.EndReading()
@@ -154,9 +154,9 @@ class StlReader(ReaderBase):
         resUM.nodes = np.array(nodesbuffer)
         del nodesbuffer
         elements = resUM.GetElementsOfType(EN.Triangle_3)
-        elements.connectivity = np.array(range(resUM.GetNumberOfNodes()),dtype=np.int)
+        elements.connectivity = np.array(range(resUM.GetNumberOfNodes()),dtype=PBasicIndexType)
         elements.connectivity.shape = (resUM.GetNumberOfNodes()//3,3)
-        elements.originalIds = np.arange(resUM.GetNumberOfNodes()/3,dtype=np.int )
+        elements.originalIds = np.arange(resUM.GetNumberOfNodes()/3,dtype=PBasicIndexType)
         elements.cpt = elements.connectivity.shape[0]
         resUM.elemFields["normals"] = normals
         resUM.GenerateManufacturedOriginalIDs()

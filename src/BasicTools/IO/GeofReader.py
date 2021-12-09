@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 """ Geof file reader (Zset mesh file)
 
 """
@@ -14,6 +14,8 @@ import BasicTools.Containers.ElementNames as EN
 from BasicTools.IO.ReaderBase import ReaderBase
 
 from BasicTools.IO.ZsetTools import GeofNumber, PermutationZSetToBasicTools, nbIntegrationsPoints
+
+from BasicTools.NumpyDefs import PBasicIndexType
 
 def ReadGeof(fileName=None,string=None,out=None,readElset=True,readFaset=True,printNotRead=True):
     reader = GeofReader()
@@ -54,7 +56,7 @@ class GeofReader(ReaderBase):
       elif l.find("**element")>-1:
         l  = self.ReadCleanLine()
         res['nbElements'] = int(l.split()[0])
-        IPPerElement = np.empty(res['nbElements'],dtype= np.int)
+        IPPerElement = np.empty(res['nbElements'],dtype= PBasicIndexType)
         cpt = 0
         while(True):
           l  = self.ReadCleanLine()
@@ -109,7 +111,7 @@ class GeofReader(ReaderBase):
         dim     = int(s[1])
         self.PrintDebug("Reading "+str(nbNodes)+ " Nodes in dimension "+str(dim))
         res.nodes = np.empty((nbNodes,dim))
-        res.originalIDNodes= np.empty((nbNodes,),dtype=np.int)
+        res.originalIDNodes= np.empty((nbNodes,),dtype=PBasicIndexType)
         cpt = 0
         while(True):
             l  = self.ReadCleanLine()
@@ -216,11 +218,11 @@ class GeofReader(ReaderBase):
     fenames = []
     for elname in res.elements:
       if elname not in FENames:
-        fenames.extend(["NA"]*res.elements[elname].GetNumberOfElements())  
+        fenames.extend(["NA"]*res.elements[elname].GetNumberOfElements())
       else:
         fenames.extend(FENames[elname])
-    
-    res.elemFields["FE Names"] = np.array(fenames) 
+
+    res.elemFields["FE Names"] = np.array(fenames)
 
     self.output = res
     return res

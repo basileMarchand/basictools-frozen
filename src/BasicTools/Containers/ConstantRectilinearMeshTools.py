@@ -3,14 +3,15 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 import numpy as np
 from scipy.sparse import coo_matrix
 
 from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearMesh
+from BasicTools.NumpyDefs import PBasicIndexType
 
 def GetSubSuperMesh(inputmesh, _newDimensions):
-    newDimensions = np.array(_newDimensions,dtype=np.int)
+    newDimensions = np.array(_newDimensions,dtype=PBasicIndexType)
     ## to generate meshes with more or less elements in each directions
     ## return the mesh
     newSpac = ((inputmesh.GetDimensions()-1)*inputmesh.GetSpacing()).astype(float)/(newDimensions-1)

@@ -9,6 +9,7 @@ import numpy as np
 from sympy.matrices import Matrix
 import BasicTools.Containers.ElementNames as EN
 from BasicTools.FE.Spaces.SymSpace import SymSpaceBase
+from BasicTools.NumpyDefs import PBasicFloatType
 
 
 class TriSpaceBase(SymSpaceBase):
@@ -114,8 +115,8 @@ def plot2DTriangle(Space):
     import matplotlib.pyplot as plt
     import matplotlib.tri as mtri
     # Create triangulation.
-    x = np.asarray([0,1,2,3,4,5,6,0,1,2,3,4,5,0,1,2,3,4,0,1,2,3,0,1,2,0,1,0],dtype=np.float)/6.0
-    y = np.asarray([0,0,0,0,0,0,0,1,1,1,1,1,1,2,2,2,2,2,3,3,3,3,4,4,4,5,5,6],dtype=np.float)/6.0
+    x = np.asarray([0,1,2,3,4,5,6,0,1,2,3,4,5,0,1,2,3,4,0,1,2,3,0,1,2,0,1,0],dtype=PBasicFloatType)/6.0
+    y = np.asarray([0,0,0,0,0,0,0,1,1,1,1,1,1,2,2,2,2,2,3,3,3,3,4,4,4,5,5,6],dtype=PBasicFloatType)/6.0
     triangles = [[ 0, 1, 7],[ 1, 2, 8],[ 2, 3, 9],[ 3, 4, 10], [ 4, 5, 11], [5, 6, 12],
                  [ 1, 8, 7],[ 2, 9, 8],[ 3,10, 9],[ 4,11, 10], [ 5,12, 11],
                  [ 7, 8,13],[ 8, 9,14],[ 9,10,15],[10, 11,16], [11, 12,17],
@@ -131,7 +132,7 @@ def plot2DTriangle(Space):
 
     triang = mtri.Triangulation(x, y, triangles)
 
-    z = np.empty((28),dtype=np.float)
+    z = np.empty((28),dtype=PBasicFloatType)
     print (x)
     print (y)
 

@@ -15,6 +15,7 @@ from BasicTools.IO.MeshTools import BinaryKeywords,BinaryNumber,ASCIIName, ASCII
 from BasicTools.IO.MeshTools import Corners,Ridges,RequiredEdges,RequiredTriangles,RequiredVertices
 import BasicTools.IO.MeshTools as MT
 from BasicTools.IO.MeshTools import BinaryKeywords as BKeys
+from BasicTools.NumpyDefs import PBasicFloatType, PBasicIndexType
 
 def WriteMesh(filename,mesh,PointFields=None,solutionOnOwnFile= False, binary=True, nodalRefNumber= None,elemRefNumber=None):
     OW = MeshWriter()
@@ -122,11 +123,11 @@ class MeshWriter(WriterBase):
             self.filePointer.write(struct.pack('i', nbelements))# GetNumberOfElements
 
             tempcoon =  np.zeros( (data.connectivity.shape[0],data.connectivity.shape[1]+1),dtype=np.int32,order="c"  )
-            tempcoon[:,0:data.connectivity.shape[1]] = data.connectivity.astype(np.int32) 
+            tempcoon[:,0:data.connectivity.shape[1]] = data.connectivity.astype(np.int32)
             tempcoon[:,0:data.connectivity.shape[1]] += 1
             if elemRefNumber is not None:
                 tempcoon[:,data.connectivity.shape[1]] = elemRefNumber[globalOffset: globalOffset+nbelements]
-            tempcoon.tofile(self.filePointer, format=dataformat,sep='') 
+            tempcoon.tofile(self.filePointer, format=dataformat,sep='')
 
 
             globalOffset += data.GetNumberOfElements()
@@ -209,13 +210,13 @@ class MeshWriter(WriterBase):
         self._isOpen = True
 
         self.filePointer.write("MeshVersionFormatted 2\n\n")
-        dimension = 3 
+        dimension = 3
 
         if support.nodes.shape[1] == 3 :
             mmax = np.max(support.nodes[:,2])
             mmin = np.min(support.nodes[:,2])
             if  mmax ==  mmin and mmax == 0.:
-               dimension = 2 
+               dimension = 2
         self.filePointer.write("Dimension {}\n\n".format(dimension))
 
     def WriteSolutionsFieldsAscii(self,meshObject,PointFields=None,SolsAtTriangles=None,SolsAtTetrahedra=None):
@@ -306,7 +307,7 @@ class MeshWriter(WriterBase):
             mmax = np.max(support.nodes[:,2])
             mmin = np.min(support.nodes[:,2])
             if  mmax ==  mmin:
-               dimension = 2 
+               dimension = 2
 
         self.filePointer.write(struct.pack('i', self.filePointer.tell()+4*2))# end of information
         self.filePointer.write(struct.pack('i', dimension)) #dimension
@@ -491,8 +492,8 @@ def CheckIntegrity():
 
     mymesh = UM.UnstructuredMesh()
     with mymesh.WithModification():
-        mymesh.nodes = np.array([[0.00000000001,0,0],[1,0,0],[0,1,0],[1,1,0],[0,0,1]],dtype=np.float)
-        mymesh.originalIDNodes = np.array([1, 3, 4, 5,6],dtype=np.int)
+        mymesh.nodes = np.array([[0.00000000001,0,0],[1,0,0],[0,1,0],[1,1,0],[0,0,1]],dtype=PBasicFloatType)
+        mymesh.originalIDNodes = np.array([1, 3, 4, 5,6],dtype=PBasicIndexType)
 
         mymesh.nodesTags.CreateTag("coucou").AddToTag(0)
         mymesh.nodesTags.CreateTag(Corners).AddToTag(0)
@@ -504,7 +505,7 @@ def CheckIntegrity():
         tris = mymesh.GetElementsOfType(EN.Triangle_3)
         tris.AddNewElement([0,1,2],0)
         tris.AddNewElement([2,1,3],3)
-        tris.originalIds = np.array([3, 5],dtype=np.int)
+        tris.originalIds = np.array([3, 5],dtype=PBasicIndexType)
 
         tris.tags.CreateTag("RequiredTriangles").AddToTag(0)
 
@@ -537,7 +538,7 @@ def CheckIntegrity():
     OWB.Close()
 
     print(mymesh)
-    sol = np.arange(mymesh.GetNumberOfNodes(),dtype=np.float)
+    sol = np.arange(mymesh.GetNumberOfNodes(),dtype=PBasicFloatType)
     WriteMesh(tempdir+"Test_MmgWriter_II_Binary.mesh", mymesh ,PointFields=[sol ] )
     WriteMesh(tempdir+"Test_MmgWriter_II_Ascii.mesh", mymesh ,PointFields=[sol ], binary=False )
 

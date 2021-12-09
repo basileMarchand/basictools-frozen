@@ -9,6 +9,7 @@ import numpy as np
 import BasicTools.Containers.ElementNames as EN
 from BasicTools.IO.ReaderBase import ReaderBase
 from BasicTools.Helpers import ParserHelper as PH
+from BasicTools.NumpyDefs import PBasicFloatType, PBasicIndexType
 
 KeywordToIgnore = ["INIT",
                    "MCNL",
@@ -98,7 +99,7 @@ class DatReader(ReaderBase):
 
         if len(res) == 0:
             return self.ReadCleanLine(withError=withError)
-        # read multiline blocks 
+        # read multiline blocks
         if res[-1] == "$":
             nline = self.PeekLine()
             if nline[0] != ".":
@@ -272,7 +273,7 @@ class DatReader(ReaderBase):
                             for name,data in res.elements.items():
                                 if "Group"+str(ldata[1]) in data.tags:
                                     tag = data.tags["Group"+str(ldata[1])]
-                                    ids.extend(data.originalIds[tag.GetIds()] ) 
+                                    ids.extend(data.originalIds[tag.GetIds()] )
                         else:
                             ids.extend(map(int,ldata))
 
@@ -339,7 +340,7 @@ class DatReader(ReaderBase):
                 #l = self.ReadCleanLine()
                 l = self.ReadCleanLine()
                 while(True): # for every I entry
-                    
+
                     if l == None:
                         break
                     if l[0] == ".":
@@ -363,7 +364,7 @@ class DatReader(ReaderBase):
                         fields = l.split()
                         fcpt = 0
 
-                        while(fcpt < len(fields)): # for every field in 
+                        while(fcpt < len(fields)): # for every field in
                             if fields[fcpt] == "I":
                                 fcpt += 1
                                 if oid != -1: break
@@ -404,7 +405,7 @@ class DatReader(ReaderBase):
                                 break
                             if l[0] == ".":
                                 break
-                            
+
                             continue
 
                         break
@@ -462,8 +463,8 @@ class DatReader(ReaderBase):
                             __DEGRE = fields[fcpt]
                             fcpt += 1
                             continue
-                        
-                        
+
+
                         print(fields)
                         raise
                     self.AEL.append({'I':__I,"G":__GROUP,"M":__MAT,"F":__FRAME})
@@ -548,8 +549,8 @@ class DatReader(ReaderBase):
             self.PrintVerbose("----------------------------------------------------------")
             raise
 
-        res.SetNodes(np.array([xs,ys,zs],dtype=np.float).T)
-        res.originalIDNodes = np.array(originalsids,dtype=np.int)
+        res.SetNodes(np.array([xs,ys,zs],dtype=PBasicFloatType).T)
+        res.originalIDNodes = np.array(originalsids,dtype=PBasicIndexType)
         res.PrepareForOutput()
 
         self.output = res
@@ -579,8 +580,8 @@ class DatReader(ReaderBase):
 
                 if ael["F"] != -1:
                     frame = self.FRAME[ael["F"]]
-                
-                    (elements,cpt) = filetointernalidElement[oid] 
+
+                    (elements,cpt) = filetointernalidElement[oid]
                     if frame["T"] != "CARTESIAN":
                         raise
                     if np.any(frame["O"]-[0,0,0]):

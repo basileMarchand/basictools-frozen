@@ -18,6 +18,7 @@
     pytest-cov
     setuptools
     eigency
+    pyvista
 
     C++ OPEN-SOURCE DEPENDENCIES
     Eigen (http://eigen.tuxfamily.org)

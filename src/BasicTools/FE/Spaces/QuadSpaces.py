@@ -3,11 +3,12 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 import numpy as np
 from sympy.matrices import Matrix
 import BasicTools.Containers.ElementNames as EN
 from BasicTools.FE.Spaces.SymSpace import SymSpaceBase
+from BasicTools.NumpyDefs import PBasicFloatType
 
 class Quad_P0_Global(SymSpaceBase):
     def __init__(self):
@@ -169,9 +170,9 @@ def plot2DSquare(Space):
     ep = np.array([[ 0, 0],[ 0.5, 0],[ 1, 1.2],[ 0, 0.5]])
     ep = Space.posN
     #ep = Space.posN
-    X = np.empty((11,11),dtype=np.float)
-    Y = np.empty((11,11),dtype=np.float)
-    Z = np.empty((11,11),dtype=np.float)
+    X = np.empty((11,11),dtype=PBasicFloatType)
+    Y = np.empty((11,11),dtype=PBasicFloatType)
+    Z = np.empty((11,11),dtype=PBasicFloatType)
 
     for xi in range(11):
         xp = xi/10.

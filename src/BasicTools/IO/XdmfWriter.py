@@ -13,6 +13,7 @@ import BasicTools.Containers.ElementNames as EN
 from BasicTools.IO.XdmfTools import XdmfName,XdmfNumber
 from BasicTools.IO.WriterBase import WriterBase as WriterBase
 from BasicTools.Helpers.MPIInterface import MPIInterface as MPI
+from BasicTools.NumpyDefs import PBasicIndexType
 
 def ArrayToString(data):
     return " ".join(str(x) for x in data)
@@ -526,7 +527,7 @@ class XdmfWriter(WriterBase):
 
 
 
-                dataarray = np.empty((ntotalentries,),dtype=np.int)
+                dataarray = np.empty((ntotalentries,),dtype=PBasicIndexType)
                 cpt =0;
                 for ntype, data in baseMeshObject.elements.items():
                    #self.PrintVerbose("printing {} elements  of type : {} ({} nodes per element)".format(data.GetNumberOfElements(),data.elementType, data.GetNumberOfNodesPerElement()) )
@@ -1170,7 +1171,7 @@ def CheckIntegrity(GUI=False):
     res.SetNodes([[0,0,0],[1,0,0]],np.arange(2))
     elements = res.GetElementsOfType(EN.Point_1)
     elements.AddNewElement([0],1)
-    
+
     WriteMeshToXdmf(tempdir+"TestUnstructured_OnlyPoints.xdmf", res)
 
     res = UM.UnstructuredMesh()
@@ -1247,7 +1248,7 @@ def CheckIntegrity(GUI=False):
     writer.SetXmlSizeLimit(0)
     writer.SetBinary(True)
     writer.Open(filename=tempdir+'testdirect.xdmf');
-    writer.Write(CRM2D, PointFields = [ np.zeros((CRM2D.GetNumberOfNodes(),) ).astype(np.float32), np.zeros((CRM2D.GetNumberOfNodes(),) ).astype(np.int) ],
+    writer.Write(CRM2D, PointFields = [ np.zeros((CRM2D.GetNumberOfNodes(),) ).astype(np.float32), np.zeros((CRM2D.GetNumberOfNodes(),) ).astype(int) ],
                                                             PointFieldsNames = ["Test", "testint"],
                                                             CellFields= [ np.arange(CRM2D.GetNumberOfElements()*2 ).astype(np.float64)],
                                                             CellFieldsNames = [ "TestV"] );
@@ -1264,7 +1265,7 @@ def CheckIntegrity(GUI=False):
     writer.Open(filename=tempdir+'testdirectTwoDomains.xdmf');
 
 
-    writer.Write(CRM2D, PointFields = [ np.zeros((CRM2D.GetNumberOfNodes(),) ).astype(np.float32), np.zeros((CRM2D.GetNumberOfNodes(),) ).astype(np.int) ],
+    writer.Write(CRM2D, PointFields = [ np.zeros((CRM2D.GetNumberOfNodes(),) ).astype(np.float32), np.zeros((CRM2D.GetNumberOfNodes(),) ).astype(int) ],
                                                             PointFieldsNames = ["Test", "testint"],
                                                             CellFields= [ np.arange(CRM2D.GetNumberOfElements()*2 ).astype(np.float64)],
                                                             CellFieldsNames = [ "TestV"] );

@@ -10,6 +10,7 @@ import xml.sax
 
 from BasicTools.Helpers.TextFormatHelper import TFormat
 from BasicTools.IO.XdmfTools import FieldNotFound
+from BasicTools.NumpyDefs import PBasicFloatType
 
 import BasicTools.Containers.ElementNames as ElementNames
 
@@ -460,7 +461,7 @@ class XdmfTime(Xdmfbase):
         self.Value = None
 
     def ReadAttributes(self,attrs):
-        self.Value = np.array(self.ReadAttribute(attrs,'Value').split(), dtype=np.float)
+        self.Value = np.array(self.ReadAttribute(attrs,'Value').split(), dtype=PBasicFloatType)
 
     def __str__(self):
         res = TFormat.GetIndent() + 'XdmfTime'

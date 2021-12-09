@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 """ Gcode file reader
 
 """
@@ -14,6 +14,7 @@ import BasicTools.Containers.ElementNames as EN
 import BasicTools.Containers.UnstructuredMesh  as UM
 
 from BasicTools.IO.ReaderBase import ReaderBase
+from BasicTools.NumpyDefs import PBasicFloatType, PBasicIndexType
 
 
 def ReadGCode(fileName=None,string=None ):
@@ -92,9 +93,9 @@ class GReader(ReaderBase):
             print("ignoring line " + str(l) )
         self.EndReading()
 
-        res.nodes = np.reshape(np.asarray(nodes,dtype=np.float),newshape=(len(nodes)//3, 3))
+        res.nodes = np.reshape(np.asarray(nodes,dtype=PBasicFloatType),newshape=(len(nodes)//3, 3))
 
-        res.originalIDNodes = np.arange(res.GetNumberOfNodes(),dtype=np.int)
+        res.originalIDNodes = np.arange(res.GetNumberOfNodes(),dtype=PBasicIndexType)
         elems = res.GetElementsOfType(EN.Bar_2)
         elems.Allocate(res.GetNumberOfNodes()-1)
         elems.connectivity[:,0] = range(res.GetNumberOfNodes()-1)

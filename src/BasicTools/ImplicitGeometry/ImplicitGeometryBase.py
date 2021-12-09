@@ -168,7 +168,7 @@ def CheckIntegrity(GUI=False):
 
     TryToCreate("Dummy").ApplyVector(myMesh3D,cellCenter=True)
 
-    TwoPoints3D = np.array([[0.,0.,0.],[1.,2.,3.]], dtype=np.float)
+    TwoPoints3D = np.array([[0.,0.,0.],[1.,2.,3.]], dtype=float)
     TryToCreate("Dummy")(TwoPoints3D)
 
     try:
@@ -178,7 +178,7 @@ def CheckIntegrity(GUI=False):
     except:
         pass
 
-    TwoPoints2D = np.array([[0.,0.],[1.,2.]], dtype=np.float)
+    TwoPoints2D = np.array([[0.,0.],[1.,2.]], dtype=float)
 
     obj = TryToCreate("Dummy")
     obj.insideOut = True

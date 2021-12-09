@@ -15,6 +15,7 @@ from BasicTools.Helpers.BaseOutputObject import BaseOutputObject as BOO,froze_it
 from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
 from BasicTools.FE.SymWeakForm import testcharacter
 from BasicTools.FE.Fields.FEField import FEField
+from BasicTools.NumpyDefs import PBasicFloatType, PBasicIndexType
 
 @froze_it
 class MonoElementsIntegral(BOO):
@@ -391,9 +392,9 @@ class MonoElementsIntegral(BOO):
 
         numberOfIntegrationPoints = len(self.w)
 
-        ev = np.empty(self.maxNumberOfElementVIJ*wform.GetNumberOfTerms()*numberOfIntegrationPoints,dtype=np.float)
-        ei = np.empty(self.maxNumberOfElementVIJ*wform.GetNumberOfTerms()*numberOfIntegrationPoints,dtype=np.int)
-        ej = np.empty(self.maxNumberOfElementVIJ*wform.GetNumberOfTerms()*numberOfIntegrationPoints,dtype=np.int)
+        ev = np.empty(self.maxNumberOfElementVIJ*wform.GetNumberOfTerms()*numberOfIntegrationPoints,dtype=PBasicFloatType)
+        ei = np.empty(self.maxNumberOfElementVIJ*wform.GetNumberOfTerms()*numberOfIntegrationPoints,dtype=PBasicIndexType)
+        ej = np.empty(self.maxNumberOfElementVIJ*wform.GetNumberOfTerms()*numberOfIntegrationPoints,dtype=PBasicIndexType)
 
         numberOfFields = len(self.__usedSpaces__)
 

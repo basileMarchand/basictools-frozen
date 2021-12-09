@@ -13,6 +13,7 @@ from BasicTools.Containers.UnstructuredMeshCreationTools import QuadToLin
 from BasicTools.Containers.UnstructuredMeshInspectionTools import ExtractElementsByElementFilter
 from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
 from BasicTools.Linalg.Transform import Transform
+from BasicTools.NumpyDefs import PBasicFloatType
 
 def ApplyRotationMatrixTensorField(fields,fieldstoTreat, baseNames=["v1","v2"],inplace=False,prefix="new_",inverse=False):
     nbentries = fields[fieldstoTreat[0][0]].shape[0]
@@ -801,7 +802,7 @@ def CheckIntegrity_GetValueAtPosLinearSymplecticMesh(GUI=False):
 
 def CheckIntegrity_PointToCellData(GUI = False):
     myMesh = UnstructuredMesh()
-    myMesh.nodes = np.array([[0,0,0],[1,0,0],[2,0,0]] ,dtype=np.float)
+    myMesh.nodes = np.array([[0,0,0],[1,0,0],[2,0,0]] ,dtype=PBasicFloatType)
     myMesh.originalIDNodes = np.array([0,1,2] ,dtype=int)
     tag = myMesh.GetNodalTag("linPoints")
     tag.AddToTag(0)

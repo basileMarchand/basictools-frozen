@@ -8,6 +8,7 @@
 import numpy as np
 
 import BasicTools.Containers.ElementNames as EN
+from BasicTools.NumpyDefs import PBasicIndexType
 
 OdbName = {}
 OdbName[EN.Tetrahedron_4] = 'C3D4'
@@ -303,7 +304,7 @@ def CheckIntegrity():
 
     mymesh = UM.UnstructuredMesh()
     mymesh.nodes = np.array([[0.00000000001,0,0],[1,0,0],[0,1,0],[1,1,1.]])
-    mymesh.originalIDNodes = np.array([1, 3, 4, 5],dtype=np.int)
+    mymesh.originalIDNodes = np.array([1, 3, 4, 5],dtype=PBasicIndexType)
 
     tag = mymesh.nodesTags.CreateTag("coucou")
     tag.AddToTag(0)
@@ -316,7 +317,7 @@ def CheckIntegrity():
     tris = mymesh.GetElementsOfType(EN.Triangle_3)
     tris.AddNewElement([0,1,2],0)
     tris.AddNewElement([2,1,3],3)
-    tris.originalIds = np.array([3, 5],dtype=np.int)
+    tris.originalIds = np.array([3, 5],dtype=PBasicIndexType)
     tris.tags.CreateTag("OneTri").AddToTag(0)
 
     #bars = mymesh.GetElementsOfType(EN.Bar_2)

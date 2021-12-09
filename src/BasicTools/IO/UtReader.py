@@ -8,6 +8,7 @@ import os
 import numpy as np
 
 from BasicTools.IO.ReaderBase import ReaderBase
+from BasicTools.NumpyDefs import PBasicFloatType
 
 def ReadFieldFromUt(fileName=None, fieldname=None, time=None, timeIndex=None, string=None, atIntegrationPoints=False):
     reader = UtReader()
@@ -203,7 +204,7 @@ class UtReader(ReaderBase):
                 raise(Exception("unable to find field " +str(self.fieldNameToRead) ))
 
             self.PrintVerbose("Opening file : " + str(ffn) )
-            res = np.empty(count,dtype=np.float)
+            res = np.empty(count,dtype=PBasicFloatType)
             try:
               if len(self.integ)==1 :
                 with open(ffn+postfix,"rb") as datafile:

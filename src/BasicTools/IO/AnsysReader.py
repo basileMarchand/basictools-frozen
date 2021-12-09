@@ -13,6 +13,7 @@ import BasicTools.Containers.ElementNames as EN
 import BasicTools.Containers.UnstructuredMesh as UM
 from BasicTools.IO.ReaderBase import ReaderBase
 from BasicTools.Helpers.ParserHelper import LocalVariables
+from BasicTools.NumpyDefs import PBasicIndexType
 
 
 def ReadAnsys(fileName=None, string=None, out=None, **kwargs):
@@ -82,7 +83,7 @@ class Session:
 
         # Nodes
         self.result.nodes = np.empty((0, 3), dtype=np.double)
-        self.result.originalIDNodes = np.empty((0,), dtype=np.int)
+        self.result.originalIDNodes = np.empty((0,), dtype=PBasicIndexType)
         self.node_count = 0
         self.node_rank_from_id = dict()
 

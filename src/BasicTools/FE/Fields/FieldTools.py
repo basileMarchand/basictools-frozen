@@ -492,7 +492,7 @@ class FieldsEvaluator():
             def __init__(self,func,constants):
                 self.constants = dict(constants)
                 # get arguments names
-                args = inspect.getargspec(func).args
+                args = inspect.getfullargspec(func).args
                 # clean self, in the case of a member function
                 if args[0] == "self":
                     args.pop(0)
