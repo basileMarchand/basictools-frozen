@@ -529,6 +529,7 @@ class UnstructuredMesh(MeshBase):
         """
         self.nodesTags.Tighten()
         for data in self.elements.values():
+            data.tags.RemoveDoubles()
             data.tighten()
         self.ComputeGlobalOffset()
         self.VerifyIntegrity()

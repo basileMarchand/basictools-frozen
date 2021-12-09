@@ -56,8 +56,7 @@ class Tag(object):
             self._id = np.resize(self._id, (self.cpt,))
 
     def RemoveDoubles(self):
-        self.Tighten()
-        self.SetIds(self._id)
+        self.SetIds(self._id[0:self.cpt])
 
     def SetIds(self, ids):
         self._id = np.unique(np.asarray(ids,dtype=PBasicIndexType))
@@ -130,6 +129,10 @@ class Tags(BaseOutputObject):
     def Tighten(self):
         for tag in self:
             tag.Tighten()
+
+    def RemoveDoubles(self):
+        for tag in self:
+            tag.RemoveDoubles()
 
     def AddTag(self,item):
         if item.name in self:
