@@ -241,6 +241,7 @@ def GetDualGraph(inmesh, maxNumConnections=200):
     for i in range(inmesh.GetNumberOfNodes()):
         c = np.unique(dualGraph[i,0:usedPoints[i]])
         dualGraph[i,0:len(c)] = c
+        dualGraph[i,len(c):] = -1
         usedPoints[i] = len(c)
         maxsize = max(len(c),maxsize)
 
