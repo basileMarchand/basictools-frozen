@@ -508,18 +508,19 @@ def ComputeIntegrationPointsTags(mesh, dimension = None):
     return listOfTags
 
 
-
-def CellDataToIntegrationPointsData(mesh, set, scalarFields, relativeDimension = 0):
+def CellDataToIntegrationPointsData(mesh, scalarFields, set = None, relativeDimension = 0):
     """
     scalarFields is an np.ndarray of size (nbe of fields, number of dofs of the mesh)
     or a dict with "nbe of fields" keys
+    set = None: takes all the elements of considered dimension
     """
 
     dimension = mesh.GetDimensionality() + relativeDimension
 
     ff = Filters.ElementFilter(mesh)
     ff.SetDimensionality(dimension)
-    ff.AddTag(set)
+    if set != None:
+        ff.AddTag(set)
 
     _, _, _, NGauss = PrepareFEComputation(mesh, ff, dimension)
 
@@ -531,6 +532,7 @@ def CellDataToIntegrationPointsData(mesh, set, scalarFields, relativeDimension =
         raise("scalarFields is neither an np.ndarray nor a dict")
 
     numberOfFields = len(keymap)
+
     integrationPointsData = np.empty((numberOfFields, NGauss))
 
     countEl = 0
@@ -549,6 +551,31 @@ def CellDataToIntegrationPointsData(mesh, set, scalarFields, relativeDimension =
             countIp += numberOfIPperEl
 
     return integrationPointsData
+
+
+def IntegrationPointsToCellData(mesh, scalarFields):
+
+    if type(scalarFields) == dict:
+        keymap = list(scalarFields.keys())
+    elif type(scalarFields) == np.ndarray:
+        keymap = np.arange(scalarFields.shape[0])
+    else:
+        raise("scalarFields is neither an np.ndarray nor a dict")
+
+    numberOfFields = len(keymap)
+
+    from BasicTools.FE.Fields import IPField as IPF
+
+    cellData = []
+
+    for f in range(numberOfFields):
+        iPField = IPF.IPField("",mesh,rule=LagrangeIsoParam)
+        iPField.Allocate()
+        iPField.SetDataFromNumpy(scalarFields[keymap[f]],dim=mesh.GetDimensionality())
+        cellData.append(iPField.GetCellRepresentation())
+
+    return np.array(cellData)
+
 
 def CheckIntegrity(GUI=False):
     from BasicTools.FE.SymPhysics import MecaPhysics
@@ -569,7 +596,10 @@ def CheckIntegrity(GUI=False):
     ComputeIntegrationPointsTags(mesh, 3)
     ComputeNormalsAtIntegPoint(mesh, ["x0"])
     length = len(mesh.elements["quad4"].tags["x0"].GetIds())
-    CellDataToIntegrationPointsData(mesh, "x0", np.ones(length))
+    CellDataToIntegrationPointsData(mesh, np.ones((2,length)), "x0", relativeDimension=-1)
+    res = CellDataToIntegrationPointsData(mesh, np.ones((2,216)))
+    nGauss = res.shape[1]
+    IntegrationPointsToCellData(mesh, np.ones((2,nGauss)))
 
     from BasicTools.FE.IntegrationsRules import LagrangeP1
     mesh.elements["hex8"].tags.CreateTag("Transfert").SetIds([0,1] )
