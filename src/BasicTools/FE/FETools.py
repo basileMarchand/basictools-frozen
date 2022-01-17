@@ -56,7 +56,26 @@ def GetElementaryMatrixForFormulation(elemName, wform, unknownNames, space=Lagra
     return M.toarray(), f
 
 def PrepareFEComputation(mesh, elementFilter = None, numberOfComponents = None):
+    """
+    Prepares a finite element computation with Lagrange isoparametric finite
+    elements by computing FESpace, numberings, offset and NGauss
 
+    Parameters
+    ----------
+    mesh : UnstructuredMesh
+        mesh on which the function is applied
+    elementFilter : ElementFilter, optional
+        Filter on which the function is applied
+    numberOfComponents : int
+        the number of components
+
+    Returns
+    -------
+    FESpace
+    numberings
+    offset : list of int
+    NGauss : int
+    """
     dim = mesh.GetDimensionality()
     if elementFilter == None:
         elementFilter = Filters.ElementFilter(mesh)
@@ -84,6 +103,27 @@ def PrepareFEComputation(mesh, elementFilter = None, numberOfComponents = None):
     return spaces, numberings, offset, NGauss
 
 def ComputeL2ScalarProducMatrix(mesh, numberOfComponents, elementFilter = None):
+    """
+    Computes the L2 scalar product used to compute the correlations
+    between the primal solution snapshots. The numberOfComponents
+    depends on the solution type: 3 for solid mechanics in 3D, or 1 for
+    thermal in any dimension. (Lagrange isoparametric finite elements)
+
+    Parameters
+    ----------
+    mesh : UnstructuredMesh
+        mesh on which the function is applied
+    numberOfComponents : int
+        the number of components
+    elementFilter : ElementFilter, optional
+        Filter on which the function is applied
+
+    Returns
+    -------
+    scipy.sparse.csr_matrix
+        the sparse matrix of the L2 scalar product
+    """
+
     from BasicTools.FE.Integration import IntegrateGeneral
 
     dim = mesh.GetDimensionality()
@@ -117,6 +157,24 @@ def ComputeL2ScalarProducMatrix(mesh, numberOfComponents, elementFilter = None):
     return K
 
 def ComputeH10ScalarProductMatrix(mesh, numberOfComponents):
+    """
+    Computes the H10 scalar product used to compute the correlations
+    between the primal solution snapshots. The numberOfComponents
+    depends on the solution type: 3 for solid mechanics in 3D, or 1 for
+    thermal in any dimension (Lagrange isoparametric finite elements)
+
+    Parameters
+    ----------
+    mesh : UnstructuredMesh
+        mesh on which the function is applied
+    numberOfComponents : int
+        the number of components of the primal variable snapshots
+
+    Returns
+    -------
+    scipy.sparse.csr_matrix
+        the sparse matrix of the H10 scalar product
+    """
 
     nbNodes = mesh.GetNumberOfNodes()
     dim     = mesh.GetDimensionality()
@@ -192,7 +250,26 @@ def ComputeInterpolationMatrix_FE_GaussPoint(mesh, feSpace, integrationRule,feNu
     return interpMatrixMatrix
 
 def ComputeJdetAtIntegPoint(mesh, elementSets = None, relativeDimension = 0):
+    """
+    Computes determinant of the Jacobian of the transformation of the
+    transformation between the reference element and the mesh element, at
+    the integration points. (Lagrange isoparametric finite elements)
 
+    Parameters
+    ----------
+    mesh : UnstructuredMesh
+        mesh on which the function is applied
+    elementSets : list if strings
+        sets of elements on which the det-Jacobians are computed
+    relativeDimension : int (0, -1 or -2)
+        difference between the dimension of the elements on which the function
+        is computed and the dimensionality of the mesh
+
+    Returns
+    -------
+    np.ndarray
+        of size (NGauss,)
+    """
     ff = Filters.ElementFilter(mesh)
 
     dimension = mesh.GetDimensionality() + relativeDimension
@@ -228,27 +305,26 @@ def ComputeJdetAtIntegPoint(mesh, elementSets = None, relativeDimension = 0):
 
 def ComputePhiAtIntegPoint(mesh, elementSets = None, relativeDimension = 0):
     """
-    Computes the shape functions on the integration
-    points and the integration weights associated with the integration scheme
+    Computes the value of the finite element shape functions at the integration
+    points. (Lagrange isoparametric finite elements)
 
     Parameters
     ----------
     mesh : UnstructuredMesh
-    elementSets : list of strings
-        element sets, support for the shape functions
-    relativeDimension : int
-        0, -1, or -2: the dimension of the element set relative to the dimension of the mesh
-
+        mesh on which the function is applied
+    elementSets : list if strings
+        sets of elements on which the det-Jacobians are computed
+    relativeDimension : int (0, -1 or -2)
+        difference between the dimension of the elements on which the function
+        is computed and the dimensionality of the mesh
 
     Returns
     -------
     np.ndarray
-        integrationWeights
-
-    coo_matrix of size (NGauss, nbNodes)
-        phiAtIntegPointMatrix
+        of size (NGauss,)
+    coo_matrix
+        of size (NGauss, nbNodes)
     """
-
     ff = Filters.ElementFilter(mesh)
 
     dimension = mesh.GetDimensionality() + relativeDimension
@@ -309,7 +385,6 @@ def ComputePhiAtIntegPointFromElFilter(mesh, elFilter):
     mesh : UnstructuredMesh
     elFilter : elementFilter
 
-
     Returns
     -------
     np.ndarray
@@ -362,12 +437,14 @@ def ComputePhiAtIntegPointFromElFilter(mesh, elFilter):
 
 def ComputeGradPhiAtIntegPoint(mesh, elementSets = None, relativeDimension = 0):
     """
-    Computes the components of the gradient of the shape functions on the integration
-    points and the integration weights associated with the integration scheme
+    Computes the components of the gradient of the shape functions on the
+    integration points and the integration weights associated with the
+    integration scheme
 
     Parameters
     ----------
     mesh : UnstructuredMesh
+        mesh on which the function is applied
     elementSets : list of strings
         element sets, support for the shape functions
     relativeDimension : int
@@ -438,10 +515,24 @@ def ComputeGradPhiAtIntegPoint(mesh, elementSets = None, relativeDimension = 0):
     return integrationWeights, GradPhiAtIntegPointMatrix
 
 def ComputeNormalsAtIntegPoint(mesh, elementSets):
-    """
-    vector is the size of the number of nodes of "set"
-    """
 
+    """
+    Computes the normals at the elements from the sets elementSets in the
+    ambiant space (i.e. if mesh is of dimensionality 3, elementSets should
+    contain 2D elements)
+
+    Parameters
+    ----------
+    mesh : UnstructuredMesh
+        mesh on which the function is applied
+    elementSets : list of strings
+        sets of elements on which the function is computed
+
+    Returns
+    -------
+    np.ndarray
+        of size (dimensionality, NGauss)
+    """
     ff = Filters.ElementFilter(mesh)
 
     dimension = mesh.GetDimensionality() - 1
@@ -453,8 +544,6 @@ def ComputeNormalsAtIntegPoint(mesh, elementSets):
         for set in elementSets:
             if set:
                 ff.AddTag(set)
-
-
 
     spaces, numberings, offset, NGauss = PrepareFEComputation(mesh, ff)
 
@@ -480,7 +569,23 @@ def ComputeNormalsAtIntegPoint(mesh, elementSets):
 
 
 def ComputeIntegrationPointsTags(mesh, dimension = None):
+    """
+    Returns a list of lists (of str) at each integration point (Lagrange
+    isoparametric finite elements). Each list contains all the tags of the
+    element of dimension "dimension" containg the considered integration points
 
+    Parameters
+    ----------
+    mesh : UnstructuredMesh
+        mesh on which the function is applied
+    elementSets : list if strings
+        sets of elements on which the function is computed
+
+    Returns
+    -------
+    list of lists (of str)
+        of length numberOfIntegrationPoints
+    """
 
     if dimension == None:
         dimension = mesh.GetDimensionality()
@@ -510,11 +615,28 @@ def ComputeIntegrationPointsTags(mesh, dimension = None):
 
 def CellDataToIntegrationPointsData(mesh, scalarFields, set = None, relativeDimension = 0):
     """
-    scalarFields is an np.ndarray of size (nbe of fields, number of dofs of the mesh)
-    or a dict with "nbe of fields" keys
-    set = None: takes all the elements of considered dimension
-    """
+    Change the representation of scalarFields from data constant by cell
+    (elements) to data at integration points. (Lagrange isoparametric finite
+    elements)
 
+    Parameters
+    ----------
+    mesh : UnstructuredMesh
+        mesh on which the function is applied
+    scalarFields : np.ndarray of size (nbe of fields, nbe of elements) or dict
+        with "nbe of fields" as keys and np.ndarray of size (nbe of elements,) as
+        values fields whose representation in changed by the function
+    set : elementSet defining the elements on which the function is
+        computed. If None, takes all the elements of considered dimension
+    relativeDimension : int (0, -1 or -2)
+        difference between the dimension of the elements on which the function
+        is computed and the dimensionality of the mesh
+
+    Returns
+    -------
+    np.ndarray
+        of size (nbe of fields, numberOfIntegrationPoints)
+    """
     dimension = mesh.GetDimensionality() + relativeDimension
 
     ff = Filters.ElementFilter(mesh)
@@ -554,6 +676,25 @@ def CellDataToIntegrationPointsData(mesh, scalarFields, set = None, relativeDime
 
 
 def IntegrationPointsToCellData(mesh, scalarFields):
+    """
+    Change the representation of scalarFields from data at integration points
+    to data constant by cell (elements) - taking the mean of values at the
+    integration points in each elements. (Lagrange isoparametric finite
+    elements)
+
+    Parameters
+    ----------
+    mesh : UnstructuredMesh
+        mesh on which the function is applied
+    scalarFields : np.ndarray of size (nbe of fields, nbe of elements) or dict
+        with "nbe of fields" as keys and np.ndarray of size (nbe of elements,) as
+        values fields whose representation in changed by the function
+
+    Returns
+    -------
+    np.ndarray
+        of size (nbe of elements,)
+    """
 
     if type(scalarFields) == dict:
         keymap = list(scalarFields.keys())
