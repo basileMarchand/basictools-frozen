@@ -149,7 +149,7 @@ def GetFieldTransferOp(inputField,targetPoints,method=None,verbose=False,element
     def GetElement(imesh,enb):
         for name,data in imesh.elements.items():
             if enb < data.GetNumberOfElements():
-                return originalmesh.elements[name], data.originalIds[enb]
+                return originalmesh.elements[name], data.originalIds[enb], data, enb
             else:
                 enb -= data.GetNumberOfElements()
 
@@ -176,13 +176,13 @@ def GetFieldTransferOp(inputField,targetPoints,method=None,verbose=False,element
         CP =  idsTP[p]          # closest point posicion
 
         ## we use the closest element (in the sens of cells center )
-        origial_data, lenb = GetElement(imesh,idsTPcenters[p])
+        origial_data, lenb, imesh_data, imesh_elnb = GetElement(imesh,idsTPcenters[p])
         ## construct the potentialElements list (all element touching the closest element)
         potentialElements = []
         #Element connected to the closest point
         potentialElements.extend(dualGraph[idsTP[p],0:nused[idsTP[p]]])
         #Elements connected to the closest element (bases on the element center)
-        for elempoint in  origial_data.connectivity[lenb,:]:
+        for elempoint in  imesh_data.connectivity[imesh_elnb,:]:
             potentialElements.extend(dualGraph[elempoint,0:nused[elempoint]])
         potentialElements = np.unique(potentialElements)
         # compute distance to elements
@@ -190,7 +190,7 @@ def GetFieldTransferOp(inputField,targetPoints,method=None,verbose=False,element
         # of the order to check the elements
         dist = np.empty(len(potentialElements))
         for cpt,e in enumerate(potentialElements):
-            data, lenb = GetElement(imesh,e)
+            data, lenb, imesh_data, imesh_elnb = GetElement(imesh,e)
             diff = centers[e,:]-TP
             dist[cpt] = diff.dot(diff)
 
@@ -201,7 +201,7 @@ def GetFieldTransferOp(inputField,targetPoints,method=None,verbose=False,element
         distmem = 1e10
 
         for cpt,e in enumerate(potentialElements):
-            origial_data, lenb = GetElement(imesh,e)
+            origial_data, lenb, imesh_data, imesh_elnb = GetElement(imesh,e)
             localnumbering = numbering[origial_data.elementType]
             localspace = space[origial_data.elementType]
 
