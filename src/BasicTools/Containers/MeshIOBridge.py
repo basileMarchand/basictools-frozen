@@ -116,7 +116,13 @@ def MeshIOToMesh(mesh, TagsAsFields=False):
         res.nodesTags.CreateTag(tagname).SetIds(tagdata)
 
     cpt = 0
-    for name, data in mesh.cells:
+    for  cellblock in mesh.cells:
+        if isinstance(cellblock, tuple):
+            name, data = cellblock
+        else:
+            name = cellblock.type
+            data = cellblock.data
+
         elems = res.GetElementsOfType( elementNameByMeshIOName[name] )
         elems.connectivity = data
         nbelems = data.shape[0]
