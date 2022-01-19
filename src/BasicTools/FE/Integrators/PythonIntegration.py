@@ -118,9 +118,7 @@ class MonoElementsIntegral(BOO):
         if tfs is none then the unkown fields are used (Galerkin projection)
         """
         if tfs is None:
-            tfs = []
-            for f in self.__ufs__:
-                tfs.append(FEField(name=f.name+testcharacter,mesh=f.mesh,space=f.space,numbering=f.numbering,data=f.data) )
+            tfs = [ uf.GetTestField() for uf in self.__ufs__ ]
 
         self.__tfs__ = tfs
 

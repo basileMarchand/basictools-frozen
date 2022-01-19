@@ -99,9 +99,7 @@ cdef class PyMonoElementsIntegralCpp():
         self.NativeIntegrator.SetTotalUnkownDofs(totalUnkownDofs)
     def SetTestFields(self,list tfs = None): #ok
         if tfs is None:
-            self.__tfs__  = []
-            for f in self.__ufs__:
-                self.__tfs__.append(FEField(name=f.name+testcharacter,mesh=f.mesh,space=f.space,numbering=f.numbering,data=f.data) )
+            self.__tfs__ = [ uf.GetTestField() for uf in self.__ufs__ ]
         else:
             self.__tfs__ = tfs
 

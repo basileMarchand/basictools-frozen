@@ -158,6 +158,8 @@ class IntegrationClass(BaseOutputObject):
         ----------
         unkownFields : list(FEField) list of fields
         """
+        if unkownFields is None:
+            unkownFields = []
         self.unkownFields = unkownFields
         self.integrator.SetUnkownFields(unkownFields)
 
@@ -298,9 +300,13 @@ class IntegrationClass(BaseOutputObject):
 
         """
         numberOfVIJ = self.integrator.ComputeNumberOfVIJ(self.mesh,self.elementFilter)
-        if numberOfVIJ == 0:
+        if numberOfVIJ == 0 and len(self.testFields)*len(self.unkownFields) > 0:
             print("Warning!!! System with zero dofs")
             raise Exception("Error!!! System with zero dofs")
+
+        # be sure to have valid pointer so we allocate at least one element
+        if numberOfVIJ==0:
+            numberOfVIJ = 1
 
         self.vK = np.zeros(numberOfVIJ,dtype=PBasicFloatType)
         self.iK = np.empty(numberOfVIJ,dtype=PBasicIndexType)
