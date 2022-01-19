@@ -12,6 +12,9 @@ import numpy as np
 testcharacter = "'"
 space = Matrix([Symbol('x'),Symbol('y'), Symbol('z')])
 
+def GetTestSufixChar():
+    return testcharacter
+
 def GetNormal(size):
     return GetField("Normal",size)
 
@@ -117,7 +120,7 @@ def Cross(a,b):
     if type(a).__module__ == np.__name__:
        return np.array(res)
     else :
-        return Matrix(res) 
+        return Matrix(res)
 
 def Strain(arg ,sdim=3):
     G = Gradient(arg,sdim)

@@ -112,6 +112,16 @@ class FEField(FieldBase):
             res.data = op(self.data,other)
         return res
 
+    def GetTestField(self):
+        from BasicTools.FE.SymWeakForm import  GetTestSufixChar
+        tc = GetTestSufixChar()
+        if len(self.name) == 0:
+            raise Exception("FEField must have a name")
+        elif self.name[-1] == tc:
+            raise Exception("this FEField is already a test field")
+        else:
+            return FEField(name=self.name+tc,mesh=self.mesh,space=self.space,numbering=self.numbering)
+
 def CheckIntegrity(GUI=False):
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateCube
     mesh = CreateCube([2.,3.,4.],[-1.0,-1.0,-1.0],[2./10, 2./10,2./10])
@@ -120,6 +130,7 @@ def CheckIntegrity(GUI=False):
     spaces,numberings,offset, NGauss = PrepareFEComputation(mesh,numberOfComponents=1)
 
     sig11 = FEField(name = "temp",mesh=mesh,space=spaces,numbering=numberings[0])
+    print(sig11.GetTestField())
     sig11.Allocate()
     print(sig11)
 
