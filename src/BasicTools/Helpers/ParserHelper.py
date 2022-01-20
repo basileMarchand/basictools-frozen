@@ -104,6 +104,9 @@ def ReadBool(string):
     if type(string) is bool:
         return bool(string)
 
+    if type(string) is not str:
+        return bool(string)
+
     string = ApplyGlobalDictionary(string)
 
     tmp = string.lstrip().rstrip().lower()
