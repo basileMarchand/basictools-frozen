@@ -870,6 +870,7 @@ class XdmfWriter(WriterBase):
              from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
              tempmesh = UnstructuredMesh()
              tempmesh.nodes = baseMeshObject.nodes
+             tempmesh.originalIDNodes = baseMeshObject.originalIDNodes
              for name,data in baseMeshObject.elements.items():
                  if data.mutable :
                      tempmesh.elements[name] =  data

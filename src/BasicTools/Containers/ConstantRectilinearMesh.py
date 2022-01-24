@@ -324,6 +324,8 @@ class ConstantRectilinearMesh(MeshBase):
               self.nodes = np.empty((self.GetNumberOfNodes(),2),dtype=PBasicFloatType)
               self.nodes[:,0] = xv.ravel()
               self.nodes[:,1] = yv.ravel()
+
+              self.originalIDNodes = np.arange(self.GetNumberOfNodes(),dtype=PBasicIndexType)
               return self.nodes
 
             z = np.arange(self.__dimensions[2])*self.__spacing[2]+self.__origin[2]
@@ -334,7 +336,6 @@ class ConstantRectilinearMesh(MeshBase):
             self.nodes[:,1] = yv.ravel()
             self.nodes[:,2] = zv.ravel()
 
-        if self.originalIDNodes is None:
             self.originalIDNodes = np.arange(self.GetNumberOfNodes(),dtype=PBasicIndexType)
 
         return self.nodes
