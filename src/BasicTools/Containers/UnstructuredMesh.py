@@ -337,6 +337,7 @@ class UnstructuredMesh(MeshBase):
         return True
 
     def ConvertDataForNativeTreatment(self):
+        self.originalIDNodes = np.asarray(self.originalIDNodes, dtype=PBasicIndexType, order="C")
         self.nodes = np.asarray(self.nodes, dtype=PBasicFloatType, order="C")
         for data in self.elements.values():
             data.connectivity = np.asarray(data.connectivity, dtype=PBasicIndexType, order="C")
