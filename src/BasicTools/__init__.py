@@ -28,7 +28,5 @@ def main():
     print(" Copyright (c) {}".format(__copyright__))
     print("")
 
-    import BasicTools.Helpers.Tests
-    BasicTools.Helpers.Tests.TestAll( \
-            extraToolsBoxs=["BasicTools"],
-            coverage={"active": False})
+    from BasicTools.Helpers.Tests import RunTests
+    RunTests()

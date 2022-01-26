@@ -402,8 +402,7 @@ def CheckIntegrity():
     TestTempDir().GetTempPath()
     return "Ok"
 
-if __name__ == '__main__':# pragma: no cover
-
+def RunTests():
     import sys, getopt
     if len(sys.argv) == 1:
         res = TestAll(modulestotreat=['ALL'],extraToolsBoxs= ["BasicTools"], fulloutput=False,coverage={"active":False})# pragma: no cover
@@ -498,6 +497,11 @@ if __name__ == '__main__':# pragma: no cover
     print("Percentage of OK test : " + str(((noks*100.0)/(noks+nerrors)) ) + " %")
     #print(errors)
     #print(len(errors))
+    return errors
+
+if __name__ == '__main__':# pragma: no cover
+    errors = RunTests()
+    import sys
     sys.exit(len(errors))
 
 
