@@ -8,13 +8,12 @@ stages:
     - debug
     - deploy
 
-
 doc:
     stage: doc
     tags:
         - MSBasicTools
     script:
-        - module load PISCO/Python3Dev
+        - module load PISCO/Python3.8Dev
         - export PYTHONPATH=$PWD/src:$PYTHONPATH
         - python setup.py build_sphinx
         - mkdir public
@@ -22,24 +21,24 @@ doc:
     artifacts:
         name: "Documentation"
         paths:
-          - public/doc
+            - public/doc
 
 build_Python3:
     stage: build
     tags:
         - MSBasicTools
     script:
-        - module load PISCO/Python3Dev
+        - module load PISCO/Python3.8Dev
         - export PYTHONPATH=$PWD/src:$PYTHONPATH
         - python setup.py generate
         - python setup.py build_clib
         - python setup.py build_ext --inplace
     artifacts:
         paths:
-          - src/BasicTools/FE/*/*36*.so*
-          - src/BasicTools/Linalg/*36*.so*
-          - src/libCppBasicTools.so
-
+            - src/BasicTools/Containers/*38*.so*
+            - src/BasicTools/FE/*/*38*.so*
+            - src/BasicTools/Linalg/*38*.so*
+            - src/libCppBasicTools.so
         expire_in: 600 minutes
 
 test_with_pytest_and_coverage:
@@ -47,7 +46,7 @@ test_with_pytest_and_coverage:
     tags:
         - MSBasicTools
     script:
-        - module load PISCO/Python3Dev
+        - module load PISCO/Python3.8Dev
         - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$PWD/src
         - export ABAQUS_NO_FAIL="True"
         - export ZSET_NO_FAIL="True"
@@ -65,7 +64,7 @@ test_with_coverage_Python3:
     tags:
         - MSBasicTools
     script:
-        - module load PISCO/Python3Dev
+        - module load PISCO/Python3.8Dev
         - export ZSET_NO_FAIL="True"
         - export CATALYST_NO_FAIL="True"
         - export PYTHONPATH=$PWD/src:$PYTHONPATH
@@ -85,7 +84,7 @@ test_full_output_stop_at_first_error_Python3:
     tags:
         - MSBasicTools
     script:
-        - module load PISCO/Python3Dev
+        - module load PISCO/Python3.8Dev
         - export ZSET_NO_FAIL="True"
         - export CATALYST_NO_FAIL="True"
         - export PYTHONPATH=$PWD/src:$PYTHONPATH
