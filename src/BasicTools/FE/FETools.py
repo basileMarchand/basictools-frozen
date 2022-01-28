@@ -277,9 +277,9 @@ def ComputeJdetAtIntegPoint(mesh, elementSets = None, relativeDimension = 0):
 
     if elementSets:
         assert type(elementSets) == list, "elementSets should be a list of elementSets"
-        for set in elementSets:
-            if set:
-                ff.AddTag(set)
+        for elementSet in elementSets:
+            if elementSet:
+                ff.AddTag(elementSet)
 
     spaces, numberings, offset, NGauss = PrepareFEComputation(mesh, ff)
 
@@ -332,9 +332,9 @@ def ComputePhiAtIntegPoint(mesh, elementSets = None, relativeDimension = 0):
 
     if elementSets:
         assert type(elementSets) == list, "elementSets should be a list of elementSets"
-        for set in elementSets:
-            if set:
-                ff.AddTag(set)
+        for elementSet in elementSets:
+            if elementSet:
+                ff.AddTag(elementSet)
 
     spaces, numberings, offset, NGauss = PrepareFEComputation(mesh, ff)
 
@@ -466,9 +466,9 @@ def ComputeGradPhiAtIntegPoint(mesh, elementSets = None, relativeDimension = 0):
 
     if elementSets:
         assert type(elementSets) == list, "elementSets should be a list of elementSets"
-        for set in elementSets:
-            if set:
-                ff.AddTag(set)
+        for elementSet in elementSets:
+            if elementSet:
+                ff.AddTag(elementSet)
 
 
     spaces, numberings, offset, NGauss = PrepareFEComputation(mesh, ff)
@@ -541,9 +541,9 @@ def ComputeNormalsAtIntegPoint(mesh, elementSets):
 
     if elementSets:
         assert type(elementSets) == list, "elementSets should be a list of elementSets"
-        for set in elementSets:
-            if set:
-                ff.AddTag(set)
+        for elementSet in elementSets:
+            if elementSet:
+                ff.AddTag(elementSet)
 
     spaces, numberings, offset, NGauss = PrepareFEComputation(mesh, ff)
 
@@ -613,7 +613,7 @@ def ComputeIntegrationPointsTags(mesh, dimension = None):
     return listOfTags
 
 
-def CellDataToIntegrationPointsData(mesh, scalarFields, set = None, relativeDimension = 0):
+def CellDataToIntegrationPointsData(mesh, scalarFields, elementSet = None, relativeDimension = 0):
     """
     Change the representation of scalarFields from data constant by cell
     (elements) to data at integration points. (Lagrange isoparametric finite
@@ -626,7 +626,7 @@ def CellDataToIntegrationPointsData(mesh, scalarFields, set = None, relativeDime
     scalarFields : np.ndarray of size (nbe of fields, nbe of elements) or dict
         with "nbe of fields" as keys and np.ndarray of size (nbe of elements,) as
         values fields whose representation in changed by the function
-    set : elementSet defining the elements on which the function is
+    elementSet : elementSet defining the elements on which the function is
         computed. If None, takes all the elements of considered dimension
     relativeDimension : int (0, -1 or -2)
         difference between the dimension of the elements on which the function
@@ -641,8 +641,8 @@ def CellDataToIntegrationPointsData(mesh, scalarFields, set = None, relativeDime
 
     ff = Filters.ElementFilter(mesh)
     ff.SetDimensionality(dimension)
-    if set != None:
-        ff.AddTag(set)
+    if elementSet != None:
+        ff.AddTag(elementSet)
 
     _, _, _, NGauss = PrepareFEComputation(mesh, ff, dimension)
 
