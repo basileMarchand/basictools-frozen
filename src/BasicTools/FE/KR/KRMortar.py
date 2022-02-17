@@ -27,7 +27,7 @@ class KRMortar(KRBaseVector):
 
         self.useSurface = "first_surface" # [ "mean_surface", "first_surface", "second_surface","flat"]
         self.onII =[]
-        self.ang = 30.  # tolerance angle
+        self.ang = 30/180.*np.pi  # tolerance angle
         self.originSystem.keepOrthogonal = True
         self.originSystem.keepNormalised = True
         self.targetSystem.keepOrthogonal = True
@@ -172,7 +172,9 @@ class KRMortar(KRBaseVector):
                             normal2 = TS.ApplyTransformDirection(_normal2)
                             # only for 1d and 2d elements
                             # check normal are aligned using the self.ang
-                            if  not (np.arccos(normal1.dot(normal2)) > (np.pi-self.ang*np.pi/360) ) :
+                            # the orientation is not important
+                            angle = np.arccos(normal1.dot(normal2))
+                            if abs(angle) > self.ang and abs(angle-np.pi) > self.ang:
                                 continue
 
                         # we have intersection of 2 elements
