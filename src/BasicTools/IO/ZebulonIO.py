@@ -431,7 +431,7 @@ def GetInputTimeSequence(data):
           if count > 0:
             dTimeSequence.append(float(t))
           count += 1
-      timeSequence.append(0)
+      timeSequence.append(0.)
       for i, dt in enumerate(dTimeSequence):
         timeSequence.append(timeSequence[i]+dt)
 
