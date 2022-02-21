@@ -257,7 +257,7 @@ class UtReader(ReaderBase):
                     count = nbUsednodes
                     ffn = basename + ".ctnod"
                 except:
-                    raise(Exception("unable to find field " +str(self.fieldNameToRead) + "in file " + self.fileName))
+                    raise(Exception("unable to find field " +str(self.fieldNameToRead) + " in file " + self.fileName))
 
             self.PrintVerbose("Opening file : " + str(ffn) )
             res = None
