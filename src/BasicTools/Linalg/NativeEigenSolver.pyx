@@ -18,7 +18,7 @@ cdef extern from "LinAlg/EigenSolvers.h"  namespace "BasicTools"  :
     cdef cppclass EigenSolvers:
         EigenSolvers() except +
         void SetSolverType(int)
-        void SetOp(int, int,int, CBasicFloatType*,CBasicIndexType*,CBasicIndexType*, const CBasicFloatType& ) nogil
+        void SetOp(CBasicIndexType, CBasicIndexType,CBasicIndexType, CBasicFloatType*,CBasicIndexType*,CBasicIndexType*, const CBasicFloatType& ) nogil
         void Solve(CBasicIndexType,CBasicFloatType*,CBasicFloatType*) nogil
         CBasicIndexType GetSPQRRank()
         void GetSPQR_R(CBasicIndexType*, CBasicIndexType*, CBasicFloatType*, CBasicIndexType*, CBasicIndexType*)
@@ -63,7 +63,7 @@ cdef class CEigenSolvers():
          self.SetOp_internal(self.m,self.n, data.data, drow, dcol)
 
 
-     def SetOp_internal(self,int m,int n,
+     def SetOp_internal(self,CBasicIndexType m,CBasicIndexType n,
                np.ndarray[CBasicFloatType, ndim=1, mode="c"] data,
                np.ndarray[CBasicIndexType, ndim=1, mode="c"] row,
                np.ndarray[CBasicIndexType, ndim=1, mode="c"] col):
