@@ -633,6 +633,9 @@ def GetProblemType(data):
     else:
         return "mechanical"
 
+def GetMeshFileName(data):
+    return GetFromInp(data,{'4':['calcul'], '3':['mesh']})[1][0][1]
+    
 
 def ReadBinaryFile(fileName):
     return np.fromfile(fileName, dtype=np.float32).byteswap()
@@ -694,7 +697,7 @@ def CheckIntegrity():
     print(GetDensity(T2.GetTestDataPath() + 'elas'))
     print(GetBehavior(T2.GetTestDataPath() + 'elas'))
     GetProblemType(res)
-
+    GetMeshFileName(res)
 
     res = ReadInp2(T2.GetTestDataPath() + 'mat', startingNstar=3)
     GetFromInp(res,{'3':['behavior', 'thermal'], '2':['conductivity', 'isotropic']})
