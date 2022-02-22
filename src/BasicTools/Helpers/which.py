@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 """Class to check if a executable is in the current path
 
 insperated from:
@@ -24,6 +24,14 @@ def which(program):
             exe_file = os.path.join(path, program)
             if is_exe(exe_file):
                 return exe_file
+            if os.name == "nt":# Windows
+                try:
+                    from win32api import FindExecutable, GetLongPathName
+                    _, executable = FindExecutable(program)
+                    if os.path.isfile(executable):
+                        return executable
+                except:
+                    pass
 
     return None
 
