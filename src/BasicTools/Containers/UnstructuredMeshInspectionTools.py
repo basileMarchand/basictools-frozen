@@ -258,6 +258,7 @@ def ExtractElementsByImplicitZone(inmesh,op,allNodes=True,cellCenter=False):
     outmesh.CopyProperties(inmesh)
 
     outmesh.nodes = np.copy(inmesh.nodes)
+    outmesh.originalIDNodes = np.arange(inmesh.GetNumberOfNodes())
 
     # keep only the faces with one or zero volumes attached
     for name,data in inmesh.elements.items():
@@ -276,9 +277,9 @@ def ExtractElementsByElementFilter(inmesh,ff):
     outmesh = type(inmesh)()
     outmesh.CopyProperties(inmesh)
 
-    outmesh.nodes = inmesh.nodes
+    outmesh.nodes = np.copy(inmesh.nodes)
     outmesh.originalIDNodes = np.arange(inmesh.GetNumberOfNodes())
-    outmesh.nodesTags = inmesh.nodesTags
+    outmesh.nodesTags = inmesh.nodesTags.Copy()
 
     ff.mesh = inmesh
     for name,data,ids in ff:

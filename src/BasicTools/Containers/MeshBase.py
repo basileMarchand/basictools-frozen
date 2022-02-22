@@ -110,6 +110,12 @@ class Tag(object):
         res  = str(self.name) + " " + str(self.cpt) + " "
         return res
 
+    def Copy(self):
+        res = Tag(self.name)
+        res._id = np.copy(self._id)
+        res.cpt = len(res._id)
+        return res
+
 class Tags(BaseOutputObject):
     def __init__(self):
         super(Tags,self).__init__()
@@ -201,6 +207,11 @@ class Tags(BaseOutputObject):
     def __str__(self):
         res = ''
         res  = str(list(self.keys()))
+        return res
+
+    def Copy (self):
+        res = Tags()
+        res.storage = [x.Copy() for x in self]
         return res
 
 class MeshBase(BaseOutputObject):
