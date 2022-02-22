@@ -7,20 +7,20 @@
 
 #include <LinAlg/EigenTypes.h>
 
-namespace BasicTools { 
+namespace BasicTools {
 
 
 class IntegrationRule {
 public:
     MatrixDDD p;
     MatrixDDD w;
-    inline int GetNumberOfPoints() const {
-        return this->p.rows();
+    inline CBasicIndexType GetNumberOfPoints() const {
+        return static_cast<CBasicIndexType>(this->p.rows());
     }
 };
 
 class SpaceIntegrationRule {
-public: 
+public:
     std::map<std::string,IntegrationRule> storage;
     const IntegrationRule& GetIR(const std::string& key ) const {
         return this->storage.at(key);
