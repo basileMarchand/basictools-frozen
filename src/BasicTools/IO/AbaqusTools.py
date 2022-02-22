@@ -23,6 +23,11 @@ InpNameToBasicTools["C3D20"] = EN.Hexaedron_20
 InpNameToBasicTools["C3D6"] = EN.Wedge_6
 InpNameToBasicTools["T3D2"] = EN.Bar_2
 InpNameToBasicTools["CPS3"] = EN.Triangle_3
+InpNameToBasicTools["STRI3"] = EN.Triangle_3
+InpNameToBasicTools["CPS3"] = EN.Triangle_3
+InpNameToBasicTools["CPS4"] = EN.Quadrangle_4
+InpNameToBasicTools["CPS6"] = EN.Triangle_6
+InpNameToBasicTools["CPS8"] = EN.Quadrangle_8
 
 
 permutation = {}
