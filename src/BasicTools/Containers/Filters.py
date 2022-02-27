@@ -19,7 +19,7 @@ class Filter(BOO):
     :param List(str) tags: the list of tag names to treat
     :param str tag: a tag name to add to the list
     """
-    def __init__(self,mesh = None, zones = None, tags = None, zone = None, tag = None):
+    def __init__(self,mesh = None, zones = None, tags = None, zone = None, tag = None, mask= None):
         super(Filter,self).__init__()
 
         self.tags = list()
@@ -33,6 +33,10 @@ class Filter(BOO):
             self.SetZones(zones)
         if zone is not None:
             self.AddZone(zone)
+
+        self.mask = None
+        if mask is not None:
+            self.mask = mask
 
         self.mesh = mesh
 
@@ -107,6 +111,10 @@ class Filter(BOO):
                 res[tags[tag].GetIds()] = True
         return np.nonzero(res)[0]
 
+    def _CheckMask_(self,start,size):
+        if self.mask is not None:
+            return np.where(self.mask[start:size])[0]
+        return None
 
     def intersect1D(self,first,second):
         """
@@ -205,8 +213,10 @@ class NodeFilter(Filter):
 
         res  = self._CheckTags_(self.mesh.nodesTags,self.mesh.GetNumberOfNodes())
         res2 = self._CheckZones_(self.mesh.nodes,self.mesh.GetNumberOfNodes() )
+        resM = self._CheckMask_(0,self.mesh.GetNumberOfNodes())
         res3 = self.intersect1D(res,res2)
         res3 = self.intersect1D(res3,resE)
+        res3 = self.intersect1D(res3,resM)
         if res3 is None:
             return range(self.mesh.GetNumberOfNodes())
         else:
@@ -641,6 +651,15 @@ class ElementFilter(Filter):
         res2 = self._CheckZones_(elements)
         self.zonesField = res2
         res3 = self.intersect1D(res,res2)
+        init = 0
+        for name, data in self.mesh.elements.items():
+            if name == elements.elementType:
+                break
+            init +=  elements.GetNumberOfElements()
+
+        resM = self._CheckMask_(init,elements.GetNumberOfElements())
+        res3 = self.intersect1D(res3,resM)
+
         if res3 is None:
             return range(elements.GetNumberOfElements())
         else:
@@ -928,6 +947,19 @@ def CheckIntegrity( GUI=False):
         cpt += len(ids)
 
     print("Number of Element in tag X0 {}".format(cpt))
+
+    mask = np.zeros(mesh.GetNumberOfElements(),dtype=bool)
+    mask[0] = True
+    ff = ElementFilter(mesh,mask=mask)
+    for n,d,ids in ff:
+        print(n,ids)
+        if n != EN.Tetrahedron_4 or len(ids) != 1 :
+            raise
+        if ids[0] != 0:
+            raise
+
+    ff = ElementFilter(mesh, zone = lambda p: (p[:,2]-mesh.boundingMin[2]-0.001),zones=[])
+
 
     ff = ElementFilter(mesh, zone = lambda p: (p[:,2]-mesh.boundingMin[2]-0.001),zones=[])
     for name,data,ids in ff:
