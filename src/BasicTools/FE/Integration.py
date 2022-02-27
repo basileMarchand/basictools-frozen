@@ -300,7 +300,7 @@ class IntegrationClass(BaseOutputObject):
 
         """
         numberOfVIJ = self.integrator.ComputeNumberOfVIJ(self.mesh,self.elementFilter)
-        if numberOfVIJ == 0 and len(self.testFields)*len(self.unkownFields) > 0:
+        if numberOfVIJ == 0 and ( self.testFields is not None and len(self.testFields)*len(self.unkownFields) ) > 0:
             print("Warning!!! System with zero dofs")
             raise Exception("Error!!! System with zero dofs")
 
