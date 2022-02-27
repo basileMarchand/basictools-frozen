@@ -23,8 +23,12 @@ def GetNumberOfAvailableCpus():
             os.environ['SLURM_JOB_CPU_PER_NODE'] = str(res)
             return res
         except:
-            import multiprocessing
-            res = multiprocessing.cpu_count()
+            try :
+                import psutil
+                res = psutil.cpu_count(logical=False)
+            except:
+                import multiprocessing
+                res = multiprocessing.cpu_count()
             os.environ['SLURM_JOB_CPU_PER_NODE'] = str(res)
             return res
     return  PH.ReadInt(SLURM_JOB_CPU_PER_NODE)
