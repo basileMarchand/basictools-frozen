@@ -317,10 +317,10 @@ class MeshBase(BaseOutputObject):
         """
         function to generate a valid originalid data
         """
-        self.originalIDNodes = np.arange(self.GetNumberOfNodes())
+        self.originalIDNodes = np.arange(self.GetNumberOfNodes(),dtype=PBasicIndexType)
         counter = 0
         for key, value in self.elements.items():
-           value.originalIds = np.arange(counter,counter+value.GetNumberOfElements())
+           value.originalIds = np.arange(counter,counter+value.GetNumberOfElements(),dtype=PBasicIndexType)
            counter += value.GetNumberOfElements()
 
 

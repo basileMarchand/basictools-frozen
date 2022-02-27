@@ -18,7 +18,7 @@ from BasicTools.IO.MeshTools import BinaryKeywords as BKeys
 from BasicTools.IO.MeshTools import BinaryTags
 from BasicTools.IO.MeshTools import BinaryFields
 import BasicTools.IO.MeshTools as MT
-from BasicTools.NumpyDefs import PBasicIndexType
+from BasicTools.NumpyDefs import PBasicIndexType, PBasicFloatType
 
 def ReadMesh(fileName=None,string=None,ReadRefsAsField=False ):
     reader = MeshReader()
@@ -369,7 +369,7 @@ class MeshReader(ReaderBase):
 
               self.PrintVerbose("Reading " + str(nbNodes) + " nodes ")
 
-              res.nodes = np.empty((nbNodes,dimension),dtype=dataType)
+              res.nodes = np.empty((nbNodes,dimension),dtype=PBasicFloatType)
               res.originalIDNodes= np.empty((nbNodes,),dtype=PBasicIndexType)
               dt =  np.dtype([('pos', dataType,(dimension,) ), ('ref', np.int32, (1,))])
 
@@ -377,7 +377,7 @@ class MeshReader(ReaderBase):
               data = np.fromfile(self.filePointer,dtype=dt,count=nbNodes, sep="")
 
               res.nodes[:,:] = data[:]["pos"]
-              res.originalIDNodes[:] = np.arange(nbNodes)
+              res.originalIDNodes[:] = np.arange(nbNodes,dtype=PBasicIndexType)
 
               refs = data[:]["ref"]
               if self.refsAsAField:
@@ -481,6 +481,7 @@ class MeshReader(ReaderBase):
          res.elemFields['refs'] = elemRefs
 
       self.EndReading()
+      res.ConvertDataForNativeTreatment()
       return res
 
 
