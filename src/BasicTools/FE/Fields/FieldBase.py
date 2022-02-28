@@ -40,6 +40,9 @@ class FieldBase(BaseOutputObject):
     def SetName(self,name):
         self.name = name
 
+    def ConvertDataForNativeTreatment(self):
+        self.data =  self.unaryOp(np.ascontiguousarray).data
+
     def __neg__(self):
         return self.unaryOp(np.negative)
 
