@@ -12,12 +12,12 @@ paraviewExec= "paraview"
 def OpenInParaView( mesh=None,filename=None, run=True, wait=0):
     from subprocess import Popen
     from BasicTools.Helpers.which import which
-
-    if which(paraviewExec) is None:
+    ef = which(paraviewExec)
+    if ef is None:
         print("App " + str( paraviewExec) + " Not Found" )
 
     if filename is None and mesh is None and run:
-        Popen([paraviewExec])
+        Popen([ef])
         return
 
     if filename is None:
@@ -38,7 +38,7 @@ def OpenInParaView( mesh=None,filename=None, run=True, wait=0):
         WriteMeshToXdmf(filename,mesh,PointFieldsNames=PointFieldsNames,PointFields=PointFields,CellFieldsNames=CellFieldsNames,CellFields=CellFields  )
 
     if run:# pragma: no cover
-         pross = Popen([paraviewExec,filename])
+         pross = Popen([ef,filename])
          if wait:
              pross.wait(wait)
 
