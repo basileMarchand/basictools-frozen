@@ -18,6 +18,13 @@ class Physics(BOO):
         self.linearWeakFormulations = []
         self.numberings = None
         self.spaceDimension = 3
+        self.extraRHSTerms = []
+
+    def AddToRHSTerm(self, nf, val):
+        """ nf  : a NodalFilter
+            val : a vector of size len(self.spaces)
+        """
+        self.extraRHSTerms.append((nf,val))
 
     def Reset(self):
         self.numberings = None

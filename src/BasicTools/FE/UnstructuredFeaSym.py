@@ -4,7 +4,7 @@
 # file 'LICENSE.txt', which is part of this source code package.
 #
 
-
+import numpy as np
 from BasicTools.FE.FeaBase import FeaBase
 from BasicTools.Containers.Filters import ElementFilter
 
@@ -110,43 +110,63 @@ class UnstructuredFeaSym(FeaBase):
 
             return (lhsRes,rhsRes)
 
+        for phy in self.physics:
+            for nf,data in phy.extraRHSTerms:
+                nf.SetMesh(self.mesh)
+                nids = nf.GetIdsToTreat()
+                size = 0
+                offset = []
+                for n in phy.numberings:
+                    offset.append(size)
+                    size += n.size
+
+                for i,val in enumerate(data):
+                    inumbering = phy.numberings[i]
+                    if val == 0 :
+                        continue
+                    if rhsRes is None:
+                        rhsRes = np.zeros(size,float)
+                    for nid in nids:
+                        dof = inumbering.GetDofOfPoint(nid)+offset[i]
+                        rhsRes[dof] += val
+
         if (computeF):
-          self.PrintDebug("In Integration F")
-          for phy in self.physics:
-              linearWeakFormulations = phy.linearWeakFormulations
+            self.PrintDebug("In Integration F")
+            for phy in self.physics:
+                linearWeakFormulations = phy.linearWeakFormulations
 
-              for ff,form in linearWeakFormulations:
-                if form is None:
-                    continue
-                self.PrintDebug("integration of f "+ str(ff) )
-                _,f = IntegrateGeneral(mesh=self.mesh,wform=form,  constants=self.constants, fields=list(self.fields.values()),unkownFields= self.unkownFields,
-                                integrationRuleName=phy.integrationRule,elementFilter=ff)
-                if rhsRes is None:
-                    rhsRes = f
-                else:
-                    rhsRes += f
-
-        if (computeK):
-          self.PrintDebug("In Integration K")
-          for phy in self.physics:
-              bilinearWeakFormulations = phy.bilinearWeakFormulations
-
-              for ff,form in bilinearWeakFormulations:
-                if form is None:
-                    continue
-                self.PrintDebug("Integration of bilinear formulation on : " + str(ff))
-                k,f = IntegrateGeneral(mesh=self.mesh,wform=form,  constants=self.constants, fields=list(self.fields.values()), unkownFields= self.unkownFields,
-                                integrationRuleName=phy.integrationRule,elementFilter=ff)
-                if not (f is None):
+                for ff,form in linearWeakFormulations:
+                    if form is None:
+                        continue
+                    self.PrintDebug("integration of f "+ str(ff) )
+                    _,f = IntegrateGeneral(mesh=self.mesh,wform=form,  constants=self.constants, fields=list(self.fields.values()),unkownFields= self.unkownFields,
+                                    integrationRuleName=phy.integrationRule,elementFilter=ff)
                     if rhsRes is None:
                         rhsRes = f
                     else:
                         rhsRes += f
 
-                if lhsRes is None:
-                    lhsRes = k
-                else:
-                    lhsRes += k
+        if (computeK):
+            self.PrintDebug("In Integration K")
+            for phy in self.physics:
+                bilinearWeakFormulations = phy.bilinearWeakFormulations
+
+                for ff,form in bilinearWeakFormulations:
+                    if form is None:
+                        continue
+                    self.PrintDebug("Integration of bilinear formulation on : " + str(ff))
+                    k,f = IntegrateGeneral(mesh=self.mesh,wform=form,  constants=self.constants, fields=list(self.fields.values()), unkownFields= self.unkownFields,
+                                    integrationRuleName=phy.integrationRule,elementFilter=ff)
+                    if not (f is None):
+                        if rhsRes is None:
+                            rhsRes = f
+                        else:
+                            rhsRes += f
+
+                    if lhsRes is None:
+                        lhsRes = k
+                    else:
+                        lhsRes += k
 
         return (lhsRes,rhsRes)
 
