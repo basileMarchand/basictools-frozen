@@ -131,10 +131,12 @@ class UtReader(ReaderBase):
         self.time = np.array(self.time)
         self.EndReading()
 
+
     def ReadMetaData(self):
-        if self.meshMetadata is not None : return self.meshMetadata
 
         self.ReadUTMetaData()
+
+        if self.meshMetadata is not None : return self.meshMetadata
 
         if self.meshfile[-5:] == ".geof":
             from BasicTools.IO.GeofReader import GeofReader
@@ -148,6 +150,14 @@ class UtReader(ReaderBase):
         else:
             GR.SetFileName(self.filePath +self.meshfile )
         self.meshMetadata = GR.ReadMetaData()
+        return self.meshMetadata
+
+
+    def SetMeshMetaData(self, meshMetadata):
+        """
+        To prevent reading the mesh file again in case multiple ut files are related to the same mesh file
+        """
+        self.meshMetadata = meshMetadata
 
 
     def Read(self):
