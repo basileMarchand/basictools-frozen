@@ -11,7 +11,6 @@ from BasicTools.Containers.Filters import ElementFilter
 from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
 from BasicTools.Containers.UnstructuredMeshCreationTools import QuadToLin
 from BasicTools.Containers.UnstructuredMeshInspectionTools import ExtractElementsByElementFilter
-from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
 from BasicTools.Linalg.Transform import Transform
 from BasicTools.NumpyDefs import PBasicFloatType
 
@@ -68,6 +67,8 @@ def GetFieldTransferOp(inputField,targetPoints,method=None,verbose=False,element
 
     from scipy.spatial import cKDTree
     from scipy.sparse import coo_matrix
+    from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
+
 
     if method is None:
         method = possibleMethods[0]
