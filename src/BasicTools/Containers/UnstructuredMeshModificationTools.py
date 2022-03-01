@@ -115,22 +115,19 @@ def CleanLonelyNodes(res,out=None):
 
     cpt = 0
     NewIndex =  np.zeros(res.GetNumberOfNodes(),dtype=PBasicIndexType )-1
-    originalIDNodes = np.zeros(res.GetNumberOfNodes(),dtype=PBasicIndexType)
     for n in range(res.GetNumberOfNodes()):
         if usedNodes[n]:
             NewIndex[n] = cpt
-            originalIDNodes[cpt] = n
             cpt += 1
-
+    originalIDNodes = np.where(usedNodes)[0]
     #filter the nodes
     #inplace
     if out is None:
         res.nodes = res.nodes[usedNodes ,:]
-        res.originalIDNodes = np.where(usedNodes)[0]
+        res.originalIDNodes = originalIDNodes
         newTags = Tags()
         #node tags
         for tag in res.nodesTags :
-            tag.SetIds(NewIndex[np.extract(usedNodes[tag.GetIds()],tag.GetIds() )])
             newTags.CreateTag(tag.name).SetIds(NewIndex[np.extract(usedNodes[tag.GetIds()],tag.GetIds() )])
         res.nodesTags = newTags
 
@@ -141,7 +138,7 @@ def CleanLonelyNodes(res,out=None):
 
     else:
         out.nodes = res.nodes[usedNodes ,:]
-        out.originalIDNodes = np.where(usedNodes)[0]
+        out.originalIDNodes = originalIDNodes
         #node tags
         for tag in res.nodesTags :
             outtag = out.nodesTags.CreateTag(tag.name)
@@ -153,6 +150,9 @@ def CleanLonelyNodes(res,out=None):
             outelements.connectivity = NewIndex[elements.connectivity]
 
             outelements.tags = copy.deepcopy(elements.tags)
+
+    for name,data in res.nodeFields.items():
+        res.nodeFields[name] = res.nodeFields[name][usedNodes]
 
     return usedNodes
 
