@@ -18,6 +18,7 @@ def Create(name,ops=None):
 
 class ImplicitGeometryFactory(Factory):
     _Catalog = {}
+    _SetCatalog = set()
 
     def __init(self):
         super(ImplicitGeometryFactory,self).__init__()
