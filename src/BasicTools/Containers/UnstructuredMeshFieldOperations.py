@@ -264,6 +264,9 @@ def GetFieldTransferOp(inputField,targetPoints,method=None,verbose=False,element
         dat = sF
         AddToOutput(l,col,row,dat,cood)
 
+    if verbose:
+        printProgressBar(nbtp, nbtp, prefix = 'Building Transfer '+method+':', suffix = 'Complete', length = 50)
+
     return coo_matrix((cood[2][0:cood[3]], (cood[1][0:cood[3]], cood[0][0:cood[3]])), shape=(nbtp , inputField.numbering["size"])), status
 
 def ComputeInterpolationExtrapolationsBarycentricCoordinates(TP,elementType,coordAtDofs,posspace):
