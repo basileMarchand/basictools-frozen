@@ -21,9 +21,12 @@ from BasicTools import __version__ as BasicTools__version__
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-sys.path.insert(0, os.path.abspath('../..'))
+#sys.path.insert(0, os.path.abspath('../..'))
+
 
 # -- General configuration -----------------------------------------------------
+# Numbered figures in your Sphinx documents and refer to them by number
+# numfig = True
 
 # If your documentation needs a minimal Sphinx version, state it here.
 #needs_sphinx = '1.0'
@@ -37,7 +40,7 @@ extensions = [
         'sphinx.ext.viewcode',
         'sphinx.ext.mathjax',
         'sphinx.ext.todo',
-
+        'sphinx_rtd_theme',
         ]
 
 todo_include_todos=True
@@ -107,7 +110,8 @@ modindex_common_prefix = ['BasicTools.']
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'default'
+#html_theme = 'default'
+html_theme = 'sphinx_rtd_theme'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -288,11 +292,11 @@ def setup(app):
 # Additional stuff for the LaTeX preamble.
 
 
-mathjax_config = {                  
-    "TeX": {                        
-        "Macros": {                 
+mathjax3_config = {
+    "tex": {
+        "macros": {
             "RR": '{\\bf R}',
-			
+
 			 "KFE": r'{\mathbf{K}}',
              "UFE": r'{\mathbf{u}}',
              "FFE": r'{\mathbf{f}}',
@@ -307,8 +311,8 @@ mathjax_config = {
 
              "XFE": r'{\mathbf{X}}',
              "DFE": r'{\mathbf{d}}',
-            "bold": ['{\\bf #1}',1] 
-            }                       
-        }                           
-    }   
-	
+             "bold": ['{\\bf #1}',1]
+            }
+        }
+    }
+

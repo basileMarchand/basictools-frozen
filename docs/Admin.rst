@@ -38,6 +38,7 @@ Optionals Python packages (some functionalities may not be available):
 * h5py
 * meshio
 * sphinx
+* sphinx-rtd-theme
 * pytest
 * pytest-cov
 * setuptools
@@ -75,7 +76,7 @@ Then inside the repository folder the user must compile the c++ extensions to ta
     > python setup.py build_ext --inplace
 
 Then the user is responsible to add the ``BASICTOOLS_REPOSITORY/src/`` folder to the ``PYTHONPATH`` environment variables (more information on [#pythonpathdoc]_).
-In the case you whant to use the compiled tools (using the --inplace option) you must add to the LD_LIBRARY_PATH the ``BASICTOOLS_REPOSITORY/src/`` folder.
+In the case you want to use the compiled tools (using the --inplace option) you must add to the LD_LIBRARY_PATH the ``BASICTOOLS_REPOSITORY/src/`` folder.
 
 Or using pip for development:
 
@@ -96,7 +97,7 @@ To contribute to BasicTools
 ###########################
 
 To contribute to BasicTools you can fill a bug report on either of the gitlab with a *minimal non working example*.
-This makes the debuging in ours side easier.
+This makes the debugging in ours side easier.
 
 If you want to contribute with code you must.
 
