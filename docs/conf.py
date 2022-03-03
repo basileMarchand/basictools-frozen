@@ -26,7 +26,7 @@ from BasicTools import __version__ as BasicTools__version__
 
 # -- General configuration -----------------------------------------------------
 # Numbered figures in your Sphinx documents and refer to them by number
-# numfig = True
+numfig = True
 
 # If your documentation needs a minimal Sphinx version, state it here.
 #needs_sphinx = '1.0'

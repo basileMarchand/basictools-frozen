@@ -13,7 +13,7 @@ Some deep learning workflow applied to physics contexts require the projection o
    :figclass: align-center
    :name: _figPrePost_img1
 
-   Example pf deep learning pre/post
+   Example of deep learning pre/post
 
 The mesh and solution associated to a previously computed flow field is read (see also :numref:`_figPrePost_img1`, top-left image):
 
