@@ -1,0 +1,27 @@
+name: BasicTools3.8
+channels:
+    - piscodevteam
+    - conda-forge
+    - nodefaults
+dependencies:
+    - python=3.8
+    - pyamg
+    - numpy
+    - cython
+    - eigency
+    - mkl-include
+    - setuptools-scm
+    - eigen
+    - sympy
+    - psutil
+    - pyparsing
+    - numpy
+    - scipy
+    - mkl
+    - scikit-learn
+    - vtk
+    - meshio
+    - h5py
+#    - pyvista [not py==36]
+#    - scikit-sparse [not win]
+    - compilers

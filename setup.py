@@ -8,6 +8,7 @@
 import os, sys
 from setuptools.command.build_ext import build_ext
 from setuptools.command.build_clib import build_clib
+from setuptools.command.install import install
 from setuptools import setup, Extension, Command
 from distutils.command.build import build
 import configparser
@@ -159,7 +160,7 @@ class my_build_clib(build_clib):
 
     def build_libraries(self,libraries):
         define_macros = []
-        if enable_MKL or True:
+        if enable_MKL:
             define_macros.append(("MKL_DIRECT_CALL",None))
             define_macros.append(("EIGEN_USE_MKL_VML",None))
 
@@ -175,10 +176,15 @@ class my_build_clib(build_clib):
 
         build_clib.build_libraries(self,libraries)
 
+class my_install(install):
+    def run(self):
+        self.run_command('generate')
+        install.run(self)
+
 if __name__ == '__main__':
     setup(
         ext_modules=modules,
         libraries=ext_libraries,
-        cmdclass={'build': build,'build_ext':my_build_ext,'build_clib': my_build_clib,'generate': GenerateCommand},
+        cmdclass={'install':my_install, 'build': build,'build_ext':my_build_ext,'build_clib': my_build_clib,'generate': GenerateCommand},
         data_files=[("ParaViewPlugins",["extras/BasicToolsParaViewBridge.py"])]
 )
