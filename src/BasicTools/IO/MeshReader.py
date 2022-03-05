@@ -645,7 +645,9 @@ class MeshReader(ReaderBase):
 class MeshSolutionReaderWrapper():
     def __init__(self):
        super(MeshSolutionReaderWrapper,self).__init__()
+       import locale
        self.canHandleTemporal = False
+       self.encoding = locale.getpreferredencoding(False)
 
     def SetFileName(self,fileName):
         import os.path
@@ -671,6 +673,7 @@ class MeshSolutionReaderWrapper():
         if not os.path.isfile(f):
             raise Exception("unable to find a mesh file")
         self.reader = MeshReader()
+        self.reader.encoding = self.encoding
         self.reader.SetFileName(fileName=f)
 
     def Read(self,out=None):
