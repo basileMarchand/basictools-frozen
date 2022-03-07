@@ -31,7 +31,7 @@ problem.solver.constraints.AddConstraint(dirichlet)
 
 # Read The mesh
 from BasicTools.IO.GmshReader import ReadGmsh
-mesh = ReadGmsh("TwoInclussions.msh")
+mesh = ReadGmsh("TwoInclusions.msh")
 mesh.ConvertDataForNativeTreatment()
 print(mesh)
 
@@ -99,7 +99,7 @@ problem.mesh.elemFields["Energy"] = energyDensity
 import numpy as np
 print("Strain energy on the second inclusion:", np.sum(energyDensity) )
 from BasicTools.IO import XdmfWriter as XW
-writer = XW.XdmfWriter('TwoInclussions_Output.xdmf')
+writer = XW.XdmfWriter('TwoInclusions_Output.xdmf')
 writer.SetHdf5(False)
 writer.Open()
 writer.Write(mesh,PointFields=list(mesh.nodeFields.values()), PointFieldsNames=list(mesh.nodeFields.keys()),
