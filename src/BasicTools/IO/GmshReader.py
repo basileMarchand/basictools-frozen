@@ -183,7 +183,7 @@ class GmshReader(ReaderBase):
             for name,data in res.elements.items():
                 if EN.dimension[name] != dim :
                     continue
-                print("changing tag form '" + str("PhyTag"+number) + "' to '" + str(newName)+"'")
+                self.PrintVerbose("changing tag form '" + str("PhyTag"+number) + "' to '" + str(newName)+"'")
                 data.tags.RenameTag("PhyTag"+number,newName,noError=True)
 
         self.EndReading()
