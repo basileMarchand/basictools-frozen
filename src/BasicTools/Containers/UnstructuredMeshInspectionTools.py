@@ -12,6 +12,7 @@ from BasicTools.FE.Fields.FEField import FEField
 
 from BasicTools.NumpyDefs import PBasicIndexType, PBasicFloatType, ArrayLike
 import BasicTools.Containers.ElementNames as ElementNames
+import BasicTools.Containers.Filters as Filters
 from BasicTools.Containers.UnstructuredMesh import ElementsContainer, UnstructuredMesh
 from BasicTools.Containers.UnstructuredMeshModificationTools import CleanLonelyNodes
 from BasicTools.NumpyDefs import PBasicIndexType
@@ -263,28 +264,35 @@ def GetMeasure(inmesh: UnstructuredMesh, elementFilter:Optional[ElementFilter] =
     _,f  = IntegrateGeneral( mesh=inmesh, wform=wform, constants={}, fields=[F], unkownFields=unkownFields, elementFilter=elementFilter)
     return f[0]
 
-def GetVolume(inmesh: UnstructuredMesh) -> PBasicFloatType:
-    """Compute the volume of the mesh
-    Only element of the bigger dimensionality are taken into account
-    if no elements on mesh we return zero.
+def GetElementGraph(inmesh, maxNumConnections = 200):
+    '''Generates the graph connecting elements through faces (in 3D) or edges (in 2D)
+    for use in graph partitionners. Also provides the array of cells used.'''
 
-    for a more general function see: GetMeasure
+    meshGraph, dump = GetDualGraphNodeToElement(inmesh) # build node connectivity table first
+    elemGraph = np.zeros((inmesh.GetNumberOfElements(), maxNumConnections), dtype = PBasicIndexType) - 1
+    usedCells = np.zeros(inmesh.GetNumberOfElements(), dtype = PBasicIndexType)
+    maxDim = max([ElementNames.dimension[groupName] for groupName, elemGroup in inmesh.elements.items()]) # check largest dimensionality
 
-    Parameters
-    ----------
-    inmesh : UnstructuredMesh
-        the mesh to use for the computation
-
-    Returns
-    -------
-    PBasicFloatType
-        the volume if the mesh contains 3D elements
-        the surface if the mesh contains 2D elements and no 3D elements
-        the length if the mesh contains 1D elements and no 3D elements nor 2D elements
-
-
-    """
-    return GetMeasure(inmesh)
+    for groupName, elemGroup, ids in Filters.ElementFilter(inmesh,dimensionality=maxDim): # for each element group of largest dimensionality
+        neighboringElems = np.zeros((elemGroup.connectivity.shape[1], meshGraph.shape[1]), dtype = PBasicIndexType)
+        nbNodesPerFace = []
+        for face in ElementNames.faces[groupName]: # evaluate face connectivity
+            nbNodesPerFace.append(len(face[1]))
+        for element in ids: # for each element in the filtered groups
+            elementNodes = elemGroup.connectivity[element,:]
+            neighboringElems.fill(0)
+            for j, node in enumerate(elementNodes):
+                neighboringElems[j] = meshGraph[node]
+            unique, counts = np.unique(neighboringElems, return_counts=True) # count how many time each other element is connected to a node
+            yindex = 0
+            for j in range(len(unique)):
+                if counts[j] in nbNodesPerFace: # if nb of connections correspond to face connectivity, add it to graph
+                    elemGraph[element,yindex] = unique[j]
+                    usedCells[element] += 1
+                    yindex += 1
+    maxsize = np.max(np.sum(elemGraph>=0,axis=1)) # crop output data
+    elemGraph = elemGraph[:,0:maxsize]
+    return elemGraph, usedCells
 
 def GetDualGraphNodeToElement(inmesh, maxNumConnections=200):
     # generation of the dual graph
@@ -859,6 +867,14 @@ def CheckIntegrity_GetDualGraph(GUI=False):
 
     res = CreateMeshOfTriangles([[0,0,0],[1,0,0],[0,1,0],[0,0,1] ], [[0,1,2],[0,2,3]])
     dg, unUsed = GetDualGraph(res)
+
+    return "ok"
+
+def CheckIntegrity_GetElementGraph(GUI=False):
+    from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshOfTriangles
+
+    res = CreateMeshOfTriangles([[0,0,0],[1,0,0],[0,1,0],[0,0,1] ], [[0,1,2],[0,2,3]])
+    dg, nused = GetElementGraph(res)
 
     return "ok"
 
