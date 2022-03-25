@@ -13,7 +13,8 @@ Installation
 Requirements
 ************
 
-Python minimal version: 3.6
+Python minimal version: 3.7
+
 
 Python packages:
 
@@ -22,11 +23,13 @@ Python packages:
 * sympy
 * pyparsing
 * cython
-* eigen
-* vtk
 * scikit-learn
 * scikit-sparse
-* eigency
+* vtk
+* eigency=1.78
+* mkl
+* mkl-include
+* psutil
 
 C++ packages:
 
@@ -39,10 +42,9 @@ Optionals Python packages (some functionalities may not be available):
 * meshio
 * sphinx
 * sphinx-rtd-theme
-* pytest
-* pytest-cov
-* setuptools
+* setuptools-scm
 * pyvista
+
 
 Optionals Proprietary packages (some functionalities may not be available):
 

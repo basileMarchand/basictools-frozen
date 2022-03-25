@@ -5,20 +5,24 @@
     PYTHON OPEN-SOURCE DEPENDENCIES
     numpy
     scipy
-    scikit-sparse
-    matplotlib
-    vtk
     sympy
+    pyparsing
+    cython
+    scikit-learn
+    scikit-sparse
+    vtk
+    eigency=1.78
+    mkl
+    mkl-include
+    psutil
     pyamg
     h5py
-    pyparsing
-    Cython
+    meshio
     sphinx
-    pytest
-    pytest-cov
-    setuptools
-    eigency
+    sphinx-rtd-theme
+    setuptools-scm
     pyvista
+
 
     C++ OPEN-SOURCE DEPENDENCIES
     Eigen (http://eigen.tuxfamily.org)
