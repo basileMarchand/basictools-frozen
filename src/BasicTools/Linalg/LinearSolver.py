@@ -137,7 +137,7 @@ class LinearProblem(BOO):
         rhs = rhs.squeeze()
         u0 = u0.squeeze()
 
-        self.PrintDebug('In LinearProblem Solve')
+        self.PrintDebug('In LinearProblem Solve ' + self.type)
         if self.type in ["Direct", "cholesky"]:
             self.u = self.solver(rhs)
         elif self.type == "AMG":
@@ -177,7 +177,7 @@ class LinearProblem(BOO):
             raise(Exception("Error solving system"))
 
 
-        self.PrintDebug("Done Linear solver")
+        self.PrintDebug("Done Linear solver "+str(self.u.shape))
 
         if self.HasConstraints():
             self.u = self.constraints.RestoreSolution(self.u)
