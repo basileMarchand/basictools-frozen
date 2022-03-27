@@ -43,16 +43,16 @@ class ImplicitGeometryWrapped(ImplicitGeometryBase):
 RegisterClass("Wrapped",ImplicitGeometryWrapped)
 
 def CreateImplicitGeometryExternalSurface(ops):
-     """
-     ImplicitGeometry of the external surface of a mesh (support)
-     support : Grid to compute the surface
+    """
+    ImplicitGeometry of the external surface of a mesh (support)
+    support : Grid to compute the surface
 
-     <All id="x" support="" >
-     """
-     res = ImplicitGeometryExternalSurface(ops["support"])
-     if "support" in ops:
-         res.SetSupport(ops["support"])
-     return res
+    <All id="x" support="" >
+    """
+    res = ImplicitGeometryExternalSurface(ops["support"])
+    if "support" in ops:
+        res.SetSupport(ops["support"])
+    return res
 
 class ImplicitGeometryExternalSurface(ImplicitGeometryBase):
     """ImplicitGeometry of the external surface of a mesh (support)
@@ -66,11 +66,11 @@ class ImplicitGeometryExternalSurface(ImplicitGeometryBase):
             self.SetSupport(support)
 
     def SetSupport(self, support):
-      self.internalImplicitGeometry = ImplicitGeometryStl()
-      self.internalImplicitGeometry.SetMesh(support)
-      self.internalImplicitGeometry.ismanifold = True
-      support.ComputeBoundingBox()
-      self.offset = 1.*np.linalg.norm(support.boundingMax-support.boundingMin)/1000
+        self.internalImplicitGeometry = ImplicitGeometryStl()
+        self.internalImplicitGeometry.SetMesh(support)
+        self.internalImplicitGeometry.ismanifold = True
+        support.ComputeBoundingBox()
+        self.offset = 1.*np.linalg.norm(support.boundingMax-support.boundingMin)/1000
 
 
     def GetDistanceToPoint(self,pos):
@@ -79,20 +79,20 @@ class ImplicitGeometryExternalSurface(ImplicitGeometryBase):
 RegisterClass("All",ImplicitGeometryExternalSurface,CreateImplicitGeometryExternalSurface)
 ####################### objects ################################
 def CreateImplicitGeometryByETag(ops):
-     res = ImplicitGeometryByETag()
-     if "eTags" not in ops:
-         raise(Exception('Need a eTags'))
-     if ("support" in ops or "ls" in ops ) :
-         if "ls" in ops:
-             sup = ops["ls"].support
-         else:
-             sup = ops["support"]
-         res.SetSupportAndZones(sup,PH.ReadStrings(ops["eTags"] ))
-     else:
-         raise(Exception('Need a (ls or support) '))
+    res = ImplicitGeometryByETag()
+    if "eTags" not in ops:
+        raise(Exception('Need a eTags'))
+    if ("support" in ops or "ls" in ops ) :
+        if "ls" in ops:
+            sup = ops["ls"].support
+        else:
+            sup = ops["support"]
+        res.SetSupportAndZones(sup,PH.ReadStrings(ops["eTags"] ))
+    else:
+        raise(Exception('Need a (ls or support) '))
 
-     res.offset = (PH.ReadFloat(ops.get("offset",res.offset)))
-     return res
+    res.offset = (PH.ReadFloat(ops.get("offset",res.offset)))
+    return res
 
 class ImplicitGeometryByETag(ImplicitGeometryBase):
     """ImplicitGeometry based in a eTags from a mesh (support) or levelset
@@ -135,20 +135,20 @@ class ImplicitGeometryByETag(ImplicitGeometryBase):
 RegisterClass("ETag",ImplicitGeometryByETag,CreateImplicitGeometryByETag)
 
 def CreateImplicitGeometryByETagII(ops):
-     res = ImplicitGeometryByETagII()
-     if "eTags" not in ops:
-         raise(Exception('Need a eTags'))
-     if ("support" in ops or "ls" in ops ) :
-         if "ls" in ops:
-             sup = ops["ls"].support
-         else:
-             sup = ops["support"]
-         res.SetSupportAndZones(sup,PH.ReadStrings(ops["eTags"] ))
-     else:
-         raise(Exception('Need a (ls or support) '))
+    res = ImplicitGeometryByETagII()
+    if "eTags" not in ops:
+        raise(Exception('Need a eTags'))
+    if ("support" in ops or "ls" in ops ) :
+        if "ls" in ops:
+            sup = ops["ls"].support
+        else:
+            sup = ops["support"]
+        res.SetSupportAndZones(sup,PH.ReadStrings(ops["eTags"] ))
+    else:
+        raise(Exception('Need a (ls or support) '))
 
-     res.offset = (PH.ReadFloat(ops.get("offset",res.offset)))
-     return res
+    res.offset = (PH.ReadFloat(ops.get("offset",res.offset)))
+    return res
 
 class ImplicitGeometryByETagII(ImplicitGeometryBase):
     """ImplicitGeometry based in a eTags from a mesh (support) or levelset
@@ -247,8 +247,8 @@ class ImplicitGeometryAxisAlignBox(ImplicitGeometryBase):
 
         for normal in data:
             Obj = ImplicitGeometryPlane()
-            Obj.point=self.GetBoundingMin();
-            Obj.normal=np.array(normal,dtype=float);
+            Obj.point=self.GetBoundingMin()
+            Obj.normal=np.array(normal,dtype=float)
             walls.append(Obj)
 
         data = [[ 1, 0, 0],
@@ -257,8 +257,8 @@ class ImplicitGeometryAxisAlignBox(ImplicitGeometryBase):
 
         for normal in data:
             Obj = ImplicitGeometryPlane()
-            Obj.point=self.GetBoundingMax();
-            Obj.normal=np.array(normal,dtype=float);
+            Obj.point=self.GetBoundingMax()
+            Obj.normal=np.array(normal,dtype=float)
             walls.append(Obj)
 
         return self.ApplyInsideOut(ImplicitGeometryIntersection(walls).ApplyVector(_pos))
@@ -509,7 +509,7 @@ class ImplicitGeometryGyroid(ImplicitGeometryBase):
         self.scale = scale
         self.offset = np.array(offset,dtype=float)
         self.type = 0
-        self.wall = False;
+        self.wall = False
         self.wallThickness = 0.5
 
     def __str__(self):
@@ -545,7 +545,7 @@ class ImplicitGeometryGyroid(ImplicitGeometryBase):
                        +np.cos(2.*x)*np.cos(2.*y)
                        +np.cos(2.*y)*np.cos(2.*z)
                        +np.cos(2.*z)*np.cos(2.*x)
-                      )+0.15;
+                      )+0.15
 
         if self.wall:
             res = np.abs(res)-self.wallThickness/2.
@@ -577,7 +577,7 @@ class ImplicitGeometry60D(ImplicitGeometryBase):
         llx = self.lx/2.
         lw =self.w/2.
 
-        aw = lw/llx;
+        aw = lw/llx
 
         mpos = abs((np.mod(pos/llx,[2.,2*v,1.])-[1,v,0]) )
 
@@ -666,8 +666,8 @@ class ImplicitGeometryStl(ImplicitGeometryBase):
         self.implicitFunction = None
 
         self.filename = ''
-        self.boundingMin = [0,0,0];
-        self.boundingMax = [0,0,0];
+        self.boundingMin = [0,0,0]
+        self.boundingMax = [0,0,0]
         self.surface = None
         self.ismanifold = True
         self.onLines = False
@@ -770,7 +770,7 @@ class ImplicitGeometryStl(ImplicitGeometryBase):
         if polydata.GetNumberOfPolys() > 0:
             self.implicitFunction = vtkImplicitPolyDataDistance()
             self.implicitFunction.SetNoValue(-100.)
-            self.implicitFunction.SetInput(polydata);
+            self.implicitFunction.SetInput(polydata)
             self.onLines = False
         elif polydata.GetNumberOfLines() >0:
             #we are working on lines only
@@ -786,12 +786,9 @@ class ImplicitGeometryStl(ImplicitGeometryBase):
 
         if len(pos.shape) == 1:
             res = np.zeros(1,dtype=float)
-        else:
-            res = np.zeros(pos.shape[0],dtype=float)
-
-        if len(pos.shape) == 1:
             res[0]  =  self.implicitFunction.EvaluateFunction(pos)
         else:
+            res = np.zeros(pos.shape[0],dtype=float)
             from vtkmodules.vtkCommonCore import vtkDoubleArray
             from vtkmodules.util import numpy_support
 
@@ -854,10 +851,10 @@ class ImplicitGeometryAnalytical(ImplicitGeometryBase):
         return res
 
 def CreateImplicitGeometryAnalytical(ops):
-       res =  ImplicitGeometryAnalytical()
-       if "expr" in ops:
-           res.SetExpression(ops["expr"])
-       return res
+    res =  ImplicitGeometryAnalytical()
+    if "expr" in ops:
+        res.SetExpression(ops["expr"])
+    return res
 
 RegisterClass("Analytical",ImplicitGeometryAnalytical,CreateImplicitGeometryAnalytical)
 
@@ -921,9 +918,9 @@ class ImplicitGeometryHoles(ImplicitGeometryBase):
                        np.cos(self.offset[1] + (self.n[1]*np.pi/l[1])*pos[:,1]) * \
                        np.cos(self.offset[2] + (self.n[2]*np.pi/l[2])*pos[:,2]) + self.r - 1.0
         elif self.type == "Aligned":
-            balls = [ ImplicitGeometrySphere(radius=self.r,center=[x,y,z]) 
+            balls = [ ImplicitGeometrySphere(radius=self.r,center=[x,y,z])
                       for x in np.linspace(self.boundingMin[0],self.boundingMax[0], np.int(self.n[0]))
-                      for y in np.linspace(self.boundingMin[1],self.boundingMax[1], np.int(self.n[1])) 
+                      for y in np.linspace(self.boundingMin[1],self.boundingMax[1], np.int(self.n[1]))
                       for z in np.linspace(self.boundingMin[2],self.boundingMax[2], np.int(self.n[2]))]
             Ores = ImplicitGeometryUnion(balls)
             Ores.insideOut=True
@@ -975,9 +972,9 @@ def CheckIntegrity(GUI=False):
 
     from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearMesh
     myMesh = ConstantRectilinearMesh()
-    myMesh.SetDimensions([5,6,7]);
-    myMesh.SetSpacing(1./(myMesh.GetDimensions()-1)*2);
-    myMesh.SetOrigin([-1.,-1.,-1.]);
+    myMesh.SetDimensions([5,6,7])
+    myMesh.SetSpacing(1./(myMesh.GetDimensions()-1)*2)
+    myMesh.SetOrigin([-1.,-1.,-1.])
     myMesh.elements["hex8"].tags.CreateTag("2elems").SetIds([0,1])
     myMesh.nodesTags.CreateTag("3points").SetIds([2,3,4])
     print(myMesh)
