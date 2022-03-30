@@ -19,7 +19,7 @@ from BasicTools.NumpyDefs import PBasicFloatType, PBasicIndexType
 
 def WriteMesh(filename,mesh,PointFields=None,solutionOnOwnFile= False, binary=True, nodalRefNumber= None,elemRefNumber=None):
     OW = MeshWriter()
-    OW.SetBinary(binary);
+    OW.SetBinary(binary)
     OW.Open(filename)
     OW.Write(mesh,PointFields = PointFields,solutionOnOwnFile=solutionOnOwnFile, nodalRefNumber=nodalRefNumber,elemRefNumber=elemRefNumber)
     OW.Close()
@@ -28,7 +28,7 @@ class MeshWriter(WriterBase):
     def __init__(self):
         super(MeshWriter,self).__init__()
         self.dataType = np.float32
-        self.dataSize = 4;
+        self.dataSize = 4
         self.SetSinglePrecission()
 
     def __str__(self):
@@ -38,15 +38,15 @@ class MeshWriter(WriterBase):
         return res
 
     def SetFileName(self,fileName):
-        self.fileName = fileName;
+        self.fileName = fileName
 
     def SetSinglePrecission(self,single=True):
         if single:
             self.dataType = np.float32
-            self.dataSize = 4;
+            self.dataSize = 4
         else:
             self.dataType = np.float64
-            self.dataSize = 8;
+            self.dataSize = 8
 
     def Write(self,meshObject,PointFields=None, solutionOnOwnFile= False, nodalRefNumber= None, elemRefNumber=None,PointFieldsNames=None,CellFieldsNames=None,CellFields=None):
         if self.isBinary():
@@ -54,24 +54,30 @@ class MeshWriter(WriterBase):
         else:
             return self.WriteASCII(meshObject,PointFields=PointFields, solutionOnOwnFile= solutionOnOwnFile, nodalRefNumber =nodalRefNumber,elemRefNumber=elemRefNumber )
 
+    def GetDimensionFromMesh(self,meshObject):
+        flat= True
+        if meshObject.nodes.shape[1] == 3:
+            mmax = np.max(meshObject.nodes[:,2])
+            mmin = np.min(meshObject.nodes[:,2])
+            flat = mmax == mmin == 0
+
+        if meshObject.nodes.shape[1] == 3 and not flat :
+            dimension = 3
+        else:
+            dimension = 2
+        return dimension
+
     def WriteBINARY(self,meshObject,PointFields=None, solutionOnOwnFile= False, nodalRefNumber = None,elemRefNumber=None):
         self.SetSinglePrecission(single=False)
         #key MeshVersionFormatted
         self.filePointer.write(struct.pack('i', 1))
         self.filePointer.write(struct.pack('i', self.dataSize//4))
 
-        #key Dimension (3)
-        self.filePointer.write(struct.pack('i', 3))
 
-        flat= True
-        if meshObject.nodes.shape[1] == 3:
-            mmax = np.max(meshObject.nodes[:,2])
-            mmin = np.min(meshObject.nodes[:,2])
-            flat = (mmax == mmin)
-        if meshObject.nodes.shape[1] == 3 and  not flat :
-            dimension = 3
-        else:
-            dimension = 2
+        dimension = self.GetDimensionFromMesh(meshObject)
+
+        #key Dimension (3)
+        self.filePointer.write(struct.pack('i', dimension ))
 
         self.filePointer.write(struct.pack('i', self.filePointer.tell()+8))# end of information
         self.filePointer.write(struct.pack('i', dimension)) #dimension
@@ -85,13 +91,20 @@ class MeshWriter(WriterBase):
         self.filePointer.write(struct.pack('i', numberofpoints))# numberofpoints
 
         dataformat = ('f' if self.dataSize == 4 else 'd')
-        posn = meshObject.GetPosOfNodes()
-        for n in range(numberofpoints):
-             posn[n,0:dimension].astype(self.dataType).tofile(self.filePointer, sep='')
-             if nodalRefNumber is  None :
-                 self.filePointer.write(struct.pack("i", 0))# refs
-             else :
-                 self.filePointer.write(struct.pack("i", nodalRefNumber[n]))# refs
+        posn = meshObject.GetPosOfNodes()[:,0:dimension].astype(self.dataType)
+
+        if nodalRefNumber is  None :
+            nrn = np.ones((numberofpoints,1),dtype="i").squeeze()
+        else:
+            nrn = nodalRefNumber.astype(dtype="i").squeeze()
+
+        names = ["c"+str(i) for i in range(dimension)]+["id"]
+        dtype_out = np.dtype({"names":names  ,"formats":[np.float64]*dimension+ [np.int32]})
+        data = np.empty((posn.shape[0]), dtype=dtype_out)
+        for i in range(dimension):
+            data[names[i]] =  posn[:,i]
+        data["id"] =  nrn
+        self.filePointer.write(data.tobytes())
 
         if MT.RequiredVertices  in meshObject.nodesTags :
             ids = meshObject.nodesTags[MT.RequiredVertices].GetIds()+1
@@ -207,7 +220,7 @@ class MeshWriter(WriterBase):
 
         if PointFields is not None and len(PointFields)>0 :
             if solutionOnOwnFile :
-                self.Close();
+                self.Close()
                 self.OpenSolutionFileBinary(support=meshObject)
             self.WriteSolutionsFieldsBinary(meshObject,PointFields)
 
@@ -216,13 +229,8 @@ class MeshWriter(WriterBase):
         self._isOpen = True
 
         self.filePointer.write("MeshVersionFormatted 2\n\n")
-        dimension = 3
 
-        if support.nodes.shape[1] == 3 :
-            mmax = np.max(support.nodes[:,2])
-            mmin = np.min(support.nodes[:,2])
-            if  mmax ==  mmin and mmax == 0.:
-               dimension = 2
+        dimension = self.GetDimensionFromMesh(support)
         self.filePointer.write("Dimension {}\n\n".format(dimension))
 
     def WriteSolutionsFieldsAscii(self,meshObject,PointFields=None,SolsAtTriangles=None,SolsAtTetrahedra=None):
@@ -262,16 +270,11 @@ class MeshWriter(WriterBase):
                 self.filePointer.write("3 ")
 
         self.filePointer.write("\n\n")
+        composedData = np.column_stack(Sols)
+        np.savetxt(self.filePointer,composedData, fmt="%g")
 
-        for i in range(nbentries):
-            for sol in Sols:
-                if len(sol.shape)== 1:
-                    sol[i].tofile(self.filePointer, sep=' ' )
-                else:
-                    sol[i,:].tofile(self.filePointer, sep=' ' )
-                self.filePointer.write(" ")
-            self.filePointer.write("\n")
         self.filePointer.write("\n")
+        self.PrintDebug("tata")
 
     def CloseSolutionFileAscii(self):
         self.filePointer.write("End\n") #dimension
@@ -307,17 +310,10 @@ class MeshWriter(WriterBase):
         #
         #key Dimension (3)
         self.filePointer.write(struct.pack('i', 3))
-        dimension = 3 #support.GetDimensionality()
-
-        if support.nodes.shape[1] == 3 :
-            mmax = np.max(support.nodes[:,2])
-            mmin = np.min(support.nodes[:,2])
-            if  mmax ==  mmin:
-               dimension = 2
-
         self.filePointer.write(struct.pack('i', self.filePointer.tell()+4*2))# end of information
-        self.filePointer.write(struct.pack('i', dimension)) #dimension
 
+        dimension = self.GetDimensionFromMesh(support)
+        self.filePointer.write(struct.pack('i', dimension)) #dimension
 
     def WriteSolutionsFieldsBinary(self,meshObject,PointFields=None,SolsAtTriangles=None,SolsAtTetrahedra=None):
         if PointFields is not None:
@@ -328,7 +324,6 @@ class MeshWriter(WriterBase):
 
         if SolsAtTetrahedra is not None:
             self._WriteSolutionsFieldsBinaryUsingKey(meshObject,66,SolsAtTetrahedra)
-
 
     def _WriteSolutionsFieldsBinaryUsingKey(self,meshObject,key,Sols):
 
@@ -365,17 +360,12 @@ class MeshWriter(WriterBase):
                 ## vectors
                 self.filePointer.write(struct.pack('i',2))#
             elif size == 6:
-                ## tensors 
+                ## tensors
                 self.filePointer.write(struct.pack('i',3))#
             else:
                 raise Exception("Solution fields must be scalars, vectors or tensors.")
 
-
-        for i in range(NumberOfEntries):
-            for sol in Sols:
-                if len(sol.shape)== 1:
-                    sol = sol[:,np.newaxis]
-                sol[i,:].astype(self.dataType).tofile(self.filePointer, sep='')
+        np.column_stack(tuple(x.astype(self.dataType) for x in  Sols) ).tofile(self.filePointer, sep='')
 
         if ( not (self.filePointer.tell() == endOfInformation) ) : raise Exception("Error in the writing code, please debug me!!!")
 
@@ -387,17 +377,17 @@ class MeshWriter(WriterBase):
         self.filePointer.write("MeshVersionFormatted 2 \n")
 
         self.filePointer.write("Dimension " + str(meshObject.GetDimensionality()) + "\n\n")
-        self.filePointer.write("Vertices\n");
+        self.filePointer.write("Vertices\n")
         numberofpoints = meshObject.GetNumberOfNodes()
-        self.filePointer.write("{} \n\n".format(numberofpoints) )
+        self.filePointer.write("{}\n".format(numberofpoints) )
         posn = meshObject.GetPosOfNodes()
 
-        for n in range(numberofpoints):
-               posn[np.newaxis,n,:] .tofile(self.filePointer, sep=" ")
-               if nodalRefNumber is None:
-                   self.filePointer.write(" 0 \n")
-               else:
-                   self.filePointer.write(" {} \n".format(int(nodalRefNumber[n])) )
+        if nodalRefNumber is None:
+            composedData = np.column_stack(( posn,np.zeros( (numberofpoints,1),dtype=int)))
+        else:
+            composedData = np.column_stack(( posn,nodalRefNumber))
+        np.savetxt(self.filePointer,composedData, fmt="%g "*posn.shape[1]  +"%i")
+
         self.filePointer.write("\n" )
 
         if meshObject.IsConstantRectilinear():
@@ -427,16 +417,14 @@ class MeshWriter(WriterBase):
                 nelem = data.GetNumberOfElements()
             if nelem == 0:
                 continue
-            self.filePointer.write("{} \n".format(elemtype) )
+            self.filePointer.write("{}\n".format(elemtype) )
             self.filePointer.write("{}\n".format(nelem) )
-            for i in range(nelem):
-                    connectivity = (data.connectivity[i,:]+1).astype(int)
-                    connectivity.tofile(self.filePointer, sep=" ")
-
-                    if elemRefNumber is None :
-                        self.filePointer.write(" 0\n")#
-                    else:
-                        self.filePointer.write(" " + str(elemRefNumber[globalOffset+i]) + "\n")#
+            connectivity = (data.connectivity+1).astype(int)
+            if elemRefNumber is None :
+                composit_data = np.column_stack(( connectivity,np.zeros( nelem, dtype=PBasicIndexType) ))
+            else:
+                composit_data =np.column_stack(( connectivity,elemRefNumber[globalOffset:globalOffset+data.GetNumberOfElements()]))
+            composit_data.tofile(self.filePointer, sep=" ")
 
             globalOffset += data.GetNumberOfElements()
             self.filePointer.write("\n")
@@ -447,7 +435,7 @@ class MeshWriter(WriterBase):
             if tagname in meshObject.nodesTags:
                tag = meshObject.nodesTags[tagname]
                if len(tag):
-                  self.filePointer.write(tagname+" \n");
+                  self.filePointer.write(tagname+" \n")
                   self.filePointer.write("{} \n\n".format(len(tag)) )
                   (tag.GetIds()+1).tofile(self.filePointer, sep=" ")
                   self.filePointer.write("\n" )
@@ -457,7 +445,7 @@ class MeshWriter(WriterBase):
             if TagName in elements.tags:
                 tag = elements.tags[TagName ]
                 if len(tag):
-                    self.filePointer.write(str(TagNameInFile)+"\n");
+                    self.filePointer.write(str(TagNameInFile)+"\n")
                     self.filePointer.write("{} \n\n".format(len(tag)) )
                     (tag.GetIds()+1).tofile(self.filePointer, sep=" ")
                     self.filePointer.write("\n" )
@@ -465,7 +453,7 @@ class MeshWriter(WriterBase):
         self.filePointer.write("\n")
 
         if solutionOnOwnFile :
-            self.Close();
+            self.Close()
             self.filePointer = open(".".join(self.fileName.split(".")[0:-1])+".sol" , 'w')
             self._isOpen = True
             self.filePointer.write("#Written by BasicTools package\n")
@@ -474,7 +462,7 @@ class MeshWriter(WriterBase):
 
         if PointFields is not None and len(PointFields)>0 :
             if solutionOnOwnFile :
-                self.Close();
+                self.Close()
                 self.OpenSolutionFileAscii(support=meshObject)
             self.WriteSolutionsFieldsAscii(meshObject,PointFields)
 
