@@ -8,9 +8,11 @@
 
 """
 from __future__ import print_function
-
+import sys
 import time
+import inspect
 from functools import wraps
+
 _startTime = time.time()
 useDifferentialTime = True
 useFroze_itDecorator = False
@@ -27,10 +29,10 @@ def ResetStartTime():
 
 def SetUseDifferentialTime(val):
     """
-    Function to set the printing format 
+    Function to set the printing format
 
     :param [val]: True to print the time from the begining of the program or False to print the current time, defaults to [True]
-    :type [val]: [Bool] 
+    :type [val]: [Bool]
     """
     global useDifferentialTime
     useDifferentialTime = val
@@ -148,9 +150,6 @@ class BaseOutputObject(object):
     def PrintInternal(self, mess, level=1):
         if BaseOutputObject.__globalDebugMode or self.__classDebugMode :
             res = ""
-            ## we only load modules in debug mode
-            import inspect
-            import time
 
             stnumber = 1
             stack = inspect.stack()[stnumber]
@@ -160,8 +159,6 @@ class BaseOutputObject(object):
                 stnumber += 1
             # the real stack
             stack = inspect.stack()[stnumber]
-
-
 
             #res += (": "+str(stack[1]) + ":" +str(stack[2]) )
             res += '  File "' + str(stack[1]) + '", line ' +str(stack[2])
@@ -198,7 +195,6 @@ class BaseOutputObject(object):
         elif level <= BaseOutputObject.__verboseLevel :
             print(mess)
 
-        import sys
         sys.stdout.flush()
     def  __str__(self):
         res = str(type(self)) + "\n"
