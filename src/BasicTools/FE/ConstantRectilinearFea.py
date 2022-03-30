@@ -307,14 +307,14 @@ class Fea(FeaBase.FeaBase):
         # hack to integrate complex boundary condition in the mesh
         if hasattr(self,"mecaPhysics") and (self.mecaPhysics is not None):
             from BasicTools.FE.UnstructuredFeaSym import UnstructuredFeaSym
-            prob = UnstructuredFeaSym()
+            prob = UnstructuredFeaSym(spaceDim =self.spaceDim)
             prob.physics.append(self.mecaPhysics)
             prob.SetMesh(self.support)
             self.mecaPhysics.ComputeDofNumberingFromConnectivity(self.support)
             prob.ComputeDofNumbering(self.support)
             k,f = prob.GetLinearProblem(computeK=False)
             if f is not None:
-                f.shape = (3,len(f)//3)
+                f.shape = (self.spaceDim,len(f)//self.spaceDim)
                 f = f.ravel(order='F')
                 self.f[:,0] += f
             self.mecaPhysics = None
