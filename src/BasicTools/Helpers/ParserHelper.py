@@ -133,6 +133,14 @@ def ReadBool(string):
 def ReadBools(string):
     return ReadVector(string,bool)
 
+def ReadVectorXY(string, normalised=False):
+    res = ReadFloats(string)
+    if len(res) != 2:
+        raise
+    if normalised:
+        res /= np.linalg.norm(res)
+    return res
+
 def ReadVectorXYZ(string,normalised=False):
     res = ReadFloats(string)
     if len(res) != 3:
