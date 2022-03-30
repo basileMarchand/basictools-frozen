@@ -99,17 +99,7 @@ def GetFieldTransferOp(inputField,targetPoints,method=None,verbose=False,element
     inodes = imesh.nodes
     nbtp = targetPoints.shape[0]
 
-    # be sure to create the spaces
-    for elementType, data in inputField.mesh.elements.items():
-        space[elementType].Create()
-        LagrangeSpaceGeo[elementType].Create()
 
-        facestoTreat = [ElementNames.faces[elementType],
-                        ElementNames.faces2[elementType],
-                        ElementNames.faces3[elementType]]
-        for tt in facestoTreat:
-            for elementType2, num in tt:
-                LagrangeSpaceGeo[elementType2].Create()
     kdt = cKDTree(inodes)
 
     if insideMethod == 0 and  outsideMethod == 0:
@@ -123,6 +113,18 @@ def GetFieldTransferOp(inputField,targetPoints,method=None,verbose=False,element
         row = np.arange(nbtp)
         data = np.ones(nbtp)
         return coo_matrix((data, (row, cols)), shape=(nbtp , inodes.shape[0])), np.zeros(nbtp)
+
+    # be sure to create the spaces
+    for elementType, data in inputField.mesh.elements.items():
+        space[elementType].Create()
+        LagrangeSpaceGeo[elementType].Create()
+
+        facestoTreat = [ElementNames.faces[elementType],
+                        ElementNames.faces2[elementType],
+                        ElementNames.faces3[elementType]]
+        for tt in facestoTreat:
+            for elementType2, num in tt:
+                LagrangeSpaceGeo[elementType2].Create()
 
     # we build de Dual Coonectivity
     from BasicTools.Containers.UnstructuredMeshInspectionTools import GetDualGraphNodeToElement
