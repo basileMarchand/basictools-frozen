@@ -11,46 +11,41 @@ import scipy.sparse.linalg as spslin
 from BasicTools.NumpyDefs import PBasicFloatType, PBasicIndexType
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject as BOO
 from BasicTools.Helpers.TextFormatHelper import TFormat as TF
-
 from BasicTools.Linalg.ConstraintsHolder import ConstraintsHolder
+from BasicTools.Helpers.Factory import Factory
 
-def _available_algorithms():
-    result = ["Direct", "CG", "lsqr", "gmres","lgmres"]
-    try:
-        import sksparse.cholmod
-        result.append("cholesky")
-    except ImportError:
-        pass
-
-    try:
-        import pyamg
-        result.append("AMG")
-    except ImportError:
-        pass
-
-    try:
-        import BasicTools.Linalg.NativeEigenSolver
-        result.extend(("EigenCG", "EigenLU","EigenBiCGSTAB","EigenSPQR"))
-    except ImportError:
-        pass
-
-    return tuple(result)
-
-
-class LinearProblem(BOO):
+class SolverFactory(Factory):
+    _Catalog = {}
+    _SetCatalog = set()
     def __init__(self):
-        super(LinearProblem,self).__init__()
+        super(SolverFactory,self).__init__()
+
+def GetAvailableSolvers():
+    return list(SolverFactory._Catalog.keys())
+
+def RegisterSolverClass(name, classtype, constructor=None, withError = True):
+    return SolverFactory.RegisterClass(name,classtype, constructor=constructor, withError = withError )
+
+def RegisterSolverClassUsingName(cls):
+    RegisterSolverClass(cls().name, cls)
+
+class LinearSolverBase(BOO):
+    def __init__(self):
+        super(LinearSolverBase,self).__init__()
         self.op = None   # the operator to solve
+        self.originalOp = None
         self.solver = None
-        self.type = "EigenCG"
+        self.name = ''
         self.u = None
-        self.tol = 1.e-6
-
         self.constraints = ConstraintsHolder()
-        self.SetAlgo(self.type)
 
-    def SetTolerance(self,tol):
-        self.tol = tol
+        self._can_use_u0 = False
+
+    def GetConstraints(self):
+        return self.constraints
+
+    def SetConstraints(self,constraints):
+        self.constraints = constraints
 
     def HasConstraints(self):
         return self.constraints.numberOfEquations > 0
@@ -58,137 +53,303 @@ class LinearProblem(BOO):
     def GetNumberOfDofs(self):
         return self.op.shape[0]
 
-    def ComputeProjector(self,mesh,fields):
-        self.constraints.ComputeConstraintsEquations(mesh,fields)
-        ndofs = np.sum([f.numbering["size"] for f in fields])
-        print("Number Of dofs" , ndofs)
-
-        self.constraints.SetNumberOfDofs(ndofs)
+    def ComputeProjector(self, op ):
+        self.PrintVerbose(" With constraints (" +str(self.constraints.numberOfEquations) + ")")
+        self.PrintVerbose(" Treating constraints using "+ str(type(self.constraints.method)) )
+        self.constraints.SetNumberOfDofs(op.shape[1])
+        self.PrintDebug(" Setting Op" )
+        self.constraints.SetOp( op  )
+        self.PrintDebug(" UpdateCSystem()" )
         self.constraints.UpdateCSystem()
-        self.constraints.SetOp( self.originalOp   )
-        print("Number Of dofs " , self.originalOp.shape)
-        self.op = self.constraints.GetReducedOp()
+        self.PrintDebug(" GetCOp ")
+        op = self.constraints.GetCOp()
+        self.PrintVerbose('Constraints treatment Done ')
+        return op
 
-    # you must set SetAlgo before setting the Op
     def SetOp(self, op):
-        self.PrintVerbose('In SetOp (type:' +str(self.type) + ')')
-
+        self.PrintVerbose('In SetOp (type:' +str(self.name) + ')')
         self.originalOp = op
 
         if self.HasConstraints():
-            self.PrintVerbose(" With constraints (" +str(self.constraints.numberOfEquations) + ")")
-            self.PrintVerbose(" Treating constraints using "+ str(type(self.constraints.method)) )
-            self.constraints.SetNumberOfDofs(op.shape[1])
-            self.PrintDebug(" Setting Op" )
-            self.constraints.SetOp( op  )
-            self.PrintDebug(" UpdateCSystem()" )
-            self.constraints.UpdateCSystem()
-            self.PrintDebug(" GetCOp ")
-            op = self.constraints.GetCOp()
-            self.PrintVerbose('Constraints treatememnt Done ')
+            op = self.ComputeProjector(op)
 
         self.op = op
 
-        if self.type in [ "CG", "gmres","lsqr", "lgmres" ]:
-            self.solver = None
-        elif self.type == "Direct":
-            self.PrintDebug('Starting Factorisaton')
-            self.solver = sps.linalg.factorized(op)
-        elif self.type == "AMG":
-            import pyamg
-            self.solver = pyamg.ruge_stuben_solver(op.tocsr())
-        elif self.type == "cholesky":
-            from sksparse.cholmod import cholesky
-            self.solver = cholesky(op)
-        elif len(self.type) >= 5 and  self.type[0:5] == "Eigen":
-            import BasicTools.Linalg.NativeEigenSolver as NativeEigenSolver
-            self.solver = NativeEigenSolver.CEigenSolvers()
-            self.solver.SetSolverType(self.type[5:])
-            self.solver.SetTolerance(self.tol)
-            self.solver.SetOp(op)
-        else:
-            raise(Exception("Error setting the operator"))
+        self.PrintDebug('In LinearSolver.SetOp(...) ')
+        self._setop_imp(op)
+        self.PrintDebug('In LinearSolver.SetOp(...) Done')
 
-        self.PrintDebug('In SetOp Done')
-
-    def SetAlgo(self, algoType, withErrorIfNotFound=False):
-        if algoType in self.GetAvailableAlgorithms():
-            self.type = algoType
-        else:
-            if withErrorIfNotFound:
-                raise ValueError(TF.InRed("Error : ") + "Type not allowed ("+algoType+")") #pragma: no cover
-            else:
-                defaultIfError = "CG"
-                print(f"Solver {algoType} unavailable, falling back to solver {defaultIfError} instead.")
-                self.SetAlgo(defaultIfError)
-
-    def Solve(self, rhs):
-        u0 = None
+    def Solve(self, rhs, u0=None):
         if self.HasConstraints():
-            rhs = self.constraints.GetCRhs(rhs)
-            if self.u is not None:
-                u0 =  self.constraints.RestrictSolution(self.u)
-        else:
-            u0 = self.u
+            rhs = self.constraints.GetCRhs(rhs.squeeze())
+        rhs = np.atleast_1d(rhs.squeeze())
 
-        if u0 is None:
-           u0 = np.zeros_like(rhs)
+        if self.u is not None and self.originalOp is not None and len(self.u) != self.originalOp.shape[1]:
+            self.u = None
 
-        rhs = rhs.squeeze()
-        u0 = u0.squeeze()
-
-        self.PrintDebug('In LinearProblem Solve ' + self.type)
-        if self.type in ["Direct", "cholesky"]:
-            self.u = self.solver(rhs)
-        elif self.type == "AMG":
-            self.u = self.solver.solve(rhs,x0=u0,tol=self.tol)
-        elif len(self.type) >= 5 and  self.type[0:5] == "Eigen":
-            self.u = self.solver.Solve(rhs,u0)
-        elif self.type == "CG":
-            diag = self.op.diagonal()
-            diag[diag == 0] = 1.0
-            M = sps.dia_matrix((1./diag,0), shape=self.op.shape)
-
-            norm = np.linalg.norm(rhs)
-            if self.u is None:
-                res = spslin.cg(self.op, rhs/norm, M = M,tol = self.tol, atol = self.tol)
+        self.PrintDebug('In LinearProblem Solve ' + self.name)
+        if self._can_use_u0 :
+            if self.HasConstraints():
+                if u0 is not None:
+                    u0 =  self.constraints.RestrictSolution(u0)
             else:
-                res = spslin.cg(self.op, rhs/norm, M = M, x0 = u0/norm,tol = self.tol, atol = self.tol)
-            self.u = res[0][np.newaxis].T*norm
-            self.u = self.u[:,0]
-
-            if res[1] > 0 :
-                self.Print(TF.InYellowBackGround(TF.InRed("Convergence to tolerance not achieved"))) #pragma: no cover
-            if res[1] < 0 :
-                self.Print(TF.InYellowBackGround(TF.InRed("Illegal input or breakdown"))) #pragma: no cover
-        elif self.type == "gmres":
-            diag = self.op.diagonal()
-            diag[diag == 0] = 1.0
-            M = sps.dia_matrix((1./diag,0), shape=self.op.shape)
-            self.u = spslin.gmres(self.op, rhs, x0 = u0,M = M,tol = self.tol, atol= self.tol)[0]
-        elif self.type == "lgmres":
-            diag = self.op.diagonal()
-            diag[diag == 0] = 1.0
-            M = sps.dia_matrix((1./diag,0), shape=self.op.shape)
-            self.u = spslin.lgmres(self.op, rhs, x0 = u0,M = M,tol = self.tol, atol= self.tol)[0]
-        elif self.type == "lsqr":
-            self.u = spslin.lsqr(self.op, rhs, atol=self.tol, btol=self.tol, x0 = u0)[0]
+                if self.u is not None:
+                    u0 =  self.constraints.RestrictSolution(self.u)
+            if u0 is None:
+                u0 = np.zeros_like(rhs)
+            u0 = np.atleast_1d(u0.squeeze())
+            u = self._solve_imp(rhs,u0=u0)
         else:
-            raise(Exception("Error solving system"))
+            if u0 is not None and self.__print_warning_u0_ignored:
+                print("u0 ignored for direct solvers")
+                self.__print_warning_u0_ignored = False
 
-
-        self.PrintDebug("Done Linear solver "+str(self.u.shape))
+            u = self._solve_imp(rhs,u0=None)
+        self.PrintDebug("Done Linear solver "+str(u.shape))
 
         if self.HasConstraints():
-            self.u = self.constraints.RestoreSolution(self.u)
+            self.u = self.constraints.RestoreSolution(u)
+        else:
+            self.u = u
 
         return self.u
 
-    __available_algorithms = _available_algorithms()
+    def _setop_imp(self,op):
+        pass
+
+
+class LinearSolverIterativeBase(LinearSolverBase):
+    def __init__(self):
+        super(LinearSolverIterativeBase,self).__init__()
+        self.tol = 1.e-6
+        self._can_use_u0 = True
+
+    def SetTolerance(self,tol):
+        self.tol = tol
+
+class LinearSolverCG(LinearSolverIterativeBase):
+    def __init__(self):
+        super(LinearSolverCG,self).__init__()
+        self.name = "CG"
+
+    def _solve_imp(self, rhs, u0):
+        diag = self.op.diagonal()
+        diag[diag == 0] = 1.0
+        M = sps.dia_matrix((1./diag,0), shape=self.op.shape)
+
+        norm = np.linalg.norm(rhs)
+        if u0 is None:
+            res = spslin.cg(self.op, rhs/norm, M = M,tol = self.tol, atol = self.tol)
+        else:
+            res = spslin.cg(self.op, rhs/norm, M = M, x0 = u0/norm,tol = self.tol, atol = self.tol)
+        u = res[0][np.newaxis].T*norm
+        u = u[:,0]
+
+        if res[1] > 0 :
+            self.Print(TF.InYellowBackGround(TF.InRed("Convergence to tolerance not achieved"))) #pragma: no cover
+        if res[1] < 0 :
+            self.Print(TF.InYellowBackGround(TF.InRed("Illegal input or breakdown"))) #pragma: no cover
+
+        return u
+
+RegisterSolverClassUsingName(LinearSolverCG)
+
+class LinearSolvergmres(LinearSolverIterativeBase):
+    def __init__(self):
+        super(LinearSolvergmres,self).__init__()
+        self.name = "gmres"
+
+    def _solve_imp(self, rhs, u0):
+        diag = self.op.diagonal()
+        diag[diag == 0] = 1.0
+        M = sps.dia_matrix((1./diag,0), shape=self.op.shape)
+        return  spslin.gmres(self.op, rhs, x0 = u0,M = M,tol = self.tol, atol= self.tol)[0]
+
+RegisterSolverClassUsingName(LinearSolvergmres)
+
+class LinearSolverlsqr(LinearSolverIterativeBase):
+    def __init__(self):
+        super(LinearSolverlsqr,self).__init__()
+        self.name = "lsqr"
+
+    def _solve_imp(self, rhs, u0):
+        return spslin.lsqr(self.op, rhs, atol=self.tol, btol=self.tol, x0 = u0)[0]
+
+RegisterSolverClassUsingName(LinearSolverlsqr)
+
+class LinearSolverlgmres(LinearSolverIterativeBase):
+    def __init__(self):
+        super(LinearSolverlgmres,self).__init__()
+        self.name = "lgmres"
+
+    def _solve_imp(self, rhs, u0):
+        diag = self.op.diagonal()
+        diag[diag == 0] = 1.0
+        M = sps.dia_matrix((1./diag,0), shape=self.op.shape)
+        return spslin.lgmres(self.op, rhs, x0 = u0,M = M,tol = self.tol, atol= self.tol)[0]
+
+RegisterSolverClassUsingName(LinearSolverlgmres)
+
+class LinearSolverlAMG(LinearSolverIterativeBase):
+    def __init__(self):
+        super(LinearSolverlAMG,self).__init__()
+        self.name = "AMG"
+
+    def _setop_imp(self,op):
+        import pyamg
+        self._internal_solver = pyamg.ruge_stuben_solver(op.tocsr())
+
+    def _solve_imp(self, rhs, u0):
+        return self._internal_solver.solve(rhs,x0=u0,tol=self.tol)
+
+try:
+    import pyamg
+    RegisterSolverClassUsingName(LinearSolverlAMG)
+except:
+    pass
+
+class LinearSolverDirect(LinearSolverIterativeBase):
+    def __init__(self):
+        super(LinearSolverDirect,self).__init__()
+        self.name = "Direct"
+
+    def _setop_imp(self,op):
+        self._internal_solver = sps.linalg.factorized(op)
+
+    def _solve_imp(self, rhs, u0=None):
+        return self._internal_solver(rhs)
+
+RegisterSolverClassUsingName(LinearSolverDirect)
+
+class LinearSolverCholesky(LinearSolverDirect):
+    def __init__(self):
+        super(LinearSolverCholesky,self).__init__()
+        self.name = "cholesky"
+
+    def _setop_imp(self,op):
+        from sksparse.cholmod import cholesky
+        self._internal_solver = cholesky(op)
+
+    def _solve_imp(self, rhs, u0= None):
+        return self._internal_solver(rhs)
+
+try:
+    from sksparse.cholmod import cholesky
+    RegisterSolverClassUsingName(LinearSolverCholesky)
+except:
+    pass
+
+class LinearSolverEigen(LinearSolverIterativeBase):
+    def __init__(self,subtype):
+        super(LinearSolverEigen,self).__init__()
+        self.SetSolver(subtype)
+
+    def SetSolver(self, subtype):
+        self.name = "Eigen"+subtype
+        self.subtype = subtype
+        self.solver = None
+
+    def _setop_imp(self,op):
+        import BasicTools.Linalg.NativeEigenSolver as NativeEigenSolver
+        self.solver = NativeEigenSolver.CEigenSolvers()
+        self.solver.SetSolverType(self.subtype)
+        self.solver.SetTolerance(self.tol)
+        self.solver.SetOp(op)
+
+    def _solve_imp(self, rhs, u0=None):
+        # for the eigen solver we must allocate on the python side
+        if u0 is None:
+            u0 = np.zeros_like(rhs)
+        return self.solver.Solve(rhs,u0)
+
+    def GetSPQRRank(self):
+        return self.solver.GetSPQRRank()
+
+    def GetSPQR_Q(self):
+        return self.solver.GetSPQR_Q()
+
+    def GetSPQR_R(self):
+        return self.solver.GetSPQR_R()
+
+    def GetSPQR_P(self):
+        return self.solver.GetSPQR_P()
 
     @classmethod
-    def GetAvailableAlgorithms(cls):
-        return cls.__available_algorithms
+    def GetAvailableSolvers(cls):
+        return ['CG','LU','BiCGSTAB', 'SPQR']
+
+try:
+    import BasicTools.Linalg.NativeEigenSolver as NativeEigenSolver
+    for eigenSubTypes  in LinearSolverEigen.GetAvailableSolvers():
+        RegisterSolverClass("Eigen"+eigenSubTypes,LinearSolverEigen, lambda x :  LinearSolverEigen(eigenSubTypes) )
+    defaultIfError = "EigenCG"
+except:
+    print("WARNING! Error loading Eigen linear solver using CG as default")
+    defaultIfError = "CG"
+
+###############################################################################################################################
+class LinearProblem(BOO):
+    def __init__(self):
+        self.realsolver = None
+        self.SetAlgo(defaultIfError)
+
+    def SetTolerance(self,tol):
+        if self.realsolver == None: #pragma: no cover
+            raise(Exception("Please set the solver type first"))
+        self.realsolver.SetTolerance(tol)
+
+    def HasConstraints(self):
+        if self.realsolver == None: #pragma: no cover
+            raise(Exception("Please set the solver type first"))
+        return self.realsolver.HasConstraints()
+
+    def GetNumberOfDofs(self):
+        if self.realsolver == None: #pragma: no cover
+            raise(Exception("Please set the solver type first"))
+        return self.realsolver.GetNumberOfDofs()
+
+    def ComputeProjector(self,mesh,fields):
+        if self.realsolver == None: #pragma: no cover
+            raise(Exception("Please set the solver type first"))
+        self.realsolver.ComputeProjector(mesh,fields)
+
+    # you must set SetAlgo before setting the Op
+    def SetOp(self, op):
+        if self.realsolver == None: #pragma: no cover
+            raise(Exception("Please set the solver type first"))
+        self.realsolver.SetOp(op)
+
+    def SetAlgo(self, name, ops=None, withErrorIfNotFound=False):
+        try:
+            if self.realsolver is not None:
+                constraints = self.realsolver.GetConstraints()
+                self.realsolver = SolverFactory.Create(name,ops=ops)
+                self.realsolver.SetConstraints(constraints)
+            else:
+                self.realsolver = SolverFactory.Create(name)
+        except:
+            if withErrorIfNotFound: #pragma: no cover
+                raise
+            else:
+                print(f"Solver {name} unavailable, falling back to solver {defaultIfError} instead.")
+                self.SetAlgo(defaultIfError)
+
+    def Solve(self, rhs):
+        if self.realsolver == None: #pragma: no cover
+            raise(Exception("Please set the solver type first"))
+        return self.realsolver.Solve(rhs)
+
+    @property
+    def constraints(self):
+        if self.realsolver == None: #pragma: no cover
+            raise(Exception("Please set the solver type first"))
+        return self.realsolver.GetConstraints()
+
+    @constraints.setter
+    def constraints(self, constraints):
+        if self.realsolver == None: #pragma: no cover
+            raise(Exception("Please set the solver type first"))
+        return self.realsolver.SetConstraints(constraints)
 
 def CheckSolver(GUI,solver):
     print("Solver "+ str(solver))
@@ -196,75 +357,81 @@ def CheckSolver(GUI,solver):
     LS.SetGlobalDebugMode()
     LS.SetAlgo(solver)
 
+    print("Number of dofs")
     LS.SetOp(sps.csc_matrix(np.array([[0.5,0],[0,1]]),dtype=PBasicFloatType))
+    print("HasConstraints : ", LS.HasConstraints() )
+    print("Number of dofs : ", LS.GetNumberOfDofs() )
+
     sol = LS.Solve(np.array([[1.],[2.]]))
     # second run
     sol = LS.Solve(np.array([[1.],[2.]]))
 
     if abs(sol[0] - 2.) >1e-15  :
         print(sol[0]-2) #pragma: no cover
+        print("sol : ",sol) #pragma: no cover
         raise Exception() #pragma: no cover
     if abs(sol[1] - 2.) > 1e-15 : raise Exception()
 
-    if solver == "EigenSPQR" :
 
-        A = sps.csc_matrix(np.array([[0,0,0,1,1],
-                                     [0,0,0,1,1],
-                                     [0.51,0.5,0.5,0,10],
-                                     [0.5,0.5,0.5,0,10],
-                                     [0,1,0,0,5],
-                                     ]),dtype=PBasicFloatType)
-
-        def QRTest(A):
-            LS.SetTolerance(1e-5)
-            print(A.toarray())
-            LS.SetOp(A)
-            rank = LS.solver.GetSPQRRank()
-            print("Rank",rank )
-            Q = LS.solver.GetSPQR_Q()
-            print("Q")
-            print(Q.toarray())
-            R = LS.solver.GetSPQR_R()
-            print("R")
-            print(R.toarray())
-            P = LS.solver.GetSPQR_P()
-            print("P" ,P)
-            print("-------------------------------------------------")
-            print("AP")
-            print(A.toarray()[:,P])
-            print("QR")
-            print(Q.tocsr().dot(R.tocsr().toarray() ) )
-            print("norm A[:,P]-QR")
-            print(np.linalg.norm(A.toarray()[:,P] - Q.tocsr()[:,0:rank].dot(R.tocsr()[0:rank,:].toarray() ) ) )
-            print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
-            print("Q réduit")
-            print(Q.tocsr()[:,0:rank].toarray())
-            print("R réduit")
-            print(R.tocsr()[0:rank,0:rank].toarray())
-            print("QR reduit")
-            print(Q.tocsr()[:,0:rank].dot(R.tocsr()[0:rank,0:rank].toarray() ) )
-            print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
-            error = np.linalg.norm(A.toarray()[:,P[0:rank]] - Q.tocsr()[:,0:rank].dot(R.tocsr()[0:rank,0:rank].toarray() ) )
-            if abs(error) > 1e-10:
-                raise
-            print(error)
+def CheckSPQR(GUI):
+    realsolver = LinearSolverEigen("SPQR")
 
 
-            print ("OK EigenSPQR"  )
+    A = sps.csc_matrix(np.array([[0,0,0,1,1],
+                                    [0,0,0,1,1],
+                                    [0.51,0.5,0.5,0,10],
+                                    [0.5,0.5,0.5,0,10],
+                                    [0,1,0,0,5],
+                                    ]),dtype=PBasicFloatType)
 
-        QRTest(A.T)
+    def QRTest(A):
+        realsolver.SetTolerance(1e-5)
+        print(A.toarray())
+        realsolver.SetOp(A)
+        rank = realsolver.GetSPQRRank()
+        print("Rank",rank )
+        Q = realsolver.GetSPQR_Q()
+        print("Q")
+        print(Q.toarray())
+        R = realsolver.GetSPQR_R()
+        print("R")
+        print(R.toarray())
+        P = realsolver.GetSPQR_P()
+        print("P" ,P)
+        print("-------------------------------------------------")
+        print("AP")
+        print(A.toarray()[:,P])
+        print("QR")
+        print(Q.tocsr().dot(R.tocsr().toarray() ) )
+        print("norm A[:,P]-QR")
+        print(np.linalg.norm(A.toarray()[:,P] - Q.tocsr()[:,0:rank].dot(R.tocsr()[0:rank,:].toarray() ) ) )
+        print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+        print("Q réduit")
+        print(Q.tocsr()[:,0:rank].toarray())
+        print("R réduit")
+        print(R.tocsr()[0:rank,0:rank].toarray())
+        print("QR reduit")
+        print(Q.tocsr()[:,0:rank].dot(R.tocsr()[0:rank,0:rank].toarray() ) )
+        print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+        error = np.linalg.norm(A.toarray()[:,P[0:rank]] - Q.tocsr()[:,0:rank].dot(R.tocsr()[0:rank,0:rank].toarray() ) )
+        if abs(error) > 1e-10:
+            raise
+        print(error)
 
+        print ("OK EigenSPQR"  )
 
+    QRTest(A.T)
 
 def CheckIntegrity(GUI=False):
-
-    solvers = _available_algorithms()
+    obj =  SolverFactory()
+    solvers = GetAvailableSolvers()
 
     for s in solvers:
         CheckSolver(GUI,s)
 
-    return "ok"
+    CheckSPQR(GUI)
 
+    return "ok"
 
 if __name__ == '__main__':
     print(CheckIntegrity()) #pragma: no cover

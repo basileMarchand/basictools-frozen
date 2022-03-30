@@ -8,7 +8,7 @@ Configuration
 #############
 
 BasicTools has some module level variables accessible to the user.
-This variables can be used to alter the behavior of the library. 
+This variables can be used to alter the behavior of the library.
 The following template can be used to configure BasicTools for a specific application.
 please refers to the module help for more information.
 
@@ -64,3 +64,10 @@ please refers to the module help for more information.
     #print("I.MultiThreadThreshold =", I.MultiThreadThreshold)
     #default 100
     #I.MultiThreadThreshold = 100
+
+    #import BasicTools.Linalg.LinearSolver as IS
+    #default "EigenCG"
+    #IS.defaultIfError = "EigenCG"
+    #IS.defaultIfError = "CG"
+
+
