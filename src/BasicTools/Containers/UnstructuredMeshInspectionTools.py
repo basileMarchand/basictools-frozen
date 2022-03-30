@@ -514,18 +514,21 @@ def ComputeMeshMinMaxLengthScale(mesh):
         if data.GetNumberOfElements() == 0: continue
         posx = mesh.nodes[data.connectivity,0]
         posy = mesh.nodes[data.connectivity,1]
-        posz = mesh.nodes[data.connectivity,2]
         meanx = np.sum(posx,axis=1)/data.GetNumberOfNodesPerElement()
         meany = np.sum(posy,axis=1)/data.GetNumberOfNodesPerElement()
-        meanz = np.sum(posz,axis=1)/data.GetNumberOfNodesPerElement()
         meanx.shape = (len(meanx),1)
         meany.shape = (len(meanx),1)
-        meanz.shape = (len(meanx),1)
 
-        posx-meanx
-        distToBaricenter = np.sqrt((posx-meanx)**2 +
-        (posy-meany)**2 +
-        (posz-meanz)**2)
+
+        distToBaricenter2 = (posx-meanx)**2 + (posy-meany)**2
+
+        if mesh.nodes.shape[1] == 3:
+            posz = mesh.nodes[data.connectivity,2]
+            meanz = np.sum(posz,axis=1)/data.GetNumberOfNodesPerElement()
+            meanz.shape = (len(meanx),1)
+            distToBaricenter2 += (posz-meanz)**2
+
+        distToBaricenter = np.sqrt(distToBaricenter2)
         mmin = np.min(distToBaricenter)
         mmax = np.max(distToBaricenter)
         if resMin is None:
