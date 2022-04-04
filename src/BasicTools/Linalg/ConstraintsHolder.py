@@ -103,8 +103,9 @@ class ConstraintsHolder(BOO):
         self.NextEquation()
 
     def AddEquationsFromIJV(self,ei,ej,ev):
-        ej = np.array(ej)
-        ev = np.array(ev)
+        ei = np.require(ei, dtype=PBasicIndexType)
+        ej = np.require(ej, dtype=PBasicIndexType)
+        ev = np.require(ev, dtype=PBasicFloatType)
         s = np.unique(ei)
 
         for i in s:
@@ -118,7 +119,7 @@ class ConstraintsHolder(BOO):
         r = self.numberOfEquations
         c = self.nbdof+1
 
-        res = coo_matrix((self.vals, (self.rows, self.cols)), shape=((r, c)), copy=False )
+        res = coo_matrix((self.vals, (self.rows, self.cols)), shape=((r, c)), copy=False, dtype=PBasicFloatType )
 
         self.rows = res.row
         self.cols = res.col
@@ -131,8 +132,8 @@ class ConstraintsHolder(BOO):
         self.vals.extend(A.data)
 
         if b is not None:
-            self.rows.extend(np.arange(A.shape[0])+self.numberOfEquations )
-            self.cols.extend(np.ones(A.shape[0])*self.nbdof)
+            self.rows.extend(np.arange(A.shape[0],dtype=PBasicIndexType)+self.numberOfEquations )
+            self.cols.extend(np.ones(A.shape[0],dtype=PBasicIndexType)*self.nbdof,dtype=PBasicIndexType)
             self.vals.extend(b)
             raise
 
@@ -282,7 +283,7 @@ class ConstraintsHolder(BOO):
             res_rows = M.row
             res_cols = M.col
             rankcpt = M.shape[0]
-            slaves = np.arange(M.shape[1]-1)
+            slaves = np.arange(M.shape[1]-1,dtype=PBasicIndexType)
         else:
             atonce = np.zeros( M.shape[0],dtype=bool)
             slaves = []
@@ -585,12 +586,12 @@ class Projection(BOO):
         nbdof = CH.GetNumberOfDofsOnOriginalSystem()
 
         mat, self.mattoglobal, slaves = CH.GetCleanConstraintBase()
-        slavesInMat = np.array(slaves)
+        slavesInMat = np.require(slaves,dtype=PBasicIndexType)
         slaveIds = self.mattoglobal[slavesInMat]
 
         mat = mat.tocsr()
 
-        self.slaves = np.array(slaveIds,dtype=PBasicIndexType)
+        self.slaves = np.require(slaveIds,dtype=PBasicIndexType)
 
         masterMatMask = np.ones(mat.shape[1]-1,dtype=bool )
         masterMatMask[slavesInMat] = False
@@ -607,9 +608,9 @@ class Projection(BOO):
 
         self.Ms_1 = splinalg.splu(Ms)
         Ms_1Mm = sparse.coo_matrix(self.Ms_1.solve(Mm.toarray()))
-        Xdata = np.hstack( (np.ones(self.nbMaster), -Ms_1Mm.data  ) )
+        Xdata = np.hstack( (np.ones(self.nbMaster,dtype=PBasicFloatType), -Ms_1Mm.data  ) )
         Xrow  = np.hstack( ( self.masters, slaveIds[Ms_1Mm.row] ) )
-        Xcol  = np.hstack( ( np.arange(self.nbMaster), Ms_1Mm.col ) )
+        Xcol  = np.hstack( ( np.arange(self.nbMaster,dtype=PBasicIndexType), Ms_1Mm.col ) )
 
         self.X = sparse.coo_matrix( (Xdata,(Xrow,Xcol )), shape=(nbdof,self.nbMaster )   )
 
