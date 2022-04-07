@@ -579,7 +579,7 @@ def GetParameterFiles(data, parameterName = None):
       paraFilesData = GetFromInp(data,{'4':['calcul'], '3':['parameter'], '2':['file', parameterName]})
 
     import re
-    numeric_const_pattern = '[-+]? (?: (?: \d* \. \d+ ) | (?: \d+ \.? ) )(?: [Ee] [+-]? \d+ ) ?'
+    numeric_const_pattern = r'[-+]? (?: (?: \d* \. \d+ ) | (?: \d+ \.? ) )(?: [Ee] [+-]? \d+ ) ?'
     rx = re.compile(numeric_const_pattern, re.VERBOSE)
 
     parameterFiles = {}
