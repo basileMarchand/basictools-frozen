@@ -84,6 +84,11 @@
     The function TestAll() is used to test the library (see documentation of
     this function for more information).
 
+    With a correct configuration of the environment, the following command should
+    return 100% of successful tests:
+
+        > python -m BasicTools -k Catalyst
+
     COVERAGE :
 
     If you want to tell coverage.py to ignore some part of the code, use the
