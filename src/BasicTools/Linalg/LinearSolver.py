@@ -243,6 +243,10 @@ class LinearSolverEigen(LinearSolverIterativeBase):
     def __init__(self,subtype):
         super(LinearSolverEigen,self).__init__()
         self.SetSolver(subtype)
+        import BasicTools.Linalg.NativeEigenSolver as NativeEigenSolver
+        self.solver = NativeEigenSolver.CEigenSolvers()
+        from BasicTools.Helpers.CPU import GetNumberOfAvailableCpus
+        self.solver.ForceNumberOfThreads(GetNumberOfAvailableCpus())
 
     def SetSolver(self, subtype):
         self.name = "Eigen"+subtype
@@ -250,8 +254,6 @@ class LinearSolverEigen(LinearSolverIterativeBase):
         self.solver = None
 
     def _setop_imp(self,op):
-        import BasicTools.Linalg.NativeEigenSolver as NativeEigenSolver
-        self.solver = NativeEigenSolver.CEigenSolvers()
         self.solver.SetSolverType(self.subtype)
         self.solver.SetTolerance(self.tol)
         self.solver.SetOp(op)

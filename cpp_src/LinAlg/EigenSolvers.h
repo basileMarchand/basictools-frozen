@@ -136,6 +136,9 @@ struct EigenSolvers {
 
         this->solverType = 0;
     }
+    void ForceNumberOfThreads(int n){
+        Eigen::setNbThreads(n);
+    };
 
     void SetSolverType(int i) {
         this->Clean();

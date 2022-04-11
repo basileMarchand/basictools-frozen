@@ -18,6 +18,7 @@ cdef extern from "LinAlg/EigenSolvers.h"  namespace "BasicTools"  :
     cdef cppclass EigenSolvers:
         EigenSolvers() except +
         void SetSolverType(int)
+        void ForceNumberOfThreads(int)
         void SetOp(CBasicIndexType, CBasicIndexType,CBasicIndexType, CBasicFloatType*,CBasicIndexType*,CBasicIndexType*, const CBasicFloatType& ) nogil
         void Solve(CBasicIndexType,CBasicFloatType*,CBasicFloatType*) nogil
         CBasicIndexType GetSPQRRank()
@@ -39,6 +40,9 @@ cdef class CEigenSolvers():
 
      def SetTolerance(self,double tol):
          self.tol = tol
+
+     def ForceNumberOfThreads(self, int n):
+        self.cpp_object.ForceNumberOfThreads(n)
 
      def SetSolverType(self,str stype):
          if stype == "CG":
@@ -92,7 +96,7 @@ cdef class CEigenSolvers():
      def GetSPQR_R(self):
 
          cdef EigenSolvers* solver = &self.cpp_object
-         nzsize = solver.GetSPQR_R_nonZeros();
+         nzsize = solver.GetSPQR_R_nonZeros()
          cdef np.ndarray[CBasicFloatType, ndim=1, mode="c"] vals = np.ndarray(nzsize,dtype=PBasicFloatType)
          cdef np.ndarray[CBasicIndexType, ndim=1, mode="c"] rows = np.ndarray(nzsize,dtype=PBasicIndexType)
          cdef np.ndarray[CBasicIndexType, ndim=1, mode="c"]cols = np.ndarray(nzsize,dtype=PBasicIndexType)
@@ -140,7 +144,7 @@ cdef class CEigenSolvers():
          cdef CBasicIndexType* rp = &rows[0]
          cdef CBasicIndexType* cp = &cols[0]
 
-         solver.GetSPQR_Q(si,sj, vp,rp,cp);
+         solver.GetSPQR_Q(si,sj, vp,rp,cp)
 
          data = (vals, (rows,cols))
          Q = coo_matrix(data, shape=(sizes[0],sizes[1]) )
