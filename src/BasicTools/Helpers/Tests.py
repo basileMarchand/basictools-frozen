@@ -209,7 +209,10 @@ def __tryImportRecursive(submod,tocheck,stopAtFirstError,modulestotreat,modulest
   import importlib
   try:
     sm = importlib.import_module(submod)
-  except :
+  except ImportError as e:
+    print(e)
+    if(stopAtFirstError): raise
+  except Exception as e:
     sm = None
 
   cif = getattr( sm, "CheckIntegrity", None)
