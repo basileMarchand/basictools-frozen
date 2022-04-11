@@ -183,9 +183,11 @@ void MonoElementsIntegralCpp::Integrate( WeakForm* wform, std::vector<int>& idst
     int n;
     int rightIndex=0;
     int leftIndex=0;
-    for(int elem_counter =0; elem_counter< idstotreat_s; ++elem_counter){
-        ElementMatrix =  MatrixDDD::Zero(maxsizelocalTestDofs,maxsizelocalUnkownDofs);
+    ElementMatrix =  MatrixDDD::Zero(maxsizelocalTestDofs,maxsizelocalUnkownDofs);
+    MatrixDDD Jack(3,3);
 
+    for(int elem_counter =0; elem_counter< idstotreat_s; ++elem_counter){
+        ElementMatrix.setZero();
         n = idstotreat[elem_counter];
 //      the coordinates of the nodes
         for( int j = 0; j < nbcols;++j){
@@ -199,7 +201,7 @@ void MonoElementsIntegralCpp::Integrate( WeakForm* wform, std::vector<int>& idst
         for(int ip = 0; ip< NumberOfIntegrationPoints;  ++ip){
 //            """ we recover the jacobian matrix """
             MatrixDDD Jack;
-            Jack.resize(3,3);
+
             double Jdet;
 
             GetInv_Jacobian_Det(*geoSpace.valdphidxi[ip],
@@ -250,8 +252,6 @@ void MonoElementsIntegralCpp::Integrate( WeakForm* wform, std::vector<int>& idst
                         } else {
                             right = cs.GetNxNyNz();
                         }
-//                        rightNumbering = this->lnumbering[term.numberingIndex_]->row(n);
-//                        rightNumbering.array() += this->unkownDofsOffset(term.valuesIndex_,0);
                         hasright = true;
                         l2 = this->lspaces[term.spaceIndex_].numberOfShapeFunctions;
                         rightIndex = term.valuesIndex_;
@@ -295,29 +295,10 @@ void MonoElementsIntegralCpp::Integrate( WeakForm* wform, std::vector<int>& idst
                         exit(1);
                     }
                 }
-                if(factor == 0) continue;
-
-
+                if(factor == 0.0) continue;
 
                 if(hasright){
 
-//                    const int l = l1*l2;
-//                    int l2cpt = fillcpt;
-//                    for(int i=0;i<l1;++i){
-//                        for(int j=0;j<l2;++j){
-//                            ev[l2cpt] =  left[i]*right[j]*factor;
-//                            ej[l2cpt] = rightNumbering[j];
-//                            l2cpt +=1;
-//                        }
-//                    }
-//                    l2cpt = fillcpt;
-//                    for(int j=0;j<l2;++j){
-//                        for(int i=0;i<l1;++i){
-//                            ei[l2cpt] = leftNumbering[j];
-//                            l2cpt += 1;
-//                        }
-//                    }
-//                    fillcpt += l;
                     const CBasicIndexType loff =   this->localTestDofsOffset[leftIndex];
                     const CBasicIndexType roff =   this->localUnkownDofsOffset[rightIndex];
                     for(int i=0;i<l1;++i){
@@ -343,8 +324,8 @@ void MonoElementsIntegralCpp::Integrate( WeakForm* wform, std::vector<int>& idst
                 rightNumbering.array() += this->unkownDofsOffset(vj,0);
                 for (int i=0; i<leftNumbering.rows(); ++i){
                     for (int j=0; j<rightNumbering.rows(); ++j){
-                        double val = ElementMatrix(localTestDofsOffset[vi]+i,localUnkownDofsOffset[vj]+j);
-                        if (val != 0){
+                        const double val = ElementMatrix(localTestDofsOffset[vi]+i,localUnkownDofsOffset[vj]+j);
+                        if (val != 0.0){
                             const CBasicIndexType ii = leftNumbering[i];
                             const CBasicIndexType jj = rightNumbering[j];
 

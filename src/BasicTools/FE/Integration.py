@@ -294,6 +294,14 @@ class IntegrationClass(BaseOutputObject):
         if not isinstance(self.mesh, UnstructuredMesh):
             self.mesh.GetPosOfNodes()
 
+    def SetOutputObjects(self, vK, iK, jK, rhs):
+        """ This is an advace feature, the user must put objects of the correct size"""
+        self.vK = vK
+        self.iK = iK
+        self.jK = jK
+
+        self.rhs = rhs
+
     def Allocate(self):
         """ Function to allocate the memory to do the integration
         This function must be called right before the integation
@@ -308,11 +316,14 @@ class IntegrationClass(BaseOutputObject):
         if numberOfVIJ==0:
             numberOfVIJ = 1
 
-        self.vK = np.zeros(numberOfVIJ,dtype=PBasicFloatType)
-        self.iK = np.empty(numberOfVIJ,dtype=PBasicIndexType)
-        self.jK = np.empty(numberOfVIJ,dtype=PBasicIndexType)
 
-        self.rhs = np.zeros(self.integrator.GetTotalTestDofs(),dtype=PBasicFloatType)
+        vK = np.zeros(numberOfVIJ,dtype=PBasicFloatType)
+        iK = np.zeros(numberOfVIJ,dtype=PBasicIndexType)
+        jK = np.zeros(numberOfVIJ,dtype=PBasicIndexType)
+
+        rhs = np.zeros(self.integrator.GetTotalTestDofs(),dtype=PBasicFloatType)
+
+        self.SetOutputObjects( vK, iK, jK, rhs)
 
     def Compute(self, forceMonoThread=False):
         """Execute the integration in multitrhead
@@ -370,27 +381,21 @@ class IntegrationClass(BaseOutputObject):
         allworkload = [ PartialElementFilter(self.elementFilter,self.nbCPUs,i) for i in range(self.nbCPUs)  ]
         workload = []
 
+        cpt = 0
         for f in allworkload:
             if f.ApplyOnElements(ElementCounter()).cpt > 0:
-                workload.append(f)
+                numberOfVIJ = self.integrator.ComputeNumberOfVIJ(self.mesh,f)
+                workload.append((f,self.vK[cpt:numberOfVIJ+cpt],self.iK[cpt:numberOfVIJ+cpt],self.jK[cpt:numberOfVIJ+cpt]) )
+                cpt += numberOfVIJ
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=self.nbCPUs) as executor:
             results =  executor.map(self._InternalComputeMonoThreadSafe,workload)
-            cpt = 0
-            for kvij, rhs in results:
-                if kvij is None:
-                    return
-                v,(i,j) = kvij
-                sizeOfvij = len(v)
-                self.vK[cpt:cpt+sizeOfvij] = v
-                self.iK[cpt:cpt+sizeOfvij] = i
-                self.jK[cpt:cpt+sizeOfvij] = j
-                cpt += sizeOfvij
+            for rhs in results:
                 self.rhs += rhs
-
         self.numberOfUsedvij = cpt
 
-    def _InternalComputeMonoThreadSafe(self,elementFilter):
+    def _InternalComputeMonoThreadSafe(self,elementFilter_vK_iK_jK):
+        elementFilter,vK,iK,jK =elementFilter_vK_iK_jK
         res = IntegrationClass()
         res.nbCPUs = 1
         res.SetMesh(self.mesh)
@@ -403,9 +408,11 @@ class IntegrationClass(BaseOutputObject):
         res.SetElementFilter(elementFilter)
         res.SetWeakForm(self.numericalWeakForm)
         res.PreStartCheck()
-        res.Allocate()
+        rhs = np.zeros(res.integrator.GetTotalTestDofs(),dtype=PBasicFloatType)
+        res.SetOutputObjects(vK,iK,jK,rhs)
+
         res.ComputeMonoThread()
-        return res.GetKvij(), res.GetRhs()
+        return res.GetRhs()
 
     def ComputeMonoThread(self,elementFilter=None):
         """Execute the integration using only one tread (this function is no threadsafe)
