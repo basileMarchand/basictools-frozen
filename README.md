@@ -22,6 +22,8 @@
     sphinx-rtd-theme
     setuptools-scm
     pyvista
+    psutil
+    pywin32 [Only for windows]
 
 
     C++ OPEN-SOURCE DEPENDENCIES

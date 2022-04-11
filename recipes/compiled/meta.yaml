@@ -50,6 +50,8 @@ requirements:
     - h5py
     - pyvista [not py==36]
     - scikit-sparse [not win]
+    - psutil
+    - pywin32 [win]
 
 test:
   requirements:
