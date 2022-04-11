@@ -59,23 +59,20 @@ def GetBasicToolsIncludeDirs():
         include_dirs.append(os.path.join(conda_prefix, "include", "eigen3"))
         include_dirs.append(os.path.join(conda_prefix, "Library", "include"))
         include_dirs.append(os.path.join(conda_prefix, "Library", "include", "eigen3"))
-
     if "PREFIX" in os.environ:
         conda_prefix = os.environ["PREFIX"]
         include_dirs.append(os.path.join(conda_prefix, "include"))
         include_dirs.append(os.path.join(conda_prefix, "include", "eigen3"))
         include_dirs.append(os.path.join(conda_prefix, "Library", "include"))
         include_dirs.append(os.path.join(conda_prefix, "Library", "include", "eigen3"))
-
     import numpy
     include_dirs.extend([numpy.get_include(),"cpp_src" ,"."])
-
     import eigency
     include_dirs.extend(eigency.get_includes(include_eigen=useEigencyEigen) )
     if not useEigencyEigen:
         if "EIGEN_INC" in os.environ:
             include_dirs.append(os.environ.get('EIGEN_INC'))
-    return include_dirs
+    return list(set(include_dirs))
 
 class add_path():
     def __init__(self, path):
@@ -116,7 +113,8 @@ try:
     for n,m in zip(cython_src,cython_src_with_path):
         modules.append(Extension("BasicTools."+n.split(".pyx")[0].replace("/","."), [m],
         libraries=["libCppBasicTools"],
-        language="c++"  ))
+        language="c++",
+        ))
 
 except ImportError as e:
     print(f"Compilation disabled since {e.name} package is missing")
@@ -125,6 +123,15 @@ except ImportError as e:
 except Exception as e:
     print("Error during generation of cpp sources ")
     print(e)
+
+extra_compile_args = {
+            'unix': ['-fopenmp'],
+            'msvc': ['/openmp']
+    }
+extra_link_args = {
+            'unix': ['-fopenmp'],
+            'msvc': ['/openmp']
+    }
 
 class GenerateCommand(Command):
     description = "custom generate command that generate the c++ sources from python "
@@ -154,6 +161,10 @@ class my_build_ext(build_ext):
     def build_extensions(self):
         for ext in self.extensions:
             ext.include_dirs.extend(GetBasicToolsIncludeDirs())
+            ctype = self.compiler.compiler_type
+            ext.extra_compile_args = extra_compile_args.get(ctype, [])
+            ext.extra_link_args = extra_link_args.get(ctype, [])
+
         build_ext.build_extensions(self)
 
 class my_build_clib(build_clib):
@@ -174,17 +185,20 @@ class my_build_clib(build_clib):
             macros.extend(define_macros)
             build_info["macros"] = macros
 
+            ctype = self.compiler.compiler_type
+            cflags = build_info.get('cflags',[])
+            cflags.extend(extra_compile_args.get(ctype, []))
+            build_info["cflags"] = cflags
+
+
         build_clib.build_libraries(self,libraries)
 
-class my_install(install):
-    def run(self):
-        self.run_command('generate')
-        install.run(self)
+
 
 if __name__ == '__main__':
     setup(
         ext_modules=modules,
         libraries=ext_libraries,
-        cmdclass={'install':my_install, 'build': build,'build_ext':my_build_ext,'build_clib': my_build_clib,'generate': GenerateCommand},
+        cmdclass={ 'build': build,'build_ext':my_build_ext,'build_clib': my_build_clib,'generate': GenerateCommand},
         data_files=[("ParaViewPlugins",["extras/BasicToolsParaViewBridge.py"])]
 )
