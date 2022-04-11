@@ -12,6 +12,7 @@ import sys
 import time
 import inspect
 from functools import wraps
+import psutil
 
 _startTime = time.time()
 useDifferentialTime = True
@@ -172,6 +173,8 @@ class BaseOutputObject(object):
                 h, m = divmod(m, 60)
                 d, h = divmod(h, 24)
                 res += ("[%d:%02d:%02d]" % (h+1, m, s))
+
+            res += " [%.2fMB]" % (psutil.Process().memory_info().rss/ (1048576))
 
             if level == 1 :
                 res += (TFormat.InBlue(" --> "))
