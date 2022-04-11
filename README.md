@@ -33,10 +33,7 @@
 
     FOR WINDOWS:
       install Microsoft Visual C++ Build Tools to use eigen,
-      scikit-sparse package not available in anaconda for windows, should be able to compile it for windows following https://github.com/xmlyqing00/Cholmod-Scikit-Sparse-Windows,
-      tested on windows10: 99 tests OK, 3 tests not OK (Linalg.LinearSolver, IO.Wormhole (SIGALARM not supported on windows), IO.CodeInterface
-
-
+      scikit-sparse package not available in anaconda for windows, some functionality will be missing,
 
 2) INSTALLATION
 
@@ -45,16 +42,16 @@
     For conda you can create packages using the recipes available on the sources:
 
         recipes/compiled/  -> for compiled version of BasicTools
-        recipes/noarch/  -> (not recomended) for a pure python (slower) version of BasicTools
+        recipes/noarch/  -> (not recommended) for a pure python (slower) version of BasicTools
 
     FOR DEVELOPERS:
 
-    For development using a conda or other type of enviroment manager :
+    For development using a conda or other type of environment manager :
 
-        create an enviroment with all the requirements
+        create an environment with all the requirements
 
 
-    if the compilation script cant find eigen please add the environement variable with the path to the EIGEN library must be defined (normaly you dont have to do this):
+    if the compilation script cant find eigen please add the environment  variable with the path to the EIGEN library must be defined (normally you don't have to do this):
 
         > export EIGEN_INC=/Path/To/Eigen/Library
 
@@ -64,7 +61,10 @@
 
         > python setup.py generate
         > python setup.py build_clib
-        > python setup.py build_ext --inplace
+        > python -m pip install --no-deps  -e . -vv
+
+    This will install the library in developer mode (-e), to reinstall please remove the "build" before running
+    the commands again.
 
 
 3) TESTING INFRASTRUCTURE
@@ -101,7 +101,7 @@
     case arises when a test relies on an external dependency that may not be
     available.
 
-    The feature relies on the definition of non-empty enviromennt variables of
+    The feature relies on the definition of non-empty environment variables of
     the form :
 
         "appsname_NO_FAIL"
