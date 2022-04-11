@@ -2,7 +2,7 @@
 
 package:
   name: "basictools"
-  version: {{ GIT_DESCRIBE_TAG }}
+  version: {{ GIT_DESCRIBE_TAG }}.{{ GIT_DESCRIBE_NUMBER }}
 
 source:
   path: ../../.
@@ -10,7 +10,7 @@ source:
 build:
   skip : True # [py==36]
 
-  number: {{ GIT_DESCRIBE_NUMBER }}
+  number: 0
   entry_points:
     - "MeshFileConvert = BasicTools.IO.MeshFileConverter:Main"
 
@@ -50,7 +50,6 @@ requirements:
     - h5py
     - pyvista [not py==36]
     - scikit-sparse [not win]
-    - psutil
     - pywin32 [win]
 
 test:
