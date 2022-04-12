@@ -130,7 +130,7 @@ extra_compile_args = {
     }
 extra_link_args = {
             'unix': ['-fopenmp'],
-            'msvc': ['/openmp']
+            'msvc': []
     }
 
 class GenerateCommand(Command):
