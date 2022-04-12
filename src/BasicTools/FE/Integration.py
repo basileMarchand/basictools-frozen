@@ -205,7 +205,7 @@ class IntegrationClass(BaseOutputObject):
                 self.integrationRule = IntegrationRulesAlmanac[integrationRuleName]
             else:
                 raise Exception("must give integrationRuleName or integrationRule not both")
-        self.integrator.SetIntegrationRule(integrationRule)
+        self.integrator.SetIntegrationRule(self.integrationRule)
 
     def SetIntegrator(self,userIntegrator=None, forceUseCpp=True):
         """Set the internal integrator (only for advance users) """
