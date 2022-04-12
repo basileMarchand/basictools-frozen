@@ -207,7 +207,7 @@ class IntegrationClass(BaseOutputObject):
                 raise Exception("must give integrationRuleName or integrationRule not both")
         self.integrator.SetIntegrationRule(self.integrationRule)
 
-    def SetIntegrator(self,userIntegrator=None, forceUseCpp=True):
+    def SetIntegrator(self, userIntegrator=None):
         """Set the internal integrator (only for advance users) """
         if userIntegrator is None:
             typeCpp = True
@@ -220,7 +220,7 @@ class IntegrationClass(BaseOutputObject):
                 print(str(err))
                 print("Warning : Using Python Integration (very slow)")
 
-            if forceUseCpp and typeCpp:
+            if typeCpp and UseCpp :
                 import BasicTools.FE.Integrators.NativeIntegration as NI
                 self.integrator = NI.PyMonoElementsIntegralCpp()
             else:
