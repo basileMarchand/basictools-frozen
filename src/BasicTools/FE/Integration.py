@@ -334,6 +334,10 @@ class IntegrationClass(BaseOutputObject):
             true to force the use of only one thread
 
         """
+        if not self.integrator.IsMultiThread():
+            self.PrintDebug("Integration with only one thread")
+            return self.ComputeMonoThread()
+
         self.PrintDebug(f"Integration forceMonoThread={forceMonoThread}, nbCPUs={self.nbCPUs}")
         if forceMonoThread or self.nbCPUs == 1:
             return self.ComputeMonoThread()

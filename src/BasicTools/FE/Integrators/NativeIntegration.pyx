@@ -82,6 +82,9 @@ cdef class PyMonoElementsIntegralCpp():
         self.maxNumberOfElementVIJ = 0
         self.BOO = BaseOutputObject()
 
+    def IsMultiThread(self):
+        return True
+
     def SetUnkownFields(self,list ufs): # OK
 
         self.__ufs__ = ufs

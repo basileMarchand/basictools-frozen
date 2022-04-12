@@ -27,13 +27,13 @@ class MonoElementsIntegral(BOO):
     * testDofsOffset   : offset for the test dofs
     * __tfs__          : unkown dofs
 
-    * totalTestDofs    : Total number fo test dofs    (computed Automaticaly)
-    * totalUnkownDofs  : Total number fo unkown dofs  (computed Automaticaly)
-    * geoSpace         : Geometry aproximation space  (computed Automaticaly)
+    * totalTestDofs    : Total number fo test dofs    (computed Automatically)
+    * totalUnkownDofs  : Total number fo unknown dofs  (computed Automatically)
+    * geoSpace         : Geometry approximation space  (computed Automatically)
 
     * __efs__          : Extra Fields
     * __cfs__          : (dic(str:float) ) Constants
-    * integrationRule  : integration rule for the integratoin
+    * integrationRule  : integration rule for the integration
     * onlyEvaluation   : To force the integrator to not multiply by the detJac
 
     * numberOfVIJ = 0
@@ -41,9 +41,8 @@ class MonoElementsIntegral(BOO):
     * vK, iK, jK       : Vectors containing the values and indices for the entries
                          of the operator
     * totalvijcpt      : Number of non zero entries in the self.vK iK ant jK vector
-    * maxNumberOfTerms : maximal number of terms in a monom (computed Automaticaly)
-    * maxNumberOfElementVIJ : (computed Automaticaly)
-    * hasnormal        : (computed Automaticaly)
+    * maxNumberOfTerms : maximal number of terms in a monom (computed Automatically)
+    * hasnormal        : (computed Automatically)
     * __usedSpaces__
     * geoSpaceNumber
     """
@@ -64,7 +63,7 @@ class MonoElementsIntegral(BOO):
         self.integrationRule = None
         self.onlyEvaluation = False
         """
-        For the evaluation we only add the constribution without doing the integration
+        For the evaluation we only add the contribution without doing the integration
         the user is responsible of dividing by the mass matrix to get the correct values
         also the user can use a discontinues field to generate element surface stress (for example)
         """
@@ -76,7 +75,6 @@ class MonoElementsIntegral(BOO):
         self.jK = None
         self.totalvijcpt = 0
         self.maxNumberOfTerms = 0
-        self.maxNumberOfElementVIJ = 0
         self.hasnormal = False
         self.__usedSpaces__ = None
         self.__usedNumbering__ = None
@@ -84,7 +82,7 @@ class MonoElementsIntegral(BOO):
         self.__usedValuesAtIP__ = None
         self.geoSpaceNumber = 0
 
-        # internal variables dependent on the courrent element type been treatd
+        # internal variables dependent on the current element type been treated
         # (internal use only )
         self.localSpaces = None
         self.localNumbering = None
@@ -93,6 +91,13 @@ class MonoElementsIntegral(BOO):
         self.w = None
         self.nodes = None
         self.connectivity = None
+        self.isMultiThread = False
+        self.NumberOfShapeFunctionTest = 0
+        self.NumberOfShapeFunctionUnknown = 0
+
+    def IsMultiThread(self):
+        """In pure python the GIL block so a multiThread is useless"""
+        return False
 
     def SetUnkownFields(self,ufs):
         """
@@ -158,7 +163,6 @@ class MonoElementsIntegral(BOO):
         Compute and return the number triplets to be calculated during integration
         """
         self.numberOfVIJ = 0
-        self.maxNumberOfElementVIJ = 0
         for name, _data, ids in elementFilter:
             if len(ids) == 0:
                 continue
@@ -167,7 +171,6 @@ class MonoElementsIntegral(BOO):
             us = np.sum([f.space[name].GetNumberOfShapeFunctions() for f in self.__ufs__] )
             ts = np.sum([f.space[name].GetNumberOfShapeFunctions() for f in self.__tfs__ ] )
 
-            self.maxNumberOfElementVIJ = max(self.maxNumberOfElementVIJ,numberOfUsedElements*(us*ts))
             self.numberOfVIJ += numberOfUsedElements*(us*ts)
         return self.numberOfVIJ
 
@@ -360,7 +363,8 @@ class MonoElementsIntegral(BOO):
         self.geoSpace = LagrangeSpaceGeo[domain.elementType].SetIntegrationRule(self.p,self.w)
 
         self.NumberOfShapeFunctionForEachSpace = np.zeros(len(self.__usedSpaces__), dtype=int)
-
+        self.NumberOfShapeFunctionTest = np.sum([ f.space[domain.elementType].GetNumberOfShapeFunctions() for f in self.__tfs__ ])
+        self.NumberOfShapeFunctionUnknown = np.sum([ f.space[domain.elementType].GetNumberOfShapeFunctions() for f in self.__ufs__ ])
         cpt = 0
         self.localSpaces = list()
         for space in self.__usedSpaces__:
@@ -389,10 +393,10 @@ class MonoElementsIntegral(BOO):
             cpt += 1
 
         numberOfIntegrationPoints = len(self.w)
-
-        ev = np.empty(self.maxNumberOfElementVIJ*wform.GetNumberOfTerms()*numberOfIntegrationPoints,dtype=PBasicFloatType)
-        ei = np.empty(self.maxNumberOfElementVIJ*wform.GetNumberOfTerms()*numberOfIntegrationPoints,dtype=PBasicIndexType)
-        ej = np.empty(self.maxNumberOfElementVIJ*wform.GetNumberOfTerms()*numberOfIntegrationPoints,dtype=PBasicIndexType)
+        maxNumberOfElementVIJ = self.NumberOfShapeFunctionTest*self.NumberOfShapeFunctionUnknown
+        ev = np.empty(maxNumberOfElementVIJ*wform.GetNumberOfTerms()*numberOfIntegrationPoints,dtype=PBasicFloatType)
+        ei = np.empty(maxNumberOfElementVIJ*wform.GetNumberOfTerms()*numberOfIntegrationPoints,dtype=PBasicIndexType)
+        ej = np.empty(maxNumberOfElementVIJ*wform.GetNumberOfTerms()*numberOfIntegrationPoints,dtype=PBasicIndexType)
 
         numberOfFields = len(self.__usedSpaces__)
 
@@ -505,6 +509,7 @@ class MonoElementsIntegral(BOO):
             if fillcpt:
                 data = coo_matrix((ev[:fillcpt], (ei[:fillcpt],ej[:fillcpt])), shape=( self.totalTestDofs,self.totalUnkownDofs))
                 data.sum_duplicates()
+                data.eliminate_zeros()
                 start = self.totalvijcpt
                 stop = start+len(data.data)
 
