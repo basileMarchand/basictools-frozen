@@ -191,6 +191,12 @@ def CheckIntegrityFlexion(P,tetra,GUI=False):
     mecaPhysics.AddBFormulation( "3D",mecaPhysics.GetBulkFormulation(1.0,0.3)  )
     mecaPhysics.AddLFormulation( "Z1", mecaPhysics.GetForceFormulation([1,0,0],0.002)  )
     mecaPhysics.AddLFormulation( "Z0", None  )
+    from BasicTools.FE.IntegrationsRules import LagrangeP2, LagrangeP1
+    if P == 1:
+        mecaPhysics.integrationRule = "LagrangeP1"
+    else:
+        mecaPhysics.integrationRule = "LagrangeP2"
+
     problem.physics.append(mecaPhysics)
 
     # the boundary conditions
@@ -205,10 +211,10 @@ def CheckIntegrityFlexion(P,tetra,GUI=False):
 
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateCube
 
-    nx = 11; ny = 12; nz = 13;
-    nx = nx//2
-    ny = ny//2
-    nz = nz//2
+    nx = 11; ny = 12; nz = 13
+    nx = 3
+    ny = 3
+    nz = 4
 
     mesh = CreateCube(dimensions=[nx,ny,nz],origin=[0,0,0.], spacing=[1./(nx-1),1./(ny-1), 10./(nz-1)], ofTetras=tetra )
     mesh.ConvertDataForNativeTreatment()
@@ -217,12 +223,10 @@ def CheckIntegrityFlexion(P,tetra,GUI=False):
     print(mesh)
     # we compute the numbering
     problem.ComputeDofNumbering()
-    #print(mecaPhysics.numberings[0])
 
     from BasicTools.Helpers.Timer import Timer
     with Timer("Assembly "):
         k,f = problem.GetLinearProblem()
-
 
     #problem.solver = LinearProblem()
     #problem.solver.SetAlgo("EigenCG")
