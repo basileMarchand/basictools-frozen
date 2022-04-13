@@ -6,6 +6,7 @@
 
 import numpy as np
 
+from BasicTools.NumpyDefs import PBasicFloatType, PBasicIndexType
 import BasicTools.Containers.ElementNames as EN
 from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
 
@@ -109,7 +110,7 @@ def MeshToMeshIO(mesh, TagsAsFields=False):
 def MeshIOToMesh(mesh, TagsAsFields=False):
     res = UnstructuredMesh()
 
-    res.nodes = mesh.points
+    res.nodes = np.ascontiguousarray(mesh.points,dtype=PBasicFloatType)
     res.nodeFields = mesh.point_data
 
     for tagname, tagdata in mesh.point_sets.items():
@@ -124,7 +125,7 @@ def MeshIOToMesh(mesh, TagsAsFields=False):
             data = cellblock.data
 
         elems = res.GetElementsOfType( elementNameByMeshIOName[name] )
-        elems.connectivity = data
+        elems.connectivity = np.ascontiguousarray(data,dtype=PBasicIndexType)
         nbelems = data.shape[0]
         elems.cpt = nbelems
         for tagname,tagdata in mesh.cell_sets.items():
@@ -147,7 +148,7 @@ def InitAllReaders():
     import meshio
     from meshio import extension_to_filetypes
 
-    for ext, filetype in extension_to_filetypes.items():
+    for ext, filetypes in extension_to_filetypes.items():
         def Getinit(filetype):
             def __init__(self):
                 super(type(self),self).__init__()
@@ -166,32 +167,34 @@ def InitAllReaders():
                 return MeshIOToMesh(mesh_io)
             return Read
 
-        wrapperClassName = "MeshIO_"+ ext[1:]+"_Reader"
-        obj = type(wrapperClassName,
-              (object,),
-              {"__init__":Getinit(filetype),
-               "SetFileName": GetSetFileName(),
-               "Read": GetRead(),}
-               )
-
-        globals()[wrapperClassName] = obj
-        globals()["readers"][ext] = obj
+        for filetype in filetypes:
+            wrapperClassName = "MeshIO_"+ ext[1:]+"_"+filetype+"_Reader"
+            obj = type(wrapperClassName,
+                  (object,),
+                  {"__init__":Getinit(filetype),
+                  "SetFileName": GetSetFileName(),
+                  "Read": GetRead(),}
+                  )
+            print(filetype)
+            globals()[wrapperClassName] = obj
+            globals()["readers"][wrapperClassName] = (ext,obj)
 
 def AddReadersToBasicToolsFactory():
     from BasicTools.IO.IOFactory import RegisterReaderClass
-    for ext,obj in globals()["readers"].items():
+    for name,(ext,obj) in globals()["readers"].items():
         RegisterReaderClass(ext,obj, withError= False)
 
 writers = {}
 def InitAllWriters():
     from meshio import extension_to_filetypes
-    for ext, filetype in extension_to_filetypes.items():
+    for ext, filetypes in extension_to_filetypes.items():
 
         def GetInit(filetype):
             def __init__(self):
                 super(type(self),self).__init__()
                 self.canHandleTemporal = False
                 self.canHandleBinaryChange = False
+                self.filename = None
             return __init__
 
         def GetSetFileName():
@@ -201,6 +204,9 @@ def InitAllWriters():
 
         def GetWrite(meshIOInternalfiletype):
             def Write(self,mesh=None, PointFieldsNames=None, PointFields=None, CellFieldsNames=None, CellFields=None):
+                if self.filename == None:
+                    raise Exception("Please SetFileName first")
+
                 meshio  = MeshToMeshIO(mesh)
 
                 if PointFieldsNames is not None:
@@ -223,23 +229,22 @@ def InitAllWriters():
         def SetBinary(self):
             pass
 
-
-        wrapperClassName = "MeshIO_"+ ext[1:]+"_Writer"
-        obj = type(wrapperClassName,
-              (object,),
-              {"__init__":GetInit(filetype),
-               "SetFileName": GetSetFileName(),
-               "Write": GetWrite(filetype),
-               "Open": Open,
-               "Close": Close,}
-               )
-
-        globals()[wrapperClassName] = obj
-        globals()["writers"][ext] = obj
+        for filetype in filetypes:
+            wrapperClassName = "MeshIO_"+ ext[1:]+"_"+filetype+"_Writer"
+            obj = type(wrapperClassName,
+                (object,),
+                {"__init__":GetInit(filetype),
+                "SetFileName": GetSetFileName(),
+                "Write": GetWrite(filetype),
+                "Open": Open,
+                "Close": Close,}
+                )
+            globals()[wrapperClassName] = obj
+            globals()["writers"][wrapperClassName] = (ext,obj)
 
 def AddWritersToBasicToolsFactory():
     from BasicTools.IO.IOFactory import RegisterWriterClass
-    for ext,obj in globals()["writers"].items():
+    for name,(ext,obj) in globals()["writers"].items():
         RegisterWriterClass(ext,obj, withError= False)
 
 def CheckIntegrity():
@@ -271,6 +276,29 @@ def CheckIntegrity():
 
     InitAllWriters()
     print(writers)
+    from BasicTools.Helpers.Tests import TestTempDir
+    tempdir = TestTempDir.GetTempPath()
+    print(tempdir)
+
+    # we test one reader/writer to check impl
+    name = "MeshIO_mesh_medit_Writer"
+    (ext,obj)= writers[name]
+    r = obj()
+    fname = tempdir+"/"+name+"_mesh."+ext
+    r.SetFileName(fname )
+    r.Write(res)
+
+    for name,(ext,obj) in writers.items():
+        if 'flac' in name:
+            continue
+        obj()
+
+    name = "MeshIO_mesh_medit_Reader"
+    (ext,obj)= readers[name]
+    r = obj()
+    r.SetFileName(fname)
+    r.Read()
+
     #AddWritersToBasicToolsFactory()
 
     return "ok"
