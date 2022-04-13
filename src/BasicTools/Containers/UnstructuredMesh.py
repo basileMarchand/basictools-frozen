@@ -614,7 +614,7 @@ class UnstructuredMesh(MeshBase):
             if len(data.connectivity) and np.amax(data.connectivity) >= nbnodes:
                 print(data.connectivity)
                 print(nbnodes)
-                raise Exception("connecitivty of '"+elemtype+"' out of bound > nbnodes")
+                raise Exception("connectivity of '"+elemtype+"' out of bound > nbnodes")
 
             nbelements = data.connectivity.shape[0]
 
