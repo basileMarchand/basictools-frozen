@@ -1,6 +1,4 @@
 
-%python% setup.py generate
-if errorlevel 1 exit 1
 %python% setup.py build_clib
 if errorlevel 1 exit 1
 %python% -m pip install --no-deps . -vv

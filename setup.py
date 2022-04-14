@@ -170,6 +170,7 @@ class my_build_ext(build_ext):
 class my_build_clib(build_clib):
 
     def build_libraries(self,libraries):
+        self.run_command("generate")
         define_macros = []
         if enable_MKL:
             define_macros.append(("MKL_DIRECT_CALL",None))
