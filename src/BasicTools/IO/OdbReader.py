@@ -32,6 +32,9 @@ class OdbReader(BaseOutputObject):
         self.client = None
         self.odb = None
         self.output = None
+        self.encoding = None
+
+
 
     def Reset(self):
         self.fieldsNamesToRead = []
@@ -181,7 +184,7 @@ class OdbReader(BaseOutputObject):
             cpt = 0
             temptagdata = defaultdict(lambda : list() )
             for elem in eSet.elements:
-                temptagdata[elem.type].append(elem.label)  
+                temptagdata[elem.type].append(elem.label)
 
             for elemstype,label in  temptagdata.items():
                 res.GetElementsOfType(InpNameToBasicTools[elemstype]).GetTag(name).SetIds( [ elemToMeshElem[x][1] for x in label ] )
@@ -239,7 +242,7 @@ class OdbReader(BaseOutputObject):
         s1 = 0
         s2 = 1
         for name,data in frame.fieldOutputs.items():
-            
+
             if len(self.fieldsNamesToRead) != 0  and name not in self.fieldsNamesToRead:
                 continue
 

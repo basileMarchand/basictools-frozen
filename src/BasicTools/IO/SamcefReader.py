@@ -90,6 +90,7 @@ class DatReader(ReaderBase):
         super(DatReader,self).__init__()
         self.commentChar= "!"
         self.readFormat = 'r'
+        self.encoding = None
 
     def ReadCleanLine(self,withError=False):
         res = super(DatReader,self).ReadCleanLine(withError=withError)

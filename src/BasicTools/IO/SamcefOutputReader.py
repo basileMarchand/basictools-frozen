@@ -23,6 +23,7 @@ class SamcefOuputReader(BOO):
         self.LCP = "me"
         self.timeToRead = 0.
         self.fieldsToRead = ["U","Element_Stress" ]
+        self.encoding = None
 
     def SetFileName(self, fileName):
         self.PrintDebug(fileName)
