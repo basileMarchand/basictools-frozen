@@ -15,7 +15,7 @@ from BasicTools.Helpers.BaseOutputObject import froze_it
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 
 import BasicTools.Containers.ElementNames as EN
-from BasicTools.Containers.Filters import ElementFilter, ElementCounter
+from BasicTools.Containers.Filters import ElementFilter, ElementCounter, FrozenFilter
 
 from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
 from BasicTools.FE.Fields.FEField import FEField
@@ -247,7 +247,10 @@ class IntegrationClass(BaseOutputObject):
             else:
                 self.elementFilter = ElementFilter( dimensionality=self.mesh.GetDimensionality()).GetFrozenFilter(mesh=self.mesh)
         else:
-            self.elementFilter = elementFilter.GetFrozenFilter(mesh=self.mesh)
+            if type(elementFilter) == FrozenFilter:
+                self.elementFilter = elementFilter
+            else:
+                self.elementFilter = elementFilter.GetFrozenFilter(mesh=self.mesh)
 
     def SetWeakForm(self,weakForm):
         """Set the weak form to be integrated
