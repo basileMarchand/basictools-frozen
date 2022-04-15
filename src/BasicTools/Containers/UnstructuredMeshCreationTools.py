@@ -119,8 +119,35 @@ def CreateSquare(dimensions=[2,2], origin=[-1.0,-1.0], spacing=[1.,1.], ofTris=F
 
 
     mesh.PrepareForOutput()
-
     return mesh
+
+def CreateDisk(nr=10, ntheta=10, r0=0.5, r1=1, theta0=0, theta1=np.pi/2 ):
+    """Functionto create a disk section
+    nr: number of points in the radial direction
+    ntheta: number of point in the angular direction
+    r0: internal radius
+    r1: external radius
+    theta0: start angle
+    theta1: end angle
+
+    return : Unstructured mesh of a disk sector
+    """
+    myMesh = CreateSquare(dimensions=[nr,ntheta],origin=[r0,theta0],spacing=[(r1-r0)/(nr-1),(theta1-theta0)/(ntheta-1)])
+
+    r = myMesh.nodes[:,0].copy()
+    theta = myMesh.nodes[:,1].copy()
+
+    myMesh.nodes[:,0] = r*np.cos(theta)
+    myMesh.nodes[:,1] = r*np.sin(theta)
+
+    import BasicTools.Containers.ElementNames as EN
+    myMesh.elements[EN.Bar_2].tags["X0"].name = "R0"
+    myMesh.elements[EN.Bar_2].tags["X1"].name = "R1"
+    myMesh.elements[EN.Bar_2].tags["Y0"].name = "Theta0"
+    myMesh.elements[EN.Bar_2].tags["Y1"].name = "Theta1"
+
+    return myMesh
+
 
 def CreateCube(dimensions=[2,2,2], origin=[-1.0,-1.0,-1.0], spacing=[1.,1.,1.], ofTetras=False):
     spacing = np.array(spacing,dtype=float)
@@ -678,6 +705,11 @@ def SubDivideMesh(mesh,level=1):
 
     return SubDivideMesh(res,level-1)
 #------------------------- CheckIntegrity ------------------------
+def CheckIntegrity_CreateDisk(GUI=False):
+    """ CheckIntegrity_CreateDisk """
+    a = CreateDisk()
+    return "ok"
+
 def CheckIntegrity_SubDivideMesh(GUI=False):
     points = [[0,0,0],
               [1,0,0],
@@ -830,6 +862,7 @@ def CheckIntegrity(GUI=False):
     CheckIntegrity_MirrorMesh,
     CheckIntegrity_Creat0DElementAtEveryPoint,
     CheckIntegrity_SubDivideMesh,
+    CheckIntegrity_CreateDisk,
     ]
     for f in totest:
         print("running test : " + str(f))
