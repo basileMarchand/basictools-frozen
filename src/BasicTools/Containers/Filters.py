@@ -113,7 +113,7 @@ class Filter(BOO):
 
     def _CheckMask_(self,start,size):
         if self.mask is not None:
-            return np.where(self.mask[start:size])[0]
+            return np.where(self.mask[start:start+size])[0]
         return None
 
     def intersect1D(self,first,second):
@@ -655,7 +655,7 @@ class ElementFilter(Filter):
         for name, data in self.mesh.elements.items():
             if name == elements.elementType:
                 break
-            init +=  elements.GetNumberOfElements()
+            init +=  data.GetNumberOfElements()
 
         resM = self._CheckMask_(init,elements.GetNumberOfElements())
         res3 = self.intersect1D(res3,resM)
