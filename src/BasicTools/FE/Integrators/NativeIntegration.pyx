@@ -82,6 +82,10 @@ cdef class PyMonoElementsIntegralCpp():
         self.maxNumberOfElementVIJ = 0
         self.BOO = BaseOutputObject()
 
+    def Reset(self):
+        self.maxNumberOfElementVIJ = 0
+        self.NativeIntegrator.Reset()
+
     def IsMultiThread(self):
         return True
 

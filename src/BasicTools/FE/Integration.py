@@ -125,6 +125,9 @@ class IntegrationClass(BaseOutputObject):
 
         self.SetIntegrator()
 
+    def Reset(self):
+        self.integrator.Reset()
+
     def SetConstants(self, constants):
         """Set the contants to be used in the weak form
 

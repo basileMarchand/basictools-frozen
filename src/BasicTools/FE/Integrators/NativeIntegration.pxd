@@ -12,6 +12,7 @@ cimport BasicTools.FE.WeakForms.NativeNumericalWeakForm as NNWF
 cdef extern from "FE/NativeIntegration.h" namespace "BasicTools" :
     cdef cppclass MonoElementsIntegralCpp:
         MonoElementsIntegralCpp() except +
+        void Reset()
         void SetNumberOfUnkownFields(CBasicIndexType)
         void SetUnkownOffset(int,int)
         void SetTotalUnkownDofs(int)

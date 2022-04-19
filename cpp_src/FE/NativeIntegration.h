@@ -153,6 +153,12 @@ struct MonoElementsIntegralCpp{
           }
   }
 
+  void Reset(){
+    this->hasnormal = false;
+    this->totalvijcpt = 0;
+    this->onlyUpper = false;
+  };
+
   void SetGeoSpace(const int& i){
           this->geoSpaceNumber = i ;
   };
@@ -178,19 +184,25 @@ struct MonoElementsIntegralCpp{
   }
   //////////////////////////////////////////
   void SetNumberOfNumberings(int i){
+
       for(unsigned int i=0; i < this->lnumbering.size() ; ++i){
-        if(this->lnumbering[i])
+        if(this->lnumbering[i]) {
             delete this->lnumbering[i];
+            this->lnumbering[i] = nullptr;
+        }
       }
       this->lnumbering.resize(i,0);
-      for(unsigned int i=0; i < this->lnumbering.size() ; ++i){
-        this->lnumbering[i] = nullptr;
-      }
+      //for(unsigned int i=0; i < this->lnumbering.size() ; ++i){
+      //  this->lnumbering[i] = nullptr;
+      //}
 
   };
   //
   void SetNumberingI(int i, int n, int m, CBasicIndexType* ip){
-     if(this->lnumbering[i]) delete this->lnumbering[i];
+     if(this->lnumbering[i] != nullptr) {
+         delete this->lnumbering[i];
+         this->lnumbering[i] = nullptr;
+     }
      this->lnumbering[i] = new MapMatrixIDD(ip,n,m);
    }
   //////////////////////////////////////////

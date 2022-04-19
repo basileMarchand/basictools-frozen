@@ -91,13 +91,16 @@ class MonoElementsIntegral(BOO):
         self.w = None
         self.nodes = None
         self.connectivity = None
-        self.isMultiThread = False
         self.NumberOfShapeFunctionTest = 0
         self.NumberOfShapeFunctionUnknown = 0
 
     def IsMultiThread(self):
         """In pure python the GIL block so a multiThread is useless"""
         return False
+
+    def Reset(self):
+        self.numberOfVIJ = 0
+        self.totalvijcpt = 0
 
     def SetUnkownFields(self,ufs):
         """
