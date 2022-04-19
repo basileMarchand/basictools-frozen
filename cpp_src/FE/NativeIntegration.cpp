@@ -26,7 +26,7 @@ const int EnumTestField = 3;
 const int EnumExtraField = 4;
 const int EnumExtraIPField = 5;
 
-MonoElementsIntegralCpp::MonoElementsIntegralCpp (): nodes(0),connectivity(0),lnumbering() {
+MonoElementsIntegralCpp::MonoElementsIntegralCpp (): nodes(nullptr),connectivity(nullptr),lnumbering() {
   this->totalTestDofs = 0;
   this->totalUnkownDofs = 0;
   //this->numberOfVIJ = 0;
@@ -39,25 +39,29 @@ MonoElementsIntegralCpp::MonoElementsIntegralCpp (): nodes(0),connectivity(0),ln
 void  MonoElementsIntegralCpp::SetNumberOfValues(int i){
     for(unsigned int i=0; i < this->values.size() ; ++i){
       delete this->values[i];
+      this->values[i] = nullptr;
     }
-    this->values.resize(i,0);
+    this->values.resize(i,nullptr);
 };
 //
 void  MonoElementsIntegralCpp::SetNumberOfIPValues(int i){
     for(unsigned int i=0; i < this->ipvalues.size() ; ++i){
       delete this->ipvalues[i];
+      this->ipvalues[i] = nullptr;
     }
-    this->ipvalues.resize(i,0);
+    this->ipvalues.resize(i,nullptr);
 };
 
 //
 void  MonoElementsIntegralCpp::SetValueI(int i, int n, int m, double* dp){
-    if(this->values[i]) delete this->values[i];
+    if(this->values[i] != nullptr)
+        delete this->values[i];
     this->values[i] = new MapMatrixDD1(dp,n,m);
 }
 //
 void  MonoElementsIntegralCpp::SetIPValueI(int i, int n, int m, double* dp){
-    if(this->ipvalues[i]) delete this->ipvalues[i];
+    if(this->ipvalues[i] != nullptr)
+        delete this->ipvalues[i];
     this->ipvalues[i] = new MapMatrixDDD(dp,n,m);
 }
 
@@ -123,12 +127,14 @@ void MonoElementsIntegralCpp::SetIntegrationPointI(const int& n,const double& w,
 }
 //
 void MonoElementsIntegralCpp::SetPoints(double* pd, const int& rows, const int& columns){
-    if(this->nodes) delete this->nodes;
+    if(this->nodes != nullptr)
+        delete this->nodes;
     this->nodes = new MapMatrixDDD(pd,rows,columns);
 }
 //
 void MonoElementsIntegralCpp::SetConnectivity( CBasicIndexType* pd, const int& rows, const int& columns){
-    if(this->connectivity) delete this->connectivity;
+    if(this->connectivity != nullptr)
+        delete this->connectivity;
     this->connectivity = new MapMatrixIDD(pd,rows,columns);
 }
 //
