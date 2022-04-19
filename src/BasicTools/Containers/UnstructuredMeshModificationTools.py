@@ -395,7 +395,7 @@ def ComputeSkin(mesh, md=None ,inplace=False):
 
         # all the elements present only 1 time not in the original mesh
         uniqueelems = index[counts==1]
-        ids =  uniqueelems[uniqueelems > nbmelems]
+        ids =  uniqueelems[uniqueelems >= nbmelems]
         if len(ids) == 0 :
             continue
 
