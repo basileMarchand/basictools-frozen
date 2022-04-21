@@ -154,6 +154,7 @@ def InitAllReaders():
                 super(type(self),self).__init__()
                 self.canHandleTemporal = False
                 self.meshIOInternalfiletype = filetype
+                self.encoding = None
             return __init__
 
         def GetSetFileName():
