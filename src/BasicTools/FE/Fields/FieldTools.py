@@ -10,7 +10,7 @@ from typing import Union, List, Tuple, Callable, Optional, Iterable
 from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
 
 from BasicTools.NumpyDefs import PBasicFloatType, PBasicIndexType
-from BasicTools.Containers.Filters import ElementFilter,NodeFilter, IntersectionElementFilter, Filter
+from BasicTools.Containers.Filters import ElementFilter,NodeFilter, IntersectionElementFilter, Filter, FilterOP
 import BasicTools.Containers.ElementNames as EN
 from BasicTools.FE.Fields.FEField import FEField
 from BasicTools.FE.Fields.IPField import IPField, RestrictedIPField
@@ -486,7 +486,7 @@ def FillFEField(field : FEField, fieldDefinition) -> None:
             fval = lambda x: val
 
         f.mesh = field.mesh
-        if isinstance(f,ElementFilter):
+        if isinstance(f,(ElementFilter,FilterOP)):
 
             for name,elements,ids in f:
                 geoSpace = LagrangeSpaceGeo[name]
@@ -515,6 +515,8 @@ def FillFEField(field : FEField, fieldDefinition) -> None:
                 dofid = field.numbering.GetDofOfPoint(pid)
                 pos = field.mesh.nodes[pid,:]
                 field.data[dofid] = fval(pos)
+        else:
+            raise(Exception("Dont know how to treat this type of field {}".format(str(type(f)) )))
 
 
 def FieldsAtIp(listOfFields,rule,efmask=None):
