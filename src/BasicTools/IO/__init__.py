@@ -22,7 +22,7 @@ _test = [
 'InpReader',
 'InputFile',
 'JsonReader',
-'LSDynReader',
+'LSDynaReader',
 'MeshReader',
 'MeshWriter',
 'MeshFileConverter',
