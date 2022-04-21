@@ -138,6 +138,7 @@ class LSDynaReader(ReaderBase):
     updateIDsFunc = lambda x: filetointernalid[x]
 
     for name, data in res.elements.items():
+      data.tighten()
       data.connectivity = np.vectorize(updateIDsFunc)(data.connectivity)
 
     res.PrepareForOutput()
