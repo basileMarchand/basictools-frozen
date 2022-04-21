@@ -175,7 +175,6 @@ def InitAllReaders():
                   "SetFileName": GetSetFileName(),
                   "Read": GetRead(),}
                   )
-            print(filetype)
             globals()[wrapperClassName] = obj
             globals()["readers"][wrapperClassName] = (ext,obj)
 
