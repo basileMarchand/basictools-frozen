@@ -5,13 +5,28 @@
 #
 
 import os
-import BasicTools.Helpers.ParserHelper as PH
+
+
+def SetNumberOfThreadsPerInstance(nbThreads):
+    """
+    Function to enforce the number of threads for various multithreaded libraries.
+    This function should be called before importing these multithreaded libraries.
+    """
+
+    os.environ["OMP_NUM_THREADS"] = str(nbThreads)
+    os.environ["OPENBLAS_NUM_THREADS"] = str(nbThreads)
+    os.environ["MKL_NUM_THREADS"] = str(nbThreads)
+    os.environ["VECLIB_MAXIMUM_THREADS"] = str(nbThreads)
+    os.environ["NUMEXPR_NUM_THREADS"] = str(nbThreads)
+
 
 def GetNumberOfAvailableCpus():
     """
     Function to discover the number of computing cores available.
 
     """
+    import BasicTools.Helpers.ParserHelper as PH
+
     SLURM_JOB_CPU_PER_NODE = os.environ.get('SLURM_JOB_CPU_PER_NODE')
     if SLURM_JOB_CPU_PER_NODE is None:
         import subprocess
@@ -32,6 +47,8 @@ def GetNumberOfAvailableCpus():
             os.environ['SLURM_JOB_CPU_PER_NODE'] = str(res)
             return res
     return  PH.ReadInt(SLURM_JOB_CPU_PER_NODE)
+
+
 
 class CPU():
     """ Class to help doing the multithreading without using to many cpus
@@ -90,7 +107,7 @@ def CheckIntegrity():
     except Exception as e:
          print(e)
 
-   #     pass
+    #     pass
     print("CPU dispo " + str( CPU.cpudispo))
     print("GetNumberOfAvailableCpus", GetNumberOfAvailableCpus())
     return "ok"
