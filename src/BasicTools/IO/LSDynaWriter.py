@@ -34,6 +34,19 @@ class KWriter(WriterBase):
         #Header
         self.writeText("$# LS-DYNA Keyword file\n*KEYWORD\n*TITLE\n"+str(os.path.basename(self.fileName))+"\n")
 
+        #Node tags
+        for i, tag in enumerate(meshObject.nodesTags):
+            self.writeText("*SET_NODE_LIST\n")
+            self.writeText("$#     sid\n")
+            self.writeText(str(i+1).rjust(10)+"\n")
+            self.writeText("$#    nid1      nid2      nid3      nid4      nid5      nid6      nid7      nid8\n")
+            listOfIds = [tag.GetIds()[j:j+8] for j in range(0, len(tag.GetIds()), 8)]
+            for line in listOfIds:
+                node_line = ""
+                for ind in line:
+                    node_line += str(ind+1).rjust(10)
+                self.writeText(node_line + "\n")
+
         #Elements
         for name, data in meshObject.elements.items():
             self.writeText("*ELEMENT_SOLID\n")
@@ -55,7 +68,8 @@ class KWriter(WriterBase):
         #Nodes
         numberofpoints = meshObject.GetNumberOfNodes()
         posn = meshObject.GetPosOfNodes()
-        self.writeText("*NODE\n$#   nid               x               y               z      tc      rc\n")
+        self.writeText("*NODE\n")
+        self.writeText("$#   nid               x               y               z      tc      rc\n")
         for n in range(numberofpoints):
             node_line = str(n+1).rjust(8)
             for pos in posn[n]:
@@ -92,6 +106,10 @@ def CheckIntegrity():
     tet.AddNewElement([1,2,3,4],1)
     tet.AddNewElement([2,3,4,5],2)
 
+    mymesh.AddNodeToTagUsingOriginalId(1,"NodeTest")
+    mymesh.AddNodeToTagUsingOriginalId(3,"NodeTest")
+    mymesh.AddNodeToTagUsingOriginalId(8,"NodeTest")
+
     OW = KWriter()
     OW.Open(tempdir+"Test_LSDynaWriter.k")
     OW.Write(mymesh)
@@ -103,6 +121,11 @@ def CheckIntegrity():
 *KEYWORD
 *TITLE
 Test_LSDynaWriter.k
+*SET_NODE_LIST
+$#     sid
+         1
+$#    nid1      nid2      nid3      nid4      nid5      nid6      nid7      nid8
+         1         2         7
 *ELEMENT_SOLID
 $#   eid     pid      n1      n2      n3      n4      n5      n6      n7      n8
        1       1       1       2       3       4       4       4       4       4
