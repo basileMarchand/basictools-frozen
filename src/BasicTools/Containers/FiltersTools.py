@@ -4,14 +4,28 @@
 # file 'LICENSE.txt', which is part of this source code package.
 #
 import numpy as np
-from BasicTools.Containers.Filters import ElementFilter
 
-def VerifyExclusiveFilters(listOfFilters,mesh):
-    """Funtion to check if a list of ElementFilter is exclusive each element is present only one
-    listOfFilters : the list of filters to check
-    mesh : the mesh to apply the filters
+from typing import List, Union, Optional
+from numpy.typing import ArrayLike
 
-    raise exception is the case the intersection is not empty
+from BasicTools.Containers.Filters import ElementFilter, FilterOP
+from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
+
+def VerifyExclusiveFilters(listOfFilters: List[Union[ElementFilter,FilterOP]], mesh:UnstructuredMesh) -> bool :
+    """Funtion to check if a list of ElementFilter is exclusive.
+       (each element is present at the most in one filter)
+
+    Parameters
+    ----------
+    listOfFilters : List[Union[ElementFilter,FilterOP]]
+        The list of filters to check
+    mesh : UnstructuredMesh
+        Mesh to evaluate the filters
+
+    Returns
+    -------
+    bool
+        True if the filters are exclusive
     """
 
     for elemtype,data in mesh.elements.items():
@@ -20,17 +34,26 @@ def VerifyExclusiveFilters(listOfFilters,mesh):
             ids = f.GetIdsToTreat(data)
             if np.any(mask[ids] > -1):
                 idd = np.where(mask[ids] > -1)[0][0]
-                raise(Exception(f"Filter {fnb} incompatiblewith filter {idd} "))
+                print(f"Filter {fnb} incompatible with filter {idd} ")
+                return 0
             mask[ids] = fnb
 
-def ListOfElementFiltersFromETagList(taglist, mesh=None):
-    """Function to construct a list of filter from a list of tags (or a list of tags)
+    return True
 
-    taglist: is a list containing a string or a list of strings ("tag1",("tag2","tag3"))
-    mesh: mesh to pass to the filters
+def ListOfElementFiltersFromETagList(taglist: List[Union[str,List[str]]], mesh: Optional[UnstructuredMesh] = None) -> List[ElementFilter]:
+    """Function to construct a list of filters from a list of tags (or a list of tags)
 
-    return : It returns a list of ElementFilter with the associated tags as filters
+    Parameters
+    ----------
+    taglist : List[Union[str,List[str]]]
+        A list containing a string or a list of strings ("tag1",("tag2","tag3"))
+    mesh : Optional[UnstructuredMesh], optional
+        Mesh to pass to the filters
 
+    Returns
+    -------
+    List[ElementFilter]
+        List of ElementFilter with the associated tags as filters
     """
 
     listOfFilters = []
@@ -42,15 +65,23 @@ def ListOfElementFiltersFromETagList(taglist, mesh=None):
 
     return listOfFilters
 
-def ListOfElementFiltersFromMask(maskVector, mesh=None):
+
+def ListOfElementFiltersFromMask(maskVector: ArrayLike, mesh: Optional[UnstructuredMesh]=None) -> List[ElementFilter]:
     """Function to construct a list of filter from a mask vector
 
-    maskVector : a element size vector of ints to determine to which filter each
-                elements belongs to. The number of filters is calculated unsing the np.unique
+    Parameters
+    ----------
+    maskVector : ArrayLike
+        A element size vector of ints to determine to which filter each elements belongs to.
+        The number of filters is calculated unsing the np.unique
 
-    mesh: mesh to pass to the filters
+    mesh : Optional[UnstructuredMesh], optional
+        Mesh to pass to the filters
 
-    return : It returns a list of ElementFilter with the associated tags as filters
+    Returns
+    -------
+    List[ElementFilter]
+        List of ElementFilter with the associated tags as filters
 
     """
     ids = np.unique(maskVector.flatten())
@@ -62,7 +93,51 @@ def ListOfElementFiltersFromMask(maskVector, mesh=None):
 
     return listOfFilters
 
+def FilterToETag(mesh: UnstructuredMesh, elementFilter: Union[ElementFilter,FilterOP], tagname: str) -> None:
+    """Create a Element tag with the name tagname using the elementFilter
+
+    Parameters
+    ----------
+    mesh : UnstructuredMesh
+        Mesh to work on
+    elementFilter : Union[ElementFilter,FilterOP]
+        The element filter to use to select the elements
+    tagname : str
+        the name of tag to create
+
+    Returns:
+    --------
+    the mesh with a new tag with, if the tag alreade exist a exception is raised
+    """
+
+    elementFilter.mesh = mesh
+    for name, data, ids in elementFilter:
+        data.tags.CreateTag(tagname).SetIds(ids)
+
 #--------------  CheckIntegrity ---------------
+def CheckIntegrity_FilterToETag(GUI=False):
+    from BasicTools.Containers.UnstructuredMeshCreationTools import CreateSquare
+    from BasicTools.Containers.ElementNames import Quadrangle_4
+    mesh = CreateSquare(dimensions=[10,10])
+    ef = ElementFilter(mesh=mesh,elementType=Quadrangle_4)
+    FilterToETag(mesh,ef, "quads")
+    if len(mesh.elements[Quadrangle_4].tags["quads"].GetIds()) != 9*9:
+        raise # pragma: no cover
+    return "ok"
+
+def CheckIntegrity_VerifyExclusiveFilters(GUI=False):
+    from BasicTools.Containers.UnstructuredMeshCreationTools import CreateSquare
+    from BasicTools.Containers.ElementNames import Quadrangle_4
+    mesh = CreateSquare(dimensions=[10,10])
+
+    efI = ElementFilter(mesh=mesh,elementType=Quadrangle_4)
+    mask = np.ones(mesh.GetNumberOfElements(),dtype=bool)
+    efII = ElementFilter(mesh=mesh,mask=mask)
+    if VerifyExclusiveFilters([efI,efII],mesh) == 1:
+        raise # pragma: no cover
+
+    return "ok"
+
 def CheckIntegrity_ListOfElementFiltersFromMask(GUI=False):
 
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateSquare
@@ -75,7 +150,8 @@ def CheckIntegrity_ListOfElementFiltersFromMask(GUI=False):
     mask = np.asarray(np.random.random(mesh.GetNumberOfElements())*5,dtype=int)
 
     listOfFilters = ListOfElementFiltersFromMask(mask,mesh)
-    VerifyExclusiveFilters(listOfFilters,mesh)
+    if VerifyExclusiveFilters(listOfFilters,mesh) == 0:
+        raise # pragma: no cover
 
     tmp = TestTempDir.GetTempPath()
 
@@ -91,7 +167,7 @@ def CheckIntegrity_ListOfElementFiltersFromMask(GUI=False):
     print((nbelements,mesh.GetNumberOfElements()))
 
     if nbelements != mesh.GetNumberOfElements():
-        return "Not OK"
+        return "Not OK" # pragma: no cover
 
     return "OK"
 
@@ -107,16 +183,18 @@ def CheckIntegrity_ListOfElementFiltersFromETagList(GUI=False):
 
 def CheckIntegrity(GUI=False):
     totest= [
+    CheckIntegrity_FilterToETag,
+    CheckIntegrity_VerifyExclusiveFilters,
     CheckIntegrity_ListOfElementFiltersFromETagList,
     CheckIntegrity_ListOfElementFiltersFromMask
     ]
     for f in totest:
         print("running test : " + str(f))
         res = f(GUI)
-        if str(res).lower() != "ok":
+        if str(res).lower() != "ok": # pragma: no cover
             return "error in "+str(f) + " res"
     return "ok"
 
 
 if __name__ == '__main__':
-    print(CheckIntegrity(True))# pragma: no cover
+    print(CheckIntegrity(True)) # pragma: no cover
