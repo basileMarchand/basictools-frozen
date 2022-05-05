@@ -22,4 +22,5 @@ _test = ["vtkBridge",
            'SymExpr',
            'MeshIOBridge',
            'PyVistaBridge',
+           'Tags',
            ]

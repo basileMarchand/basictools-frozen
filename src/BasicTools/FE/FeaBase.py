@@ -9,8 +9,6 @@ import numpy as np
 
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 from BasicTools.Linalg.LinearSolver import LinearProblem
-from  BasicTools.Containers.MeshBase import allElements
-
 
 class FeaBase(BaseOutputObject):
     """
