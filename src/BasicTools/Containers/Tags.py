@@ -6,7 +6,7 @@
 
 from __future__ import annotations # python 3 compatibility
 
-from typing import Iterable, Optional,  List, Tuple
+from typing import Iterable, Optional,  List, Tuple, Iterator, Collection
 
 import numpy as np
 
@@ -26,13 +26,13 @@ class Tag(BaseOutputObject):
         self._id = np.empty(0,dtype=PBasicIndexType)
         self.cpt = 0
 
-    def __eq__(self, other:Tag) -> True:
+    def __eq__(self, other:object) -> bool:
         """Equal operator, return True only if names and ids are equal
             internals this function calls Tighten
 
         Parameters
         ----------
-        other : Tag
+        other : object
             the other tag
 
         Returns
@@ -41,6 +41,8 @@ class Tag(BaseOutputObject):
             True if names and GetIds of self and other are equal
             False otherwise
         """
+        if not isinstance(other, Tag):
+            return False
 
         if self.name != other.name:
             return False
@@ -53,7 +55,7 @@ class Tag(BaseOutputObject):
 
         return True
 
-    def AddToTag(self,tid: PBasicIndexType | Iterable):
+    def AddToTag(self,tid: int | Collection):
         """Add id or ids to the list of tags
         more memory is allocated if needed
 
@@ -62,7 +64,7 @@ class Tag(BaseOutputObject):
         tid : PBasicIndexType or Iterable
             the id or ids to added to the tag.
         """
-        if hasattr(tid, '__iter__'):
+        if isinstance(tid, Collection):
             if len(self._id) <= self.cpt+len(tid):
                 self._id = np.resize(self._id, (len(self._id)*2+len(tid),))
             self._id[self.cpt:self.cpt+len(tid)] = tid
@@ -135,7 +137,7 @@ class Tag(BaseOutputObject):
         self.Tighten()
         return self._id
 
-    def GetIdsAsMask(self,totalNumberOfObjects:int=None, output:bool=None, erase:bool=True)-> np.ndarray:
+    def GetIdsAsMask(self,totalNumberOfObjects:int=0, output:np.ndarray=None, erase:bool=True)-> np.ndarray:
         """Generate a numpy array of dtype=bool of size totalNumberOfObjects with the indexes of this
         as True
 
@@ -360,7 +362,7 @@ class Tags(BaseOutputObject):
                 return item
         raise KeyError("Tag '"+ str(tagName) + "' not found")# pragma: no cover
 
-    def __iter__(self) -> Iterable[Tag]:
+    def __iter__(self) -> Iterator[Tag]:
         """Dict API, iterable
 
         Returns

@@ -3,12 +3,11 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-
-
 import time
+from typing import Dict, List, Union
 
 class Timer():
-    almanac = {}
+    almanac = {} # type: Dict[str, List[Union[float, int]] ]
 
     def __init__(self, name=None):
         self.name = name

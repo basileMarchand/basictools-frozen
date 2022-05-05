@@ -10,21 +10,21 @@ from BasicTools.Helpers.TextFormatHelper import TFormat
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 
 class Loading(object):
-  def __init__(self):
-    self.timeSequence = None
+    def __init__(self):
+        self.timeSequence = None
 
-  def __str__(self):
-    res =  TFormat.GetIndent()+TFormat.InBlue('Loading :\n')
-    TFormat.II()
-    res += TFormat.GetIndent()+TFormat.InBlue("Parameters: ")
-    for l in self.__dict__:
-      res += TFormat.GetIndent()+TFormat.InRed(l.__str__()+"  ")
-    TFormat.DI()
-    return res
+    def __str__(self):
+        res =  TFormat.GetIndent()+TFormat.InBlue('Loading :\n')
+        TFormat.II()
+        res += TFormat.GetIndent()+TFormat.InBlue("Parameters: ")
+        for l in self.__dict__:
+            res += TFormat.GetIndent()+TFormat.InRed(l.__str__()+"  ")
+        TFormat.DI()
+        return res
 
 class BoundaryConditions(object):
-  def __init__(self):
-    self.on = None
+    def __init__(self):
+        self.on = None
 
 class StudyCase(object):
     def __init__(self):
@@ -37,50 +37,50 @@ class StudyCase(object):
 
 class Solution(object):
     def __init__(self):
-      import collections
-      self.data_node  = collections.OrderedDict()
-      self.data_ctnod = collections.OrderedDict()
-      self.data_integ = collections.OrderedDict()
+        import collections
+        self.data_node  = collections.OrderedDict()
+        self.data_ctnod = collections.OrderedDict()
+        self.data_integ = collections.OrderedDict()
 
     def __str__(self):
-      res =  "\n    node  : "+str(list(self.data_node.keys()))
-      res += "\n    integ : "+str(list(self.data_integ.keys()))
-      return res
+        res =  "\n    node  : "+str(list(self.data_node.keys()))
+        res += "\n    integ : "+str(list(self.data_integ.keys()))
+        return res
 
 class ProblemData(BaseOutputObject):
     def __init__(self):
-       super(ProblemData,self).__init__()
-       self.name = ""
-       self.heading = ""
-       self.orientations = {}
-       self.materials = {}
-       self.studyCases = {}
-       self.solutions = {}
-       self.loadings = {}
-       self.mesh = None
+        super(ProblemData,self).__init__()
+        self.name = ""
+        self.heading = ""
+        self.orientations = {}
+        self.materials = {}
+        self.studyCases = {}
+        self.solutions = {}
+        self.loadings = {}
+        self.mesh = None
 
     def AttachMesh(self, mesh):
-       self.mesh = mesh
+        self.mesh = mesh
 
     def AttachLoading(self, tag, loading):
-       #loading.Ntime = loading.timeSequence.shape[0]
-       self.loadings[tag] = loading
+        #loading.Ntime = loading.timeSequence.shape[0]
+        self.loadings[tag] = loading
 
     def AttachSolution(self, tag, solution):
-       self.solutions[tag] = solution
+        self.solutions[tag] = solution
 
     def InitWriter(self, loadingKey, name, folder, Nnode = None, Nint = None):
-       import BasicTools.IO.UtWriter as UW
-       import os
-       self.UtW = UW.UtWriter()
-       self.UtW.SetFileName(folder+os.sep+name)
-       self.UtW.AttachMesh(self.mesh)
-       self.UtW.AttachDataFromProblemData(self, loadingKey, Nnode = Nnode, Nint = Nint)
-       self.UtW.AttachSequence(self.loadings[loadingKey].timeSequence)
+        import BasicTools.IO.UtWriter as UW
+        import os
+        self.UtW = UW.UtWriter()
+        self.UtW.SetFileName(folder+os.sep+name)
+        self.UtW.AttachMesh(self.mesh)
+        self.UtW.AttachDataFromProblemData(self, loadingKey, Nnode = Nnode, Nint = Nint)
+        self.UtW.AttachSequence(self.loadings[loadingKey].timeSequence)
 
     def Write(self, loadingKey, name, folder, skipCtnod = False, writeGeof = True, geofName = None):
-       self.InitWriter(loadingKey, name, folder)
-       self.UtW.WriteFiles(writeGeof = writeGeof, geofName = geofName, skipCtnod = skipCtnod)
+        self.InitWriter(loadingKey, name, folder)
+        self.UtW.WriteFiles(writeGeof = writeGeof, geofName = geofName, skipCtnod = skipCtnod)
 
 
     def __str__(self):
@@ -115,7 +115,7 @@ class Property(object):
 
 
 class Material(BaseOutputObject):
-
+    """
     #type: ELASTIC
     #subtype : ISOTROPIC
     #params (12000,0.3)
@@ -123,7 +123,7 @@ class Material(BaseOutputObject):
     #type: DENSITY
     #subtype : NONE
     #params (0.1,)
-
+    """
     def __init__(self):
         super(Material,self).__init__()
         self.name = "None"
@@ -179,20 +179,20 @@ def CheckIntegrity(GUI=False):
 
     solution = Solution()
     for dnn in reader.node:
-      solution.data_node[dnn] = np.empty((Nnode,Ntime))
+        solution.data_node[dnn] = np.empty((Nnode,Ntime))
     for din in reader.integ:
-      solution.data_ctnod[din] = np.empty((Nnode,Ntime))
-      solution.data_integ[din] = np.empty((Nint,Ntime))
+        solution.data_ctnod[din] = np.empty((Nnode,Ntime))
+        solution.data_integ[din] = np.empty((Nint,Ntime))
     reader.atIntegrationPoints = False
     for i in range(Ntime):
-      for dn in solution.data_node:
-        solution.data_node[dn][:,i] = reader.ReadField(fieldname=dn, timeIndex=i)
-      for dc in solution.data_ctnod:
-        solution.data_ctnod[dc][:,i] = reader.ReadField(fieldname=dc, timeIndex=i)
+        for dn in solution.data_node:
+            solution.data_node[dn][:,i] = reader.ReadField(fieldname=dn, timeIndex=i)
+        for dc in solution.data_ctnod:
+            solution.data_ctnod[dc][:,i] = reader.ReadField(fieldname=dc, timeIndex=i)
     reader.atIntegrationPoints = True
     for i in range(Ntime):
-      for di in solution.data_integ:
-        solution.data_integ[di][:,i] = reader.ReadField(fieldname=di, timeIndex=i)
+        for di in solution.data_integ:
+            solution.data_integ[di][:,i] = reader.ReadField(fieldname=di, timeIndex=i)
     res.AttachSolution("Run1", solution)
 
     import BasicTools.IO.GeofReader as GR
