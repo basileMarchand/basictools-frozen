@@ -110,14 +110,17 @@ class MeshBase(BaseOutputObject):
     def IsStructured(self): return False
     def IsUnstructured(self): return False
 
-    def GenerateManufacturedOriginalIDs(self):
+    def GenerateManufacturedOriginalIDs(self,offset=0):
         """
         function to generate a valid originalid data
         """
         self.originalIDNodes = np.arange(self.GetNumberOfNodes(),dtype=PBasicIndexType)
+        self.originalIDNodes += offset
+
         counter = 0
         for key, value in self.elements.items():
            value.originalIds = np.arange(counter,counter+value.GetNumberOfElements(),dtype=PBasicIndexType)
+           value.originalIds += offset
            counter += value.GetNumberOfElements()
 
 
