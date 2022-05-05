@@ -31,6 +31,7 @@ options :
     -l    Generation of the coverage (html) report localy (current path)
     -b    Launch browser after the covarage report generation
     -p    Activate profiling
+    -t    use mypy to check the typing of every module
     -v    Activate maximal level of verbosity
     -y    Generate .pyc when inporting modules (default False)
     -L    Output Localy, Use the current path for all the outputs
@@ -124,7 +125,7 @@ class TestTempDir(object):
             import stat
             os.chmod(home + os.sep+".BasicToolsTempPath", stat.S_IWUSR | stat.S_IRUSR |stat.S_IXUSR)
 
-def __RunAndCheck(lis,bp,stopAtFirstError,dryrun,profiling):# pragma: no cover
+def __RunAndCheck(lis,bp,stopAtFirstError,dryrun,profiling,typing):# pragma: no cover
 
     res = {}
     from BasicTools.Helpers.TextFormatHelper import TFormat
@@ -171,6 +172,10 @@ res = CheckIntegrity()""".format(name)
                 bp.Print(TFormat.InRed( TFormat().GetIndent() + "Please add a correct return statement in the CheckIntegrity of the module" + name))
                 #raise Exception()
                 r = 'Not OK'
+
+            if typing:
+                import subprocess
+                subprocess.call(["mypy","--ignore-missing-imports","-m",name])
 
         except UserWarning as e :
             sys.stdout.flush()
@@ -267,7 +272,7 @@ def __tryImport(noduleName, bp, stopAtFirstError, modulestotreat, modulestoskip)
     return tocheck
 
 
-def TestAll(modulestotreat=['ALL'],modulestoskip=[], fulloutput=False, stopAtFirstError= False, extraToolsBoxs= None,dryrun=False,profiling=False,coverage=None) :# pragma: no cover
+def TestAll(modulestotreat=['ALL'],modulestoskip=[], fulloutput=False, stopAtFirstError= False, extraToolsBoxs= None,dryrun=False,profiling=False,coverage=None,typing=False) :# pragma: no cover
 
     print("")
     print("modulestotreat   : " + str(modulestotreat))
@@ -275,6 +280,7 @@ def TestAll(modulestotreat=['ALL'],modulestoskip=[], fulloutput=False, stopAtFir
     print("fulloutput       : " + str(fulloutput) )
     print("stopAtFirstError : " + str(stopAtFirstError))
     print("coverage         : " + str(coverage))
+    print("typing           : " + str(typing))
     print("profiling        : " + str(profiling))
     print("extraToolsBoxs   : " + str(extraToolsBoxs))
     print("dryrun           : " + str(dryrun))
@@ -314,7 +320,7 @@ def TestAll(modulestotreat=['ALL'],modulestoskip=[], fulloutput=False, stopAtFir
             filtered =  dict((k, v) for k, v in tocheck.items() if not any(s in k for s in modulestoskip ) )
             tocheck = filtered
 
-        res = __RunAndCheck(tocheck,bp,stopAtFirstError,dryrun,profiling)
+        res = __RunAndCheck(tocheck,bp,stopAtFirstError,dryrun,profiling,typing)
 
     if coverage["active"] :
         cov.stop()
@@ -399,16 +405,17 @@ def CheckIntegrity():
 
 def RunTests():
     if len(sys.argv) == 1:
-        res = TestAll(modulestotreat=['ALL'],extraToolsBoxs= ["BasicTools"], fulloutput=False,coverage={"active":False})# pragma: no cover
+        res = TestAll(modulestotreat=['ALL'],extraToolsBoxs= ["BasicTools"], fulloutput=False,coverage={"active":False},typing=False)# pragma: no cover
     else:
         try:
-            opts, args = getopt.getopt(sys.argv[1:],"hcblfsdpvyLe:m:k:")
+            opts, args = getopt.getopt(sys.argv[1:],"thcblfsdpvyLe:m:k:")
         except getopt.GetoptError as e:
             print(e)
             print(Test_Help_String)
             sys.exit(2)
 
         coverage = False
+        typing = False
         fulloutput = False
         stopAtFirstError = False
         extraToolsBoxs = []
@@ -428,6 +435,9 @@ def RunTests():
             elif opt in ("-c"):
                 coverage = True
                 browser = False
+            elif opt in ("-t"):
+                typing = True
+                os.environ["MYPYPATH"] = os.environ["PYTHONPATH"]
             elif opt in ("-l"):
                 localhtml = True
                 browser = False
@@ -474,7 +484,8 @@ def RunTests():
                     stopAtFirstError= stopAtFirstError,
                     extraToolsBoxs=extraToolsBoxs,
                     dryrun = dryrun,
-                    profiling  = profiling
+                    profiling  = profiling,
+                    typing=typing
                     )
     errors = {}
     oks = {}
