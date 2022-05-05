@@ -6,23 +6,29 @@
 
 # If this file is modified a compilation must executed to export this data
 # to the cpp portion of BasicTools
+import numpy as np
+from typing import Dict, Tuple, List
 
-class GeoSupport(object):
-    def __init__(self,data):
-        super(GeoSupport,self).__init__()
+class GeoSupport():
+    def __init__(self,data: Tuple[str,int])-> None:
+        super().__init__()
         self.name = data[0]
         self.dimensionality = data[1]
-    def __rep__(self):
+
+    def __rep__(self) -> str:
         res = "GeoSuport( " + self.name + ")"
         return res
-    def __str__(self):
+
+    def __str__(self) -> str:
         return self.__rep__()
-    def __eq__(self, other):
+
+    def __eq__(self, other:object)-> bool:
         """Overrides the default implementation"""
         if isinstance(other, GeoSupport):
             return self.name == other.name
         return False
-    def __hash__(self):
+
+    def __hash__(self) -> int:
         return id(self.name)
 
 GeoPoint = GeoSupport(("point",0))   #0
@@ -34,9 +40,8 @@ GeoPyr   = GeoSupport(("pyr"  ,3))   #5
 GeoWed   = GeoSupport(("wed"  ,3))   #6
 GeoHex   = GeoSupport(("hex"  ,3 ))  #
 
-
 class ElementInformation():
-    def __init__(self,name,geosupport):
+    def __init__(self, name, geosupport):
         self.name = name
         # the geometrical support of this element
         self.geoSupport = geosupport
@@ -58,15 +63,15 @@ class ElementInformation():
         self.mirrorPermutation = []
 
 
-numberOfNodes = {}
-mirrorPermutation = {}
-dimension = {}
-linear = {}
-degree = {}
-faces = {}
-faces2 = {}
-faces3 = {}
-geoSupport = {}
+numberOfNodes = {}     # type: Dict[str, int]
+mirrorPermutation = {} # type: Dict[str, List[int]]
+dimension = {}         # type: Dict[str, int]
+linear = {}            # type: Dict[str, bool]
+degree = {}            # type: Dict[str, int]
+faces  = {}            # type: Dict[str, List[Tuple[str, List[int] ]] ]
+faces2 = {}            # type: Dict[str, List[Tuple[str, List[int] ]] ]
+faces3 = {}            # type: Dict[str, List[Tuple[str, List[int] ]] ]
+geoSupport = {}        # type: Dict[str, GeoSupport]
 
 #0D
 Point_1  = 'point1'
@@ -497,6 +502,7 @@ def CheckIntegrity(GUI=False):
     print(GeoPoint==GeoBar)
     print(GeoPoint==1)
     print(GeoPoint!=GeoBar)
+    print(hash(GeoPoint))
     return "ok"
 
 if __name__ == '__main__':# pragma: no cover
