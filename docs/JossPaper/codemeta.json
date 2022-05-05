@@ -1,0 +1,37 @@
+{
+  "@context": "https://raw.githubusercontent.com/codemeta/codemeta/master/codemeta.jsonld",
+  "@type": "Code",
+  "author": [
+    {
+      "@id": "0000-0002-0640-5485",
+      "@type": "Person",
+      "email": "felipe.bordeu@safrangroup.com",
+      "name": "BORDEU Felipe",
+      "affiliation": "Safran Tech, Digital Sciences & Technologies Department, Rue des Jeunes Bois, Châteaufort, 78114 Magny-Les-Hameaux, France"
+    },
+    {
+      "@id": "0000-0002-8810-9128",
+      "@type": "Person",
+      "email": "fabien.casenave@safrangroup.com",
+      "name": "Fabien Casenave",
+      "affiliation": "Safran Tech, Digital Sciences & Technologies Department, Rue des Jeunes Bois, Châteaufort, 78114 Magny-Les-Hameaux, France"
+    },
+    {
+      "@id": "",
+      "@type": "Person",
+      "email": "julien.cortial@safrangroup.com",
+      "name": "Julien Cortial",
+      "affiliation": "Safran Tech, Digital Sciences & Technologies Department, Rue des Jeunes Bois, Châteaufort, 78114 Magny-Les-Hameaux, France"
+    }
+  ],
+  "identifier": "",
+  "codeRepository": "https://gitlab.com/drti/basic-tools",
+  "datePublished": "2022-03-23",
+  "dateModified": "2022-03-23",
+  "dateCreated": "2022-03-23",
+  "description": "BasicTools was primary designed as a basic set of tools to work on meshes in the context of finite element computation.",
+  "keywords": "FEM, Mesh, Python, post-treatment, Fields",
+  "license": "BSD 3-Clause License",
+  "title": "BasicTools",
+  "version": "1.7.1"
+}
