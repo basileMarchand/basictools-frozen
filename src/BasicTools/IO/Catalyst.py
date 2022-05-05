@@ -34,12 +34,12 @@ class Catalyst(WriterBase):
         #   "22222.catalyst"
         #   "hostname:22222"
         #   "22222"
-        
-        if fileName == None:
-            return 
+
+        if fileName is None:
+            return
 
         if fileName.find(".catalyst") > -1 :
-           fileName = fileName[0:fileName.find(".catalyst")]
+            fileName = fileName[0:fileName.find(".catalyst")]
 
         fileName = fileName.split(os.sep)[-1]
 
@@ -55,15 +55,14 @@ class Catalyst(WriterBase):
         self.SetFileName(filename)
 
         from paraview.catalyst import bridge
-        from paraview import print_info, print_warning
 
         if self._isOpen:
             return
-        
+
         self._isOpen = True
         if self.bridge_initialize == False:
             bridge.initialize()
-            self.bridge_initialize = True 
+            self.bridge_initialize = True
 
         if self.userscript is None:
             from BasicTools.Helpers.Tests import GetUniqueTempFile
@@ -88,10 +87,10 @@ options.CatalystLiveURL = "{self.hostname}:{self.port}"
         else:
             # add analysis script
             bridge.add_pipeline(self.userscript, 2)
-        
-      
+
+
     def Close(self):
-        if self.bridge_finalize == False:    
+        if self.bridge_finalize == False:
             from paraview.catalyst import bridge
             bridge.finalize()
             self.bridge_finalize = True
@@ -132,7 +131,7 @@ RegisterWriterClass(".catalyst",Catalyst)
 def CheckIntegrity(GUI=False):
 
     from BasicTools.Helpers.Tests import SkipTest
-    if SkipTest("CATALYST_NO_FAIL"): return "ok"
+    if SkipTest("CATALYST_NO_FAIL"): return "skip"
 
     numsteps = 50
     delay = 0.05
