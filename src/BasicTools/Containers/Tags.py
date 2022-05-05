@@ -15,8 +15,9 @@ from BasicTools.NumpyDefs import PBasicIndexType
 
 @froze_it
 class Tag(BaseOutputObject):
-    """A Tag is a object to story a name and ids
-    internals it has a buffer to easily
+    """A Tag is an object to store a name and ids.
+    internals it has a buffer to easily fill the
+    content incrementally.
     """
     def __init__(self,tagname):
         super().__init__()
@@ -88,8 +89,8 @@ class Tag(BaseOutputObject):
         self.SetIds(self._id[0:self.cpt])
 
     def SetIds(self, ids:np.typing.ArrayLike):
-        """Set the ids of this tag, a copy is made
-        and a remove Doubles to ensure ids are present only once
+        """Set the ids of this tag, a copy is made and a
+        RemoveDoubles is executed to ensure ids are present only once
 
         Parameters
         ----------

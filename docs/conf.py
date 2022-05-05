@@ -264,6 +264,12 @@ texinfo_documents = [
 # -- Options for autodoc extension
 #autodoc_mock_imports = ['BasicTools']
 
+autodoc_type_aliases = {
+    'Iterable': 'Iterable',
+    'ArrayLike': 'ArrayLike',
+    'np.typing.ArrayLike':'ArrayLike'
+}
+
 # -- Options for autosummary extension
 autosummary_generate = False
 
