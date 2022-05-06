@@ -73,12 +73,10 @@ In the case the user want to make changes to BasicTools, an installation from so
 The sources can be downloaded from either one of the gitlab repositories.
 Then inside the repository folder the user must compile the c++ extensions to take profit of optimized algorithms.
 
-    > python setup.py generate
     > python setup.py build_clib
     > python setup.py build_ext --inplace
 
 Then the user is responsible to add the ``BASICTOOLS_REPOSITORY/src/`` folder to the ``PYTHONPATH`` environment variables (more information on [#pythonpathdoc]_).
-In the case you want to use the compiled tools (using the --inplace option) you must add to the LD_LIBRARY_PATH the ``BASICTOOLS_REPOSITORY/src/`` folder.
 
 Or using pip for development:
 

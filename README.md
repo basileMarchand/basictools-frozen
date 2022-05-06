@@ -57,16 +57,22 @@
 
         > export EIGEN_INC=/Path/To/Eigen/Library
 
-    COMPILATION:,
+    COMPILATION:
 
     Run the following command in the root directory :
 
-        > python setup.py generate
         > python setup.py build_clib
         > python -m pip install --no-deps  -e . -vv
 
     This will install the library in developer mode (-e), to reinstall please remove the "build" before running
     the commands again.
+
+    WARNING: if you use a shared conda environnement, then you must only compile (not install) BasicTools
+
+        > python setup.py build_clib
+        > python setup.py build_ext --inplace
+        > export PYTHONPATH=${PYTHONPATH}:/path/to/BasicTools/src/
+        (for bash)
 
 
 3) TESTING INFRASTRUCTURE
