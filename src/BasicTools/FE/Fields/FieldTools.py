@@ -19,7 +19,7 @@ from BasicTools.FE.DofNumbering import ComputeDofNumbering
 from BasicTools.FE.Fields.IPField import FieldBase
 
 
-def NodeFieldToFEField(mesh, nodeFields=None):
+def NodeFieldToFEField(mesh, nodeFields: dict=None):
     """
     Create FEField(P isogeometric) from the node field data.
     if nodesFields is None the mesh.nodeFields is used
@@ -40,8 +40,8 @@ def NodeFieldToFEField(mesh, nodeFields=None):
         nodeFields = mesh.nodeFields
     numbering = ComputeDofNumbering(mesh,LagrangeSpaceGeo,fromConnectivity=True)
     res = {}
-    for name,values in mesh.nodeFields.items():
-        if len(values.shape) == 2:
+    for name,values in nodeFields.items():
+        if len(values.shape) == 2 and values.shape[1] > 1:
             for i in range(values.shape[1]):
                 res[name+"_"+str(i)] = FEField(name=name+"_"+str(i), mesh=mesh, space=LagrangeSpaceGeo, numbering=numbering, data=np.asarray(values[:,i], dtype=PBasicFloatType, order="C") )
         else:
@@ -70,7 +70,7 @@ def ElemFieldsToFEField(mesh, elemFields=None):
     numbering = ComputeDofNumbering(mesh,LagrangeSpaceP0)
     res = {}
     for name,values in elemFields.items():
-        if len(values.shape) == 2:
+        if len(values.shape) == 2 and values.shape[1] > 1:
             for i in range(values.shape[1]):
                 res[name+"_"+str(i)] = FEField(name=name+"_"+str(i), mesh=mesh, space=LagrangeSpaceP0, numbering=numbering, data=np.asarray(values[:,i], dtype=PBasicFloatType, order="C"))
         else:
