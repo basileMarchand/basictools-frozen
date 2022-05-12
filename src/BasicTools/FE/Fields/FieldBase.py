@@ -8,7 +8,8 @@ import numpy as np
 
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 
-unaryOps = {"__neg__":np.negative}
+unaryOps = {"__neg__":np.negative,
+            "__abs__":np.abs}
 
 binaryOps = {"__add__":np.add,
              "__mul__":np.multiply,
@@ -45,6 +46,8 @@ class FieldBase(BaseOutputObject):
 
     def __neg__(self):
         return self.unaryOp(np.negative)
+    def __abs__(self):
+        return self.unaryOp(np.abs)
 
     def __add__(self,other):
         return self.binaryOp(other,binaryOps["__add__"])
