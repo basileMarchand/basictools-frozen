@@ -70,7 +70,7 @@ class IPField(FieldBase):
         else:
             res = out
 
-        if isinstance(other,type(self)):
+        if isinstance(other,(type(self),RestrictedIPField) ):
             res.data = { key:op(self.data[key],other.data[key]) for key in set(self.data.keys()).union(other.data.keys())}
             return res
         elif type(other).__module__ == np.__name__ and np.ndim(other) != 0:
@@ -78,10 +78,11 @@ class IPField(FieldBase):
             for res_data,other_data in np.nditer([res,other],flags=["refs_ok"],op_flags=["readwrite"]):
                 res_data[...] = op(self,other_data)
             return res
-
-        res.data = { key:op(self.data[key],other) for key in self.data.keys()}
-
-        return res
+        elif np.isscalar(other):
+            res.data = { key:op(self.data[key],other) for key in self.data.keys()}
+            return res
+        else:
+            raise Exception(f"operator {op} not valid for types :{type(self)} and {type(other)} ")
 
     def GetCellRepresentation(self,fillvalue=0,method='mean'):
         """
@@ -184,6 +185,9 @@ class IPField(FieldBase):
         res = RestrictedIPField(name=self.name,mesh=self.mesh,rule=self.rule,efmask=efmask)
         res.AllocateFromIpField(self)
         return res
+
+    def __str__(self):
+        return  f"<IPField object '{self.name}'  ({id(self)})>"
 
 class RestrictedIPField(IPField):
     def __init__(self,name=None,mesh=None,rule=None,ruleName=None,data=None,efmask=None):

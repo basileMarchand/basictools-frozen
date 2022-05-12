@@ -102,15 +102,17 @@ class FEField(FieldBase):
         res = type(self)(name = None,mesh=self.mesh,space=self.space, numbering = self.numbering )
         if isinstance(other,type(self)):
             res.data = op(self.data,other.data)
+            return res
         elif type(other).__module__ == np.__name__ and np.ndim(other) != 0 :
             res = np.empty(other.shape,dtype=object)
             for res_data,other_data in np.nditer([res,other],flags=["refs_ok"],op_flags=["readwrite"]):
                 res_data[...] = op(self,other_data)
             return res
-
-        else:
+        elif np.isscalar(other):
             res.data = op(self.data,other)
-        return res
+            return res
+        else:
+            raise Exception(f"operator {op} not valid for types :{type(self)} and {type(other)} ")
 
     def GetTestField(self):
         from BasicTools.FE.SymWeakForm import  GetTestSufixChar
@@ -121,6 +123,9 @@ class FEField(FieldBase):
             raise Exception("this FEField is already a test field")
         else:
             return FEField(name=self.name+tc,mesh=self.mesh,space=self.space,numbering=self.numbering)
+
+    def __str__(self):
+        return  f"<FEField object '{self.name}' ({id(self)})>"
 
 def CheckIntegrity(GUI=False):
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateCube
