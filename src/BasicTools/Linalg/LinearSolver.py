@@ -18,7 +18,7 @@ class SolverFactory(Factory):
     _Catalog = {}
     _SetCatalog = set()
     def __init__(self):
-        super(SolverFactory,self).__init__()
+        super().__init__()
 
 def GetAvailableSolvers():
     return list(SolverFactory._Catalog.keys())
@@ -31,7 +31,7 @@ def RegisterSolverClassUsingName(cls):
 
 class LinearSolverBase(BOO):
     def __init__(self):
-        super(LinearSolverBase,self).__init__()
+        super().__init__()
         self.op = None   # the operator to solve
         self.originalOp = None
         self.solver = None
@@ -120,7 +120,7 @@ class LinearSolverBase(BOO):
 
 class LinearSolverIterativeBase(LinearSolverBase):
     def __init__(self):
-        super(LinearSolverIterativeBase,self).__init__()
+        super().__init__()
         self.tol = 1.e-6
         self._can_use_u0 = True
 
@@ -129,7 +129,7 @@ class LinearSolverIterativeBase(LinearSolverBase):
 
 class LinearSolverCG(LinearSolverIterativeBase):
     def __init__(self):
-        super(LinearSolverCG,self).__init__()
+        super().__init__()
         self.name = "CG"
 
     def _solve_imp(self, rhs, u0):
@@ -156,7 +156,7 @@ RegisterSolverClassUsingName(LinearSolverCG)
 
 class LinearSolvergmres(LinearSolverIterativeBase):
     def __init__(self):
-        super(LinearSolvergmres,self).__init__()
+        super().__init__()
         self.name = "gmres"
 
     def _solve_imp(self, rhs, u0):
@@ -169,7 +169,7 @@ RegisterSolverClassUsingName(LinearSolvergmres)
 
 class LinearSolverlsqr(LinearSolverIterativeBase):
     def __init__(self):
-        super(LinearSolverlsqr,self).__init__()
+        super().__init__()
         self.name = "lsqr"
 
     def _solve_imp(self, rhs, u0):
@@ -179,7 +179,7 @@ RegisterSolverClassUsingName(LinearSolverlsqr)
 
 class LinearSolverlgmres(LinearSolverIterativeBase):
     def __init__(self):
-        super(LinearSolverlgmres,self).__init__()
+        super().__init__()
         self.name = "lgmres"
 
     def _solve_imp(self, rhs, u0):
@@ -192,7 +192,7 @@ RegisterSolverClassUsingName(LinearSolverlgmres)
 
 class LinearSolverlAMG(LinearSolverIterativeBase):
     def __init__(self):
-        super(LinearSolverlAMG,self).__init__()
+        super().__init__()
         self.name = "AMG"
 
     def _setop_imp(self,op):
@@ -210,7 +210,7 @@ except:
 
 class LinearSolverDirect(LinearSolverIterativeBase):
     def __init__(self):
-        super(LinearSolverDirect,self).__init__()
+        super().__init__()
         self.name = "Direct"
 
     def _setop_imp(self,op):
@@ -223,7 +223,7 @@ RegisterSolverClassUsingName(LinearSolverDirect)
 
 class LinearSolverCholesky(LinearSolverDirect):
     def __init__(self):
-        super(LinearSolverCholesky,self).__init__()
+        super().__init__()
         self.name = "cholesky"
 
     def _setop_imp(self,op):
@@ -241,7 +241,7 @@ except:
 
 class LinearSolverEigen(LinearSolverIterativeBase):
     def __init__(self,subtype):
-        super(LinearSolverEigen,self).__init__()
+        super().__init__()
         self.SetSolver(subtype)
         import BasicTools.Linalg.NativeEigenSolver as NativeEigenSolver
         self.solver = NativeEigenSolver.CEigenSolvers()
@@ -283,7 +283,9 @@ class LinearSolverEigen(LinearSolverIterativeBase):
 try:
     import BasicTools.Linalg.NativeEigenSolver as NativeEigenSolver
     for eigenSubTypes  in LinearSolverEigen.GetAvailableSolvers():
-        RegisterSolverClass("Eigen"+eigenSubTypes,LinearSolverEigen, lambda x :  LinearSolverEigen(eigenSubTypes) )
+        def GenerateEigenConstructor(type):
+            return lambda x :  LinearSolverEigen(type)
+        RegisterSolverClass("Eigen"+eigenSubTypes,LinearSolverEigen, GenerateEigenConstructor(eigenSubTypes) )
     defaultIfError = "EigenCG"
 except:
     print("WARNING! Error loading Eigen linear solver using CG as default")
@@ -292,6 +294,7 @@ except:
 ###############################################################################################################################
 class LinearProblem(BOO):
     def __init__(self):
+        super().__init__()
         self.realsolver = None
         self.SetAlgo(defaultIfError)
 
