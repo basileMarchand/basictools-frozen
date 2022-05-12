@@ -358,8 +358,32 @@ class UnstructuredMesh(MeshBase):
         elif generateOriginalIDs:
             self.originalIDNodes = np.arange(self.GetNumberOfNodes())
 
+    def GetPointsDimensionality(self) -> int:
+        """Return the number of coordinates of the points
+
+        Returns
+        -------
+        int
+            number of columns in the point array
+        """
+        return self.nodes.shape[1]
+
+    def GetElementsDimensionality(self) -> int:
+        """return the maximal dimension of the elements
+
+
+        Returns
+        -------
+        int
+            the max of all elements dimensionality
+        """
+
+        return np.max([ElementNames.dimension[elemtype] for elemtype in self.elements.keys() ])
+
     def GetDimensionality(self):
         """
+        DEPRECATED: please use GetPointsDimensionality()
+
         return the dimensionality 2/3
         """
         return self.nodes.shape[1]
@@ -549,6 +573,19 @@ class UnstructuredMesh(MeshBase):
             res += "  elemFields         : " + str(list(self.elemFields.keys())) + "\n"
         return res
 
+    def Clean(self)->None:
+        """Remove superflu data :
+            1) empty tags
+            2) empty element containers
+
+        """
+        self.nodesTags.RemoveEmptyTags()
+        for k in list(self.elements.keys()):
+            if self.elements[k].GetNumberOfElements() == 0:
+                del self.elements[k]
+                continue
+            self.elements[k].tags.RemoveEmptyTags()
+
     def VerifyIntegrity(self):
         #verification nodes an originalIdNodes are compatible
         if len(self.nodes.shape) !=2:
@@ -682,6 +719,14 @@ def CheckIntegrity():
     resII = CreateMeshOfTriangles([[0,0,0],[1,2,3],[0,1,0]], [[0,1,2]])
     resII.AddNodeToTagUsingOriginalId(0,"First Point")
     resII.GenerateManufacturedOriginalIDs()
+
+    if resII.GetPointsDimensionality() != 3:
+        raise  #pragma: no cover
+
+    if resII.GetElementsDimensionality() != 2:
+        raise  #pragma: no cover
+
+    resII.Clean()
 
     try:
         resII.MergeElements(res)
