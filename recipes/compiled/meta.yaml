@@ -26,8 +26,8 @@ requirements:
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}
   host:
-    - python
-    - numpy
+    - python {{ python }}
+    - numpy>=1.20
     - cython
     - eigency
     - mkl
@@ -36,10 +36,10 @@ requirements:
     - eigen
     - sympy
   run:
+    - {{ pin_compatible('numpy') }}
     - psutil
     - python
     - pyparsing
-    - numpy
     - scipy
     - sympy
     - eigency=1.78
@@ -48,7 +48,7 @@ requirements:
     - vtk
     - meshio
     - h5py
-    - pyvista [not py==36]
+    - pyvista
     - scikit-sparse [not win]
     - pywin32 [win]
 
@@ -59,7 +59,6 @@ test:
      -  BasicTools
   commands :
     - python -u -m BasicTools.Helpers.Tests -k Catalyst # [not py==36]
-    - python -u -m BasicTools.Helpers.Tests -k Catalyst -k PyVistaBridge -k MeshIOBridge # [py==36]
 
 
 about:
