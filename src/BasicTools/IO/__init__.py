@@ -7,6 +7,7 @@
 
 _test = [
 'AnsysReader',
+'AnsysTools',
 'AnsysWriter',
 'AscReader',
 'Catalyst',
@@ -17,6 +18,7 @@ _test = [
 'GeoReader',
 'GeofWriter',
 'GmshReader',
+'GmshTools',
 'GmshWriter',
 'GReader',
 'InpReader',

@@ -13,22 +13,7 @@ import BasicTools.Containers.ElementNames as EN
 import BasicTools.Containers.UnstructuredMesh  as UM
 from BasicTools.IO.ReaderBase import ReaderBase
 from BasicTools.NumpyDefs import PBasicIndexType
-
-gmshNumber = {}
-gmshNumber['1'] = EN.Bar_2
-gmshNumber['2'] = EN.Triangle_3
-gmshNumber['3'] = EN.Quadrangle_4
-gmshNumber['4'] = EN.Tetrahedron_4
-gmshNumber['5'] = EN.Hexaedron_8
-gmshNumber['6'] = EN.Wedge_6
-gmshNumber['7'] = EN.Pyramid_5
-gmshNumber['8'] = EN.Bar_3
-gmshNumber['9'] = EN.Triangle_6
-gmshNumber['10'] = EN.Quadrangle_9
-gmshNumber['15'] = EN.Point_1
-gmshNumber['16'] = EN.Quadrangle_8
-gmshNumber['17'] = EN.Hexaedron_20
-
+from BasicTools.IO.GmshTools import gmshNumber,PermutationGmshToBasicTools
 
 def ReadGmsh(fileName=None,string=None,out=None,**kwargs):
     reader = GmshReader()
@@ -151,6 +136,8 @@ class GmshReader(ReaderBase):
                     ntags = int(s[2])
 
                     conn = [filetointernalid[x] for x in  s[ntags+3:] ]
+                    if nametype in PermutationGmshToBasicTools:
+                        conn = [conn[x] for x in PermutationGmshToBasicTools[nametype]]
                     elements = res.elements.GetElementsOfType(nametype)
                     elnumber = elements.AddNewElement(conn,oid)-1
                     tags = allTags.setdefault(nametype,{})
@@ -203,20 +190,42 @@ $MeshFormat
 2.2 0 8
 $EndMeshFormat
 $PhysicalNames
-2
+3
 0 223 "1D"
 0 227 "2D"
+0 230 "3D"
 $EndPhysicalNames
 $Nodes
-3
+23
 1 30 0 0
 2 30 0 75
 3 30 -2.5 0
+4 0.0 0.0 0.0
+5 1.0 0.0 0.0
+6 1.0 1.0 0.0
+7 0.0 1.0 0.0
+8 0.0 0.0 1.0
+9 1.0 0.0 1.0
+10 1.0 1.0 1.0
+11 0.0 1.0 1.0
+12 0.5 0.0 0.0
+13 1.0 0.5 0.0
+14 0.5 1.0 0.0
+15 0.0 0.5 0.0
+16 0.5 0.0 1.0
+17 1.0 0.5 1.0
+18 0.5 1.0 1.0
+19 0.0 0.5 1.0
+20 0.0 0.0 0.5
+21 1.0 0.0 0.5
+22 1.0 1.0 0.5
+23 0.0 1.0 0.5
 $EndNodes
 $Elements
-2
+3
 1 15 2 223 1 2
 2 15 3 227 2 3 1
+3 17 3 230 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23
 $EndElements
 this is a comment
 """
@@ -227,7 +236,7 @@ this is a comment
     print(res.nodes)
     print(res.originalIDNodes)
     print(res.GetElementsOfType('bar2').connectivity)
-
+    print(res.GetElementsOfType('hex20').connectivity)
 
     from BasicTools.Helpers.Tests import TestTempDir
     newFileName = TestTempDir().GetTempPath()+"mshFile"

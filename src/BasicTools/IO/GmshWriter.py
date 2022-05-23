@@ -4,7 +4,7 @@
 # file 'LICENSE.txt', which is part of this source code package.
 #
 
-""" Gmsh  ile Writer (gmesh mesh files)
+""" Gmsh  File Writer (gmesh mesh files)
 
 """
 import numpy as np
@@ -13,21 +13,8 @@ import BasicTools.Containers.ElementNames as EN
 from BasicTools.Containers.MeshBase import Tag as Tag
 from BasicTools.IO.WriterBase import WriterBase as WriterBase
 from BasicTools.NumpyDefs import PBasicFloatType, PBasicIndexType
-
-gmshName = {}
-gmshName[EN.Bar_2]         = '1'
-gmshName[EN.Triangle_3]    = '2'
-gmshName[EN.Quadrangle_4]  = '3'
-gmshName[EN.Tetrahedron_4] = '4'
-gmshName[EN.Hexaedron_8]   = '5'
-gmshName[EN.Wedge_6]       = '6'
-gmshName[EN.Pyramid_5]     = '7'
-gmshName[EN.Bar_3]         = '8'
-gmshName[EN.Triangle_6]    = '9'
-gmshName[EN.Quadrangle_9]  = '10'
-gmshName[EN.Point_1]       = '15'
-gmshName[EN.Quadrangle_8]  = '16'
-gmshName[EN.Hexaedron_20]  = '17'
+from BasicTools.IO.GmshTools import gmshName,PermutationGmshToBasicTools
+PermutationBasicToolsToGmsh = {key:np.argsort(value) for key, value in PermutationGmshToBasicTools.items() }
 
 def WriteMeshToGmsh(filename,mesh, useOriginalId=False):
     OW = GmshWriter()
@@ -96,6 +83,8 @@ class GmshWriter(WriterBase):
                 #for connectivity in meshObject.elements[elementContainer].connectivity[meshObject.elements[elementContainer].tags[tagname].id-1]:
                 for i in range(data.GetNumberOfElements() ):
                   connectivity = data.connectivity[i,:]
+                  if elementContainer in PermutationBasicToolsToGmsh:
+                      connectivity = [connectivity[x] for x in PermutationBasicToolsToGmsh[elementContainer]]
                   self.filePointer.write("{} {} {} {} {} ".format(cpt,elemtype,2,tagcounter,tagcounter) )
                   self.filePointer.write(" ".join([str(x+1) for x in connectivity]))
                   cpt += 1

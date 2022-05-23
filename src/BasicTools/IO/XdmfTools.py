@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 import BasicTools.Containers.ElementNames as EN
 
 XdmfName = {}
@@ -23,7 +23,7 @@ XdmfName[EN.Quadrangle_9] = 'Quadrilateral_9'
 XdmfName[EN.Quadrangle_8] = 'Quadrilateral_8'
 XdmfName[EN.Tetrahedron_10] = 'Tetrahedron_10'
 XdmfName[EN.Pyramid_13] = 'Pyramid_13'
-XdmfName[EN.Wedge_15] = 'Wedge_13'
+XdmfName[EN.Wedge_15] = 'Wedge_15'
 XdmfName[EN.Wedge_18] = 'Wedge_18'
 XdmfName[EN.Hexaedron_20] = 'Hexahedron_20'
 

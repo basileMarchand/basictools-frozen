@@ -14,7 +14,7 @@ import BasicTools.Containers.UnstructuredMesh as UM
 from BasicTools.IO.ReaderBase import ReaderBase
 from BasicTools.Helpers.ParserHelper import LocalVariables
 from BasicTools.NumpyDefs import PBasicIndexType
-
+from BasicTools.IO.AnsysTools import PermutationAnsysToBasicTools
 
 def ReadAnsys(fileName=None, string=None, out=None, **kwargs):
     reader = AnsysReader()
@@ -376,13 +376,48 @@ def discriminate_solid185(nodes):
 
 def discriminate_solid186(nodes):
     # SOLID186: EN.Hexaedron_20
-    # May degenerate to wedge, pyramid or tetrahedron
-    implemented = False
-    assert(implemented)
+    # May degenerate to EN.Wedge_15, EN.Pyramid_13 or EN.Tetrahedron_10
+    # Node numbering: ijklmnopqrstuvwxyzab
+    repeated_kl = nodes[2] == nodes[3]
+    repeated_mn = nodes[4] == nodes[5]
+    repeated_op = nodes[6] == nodes[7]
+    from itertools import compress
+    if repeated_op:
+        if repeated_mn:
+            if repeated_kl:
+                assert(nodes[4] == nodes[6])
+                assert(nodes[6] == nodes[12])
+                assert(nodes[6] == nodes[13])
+                assert(nodes[6] == nodes[14])
+                assert(nodes[6] == nodes[15])
+                assert(nodes[18] == nodes[19])
+                assert(nodes[2] == nodes[10])
+                internal_element_type = EN.Tetrahedron_10
+                unique_nodes = list(compress(nodes, (1, 1, 1, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 1, 1, 1, 0)))
+                nodes = [ nodes[per] for per in PermutationAnsysToBasicTools[EN.Tetrahedron_10] ]
+            else:
+                assert(nodes[4] == nodes[6])
+                assert(nodes[6] == nodes[12])
+                assert(nodes[6] == nodes[13])
+                assert(nodes[6] == nodes[14])
+                assert(nodes[6] == nodes[15])
+                internal_element_type = EN.Pyramid_13
+                unique_nodes = list(compress(nodes, (1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1)))
+        else:
+            assert(nodes[6] == nodes[14])
+            assert(nodes[18] == nodes[19])
+            assert(nodes[2] == nodes[10])
+            internal_element_type = EN.Wedge_15
+            unique_nodes = list(compress(nodes, (1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0)))
+    else:
+        internal_element_type = EN.Hexaedron_20
+        unique_nodes = nodes
+    return internal_element_type, unique_nodes
 
 def discriminate_solid187(nodes):
-    # SOLID187: EN.Tetrahedron_10
-    return EN.Tetrahedron_10, nodes
+    internal_element_type = EN.Tetrahedron_10
+    nodes = [ nodes[per] for per in PermutationAnsysToBasicTools[EN.Tetrahedron_10] ]
+    return internal_element_type, nodes
 
 # FOLLW201 is a one-node 3d element used to apply nodal forces
 
@@ -392,6 +427,7 @@ internal_element_type_from_ansys = {
         '154': discriminate_tri_or_quad,
         '181': discriminate_shell181,
         '185': discriminate_solid185,
+        '186': discriminate_solid186,
         '187': discriminate_solid187
         }
 
@@ -402,7 +438,7 @@ RegisterReaderClass(".ansys", AnsysReader)
 
 def CheckIntegrity():
     __teststring = u"""
-nblock,3,,24
+nblock,3,,44
 (1i9,3e20.9e3)
       551     7.784032421E-02     6.661491953E-02     2.000000000E-01
      1691     8.991484887E-02     6.820190681E-02     1.903279204E-01
@@ -413,6 +449,14 @@ nblock,3,,24
      4975     8.387758654E-02     6.740841317E-02     1.951639602E-01
      4976     7.619999012E-02     6.384576627E-02     1.953284701E-01
      4978     8.185593470E-02     6.056343870E-02     1.978568901E-01
+     6782     7.261344291E-04    -6.938080072E-04     7.640761699E-02
+     6805     2.186338673E-04    -8.078558619E-04     7.646145635E-02
+     7308     6.305392899E-04    -2.000856285E-04     7.594041518E-02
+     7309     1.108636472E-04    -3.288991121E-04     7.599344534E-02
+     7859     1.725123756E-04    -7.844719866E-04     7.599047369E-02
+     7860     7.591255417E-04    -7.164507578E-04     7.593581544E-02
+     8108     1.476547648E-04    -3.576023233E-04     7.647352256E-02
+     8111     6.989548354E-04    -2.490909499E-04     7.643098938E-02
     11353     8.223725245E-02     6.463925992E-02     1.904924303E-01
     11355     9.193401184E-02     6.209102085E-02     1.894806444E-01
     11357     8.797802972E-02     6.673380414E-02     1.850919316E-01
@@ -427,6 +471,18 @@ nblock,3,,24
     37856    -1.364793556E+01     3.797073871E+01    -1.607483826E+01
     39901    -1.425619495E+01     3.874218666E+01    -1.561731625E+01
     42378    -1.371046977E+01     3.892752029E+01    -1.493156312E+01
+    45628     4.723841482E-04    -7.508319345E-04     7.643453667E-02
+    45632     7.426299854E-04    -7.051293825E-04     7.617171621E-02
+    45633     7.125446322E-04    -4.714494786E-04     7.641930319E-02
+    45769     1.955731215E-04    -7.961639242E-04     7.622596502E-02
+    45770     1.831443160E-04    -5.827290926E-04     7.646748946E-02
+    47969     3.707014685E-04    -2.644923703E-04     7.596693026E-02
+    47970     6.948324158E-04    -4.582681931E-04     7.593811531E-02
+    47971     6.647470626E-04    -2.245882892E-04     7.618570228E-02
+    47973     1.416880114E-04    -5.566855494E-04     7.599195951E-02
+    47974     1.292592060E-04    -3.432507177E-04     7.623348395E-02
+    50074     4.658189586E-04    -7.504613722E-04     7.596314456E-02
+    50908     4.233048001E-04    -3.033466366E-04     7.645225597E-02
     62174    -1.331961824E+01     3.837984154E+01    -1.550789885E+01
 -1
 et,1,185
@@ -456,6 +512,18 @@ eblock,10,,,2
     10915        3        4        3       12      551     1691     2233     2233     4975    11358     2233     4976
     10916        3        5        3       12     1691     2233     1944     1944    11358    12939     1944    11357
 -1
+et,4,186
+eblock,19,solid,,4
+(19i9)
+        3        4        1        3        0        0        0        0       20        0        1     6782     7860     7859     6805     8111     7308     7309     8108
+    45632    50074    45769    45628    47971    47969    47974    50908    45633    47970    47973    45770
+        3        4        1        3        0        0        0        0       20        0        2     6782     7860     7859     7859     8111     8111     8111     8111
+    45632    50074     7859    45628     8111     8111     8111     8111    45633    47970    47973    47973
+        3        4        1        3        0        0        0        0       20        0        3     6782     7860     7859     6805     8111     8111     8111     8111
+    45632    50074    45769    45628     8111     8111     8111     8111    45633    47970    47973    45770
+        3        4        1        3        0        0        0        0       20        0        4     6782     7860     7859     7859     8111     7308     7309     7309
+    45632    50074     7859    45628    47971    47969     7309    50908    45633    47970    47973    47973
+-1
 """
 
     res = ReadAnsys(string=__teststring)
@@ -463,12 +531,15 @@ eblock,10,,,2
     print("----")
     print('coords: {}'.format(res.nodes))
     print('node ids: {}'.format(res.originalIDNodes))
+    print('hex20: {}'.format((res.GetElementsOfType('hex20').connectivity)))
+    print('pyr13: {}'.format((res.GetElementsOfType('pyr13').connectivity)))
     print('tet4: {}'.format((res.GetElementsOfType('tet4').connectivity)))
     print('tet10: {}'.format((res.GetElementsOfType('tet10').connectivity)))
     print('tri6: {}'.format((res.GetElementsOfType('tri6').connectivity)))
+    print('wed15: {}'.format((res.GetElementsOfType('wed15').connectivity)))
     node_tag = res.GetNodalTag('FewNodes')
     print('node set {}: {}'.format(node_tag, node_tag.GetIds()))
-    for t in ('et_1', 'et_2', 'et_3', 'rc_4', 'rc_5', 'EB_0', 'EB_1', 'EB_2'):
+    for t in ('et_1', 'et_2', 'et_3', 'et_4', 'rc_4', 'rc_5', 'EB_0', 'EB_1', 'EB_2', 'EB_3'):
         print('element set {}: {}'.format(t, res.GetElementsInTag(t)))
 
     return 'ok'
