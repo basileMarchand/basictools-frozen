@@ -28,6 +28,9 @@ class SpaceBase(BaseOutputObject):
     def GetDimensionality(self):
         return self.geoSupport.dimensionality; #pragma: no cover
 
+    def SetIntegrationRule(self, points, weights):
+        raise NotImplementedError("SetIntegrationRule not implemented")
+
     def ClampParamCoorninates(self,xietaphi):
         """ Clamps the xi eta and phi to othe intervals [0,1] for the first dim coordinates,
         the others are set to zero """
