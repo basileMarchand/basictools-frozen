@@ -408,7 +408,7 @@ def RunTests():
         res = TestAll(modulestotreat=['ALL'],extraToolsBoxs= ["BasicTools"], fulloutput=False,coverage={"active":False},typing=False)# pragma: no cover
     else:
         try:
-            opts, args = getopt.getopt(sys.argv[1:],"thcblfsdpvyLe:m:k:")
+            opts, args = getopt.getopt(sys.argv[1:],"thcblfsdpvyLe:m:k:P:")
         except getopt.GetoptError as e:
             print(e)
             print(Test_Help_String)
