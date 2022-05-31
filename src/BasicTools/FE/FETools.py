@@ -16,7 +16,7 @@ from BasicTools.NumpyDefs import PBasicIndexType
 from scipy.sparse import coo_matrix, csr_matrix
 from BasicTools.FE.IntegrationsRules import LagrangeIsoParam
 from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
-from BasicTools.Containers import Filters
+from BasicTools.Containers.Filters import ElementFilter
 
 def GetElementaryMatrixForFormulation(elemName, wform, unknownNames, space=LagrangeSpaceP1,geoFactor=None):
     # Explicitly specify signature to cleanly display default argument values
@@ -78,7 +78,7 @@ def PrepareFEComputation(mesh, elementFilter = None, numberOfComponents = None):
     """
     dim = mesh.GetDimensionality()
     if elementFilter == None:
-        elementFilter = Filters.ElementFilter(mesh)
+        elementFilter = ElementFilter(mesh)
         elementFilter.SetDimensionality(dim)
 
     if numberOfComponents == None:
@@ -129,7 +129,7 @@ def ComputeL2ScalarProducMatrix(mesh, numberOfComponents, elementFilter = None):
     dim = mesh.GetDimensionality()
 
     if elementFilter == None:
-        elementFilter = Filters.ElementFilter(mesh)
+        elementFilter = ElementFilter(mesh)
         elementFilter.SetDimensionality(dim)
 
     spaces, numberings, offset, NGauss = PrepareFEComputation(mesh, elementFilter, numberOfComponents)
@@ -179,7 +179,7 @@ def ComputeH10ScalarProductMatrix(mesh, numberOfComponents):
     nbNodes = mesh.GetNumberOfNodes()
     dim     = mesh.GetDimensionality()
 
-    ff = Filters.ElementFilter(mesh)
+    ff = ElementFilter(mesh)
     ff.SetDimensionality(dim)
 
     spaces, numberings, offset, NGauss = PrepareFEComputation(mesh, ff, numberOfComponents)
@@ -219,7 +219,7 @@ def ComputeInterpolationMatrix_FE_GaussPoint(mesh, feSpace, integrationRule,feNu
     from BasicTools.FE.Integration import IntegrateGeneral
 
     if elementFilter is None:
-        elementFilter = Filters.ElementFilter(mesh)
+        elementFilter = ElementFilter(mesh)
         dim = mesh.GetDimensionality()
         elementFilter.SetDimensionality(dim)
     else:
@@ -270,7 +270,7 @@ def ComputeJdetAtIntegPoint(mesh, elementSets = None, relativeDimension = 0):
     np.ndarray
         of size (NGauss,)
     """
-    ff = Filters.ElementFilter(mesh)
+    ff = ElementFilter(mesh)
 
     dimension = mesh.GetDimensionality() + relativeDimension
     ff.SetDimensionality(dimension)
@@ -325,7 +325,7 @@ def ComputePhiAtIntegPoint(mesh, elementSets = None, relativeDimension = 0):
     coo_matrix
         of size (NGauss, nbNodes)
     """
-    ff = Filters.ElementFilter(mesh)
+    ff = ElementFilter(mesh)
 
     dimension = mesh.GetDimensionality() + relativeDimension
     ff.SetDimensionality(dimension)
@@ -459,7 +459,7 @@ def ComputeGradPhiAtIntegPoint(mesh, elementSets = None, relativeDimension = 0):
         gradPhiAtIntegPoint
     """
 
-    ff = Filters.ElementFilter(mesh)
+    ff = ElementFilter(mesh)
 
     dimension = mesh.GetDimensionality() + relativeDimension
     ff.SetDimensionality(dimension)
@@ -533,7 +533,7 @@ def ComputeNormalsAtIntegPoint(mesh, elementSets):
     np.ndarray
         of size (dimensionality, NGauss)
     """
-    ff = Filters.ElementFilter(mesh)
+    ff = ElementFilter(mesh)
 
     dimension = mesh.GetDimensionality() - 1
     ff.SetDimensionality(dimension)
@@ -590,7 +590,7 @@ def ComputeIntegrationPointsTags(mesh, dimension = None):
     if dimension == None:
         dimension = mesh.GetDimensionality()
 
-    ff = Filters.ElementFilter(mesh)
+    ff = ElementFilter(mesh)
     ff.SetDimensionality(dimension)
 
     _, _, _, NGauss = PrepareFEComputation(mesh, ff, dimension)
@@ -639,7 +639,7 @@ def CellDataToIntegrationPointsData(mesh, scalarFields, elementSet = None, relat
     """
     dimension = mesh.GetDimensionality() + relativeDimension
 
-    ff = Filters.ElementFilter(mesh)
+    ff = ElementFilter(mesh)
     ff.SetDimensionality(dimension)
     if elementSet != None:
         ff.AddTag(elementSet)
@@ -712,7 +712,7 @@ def IntegrationPointsToCellData(mesh, scalarFields):
     for f in range(numberOfFields):
         iPField = IPF.IPField("",mesh,rule=LagrangeIsoParam)
         iPField.Allocate()
-        iPField.SetDataFromNumpy(scalarFields[keymap[f]],dim=mesh.GetDimensionality())
+        iPField.SetDataFromNumpy(scalarFields[keymap[f]], ElementFilter(mesh=mesh,dimensionality =mesh.GetDimensionality())  )
         cellData.append(iPField.GetCellRepresentation())
 
     return np.array(cellData)
@@ -744,7 +744,7 @@ def CheckIntegrity(GUI=False):
 
     from BasicTools.FE.IntegrationsRules import LagrangeP1
     mesh.elements["hex8"].tags.CreateTag("Transfert").SetIds([0,1] )
-    elementFilter = Filters.ElementFilter(mesh,tag="Transfert")
+    elementFilter = ElementFilter(mesh,tag="Transfert")
     data = ComputeInterpolationMatrix_FE_GaussPoint(mesh=mesh,feSpace=LagrangeSpaceP1,integrationRule=LagrangeP1,elementFilter=elementFilter)
 
     print(np.dot(data.toarray(),np.arange(12)))
