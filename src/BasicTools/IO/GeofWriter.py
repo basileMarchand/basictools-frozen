@@ -51,7 +51,7 @@ GeofName[EN.Hexaedron_20] = "c3d20"
 
 GeofName[EN.Wedge_6] = "c3d6"
 
-def WriteMeshToGeof(filename :str , mesh:UnstructuredMesh, useOriginalId:Optional[bool]=False,lowerDimElementsAsElsets:Optional[bool]=False)-> None:
+def WriteMeshToGeof(filename :str , mesh:UnstructuredMesh, useOriginalId:Optional[bool]=False,lowerDimElementsAsElsets:bool=False)-> None:
     """Export Mesh to disk in the geof format files.
         A file is created using the path and name of filename
 
@@ -101,7 +101,7 @@ class GeofWriter(WriterBase):
         if val is not None:
             self.lowerDimElementsAsElsets= bool(val)
 
-    def Write(self,meshObject: UnstructuredMesh, useOriginalId:Optional[bool]=False, lowerDimElementsAsElsets:Optional[bool]=None, PointFieldsNames=None, PointFields=None, CellFieldsNames=None, CellFields=None):
+    def Write(self,meshObject: UnstructuredMesh, useOriginalId:Optional[bool]=False, lowerDimElementsAsElsets:bool=False, PointFieldsNames=None, PointFields=None, CellFieldsNames=None, CellFields=None):
         """Write mesh to file in Geof format
 
         Parameters
