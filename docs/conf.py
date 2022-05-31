@@ -43,7 +43,7 @@ extensions = [
         ]
 
 todo_include_todos=True
-
+typehints_fully_qualified = False
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = []
@@ -267,12 +267,13 @@ texinfo_documents = [
 autodoc_type_aliases = {
     'Iterable': 'Iterable',
     'ArrayLike': 'ArrayLike',
-    'np.typing.ArrayLike':'ArrayLike'
+    'np.typing.ArrayLike':'ArrayLike',
+    'numpy.float64':'float64'
 }
 
 # -- Options for autosummary extension
 autosummary_generate = False
-
+autodoc_typehints_format = 'short'
 # -- Options for napoleon extension
 #pass
 
