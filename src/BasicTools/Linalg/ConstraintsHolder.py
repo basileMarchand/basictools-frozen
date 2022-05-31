@@ -3,6 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
+from typing import Dict, Any
 
 import numpy as np
 from scipy.sparse import linalg as splinalg
@@ -15,16 +16,16 @@ from scipy.sparse.csgraph import connected_components
 from BasicTools.NumpyDefs import PBasicFloatType, PBasicIndexType
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject as BOO
 
-methodFactory = {}
+methodFactory : Dict[str,Any] = {}
 
 class ConstraintsHolder(BOO):
     """
-    Constrained linear problem: Class to store and to enfore constrains to a
-    linear system on the form:
+    Constrained linear problem: Class to store and to enforce constrains to a
+    quadratic system on the form:
 
-        K u = f
+        1/2 u.K.u = u.f
         with the constrain :
-        A u = b
+        A.u = b
 
     This class can store, and manipulate the system Au=b and enforced on the Ku=f
     by different methods (penalisation, subtitution, lagrange multiplier)
@@ -183,7 +184,7 @@ class ConstraintsHolder(BOO):
             return coo_matrix(([], ([], [])), shape=((0, 0 )), copy= True ), usedDofs
 
         if usedDofs[-1] != nbdof :
-        	#we add the independent term in the case is all zeros (last column = 0)
+            #we add the independent term in the case is all zeros (last column = 0)
             usedDofs= np.append(usedDofs, [nbdof])
 
         nbUsedDofs = len(usedDofs)
@@ -432,7 +433,7 @@ class Ainsworth(BOO):
         return (a +b).flatten()
 
     def GetNumberOfDofs(self):
-    	return self.nbdof
+        return self.nbdof
 
     def matvec(self,op,arg):
         return self.P.dot(arg) + self.Q.T.dot(op.dot(self.Q.dot(arg)))
@@ -479,7 +480,7 @@ class Penalisation(BOO):
         return rhs + self.maxdiag*self.factor*self.penalRhs
 
     def GetNumberOfDofs(self):
-    	return self.nbdof
+        return self.nbdof
 
     def matvec(self,op,arg):
         return op.dot(arg) +self.factor*self.maxdiag*self.penalOp.dot(arg)
@@ -507,22 +508,22 @@ class Lagrange(BOO):
         self.nbdof = CH.GetNumberOfDofsOnOriginalSystem()
 
     def GetCOp(self,op):
-    	nbdof = op.shape[0]
-    	nbcons = self.mat.shape[0]
-    	op= op.tocoo()
+        nbdof = op.shape[0]
+        nbcons = self.mat.shape[0]
+        op= op.tocoo()
 
-    	data = np.hstack((op.data,self.mat.data,self.mat.data))
-    	rows = np.hstack((op.row, self.mat.row+nbdof,self.mattoglobal[self.mat.col]))
-    	cols = np.hstack((op.col, self.mattoglobal[self.mat.col], self.mat.row+nbdof))
+        data = np.hstack((op.data,self.mat.data,self.mat.data))
+        rows = np.hstack((op.row, self.mat.row+nbdof,self.mattoglobal[self.mat.col]))
+        cols = np.hstack((op.col, self.mattoglobal[self.mat.col], self.mat.row+nbdof))
 
-    	return sparse.coo_matrix((data,(rows,cols)),shape=(nbdof+nbcons,nbdof+nbcons))
+        return sparse.coo_matrix((data,(rows,cols)),shape=(nbdof+nbcons,nbdof+nbcons))
 
     def GetCRhs(self, op,rhs):
         return np.hstack((rhs.ravel(),self.rhs.ravel()))
 
     def GetNumberOfDofs(self):
-    	nbcons = self.mat.shape[0]
-    	return self.nbdof+nbcons
+        nbcons = self.mat.shape[0]
+        return self.nbdof+nbcons
 
     def matvec(self,op,arg):
         u = np.zeros(self.GetNumberOfDofs())
