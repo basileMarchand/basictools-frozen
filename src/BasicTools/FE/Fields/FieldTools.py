@@ -5,7 +5,7 @@
 #
 
 import numpy as np
-from typing import Union, List, Tuple, Callable, Optional, Iterable
+from typing import Union, List, Tuple, Callable, Optional, Iterable, Dict
 
 from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
 
@@ -13,11 +13,59 @@ from BasicTools.NumpyDefs import PBasicFloatType, PBasicIndexType
 from BasicTools.Containers.Filters import ElementFilter,NodeFilter, IntersectionElementFilter, Filter, FilterOP
 import BasicTools.Containers.ElementNames as EN
 from BasicTools.FE.Fields.FEField import FEField
-from BasicTools.FE.Fields.IPField import IPField, RestrictedIPField
-from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
+from BasicTools.FE.Fields.IPField import FieldBase, IPField, RestrictedIPField
+from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo, FESpaceType
 from BasicTools.FE.DofNumbering import ComputeDofNumbering
-from BasicTools.FE.Fields.IPField import FieldBase
+from BasicTools.FE.IntegrationsRules import IntegrationRulesType
 
+def ElementWiseIpToFETransferOp(integrationRule: IntegrationRulesType , space:FESpaceType )-> Dict[str,np.ndarray]:
+    """Generate transfer operator (element wise) to pass information from integration points to a FE field. This is done
+    by solving a least-squares problem.
+
+    Parameters
+    ----------
+    integrationRule : IntegrationRuleType
+        The integration rule of the orginal data
+    space : FESpaceType
+        The target space
+
+    Returns
+    -------
+    Dict[str,np.ndarray]
+        the operator to pass the data from the integration points to the FEField
+    """
+    res: Dict[str,np.ndarray] = dict()
+    for name, ir in integrationRule.items():
+        space_ipValues = space[name].SetIntegrationRule(ir[0],ir[1])
+        valN = np.asarray( space_ipValues.valN, dtype=PBasicFloatType)
+        sol = np.linalg.lstsq(valN, np.eye(valN.shape[0],valN.shape[1]), rcond=None)[0]
+        res[name] = sol
+    return res
+
+def ElementWiseFEToFETransferOp(originSpace: FESpaceType, targetSpace: FESpaceType)-> Dict[str,np.ndarray]:
+    """Generate transfer operator (element wise) to pass information from a FE Field to a different FE field. This is done
+    by solving a least-squares problem.
+
+    Parameters
+    ----------
+    originSpace : FESpaceType
+        The initial space
+    targetSpace : FESpaceType
+        The target space
+
+    Returns
+    -------
+    Dict[str,np.ndarray]
+        the operator to pass the data from the initial space to the target FEField
+    """
+    res: Dict[str,np.ndarray] = dict()
+    for name, ir in targetSpace.items():
+        ir = (originSpace[name].posN, np.ones(originSpace[name].GetNumberOfShapeFunctions(),dtype=PBasicFloatType) )
+        space_ipvalues = targetSpace[name].SetIntegrationRule(ir[0],ir[1])
+        valN = np.asarray( space_ipvalues.valN, dtype=PBasicFloatType)
+        sol = np.linalg.lstsq(valN, np.eye(valN.shape[0],valN.shape[1]), rcond=None)[0]
+        res[name] = sol
+    return res
 
 def NodeFieldToFEField(mesh, nodeFields: dict=None):
     """
@@ -136,7 +184,7 @@ def GetPointRepresentation(listOfFEFields,fillvalue=0):
     Returns
     -------
     np.array
-        Array  of size (number of fields, number of points)
+        Array  of size ( number of points, number of fields)
 
     """
     nbfields= len(listOfFEFields)
@@ -162,7 +210,7 @@ def GetCellRepresentation(listOfFEFields,fillvalue=0):
     Returns
     -------
     np.array
-        Array  of size (number of fields, number of points)
+        Array  of size (number of elements, number of fields)
 
     """
     nbfields= len(listOfFEFields)
@@ -239,11 +287,10 @@ def CreateFieldFromDescription(mesh: UnstructuredMesh,
     fieldDefinition : List[Tuple[Union[ElementFilter,NodeFilter],Union[float,Callable[[np.ndarray],float]]]]
         A field definition is a list of Tuples (with 2 element each ).
         The first element of the tuple is a ElementFilter or a NodeFilter
-        The second element of the tuple is a float or
-            float returning callable (argument is a point in the space)
+        The second element of the tuple is a float or float returning callable (argument is a point in the space)
     ftype : str, optional
         type of field created FEField or IPField
-        ("FE", "FE-P0", "IP") by default "FE" (isogeometric)
+        ("FE", "FE-P0", "IP") by default "FE" (isoparametric)
 
     Returns
     -------
@@ -321,16 +368,16 @@ def GetTransferOpToIPField(inField: FEField,
 
     for elemType,d in mesh.elements.items():
 
-        eF = ElementFilter(inField.mesh,elementTypes=[elemType])
-
         if elementFilter is not None:
-            eF = IntersectionElementFilter(mesh,(eF,elementFilter) )
+            eF = IntersectionElementFilter(mesh,(ElementFilter(inField.mesh,elementTypes=[elemType]) ,elementFilter) )
+        else:
+            eF = ElementFilter(inField.mesh,elementTypes=[elemType])
 
         idsToTreat = eF.GetIdsToTreat(d)
         if len(idsToTreat) == 0:
             continue
 
-        numberingRight = ComputeDofNumbering(mesh,Space=gaussSpace,elementFilter=eF)
+        numberingRight = ComputeDofNumbering(mesh, Space=gaussSpace, elementFilter=eF)
 
         rightField = FEField(name="Gauss'",numbering=numberingRight,mesh=mesh,space=gaussSpace)
 
@@ -352,10 +399,10 @@ def GetTransferOpToIPField(inField: FEField,
     return res
 
 
-def TransferFEFieldToIPField(inField,ruleName=None,rule=None,der=-1,elementFilter=None,op=None):
+def TransferFEFieldToIPField(inField, ruleName=None, rule=None,der=-1, elementFilter=None, op=None):
 
     if op is None:
-        op = GetTransferOpToIPField(inField=inField,ruleName=ruleName,rule=rule,der=der,elementFilter=elementFilter)
+        op = GetTransferOpToIPField(inField=inField, ruleName=ruleName, rule=rule, der=der, elementFilter=elementFilter)
 
     from BasicTools.FE.IntegrationsRules import GetRule
 
@@ -364,7 +411,7 @@ def TransferFEFieldToIPField(inField,ruleName=None,rule=None,der=-1,elementFilte
         outField = IPField(name=inField.name,mesh=inField.mesh,rule=irule)
         outField.Allocate()
     else:
-        outField = RestrictedIPField(name=inField.name,mesh=inField.mesh,rule=irule,efmask=elementFilter)
+        outField = RestrictedIPField(name=inField.name, mesh=inField.mesh, rule=irule, elementFilter=elementFilter)
         outField.Allocate()
 
     mesh = inField.mesh
@@ -435,8 +482,7 @@ def FillIPField(field : IPField, fieldDefinition) -> None:
     fieldDefinition : List[Tuple[ElementFilter,Union[float,Callable[[np.ndarray],float]]]]
         A field definition is a list of Tuples (with 2 element each ).
         The first element of the tuple is a ElementFilter or a NodeFilter
-        The second element of the tuple is a float or
-            float returning callable (argument is a point in the space)
+        The second element of the tuple is a float or float returning callable (argument is a point in the space)
     """
 
     for f,val in fieldDefinition:
@@ -474,8 +520,7 @@ def FillFEField(field : FEField, fieldDefinition) -> None:
     fieldDefinition : List[Tuple[Union[ElementFilter,NodeFilter],Union[float,Callable[[np.ndarray],float]]]]
         A field definition is a list of Tuples (with 2 element each ).
         The first element of the tuple is a ElementFilter or a NodeFilter
-        The second element of the tuple is a float or
-            float returning callable (argument is a point in the space)
+        The second element of the tuple is a float or float returning callable (argument is a point in the space)
     """
     for f,val in fieldDefinition:
         needPos = False
@@ -798,19 +843,19 @@ def ComputeTransfertOp(field1: FEField, field2: FEField, force: bool = False):
     if field1.space != field2.space and not force:
         raise(Exception("The fields must share the same space"))
 
-    extractorLeft  = []
-    extractorRight = []
+    _extractorLeft  = []
+    _extractorRight = []
 
     for name in field1.mesh.elements:
         a = field1.numbering.get(name,None)
         b = field2.numbering.get(name,None)
         if a is not None and b is not None:
             mask = np.logical_and(a>=0,b>=0)
-            extractorLeft.extend(b[mask])
-            extractorRight.extend(a[mask])
+            _extractorLeft.extend(b[mask])
+            _extractorRight.extend(a[mask])
 
-    extractorLeft = np.array(extractorLeft, dtype=PBasicIndexType)
-    extractorRight = np.array(extractorRight, dtype=PBasicIndexType)
+    extractorLeft = np.array(_extractorLeft, dtype=PBasicIndexType)
+    extractorRight = np.array(_extractorRight, dtype=PBasicIndexType)
 
     v,index = np.unique(extractorLeft, return_index=True)
     extractorLeft = v
@@ -857,11 +902,11 @@ def CheckIntegrity(GUI=False):
     print("output")
     print(nodalTransferedField.data )
 
-    print(nodalTransferedField.GetIpFieldRepr(1).data)
+    print(nodalTransferedField.GetIpFieldRepresentation(1).data)
 
     res = TranferPosToIPField(mesh,ruleName="LagrangeIsoParam",elementFilter=ElementFilter(dimensionality=1,tag="next3"))
     print(res[0].data)
-    print(res[0].GetIpFieldRepr().data)
+    print(res[0].GetIpFieldRepresentation().data)
 
     FE = FieldsEvaluator()
     field.name = "E"
