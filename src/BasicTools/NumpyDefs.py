@@ -10,3 +10,4 @@ else:
 
 from numpy import float64 as PBasicFloatType
 
+from numpy.typing import ArrayLike
