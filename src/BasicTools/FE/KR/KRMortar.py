@@ -740,21 +740,21 @@ def CheckIntegrity1DInterface2Meshes(GUI=False):
     CheckIntegrity for
     Mesh 1
 
-       y ^
-         |
-       1 |x       2 x
-         ||
-         ||       3 x
-         ||
-       0 -x-------4-x----> x
+    y ^
+      |
+    1 |x       2 x
+      ||
+      ||       3 x
+      ||
+    0 -x-------4-x----> x
 
-   y ^
-         |
-       1 |       2 x
-         |         |
-         |       3 x
-         |         |
-       0 --------4-x----> x
+    y ^
+      |
+    1 |       2 x
+      |         |
+      |       3 x
+      |         |
+    0 --------4-x----> x
 
 
     """
