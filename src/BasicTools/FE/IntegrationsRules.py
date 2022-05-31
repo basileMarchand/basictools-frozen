@@ -3,12 +3,33 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-
+from typing import NewType, Dict, Tuple, List
 import numpy as np
 
+from BasicTools.NumpyDefs import PBasicFloatType, ArrayLike
 import BasicTools.Containers.ElementNames as EN
 
-def GetRule(ruleName=None,rule=None):
+ElementIntegrationRuleType = NewType('ElementIntegrationRuleType', Tuple[np.ndarray, np.ndarray])
+IntegrationRulesType = NewType('IntegrationRulesType', Dict[str,ElementIntegrationRuleType] )
+
+IntegrationRulesAlmanac = {} # type: Dict[str,IntegrationRulesType]
+
+def GetRule(ruleName:str=None, rule:ElementIntegrationRuleType=None) -> ElementIntegrationRuleType:
+    """Get the integration rule using a name or a integration rule. In the case where
+    both are none then LagrangeIsoParam is returned
+
+    Parameters
+    ----------
+    ruleName : str, optional
+        name of the integration rule, by default None
+    rule : IntegrationRuleType, optional
+        integration rule in the case ruleName is None, by default None
+
+    Returns
+    -------
+    IntegrationRuleType
+        the integration rule
+    """
     if ruleName is None :
         if rule is None:
             return IntegrationRulesAlmanac["LagrangeIsoParam"]
@@ -20,7 +41,21 @@ def GetRule(ruleName=None,rule=None):
         else:
             raise(Exception("must give ruleName or rule not both"))
 
-def TensorProductGauss(dim,npoints=2):
+def TensorProductGauss(dim:int, npoints:int=2)-> ElementIntegrationRuleType:
+    """Tensor product of gauss point in dim dimension using npoints per dimension
+
+    Parameters
+    ----------
+    dim : int
+        the dimensionality of the tensor product
+    npoints : int, optional
+        Number of points per dimension , by default 2
+
+    Returns
+    -------
+    IntegrationRuleType
+        Integration Rule (points and weights)
+    """
     import math
     if npoints == 2:
         p = [-math.sqrt(1./3)/2+.5, math.sqrt(1./3)/2+.5 ]
@@ -33,11 +68,11 @@ def TensorProductGauss(dim,npoints=2):
         raise # pragma: no cover
 
     if dim == 1:
-        return (np.array([p,]).T,np.array(w))
+        return ElementIntegrationRuleType( (np.array([p,]).T,np.array(w)) )
 
     return TensorProdHomogeneous(dim,np.array([p]).T,np.array(w))
 
-def TensorProdHomogeneous(dim,p,w):
+def TensorProdHomogeneous(dim:int,p:ArrayLike,w:ArrayLike) ->ElementIntegrationRuleType:
     #pp,ww = TensorProd(p,w,p,w)
     #for i in range(dim-2):
     #    pp,ww = TensorProd(p,w,pp,ww)
@@ -49,20 +84,22 @@ def TensorProdHomogeneous(dim,p,w):
     else :
         raise# pragma: no cover
 
-def TensorProd(p1,w1,p2,w2,p3=None,w3=None):
+def TensorProd(p1:ArrayLike, w1:ArrayLike,
+               p2:ArrayLike, w2:ArrayLike,
+               p3:ArrayLike=None, w3:ArrayLike=None) -> ElementIntegrationRuleType:
     Pres = []
     Wres = []
     if p3 is None:
         for i in range(len(p1)):
             for j in range(len(p2)):
-                    res = []
+                    res: List[PBasicFloatType] = []
                     res.extend(p1[i,:])
                     res.extend(p2[j,:])
                     Pres.append(res)
 
                     #Pres.append([p1[i,0], p2[j,0]])
                     Wres.append( w1[i]*w2[j])
-        return (np.array(Pres),np.array(Wres))
+        return ElementIntegrationRuleType((np.array(Pres),np.array(Wres)))
     else:
         for k in range(len(p3)):
             for j in range(len(p2)):
@@ -75,15 +112,14 @@ def TensorProd(p1,w1,p2,w2,p3=None,w3=None):
 
                     #Pres.append([p1[i,0], p2[j,0]])
                     Wres.append( w1[i]*w2[j]*w3[k])
-        return (np.array(Pres),np.array(Wres))
+        return ElementIntegrationRuleType( (np.array(Pres),np.array(Wres)) )
 
         #p23,w23 = TensorProd(p2,w2,p3,w3)
         #return TensorProd(p1,w1,p23,w23)
 
-IntegrationRulesAlmanac = {}
-
 ### integration Point in the center of the elemetn #####
-ElementCenter = {}
+ElementCenter = IntegrationRulesType({})
+
 IntegrationRulesAlmanac["ElementCenterEval"] = ElementCenter
 
 # 1D elements
