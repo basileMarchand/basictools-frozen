@@ -3,39 +3,78 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
+from typing import Union
 import numpy as np
 
-from BasicTools.NumpyDefs import PBasicIndexType, PBasicFloatType
+from BasicTools.NumpyDefs import PBasicIndexType, PBasicFloatType, ArrayLike
 import BasicTools.Containers.ElementNames as ElementNames
 from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
 from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearMesh
 from BasicTools.Containers.UnstructuredMeshModificationTools import ComputeSkin
 from BasicTools.Containers.UnstructuredMeshModificationTools import CleanLonelyNodes
 
-def CreateUniformMeshOfBars(pmin,pmax,npoints,secondOrder=False):
+def CreateUniformMeshOfBars(startPoint:Union[PBasicFloatType,ArrayLike], stopPoint:Union[PBasicFloatType,ArrayLike], nbPoints:PBasicIndexType=50, secondOrder:bool=False) -> UnstructuredMesh:
+    """Create a uniform mesh of bars.
+    In the case the starPoint and stopPoint are scalar the nodes of the mesh are 3D (with zeros for the other columns)
+    The user can give a list with only one component to generate nodes with only 1 coordinate
+    0D elements are created at the start and stop points with tags "L", "H"
+    nodal tags are created at the start and stop points with tags "L", "H"
 
-    points = np.zeros((npoints,3))
-    points[:,0] = np.linspace(pmin,pmax,npoints)
+
+    Parameters
+    ----------
+    startPoint : Union[PBasicFloatType,ArrayLike]
+        Start point of the linear mesh
+    stopPoint : Union[PBasicFloatType,ArrayLike]
+        Stop point of the linear mesh
+    nbPoints : PBasicIndexType, optional
+        Number of point in the mesh, by default 50
+    secondOrder : bool, optional
+        if true second order bars are generated. In this case the number of points (nbPoints) must be odd
+
+    Returns
+    -------
+    UnstructuredMesh
+        the mesh in UnstructuredMesh format
+
+    Raises
+    ------
+    Exception
+        if the startPoint and stopPoint are not compatible
+    """
+
+    if not hasattr(startPoint,"__len__"):
+        startPoint = [startPoint,0.,0.]
+
+    if not hasattr(stopPoint,"__len__"):
+        stopPoint = [stopPoint,0.,0.]
+
+    if len(startPoint) != len(stopPoint):# pragma: no cover
+        raise Exception(f"size of startPoint ({len(startPoint)}) and stopPoint ({len(stopPoint)}) not compatible")
+
+    points = np.linspace(startPoint, stopPoint, nbPoints, dtype=PBasicFloatType)
 
     if secondOrder :
-        if npoints % 2 == 0:
+        if nbPoints % 2 == 0:# pragma: no cover
             raise(Exception("the number of point must be odd in secondOrder"))
 
-        bars = np.empty(((npoints-1)//2 ,3))
-        bars[:,0] = np.arange(0,npoints-2,2)
-        bars[:,1] = np.arange(2,npoints,2)
-        bars[:,2] = np.arange(1,npoints-1,2)
+        bars = np.empty(((nbPoints-1)//2 ,3))
+        bars[:,0] = np.arange(0,nbPoints-2,2)
+        bars[:,1] = np.arange(2,nbPoints,2)
+        bars[:,2] = np.arange(1,nbPoints-1,2)
         res = CreateMeshOf(points,bars,elemName = ElementNames.Bar_3 )
         #print(bars)
         #raise
     else:
-        bars = np.empty((npoints-1,2))
-        bars[:,0] = np.arange(npoints-1)
-        bars[:,1] = np.arange(1,npoints)
+        bars = np.empty((nbPoints-1,2))
+        bars[:,0] = np.arange(nbPoints-1)
+        bars[:,1] = np.arange(1,nbPoints)
         res = CreateMeshOf(points,bars,elemName = ElementNames.Bar_2 )
 
+    res.nodesTags.CreateTag("L",).SetIds([0])
+    res.nodesTags.CreateTag("H",).SetIds([nbPoints-1])
     elements = res.GetElementsOfType(ElementNames.Point_1)
-    elements.connectivity = np.array([[0],[npoints-1]],dtype=PBasicIndexType)
+    elements.connectivity = np.array([[0],[nbPoints-1]],dtype=PBasicIndexType)
     elements.originalIds = np.arange(2,dtype=PBasicIndexType)
     elements.cpt = elements.connectivity.shape[0]
     elements.tags.CreateTag("L",).SetIds([0])
@@ -43,8 +82,8 @@ def CreateUniformMeshOfBars(pmin,pmax,npoints,secondOrder=False):
     res.PrepareForOutput()
     return res
 
-def CreateMeshOfTriangles(points,tris):
-    return CreateMeshOf(points,tris,elemName = ElementNames.Triangle_3 )
+def CreateMeshOfTriangles(points, triangles):
+    return CreateMeshOf(points, triangles, elemName = ElementNames.Triangle_3 )
 
 def CreateMeshOf(points,connectivity,elemName = None,out=None):
 
@@ -239,7 +278,7 @@ def MeshToSimplex(mesh, legacy=False):
             res.connectivity[5:nbelems*6:6] = conn[:,[0, 6, 1, 2]]
 
             res.originalIds =  np.repeat(data.originalIds,6)
-            for tname in data.tags:
+            for tname in data.tags.keys():
                 ids = data.tags[tname].GetIds()
                 res.tags.CreateTag(tname).SetIds(np.repeat(ids,6)*6+np.tile(range(6),len(ids)) )
 
@@ -816,12 +855,15 @@ def CheckIntegrity_CreateMeshFromConstantRectilinearMesh(GUI=False):
     myMesh = ConstantRectilinearMesh(2)
     myMesh.SetDimensions([3,3]);
     myMesh.SetSpacing([1, 1]);
+
     print(myMesh)
     print(CreateMeshFromConstantRectilinearMesh(myMesh))
 
     myMesh = ConstantRectilinearMesh(dim=3)
     myMesh.SetDimensions([3,3,3]);
     myMesh.SetSpacing([1, 1,1]);
+    for name,data in myMesh.elements.items():
+        data.tags.CreateTag("First Element per Type").SetIds([0])
     print(myMesh)
     print(CreateMeshFromConstantRectilinearMesh(myMesh))
 
@@ -849,6 +891,7 @@ def CheckIntegrity_CreateSquare(GUI = False):
 
 def CheckIntegrity_CreateUniformMeshOfBars(GUI=False):
     print(CreateUniformMeshOfBars(0,8,10))
+    print(CreateUniformMeshOfBars(0,8,11,secondOrder=True))
     return "ok"
 
 def CheckIntegrity(GUI=False):
