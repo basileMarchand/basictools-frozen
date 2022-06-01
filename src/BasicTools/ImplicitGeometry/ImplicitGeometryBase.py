@@ -3,10 +3,11 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-
+from typing import Optional, Union
 import numpy as np
 
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
+from BasicTools.NumpyDefs import ArrayLike,PBasicFloatType
 from BasicTools.ImplicitGeometry.ImplicitGeometryFactory import RegisterClass
 
 def dsin(x):
@@ -44,6 +45,39 @@ class ImplicitGeometryBase(BaseOutputObject):
                   pos = np.hstack((pos,np.zeros((pos.shape[0],1) ,dtype=pos.dtype ) ) )
            d  = self.GetDistanceToPoint(pos)
        return d
+
+    def GetGradientDistanceToPoint(self, pos:np.ndarray, dx:Optional[Union[PBasicFloatType,ArrayLike] ] = None) -> np.ndarray:
+        """Compute the numerical gradient of the implicit geometry
+        the child classes can overwrite it for a more efficient or exact result.
+
+        Parameters
+        ----------
+        pos : np.ndarray
+            the position to evaluate the gradient
+        dx : Optional[PBasicFloatType,Arraylike], optional
+            the step (per coordinate) to be used to compute the numerical gradient, by default dx is 1e-6
+
+        Returns
+        -------
+        np.ndarray
+            _description_
+        """
+
+        if dx is None:
+            dx = [1.e-6]*3
+        elif not hasattr(dx, "__len__"):
+            dx = [dx]*3
+
+        res = np.zeros_like(pos)
+        for i in range(res.shape[1]):
+            if dx[i] != 0:
+                pos[:,i] -= dx[i]
+                res[:,i] = -self.GetDistanceToPoint(pos)
+                pos[:,i] += 2*dx[i]
+                res[:,i] += self.GetDistanceToPoint(pos)
+                pos[:,i] -= dx[i]
+                res[:,i] /= dx[i]
+        return res
 
     def ApplyInsideOut(self,res):
         if self.insideOut :
@@ -192,12 +226,14 @@ def CheckIntegrity(GUI=False):
     myObj6.GetDistanceToPoint(TwoPoints3D)
     myObj6.GetDistanceToPoint(TwoPoints3D)
 
-
+    myObj6.GetGradientDistanceToPoint(TwoPoints3D)
+    myObj6.GetGradientDistanceToPoint(TwoPoints3D,1)
     #######################################################################
 
     res = ImplicitGeometryDelayedInit("Dummy")
     print(res)
     res(myMesh3D)
+    res.GetDistanceToPoint(TwoPoints3D)
     print(res)
 
     return "ok"
