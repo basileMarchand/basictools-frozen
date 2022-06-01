@@ -3,23 +3,86 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-
+from typing import Dict, List, Optional, Tuple
 import numpy as np
-
- #   if elementFilter is not None and zone is not None:
- #       raise(Exception("Need only one filter or zone"))
- #   if elementFilter is None and zone is None:
- #       raise(Exception("Need a filter or a zone"))
- #
- #   if elementFilter is not None:
- #       zones = filter.zones
+from BasicTools.Containers.Filters import ElementFilter
+from BasicTools.FE.Fields.FEField import FEField
 
 
-from BasicTools.NumpyDefs import PBasicIndexType, PBasicFloatType
+from BasicTools.NumpyDefs import PBasicIndexType, PBasicFloatType, ArrayLike
 import BasicTools.Containers.ElementNames as ElementNames
-from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
+from BasicTools.Containers.UnstructuredMesh import ElementsContainer, UnstructuredMesh
 from BasicTools.Containers.UnstructuredMeshModificationTools import CleanLonelyNodes
 from BasicTools.NumpyDefs import PBasicIndexType
+
+def GetDataOverALine(startPoint:ArrayLike, stopPoint:ArrayLike, nbPoints:int, mesh:UnstructuredMesh, fields:List, method:Optional[str]=None)-> UnstructuredMesh:
+    """Compute the values of a mesh/field over a line
+    startPoint and stopPoint are used to construct a line with nbPoints points.
+    the data in mesh.nodeFields, mesh.elemFields and fields are evaluated at every point of the line
+
+    Parameters
+    ----------
+    startPoint : ArrayLike
+        Start point. this is passed to the CreateUniformMeshOfBars function
+    stopPoint : ArrayLike
+        Stop point. this is passed to the CreateUniformMeshOfBars function
+    nbPoints : int
+        this argument is passed to the CreateUniformMeshOfBars function
+    mesh : UnstructuredMesh
+        the mesh to extract mesh.nodeFields, mesh.elemFields
+    fields : List
+        a list containing only FEFields
+    method : Optional[str], optional
+        this argument is passed to the GetFieldTransferOp function, by default None
+
+    Returns
+    -------
+    UnstructuredMesh
+        a unstructured mesh with nodeFields populated with the data
+        nodeFields with contain a dictionary for every field name and the numpy vector with
+        the values at the points. If two or more fields have the same name only one is recovered,
+        the priority order staring with the hightest priority are : fields, elemFields and nodeFields
+
+    Raises
+    ------
+    Exception
+        In the case an IPField is present in the 'fields' argument
+    """
+    res:Dict[str,np.ndarray] = {}
+    from BasicTools.Containers.UnstructuredMeshCreationTools import CreateUniformMeshOfBars
+
+    lineMesh = CreateUniformMeshOfBars(startPoint,stopPoint,nbPoints)
+
+    from BasicTools.Containers.UnstructuredMeshFieldOperations import GetFieldTransferOp
+    from BasicTools.FE.Fields.FieldTools import NodeFieldToFEField, ElemFieldsToFEField
+
+    #transfert of nodalfields
+    nodeFieldsAsFEFields = NodeFieldToFEField(mesh)
+    if len(nodeFieldsAsFEFields) != 0:
+        firstField = next(iter(nodeFieldsAsFEFields.values()))
+        op,status = GetFieldTransferOp(firstField, lineMesh.nodes, method=method)
+        for name, data in mesh.nodeFields.items():
+            res[name] = op.dot(data)
+
+
+    #transfert of celldata
+    cellFieldsAsFEFields = ElemFieldsToFEField(mesh)
+    if len(cellFieldsAsFEFields) != 0:
+        firstField = next(iter(cellFieldsAsFEFields.values()))
+        op,status = GetFieldTransferOp(firstField, lineMesh.nodes, method=method)
+        for name, data in mesh.elemFields.items():
+            res[name] = op.dot(data)
+
+    #transfert of FEFields
+    for effield in fields:
+        if isinstance(effield,FEField):
+            op, status = GetFieldTransferOp(effield, lineMesh.nodes, method=method)
+            res[effield.name] = op.dot(effield.data)
+        else:# pragma: no cover
+            raise Exception(f"Don't know how to treat field of type ({type(effield)})")
+
+    lineMesh.nodeFields = res
+    return lineMesh
 
 def GetElementsFractionInside(field, points, name, elements, ids):
 
@@ -121,56 +184,54 @@ def GetElementsFractionInside(field, points, name, elements, ids):
 
     return res
 
-def VolumeOfTetrahedrons(inmesh):
+def GetVolumePerElement(inmesh:UnstructuredMesh, elementFilter:Optional[ElementFilter]=None ) -> np.ndarray:
+    """Compute the volume (surface for 2D element and length for 1De elements) for each element selected by the elementFilter
 
-    elems =inmesh.GetElementsOfType(ElementNames.Tetrahedron_4)
-    conn = elems.connectivity
-    a = inmesh.nodes[conn[:,0],:]
-    b = inmesh.nodes[conn[:,1],:]
-    c = inmesh.nodes[conn[:,2],:]
-    d = inmesh.nodes[conn[:,3],:]
-    e = np.cross(b-d,c-d)
-    f = (a-d)
-    res = np.empty(elems.GetNumberOfElements(),dtype=np.float)
-    for n in range(elems.GetNumberOfElements()):
-        res[n] = np.abs( np.dot(f[n,:],e[n,:])  )
+    Parameters
+    ----------
+    inmesh : UnstructuredMesh
+        the mesh to extract elements
+    elementFilter : Optional[ElementFilter], optional
+        filter to select some elements, if None the volume of all the element are computed
 
-    return res*(1./6.)
+    Returns
+    -------
+    np.ndarray
+        a numpy array of size number of "element selected by the elementFilter" with the volume
+    """
+    from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceP0
+    from BasicTools.FE.DofNumbering import ComputeDofNumbering
+    from BasicTools.FE.SymWeakForm import GetField
+    from BasicTools.FE.SymWeakForm import GetTestField
+    from BasicTools.FE.Fields.FEField import FEField
+    from BasicTools.FE.Integration import IntegrateGeneral
 
-def VolumeOfHexaedrons(inmesh):
+    numbering = ComputeDofNumbering(inmesh,LagrangeSpaceP0,elementFilter=elementFilter)
 
-    elems =inmesh.GetElementsOfType(ElementNames.Hexaedron_8)
-    conn = elems.connectivity
+    wform = GetField("F",1).T*GetTestField("T",1)
 
-    def VolumeInternal(a,b,c,d):
-        e = np.cross(b-d,c-d)
-        f = (a-d)
-        res = np.empty(elems.GetNumberOfElements(),dtype=np.float)
-        for n in range(elems.GetNumberOfElements()):
-            res[n] = np.abs( np.dot(f[n,:],e[n,:])  )
-        return res*(1./6.)
+    F = FEField("F",inmesh,LagrangeSpaceP0,numbering)
+    F.Allocate(1.)
+    unkownFields = [ FEField("T",mesh=inmesh,space=LagrangeSpaceP0,numbering=numbering) ]
+    _,f  = IntegrateGeneral( mesh=inmesh, wform=wform, constants={}, fields=[F], unkownFields=unkownFields,elementFilter=elementFilter)
+    return f
 
-    res = np.zeros(elems.GetNumberOfElements(),dtype=np.float)
+def GetVolume(inmesh:UnstructuredMesh) -> PBasicFloatType:
+    """Compute the volume of the mesh
+    Only element of the bigger dimensionality are taken into account
 
-    p0 = inmesh.nodes[conn[:,0],:]
-    p1 = inmesh.nodes[conn[:,1],:]
-    p2 = inmesh.nodes[conn[:,2],:]
-    p3 = inmesh.nodes[conn[:,3],:]
-    p4 = inmesh.nodes[conn[:,4],:]
-    p5 = inmesh.nodes[conn[:,5],:]
-    p6 = inmesh.nodes[conn[:,6],:]
-    p7 = inmesh.nodes[conn[:,7],:]
+    Parameters
+    ----------
+    inmesh : UnstructuredMesh
+        the mesh to use for the computation
 
-    res += VolumeInternal(p0,p6,p5,p1)
-    res += VolumeInternal(p0,p6,p1,p2)
-    res += VolumeInternal(p0,p6,p2,p3)
-    res += VolumeInternal(p0,p6,p3,p7)
-    res += VolumeInternal(p0,p6,p7,p4)
-    res += VolumeInternal(p0,p6,p4,p5)
-
-    return res
-
-def GetVolume(inmesh) :
+    Returns
+    -------
+    PBasicFloatType
+        the volume if the mesh contains 3D elements
+        the surface if the mesh contains 2D elements and no 3D elements
+        the length if the mesh contains 1D elements and no 3D elements nor 2D elements
+    """
 
     from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo, ConstantSpaceGlobal
     from BasicTools.FE.DofNumbering import ComputeDofNumbering
@@ -271,7 +332,22 @@ def ExtractElementsByImplicitZone(inmesh,op,allNodes=True,cellCenter=False):
     outmesh.PrepareForOutput()
     return outmesh
 
-def ExtractElementsByElementFilter(inmesh,ff):
+def ExtractElementsByElementFilter(inmesh: UnstructuredMesh, elementFilter:ElementFilter) -> UnstructuredMesh:
+    """Create a new mesh with the selected element by elementFilter
+    For the moment this function make a copy of nodes
+
+    Parameters
+    ----------
+    inmesh : UnstructuredMesh
+        the input mesh
+    elementFilter : ElementFilter
+        the ElementFilter to select the element to extract
+
+    Returns
+    -------
+    UnstructuredMesh
+        the mesh with the extracted elements
+    """
 
     inmesh.ComputeGlobalOffset()
     outmesh = type(inmesh)()
@@ -281,42 +357,57 @@ def ExtractElementsByElementFilter(inmesh,ff):
     outmesh.originalIDNodes = np.arange(inmesh.GetNumberOfNodes())
     outmesh.nodesTags = inmesh.nodesTags.Copy()
 
-    ff.mesh = inmesh
-    for name,data,ids in ff:
+    elementFilter.mesh = inmesh
+    for name,data,ids in elementFilter:
         outmesh.elements[name] = ExtractElementsByMask(data,ids)
 
     outmesh.PrepareForOutput()
     return outmesh
 
-def ExtractElementsByMask(inelems, _mask):
+def ExtractElementsByMask(inelems:ElementsContainer, mask:ArrayLike) -> ElementsContainer:
+    """Create a new ElementContainer with the element selected by the mask
+    Note: The connectivity of the element is not changed.
+
+    Parameters
+    ----------
+    inelems : ElementsContainer
+        _description_
+    mask : ArrayLike
+        a vector of bool (a boolean mask) or a vector with the indices to extract
+
+    Returns
+    -------
+    ElementsContainer
+        a new container with the extracted elements (the tags are updated)
+    """
 
 
     outelems = type(inelems)(inelems.elementType)
 
     newIndex = np.empty(inelems.GetNumberOfElements(),dtype=PBasicIndexType)
 
-    _mask = np.asarray(_mask)
-    if _mask.dtype == bool:
+    mask = np.asarray(mask)
+    if mask.dtype == bool:
         nbels =0
         for i in range(inelems.GetNumberOfElements()):
            newIndex[i] = nbels
-           nbels += 1 if _mask[i] else 0
-        mask = _mask
+           nbels += 1 if mask[i] else 0
+        imask = mask
     else:
-        nbels = len(_mask)
-        mask = np.zeros(inelems.GetNumberOfElements(),dtype=bool)
+        nbels = len(mask)
+        imask = np.zeros(inelems.GetNumberOfElements(),dtype=bool)
         cpt =0
-        for index in _mask:
+        for index in mask:
            newIndex[index ] = cpt
-           mask[index] = True
+           imask[index] = True
            cpt += 1
 
     outelems.Allocate(nbels)
-    outelems.connectivity = inelems.connectivity[mask,:]
-    outelems.originalIds = np.where(mask)[0]
+    outelems.connectivity = inelems.connectivity[imask,:]
+    outelems.originalIds = np.where(imask)[0]
 
     for tag in inelems.tags  :
-       temp = np.extract(mask[tag.GetIds()],tag.GetIds())
+       temp = np.extract(imask[tag.GetIds()],tag.GetIds())
        newid = newIndex[temp]
        outelems.tags.CreateTag(tag.name).SetIds(newid)
 
@@ -422,20 +513,45 @@ def ExtractElementByTags(inmesh,tagsToKeep, allNodes=False,dimensionalityFilter=
     outmesh.PrepareForOutput()
     return outmesh
 
-def EnsureUniquenessElements(mesh):
+def EnsureUniquenessElements(mesh:UnstructuredMesh)->None:
+    """Ensure that every element if present only once on the mesh
+
+    Parameters
+    ----------
+    mesh : UnstructuredMesh
+        input mesh
+
+    Raises
+    ------
+    Exception
+        if 2 element (event if the connectivity is permuted) a exception is raised
+    """
     cpt = 0
     for name,data in mesh.elements.items():
         dd = dict()
         for el in range(data.GetNumberOfElements()):
             n = tuple(np.sort(data.connectivity[el,:]))
             if len(n) != len(np.unique(n)):
-                raise(Exception("("+str(name)+") element " + str(el) +" (global["+str(el+cpt)+"])" + " use a point more than once ("+str(data.connectivity[el,:])+")"  ))
+                raise Exception("("+str(name)+") element " + str(el) +" (global["+str(el+cpt)+"])" + " use a point more than once ("+str(data.connectivity[el,:])+")"  )
             if n in dd.keys():
-                raise(Exception("("+str(name)+") element " + str(el) +" (global["+str(el+cpt)+"])" + " is a duplication of element " + str(dd[n]) +" (global["+str(dd[n]+cpt)+"])" ))
+                raise Exception("("+str(name)+") element " + str(el) +" (global["+str(el+cpt)+"])" + " is a duplication of element " + str(dd[n]) +" (global["+str(dd[n]+cpt)+"])" )
             dd[n] = el
         cpt = data.GetNumberOfElements()
 
-def MeshQualityAspectRatioBeta(mesh):
+def MeshQualityAspectRatioBeta(mesh:UnstructuredMesh):
+    """experimental mesh quality only available for tets
+
+    Parameters
+    ----------
+    mesh : UnstructuredMesh
+        the input mesh
+
+    Raises
+    ------
+    Exception
+        raise if the quality is larger than 1000
+    """
+
     #https://cubit.sandia.gov/public/15.2/help_manual/WebHelp/mesh_generation/mesh_quality_assessment/tetrahedral_metrics.htm
     for name,data in mesh.elements.items():
         if ElementNames.dimension[name] == 0:
@@ -454,24 +570,19 @@ def MeshQualityAspectRatioBeta(mesh):
                    p1 = nodes[1,:]
                    p2 = nodes[2,:]
                    p3 = nodes[3,:]
-                   #print("---")
 
                    a = np.linalg.norm(p1-p0)
                    b = np.linalg.norm(p2-p0)
-                   #print(a)
-                   #print(b)
                    normal = np.cross(p1-p0,p2-p0)
                    #https://math.stackexchange.com/questions/128991/how-to-calculate-area-of-3d-triangle
                    base_area = 0.5*a*b*np.sqrt(1-(np.dot(p1-p0,p2-p0)/(a*b))**2)
 
                    normal /= np.linalg.norm(normal)
 
-                   # distance to the oposite point
+                   # distance to the opposite point
                    d = np.dot(normal,p3-p0)
 
                    volume = base_area*d
-                   #print(base_area)
-                   #print(d)
                    inscribed_sphere_radius = d/3
                    #https://math.stackexchange.com/questions/2820212/circumradius-of-a-tetrahedron
 
@@ -481,33 +592,36 @@ def MeshQualityAspectRatioBeta(mesh):
                    B = np.linalg.norm(p1-p3)
                    C = np.linalg.norm(p2-p1)
 
-                   #print("-")
-                   #print((a*A+b*B+c*C)*
-                   #                                      (a*A+b*B-c*C)*
-                   #                                      (a*A-b*B+c*C)*
-                   #                                      (-a*A+b*B+c*C))
                    circumradius_sphere_radius = np.sqrt((a*A+b*B+c*C)*
                                                          (a*A+b*B-c*C)*
                                                          (a*A-b*B+c*C)*
                                                          (-a*A+b*B+c*C))/(24*volume)
 
-
                    AspectRatioBeta = circumradius_sphere_radius/(3.0 * inscribed_sphere_radius)
-                   #print(volume)
-                   #print(circumradius_sphere_radius)
-                   #print(inscribed_sphere_radius)
-                   #print(circumradius_sphere_radius)
-                   #print(AspectRatioBeta)
+
                    mmax = max([mmax,AspectRatioBeta])
                    if AspectRatioBeta > 1000:
-                       raise(Exception("Element " +str(el) + " has quality of " +str(AspectRatioBeta)) )
-               #print("mmax")
-               #print(mmax)
-
+                       raise Exception("Element " +str(el) + " has quality of " +str(AspectRatioBeta))
         else:
             raise
 
-def ComputeMeshMinMaxLengthScale(mesh):
+def ComputeMeshMinMaxLengthScale(mesh) -> Tuple[PBasicFloatType,PBasicFloatType]:
+    """Compute a estimation of the minimal and maximal length scale of the elements
+    for this we compute the centroid of the element and compute the min and max distance
+    between the centroid and each node of the mesh.
+    Then return a tuple with (2*min,2*max) of all the distances on the mesh
+
+
+    Parameters
+    ----------
+    mesh : UnstructuredMesh
+        The input mesh
+
+    Returns
+    -------
+    Tuple[PBasicFloatType,PBasicFloatType]
+        tuple with (2*min_dist,2*max_dist) for all the elements in the mesh
+    """
     (resMin,resMax) = (None,None)
     for name,data in mesh.elements.items():
         if data.GetNumberOfNodesPerElement() < 2: continue
@@ -518,7 +632,6 @@ def ComputeMeshMinMaxLengthScale(mesh):
         meany = np.sum(posy,axis=1)/data.GetNumberOfNodesPerElement()
         meanx.shape = (len(meanx),1)
         meany.shape = (len(meanx),1)
-
 
         distToBaricenter2 = (posx-meanx)**2 + (posy-meany)**2
 
@@ -542,7 +655,16 @@ def ComputeMeshMinMaxLengthScale(mesh):
             resMax = min(resMax,mmax)
     return (2*resMin,2*resMax)
 
-def PrintMeshInformation(mesh):
+def PrintMeshInformation(mesh:UnstructuredMesh):
+    """Print mesh information to the screen
+
+    Parameters
+    ----------
+    mesh : UnstructuredMesh
+        the input mesh
+
+    """
+
     from BasicTools.Helpers.TextFormatHelper import TFormat as TF
 
     def L25(text):
@@ -615,6 +737,11 @@ def CheckIntegrity_GetVolume(GUI=False):
     vol = GetVolume(mesh)
     if vol != (1./6.):
         raise Exception('Error en the calculation of the volume')# pragma: no cover
+
+    vol1elem = GetVolumePerElement(mesh,ElementFilter(mesh,elementType=ElementNames.Tetrahedron_4))
+    print(vol1elem)
+    if sum(vol1elem) != vol:
+        raise Exception("incompatible solution of GetVolume vs GetVolumePerElement")
 
     from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearMesh
     myMesh = ConstantRectilinearMesh()
@@ -733,14 +860,64 @@ def CheckIntegrity_ExtractElementsByMask(GUI=False):
     print(tri.connectivity)
     print(tri.originalIds)
     return "ok"
+
+def Checkintegrity_ExtractElementByDimensionalityNoCopy(GUI=False):
+    from BasicTools.Containers.UnstructuredMeshCreationTools import CreateCube
+    mesh  = CreateCube(dimensions = [20,20,20], origin = [0.1,0.1,0.,], spacing=[0.9/19]*3)
+    newmesh = ExtractElementByDimensionalityNoCopy(mesh,2)
+    print(newmesh)
+    if newmesh.GetNumberOfElements() != 19*19*6:
+        raise Exception("Wrong number of elements")
+    return "ok"
+
+def Checkintegrity_MeshQualityAspectRatioBeta(GUI=False):
+    from BasicTools.Containers.UnstructuredMeshCreationTools import CreateCube
+    mesh  = CreateCube(dimensions = [20,20,20], origin = [0.1,0.1,0.,], spacing=[0.9/19]*3)
+    MeshQualityAspectRatioBeta(mesh)
+    return "ok"
+
+def Checkintegrity_GetDataOverALine(GUI=False):
+    from BasicTools.Containers.UnstructuredMeshCreationTools import CreateCube
+    mesh  = CreateCube(dimensions = [20,20,20], origin = [0.1,0.1,0.,], spacing=[0.9/19]*3)
+    mesh.nodeFields["xpos"] = mesh.nodes[:,0]
+
+    from BasicTools.FE.Fields.FieldTools import CreateFieldFromDescription
+    field = CreateFieldFromDescription(mesh,[(ElementFilter(mesh,zone = lambda x :  x[:,2]>0.5),1)])
+    field.name = "bimat"
+    mesh.elemFields["bimatAtElem"] = field.GetCellRepresentation()
+
+    print("---")
+    print(mesh.elemFields["bimatAtElem"])
+    print("---")
+
+    res = GetDataOverALine([0,0,0], [1,1,1], 100, mesh, [field])
+    print(res)
+    if res.GetNumberOfNodes()  != 100:
+        raise Exception("Wrong number of point in the line")
+
+    if len(res.nodeFields) != 3:
+        raise Exception("Wrong number of fields")
+
+    if GUI:
+        from BasicTools.Actions.OpenInParaView import OpenInParaView
+        OpenInParaView(mesh,filename="Checkintegrity_GetDataOverALine_bulk.xdmf",run =False)
+        OpenInParaView(res,filename="Checkintegrity_GetDataOverALine_line.xdmf")
+
+    return "ok"
+
 def CheckIntegrity(GUI=False):
     totest= [
+    Checkintegrity_GetDataOverALine,
+    Checkintegrity_MeshQualityAspectRatioBeta,
     CheckIntegrity_EnsureUniquenessElements,
     CheckIntegrity_ExtractElementsByImplicitZone,
     CheckIntegrity_ExtractElementsByMask,
     CheckIntegrity_GetVolume,
     CheckIntegrity_GetDualGraph,
     CheckIntegrity_ComputeMeshMinMaxLengthScale,
+    CheckIntegrity_GetElementsFractionInside,
+    CheckIntegrity_ExtractElementByTags,
+    Checkintegrity_ExtractElementByDimensionalityNoCopy,
     ]
     for f in totest:
         print("running test : " + str(f))
