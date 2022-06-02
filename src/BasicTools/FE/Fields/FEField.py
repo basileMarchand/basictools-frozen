@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-
+from typing import Union
 import numpy as np
 
 from BasicTools.NumpyDefs import PBasicFloatType
@@ -65,11 +65,12 @@ class FEField(FieldBase):
 
         self.data[self.numbering["doftopointRight"]] = userdata[self.numbering["doftopointLeft"]]
 
-    def GetCellRepresentation(self,fillvalue=0):
+    def GetCellRepresentation(self,fillvalue:PBasicFloatType=0, method:Union[str,int]='mean') -> np.ndarray:
         """
         Function to push the data from the field into a vector homogeneous to
-        the mesh (for visualisation for example). Entities with no dofs are filled
+        the mesh cell (for visualisation for example). Entities with no dofs are filled
         with the fillvalues (default 0)
+        the method controls to transfer function
         """
 
         if fillvalue==0.:
@@ -77,9 +78,40 @@ class FEField(FieldBase):
         else:
             res = np.ones(self.mesh.GetNumberOfElements(),dtype=PBasicFloatType)*fillvalue
 
-        if len(self.numbering["doftocellLeft"]) == 0:
-            print("Warning : transfert vector is empty")
-        res[self.numbering["doftocellLeft"]] = self.data[self.numbering["doftocellRight"]]
+        cpt =0
+        for name, data in self.mesh.elements.items():
+            nbelems = data.GetNumberOfElements()
+
+            print(name)
+            numbering = self.numbering[name]
+            if name is None:
+                cpt += nbelems
+                continue
+
+            if method == 'mean':
+                data = np.mean(self.data[numbering],axis=1)
+            elif method == 'max':
+                data = np.max(self.data[numbering],axis=1)
+            elif method == 'min':
+                data = np.min(self.data[numbering],axis=1)
+            elif method == 'maxdiff' or method == "maxdifffraction":
+                cols = self.data[numbering].shape[1]
+                op = np.zeros( (cols,(cols*(cols-1))//2) )
+                icpt = 0
+                for i in range(0,cols-1):
+                    for j in range(i+1,cols):
+                        op[i,icpt] = 1
+                        op[j,icpt] = -1
+                        icpt += 1
+                data = np.max(abs(self.data[numbering].dot(op)),axis=1)
+                if method == "maxdifffraction":
+                    data /= np.mean(self.data[numbering],axis=1)
+            else:
+                col = min(int(method),self.data[numbering].shape[1])
+                data = self.data[numbering][:,col]
+
+            res[cpt:cpt+nbelems] = data
+            cpt += nbelems
 
         return res
 
