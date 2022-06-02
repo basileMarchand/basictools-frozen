@@ -3,23 +3,36 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-
+from __future__ import annotations
+from typing import Optional, List, Callable, Any, Union, Collection, Iterator, Tuple
 
 import numpy as np
 
+from BasicTools.NumpyDefs import ArrayLike, PBasicIndexType
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject  as BOO
 import BasicTools.Containers.ElementNames as EN
-class Filter(BOO):
-    """
-    Base class to construct node and element filters
+from BasicTools.Containers.UnstructuredMesh import ElementsContainer, UnstructuredMesh
 
-    :param UnstructuredMesh mesh: the mesh to filter
-    :param list(Callable) zones: a list zone to treat
-    :param Callable zone: a zone to treat
-    :param List(str) tags: the list of tag names to treat
-    :param str tag: a tag name to add to the list
+class Filter(BOO):
+    """Base class to construct node and element filters
+
+    Parameters
+    ----------
+    mesh : Optional[UnstructuredMesh], optional
+        The mesh to be used, by default None
+    zones : Optional[List[Callable]], optional
+        a list of Callable (ImplicitGeometry for example), by default None
+    tags : Optional[List[str]], optional
+        The tags used to filter the elements, by default None
+    zone : Optional[Callable], optional
+        A Callable, by default None
+    tag : Optional[str], optional
+        A tag, by default None
+    mask : Optional[ArrayLike], optional
+        a boolean vector of the size of the object to filter, by default None
     """
-    def __init__(self,mesh = None, zones = None, tags = None, zone = None, tag = None, mask= None):
+    def __init__(self, mesh:Optional[UnstructuredMesh] = None, zones:Optional[List[Callable]] = None, tags:Optional[List[str]] = None, zone:Optional[Callable] = None, tag:Optional[str] = None, mask:Optional[ArrayLike] = None):
+
         super(Filter,self).__init__()
 
         self.tags = list()
@@ -40,7 +53,19 @@ class Filter(BOO):
 
         self.mesh = mesh
 
-    def IsEquivalent(self, other):
+    def IsEquivalent(self, other:Any)->bool:
+        """To check if 2 element filter are equivalent ()
+
+        Parameters
+        ----------
+        other : Any
+            other object to check the equivalency
+
+        Returns
+        -------
+        bool
+            True if the two filters are equal
+        """
         if id(self) == id(other):
             return True
         if isinstance(other, self.__class__):
@@ -48,61 +73,81 @@ class Filter(BOO):
                 return False
             if sorted(self.zones) != sorted(other.zones):
                 return False
+            if not np.array_equal(self.mask, other.mask):
+                return False
             return True
         else:
             return False
 
-    def SetMesh(self,mesh):
-        """
-        Set the mesh
+    def SetMesh(self, mesh:UnstructuredMesh):
+        """Set the mesh
 
-        :param mesh mesh: mesh
+        Parameters
+        ----------
+        mesh : UnstructuredMesh
+            The mesh to be used
         """
         self.mesh = mesh
 
-    def SetTags(self,tagNames):
-        """
-        Set the tag list name to treate
+    def SetTags(self, tagNames:List[str]):
+        """Set the tag list name to treat
 
-        :param list(str) tagNames: list of tag names
+        Parameters
+        ----------
+        tagNames : List[str]
+            the list of string with the tag names
         """
         self.tags = list(tagNames)
 
-    def AddTag(self,tagName):
-        """
-        Add a tagname to the list of tag to treat
+    def AddTag(self, tagName:str):
+        """Add a tagname to the list of tag to treat
 
-        :param str tagName: tag name to add
+        Parameters
+        ----------
+        tagName : str
+            the tag name to be added
         """
         self.tags.append(tagName)
 
-    def SetZones(self,zonesList):
-        """
-        Set the zone list to treate
+    def SetZones(self, zonesList:List[Callable]):
+        """Set the zone list to treat
 
-        :param list(callable) zonesList: list of zone
+        Parameters
+        ----------
+        zonesList : List[Callable]
+            The list of zone to be
         """
         self.zones = zonesList
 
-    def AddZone(self,zone):
-        """
-        Add a zone to the list of zone to be treated by the filter
+    def AddZone(self, zone:Callable):
+        """dd a zone to the list of zone to be treated by the filter
 
-        :param callable zone: a callable object it takes one argument with the
-            points positions
+        Parameters
+        ----------
+        zone : Callable
+            a callable object capable of taking one argument with the
+            points positions, and returning a vector of size pos.shape[0]
+            with negative values for the entities to be selected by the filter
         """
         self.zones.append(zone)
 
-    def _CheckTags_(self,tags,numberOfObjects):
-        """
-        Internal fuction to compute the ids to be treated based on the tags
+    def _CheckTags_(self, tags, numberOfObjects) -> Union[np.ndarray,None]:
+        """Internal function to compute the ids to be treated based on the tags
 
-        :param Tags tags: The tags container
-        :param int numberOfObjects: the total number of object (number of points,
-             or number of element in the current element container)
+        Parameters
+        ----------
+        tags : _type_
+            The tags container
+        numberOfObjects : _type_
+            the total number of object (number of points or number of element in the current element container)
 
-        :rtype: list(int) or None
+        Returns
+        -------
+        np.ndarray or None
+            np.ndarray of the the ids to be kept
+            None if no tags present on to filter
         """
+
         if len(self.tags) == 0:
             return None
         res = np.zeros(numberOfObjects,dtype=bool)
@@ -111,20 +156,42 @@ class Filter(BOO):
                 res[tags[tag].GetIds()] = True
         return np.nonzero(res)[0]
 
-    def _CheckMask_(self,start,size):
+    def _CheckMask_(self, start:PBasicIndexType, size:PBasicIndexType) -> Union[np.ndarray,None]:
+        """Internal function to compute the ids based on the mask
+
+        Parameters
+        ----------
+        start : PBasicIndexType
+            the start position for the current request
+        size : PBasicIndexType
+            the stop position for the current request
+
+        Returns
+        -------
+        np.ndarray or None
+            np.ndarray of the the ids to be kept
+            None if no mask present on to filter
+        """
         if self.mask is not None:
             return np.where(self.mask[start:start+size])[0]
         return None
 
-    def intersect1D(self,first,second):
-        """
-        Function to generate an intersection of two vectors (like np.intersect1d)
+    def intersect1D(self, first:Union[ArrayLike,None], second:Union[ArrayLike,None]) -> Union[np.ndarray,None]:
+        """Function to generate an intersection of two vectors (like np.intersect1d)
         but with the particularity of treat the case where the inputs can be None
+        None represent a non filtered inputs,
 
-        :param list(int)/np.array(int)/None first:  first vector of indices
-        :param list(int)/np.array(int)/None second:  second vector of indices
-        :return: The intersection of two list
-        :rtype: Union[list(int),None]
+        Parameters
+        ----------
+        first : ArrayLike|None
+            first vector of indices
+        second : ArrayLike|None
+            second vector of indices
+
+        Returns
+        -------
+        Union[np.ndarray,None]
+            The intersection of two list
         """
         if first is None:
             if second is None:
@@ -138,44 +205,60 @@ class Filter(BOO):
                 return np.intersect1d(first,second,assume_unique=True)
 
 class NodeFilter(Filter):
+    """class for node filtering zone, tag, mask
+    the rest of the parameter are passed to the constructor of the base class Filter
+
+    Parameters
+    ----------
+    mesh : Optional[UnstructuredMesh], optional
+        The mesh to be used, by default None
+    etags : Optional[List[str]], optional
+       The element tags to be used to filter the nodes, by default None
+    etag : Optional[str], optional
+        A element tag name to be used to filter the nodes, by default None
     """
-       Specialized class for node filtering zone and tag
-    """
-    def __init__(self,mesh=None, etags = None, etag = None, **kwargs):
-        """
-        Constructor: all the parammeter are passed to the base class
-        """
+    def __init__(self, mesh:Optional[UnstructuredMesh]=None, etags:Optional[List[str]]=None, etag:Optional[str]=None, **kwargs):
+        super().__init__(mesh=mesh,**kwargs)
         self.etags = list()
         if etags is not None:
             self.SetETags(etags)
         if etag is not None:
             self.AddETag(etag)
 
-        super(NodeFilter,self).__init__(mesh=mesh,**kwargs)
+    def SetETags(self, tagNames:List[str]):
+        """Set the tag list name to treat
 
-    def SetETags(self,tagNames):
-        """
-        Set the tag list name to treate
-
-        :param list(str) tagNames: list of tag names
+        Parameters
+        ----------
+        tagNames : List[str]
+            list of tag names
         """
         self.etags = list(tagNames)
 
-    def AddETag(self,tagName):
-        """
-        Add a tagname to the list of tag to treat
+    def AddETag(self, tagName:str):
+        """Add a tagname to the list of tag to treat
 
-        :param str tagName: tag name to add
+        Parameters
+        ----------
+        tagName : str
+            tag name to add
         """
         self.etags.append(tagName)
 
-    def _CheckZones_(self,pos,numberOfObjects):
-        """
-        Internal function to compute the ids to be treated based on the zones
+    def _CheckZones_(self, pos:ArrayLike, numberOfObjects:PBasicIndexType) -> Union[np.ndarray,None]:
+        """Internal function to compute the ids to be treated based on the zones
 
-        :param np.array((n,3)) pos: np.array with the positions to be treated
-        :param int numberOfObjects: total number of points
-        :return list(int) or None: list of nodes to treat or None for all nodes
+        Parameters
+        ----------
+        pos : ArrayLike
+            (n,3) size array with the positions to be treate
+        numberOfObjects : PBasicIndexType
+            total number of points
+
+        Returns
+        -------
+        Union[np.ndarray,None]
+            list of nodes to treat or None for all nodes
         """
         if len(self.zones) == 0:
             return None
@@ -187,12 +270,18 @@ class NodeFilter(Filter):
 
         return np.where(res)[0]
 
-    def GetIdsToTreat(self,notused=None):
-        """
-        Main function of this class
+    def GetIdsToTreat(self,notused:Any=None)-> Union[np.ndarray,Collection]:
+        """Get the nodes selected by this filter
 
-        :return: the filtered ids
-        :rtype: list(int)
+        Parameters
+        ----------
+        notused : Any, optional
+            Not Used, by default None
+
+        Returns
+        -------
+        Union[np.ndarray,Collection]
+            The filtered entities
         """
         if len(self.etags) > 0:
             ff =ElementFilter(self.mesh,tags=self.etags)
@@ -222,16 +311,17 @@ class NodeFilter(Filter):
         else:
             return res3
 
-    def ApplyOnNodes(self,op):
-        """
-        Function to apply filter using an operator
+    def ApplyOnNodes(self,op:Callable):
+        """Apply the filter using an operator
 
-        :param callable op: An instance of a callable object, the object can have
-            the PreCondition function and/or the Postcondition function. Theses
+        Parameters
+        ----------
+        op : Callable
+            An instance of a callable object, the object can have
+            the PreCondition function and/or the PostCondition function. Theses
             functions are called (if exist) (with the mesh as the first argument)
             before and after the main call ( op(mesh,nodes,ids) )
         """
-
         pc = getattr(op,"PreCondition",None)
 
         if callable(pc):
@@ -244,10 +334,18 @@ class NodeFilter(Filter):
             pc(self.mesh)
 
 class FilterOP(BOO):
+    """Base class to construct derived Filters (Union filters for example)
+
+    Parameters
+    ----------
+    mesh : Optional[UnstructuredMesh], optional
+        The mesh to work on, by default None
+    filters : List[Union[Filter,FilterOP]], optional
+        the list of filters to use, by default None
+
     """
-      Specialized class to compute the operation over filters
-    """
-    def __init__(self,mesh=None,filters=None):
+    def __init__(self,mesh:Optional[UnstructuredMesh]=None,filters:List[Union[Filter,FilterOP]]=None):
+
         super(FilterOP,self).__init__()
 
         self._mesh= None
@@ -265,7 +363,20 @@ class FilterOP(BOO):
                 self.mesh = self.filters[0].mesh
         self.withError = False
 
-    def IsEquivalent(self, other):
+    def IsEquivalent(self, other:Any) -> bool:
+        """To check if 2 element filter are equivalent ()
+
+        Parameters
+        ----------
+        other : Any
+            other object to check the equivalency
+
+        Returns
+        -------
+        bool
+            True if the two filters are equal
+        """
+
         if id(self) == id(other):
             return True
         if isinstance(other, self.__class__):
@@ -275,11 +386,13 @@ class FilterOP(BOO):
         else:
             return False
 
-    def SetMesh(self,mesh):
-        """
-        Set the mesh
+    def SetMesh(self, mesh:UnstructuredMesh):
+        """Set the mesh, this will push the mesh to the internal filters
 
-        :param mesh mesh: mesh
+        Parameters
+        ----------
+        mesh : UnstructuredMesh
+            The mesh to be used
         """
         self.mesh = mesh
 
@@ -441,7 +554,7 @@ class ComplementaryObject(FilterOP):
         if len(self.filters) > 1 :
             raise Exception("ComplementaryObject Error!: filters must be of len = 1")
 
-    def GetIdsToTreat(self,data):
+    def GetIdsToTreat(self, data):
         if len(self.filters)  > 1:
             raise Exception("ComplementaryObject Error!: filters must be of len = 1")
 
@@ -465,31 +578,33 @@ class IdsAsNumpyMask(FilterOP):
             yield name, data, mask
 
 class ElementFilter(Filter):
+    """Class for element filtering by dimensionality, zone, mask,elementType, and tag
+    for the zones three types of treatments are possible:
+      if the the center of the element is inside the zone   : self.zoneTreatment = "center"
+      if all nodes of the element are inside the zone       : self.zoneTreatment = "allnodes"
+      if at least one node of the element is inside the zone: self.zoneTreatment = "leastonenode"
+
+    Parameters
+    ----------
+    mesh : UnstructuredMesh, optional
+        The mesh to be used
+    dimensionality : int, optional
+        the dimensionality of the element to be included in this filter, by default None
+        possible option are: -3 -2 -1 0 1 2 3 None
+        the - sign is for the complementary part (-2 = all non 2D elements)
+    elementType : Optional[str], optional
+        the name of a element type to be included in this filter, by default None
+    elementTypes : Optional[List[str]], optional
+        a list of element type to be included in this filter, by default None
+    zoneTreatment : str, optional
+        ["center" | "allnodes" | "leastonenode"], by default "center"
+
     """
-       Specialized class for element filtering by dimensionality, zone and tag
+    def __init__(self, mesh:UnstructuredMesh=None, dimensionality:Optional[int]=None, elementTypes:Optional[List[str]]=None, elementType:Optional[str]=None, zoneTreatment:str="center", **kwargs):
 
-       for the zones three types of treatment are possible:
-           Based on the center of the element: self.zoneTreatment = "center"
-           if all nodes of the element are in the zone ; self.zoneTreatment = "allnodes"
-           if at least one nodes of the element is in the zone ; self.zoneTreatment = "leastonenode"
-
-    """
-
-    def __init__(self,mesh=None,dimensionality=None,elementTypes=None,elementType=None,**kwargs):
-        """
-        constructor : the dimensionality parameter can be used to select a type
-        of element based in the dimension (tris are 2D, tetras are 3D...). All
-        the rest of the argument are passed to the base class
-
-        :param UnstructuredMesh mesh: the mesh to filter
-        :param int dimensionality: the dimensionality filter, [-3 -2 -1 0 1 2 3 or None]
-            the - sign is for the complementary part (-2 = all non 2D elements)
-
-
-        """
         super(ElementFilter,self).__init__(mesh=mesh,**kwargs)
         self.dimensionality = dimensionality
-        self.zoneTreatment = "center" # "center", "allnodes", "leastonenode"
+        self.zoneTreatment = zoneTreatment # "center", "allnodes", "leastonenode"
 
         self.elementTypes = list()
 
@@ -501,7 +616,19 @@ class ElementFilter(Filter):
 
         self.withError = False
 
-    def IsEquivalent(self, other):
+    def IsEquivalent(self, other:Any) -> bool:
+        """To check if 2 element filter are equivalent ()
+
+        Parameters
+        ----------
+        other : Any
+            other object to check the equivalency
+
+        Returns
+        -------
+        bool
+            True if the two filters are equal
+        """
         res = super(ElementFilter,self).IsEquivalent(other)
         if not res :
             return False
@@ -519,7 +646,7 @@ class ElementFilter(Filter):
         else:
             return False
 
-    def __str__(self):
+    def __str__(self) -> str:
         res = "ElementFilter\n"
         res += "  dimensionality: "+ str(self.dimensionality) + " \n"
         res += "  tags          : "+ str(self.tags) + " \n"
@@ -528,42 +655,76 @@ class ElementFilter(Filter):
         res += "  elementTypes  : "+ str(self.elementTypes) + " \n"
         return res
 
-    def SetZoneTreatment(self,zt):
-        if zt in ["center", "allnodes", "leastonenode"]:
-            self.zoneTreatment = zt
-        else:
-            raise Exception("Zone treatment not valide ({zt}), possible options are : center, allnodes, leastonenode".format(zt=zt))
+    def SetZoneTreatment(self, zoneTreatment:str):
+        """Set the way the elements are selected based on the position
+        if the the center of the element is inside the zone   : self.zoneTreatment = "center"
+        if all nodes of the element are inside the zone       : self.zoneTreatment = "allnodes"
+        if at least one node of the element is inside the zone: self.zoneTreatment = "leastonenode"
 
-    def SetDimensionality(self,dim):
+        Parameters
+        ----------
+        zoneTreatment : str
+            ["center" | "allnodes" | "leastonenode"]
+
+        Raises
+        ------
+        Exception
+            if the string is not permited
         """
-        Set the dimensionality of the elements to be treated
+        if zoneTreatment in ["center", "allnodes", "leastonenode"]:
+            self.zoneTreatment = zoneTreatment
+        else:
+            raise Exception(f"Zone treatment not valid ({zoneTreatment}), possible options are : center, allnodes, leastonenode")
 
-        :param dimensionality: the dimensionality filter, [-3 -2 -1 0 1 2 3 or None]
+    def SetDimensionality(self,dimensionality:int):
+        """ Set the dimensionality of the elements to be treated
+
+        Parameters
+        ----------
+        dim : int
+            the dimensionality filter, [-3 -2 -1 0 1 2 3 or None]
             the - sign is for the complementary part (-2 = all non 2D elements).
             Set to None to reset (not to apply dimensionality as a criteria)
-        :type dimensionality: int or None
         """
-        self.dimensionality = dim
+        self.dimensionality = dimensionality
 
-    def SetElementTypes(self,elementTypes):
+    def SetElementTypes(self, elementTypes:List[str]):
+        """Set the names of a element type to be included in this filter
+
+        Parameters
+        ----------
+        elementTypes : List[str]
+            the list of element types
+        """
         self.elementTypes = []
         self.elementTypes.extend(elementTypes)
 
-    def AddElementType(self,elementType):
+    def AddElementType(self, elementType:str):
+        """Add an element type to be included in this filter
+
+        Parameters
+        ----------
+        elementType : str
+            the name of an element type
+        """
         self.elementTypes.append(elementType)
 
-    def _CheckDimensionality_(self,elements):
-        """
-        Internal function check if a type of element must be treated based on
+    def _CheckDimensionality_(self, elements:ElementsContainer) -> Union[bool,None]:
+        """Internal function check if a type of element must be included based on
         the dimensionality criteria
 
-        :param ElementsContainer elements: Elements to treat
-        :return: True, if the elements must be treated
-                              False, otherwise
-                              None, dimensionality criteria not active
-        :rtype: Bool/None
-        """
+        Parameters
+        ----------
+        elements : ElementsContainer
+            the incoming ElementsContainer
 
+        Returns
+        -------
+        Union[bool,None]
+            True if this type of elements must be included
+            False if this type of elements must be excluded
+            None if this the filtering by dimensionality is not active
+        """
         if self.dimensionality is None:
             return None
         else:
@@ -576,17 +737,23 @@ class ElementFilter(Filter):
                     return False
         return True
 
-    def _CheckElementTypes_(self,elements):
-        """
-        Internal function check if a type of element must be treated based on
+    def _CheckElementTypes_(self, elements:ElementsContainer) -> Union[bool,None]:
+        """Internal function check if a type of element must be included based on
         the elementType criteria
 
-        :param ElementsContainer elements: Elements to treat
-        :return: True, if the elements must be treated
-                              False, otherwise
-                              None, elementType criteria not active
-        :rtype: Bool/None
+        Parameters
+        ----------
+        elements : ElementsContainer
+            the incoming ElementsContainer
+
+        Returns
+        -------
+        Union[bool,None]
+            True if this type of elements must be included
+            False if this type of elements must be excluded
+            None if this the filtering by dimensionality is not active
         """
+
         if len(self.elementTypes) == 0:
             return None
         if elements.elementType in self.elementTypes:
@@ -594,15 +761,23 @@ class ElementFilter(Filter):
         else:
             return False
 
-    def _CheckZones_(self, elements):
-        """
-        Internal function to compute the ids of the elements to be treated based
-        on the zones.
+    def _CheckZones_(self, elements:ElementsContainer) -> Union[bool,None]:
+        """Internal function check if a type of element must be included based on
+        the zone
 
-        :param ElementsContainer elements: Elements to treat
-        :return list of element to treat (None, if all the elements must be treated)
-        :rtype: linst(int) or None
+        Parameters
+        ----------
+        elements : ElementsContainer
+            the incoming ElementsContainer
+
+        Returns
+        -------
+        Union[bool,None]
+            True if this type of elements must be included
+            False if this type of elements must be excluded
+            None if this the filtering by dimensionality is not active
         """
+
         if len(self.zones) == 0:
             return None
 
@@ -630,15 +805,19 @@ class ElementFilter(Filter):
 
         return np.where(res)[0]
 
-    def GetIdsToTreat(self,elements):
-        """
-        Main function of this class.
+    def GetIdsToTreat(self,elements:ElementsContainer) -> Union[np.ndarray,Collection]:
+        """Get the entities selected by this filter
 
-        :param ElementsContainer elements: Elements to treat
-        :return: the filtered ids for the elements
-        :rtype: list(int)
-        """
+        Parameters
+        ----------
+        elements : ElementsContainer
+            Elements to treat
 
+        Returns
+        -------
+        Union[np.ndarray,Collection]
+            The filtered entities
+        """
         if self._CheckDimensionality_(elements) == False:
             return []
 
@@ -665,13 +844,43 @@ class ElementFilter(Filter):
         else:
             return res3
 
-    def Complementary(self):
+    def Complementary(self) -> ComplementaryObject:
+        """Create a filter with the complementary part
+
+        Returns
+        -------
+        ComplementaryObject
+            the new filter
+        """
+
         # the complementary of the complementary is the original filter
         if isinstance(self,ComplementaryObject):
             return self.filters[0]
         return ComplementaryObject(mesh=self.mesh,filters=[self])
 
-    def GetFrozenFilter(self, mesh=None):
+    def GetFrozenFilter(self, mesh:Union[UnstructuredMesh]=None) -> FrozenFilter:
+        """Generate a frozen filter. This is a filter with pre-evaluated ids.
+        This class is useful when a repeated use of a filter is needed
+
+        Parameters
+        ----------
+        mesh : Union[UnstructuredMesh], optional
+            the mesh to pre evaluated the filter.
+            If None we use the internal mesh stored in the filter, by default None
+
+        Returns
+        -------
+        FrozenFilter
+            A FrozenFilter pre-evaluated on the mesh
+
+        Raises
+        ------
+        Exception
+            If the user tries to freeze a frozen filter on a different mesh
+        Exception
+            if no mesh is available
+        """
+
         if isinstance(self,FrozenFilter):
             if mesh is None:
                 return self
@@ -686,9 +895,22 @@ class ElementFilter(Filter):
         else:
             return FrozenFilter(mesh=self.mesh, filters=[self])
 
-    def __iter__(self):
-        """
-        Iteration interface to ease the use of the filter
+    def __iter__(self) -> Iterator[Tuple[str,ElementsContainer,ArrayLike]]:
+        """Iterator over the selection
+
+        Yields
+        ------
+        Iterator[Tuple[str,ElementsContainer,ArrayLike]]
+            a tuple with three elements:
+              - the elementType
+              - the ElementContainer
+              - a np.ndarray with the ids to treat
+
+        Raises
+        ------
+        Exception
+            if withError is activated raise an exception to help the debugging
+
 
         :example:
 
@@ -700,6 +922,8 @@ class ElementFilter(Filter):
 
                 print("Number of 2D element of type " + str(name)+ " is : "  + str(len(ids) )
         """
+
+
         elementsFound = False
         for name,data in self.mesh.elements.items():
             ids = self.GetIdsToTreat(data)
@@ -710,14 +934,21 @@ class ElementFilter(Filter):
         if elementsFound  == False and self.withError:
             raise Exception("Error!! Zero element in the element filter : \n" + str(self))
 
-    def ApplyOnElements(self,op):
-        """
-        Function to apply the filter  using an operator
+    def ApplyOnElements(self, op:Callable):
+        """Apply the filter using an operator
 
-        :param callable op: An instance of a callable object, the object can have
-            the PreCondition function and/or the Postcondition function. Theses
+        Parameters
+        ----------
+        op : Callable
+            An instance of a callable object, the object can have
+            the PreCondition function and/or the PostCondition function. Theses
             functions are called (if exist) (with the mesh as the first argument)
-            before and after the main call ( op(name,elements,ids) )
+            before and after the main call ( op(mesh,nodes,ids) )
+
+        Returns
+        -------
+        Callable
+            return op after the application of the filter
         """
         pc = getattr(op,"PreCondition",None)
 
@@ -734,6 +965,16 @@ class ElementFilter(Filter):
         return op
 
 class FrozenFilter(FilterOP):
+    """Class to hold a pre-evaluated filter
+
+    Parameters
+    ----------
+    mesh : Optional[UnstructuredMesh], optional
+        The mesh to work on, by default None
+    filters : Union[Filter,FilterOP], optional
+        the list with only one filter to use, by default None
+
+    """
     def __init__(self,mesh=None,filters=None):
         self.__frozenData = {}
         super(FrozenFilter,self).__init__(mesh=mesh,filters=filters)
@@ -764,24 +1005,23 @@ class FrozenFilter(FilterOP):
     def GetIdsToTreat(self, elements):
         return self.__frozenData[elements.elementType][1] # (data, ids)
 
-    def __iter__(self):
-        """
-        Iteration interface to ease the use of the filter
+    def __iter__(self)-> Iterator[Tuple[str,ElementsContainer,ArrayLike]]:
+        """Iterator over the selection
 
-        :example:
-
-            myFilter = ElementFilter(myMesh,dimensionality=2)
-
-            for name,elements,ids in myFilter:
-
-                print("This function is called only for 2D elements")
-
-                print("Number of 2D element of type " + str(name)+ " is : "  + str(len(ids) )
+        Yields
+        ------
+        Iterator[Tuple[str,ElementsContainer,ArrayLike]]
+            a tuple with three elements:
+              - the elementType
+              - the ElementContainer
+              - a np.ndarray with the ids to treat
         """
         for name,(data,ids) in self.__frozenData.items():
             yield name, data, ids
 
 class ElementFilterBaseOperator():
+    """Template for the creation of operators
+    """
     def PreCondition(self,mesh):
         pass
 
@@ -792,34 +1032,48 @@ class ElementFilterBaseOperator():
         pass
 
 class ElementCounter(ElementFilterBaseOperator):
+    """Basic ElementCounter operators
+
+    Usage:
+        numberOfElement = ElementFilter(myMesh,dimensionality=2).ApplyOnElements(ElementCounter()).cpt
+
+    """
     def __init__(self):
         self.cpt = 0
 
-    def PreCondition(self,mesh):
+    def PreCondition(self, mesh:UnstructuredMesh):
+        """function called at the beginning to reset the counter
+        """
         self.cpt = 0
 
     def __call__(self,name,data,ids):
+        """We add the current number of element to the global counter
+        """
         self.cpt += len(ids)
 
-def ElementFilterToImplicitField(ff, pseudoDistance=2):
-    """ Function to generate a iso zero levelset on the mesh to represent
-    the shape of the filter. This discretise iso zero on the mesh cant always
+def ElementFilterToImplicitField(elementFilter:ElementFilter, pseudoDistance:int=2) -> np.ndarray:
+    """Function to generate an iso zero levelset on the mesh to represent
+    the shape of the filter. This discretized iso zero on the mesh cant always
     hold a 'perfect' representation of the filter, so a modified iso zero is
-    created. An aditional parameter pseudoDistance can be encreased to create
+    created. An additional parameter pseudo-istance can be increased to create
     a pseudo distance. This field is created using the connectivity and not
     the real distances.
 
-    arguments:
-        ff : a ElementFilter
-        pseudoDistance : distance (in number of elements) to compute pseudo
-           distance
+    Parameters
+    ----------
+    elementFilter : ElementFilter
+        the element filter to process
+    pseudoDistance : int, optional
+        the number of element to propagate the pseudo-distance, by default 2
 
-    return
-        iso zeros of the ElementFilter Geometry (numpy array)
+    Returns
+    -------
+    np.ndarray
+        a field over the nodes with negative values inside the domain defined by the filter
     """
     def UpdateInsideOutsideNodes(mesh, phi, insideNodes=None,outsideNodes=None, iso=0.0):
         """ function to build masks (insideNodes, outsideNodes) with the information
-        about if a particular nodes is connected (	through an element) to the
+        about if a particular nodes is connected (through an element) to the
         inside phi < iso or to the ouside phi > iso
         """
         for name, data  in mesh.elements.items():
@@ -832,16 +1086,16 @@ def ElementFilterToImplicitField(ff, pseudoDistance=2):
                     elmask = np.any(phis>iso,axis=1)
                     outsideNodes[ data.connectivity[elmask] ] = True
 
-    mesh = ff.mesh
+    mesh = elementFilter.mesh
     phi = np.zeros(mesh.GetNumberOfNodes())
     insideNodes = np.zeros(mesh.GetNumberOfNodes(),dtype=bool)
     dim = 0
-    for name, data, ids  in ff:
+    for name, data, ids  in elementFilter:
         insideNodes[data.connectivity[ids,:]]  = True
         dim = max(dim,EN.dimension[name])
 
     outsideNodes = np.zeros(mesh.GetNumberOfNodes(),dtype=bool)
-    for name, data, ids  in ff.Complementary():
+    for name, data, ids  in elementFilter.Complementary():
         outsideNodes[data.connectivity[ids,:]]  = True
 
     phi[insideNodes] = -1
