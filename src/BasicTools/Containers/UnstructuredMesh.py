@@ -10,7 +10,6 @@ from BasicTools.NumpyDefs import PBasicFloatType, PBasicIndexType
 import BasicTools.Containers.ElementNames as ElementNames
 from BasicTools.Containers.MeshBase import MeshBase
 from BasicTools.Containers.MeshBase import Tags
-from BasicTools.Containers.Filters import ElementFilter
 
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject, froze_it
 
