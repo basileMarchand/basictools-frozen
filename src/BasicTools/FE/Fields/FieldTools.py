@@ -69,19 +69,19 @@ def ElementWiseFEToFETransferOp(originSpace: FESpaceType, targetSpace: FESpaceTy
 
 def NodeFieldToFEField(mesh, nodeFields: dict=None):
     """
-    Create FEField(P isogeometric) from the node field data.
+    Create FEField(P isoparametric) from the node field data.
     if nodesFields is None the mesh.nodeFields is used
 
     Parameters
     ----------
     mesh : UnstructuredMesh
     nodeFields : dict
-        containing the nodes fields to be converted to FEFields
+        containing the nodes fields to be converted to FEFields, if None the mesh.nodeFields is used
 
     Returns
     -------
     dict
-        dictionary the keys are field name and the values are the FEFields
+        dictionary the keys are field names and the values are the FEFields
     """
 
     if nodeFields is None:
@@ -110,7 +110,7 @@ def ElemFieldsToFEField(mesh, elemFields=None):
     Returns
     -------
     dict
-        dictionary the keys are field name and the values are the FEFields
+        dictionary the keys are field names and the values are the FEFields
     """
     if elemFields is None:
         elemFields = mesh.elemFields
@@ -270,7 +270,6 @@ class IntegrationPointWrapper(FieldBase):
     @property
     def data(self):
         return self.GetIpField().data
-
 
 DescriptionValue = Union[float,Callable[[np.ndarray],float]]
 DescriptionUnit = Tuple[Filter,DescriptionValue]
