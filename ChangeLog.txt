@@ -1,0 +1,18 @@
+New in version 1.8:
+*******************
+*******************
+
+General Changes:
+****************
+
+Heavy use of typing so this make impossible to use BasicTools on python prior version 3.7
+
+API Changes:
+************
+
+BasicTools.Containers.UnstructuredMeshFieldOperations:GetFieldTransferOp ; change of the named argument  elementfilter -> elementFilter
+
+Deprecated Functions:
+*********************
+(UnstructuredMeshInspectionTools.py) VolumeOfHexaedrons -> use GetVolumePerElement
+(UnstructuredMeshInspectionTools.py) VolumeOfTetrahedrons -> use GetVolumePerElement
