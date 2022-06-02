@@ -3,16 +3,18 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-import numpy as np
-import math
+from typing import Tuple, Optional, Union
 
+import numpy as np
+
+from BasicTools.NumpyDefs import PBasicFloatType, ArrayLike
 import BasicTools.Containers.ElementNames as ElementNames
 from BasicTools.Containers.Filters import ElementFilter
 from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
 from BasicTools.Containers.UnstructuredMeshCreationTools import QuadToLin
 from BasicTools.Containers.UnstructuredMeshInspectionTools import ExtractElementsByElementFilter
 from BasicTools.Linalg.Transform import Transform
-from BasicTools.NumpyDefs import PBasicFloatType
+from BasicTools.FE.Fields.FEField import FEField
 
 def ApplyRotationMatrixTensorField(fields,fieldstoTreat, baseNames=["v1","v2"],inplace=False,prefix="new_",inverse=False):
     nbentries = fields[fieldstoTreat[0][0]].shape[0]
@@ -56,12 +58,47 @@ def CopyFieldsFromOriginalMeshToTargetMesh(inmesh,outmesh):
     Work(inmesh.elemFields,outmesh.elemFields, outmesh.GetElementsOriginalIDs() )
 
 
-def GetFieldTransferOp(inputField,targetPoints,method=None,verbose=False,elementfilter=None):
-    """
-        op : sparcematrix to do the transfer
-        status: vector with the status of the transfer (1:interp, 2: extrap, 3:clamp, 4:ZeroFill, 0:nearest)
+def GetFieldTransferOp(inputField: FEField, targetPoints:ArrayLike, method:Union[str,None]=None, verbose:bool=False, elementfilter:Optional[ElementFilter]=None)-> Tuple[np.ndarray,np.ndarray]:
+    """Compute the transfer operator from the inputField to the target points so:
+    valueAtTargetPoints = op.dot(FEField.data)
+
+
+        possibleMethods =["Interp/Nearest","Nearest/Nearest","Interp/Clamp","Interp/Extrap","Interp/ZeroFill"]
+    possibleMethodsDict = {"Nearest":0, "Interp":1, "Extrap":2, "Clamp":3, "ZeroFill":4  }
+
+    Parameters
+    ----------
+    inputField : FEField
+        the FEField to be transferred
+    targetPoints : ArrayLike
+        Numpy array of the target points. Position to extract the values
+    method : Union[str,None], optional
+        A couple for the algorithm used when the point is inside the mesh :
+            "Interp"  -> to use the interpolation of the FEField to extract the values
+            "Nearest" -> to use the closest point to extract the values
+        Possible options are:
+            "Interp/Nearest", "Nearest/Nearest", "Interp/Clamp", "Interp/Extrap", "Interp/ZeroFill"
+        If None is provided then "Interp/Clamp" is used
+    verbose : bool, optional
+        Print a progress bar, by default False
+    elementfilter : Optional[ElementFilter], optional
+        ElementFilter to extract the information from only a subdomain, by default None
+
+    Returns
+    -------
+    Tuple [np.ndarray,np.ndarray]
+        a tuple with 2 object containing:
+            op, sparse matrix with the operator to make the transfer
+            status: vector of ints with the status transfer for each target point :
+               0: "Nearest"
+               1: "Interp"
+               2: "Extrap"
+               3: "Clamp"
+               4: "ZeroFill"
         return op, status
+
     """
+
     possibleMethods =["Interp/Nearest","Nearest/Nearest","Interp/Clamp","Interp/Extrap","Interp/ZeroFill"]
     possibleMethodsDict = {"Nearest":0, "Interp":1, "Extrap":2, "Clamp":3, "ZeroFill":4  }
 
@@ -69,9 +106,8 @@ def GetFieldTransferOp(inputField,targetPoints,method=None,verbose=False,element
     from scipy.sparse import coo_matrix
     from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
 
-
     if method is None:
-        method = possibleMethods[0]
+        method = possibleMethods[2]
     elif method not in possibleMethods:
         raise(Exception(f"Method for transfert operator not know '{method}' possible options are : {possibleMethods}" ))
 
