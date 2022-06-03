@@ -44,10 +44,10 @@ def which(program: str) -> Union[str,None]:
             if os.name == "nt":# Windows # pragma: no cover
                 try:
                     from win32api import FindExecutable, GetLongPathName
+                    _, executable = FindExecutable(program)
                 except:
                     pass
                 else:
-                    _, executable = FindExecutable(program)
                     if os.path.isfile(executable):
                         return executable
 
