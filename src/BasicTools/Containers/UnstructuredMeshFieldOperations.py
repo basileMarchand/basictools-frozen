@@ -58,13 +58,13 @@ def CopyFieldsFromOriginalMeshToTargetMesh(inmesh,outmesh):
     Work(inmesh.elemFields,outmesh.elemFields, outmesh.GetElementsOriginalIDs() )
 
 
-def GetFieldTransferOp(inputField: FEField, targetPoints:ArrayLike, method:Union[str,None]=None, verbose:bool=False, elementfilter:Optional[ElementFilter]=None)-> Tuple[np.ndarray,np.ndarray]:
+def GetFieldTransferOp(inputField: FEField, targetPoints:ArrayLike, method:Union[str,None]=None, verbose:bool=False, elementFilter:Optional[ElementFilter]=None)-> Tuple[np.ndarray,np.ndarray]:
     """Compute the transfer operator from the inputField to the target points so:
     valueAtTargetPoints = op.dot(FEField.data)
 
 
-        possibleMethods =["Interp/Nearest","Nearest/Nearest","Interp/Clamp","Interp/Extrap","Interp/ZeroFill"]
-    possibleMethodsDict = {"Nearest":0, "Interp":1, "Extrap":2, "Clamp":3, "ZeroFill":4  }
+    possible methods are = ["Interp/Nearest","Nearest/Nearest","Interp/Clamp","Interp/Extrap","Interp/ZeroFill"]
+    possible output status  =  {"Nearest":0, "Interp":1, "Extrap":2, "Clamp":3, "ZeroFill":4  }
 
     Parameters
     ----------
@@ -81,7 +81,7 @@ def GetFieldTransferOp(inputField: FEField, targetPoints:ArrayLike, method:Union
         If None is provided then "Interp/Clamp" is used
     verbose : bool, optional
         Print a progress bar, by default False
-    elementfilter : Optional[ElementFilter], optional
+    elementFilter : Optional[ElementFilter], optional
         ElementFilter to extract the information from only a subdomain, by default None
 
     Returns
@@ -121,11 +121,11 @@ def GetFieldTransferOp(inputField: FEField, targetPoints:ArrayLike, method:Union
 
     originalmesh = inputField.mesh
 
-    if elementfilter == None:
-        elementfilter = ElementFilter(mesh = originalmesh, dimensionality=imeshdim)
+    if elementFilter == None:
+        elementFilter = ElementFilter(mesh = originalmesh, dimensionality=imeshdim)
 
     from BasicTools.Containers.UnstructuredMeshModificationTools import CleanLonelyNodes
-    imesh = ExtractElementsByElementFilter(originalmesh, elementfilter )
+    imesh = ExtractElementsByElementFilter(originalmesh, elementFilter )
     CleanLonelyNodes(imesh)
 
     inodes = imesh.nodes
@@ -506,7 +506,7 @@ def TransportPosToPoints(imesh,points,method="Interp/Clamp",verbose=None):
     from BasicTools.FE.FETools import PrepareFEComputation
     space, numberings, offset, NGauss = PrepareFEComputation(imesh,numberOfComponents=1)
     field = FEField("",mesh=imesh,space=space,numbering=numberings[0])
-    op, status = GetFieldTransferOp(field,points,method=method, verbose=verbose, elementfilter = ElementFilter(imesh) )
+    op, status = GetFieldTransferOp(field,points,method=method, verbose=verbose, elementFilter = ElementFilter(imesh) )
     return op.dot(imesh.nodes)
 
 def TransportPos(imesh,tmesh,tspace,tnumbering,method="Interp/Clamp",verbose=None):

@@ -387,7 +387,7 @@ class KRMortar(KRBaseVector):
 
         # we must apply the offsets to the operators  to build correctly the coupling terms.
         for f, offset  in zip(fields,offsetsI):
-            op, status = GetFieldTransferOp(f,meshI_IPoints,method="Interp/Clamp",elementfilter=ElementFilter(meshI,tags=self.on) )
+            op, status = GetFieldTransferOp(f,meshI_IPoints,method="Interp/Clamp",elementFilter=ElementFilter(meshI,tags=self.on) )
             # apply the offset to the op
             op.col += offset
             op.resize( (totalNumberOfIP,totalNumberOfDofsI) )
@@ -396,7 +396,7 @@ class KRMortar(KRBaseVector):
         # need to code the transfert of the field to the integration points meshII
         meshIIOps = {}
         for f,offset in zip(fieldsII,offsetsII):
-            op, status = GetFieldTransferOp(f,meshII_IPoints,method="Interp/Clamp",elementfilter=ElementFilter(meshII,tags=self.onII) )
+            op, status = GetFieldTransferOp(f,meshII_IPoints,method="Interp/Clamp",elementFilter=ElementFilter(meshII,tags=self.onII) )
             op.col += offset
             op.resize( (totalNumberOfIP,totalNumberOfDofsII) )
             meshIIOps[f.name] = (op, status)
@@ -736,8 +736,7 @@ def CheckIntegrityIntersection(GUI=False):
     return "ok"
 
 def CheckIntegrity1DInterface2Meshes(GUI=False):
-    """
-    CheckIntegrity for
+    """CheckIntegrity for 2 1D meshes
     Mesh 1
 
     y ^
