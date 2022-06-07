@@ -6,6 +6,7 @@
 
 import numpy as np
 
+from BasicTools.NumpyDefs import PBasicFloatType, PBasicIndexType
 from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
 from BasicTools.Containers.Filters import ElementFilter, IntersectionElementFilter
 import BasicTools.Containers.ElementNames as EN
@@ -68,6 +69,9 @@ class IGToMesh:
         self.volMesh = UnstructuredMesh()
         self.volMesh.CopyProperties(self.inputMesh)
         phi = self.phi
+        if np.max(phi) < 0 or  np.min(phi) > 0 :
+            print("Warning: non iso zero on phi")
+
         pid = dict()
         elems = set()
         cpt = 0
@@ -220,7 +224,7 @@ class IGToMesh:
                         AddElement(pos_id,neg_id,trisElements,p)
 
 
-        omesh.nodes = np.array(xyz)
+        omesh.nodes = np.array(xyz,dtype=PBasicFloatType,ndmin=2)
         omesh.GenerateManufacturedOriginalIDs()
         omesh.PrepareForOutput()
 
@@ -249,6 +253,12 @@ def CheckIntegrity(GUI=False):
 
     omesh =  oo.ComputeInterfaceMesh()
     print(omesh)
+
+    ooII = IGToMesh(myMesh,abs(phi)+0.1 )
+    omeshII =  ooII.ComputeInterfaceMesh()
+    print(omeshII)
+
+
 
     tempdir = TestTempDir.GetTempPath()
 
