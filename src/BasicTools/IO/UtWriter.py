@@ -12,7 +12,7 @@ from BasicTools.IO.WriterBase import WriterBase as WriterBase
 import BasicTools.IO.GeofWriter as GW
 from BasicTools.IO.GeofWriter import GeofName as GeofName
 from BasicTools.IO.GeofReader import nbIntegrationsPoints as nbIntegrationsPoints
-from BasicTools.Containers.UnstructuredMeshInspectionTools import ExtractElementByDimensionalityNoCopy
+from BasicTools.Containers.Filters import ElementFilter
 
 
 class UtWriter(WriterBase):
@@ -157,8 +157,8 @@ class UtWriter(WriterBase):
 
           numberElements = []
           nbPtIntPerElement = []
-          mesh3D = ExtractElementByDimensionalityNoCopy(self.mesh,3)
-          for name,data in mesh3D.elements.items():
+
+          for name, data, ids in ElementFilter(self.mesh, dimensionality=3):
             numberElements.append(data.GetNumberOfElements())
             nbPtIntPerElement.append(nbIntegrationsPoints[GeofName[name]])
           nbTypeEl = len(numberElements)
@@ -217,8 +217,7 @@ class UtWriter(WriterBase):
               dim = 3
           else:
               dim = 2
-          mesh3D = ExtractElementByDimensionalityNoCopy(self.mesh,dim)
-          for name,data in mesh3D.elements.items():
+          for name, data, ids in ElementFilter(self.mesh, dimensionality=3):
             numberElements.append(data.GetNumberOfElements())
             nbPtIntPerElement.append(nbIntegrationsPoints[GeofName[name]])
           nbTypeEl = len(numberElements)

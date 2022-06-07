@@ -17,3 +17,4 @@ Deprecated Functions:
 (UnstructuredMeshInspectionTools.py) VolumeOfHexaedrons -> use GetVolumePerElement
 (UnstructuredMeshInspectionTools.py) VolumeOfTetrahedrons -> use GetVolumePerElement
 (UnstructuredMeshInspectionTools.py) ExtractElementsByImplicitZone -> use ExtractElementsByElementFilter, CleanLonelyNodes
+(UnstructuredMeshInspectionTools.py) ExtractElementByDimensionalityNoCopy -> ExtractElementsByElementFilter(mesh, ElementFilter(mesh,dimensionality=dim), copy=False)

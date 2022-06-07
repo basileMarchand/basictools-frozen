@@ -310,7 +310,7 @@ def GetDualGraph(inmesh, maxNumConnections=200):
     dualGraph = dualGraph[:,0:maxsize]
     return dualGraph,usedPoints
 
-def ExtractElementsByElementFilter(inmesh: UnstructuredMesh, elementFilter:ElementFilter) -> UnstructuredMesh:
+def ExtractElementsByElementFilter(inmesh: UnstructuredMesh, elementFilter:ElementFilter, copy:bool=True) -> UnstructuredMesh:
     """Create a new mesh with the selected element by elementFilter
     For the moment this function make a copy of nodes
 
@@ -320,6 +320,9 @@ def ExtractElementsByElementFilter(inmesh: UnstructuredMesh, elementFilter:Eleme
         the input mesh
     elementFilter : ElementFilter
         the ElementFilter to select the element to extract
+    copy : bool
+        if true this function will try to make reuse as mush as possible the memory of the input mesh.
+        Warning!!! Making modification of one of the two meshes will potentially invalidate the other mesh
 
     Returns
     -------
@@ -329,15 +332,29 @@ def ExtractElementsByElementFilter(inmesh: UnstructuredMesh, elementFilter:Eleme
 
     inmesh.ComputeGlobalOffset()
     outmesh = type(inmesh)()
-    outmesh.CopyProperties(inmesh)
+    if copy:
+        outmesh.CopyProperties(inmesh)
+        outmesh.nodes = np.copy(inmesh.nodes)
+        outmesh.nodesTags = inmesh.nodesTags.Copy()
+    else:
+        outmesh.props = inmesh.props
+        outmesh.nodes = inmesh.nodes
+        outmesh.nodesTags = inmesh.nodesTags
 
-    outmesh.nodes = np.copy(inmesh.nodes)
     outmesh.originalIDNodes = np.arange(inmesh.GetNumberOfNodes(), dtype=PBasicIndexType)
-    outmesh.nodesTags = inmesh.nodesTags.Copy()
+
 
     elementFilter.mesh = inmesh
     for name,data,ids in elementFilter:
-        outmesh.elements[name] = ExtractElementsByMask(data,ids)
+        if len(ids) == data.GetNumberOfElements() and copy == False:
+            outElements = type(data)(name)
+            outElements.connectivity = data.connectivity
+            outElements.originalIds = data.originalIds
+            outElements.cpt = data.GetNumberOfElements()
+            outElements.tags = data.tags
+            outmesh.elements[name] = outElements
+        else:
+            outmesh.elements[name] = ExtractElementsByMask(data,ids)
 
     outmesh.PrepareForOutput()
     return outmesh
@@ -390,30 +407,6 @@ def ExtractElementsByMask(inelems:ElementsContainer, mask:ArrayLike) -> Elements
        outelems.tags.CreateTag(tag.name).SetIds(newid)
 
     return outelems
-
-def ExtractElementByDimensionalityNoCopy(inmesh,dimensionalityFilter):
-    outmesh = type(inmesh)()
-    outmesh.CopyProperties(inmesh)
-
-    outmesh.nodes = inmesh.nodes
-    outmesh.originalIDNodes = inmesh.originalIDNodes
-    outmesh.nodesTags = inmesh.nodesTags
-
-    if dimensionalityFilter >0 :
-        for name,elems in inmesh.elements.items():
-            if ElementNames.dimension[name] != dimensionalityFilter:
-                continue
-            else:
-                outmesh.elements[name] = elems
-    else:
-        for name,elems in inmesh.elements.items():
-            if ElementNames.dimension[name] == -dimensionalityFilter:
-                continue
-            else:
-                outmesh.elements[name] = elems
-
-    outmesh.PrepareForOutput()
-    return outmesh
 
 def ExtractElementByTags(inmesh,tagsToKeep, allNodes=False,dimensionalityFilter= None, cleanLonelyNodes=True):
 
@@ -806,15 +799,6 @@ def CheckIntegrity_ExtractElementsByMask(GUI=False):
     print(tri.originalIds)
     return "ok"
 
-def Checkintegrity_ExtractElementByDimensionalityNoCopy(GUI=False):
-    from BasicTools.Containers.UnstructuredMeshCreationTools import CreateCube
-    mesh  = CreateCube(dimensions = [20,20,20], origin = [0.1,0.1,0.,], spacing=[0.9/19]*3)
-    newmesh = ExtractElementByDimensionalityNoCopy(mesh,2)
-    print(newmesh)
-    if newmesh.GetNumberOfElements() != 19*19*6:
-        raise Exception("Wrong number of elements")
-    return "ok"
-
 def Checkintegrity_MeshQualityAspectRatioBeta(GUI=False):
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateCube
     mesh  = CreateCube(dimensions = [20,20,20], origin = [0.1,0.1,0.,], spacing=[0.9/19]*3)
@@ -861,7 +845,6 @@ def CheckIntegrity(GUI=False):
     CheckIntegrity_ComputeMeshMinMaxLengthScale,
     CheckIntegrity_GetElementsFractionInside,
     CheckIntegrity_ExtractElementByTags,
-    Checkintegrity_ExtractElementByDimensionalityNoCopy,
     ]
     for f in totest:
         print("running test : " + str(f))
