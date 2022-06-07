@@ -425,6 +425,8 @@ class FilterOP(BOO):
         if isinstance(self,FrozenFilter):
             if mesh is None:
                 return self
+            if mesh is self.mesh:
+                return self
             else:
                 raise Exception("Can't freeze a FrozenFilter with a new mesh")
 
@@ -598,13 +600,23 @@ class ElementFilter(Filter):
         a list of element type to be included in this filter, by default None
     zoneTreatment : str, optional
         ["center" | "allnodes" | "leastonenode"], by default "center"
-
+    nTags : Optional[List[str]], optional
+        a list of nodal tags names to use to extract elements
+    nTagsTreatment : str, optional
+        ["allnodes" | "leastonenode"], by default "allnodes"
     """
-    def __init__(self, mesh:UnstructuredMesh=None, dimensionality:Optional[int]=None, elementTypes:Optional[List[str]]=None, elementType:Optional[str]=None, zoneTreatment:str="center", **kwargs):
+    def __init__(self, mesh:UnstructuredMesh=None,
+                 dimensionality:Optional[int]=None,
+                 elementTypes:Optional[List[str]]=None,
+                 elementType:Optional[str]=None,
+                 zoneTreatment:str="center",
+                 nTags:Optional[List[str]] = None,
+                 nTagsTreatment:str="allnodes", **kwargs):
 
         super(ElementFilter,self).__init__(mesh=mesh,**kwargs)
         self.dimensionality = dimensionality
         self.zoneTreatment = zoneTreatment # "center", "allnodes", "leastonenode"
+        self.nTagsTreatment = nTagsTreatment
 
         self.elementTypes = list()
 
@@ -613,6 +625,10 @@ class ElementFilter(Filter):
 
         if elementType is not None:
             self.AddElementType(elementType)
+
+        self.nTags = list()
+        if nTags is not None:
+            self.SetNTags(nTags)
 
         self.withError = False
 
@@ -689,7 +705,7 @@ class ElementFilter(Filter):
         self.dimensionality = dimensionality
 
     def SetElementTypes(self, elementTypes:List[str]):
-        """Set the names of a element type to be included in this filter
+        """Set the names of the element types to be included in this filter
 
         Parameters
         ----------
@@ -698,6 +714,37 @@ class ElementFilter(Filter):
         """
         self.elementTypes = []
         self.elementTypes.extend(elementTypes)
+
+    def SetNTags(self, nTags:List[str]):
+        """Set the names of the nodal tags (nTags) to be included in this filter
+
+        Parameters
+        ----------
+        elementTypes : List[str]
+            the list of element types
+        """
+        self.nTags = []
+        self.nTags.extend(nTags)
+
+    def SetNTagsTreatment(self, nTagsTreatment:str):
+        """Set the way the elements are selected based on the nTags
+        if all nodes of the element are inside the nTag   : self.nTagsTreatment = "allnodes"
+        if at least one node of the element is inside nTag: self.nTagsTreatment = "leastonenode"
+
+        Parameters
+        ----------
+        nTagsTreatment : str
+            ["allnodes" | "leastonenode"]
+
+        Raises
+        ------
+        Exception
+            if the nTagsTreatment string is not in ["allnodes", "leastonenode"]
+        """
+        if nTagsTreatment in ["allnodes", "leastonenode"]:
+            self.nTagsTreatment = nTagsTreatment
+        else:
+            raise Exception(f"NTag treatment not valid ({nTagsTreatment}), possible options are : allnodes, leastonenode")
 
     def AddElementType(self, elementType:str):
         """Add an element type to be included in this filter
@@ -761,7 +808,7 @@ class ElementFilter(Filter):
         else:
             return False
 
-    def _CheckZones_(self, elements:ElementsContainer) -> Union[bool,None]:
+    def _CheckZones_(self, elements:ElementsContainer) -> Union[np.ndarray,None]:
         """Internal function check if a type of element must be included based on
         the zone
 
@@ -772,10 +819,9 @@ class ElementFilter(Filter):
 
         Returns
         -------
-        Union[bool,None]
-            True if this type of elements must be included
-            False if this type of elements must be excluded
-            None if this the filtering by dimensionality is not active
+        Union[np.array,None]
+            np.ndarray of the indices inside the selection
+            None if this the filtering by zones is not active
         """
 
         if len(self.zones) == 0:
@@ -805,6 +851,43 @@ class ElementFilter(Filter):
 
         return np.where(res)[0]
 
+    def _CheckNTags_(self, elements:ElementsContainer) -> Union[np.ndarray,None]:
+        """Internal function check if a element must be included based on
+        the nTags
+
+        Parameters
+        ----------
+        elements : ElementsContainer
+            the incoming ElementsContainer
+
+        Returns
+        -------
+        Union[bool,None]
+            np.ndarray of the indices inside the selection
+            None if this the filtering by nTags is not active
+        """
+
+        if len(self.nTags) == 0:
+            return None
+
+        numberOfObjects = elements.GetNumberOfElements()
+
+        res = np.zeros(numberOfObjects,dtype=bool)
+
+        nodalMask = np.zeros(self.mesh.GetNumberOfNodes(),dtype = bool)
+
+        for tagName in self.nTags :
+            if tagName in self.mesh.nodesTags:
+                nodalMask[self.mesh.nodesTags[tagName].GetIds()] = True
+
+        if self.nTagsTreatment == "allnodes":
+            res = np.sum(nodalMask[elements.connectivity],axis=1) == elements.GetNumberOfNodesPerElement()
+        elif self.nTagsTreatment == "leastonenode":
+            res = np.sum(nodalMask[elements.connectivity],axis=1) > 0
+        else: #pragma: no cover
+            raise Exception("nTagsTreatment unknown")
+        return np.where(res)[0]
+
     def GetIdsToTreat(self,elements:ElementsContainer) -> Union[np.ndarray,Collection]:
         """Get the entities selected by this filter
 
@@ -827,17 +910,26 @@ class ElementFilter(Filter):
         res  = self._CheckTags_(elements.tags,elements.GetNumberOfElements())
         if res is not None and len(res) == 0:
             return res
-        res2 = self._CheckZones_(elements)
-        self.zonesField = res2
-        res3 = self.intersect1D(res,res2)
+
+        res_nTags  = self._CheckNTags_(elements)
+        if res_nTags is not None and len(res_nTags) == 0:
+            return res_nTags
+        res = self.intersect1D(res, res_nTags)
+
+        res_zones = self._CheckZones_(elements)
+        # this is a hack to be able to access the evaluated zone over the used points
+        # for the moment this is not part of the public API
+        self.zonesField = res_zones
+        res3 = self.intersect1D(res, res_zones)
+
         init = 0
         for name, data in self.mesh.elements.items():
             if name == elements.elementType:
                 break
             init +=  data.GetNumberOfElements()
 
-        resM = self._CheckMask_(init,elements.GetNumberOfElements())
-        res3 = self.intersect1D(res3,resM)
+        res_mask = self._CheckMask_(init,elements.GetNumberOfElements())
+        res3 = self.intersect1D(res3, res_mask)
 
         if res3 is None:
             return range(elements.GetNumberOfElements())
@@ -858,7 +950,7 @@ class ElementFilter(Filter):
             return self.filters[0]
         return ComplementaryObject(mesh=self.mesh,filters=[self])
 
-    def GetFrozenFilter(self, mesh:Union[UnstructuredMesh]=None) -> FrozenFilter:
+    def GetFrozenFilter(self, mesh:Optional[UnstructuredMesh]=None) -> FrozenFilter:
         """Generate a frozen filter. This is a filter with pre-evaluated ids.
         This class is useful when a repeated use of a filter is needed
 
@@ -1200,7 +1292,18 @@ def CheckIntegrity( GUI=False):
     for name,data,ids in ff:
         cpt += len(ids)
 
+    if cpt != 264: # pragma: no cover
+        raise
     print("Number of Element in tag X0 {}".format(cpt))
+
+    cpt = 0
+    ff = ElementFilter(mesh,nTags=["x1y0z1"],nTagsTreatment="leastonenode")
+    for name,data,ids in ff:
+        cpt += len(ids)
+
+    if cpt != 6: # pragma: no cover
+        raise
+    print("Number of Element touching  ntag x1y0z1 {}".format(cpt))
 
     mask = np.zeros(mesh.GetNumberOfElements(),dtype=bool)
     mask[0] = True
@@ -1208,12 +1311,13 @@ def CheckIntegrity( GUI=False):
     for n,d,ids in ff:
         print(n,ids)
         if n != EN.Tetrahedron_4 or len(ids) != 1 :
-            raise
+            raise  # pragma: no cover
         if ids[0] != 0:
-            raise
+            raise  # pragma: no cover
 
     ff = ElementFilter(mesh, zone = lambda p: (p[:,2]-mesh.boundingMin[2]-0.001),zones=[])
 
+    ff.GetFrozenFilter().GetFrozenFilter(mesh).ApplyOnElements(ElementFilterBaseOperator())
 
     ff = ElementFilter(mesh, zone = lambda p: (p[:,2]-mesh.boundingMin[2]-0.001),zones=[])
     for name,data,ids in ff:
