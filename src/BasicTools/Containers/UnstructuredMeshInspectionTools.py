@@ -310,28 +310,6 @@ def GetDualGraph(inmesh, maxNumConnections=200):
     dualGraph = dualGraph[:,0:maxsize]
     return dualGraph,usedPoints
 
-def ExtractElementsByImplicitZone(inmesh,op,allNodes=True,cellCenter=False):
-    inmesh.ComputeGlobalOffset()
-
-    mask = op(inmesh.nodes) <= 0.
-
-    outmesh = type(inmesh)()
-    outmesh.CopyProperties(inmesh)
-
-    outmesh.nodes = np.copy(inmesh.nodes)
-    outmesh.originalIDNodes = np.arange(inmesh.GetNumberOfNodes())
-
-    # keep only the faces with one or zero volumes attached
-    for name,data in inmesh.elements.items():
-        if allNodes:
-            ElemMask = np.sum(mask[data.connectivity],axis=1) == data.GetNumberOfNodesPerElement()
-        else:
-            ElemMask = np.sum(mask[data.connectivity],axis=1) >= 1
-        outmesh.elements[name] = ExtractElementsByMask(data,ElemMask)
-    CleanLonelyNodes(outmesh)
-    outmesh.PrepareForOutput()
-    return outmesh
-
 def ExtractElementsByElementFilter(inmesh: UnstructuredMesh, elementFilter:ElementFilter) -> UnstructuredMesh:
     """Create a new mesh with the selected element by elementFilter
     For the moment this function make a copy of nodes
@@ -354,7 +332,7 @@ def ExtractElementsByElementFilter(inmesh: UnstructuredMesh, elementFilter:Eleme
     outmesh.CopyProperties(inmesh)
 
     outmesh.nodes = np.copy(inmesh.nodes)
-    outmesh.originalIDNodes = np.arange(inmesh.GetNumberOfNodes())
+    outmesh.originalIDNodes = np.arange(inmesh.GetNumberOfNodes(), dtype=PBasicIndexType)
     outmesh.nodesTags = inmesh.nodesTags.Copy()
 
     elementFilter.mesh = inmesh
@@ -754,39 +732,6 @@ def CheckIntegrity_GetVolume(GUI=False):
 
     return "ok"
 
-
-def CheckIntegrity_ExtractElementsByImplicitZone(GUI=False):
-    from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearMesh
-    from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshFromConstantRectilinearMesh
-    myMesh = ConstantRectilinearMesh(dim=3)
-    myMesh.SetDimensions([20,30,40])
-    myMesh.SetOrigin([-1.0,-1.0,-1.0])
-    myMesh.SetSpacing([2., 2.,2]/myMesh.GetDimensions())
-    print(myMesh)
-    res2 = CreateMeshFromConstantRectilinearMesh(myMesh,ofTetras=False)
-    print(res2)
-
-    class OPSphere(object):
-        def __init__(self):
-            self.center = np.array([0.0,0.0,0.0],dtype=float)
-            self.radius = 0.5
-        def __call__(self,pos):
-            res = np.sqrt(np.sum((pos-self.center)**2,axis=1))-self.radius
-            return res
-
-    myOp = OPSphere()
-
-    res = ExtractElementsByImplicitZone(res2,myOp)
-    print(res)
-
-    from BasicTools.IO.XdmfWriter import WriteMeshToXdmf
-    from BasicTools.Helpers.Tests import TestTempDir
-    tempdir = TestTempDir.GetTempPath()
-    WriteMeshToXdmf(tempdir+"Test_ExtractElementsByImplicitZone.xdmf",res,PointFields=[res.originalIDNodes],PointFieldsNames=["originalIDNodes"] )
-    print(tempdir)
-    return "OK"
-
-
 def CheckIntegrity_EnsureUniquenessElements(GUI=False):
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshOf
 
@@ -910,7 +855,6 @@ def CheckIntegrity(GUI=False):
     Checkintegrity_GetDataOverALine,
     Checkintegrity_MeshQualityAspectRatioBeta,
     CheckIntegrity_EnsureUniquenessElements,
-    CheckIntegrity_ExtractElementsByImplicitZone,
     CheckIntegrity_ExtractElementsByMask,
     CheckIntegrity_GetVolume,
     CheckIntegrity_GetDualGraph,
