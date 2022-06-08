@@ -7,6 +7,8 @@ General Changes:
 
 Heavy use of typing so this make impossible to use BasicTools on python prior version 3.7
 Add nTags for the ElementFilter: The user can select element using nodal tags. Two options "allnodes" or "leastonenode"
+Add orthotropic and anisotropic behavior to the SymPhysics module
+
 
 API Changes:
 ************

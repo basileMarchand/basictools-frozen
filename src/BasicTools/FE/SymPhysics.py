@@ -3,11 +3,14 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-import math
+from collections import defaultdict
 
+import numpy as np
+
+from BasicTools.NumpyDefs import PBasicFloatType
 from BasicTools.Containers.Filters import ElementFilter
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject as BOO
-from BasicTools.FE.SymWeakForm import Gradient,Divergence, GetField,GetTestField, GetScalarField
+from BasicTools.FE.SymWeakForm import Gradient,Divergence, GetField,GetTestField, GetScalarField, Inner
 import BasicTools.FE.SymWeakForm as swf
 
 class Physics(BOO):
@@ -121,7 +124,17 @@ class Physics(BOO):
 
 
 class MecaPhysics(Physics):
-    def __init__(self,dim=3):
+    """Weak forms for mechanical problems
+
+    Parameters
+    ----------
+    dim : int, optional
+        dimension of the unknown, by default 3
+    elasticModel : str, optional
+        The type of model used, by default "isotropic"
+        option are : "isotropic", "orthotropic", "anisotropic"
+    """
+    def __init__(self,dim=3, elasticModel ="isotropic"):
         super(MecaPhysics,self).__init__()
         self.dim = dim
 
@@ -130,10 +143,17 @@ class MecaPhysics(Physics):
 
         self.mecaSpace = None
 
-        self.young = 1.
-        self.poisson = 0.3
-        self.density = 1.
+        self.coeffs = defaultdict(lambda : 0.)
+        self.coeffs["young"] = 1.
+        self.coeffs["poisson"] = 0.3
+        self.coeffs["density"] = 1.
 
+        if elasticModel not in  ["isotropic", "orthotropic", "anisotropic"]: # pragma: no cover
+            raise Exception(f'elasticModel ({elasticModel}) not available : options are "isotropic", "orthotropic", "anisotropic" ')
+
+        self.elasticModel = elasticModel
+
+        self.materialOrientations = np.eye(dim, dtype = PBasicFloatType)
         self.planeStress = True
 
     def SetMecaPrimalName(self,name):
@@ -146,36 +166,72 @@ class MecaPhysics(Physics):
 
     def GetHookeOperator(self,young=None,poisson=None,factor=None):
 
+        if self.elasticModel == "isotropic":
+            res=  self.GetHookeOperatorIsotropic(young=young,poisson=poisson,factor=factor)
+        elif self.elasticModel == "orthotropic" :
+            res =  self.GetHookeOperatorOrthotropic(factor=factor)
+        elif self.elasticModel == "anisotropic" :
+            res =  self.GetHookeOperatorAnisotropic(factor=None)
+
+        self.HookeLocalOperator = res
+        return res
+
+    def GetHookeOperatorIsotropic(self,young=None,poisson=None,factor=None):
+
         from BasicTools.FE.MaterialHelp import HookeLaw
 
         if young is None:
-            young = self.young
+            young = self.coeffs["young"]
         if poisson is None:
-            poisson = self.poisson
+            poisson = self.coeffs["poisson"]
 
         young = GetScalarField(young)*GetScalarField(factor)
 
         op = HookeLaw()
         op.Read({"E":young, "nu":poisson})
-        self.HookeLocalOperator = op.HookeIso(dim=self.dim,planeStress=self.planeStress)
+        return op.HookeIso(dim=self.dim,planeStress=self.planeStress)
 
-        return self.HookeLocalOperator
 
-    def GetStressVoigt(self,u,HookeLocalOperator=None):
+    def GetHookeOperatorOrthotropic(self,factor=None):
+        hookOrtho = [["C11", "C12", "C13",     0,     0,    0 ],
+                     ["C12", "C22", "C23",     0,     0,    0 ],
+                     ["C13", "C23", "C33",     0,     0,    0 ],
+                     [    0,     0,     0, "C44",     0,    0 ],
+                     [    0,     0,     0,     0, "C55",    0 ],
+                     [    0,     0,     0,     0,     0, "C66"]]
+
+        return  np.array([[ GetScalarField(self.coeffs[c]) for c in line] for line in hookOrtho]) *GetScalarField(factor)
+
+    def GetHookeOperatorAnisotropic(self,factor=None):
+        hookAniso = [["C1111","C1122","C1133","C1123","C1131","C1112"],
+                     ["C2211","C2222","C2233","C2223","C2231","C2212"],
+                     ["C3311","C3322","C3333","C3323","C3331","C3312"],
+                     ["C2311","C2322","C2333","C2323","C2331","C2312"],
+                     ["C3111","C3122","C3133","C3123","C3131","C3112"],
+                     ["C1211","C1222","C1233","C1223","C1231","C1212"]]
+
+        return  np.array([[ GetScalarField(self.coeffs[c]) for c in line] for line in hookAniso]) *GetScalarField(factor)
+
+
+    def GetStressVoigt(self,utGlobal,HookeLocalOperator=None):
         from BasicTools.FE.SymWeakForm import ToVoigtEpsilon,Strain
         if HookeLocalOperator is None:
             HookeLocalOperator = self.HookeLocalOperator
-        return swf.Inner(ToVoigtEpsilon(Strain(u,self.dim)).T,HookeLocalOperator)
+
+        uLocal = Inner(self.materialOrientations,utGlobal)
+        return swf.Inner(ToVoigtEpsilon(Strain(uLocal,self.dim)).T,HookeLocalOperator)
 
     def GetBulkFormulation(self,young=None, poisson=None,alpha=None ):
         from BasicTools.FE.SymWeakForm import ToVoigtEpsilon,Strain
-        u = self.primalUnknown
-        ut = self.primalTest
+        uGlobal = self.primalUnknown
+        utGlobal = self.primalTest
+
+        utLocal = Inner(self.materialOrientations,utGlobal)
 
         HookeLocalOperator = self.GetHookeOperator(young,poisson,alpha)
-        stress = self.GetStressVoigt(u,HookeLocalOperator)
+        stress = self.GetStressVoigt(uGlobal,HookeLocalOperator)
 
-        Symwfb = stress*ToVoigtEpsilon(Strain(ut,self.dim))
+        Symwfb = stress*ToVoigtEpsilon(Strain(utLocal,self.dim))
         return Symwfb
 
     def GetPressureFormulation(self,pressure):
@@ -204,7 +260,7 @@ class MecaPhysics(Physics):
     def GetAccelerationFormulation(self,direction,density=None):
 
         if density is None:
-            density = self.density
+            density = self.coeffs["density"]
 
         ut = self.primalTest
         density = GetScalarField(density)
@@ -215,22 +271,22 @@ class MecaPhysics(Physics):
 
         return  density*direction.T*ut
 
-
-
     def PostTraitementFormulations(self):
+        """For the moment this work only if GetBulkFormulation is called only once per instance
+        the problem is the use of self.Hook"""
         import BasicTools.FE.SymWeakForm as wf
-        symdep = self.primalUnknown
-
+        uGlobal = self.primalUnknown
+        utLocal = Inner(self.materialOrientations,uGlobal)
 
         nodalEnergyT = GetTestField("elastic_energy",1)
-        symEner = 0.5*wf.ToVoigtEpsilon(wf.Strain(symdep)).T*self.HookeLocalOperator*wf.ToVoigtEpsilon(wf.Strain(symdep))*nodalEnergyT
+        symEner = 0.5*wf.ToVoigtEpsilon(wf.Strain(utLocal)).T*self.HookeLocalOperator*wf.ToVoigtEpsilon(wf.Strain(utLocal))*nodalEnergyT
 
 
         trStrainT = GetTestField("tr_strain_",1)
-        symTrStrain = wf.Trace(wf.Strain(symdep))*trStrainT
+        symTrStrain = wf.Trace(wf.Strain(uGlobal))*trStrainT
 
         trStressT = GetTestField("tr_stress_",1)
-        symTrStress = wf.Trace(wf.FromVoigtSigma(wf.ToVoigtEpsilon(wf.Strain(symdep)).T*self.HookeLocalOperator))*trStressT
+        symTrStress = wf.Trace(wf.FromVoigtSigma(wf.ToVoigtEpsilon(wf.Strain(utLocal)).T*self.HookeLocalOperator))*trStressT
 
         postQuantities = {"elastic_energy" : symEner,
                           "tr_strain_": symTrStrain,
@@ -265,10 +321,10 @@ class MecaPhysicsAxi(MecaPhysics):
 
         r = self.GetFieldR()
 
-        from BasicTools.FE.SymWeakform import StrainAxyCol
+        from BasicTools.FE.SymWeakForm import StrainAxyCol
         epsilon_u = StrainAxyCol(u,r)
         epsilon_ut = StrainAxyCol(ut,r)
-        Symwfb = 2*math.pi*epsilon_u*self.HookeLocalOperator*epsilon_ut*r
+        Symwfb = 2*np.pi*epsilon_u*self.HookeLocalOperator*epsilon_ut*r
         return Symwfb
 
     def GetPressureFormulation(self,pressure):
@@ -281,10 +337,11 @@ class MecaPhysicsAxi(MecaPhysics):
         return super().GetForceFormulation(direction,density)*self.GetFieldR()
 
     def PostTraitementFormulations(self):
+
         import BasicTools.FE.SymWeakForm as wf
         symdep = self.primalUnknown
 
-        pir2 = 2*math.pi*self.GetFieldR()
+        pir2 = 2*np.pi*self.GetFieldR()
 
         nodalEnergyT = GetTestField("strain_energy",1)
         symEner = pir2*0.5*wf.ToVoigtEpsilon(wf.Strain(symdep)).T*self.HookeLocalOperator*wf.ToVoigtEpsilon(wf.Strain(symdep))*nodalEnergyT
@@ -462,7 +519,7 @@ class ThermoMecaPhysics(Physics):
         res = self.mecaPhys.GetBulkFormulation(young=young, poisson=poisson,alpha=alpha)
         res += self.thermalPhys.GetBulkFormulation(alpha=alpha)
 
-        # need to add the clouplig terms
+        # need to add the coupling terms
 
         #res += self.HookeLocalOperator
 
@@ -481,6 +538,26 @@ def CheckIntegrity(GUI=False):
     print(t.primalUnknown)
     print(t.primalTest)
     print(t.GetBulkFormulation_dudi_dtdj(u=0,i=1,t=1,j=2) )
+
+    M2D = MecaPhysics(dim=2)
+    print(M2D.GetHookeOperator())
+    M3DI = MecaPhysics(dim=3)
+    from itertools import product
+    print(M3DI.GetHookeOperator())
+
+    M3DO = MecaPhysics(dim=3, elasticModel="orthotropic")
+    iter = range(1,7)
+    M3DO.coeffs.update({"C"+str(a)+str(b):(a)*10+(b) for a,b in product(iter,iter) })
+    print(M3DI.coeffs)
+
+    print(M3DO.GetHookeOperator())
+    M3DA = MecaPhysics(dim=3, elasticModel="anisotropic")
+    iter = range(1,4)
+    M3DA.coeffs.update({"C"+ "".join(map(str,a)):int("".join(map(str,a))) for a in product( iter,iter,iter,iter)})
+    print(M3DA.GetHookeOperator())
+    print(M3DA.GetPressureFormulation(1))
+    print(M3DA.GetAccelerationFormulation([1,0,0]))
+
     return "ok"
 
 if __name__ == '__main__':
