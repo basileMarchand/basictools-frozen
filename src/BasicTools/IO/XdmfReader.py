@@ -174,15 +174,27 @@ class XdmfGrid(Xdmfbase):
     def GetPointFields(self):
         return self.GetFieldsOfType("Node")
 
+    def GetPointField(self,name):
+        return self.GetFieldsOfType("Node",name)
+
     def GetCellFields(self):
         return self.GetFieldsOfType("Cell")
+
+    def GetCellField(self,name):
+        return self.GetFieldsOfType("Cell",name)
 
     def GetGridFields(self):
         return self.GetFieldsOfType("Grid")
 
-    def GetFieldsOfType(self,ftype):
+    def GetGridField(self,name):
+        return self.GetFieldsOfType("Grid",name)
+
+    def GetFieldsOfType(self,ftype, name = None):
         res = []
         for a in self.attributes:
+            if name is not None:
+                if a.Name != name:
+                    continue
             if a.Center == ftype :
                 data = a.dataitems[0].GetData()
                 if self.geometry.Type == "ORIGIN_DXDYDZ":
@@ -924,11 +936,20 @@ def Example1():
     grid = dom.GetGrid(0)
     grid.topology.GetDimensions()
     names = grid.GetPointFieldsNames()
-    names = grid.GetCellFieldsNames()
-    names = grid.GetGridFieldsNames()
     allFields = grid.GetPointFields()
+    if len(allFields):
+        print(grid.GetPointField(names[0]))
+
+    names = grid.GetCellFieldsNames()
     allFields = grid.GetCellFields()
+    if len(allFields):
+        print(grid.GetCellField(names[0]))
+
+    names = grid.GetGridFieldsNames()
     allFields = grid.GetGridFields()
+    if len(allFields):
+        print(grid.GetGridField(names[0]))
+
     #Get one field (or term)
     dataField1= grid.GetFieldData('RTData')
 
