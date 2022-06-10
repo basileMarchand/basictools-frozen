@@ -29,4 +29,5 @@ def main():
     print("")
 
     from BasicTools.Helpers.Tests import RunTests
-    RunTests()
+    import sys
+    sys.exit(len(RunTests()))
