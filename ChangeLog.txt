@@ -1,19 +1,52 @@
-New in version 1.8:
-*******************
-*******************
+New in version Master:
+**********************
+**********************
 
 General Changes:
 ****************
 
-Heavy use of typing so this make impossible to use BasicTools on python prior version 3.7
+Heavy use of typing so this make impossible to use BasicTools on python prior to version 3.7 and numpy verison 1.19
+   this implies the use of BasicTools type defined in the BasicTools.NumpyDefs module
+Optimization or MeshWriter + Code cleaning
+(ParserHelper.py) Add ReadVectorXYAdd function to read 2D vectors
+(UnstructuredMeshInspectionTools.py) Make ComputeMeshMinMaxLengthScale work on 2D meshes
+Some work for better 2D support (work in progress)
+(LinearSolver.py) New implementation with a factory (support for user defined solvers)
+Now BaseOutputObject.Print can print the current used memory used by the python process
+Better memory handling for multi thread integration
+OpenMP activated on windows packages
+During compilation "generate"  is automatically called during the "build_clib" step
+Now the IntegrationClass. SetElementFilter can take a frozen filter
+(BasicTools.Containers.UnstructuredMeshCreationTools) Bew CreateDisk function to create a mesh of disk section
+New module BasicTools.Containers.FiltersTools with useful functions over filters
+(Bug correction) on some cases the skin (ComputeSkin ) had one element missing
+(Bug correction) ElementFilter using mask
+New LSDyna Reader and Writer
+The user has the possibility to set the number of thread used by the library (BasicTools.Helpers.CPU:SetNumberOfThreadsPerInstance)
+(GeofWriter) correct output of elset whe useOriginalId is True
+BasicTools.Helpers.Test support for typing test with mypy (option -t)
+BasicTools.Containers.UnstructuredMesh New function GetPointsDimensionality and GetElementsDimensionality and Clean to eliminate empty tags
+New function ElementWiseIpToFETransferOp, ElementWiseFEToFETransferOp
+The user can calculate the gradient of a ImplicitGeometry by calling the GetGradientDistanceToPoint
 Add nTags for the ElementFilter: The user can select element using nodal tags. Two options "allnodes" or "leastonenode"
 Add orthotropic and anisotropic behavior to the SymPhysics module
 Better API for field extraction on the XdmfReader class
+Add the abs operator for FieldBase
+The MeshFileConverter can covert temporal data between 2 temporal aware readers/writers
+New GetDataOverALine to extract information of fields on the point of the line
 
 API Changes:
 ************
 
 BasicTools.Containers.UnstructuredMeshFieldOperations:GetFieldTransferOp ; change of the named argument  elementfilter -> elementFilter
+The native Eigen Linear solver uses the available cpu reported by the GetNumberOfAvailableCpus() function
+Argument forceUseCpp removed from IntegrationClass.SetIntegrator(self, userIntegrator=None) use BasicTools parameter UseCpp
+Tags and Tag clases are now defined on there own file BasicTools.Containers.Tags
+MeshBase.GenerateManufacturedOriginalIDs can take an offset to generate OriginalId not starting from zero
+now the CheckIntegrity function can return the string "skip" to tell the user the test was intentionally skipped
+CreateUniformMeshOfBars behavior change, kno work for lines in the 3D space
+the GetCellRepresentation of FEField uses a more generic way to generate cell data
+GetFieldTransferOp argument name change elementfilter -> elementFilter
 
 Deprecated Functions:
 *********************
@@ -21,3 +54,19 @@ Deprecated Functions:
 (UnstructuredMeshInspectionTools.py) VolumeOfTetrahedrons -> use GetVolumePerElement
 (UnstructuredMeshInspectionTools.py) ExtractElementsByImplicitZone -> use ExtractElementsByElementFilter, CleanLonelyNodes
 (UnstructuredMeshInspectionTools.py) ExtractElementByDimensionalityNoCopy -> ExtractElementsByElementFilter(mesh, ElementFilter(mesh,dimensionality=dim), copy=False)
+
+
+New in version 1.7.1:
+*********************
+*********************
+
+General Changes:
+****************
+
+In addition to the update of the core package (we have released a new C++ foundation to write new algorithms in C++ using a similar API as in python)
+New readers
+New PyVista interface
+A new C++ numbering algorithm (faster)
+Many more new functionalities.
+
+
