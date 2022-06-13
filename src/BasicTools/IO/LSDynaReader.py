@@ -75,6 +75,8 @@ class LSDynaReader(ReaderBase):
     originalIds = []
     nodes= []
 
+    nodeSetCounter = 0
+
     while(True):
 
       #premature EOF
@@ -82,7 +84,6 @@ class LSDynaReader(ReaderBase):
           print("ERROR premature EOF: please check the integrity of your .k file") # pragma: no cover
           break # pragma: no cover
       #if len(l) == 0: l = string.readline().strip('\n').lstrip().rstrip(); continue
-
 
       if l.find("*ELEMENT")>-1:
         while(True):
@@ -119,6 +120,19 @@ class LSDynaReader(ReaderBase):
             cpt += 1
         continue
 
+      if l.find("*SET_NODE_LIST")>-1:
+        tag = res.GetNodalTag(str(nodeSetCounter))
+        nodeSetCounter += 1
+        self.ReadCleanLine()
+        while(True):
+          l  = self.ReadCleanLine()
+          if l.find("*") > -1:
+              break
+          s = np.array(l.split(), dtype=int)
+          for oid in s[s>0]:
+              tag.AddToTag(int(oid))
+        continue
+
       if l.find("*END")>-1:
         self.PrintDebug("End file")
         break
@@ -137,7 +151,11 @@ class LSDynaReader(ReaderBase):
 
     updateIDsFunc = lambda x: filetointernalid[x]
 
-    for name, data in res.elements.items():
+    for tag in res.nodesTags:
+      tag.SetIds(np.vectorize(updateIDsFunc)(tag.GetIds()))
+
+
+    for _, data in res.elements.items():
       data.tighten()
       data.connectivity = np.vectorize(updateIDsFunc)(data.connectivity)
 
@@ -160,6 +178,16 @@ $# LS-DYNA Keyword file created by LS-PrePost(R) V4.5.0
 *ELEMENT_SOLID
 $#   eid     pid      n1      n2      n3      n4      n5      n6      n7      n8
        1 3000001       1       2       3       4       4       4       4       4
+*SET_NODE_LIST
+$#     sid       da1       da2       da3       da4    solver
+         1       0.0       0.0       0.0       0.0MECH
+$#    nid1      nid2      nid3      nid4      nid5      nid6      nid7      nid8
+         1         2         3         4         0         0         0         0
+*SET_NODE_LIST
+$#     sid       da1       da2       da3       da4    solver
+         1       0.0       0.0       0.0       0.0MECH
+$#    nid1      nid2      nid3      nid4      nid5      nid6      nid7      nid8
+         1         3         0         0         0         0         0         0
 *NODE
 $#   nid               x               y               z      tc      rc
        1             0.0             0.0             0.0       0       0
@@ -168,7 +196,7 @@ $#   nid               x               y               z      tc      rc
        4             0.2             0.2             0.3       0       0
        5             0.3             0.0             0.1       0       0
 *END
-    """
+"""
 
     res = ReadLSDyna(string=data)
     print(res)
