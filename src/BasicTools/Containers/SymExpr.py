@@ -9,11 +9,16 @@ import numpy as np
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 
 class SymExprBase(BaseOutputObject):
-    def __init__(self,string=None):
+    def __init__(self, string=None, symbols=None):
         super(SymExprBase,self).__init__()
         self._expression = ""
         self.constants = {}
-        self.SetConstants("t",0.0)
+        if symbols is None:
+            self.SetConstant("t",0.0)
+        else:
+            for s in symbols:
+                self.SetConstant(s,0.0)
+
         if string is not None:
             self.SetExpression(string)
 
@@ -37,7 +42,7 @@ class SymExprBase(BaseOutputObject):
             for s2 in  self.stringSymbols:
                 self.d2funcd2[(s,s2)] = lambdify(symbols(self.stringSymbols),_expr.diff(Symbol(s)).diff(Symbol(s)))
 
-    def SetConstants(self,name,value):
+    def SetConstant(self,name,value):
         self.constants[name]= value
 
     def GetValue(self,pos=None):
@@ -53,8 +58,8 @@ class SymExprBase(BaseOutputObject):
         return self.GetValue(pos)
 
 class SymExprWithPos(SymExprBase):
-    def __init__(self,string=None):
-        super(SymExprWithPos,self).__init__(string=string)
+    def __init__(self, string=None, symbols=None):
+        super(SymExprWithPos,self).__init__(string=string, symbols=symbols)
 
     def SetExpression(self,string):
         self.stringSymbols = list(self.constants.keys())
@@ -109,7 +114,7 @@ def CheckIntegrity(GUI=False):
     obj = CreateSymExprWithPos(data)
 
 
-    obj.SetConstants("t",3.14159/6.)
+    obj.SetConstant("t",3.14159/6.)
     print(obj)
     print("data : ")
     data = np.array([[100.0,0.1,0.2 ],[0,0.1,0.2 ] ])
