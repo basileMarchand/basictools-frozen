@@ -102,6 +102,9 @@ class LSDynaReader(ReaderBase):
           cpt = elements.AddNewElement(conn,oid)
           oidToElementContainer[oid] = elements
           oidToLocalElementNumber[oid] = cpt
+
+          elTag = "canonical:"+s[1]
+          elements.tags.CreateTag(elTag,False).AddToTag(cpt-1)
         continue
 
       if l.find("*NODE")>-1:
