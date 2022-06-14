@@ -109,7 +109,7 @@ class KWriter(WriterBase):
             else:
                 node_line += str(n+1).rjust(8)
             for pos in posn[n]:
-                node_line += str(pos).rjust(16)
+                node_line += str(round(pos, 10)).rjust(16)
             # rc tc always 0
             node_line += str(0).rjust(8) + str(0).rjust(8) + "\n"
             self.writeText(node_line)
