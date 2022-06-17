@@ -51,6 +51,7 @@ requirements:
     - pyvista
     - scikit-sparse [not win]
     - pywin32 [win]
+    - pycgns
 
 test:
   requirements:
