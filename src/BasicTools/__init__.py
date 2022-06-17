@@ -7,13 +7,13 @@
 
 _test = ["Actions",
          "Containers",
+         "Bridges",
          "FE",
          "Helpers",
          'ImplicitGeometry',
          "IO",
          "Linalg",
          "TensorTools"]
-
 
 __name__ = "BasicTools"
 __copyright_holder__ = "Safran"
