@@ -11,6 +11,8 @@ _test = [
 'AnsysWriter',
 'AscReader',
 'Catalyst',
+'CGNSReader',
+'CGNSWriter',
 'CodeInterface',
 'CsvWriter',
 'FemReader',
