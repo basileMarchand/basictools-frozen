@@ -5,6 +5,7 @@
 #
 from __future__ import annotations
 from typing import Optional, List, Callable, Any, Union, Collection, Iterator, Tuple
+from functools import reduce
 
 import numpy as np
 
@@ -150,11 +151,17 @@ class Filter(BOO):
 
         if len(self.tags) == 0:
             return None
-        res = np.zeros(numberOfObjects,dtype=bool)
-        for tag in self.tags:
-            if tag in tags:
-                res[tags[tag].GetIds()] = True
-        return np.nonzero(res)[0]
+
+        taglist = list(tags[t] for t in self.tags if t in tags)
+
+        if len(taglist) == 0:
+            return []
+
+        #fast path
+        if len(taglist) == 1 :
+            return taglist[0].GetIds()
+
+        return reduce(np.union1d, (tag.GetIds()  for tag in taglist)  )
 
     def _CheckMask_(self, start:PBasicIndexType, size:PBasicIndexType) -> Union[np.ndarray,None]:
         """Internal function to compute the ids based on the mask
@@ -263,12 +270,10 @@ class NodeFilter(Filter):
         if len(self.zones) == 0:
             return None
 
-        res = np.zeros(numberOfObjects,dtype=bool)
+        if len(self.zones) == 1 :
+            return np.where(self.zones[0](pos)<=0)[0]
 
-        for zone in self.zones:
-            np.logical_or(res, zone(self.mesh.nodes)<=0 ,out=res)
-
-        return np.where(res)[0]
+        return reduce(np.logical_or, (zone(pos)<=0 for zone in self.zones )  )
 
     def GetIdsToTreat(self,notused:Any=None)-> Union[np.ndarray,Collection]:
         """Get the nodes selected by this filter
@@ -1277,7 +1282,7 @@ def CheckIntegrity( GUI=False):
     if op.cpt != 4:#pragma: no cover
         raise Exception("Error finding the point")
 
-    ff.AddZone(lambda p: -1)
+    ff.AddZone(lambda p: np.ones(p.shape[0])-1)
 
     op = NOP()
     print(ff)
@@ -1289,7 +1294,7 @@ def CheckIntegrity( GUI=False):
     cpt = 0
     ff = ElementFilter(mesh)
     ff.AddTag("X0")
-    for name,data,ids in ff:
+    for name, data, ids in ff:
         cpt += len(ids)
 
     if cpt != 264: # pragma: no cover
