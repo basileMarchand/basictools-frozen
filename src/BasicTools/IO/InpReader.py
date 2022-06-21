@@ -4,12 +4,14 @@
 # file 'LICENSE.txt', which is part of this source code package.
 #
 
-
 """ Inp file reader (Abaqus simulation file)
 """
+import re
+
 import numpy as np
 import csv
 
+from BasicTools.NumpyDefs import PBasicFloatType, PBasicIndexType
 from BasicTools.Helpers.Timer import Timer
 import BasicTools.Containers.ElementNames as EN
 from BasicTools.Containers.Filters import ElementFilter
@@ -34,21 +36,34 @@ KeywordToIgnore = ["INITIAL CONDITIONS",
                    "ASSEMBLY",
                    "INSTANCE",
                    "END INSTANCE",
-                   "END ASSEMBLY"
+                   "END ASSEMBLY",
+                   "PREPRINT",
+                   "Step",
+                   "Static",
+                   "SOLVER",
+                   "Output",
+                   "NODE OUTPUT",
+                   "Element Output",
+                   "LOAD CASE",
+                   "Boundary",
+                   "End Step",
+                   "SOLVER CONTROLS",
                    ]
+
+intFilter = re.compile("^[0-9]*$")
 
 def JoinInp(filename):
     fII = open("join_"+filename,"w")
 
-    def copycontent(filename):
+    def copyContent(filename):
         for l in open(filename,"r"):
             if len(l) >=8 and l[0:8]  == "*INCLUDE":
-                copycontent( l.split("=")[1].strip())
+                copyContent( l.split("=")[1].strip())
                 pass
             else:
                 fII.write(l)
 
-    copycontent(filename)
+    copyContent(filename)
 
 def SplitInp(filename):
     import os
@@ -56,52 +71,51 @@ def SplitInp(filename):
     f.SetFileName(fileName= filename)
     fII = open("split_"+filename,"w")
     f.StartReading()
-    paires = {"PART":"*END PART",
+    pairs = {"PART":"*END PART",
               "INSTANCE":"*END INSTANCE",
               "STEP":"*END STEP",
               "Step":"*End Step",
               "ASSEMBLY":"*END ASSEMBLY",}
 
 
-    def writeonfile(inputfile,outputfile,waitfor="*",pwd="./"):
+    def WriteOnFile(inputFile, outputFile, waitFor="*", pwd="./"):
         print("working on " , " ", pwd)
-        if pwd != "./" and waitfor != "*":
+        if pwd != "./" and waitFor != "*":
             os.mkdir(pwd)
-        kcpt = 0
-        l = inputfile.ReadCleanLine()
+        keywordCpt = 0
+        l = inputFile.ReadCleanLine()
         while(True):
             if l is None:
                 return None
 
-            if l[0:len(waitfor)] == waitfor:
-                if waitfor == "*":
+            if l[0:len(waitFor)] == waitFor:
+                if waitFor == "*":
                     return l
                 else:
-                    outputfile.write(l+"\n")
-                    #print("geting out",waitfor)
-                    return  inputfile.ReadCleanLine()
+                    outputFile.write(l+"\n")
+                    return  inputFile.ReadCleanLine()
 
             if l[0] == "*":
-                ldata = LineToDic(l)
-                keyword = ldata["KEYWORD"]+"_"+str(kcpt)
-                kcpt += 1
+                localData = LineToDic(l)
+                keyword = localData["KEYWORD"]+"_"+str(keywordCpt)
+                keywordCpt += 1
 
-                outputfile.write("*INCLUDE INPUT="+pwd+keyword+".partial\n")
+                outputFile.write("*INCLUDE INPUT="+pwd+keyword+".partial\n")
                 kf = open(pwd+keyword+".partial","w")
 
                 kf.write(l+"\n")
-                if ldata["KEYWORD"] in paires:
-                    waitforin=paires[ldata["KEYWORD"]]
+                if localData["KEYWORD"] in pairs:
+                    waitForIn=pairs[localData["KEYWORD"]]
                 else:
-                    waitforin="*"
+                    waitForIn="*"
                 print("Creating file ", pwd+keyword+"/main.partial","w")
 
-                l = writeonfile(f,kf,waitfor=waitforin,pwd=pwd+keyword+"/")
+                l = WriteOnFile(f, kf, waitFor=waitForIn, pwd=pwd+keyword+"/")
             else:
-                outputfile.write(l+"\n")
-                l = inputfile.ReadCleanLine()
+                outputFile.write(l+"\n")
+                l = inputFile.ReadCleanLine()
 
-    writeonfile(f,fII,waitfor="$$",pwd="./")
+    WriteOnFile(f,fII,waitFor="$$",pwd="./")
 
 def LineToDic(text):
     import csv
@@ -126,15 +140,15 @@ def LineToList(text):
 def LineToListNoQuote(text):
     return [s.strip() for s in text.split(",")]
 
-def DischardTillNextStar(func):
+def DiscardTillNextStar(func):
     while(True):
-        courrentText = func()
-        if courrentText is None:
+        currentText = func()
+        if currentText is None:
             break
-        if len(courrentText) > 1 and courrentText[0] == "*":
+        if len(currentText) > 1 and currentText[0] == "*":
            break
 
-    return  courrentText
+    return  currentText
 
 def ReadInp(fileName=None,string=None,out=None,**kwargs):
     reader = InpReader()
@@ -154,13 +168,13 @@ class InpReader(ReaderBase):
         return res
 
     def ReadCleanLine(self):
-        # in the inp abaqus the lines ending in ',' are splited in multiple lines
+        # in the inp abaqus the lines ending in ',' are splitted in multiple lines
         res =  super(InpReader,self).ReadCleanLine()
         if res is None:
             return res
         if res[-1] == ",":
-            nline = self.PeekLine()
-            if nline[0] != "*":
+            line = self.PeekLine()
+            if line[0] != "*":
                 return res + " "+  super(InpReader,self).ReadCleanLine()
         return res
 
@@ -182,57 +196,41 @@ class InpReader(ReaderBase):
         else:
             res = out
 
-        coef = 1.
+        coefficient = 1.
         meta = ProblemData.ProblemData()
 
-        filetointernalid = {}
-        filetointernalidElement = {}
+        fileToInternalIdPoint = {}
+        fileToInternalIdElement = {}
+
+        fileToGlobalElementId = {}
+
         l = self.ReadCleanLine()
         FENames = {}
 
         while(True):
             print(l)
             if not l: break
-            ldata = LineToDic(l)
+            localData = LineToDic(l)
 
-            if  "KEYWORD" in ldata and ldata["KEYWORD"] in KeywordToIgnore:
-                print("Ignoring keyword: '" + str(ldata["KEYWORD"]) +"' jumping to the next star" )
-                l = DischardTillNextStar(self.ReadCleanLine )
+            if  "KEYWORD" in localData and localData["KEYWORD"] in KeywordToIgnore:
+                print("Ignoring keyword: '" + str(localData["KEYWORD"]) +"' jumping to the next star" )
+                l = DiscardTillNextStar(self.ReadCleanLine )
                 continue
 
-            if self.find(l,"*ELSET")>-1:
-                elsetName = ldata['ELSET']
-                l  = self.ReadCleanLine()
-                ds = []
-                tagsNames = []
+            if self.find(l,"*HEADING")>-1:
+                l = self.ReadCleanLine()
+                HEADING = ""
                 while(True):
                     if l is None or l.find("*") > -1 or not l:
-                        tags = {}
-                        for d in ds:
-                            elems, id = filetointernalidElement[d]
-                            if elems.elementType not in tags:
-                                tag = elems.tags.CreateTag(elsetName,False)
-                                tags[elems.elementType] = tag
-                            else:
-                                tag = tags[elems.elementType]
-                            tag.AddToTag(id)
-                        if len(tagsNames) >0 :
-                            for elname,eldata,elid in ElementFilter(res,tags=tagsNames):
-                                tag = eldata.tags.CreateTag(elsetName,False).AddToTag(elid)
                         break
-                    s = LineToListNoQuote(l)
-                    for ss in s:
-                        try:
-                            ds.append(int(ss))
-                        except:
-                            tagsNames.append(ss)
+                    HEADING += str(l) + "\n"
                     l = self.ReadCleanLine()
-                    continue
+
                 continue
 
             if self.find(l,"**LENGTH UNITS")>-1:
                 if l.find("mm")>-1:
-                    coef = 0.001
+                    coefficient = 0.001
                 l = self.ReadCleanLine()
                 continue
 
@@ -240,11 +238,11 @@ class InpReader(ReaderBase):
                     nodes= []
                     originalIds = []
 
-                    cpt = 0
-                    res.originalIDNodes = np.empty((0,1), int)
-                    res.nodes = np.empty((0,3), float)
+                    cpt:PBasicIndexType = 0
+                    #res.originalIDNodes = np.empty((0,1), int)
+                    #res.nodes = np.empty((0,3), float)
                     l = self.ReadCleanLine()
-                    dim = 3
+                    dim:PBasicIndexType = 3
                     s = None
 
                     while(True):
@@ -252,7 +250,7 @@ class InpReader(ReaderBase):
                             break
                         s = LineToListNoQuote(l)
                         oid = int(s[0])
-                        filetointernalid[oid] = cpt
+                        fileToInternalIdPoint[oid] = cpt
                         nodes.append(list(map(float,s[1:])) )
                         originalIds.append(oid)
                         cpt += 1
@@ -261,65 +259,65 @@ class InpReader(ReaderBase):
                     if s is not None:
                         # we use the last point to detect the dimensionality of the mesh
                         dim = len(s)-1
-                    res.nodes = np.array(nodes,dtype=float)
+                    res.nodes = np.array(nodes,dtype=PBasicFloatType)
                     res.nodes.shape = (cpt,dim)
-                    res.originalIDNodes = np.array(originalIds,dtype=int)
+                    res.originalIDNodes = np.array(originalIds,dtype=PBasicIndexType)
                     continue
 
             if self.find(l,"*ELEMENT")>-1:
                 data = LineToDic(l)
-                etype = data["TYPE"]
-                nametype = InpNameToBasicTools[etype]
-                per = permutation.get(etype,None)
+                elementType = data["TYPE"]
+                elementName = InpNameToBasicTools[elementType]
+                per = permutation.get(elementType,None)
 
                 l = self.ReadCleanLine()
-                elements = res.GetElementsOfType(nametype)
-                initialcid = elements.GetNumberOfElements()
+                elements = res.GetElementsOfType(elementName)
+                initialNumberOfElements = elements.GetNumberOfElements()
 
                 while(True):
                     if l is None or not l or l[0]== "*" :
                         break
                     s = LineToListNoQuote(l)
                     oid = int(s[0])
-                    conn = [filetointernalid[x] for x in  map(int,s[1:]) ]
+                    conn = [fileToInternalIdPoint[x] for x in  map(int,s[1:]) ]
 
                     cid = elements.AddNewElement(conn,oid)-1
-                    if nametype not in FENames:
-                        FENames[nametype] = []
-                    FENames[nametype].append(etype)
-                    filetointernalidElement[oid] = (elements,cid)
+                    if elementName not in FENames:
+                        FENames[elementName] = []
+                    FENames[elementName].append(elementType)
+                    fileToInternalIdElement[oid] = (elements,cid)
 
                     l = self.ReadCleanLine()
 
                 if per is not None:
                     elements.connectivity = elements.connectivity[:,per]
 
-                finalcid = elements.GetNumberOfElements()
+                finalNumberOfElements = elements.GetNumberOfElements()
 
                 if "ELSET" in data:
-                    elset = data["ELSET"]
-                    elements.GetTag(elset).AddToTag(range(initialcid,finalcid))
-                elif etype == "CONN3D2":
-                    elements.GetTag("CONN3D2").AddToTag(range(initialcid,finalcid))
+                    elementSetName = data["ELSET"]
+                    elements.GetTag(elementSetName).AddToTag(range(initialNumberOfElements,finalNumberOfElements))
+                elif elementType == "CONN3D2":
+                    elements.GetTag("CONN3D2").AddToTag(range(initialNumberOfElements,finalNumberOfElements))
 
                 res.ComputeGlobalOffset()
                 continue
 
             if self.find(l,"*NSET")>-1:
                 data = LineToDic(l)
-                nsetName = data['NSET']
+                nodeSetName = data['NSET']
                 l  = self.ReadCleanLine()
-                nset = []
+                nodesIds = []
 
-                if "GENERATE" in ldata and ldata["GENERATE"]:
+                if "GENERATE" in localData and localData["GENERATE"]:
                     d = LineToList(l)
                     d = (list(map(int,d) ))
-                    nset = range(d[0],d[1]+1,d[2])
-                    tag = res.nodesTags.CreateTag(nsetName,False)
-                    tagsids = [filetointernalid[x] for x in  nset if x in filetointernalid ]
-                    if len(tagsids) != len(nset):
-                        print("Warning NSET GENERATE : not all the nset generated are present in the mesh ")
-                    tag.AddToTag(tagsids)
+                    nodesIds = range(d[0],d[1]+1,d[2])
+                    tag = res.nodesTags.CreateTag(nodeSetName,False)
+                    tagsIds = [fileToInternalIdPoint[x] for x in  nodesIds if x in fileToInternalIdPoint ]
+                    if len(tagsIds) != len(nodesIds):
+                        print("Warning NSET GENERATE : not all the node ids generated are present in the mesh ")
+                    tag.AddToTag(tagsIds)
                     l = self.ReadCleanLine()
                     continue
                 else:
@@ -329,16 +327,48 @@ class InpReader(ReaderBase):
                         if l.find("*") > -1 or not l:
                             break
                         s = l.replace(',', '').split()
-                        nset.extend(map(int,s))
+                        nodesIds.extend(map(int,s))
 
                         l = self.ReadCleanLine()
                         continue
 
-                tag = res.nodesTags.CreateTag(nsetName,False)
-                tag.AddToTag([filetointernalid[x] for x in  nset ])
+                tag = res.nodesTags.CreateTag(nodeSetName,False)
+                tag.AddToTag([fileToInternalIdPoint[x] for x in  nodesIds ])
+                continue
+
+            if len(fileToGlobalElementId) == 0:
+                for (oi,(elements, id))  in fileToInternalIdElement.items():
+                    fileToGlobalElementId[oi] = elements.globaloffset + id
+
+
+            if self.find(l,"*ELSET")>-1:
+                elementSetName = localData['ELSET']
+
+                l  = self.ReadCleanLine()
+                ds = []
+                tagsNames = []
+                while(True):
+                    if l is None or l.find("*") > -1 or not l:
+                        if len(ds) > 0:
+                            ids = [fileToGlobalElementId[dd] for dd in ds ]
+                            res.AddElementsToTag(ids, elementSetName )
+                        if len(tagsNames) >0 :
+                            for elName, elData, elIds in ElementFilter(res, tags=tagsNames):
+                                tag = elData.tags.CreateTag(elementSetName,False).AddToTag(elIds)
+                        break
+
+                    s = LineToListNoQuote(l)
+
+                    # number are ids, str are names
+                    ds.extend([int(ss) for ss in s if intFilter.match(ss) ] )
+                    tagsNames.extend([ss for ss in s if not intFilter.match(ss) ] )
+
+                    l = self.ReadCleanLine()
+                    continue
                 continue
 
             if self.find(l,"*DISTRIBUTION")>-1:
+
                 data = LineToDic(l)
                 location = data['LOCATION'] # "ELEMENT"
                 name = data['NAME'] # "ELEMENT"
@@ -355,6 +385,7 @@ class InpReader(ReaderBase):
                 else:
                     raise Exception("Error! ")
                 data = np.zeros((res.GetNumberOfElements(),NumberOfData))
+                buffer = np.zeros(NumberOfData)
                 if location == "ELEMENT":
                     l = self.ReadCleanLine()
                     s = l.split(',')
@@ -374,15 +405,21 @@ class InpReader(ReaderBase):
                             break
 
                         s = l.split(",")
-                        elset = s[0].split(".")[-1]
-                        s = list(map(float,s[1:]))
+                        elementTagName = s[0].split(".")[-1]
+                        buffer[0:len(s)-1] = np.array(s[1:], dtype = PBasicFloatType )
+
                         if len(s) < NumberOfData:
                             # multiline data
-                            s.extend(map(float,self.ReadCleanLine().replace(',', ' ').split()) )
+                            buffer[len(s)-1:] = np.fromstring(self.ReadCleanLine(), dtype =PBasicFloatType, sep="," )
+                            #s.extend( )
+                                     #map(float,self.ReadCleanLine().replace(',', ' ').split()) )
 
-                        s= np.array(s)
-                        for elname,eldata,elids in ElementFilter(res,tag=elset):
-                            data[elids+eldata.globaloffset,:] = s
+                        #else :
+                        #    s = np.array(s[1:], dtype = PBasicFloatType )        list(map(float,s[1:]))
+
+                        #s= np.array(s)
+                        for elementName, elementData, elementsIds in ElementFilter(res ,tag=elementTagName):
+                            data[elementsIds+elementData.globaloffset,:] = buffer
 
                         l = self.ReadCleanLine()
 
@@ -405,16 +442,7 @@ class InpReader(ReaderBase):
 
                 continue
 
-            if self.find(l,"*HEADING")>-1:
-                l = self.ReadCleanLine()
-                HEADING = ""
-                while(True):
-                    if l is None or l.find("*") > -1 or not l:
-                        break
-                    HEADING += str(l) + "\n"
-                    l = self.ReadCleanLine()
 
-                continue
 
             if self.find(l,"*MATERIAL") > -1:
                 data = LineToDic(l)
@@ -431,7 +459,7 @@ class InpReader(ReaderBase):
 
                     if t == "DISTRIBUTION":
                         print("Ignoring DISTRIBUTION")
-                        l = DischardTillNextStar(self.ReadCleanLine )
+                        l = DiscardTillNextStar(self.ReadCleanLine )
                         break
 
                     if t == "EXPANSION":
@@ -463,7 +491,7 @@ class InpReader(ReaderBase):
                         orient.SetOffset(s[6:9])
 
                 meta.orientations[name] = orient
-                l = DischardTillNextStar(self.ReadCleanLine )
+                l = DiscardTillNextStar(self.ReadCleanLine )
                 continue
 
             if self.find(l,"*SURFACE")>-1:
@@ -481,17 +509,17 @@ class InpReader(ReaderBase):
                         s = l.split(",")
                         originalElemNumber = int(s[0])
                         faceNumber = int(s[1].lstrip().rstrip()[-1])-1
-                        elements,cid = filetointernalidElement[originalElemNumber][0]
+                        elements,cid = fileToInternalIdElement[originalElemNumber][0]
                         connectivity = elements.connectivity[cid,:]
 
-                        typeAndConnectivity = EN.faces[elements.elementType][faceNumber]
-                        faceconn = connectivity[typeAndConnectivity[1]]
+                        faceType, faceLocalConnectivity = EN.faces[elements.elementType][faceNumber]
+                        faceConnectivity = connectivity[faceLocalConnectivity]
 
-                        elements = res.GetElementsOfType(typeAndConnectivity[0])
-                        cid = elements.AddNewElement(faceconn,-1)
-                        if nametype not in FENames:
-                            FENames[typeAndConnectivity[0]] = []
-                        FENames[typeAndConnectivity[0]].append("NA")
+                        elements = res.GetElementsOfType(faceType)
+                        cid = elements.AddNewElement(faceConnectivity,-1)
+                        if faceType not in FENames:
+                            FENames[faceType] = []
+                        FENames[faceType].append("NA")
 
                         elements.GetTag(name).AddToTag(cid-1)
                         l = self.ReadCleanLine()
@@ -506,7 +534,7 @@ class InpReader(ReaderBase):
     #*KINEMATIC
     #1, 6
 
-            if ldata["KEYWORD"] == "STEP":
+            if localData["KEYWORD"] == "STEP":
                 data = LineToDic(l)
                 name = data["NAME"]
 
@@ -521,22 +549,22 @@ class InpReader(ReaderBase):
 
                     if "KEYWORD" in data and data["KEYWORD"] == "STATIC":
                         cs.type = "STATIC"
-                    l = DischardTillNextStar(self.ReadCleanLine)
+                    l = DiscardTillNextStar(self.ReadCleanLine)
                 continue
 
 
             print(l)
-            print(ldata)
+            print(localData)
             print(("line starting with <<"+l[:20]+">> not considered in the reader"))
             l = self.ReadCleanLine()
             raise Exception("Error reading file")
 
         self.EndReading()
         res.originalIDNodes = np.squeeze(res.originalIDNodes)
-        fenames = []
-        for elname in res.elements:
-            fenames.extend(FENames[elname])
-        res.elemFields["FE Names"] = np.array(fenames)
+        feNames = []
+        for elementName in res.elements:
+            feNames.extend(FENames[elementName])
+        res.elemFields["FE Names"] = np.array(feNames)
         res.PrepareForOutput()
         self.output = (res,meta)
         return res
