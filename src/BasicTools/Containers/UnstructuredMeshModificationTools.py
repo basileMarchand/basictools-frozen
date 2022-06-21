@@ -141,7 +141,7 @@ def CleanLonelyNodes(res,out=None):
         out.originalIDNodes = originalIDNodes
         #node tags
         for tag in res.nodesTags :
-            outtag = out.nodesTags.CreateTag(tag.name)
+            outtag = out.GetNodalTag(tag.name)
             outtag.SetIds(NewIndex[np.extract(usedNodes[tag.GetIds()],tag.GetIds() )])
 
         for elementName in res.elements:
