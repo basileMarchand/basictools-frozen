@@ -152,16 +152,16 @@ class Filter(BOO):
         if len(self.tags) == 0:
             return None
 
-        taglist = list(tags[t] for t in self.tags if t in tags)
+        tagList = list(tags[t] for t in self.tags if t in tags)
 
-        if len(taglist) == 0:
+        if len(tagList) == 0:
             return []
 
         #fast path
-        if len(taglist) == 1 :
-            return taglist[0].GetIds()
+        if len(tagList) == 1 :
+            return tagList[0].GetIds()
 
-        return reduce(np.union1d, (tag.GetIds()  for tag in taglist)  )
+        return reduce(np.union1d, (tag.GetIds()  for tag in tagList)  )
 
     def _CheckMask_(self, start:PBasicIndexType, size:PBasicIndexType) -> Union[np.ndarray,None]:
         """Internal function to compute the ids based on the mask
@@ -258,7 +258,7 @@ class NodeFilter(Filter):
         Parameters
         ----------
         pos : ArrayLike
-            (n,3) size array with the positions to be treate
+            (n,3) size array with the positions to be treated
         numberOfObjects : PBasicIndexType
             total number of points
 
@@ -275,12 +275,12 @@ class NodeFilter(Filter):
 
         return reduce(np.logical_or, (zone(pos)<=0 for zone in self.zones )  )
 
-    def GetIdsToTreat(self,notused:Any=None)-> Union[np.ndarray,Collection]:
+    def GetIdsToTreat(self,notUsed:Any=None)-> Union[np.ndarray,Collection]:
         """Get the nodes selected by this filter
 
         Parameters
         ----------
-        notused : Any, optional
+        notUsed : Any, optional
             Not Used, by default None
 
         Returns
@@ -474,7 +474,7 @@ class FilterOP(BOO):
         Function to apply the filter  using an operator
 
         :param callable op: An instance of a callable object, the object can have
-            the PreCondition function and/or the Postcondition function. Theses
+            the PreCondition function and/or the post-condition function. Theses
             functions are called (if exist) (with the mesh as the first argument)
             before and after the main call ( op(name,elements,ids) )
         """
@@ -489,7 +489,7 @@ class FilterOP(BOO):
         Function to apply filter using an operator
 
         :param callable op: An instance of a callable object, the object can have
-            the PreCondition function and/or the Postcondition function. Theses
+            the PreCondition function and/or the post-condition function. Theses
             functions are called (if exist) (with the mesh as the first argument)
             before and after the main call ( op(mesh,nodes,ids) )
         """
@@ -690,7 +690,7 @@ class ElementFilter(Filter):
         Raises
         ------
         Exception
-            if the string is not permited
+            if the string is not permitted
         """
         if zoneTreatment in ["center", "allnodes", "leastonenode"]:
             self.zoneTreatment = zoneTreatment
@@ -780,12 +780,12 @@ class ElementFilter(Filter):
         if self.dimensionality is None:
             return None
         else:
-            eldim = EN.dimension[elements.elementType]
+            elementDimension = EN.dimension[elements.elementType]
             if self.dimensionality  >= 0:
-                if eldim != self.dimensionality:
+                if elementDimension != self.dimensionality:
                     return False
             else:
-                if eldim == (-self.dimensionality):
+                if elementDimension == (-self.dimensionality):
                     return False
         return True
 
@@ -1149,10 +1149,10 @@ class ElementCounter(ElementFilterBaseOperator):
         self.cpt += len(ids)
 
 def ElementFilterToImplicitField(elementFilter:ElementFilter, pseudoDistance:int=2) -> np.ndarray:
-    """Function to generate an iso zero levelset on the mesh to represent
+    """Function to generate an iso zero level-set on the mesh to represent
     the shape of the filter. This discretized iso zero on the mesh cant always
     hold a 'perfect' representation of the filter, so a modified iso zero is
-    created. An additional parameter pseudo-istance can be increased to create
+    created. An additional parameter pseudo-distance can be increased to create
     a pseudo distance. This field is created using the connectivity and not
     the real distances.
 
@@ -1171,17 +1171,17 @@ def ElementFilterToImplicitField(elementFilter:ElementFilter, pseudoDistance:int
     def UpdateInsideOutsideNodes(mesh, phi, insideNodes=None,outsideNodes=None, iso=0.0):
         """ function to build masks (insideNodes, outsideNodes) with the information
         about if a particular nodes is connected (through an element) to the
-        inside phi < iso or to the ouside phi > iso
+        inside phi < iso or to the outside phi > iso
         """
         for name, data  in mesh.elements.items():
             if mesh.GetDimensionality() == EN.dimension[name]:
                 phis = phi[data.connectivity]
                 if insideNodes is not None:
-                    elmask = np.any(phis<iso,axis=1)
-                    insideNodes[ data.connectivity[elmask] ] = True
+                    elementMask = np.any(phis<iso,axis=1)
+                    insideNodes[ data.connectivity[elementMask] ] = True
                 if outsideNodes is not None:
-                    elmask = np.any(phis>iso,axis=1)
-                    outsideNodes[ data.connectivity[elmask] ] = True
+                    elementMask = np.any(phis>iso,axis=1)
+                    outsideNodes[ data.connectivity[elementMask] ] = True
 
     mesh = elementFilter.mesh
     phi = np.zeros(mesh.GetNumberOfNodes())
@@ -1222,9 +1222,9 @@ def ElementFilterToImplicitField(elementFilter:ElementFilter, pseudoDistance:int
             insideNodes.fill(False)
             UpdateInsideOutsideNodes(mesh, phi, insideNodes, None, float(i) )
             mask = phi == i
-            finalmaks = And(mask, np.logical_not(insideNodes) )
-            if np.any(finalmaks):
-                phi[finalmaks] = i+1
+            finalMask = And(mask, np.logical_not(insideNodes) )
+            if np.any(finalMask):
+                phi[finalMask] = i+1
             else:
                 insideWork = False
 
@@ -1232,9 +1232,9 @@ def ElementFilterToImplicitField(elementFilter:ElementFilter, pseudoDistance:int
             outsideNodes.fill(False)
             UpdateInsideOutsideNodes(mesh, phi, None, outsideNodes, float(-i) )
             mask = phi == -i
-            finalmaks = And(mask, np.logical_not(outsideNodes) )
-            if np.any(finalmaks):
-                phi[finalmaks] = -(i+1)
+            finalMask = And(mask, np.logical_not(outsideNodes) )
+            if np.any(finalMask):
+                phi[finalMask] = -(i+1)
             else:
                 outsideWork = False
 
@@ -1308,7 +1308,7 @@ def CheckIntegrity( GUI=False):
 
     if cpt != 6: # pragma: no cover
         raise
-    print("Number of Element touching  ntag x1y0z1 {}".format(cpt))
+    print(f"Number of Element touching the node tag 'x1y0z1' {cpt}")
 
     mask = np.zeros(mesh.GetNumberOfElements(),dtype=bool)
     mask[0] = True
