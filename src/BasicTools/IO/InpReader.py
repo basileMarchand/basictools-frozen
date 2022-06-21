@@ -239,8 +239,6 @@ class InpReader(ReaderBase):
                     originalIds = []
 
                     cpt:PBasicIndexType = 0
-                    #res.originalIDNodes = np.empty((0,1), int)
-                    #res.nodes = np.empty((0,3), float)
                     l = self.ReadCleanLine()
                     dim:PBasicIndexType = 3
                     s = None
