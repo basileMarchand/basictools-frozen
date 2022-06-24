@@ -14,6 +14,7 @@ from BasicTools.Containers.Filters import ElementFilter
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject as BOO
 from BasicTools.FE.SymWeakForm import Gradient,Divergence, GetField,GetTestField, GetScalarField, Inner
 import BasicTools.FE.SymWeakForm as swf
+import BasicTools.Helpers.ParserHelper as PH
 
 class Physics(BOO):
     """Basic class to hold the information about symbolic terms"""
@@ -157,6 +158,12 @@ class MecaPhysics(Physics):
 
         self.materialOrientations = np.eye(dim, dtype = PBasicFloatType)
         self.planeStress = True
+
+    def SetYoung(self,val ):
+        self.coeffs["young"] = PH.ReadFloat(val)
+
+    def SetPoisson(self,val ):
+        self.coeffs["poisson"] = PH.ReadFloat(val)
 
     def SetMecaPrimalName(self,name):
         self.mecaPrimalName = (name,self.dim)
