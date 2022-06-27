@@ -35,7 +35,7 @@ def ReadMesh(filename,out=None,timeToRead=-1):# pragma: no cover
 
 def ReadMeshAndPopulateVtkObject(filename, vtkobject= None,TagsAsFields=False):# pragma: no cover
     mesh = ReadMesh(filename)
-    from BasicTools.Containers.vtkBridge import MeshToVtk
+    from BasicTools.Bridges.vtkBridge import MeshToVtk
     return MeshToVtk(mesh, vtkobject,TagsAsFields=TagsAsFields)
 
 def CheckIntegrity():

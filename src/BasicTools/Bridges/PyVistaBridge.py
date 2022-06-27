@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
 
 def MeshToPyVista(mesh,TagsAsFields=False):
-    from BasicTools.Containers.vtkBridge import MeshToVtk
+    from BasicTools.Bridges.vtkBridge import MeshToVtk
     import pyvista as pv
     return pv.wrap(MeshToVtk(mesh,TagsAsFields=TagsAsFields))
 
-
 def PyVistaToMesh(pvmesh,FieldsAsTags=False):
-    from BasicTools.Containers.vtkBridge import VtkToMesh
+    from BasicTools.Bridges.vtkBridge import VtkToMesh
     return VtkToMesh(pvmesh,FieldsAsTags=FieldsAsTags)
 
 
@@ -50,7 +49,7 @@ def CheckIntegrity(GUI=False):
     if GUI:
         PlotMesh(res)
         PlotMesh(resII,eye_dome_lighting=True, cpos=[-1, -1, 0.2], color=True)
-        
+
     return 'ok'
 
 if __name__ == '__main__':

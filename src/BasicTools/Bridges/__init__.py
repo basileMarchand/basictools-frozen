@@ -5,5 +5,8 @@
 #
 
 
-_test = ["CGNSBridge"
+_test = ["CGNSBridge",
+         "vtkBridge",
+         'MeshIOBridge',
+         'PyVistaBridge',
          ]

@@ -30,12 +30,12 @@ try:
     from vtkmodules.vtkCommonDataModel import vtkUnstructuredGrid
 
     PrintDebug("Loading libs")
-    from BasicTools.Containers.vtkBridge import GetInputVtk, GetOutputVtk, GetInputBasicTools,  SetOutputBasicTools, VtkFieldToNumpyFieldWithDims
+    from BasicTools.Bridges.vtkBridge import GetInputVtk, GetOutputVtk, GetInputBasicTools,  SetOutputBasicTools, VtkFieldToNumpyFieldWithDims
     from BasicTools.IO.IOFactory import InitAllReaders
     from BasicTools.IO.IOFactory import ReaderFactory
     from BasicTools.IO.IOFactory import InitAllWriters
     from BasicTools.IO.IOFactory import WriterFactory
-    from BasicTools.Containers.vtkBridge import VtkToMesh, VtkToMeshOnlyMeta
+    from BasicTools.Bridges.vtkBridge import VtkToMesh, VtkToMeshOnlyMeta
     import BasicTools.Containers.ElementNames as EN
     PrintDebug("Loading")
 
@@ -49,7 +49,7 @@ try:
     try :
         PrintDebug("loading meshio readers")
 
-        import BasicTools.Containers.MeshIOBridge as MeshIOBridge
+        import BasicTools.Bridges.MeshIOBridge as MeshIOBridge
         MeshIOBridge.InitAllReaders()
         MeshIOBridge.AddReadersToBasicToolsFactory()
         PrintDebug("loading meshio readers Done")
@@ -211,7 +211,7 @@ try:
 
     try :
         PrintDebug("loading meshio  Done")
-        import BasicTools.Containers.MeshIOBridge as MeshIOBridge
+        import BasicTools.Bridges.MeshIOBridge as MeshIOBridge
         MeshIOBridge.InitAllWriters()
         MeshIOBridge.AddWritersToBasicToolsFactory()
         PrintDebug("loading meshio writers Done")

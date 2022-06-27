@@ -19,7 +19,7 @@ def LoadReadersAndWriters(ops = None):
         IOF.InitAllWriters()
 
     if ops is not None and ops.get("MeshIO",False):
-        from BasicTools.Containers.MeshIOBridge import InitAllReaders,InitAllWriters,AddReadersToBasicToolsFactory,AddWritersToBasicToolsFactory
+        from BasicTools.Bridges.MeshIOBridge import InitAllReaders,InitAllWriters,AddReadersToBasicToolsFactory,AddWritersToBasicToolsFactory
         InitAllReaders()
         InitAllWriters()
         AddReadersToBasicToolsFactory()
@@ -86,7 +86,7 @@ def Convert(inputfilename,outputfilename,ops):
           else:
             mesh = ReadMesh(inputfilename,timeToRead = ops["timeToRead"])
             if ops["PlotOnScreen"]:
-                from BasicTools.Containers.vtkBridge import PlotMesh
+                from BasicTools.Bridges.vtkBridge import PlotMesh
                 PlotMesh(mesh)
             if len(outputfilename) == 0:
                 from BasicTools.Containers.UnstructuredMeshInspectionTools import PrintMeshInformation

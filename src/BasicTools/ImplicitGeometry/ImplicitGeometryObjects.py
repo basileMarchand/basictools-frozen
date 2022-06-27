@@ -719,7 +719,7 @@ class ImplicitGeometryStl(ImplicitGeometryBase):
 
 
         from vtkmodules.vtkFiltersGeometry import vtkDataSetSurfaceFilter
-        from BasicTools.Containers.vtkBridge import MeshToVtk
+        from BasicTools.Bridges.vtkBridge import MeshToVtk
         vtkmesh = MeshToVtk(mesh)
 
         filt = vtkDataSetSurfaceFilter()
@@ -736,7 +736,7 @@ class ImplicitGeometryStl(ImplicitGeometryBase):
             if dimension[name] >2:
                 return self.SetMesh(mesh)
 
-        from BasicTools.Containers.vtkBridge import MeshToVtk
+        from BasicTools.Bridges.vtkBridge import MeshToVtk
         vtkmesh = MeshToVtk(mesh)
         self.SetSurfaceUsingVtkPolyData(vtkmesh)
 

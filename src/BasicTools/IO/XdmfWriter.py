@@ -732,8 +732,6 @@ class XdmfWriter(WriterBase):
 
             self.filePointer.write('    <Information Name="QP" Value="')#
             self.filePointer.write(str(EN.numberOfNodes[elemName]) + " ")
-            #from BasicTools.Containers.vtkBridge import vtkNumberByElementName
-            #self.filePointer.write(str(vtkNumberByElementName[elemName]) + " ")
             self.filePointer.write(str(XdmfNumber[elemName]) + " ")
 
 

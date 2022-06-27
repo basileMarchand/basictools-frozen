@@ -8,7 +8,7 @@ import numpy as np
 
 import BasicTools.Containers.ElementNames as EN
 from BasicTools.IO.ReaderBase import ReaderBase
-from BasicTools.Containers.vtkBridge import VtkToMesh
+from BasicTools.Bridges.vtkBridge import VtkToMesh
 from BasicTools.IO.IOFactory import RegisterReaderClass
 
 class VtkReader(ReaderBase):

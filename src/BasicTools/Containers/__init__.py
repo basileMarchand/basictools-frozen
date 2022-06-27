@@ -5,7 +5,7 @@
 #
 
 
-_test = ["vtkBridge",
+_test = [
            "UnstructuredMesh",
            'UnstructuredMeshCreationTools',
            'UnstructuredMeshFieldOperations',
@@ -20,7 +20,5 @@ _test = ["vtkBridge",
            'Filters',
            'FiltersTools',
            'SymExpr',
-           'MeshIOBridge',
-           'PyVistaBridge',
            'Tags',
            ]

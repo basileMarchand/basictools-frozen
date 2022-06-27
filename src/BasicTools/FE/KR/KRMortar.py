@@ -703,7 +703,7 @@ def CheckIntegrityIntersectionConvexHull3D(GUI=False):
 
 
     if GUI:# pragma: no cover
-        from BasicTools.Containers.vtkBridge import PlotMesh
+        from BasicTools.Bridges.vtkBridge import PlotMesh
         PlotMesh(mesh)
         from BasicTools.Actions.OpenInParaView import OpenInParaView
         OpenInParaView(mesh=mesh)
@@ -812,7 +812,7 @@ def CheckIntegrity1DInterface2Meshes(GUI=False):
     obj._debug_IntegrationMesh = UnstructuredMesh()
     CH = obj.GenerateEquations(meshI,fieldsI,CH=None,meshII=meshII,fieldsII=fieldsII)
     if GUI : # pragma: no cover
-        from BasicTools.Containers.vtkBridge import PlotMesh
+        from BasicTools.Bridges.vtkBridge import PlotMesh
         PlotMesh(meshI)
         PlotMesh(meshII)
         PlotMesh(obj._debug_IntegrationMesh)
@@ -869,7 +869,7 @@ def CheckIntegrity1DInterface(GUI=False):
     CH.SetNumberOfDofs(5)
     print(CH.ToSparseFull().toarray())
     if GUI : # pragma: no cover
-        from BasicTools.Containers.vtkBridge import PlotMesh
+        from BasicTools.Bridges.vtkBridge import PlotMesh
         PlotMesh(mesh)
         PlotMesh(obj._debug_IntegrationMesh)
     return "ok"
@@ -915,7 +915,7 @@ def CheckIntegrity2DScalar(GUI=False):
     print(obj)
     print(obj.GenerateEquations(mesh,fields))
     if GUI: # pragma: no cover
-        from BasicTools.Containers.vtkBridge import PlotMesh
+        from BasicTools.Bridges.vtkBridge import PlotMesh
         PlotMesh(obj._debug_IntegrationMesh)
 
     return "ok"
@@ -959,7 +959,7 @@ def CheckIntegrity3DVector(GUI=False):
     print(obj.GenerateEquations(mesh,fields))
 
     if GUI: # pragma: no cover
-        from BasicTools.Containers.vtkBridge import PlotMesh
+        from BasicTools.Bridges.vtkBridge import PlotMesh
         PlotMesh(obj._debug_IntegrationMesh)
 
     return "ok"

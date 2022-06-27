@@ -771,7 +771,7 @@ def CheckIntegrity_SubDivideMesh(GUI=False):
     print(mesh)
     print(outmesh)
     if GUI:
-        from BasicTools.Containers.vtkBridge import PlotMesh
+        from BasicTools.Bridges.vtkBridge import PlotMesh
         PlotMesh(outmesh)
 
     from BasicTools.IO.XdmfWriter import WriteMeshToXdmf

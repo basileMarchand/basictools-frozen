@@ -108,7 +108,7 @@ options.CatalystLiveURL = "{self.hostname}:{self.port}"
         self.currentTime += dt
         self.currentStep += 1
 
-        from BasicTools.Containers.vtkBridge import MeshToVtk
+        from BasicTools.Bridges.vtkBridge import MeshToVtk
         nodeFieldsBack = meshObject.nodeFields
         elemFieldsBack = meshObject.elemFields
         meshObject.nodeFields = { k:v for k,v in zip(PointFieldsNames,PointFields) }
