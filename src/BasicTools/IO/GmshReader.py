@@ -4,32 +4,86 @@
 # file 'LICENSE.txt', which is part of this source code package.
 #
 
-""" Gmsh file reader (gmesh mesh files)
+""" Gmsh file reader (gmsh mesh files)
 
 """
 import numpy as np
+from typing import Optional, Dict, List
 
 import BasicTools.Containers.ElementNames as EN
-import BasicTools.Containers.UnstructuredMesh  as UM
+from BasicTools.Containers.UnstructuredMesh  import UnstructuredMesh
 from BasicTools.IO.ReaderBase import ReaderBase
 from BasicTools.NumpyDefs import PBasicIndexType
 from BasicTools.IO.GmshTools import gmshNumber,PermutationGmshToBasicTools
 
-def ReadGmsh(fileName=None,string=None,out=None,**kwargs):
+def ReadGmsh(fileName: Optional[str]=None, string: Optional[str]=None, out=None, **kwargs) -> UnstructuredMesh:
+    """Function to read Gmsh files into a UnstructuredMesh
+
+    Parameters
+    ----------
+    fileName : Optional[str], optional
+        FileName of the file to be read, by default None
+    string : Optional[str], optional
+        the string with the data in format gmsh, by default None
+    out : UnstructuredMesh, optional
+        a empty UnstructuredMesh, by default None
+
+    Returns
+    -------
+    UnstructuredMesh
+        The mesh
+    """
     reader = GmshReader()
     reader.SetFileName(fileName)
     reader.SetStringToRead(string)
+
+    if "readGeoTags" in kwargs:
+        reader.readGeoTags = kwargs["readGeoTags"]
+        kwargs.pop("readGeoTags")
+
+    if "readPhyTags" in kwargs:
+        reader.readPhyTags = kwargs["readPhyTags"]
+        kwargs.pop("readPhyTags")
+
     reader.Read(fileName=fileName, string=string,out=out,**kwargs)
     return reader.output
 
-
 class GmshReader(ReaderBase):
-    def __init__(self):
-        super(GmshReader,self).__init__()
+    """Class to read Gmsh files into a UnstructuredMesh
+
+    Parameters
+    ----------
+    readGeoTags : Bool
+        option to activate/deactivate the reading of the Geometrical tags of the files
+
+    readPhyTags : Bool
+        option to activate/deactivate the reading of the Physical tags of the files
+    """
+    def __init__(self)->None:
+        super().__init__()
+        self.readGeoTags = True
+        self.readPhyTags = True
+
         self.commentChar= "%"
         self.readFormat = 'r'
 
-    def Read(self,fileName=None,string=None, out=None):
+    def Read(self, fileName: Optional[str]=None, string: Optional[str]=None, out: Optional[UnstructuredMesh]=None) -> UnstructuredMesh:
+        """Function to read Gmsh files into a UnstructuredMesh
+
+        Parameters
+        ----------
+        fileName : Optional[str], optional
+            FileName of the file to be read, by default None
+        string : Optional[str], optional
+            the string with the data in format gmsh, by default None
+        out : UnstructuredMesh, optional
+            a empty UnstructuredMesh, by default None
+
+        Returns
+        -------
+        UnstructuredMesh
+            The mesh
+        """
 
         if fileName is not None:
           self.SetFileName(fileName)
@@ -40,19 +94,19 @@ class GmshReader(ReaderBase):
         self.StartReading()
 
         if out is None:
-            res = UM.UnstructuredMesh()
+            res = UnstructuredMesh()
         else:
             res = out
 
+        fileToInternalId: Dict[str,PBasicIndexType] = {}
 
-        filetointernalid = {}
-        #filetointernalidElem =  {}
-        tagsNames = []
+        tagsNames: List[str] = []
+
         while(True):
             l = self.ReadCleanLine()
             if not l: break
 
-            if l.find("$MeshFormat")>-1 :
+            if l.find("$MeshFormat")>-1:
                 while(True):
                     line = self.ReadCleanLine()
                     l = line.strip('\n').lstrip().rstrip()
@@ -61,14 +115,14 @@ class GmshReader(ReaderBase):
                         break
                 continue
 
-            if l.find("$Nodes")>-1 :
+            if l.find("$Nodes")>-1:
                 l = self.ReadCleanLine()
 
                 nbNodes = int(l.split()[0])
                 #print("Reading "+str(nbNodes)+ " Nodes")
                 res.nodes = np.empty((nbNodes,3))
                 res.originalIDNodes= np.empty((nbNodes,),dtype=PBasicIndexType)
-                cpt =0;
+                cpt =0
                 while(True):
                     line = self.ReadCleanLine()
                     l = line.strip('\n').lstrip().rstrip()
@@ -78,12 +132,12 @@ class GmshReader(ReaderBase):
                     s = l.split()
                     if cpt == nbNodes :
                         raise(Exception("More points than the number of point in the header (fix your file!!!)")) # pragma: no cover
-                    filetointernalid[s[0]] = cpt
+                    fileToInternalId[s[0]] = cpt
                     res.originalIDNodes[cpt] = int(s[0])
                     res.nodes[cpt,:] = list(map(float,s[1:]))
                     cpt +=1
-
                 continue
+
             if l.find("$PhysicalNames")>-1 :
                 l = self.ReadCleanLine()
                 numberOfTags = int(l)
@@ -104,21 +158,16 @@ class GmshReader(ReaderBase):
 
                 line = self.ReadCleanLine()
                 if line.find("$EndPhysicalNames") == -1:
-                    print("Specting $EndPhysicalNames Keyword in the file (corrupted file??")
-
+                    print("Expecting $EndPhysicalNames Keyword in the file (corrupted file??")
                 continue
-
 
             if l.find("$Elements")>-1 :
                 line = self.ReadCleanLine()
                 l = line.strip('\n').lstrip().rstrip()
 
                 nbElements = int(l.split()[0])
-                #print("Reading "+str(nbElements)+ " Elements")
-                #res.nodes = np.empty((nbNodes,dim))
-                #res.originalIDNodes= np.empty((nbNodes,))
-                allTags = {}
-                cpt =0;
+                allTags: Dict[str, Dict[str,PBasicIndexType]] = {}
+                cpt: PBasicIndexType =0
                 while(True):
                     l = self.ReadCleanLine()
                     if l.find("$EndElements") > -1:
@@ -131,26 +180,26 @@ class GmshReader(ReaderBase):
 
                     oid = int(s[0])
                     gmshElemType = s[1]
-                    nametype = gmshNumber[gmshElemType]
+                    nameType = gmshNumber[gmshElemType]
 
-                    ntags = int(s[2])
+                    nTags = int(s[2])
 
-                    conn = [filetointernalid[x] for x in  s[ntags+3:] ]
-                    if nametype in PermutationGmshToBasicTools:
-                        conn = [conn[x] for x in PermutationGmshToBasicTools[nametype]]
-                    elements = res.elements.GetElementsOfType(nametype)
-                    elnumber = elements.AddNewElement(conn,oid)-1
-                    tags = allTags.setdefault(nametype,{})
-                    if ntags >=0 :
-                        tags.setdefault("PhyTag"+s[3],[]).append(elnumber)
-                    if ntags >=1 :
-                        tags.setdefault("GeoTag"+s[4],[]).append(elnumber)
-                    for n in range(2, ntags):
-                        tags.setdefault("ExtraTag"+str(n-2),[]).append(elnumber)
+                    conn = [fileToInternalId[x] for x in  s[nTags+3:] ]
+                    if nameType in PermutationGmshToBasicTools:
+                        conn = [conn[x] for x in PermutationGmshToBasicTools[nameType]]
+                    elements = res.elements.GetElementsOfType(nameType)
+                    elNumber = elements.AddNewElement(conn,oid)-1
+                    tags = allTags.setdefault(nameType,{})
+                    if nTags >=0 and self.readPhyTags:
+                        tags.setdefault("PhyTag"+s[3],[]).append(elNumber)
+                    if nTags >=1 and self.readGeoTags:
+                        tags.setdefault("GeoTag"+s[4],[]).append(elNumber)
+                    for n in range(2, nTags):
+                        tags.setdefault("ExtraTag"+str(n-2),[]).append(elNumber)
 
                     cpt +=1
-                for nametype,tags in allTags.items():
-                    elements = res.elements.GetElementsOfType(nametype)
+                for nameType,tags in allTags.items():
+                    elements = res.elements.GetElementsOfType(nameType)
                     for name,ids in tags.items():
                         elements.tags.CreateTag(name).SetIds(ids)
                 del allTags
@@ -181,11 +230,9 @@ class GmshReader(ReaderBase):
 from BasicTools.IO.IOFactory import RegisterReaderClass
 RegisterReaderClass(".msh",GmshReader)
 
-
-
 def CheckIntegrity():
 
-    __teststring = u"""
+    __testString = u"""
 $MeshFormat
 2.2 0 8
 $EndMeshFormat
@@ -230,7 +277,7 @@ $EndElements
 this is a comment
 """
 
-    res = ReadGmsh(string=__teststring)
+    res = ReadGmsh(string=__testString)
 
     print("----")
     print(res.nodes)
@@ -240,7 +287,7 @@ this is a comment
 
     from BasicTools.Helpers.Tests import TestTempDir
     newFileName = TestTempDir().GetTempPath()+"mshFile"
-    open(newFileName,'w').write(__teststring)
+    open(newFileName,'w').write(__testString)
     res = ReadGmsh(fileName=newFileName)
     print(res)
     return 'ok'
