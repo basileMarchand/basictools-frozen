@@ -1097,6 +1097,14 @@ class FrozenFilter(FilterOP):
             self.__frozenData[name] = (data,self.filters[0].GetIdsToTreat(data) )
 
     def IsEquivalent(self, other):
+        for name,(data,ids) in self.__frozenData.items():
+            ids2 = other.GetIdsToTreat(data)
+            if len(ids) != len(ids2):
+                return False
+            if np.any(np.asarray(ids) != np.asarray(ids2)):
+                return False
+        return True
+
         return self.filters[0].IsEquivalent(other)
 
     def GetIdsToTreat(self, elements):
@@ -1114,6 +1122,8 @@ class FrozenFilter(FilterOP):
               - a np.ndarray with the ids to treat
         """
         for name,(data,ids) in self.__frozenData.items():
+            if len(ids) == 0:
+                continue
             yield name, data, ids
 
 class ElementFilterBaseOperator():
