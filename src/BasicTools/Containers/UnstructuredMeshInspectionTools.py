@@ -5,6 +5,7 @@
 #
 from typing import Dict, List, Optional, Tuple
 import numpy as np
+
 from BasicTools.Containers.Filters import ElementFilter
 from BasicTools.FE.Fields.FEField import FEField
 
@@ -15,7 +16,8 @@ from BasicTools.Containers.UnstructuredMesh import ElementsContainer, Unstructur
 from BasicTools.Containers.UnstructuredMeshModificationTools import CleanLonelyNodes
 from BasicTools.NumpyDefs import PBasicIndexType
 
-def GetDataOverALine(startPoint:ArrayLike, stopPoint:ArrayLike, nbPoints:int, mesh:UnstructuredMesh, fields:List, method:Optional[str]=None)-> UnstructuredMesh:
+
+def GetDataOverALine(startPoint: ArrayLike, stopPoint: ArrayLike, nbPoints: int, mesh: UnstructuredMesh, fields: List, method: Optional[str]=None)-> UnstructuredMesh:
     """Compute the values of a mesh/field over a line
     startPoint and stopPoint are used to construct a line with nbPoints points.
     the data in mesh.nodeFields, mesh.elemFields and fields are evaluated at every point of the line
@@ -48,7 +50,7 @@ def GetDataOverALine(startPoint:ArrayLike, stopPoint:ArrayLike, nbPoints:int, me
     Exception
         In the case an IPField is present in the 'fields' argument
     """
-    res:Dict[str,np.ndarray] = {}
+    res: Dict[str,np.ndarray] = {}
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateUniformMeshOfBars
 
     lineMesh = CreateUniformMeshOfBars(startPoint,stopPoint,nbPoints)
@@ -184,7 +186,7 @@ def GetElementsFractionInside(field, points, name, elements, ids):
 
     return res
 
-def GetVolumePerElement(inmesh:UnstructuredMesh, elementFilter:Optional[ElementFilter]=None ) -> np.ndarray:
+def GetVolumePerElement(inmesh: UnstructuredMesh, elementFilter: Optional[ElementFilter]=None ) -> np.ndarray:
     """Compute the volume (surface for 2D element and length for 1De elements) for each element selected by the elementFilter
 
     Parameters
@@ -216,7 +218,7 @@ def GetVolumePerElement(inmesh:UnstructuredMesh, elementFilter:Optional[ElementF
     _,f  = IntegrateGeneral( mesh=inmesh, wform=wform, constants={}, fields=[F], unkownFields=unkownFields,elementFilter=elementFilter)
     return f
 
-def GetVolume(inmesh:UnstructuredMesh) -> PBasicFloatType:
+def GetVolume(inmesh: UnstructuredMesh) -> PBasicFloatType:
     """Compute the volume of the mesh
     Only element of the bigger dimensionality are taken into account
 
@@ -310,7 +312,7 @@ def GetDualGraph(inmesh, maxNumConnections=200):
     dualGraph = dualGraph[:,0:maxsize]
     return dualGraph,usedPoints
 
-def ExtractElementsByElementFilter(inmesh: UnstructuredMesh, elementFilter:ElementFilter, copy:bool=True) -> UnstructuredMesh:
+def ExtractElementsByElementFilter(inmesh: UnstructuredMesh, elementFilter: ElementFilter, copy:bool=True) -> UnstructuredMesh:
     """Create a new mesh with the selected element by elementFilter
     For the moment this function make a copy of nodes
 
@@ -349,7 +351,7 @@ def ExtractElementsByElementFilter(inmesh: UnstructuredMesh, elementFilter:Eleme
         if len(ids) == data.GetNumberOfElements() and copy == False:
             outElements = type(data)(name)
             outElements.connectivity = data.connectivity
-            outElements.originalIds = data.originalIds
+            outElements.originalIds = np.arange(data.GetNumberOfElements(), dtype=PBasicIndexType)
             outElements.cpt = data.GetNumberOfElements()
             outElements.tags = data.tags
             outmesh.elements[name] = outElements
@@ -359,7 +361,7 @@ def ExtractElementsByElementFilter(inmesh: UnstructuredMesh, elementFilter:Eleme
     outmesh.PrepareForOutput()
     return outmesh
 
-def ExtractElementsByMask(inelems:ElementsContainer, mask:ArrayLike) -> ElementsContainer:
+def ExtractElementsByMask(inelems: ElementsContainer, mask: ArrayLike) -> ElementsContainer:
     """Create a new ElementContainer with the element selected by the mask
     Note: The connectivity of the element is not changed.
 
@@ -484,7 +486,62 @@ def ExtractElementByTags(inmesh,tagsToKeep, allNodes=False,dimensionalityFilter=
     outmesh.PrepareForOutput()
     return outmesh
 
-def EnsureUniquenessElements(mesh:UnstructuredMesh)->None:
+def ComputeMeshDensityAtNodes(mesh: UnstructuredMesh)-> np.ndarray:
+    """Function to compute the mesh size at each point
+    This is done using the length of the bars of each element and averaging the data at nodes.
+    All the element are treated, even the lower dimensionality element (not the 0D elements of course).
+    This means the triangles in the surface can affect the values of the nodes on the surface
+    No weighting is done.
+
+    Parameters
+    ----------
+    mesh : UnstructuredMesh
+        The input mesh
+
+    Returns
+    -------
+    np.ndarray
+        a numpy array (node field) with average of the mesh size at each point
+    """
+    nbNodes = mesh.GetNumberOfNodes()
+    result = np.zeros(nbNodes,dtype=PBasicFloatType)
+    cpt = np.zeros(nbNodes,dtype=PBasicIndexType)
+
+    posOfNodes = mesh.GetPosOfNodes()
+
+    def AddBarSizesToOutput(connectivityOfBars):
+
+        dx = posOfNodes[connectivityOfBars[:,0],0] - posOfNodes[connectivityOfBars[:,1],0]
+        dy = posOfNodes[connectivityOfBars[:,0],1] - posOfNodes[connectivityOfBars[:,1],1]
+        if posOfNodes.shape[1] == 3:
+            dz = posOfNodes[connectivityOfBars[:,0],2] - posOfNodes[connectivityOfBars[:,1],2]
+        else:
+            dz = 0
+        lengths  = np.sqrt(dx**2+dy**2+dz**2)
+        for i in range(2):
+            result[connectivityOfBars[:,i]] += lengths
+            cpt[connectivityOfBars[:,i]] += 1
+
+
+    for dim in [3,2,1]:
+        for name, data, ids in ElementFilter(mesh=mesh,dimensionality=dim):
+            if dim == 3:
+                faces = ElementNames.faces2[name]
+                for fname, facesConnectivity in faces:
+                    AddBarSizesToOutput(data.connectivity[:,facesConnectivity][:,0:2])
+            elif dim == 2:
+                faces = ElementNames.faces[name]
+                for fname, facesConnectivity in faces:
+                    AddBarSizesToOutput(data.connectivity[:,facesConnectivity][:,0:2])
+            else:
+                AddBarSizesToOutput(data.connectivity[:,0:2])
+
+    cpt[cpt==0] = 1
+    result /= cpt
+
+    return result
+
+def EnsureUniquenessElements(mesh: UnstructuredMesh)->None:
     """Ensure that every element if present only once on the mesh
 
     Parameters
@@ -509,7 +566,7 @@ def EnsureUniquenessElements(mesh:UnstructuredMesh)->None:
             dd[n] = el
         cpt = data.GetNumberOfElements()
 
-def MeshQualityAspectRatioBeta(mesh:UnstructuredMesh):
+def MeshQualityAspectRatioBeta(mesh: UnstructuredMesh):
     """experimental mesh quality only available for tets
 
     Parameters
@@ -626,7 +683,7 @@ def ComputeMeshMinMaxLengthScale(mesh) -> Tuple[PBasicFloatType,PBasicFloatType]
             resMax = min(resMax,mmax)
     return (2*resMin,2*resMax)
 
-def PrintMeshInformation(mesh:UnstructuredMesh):
+def PrintMeshInformation(mesh: UnstructuredMesh):
     """Print mesh information to the screen
 
     Parameters
