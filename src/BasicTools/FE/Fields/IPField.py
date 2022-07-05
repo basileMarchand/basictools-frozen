@@ -184,7 +184,7 @@ class IPField(FieldBase):
 
     def GetCellRepresentation(self, fillValue:PBasicFloatType= 0., method:Union[str,int]='mean') -> np.ndarray:
         """Function to push the data from the field into a vector homogeneous to
-        the mesh (for visualisation for example).
+        the mesh (for visualization for example).
 
         Parameters
         ----------
@@ -196,8 +196,8 @@ class IPField(FieldBase):
             'mean'   : compute the mean value in every cell
             'max'    : extract the max value for every cell
             'min'    : extract the min value for every cell
-            'maxdiff': compute the maximal difference for every cell max(abs(vi-vj)) for i!=j in range(number of integration point)
-            'maxdifffraction': same as before but divided by the mean value
+            'maxDiff': compute the maximal difference for every cell max(abs(vi-vj)) for i!=j in range(number of integration point)
+            'maxDiffFraction': same as before but divided by the mean value
             'int' or, int: a int select a specific integration point the value is clipped to [0,number of integration point[
             , by default 'mean'
 
@@ -213,10 +213,10 @@ class IPField(FieldBase):
 
         cpt =0
         for name,data in self.mesh.elements.items():
-            nbelems = data.GetNumberOfElements()
+            nbElements = data.GetNumberOfElements()
 
             if name not in self.data:
-                cpt += nbelems
+                cpt += nbElements
                 continue
 
             if method == 'mean':
@@ -225,24 +225,24 @@ class IPField(FieldBase):
                 data = np.max(self.data[name],axis=1)
             elif method == 'min':
                 data = np.min(self.data[name],axis=1)
-            elif method == 'maxdiff' or method == "maxdifffraction":
+            elif method == 'maxDiff' or method == "maxDiffFraction":
                 cols = self.data[name].shape[1]
                 op = np.zeros( (cols,(cols*(cols-1))//2) )
-                icpt = 0
+                iCpt = 0
                 for i in range(0,cols-1):
                     for j in range(i+1,cols):
-                        op[i,icpt] = 1
-                        op[j,icpt] = -1
-                        icpt += 1
+                        op[i,iCpt] = 1
+                        op[j,iCpt] = -1
+                        iCpt += 1
                 data = np.max(abs(self.data[name].dot(op)),axis=1)
-                if method == "maxdifffraction":
+                if method == "maxDiffFraction":
                     data /= np.mean(self.data[name],axis=1)
             else:
                 col = min(int(method),self.data[name].shape[1])
                 data = self.data[name][:,col]
 
-            res[cpt:cpt+nbelems] = data
-            cpt += nbelems
+            res[cpt:cpt+nbElements] = data
+            cpt += nbElements
 
         return res
 
@@ -396,11 +396,11 @@ class RestrictedIPField(IPField):
         elementFilter : ElementFilter, optional
             the filter to select the element with data
         """
-        super(RestrictedIPField,self).__init__(name=name, mesh=mesh,rule=rule,ruleName=ruleName,data=data)
+        super().__init__(name=name, mesh=mesh,rule=rule,ruleName=ruleName,data=data)
         if elementFilter == None:
             self.elementFilter = ElementFilter(mesh=mesh)
         else:
-            self.elementFilter = elementFilter
+            self.elementFilter = elementFilter.GetFrozenFilter(mesh=mesh)
 
     def Allocate(self, val:PBasicFloatType=0.) -> None:
         """Allocate the memory to store the data
@@ -413,9 +413,9 @@ class RestrictedIPField(IPField):
         self.elementFilter.SetMesh(self.mesh)
         self.data = dict()
         for name, data, ids in self.elementFilter :
-            nbItegPoints = len(self.GetRuleFor(name)[1])
+            nbIntegrationPoints = len(self.GetRuleFor(name)[1])
             nbElements = len(ids)
-            self.data[name] = np.zeros((nbElements,nbItegPoints), dtype=PBasicFloatType)+val
+            self.data[name] = np.zeros((nbElements,nbIntegrationPoints), dtype=PBasicFloatType)+val
 
     def GetRestrictedIPField(self, elementFilter:ElementFilter) -> RestrictedIPField:
         """Create a RestrictedIPField only on element intersection between elementFilter and the internal elementFilter
@@ -435,7 +435,7 @@ class RestrictedIPField(IPField):
         return res
 
     def AllocateFromIpField(self, inputIPField: Union[IPField,RestrictedIPField]) -> None:
-        """Fill internal data from a  external ipField (data is copied)
+        """Fill internal data from a external ipField (data is copied)
 
         Parameters
         ----------
@@ -455,10 +455,10 @@ class RestrictedIPField(IPField):
 
         if isinstance(inputIPField, RestrictedIPField):
             for name,data,ids in self.elementFilter :
-                idsII =  inputIPField.elementFilter.GetIdsToTreat(data)
-                idds = np.empty(data.GetNumberOfElements(),dtype=PBasicIndexType)
-                idds[idsII] = np.arange(len(idsII))
-                self.data[name] = inputIPField.data[name][idds[ids],:]
+                idsII = inputIPField.elementFilter.GetIdsToTreat(data)
+                tempIds = np.empty(data.GetNumberOfElements(),dtype=PBasicIndexType)
+                tempIds[idsII] = np.arange(len(idsII))
+                self.data[name] = inputIPField.data[name][tempIds[ids],:]
         elif isinstance(inputIPField, IPField):
             for name,data,ids in self.elementFilter :
                 self.data[name] = inputIPField.data[name][ids,:]
@@ -522,7 +522,7 @@ class RestrictedIPField(IPField):
         Exception
             In the case the fields are not compatible
         """
-        super(RestrictedIPField,self).CheckCompatibility(B)
+        super().CheckCompatibility(B)
         if isinstance(B,type(self)):
             if not self.elementFilter.IsEquivalent(B.elementFilter):
                 raise Exception("The elementFilter of the fields are not the same")
@@ -544,7 +544,7 @@ class RestrictedIPField(IPField):
         """
 
         res = type(self)(name = None, mesh=self.mesh,rule=self.rule, elementFilter=self.elementFilter)
-        return super(RestrictedIPField,self).unaryOp(op,out=res)
+        return super().unaryOp(op,out=res)
 
     def binaryOp(self, other:Any ,op: Callable, out:RestrictedIPField=None) -> RestrictedIPField:
         """Internal function to apply a binary operator. A + B for example
@@ -564,7 +564,7 @@ class RestrictedIPField(IPField):
             The output RestrictedIPField
         """
         res = type(self)(name = None, mesh=self.mesh,rule=self.rule, elementFilter=self.elementFilter)
-        return super(RestrictedIPField,self).binaryOp(other,op,out=res)
+        return super().binaryOp(other,op,out=res)
 
     def GetCellRepresentation(self, fillValue:PBasicFloatType = 0., method:Union[str,int]='mean') -> np.ndarray:
         if fillValue==0.:
@@ -574,12 +574,12 @@ class RestrictedIPField(IPField):
 
         cpt =0
         self.elementFilter.SetMesh(self.mesh)
-        for name, eldata in self.mesh.elements.items():
-            ids = self.elementFilter.GetIdsToTreat(eldata)
-            nbelems = eldata.GetNumberOfElements()
+        for name, elementData in self.mesh.elements.items():
+            ids = self.elementFilter.GetIdsToTreat(elementData)
+            nbElements = elementData.GetNumberOfElements()
 
             if name not in self.data:
-                cpt += nbelems
+                cpt += nbElements
                 continue
 
             if method == 'mean':
@@ -588,23 +588,23 @@ class RestrictedIPField(IPField):
                 data = np.max(self.data[name],axis=1)
             elif method == 'min':
                 data = np.min(self.data[name],axis=1)
-            elif method == 'maxdiff' or method == "maxdifffraction":
+            elif method == 'maxDiff' or method == "maxDiffFraction":
                 cols = self.data[name].shape[1]
                 op = np.zeros( (cols,(cols*(cols-1))//2) )
-                icpt = 0
+                iCpt = 0
                 for i in range(0,cols-1):
                     for j in range(i+1,cols):
-                        op[i,icpt] = 1
-                        op[j,icpt] = -1
-                        icpt += 1
+                        op[i,iCpt] = 1
+                        op[j,iCpt] = -1
+                        iCpt += 1
                 data = np.max(abs(self.data[name].dot(op)),axis=1)
-                if method == "maxdifffraction":
+                if method == "maxDiffFraction":
                     data /= np.mean(self.data[name],axis=1)
             else:
                 col = min(int(method),self.data[name].shape[1])
                 data = self.data[name][:,col]
             res[cpt+np.asarray(ids,dtype=PBasicIndexType)]=data
-            cpt += nbelems
+            cpt += nbElements
 
         return res
 
@@ -634,7 +634,7 @@ def CheckIntegrity(GUI=False):
     print(np.linalg.norm([sig22, sig22 ] ).data )
 
     data = sig22.GetCellRepresentation()
-    methods = ["min","max","mean","maxdiff","maxdifffraction","-1"]
+    methods = ["min", "max", "mean", "maxDiff", "maxDiffFraction","-1"]
     for method in methods:
         data = sig22.GetCellRepresentation(method=method)
 
@@ -681,13 +681,13 @@ def CheckIntegrity(GUI=False):
         NumberOfValues += len(ids)*len(obj.GetRuleFor(name)[1])
     obj.SetDataFromNumpy(np.zeros(NumberOfValues,dtype=PBasicFloatType))
 
-    methods = ["min","max","mean","maxdiff","maxdifffraction","-1"]
+    methods = ["min", "max", "mean", "maxDiff", "maxDiffFraction", "-1"]
     data = obj.GetCellRepresentation(fillValue=1.)
     for method in methods:
         data = obj.GetCellRepresentation(method=method)
 
 
-    #mustfail
+    #must fail
     error = False
     try:
         restrictedIPField+restrictedIPField2
