@@ -7,7 +7,7 @@ from typing import Tuple, Optional, Union
 
 import numpy as np
 
-from BasicTools.NumpyDefs import PBasicFloatType, ArrayLike
+from BasicTools.NumpyDefs import PBasicFloatType, PBasicIndexType, ArrayLike
 import BasicTools.Containers.ElementNames as ElementNames
 from BasicTools.Containers.Filters import ElementFilter
 from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
@@ -16,49 +16,71 @@ from BasicTools.Containers.UnstructuredMeshInspectionTools import ExtractElement
 from BasicTools.Linalg.Transform import Transform
 from BasicTools.FE.Fields.FEField import FEField
 
-def ApplyRotationMatrixTensorField(fields,fieldstoTreat, baseNames=["v1","v2"],inplace=False,prefix="new_",inverse=False):
-    nbentries = fields[fieldstoTreat[0][0]].shape[0]
+def ApplyRotationMatrixTensorField(fields, fieldsToTreat, baseNames=["v1","v2"], inPlace=False, prefix="new_", inverse=False):
+    nbEntries = fields[fieldsToTreat[0][0]].shape[0]
 
     bs =  Transform()
     bs.keepNormalised = True
     v1 = fields[baseNames[0]]
     v2 = fields[baseNames[1]]
-    tempdata = np.zeros((nbentries,3,3))
+    tempData = np.zeros((nbEntries,3,3))
     for i in range(3):
         for j in range(3):
-            tempdata[:,i,j] = fields[fieldstoTreat[i][j]][:]
+            tempData[:,i,j] = fields[fieldsToTreat[i][j]][:]
 
-    for i in range(nbentries):
+    for i in range(nbEntries):
         bs.SetFirst(v1[i,:])
         bs.SetSecond(v2[i,:])
         if inverse:
-            tempdata[i,:,:] = bs.ApplyInvTransformTensor(tempdata[i,:,:])
+            tempData[i,:,:] = bs.ApplyInvTransformTensor(tempData[i,:,:])
         else:
-            tempdata[i,:,:] = bs.ApplyTransformTensor(tempdata[i,:,:])
+            tempData[i,:,:] = bs.ApplyTransformTensor(tempData[i,:,:])
 
     output = {}
     for i in range(3):
         for j in range(3):
-            output[fieldstoTreat[i][j]]  = tempdata[:,i,j]
+            output[fieldsToTreat[i][j]]  = tempData[:,i,j]
 
     output = {(prefix+x):v for x,v in output.items()}
 
-    if inplace:
+    if inPlace:
         fields.update(output)
 
     return output
 
-def CopyFieldsFromOriginalMeshToTargetMesh(inmesh,outmesh):
+def CopyFieldsFromOriginalMeshToTargetMesh(inMesh: UnstructuredMesh, outMesh: UnstructuredMesh):
     """ Function to copy fields for the original mesh to the
-        derivated mesh (mesh generated from one operations)"""
-    def Work(indic,outdic,oid):
-        for k,d in indic.items():
-            outdic[k] = d[oid]
-    Work(inmesh.nodeFields,outmesh.nodeFields, outmesh.originalIDNodes )
-    Work(inmesh.elemFields,outmesh.elemFields, outmesh.GetElementsOriginalIDs() )
+        derivated mesh ( f(inMesh) -> outMesh )
+
+    Parameters
+    ----------
+    inMesh : UnstructuredMesh
+        the source mesh, we extract the fields from inMesh.nodeFields and inMesh.elemFields.
+    outMesh : UnstructuredMesh
+        The target mesh, we push the new fields into outMesh.nodeFields and outMesh.elemFields.
+    """
+
+    def Work(inDict, outDict, oid):
+        for k,d in inDict.items():
+            outDict[k] = d[oid]
+
+    Work(inMesh.nodeFields,outMesh.nodeFields, outMesh.originalIDNodes )
+
+    # Compute the transfer array for the elemFields
+    cpt1 =0
+    cpt2 = 0
+    oid = np.empty(outMesh.GetNumberOfElements(), dtype=PBasicIndexType)
+    for name, data in inMesh.elements.items():
+        if name in outMesh.elements:
+            elements = outMesh.elements[name]
+            oid[cpt2:cpt2+elements.GetNumberOfElements()] = elements.originalIds + cpt1
+            cpt2 += elements.GetNumberOfElements()
+        cpt1 += data.GetNumberOfElements()
+
+    Work(inMesh.elemFields, outMesh.elemFields, oid )
 
 
-def GetFieldTransferOp(inputField: FEField, targetPoints:ArrayLike, method:Union[str,None]=None, verbose:bool=False, elementFilter:Optional[ElementFilter]=None)-> Tuple[np.ndarray,np.ndarray]:
+def GetFieldTransferOp(inputField: FEField, targetPoints: ArrayLike, method: Union[str,None]=None, verbose:bool=False, elementFilter: Optional[ElementFilter]=None)-> Tuple[np.ndarray,np.ndarray]:
     """Compute the transfer operator from the inputField to the target points so:
     valueAtTargetPoints = op.dot(FEField.data)
 
@@ -99,7 +121,7 @@ def GetFieldTransferOp(inputField: FEField, targetPoints:ArrayLike, method:Union
 
     """
 
-    possibleMethods =["Interp/Nearest","Nearest/Nearest","Interp/Clamp","Interp/Extrap","Interp/ZeroFill"]
+    possibleMethods =["Interp/Nearest", "Nearest/Nearest", "Interp/Clamp", "Interp/Extrap", "Interp/ZeroFill"]
     possibleMethodsDict = {"Nearest":0, "Interp":1, "Extrap":2, "Clamp":3, "ZeroFill":4  }
 
     from scipy.spatial import cKDTree
@@ -109,127 +131,125 @@ def GetFieldTransferOp(inputField: FEField, targetPoints:ArrayLike, method:Union
     if method is None:
         method = possibleMethods[2]
     elif method not in possibleMethods:
-        raise(Exception(f"Method for transfert operator not know '{method}' possible options are : {possibleMethods}" ))
+        raise(Exception(f"Method for transfer operator not know '{method}', possible options are : {possibleMethods}" ))
 
     insideMethod = possibleMethodsDict[method.split("/")[0]]
     outsideMethod = possibleMethodsDict[method.split("/")[1]]
 
-    imeshdim = 0
-    for i in range(4):
-        if inputField.mesh.GetNumberOfElements(i):
-            imeshdim = i
+    iMeshDim = inputField.mesh.GetElementsDimensionality()
 
-    originalmesh = inputField.mesh
+    originalMesh = inputField.mesh
 
     if elementFilter == None:
-        elementFilter = ElementFilter(mesh = originalmesh, dimensionality=imeshdim)
+        elementFilter = ElementFilter(mesh = originalMesh, dimensionality=iMeshDim)
 
     from BasicTools.Containers.UnstructuredMeshModificationTools import CleanLonelyNodes
-    imesh = ExtractElementsByElementFilter(originalmesh, elementFilter )
-    CleanLonelyNodes(imesh)
+    iMesh = ExtractElementsByElementFilter(originalMesh, elementFilter )
+    CleanLonelyNodes(iMesh)
 
-    inodes = imesh.nodes
+    iNodes = iMesh.nodes
 
     numbering = inputField.numbering
     space = inputField.space
-    inodes = imesh.nodes
-    nbtp = targetPoints.shape[0]
+    iNodes = iMesh.nodes
+    nbTargetPoints = targetPoints.shape[0]
 
 
-    kdt = cKDTree(inodes)
+    kdt = cKDTree(iNodes)
 
     if insideMethod == 0 and  outsideMethod == 0:
         dist, ids = kdt.query(targetPoints)
-        ids = imesh.originalIDNodes[ids]
+        ids = iMesh.originalIDNodes[ids]
 
         if numbering is None or numbering["fromConnectivity"]:
             cols = ids
         else:
             cols = [ numbering.GetDofOfPoint(pid) for pid in ids ]
-        row = np.arange(nbtp)
-        data = np.ones(nbtp)
-        return coo_matrix((data, (row, cols)), shape=(nbtp , inodes.shape[0])), np.zeros(nbtp)
+        row = np.arange(nbTargetPoints)
+        data = np.ones(nbTargetPoints)
+        return coo_matrix((data, (row, cols)), shape=(nbTargetPoints , iNodes.shape[0])), np.zeros(nbTargetPoints)
 
     # be sure to create the spaces
     for elementType, data in inputField.mesh.elements.items():
         space[elementType].Create()
         LagrangeSpaceGeo[elementType].Create()
 
-        facestoTreat = [ElementNames.faces[elementType],
+        facesToTreat = [ElementNames.faces[elementType],
                         ElementNames.faces2[elementType],
                         ElementNames.faces3[elementType]]
-        for tt in facestoTreat:
+        for tt in facesToTreat:
             for elementType2, num in tt:
                 LagrangeSpaceGeo[elementType2].Create()
 
-    # we build de Dual Coonectivity
+    # we build de Dual Connectivity
     from BasicTools.Containers.UnstructuredMeshInspectionTools import GetDualGraphNodeToElement
-    dualGraph,nused = GetDualGraphNodeToElement(imesh)
+    dualGraph, nbUsed = GetDualGraphNodeToElement(iMesh)
 
     from BasicTools.Containers.MeshTools import  GetElementsCenters
 
-    centers = GetElementsCenters(imesh)
-    kdtcenters = cKDTree(centers)
+    centers = GetElementsCenters(iMesh)
+    kdtCenters = cKDTree(centers)
 
     # 30 to be sure to hold exa27 coefficients
-    cols = np.empty(nbtp*30, dtype=int)
-    rows = np.empty(nbtp*30, dtype=int)
-    datas = np.empty(nbtp*30 )
-    fillcpt = 0
-    cood = [cols,rows,datas, fillcpt]
+    cols = np.empty(nbTargetPoints*30, dtype=int)
+    rows = np.empty(nbTargetPoints*30, dtype=int)
+    dataS = np.empty(nbTargetPoints*30 )
+    fillCpt = 0
+    cooData = [cols, rows, dataS, fillCpt]
 
-    def AddToOutput(l,col,row,dat,cood):
-        fillcpt = cood[3]
-        cood[0][fillcpt:fillcpt+l] = col
-        cood[1][fillcpt:fillcpt+l] = row
-        cood[2][fillcpt:fillcpt+l] = dat
-        cood[3] += l
+    def AddToOutput(l, col, row, dat, cooData):
+        fillCpt = cooData[3]
+        s = np.s_[fillCpt : fillCpt + l]
+        cooData[0][s] = col
+        cooData[1][s] = row
+        cooData[2][s] = dat
+        cooData[3] += l
 
-    def GetElement(imesh,enb):
-        for name,data in imesh.elements.items():
+    def GetElement(iMesh,enb):
+        for name,data in iMesh.elements.items():
             if enb < data.GetNumberOfElements():
-                return originalmesh.elements[name], data.originalIds[enb], data, enb
+                return originalMesh.elements[name], data.originalIds[enb], data, enb
             else:
                 enb -= data.GetNumberOfElements()
 
         raise(Exception("Element not found"))
 
     distTP, idsTP = kdt.query(targetPoints)
-    distTPcenters, idsTPcenters = kdtcenters.query(targetPoints)
+    distTPcenters, idsTPcenters = kdtCenters.query(targetPoints)
 
     if verbose:
         from BasicTools.Helpers.ProgressBar import printProgressBar
-        printProgressBar(0, nbtp, prefix = 'Building Transfer '+method+':', suffix = 'Complete', length = 50)
-        verbosecpt = 0
+        printProgressBar(0, nbTargetPoints, prefix=f'Building Transfer  {method}:', suffix='Complete', length=50)
+        verboseCpt = 0
 
-    status = np.zeros(nbtp)
+    status = np.zeros(nbTargetPoints)
     ones = np.ones(50)
-    for p in range(nbtp):
+    for p in range(nbTargetPoints):
         if verbose:
-            nvc = int(p/nbtp*1000)
-            if verbosecpt != nvc:
-                printProgressBar(p+1, nbtp, prefix = 'Building Transfer '+method+':', suffix = 'Complete', length = 50)
-                verbosecpt = nvc
+            nvc = int(p/nbTargetPoints*1000)
+            if verboseCpt != nvc:
+                printProgressBar(p+1, nbTargetPoints, prefix= f'Building Transfer {method}:', suffix='Complete', length=50)
+                verboseCpt = nvc
 
-        TP = targetPoints[p,:]  # target point posicion
-        CP =  idsTP[p]          # closest point posicion
+        TP = targetPoints[p,:]  # target point position
+        CP =  idsTP[p]          # closest point position
 
         ## we use the closest element (in the sens of cells center )
-        origial_data, lenb, imesh_data, imesh_elnb = GetElement(imesh,idsTPcenters[p])
+        original_data, lenb, imesh_data, imesh_elnb = GetElement(iMesh,idsTPcenters[p])
         ## construct the potentialElements list (all element touching the closest element)
         potentialElements = []
         #Element connected to the closest point
-        potentialElements.extend(dualGraph[idsTP[p],0:nused[idsTP[p]]])
+        potentialElements.extend(dualGraph[idsTP[p],0:nbUsed[idsTP[p]]])
         #Elements connected to the closest element (bases on the element center)
         for elempoint in  imesh_data.connectivity[imesh_elnb,:]:
-            potentialElements.extend(dualGraph[elempoint,0:nused[elempoint]])
+            potentialElements.extend(dualGraph[elempoint,0:nbUsed[elempoint]])
         potentialElements = np.unique(potentialElements)
         # compute distance to elements
         # for the moment we use the distance to the center, this gives a good estimate
         # of the order to check the elements
         dist = np.empty(len(potentialElements))
         for cpt,e in enumerate(potentialElements):
-            data, lenb, imesh_data, imesh_elnb = GetElement(imesh,e)
+            #data, lenb, imesh_data, imesh_elnb = GetElement(iMesh,e)
             diff = centers[e,:]-TP
             dist[cpt] = diff.dot(diff)
 
@@ -240,15 +260,15 @@ def GetFieldTransferOp(inputField: FEField, targetPoints:ArrayLike, method:Union
         distmem = 1e10
 
         for cpt,e in enumerate(potentialElements):
-            origial_data, lenb, imesh_data, imesh_elnb = GetElement(imesh,e)
-            localnumbering = numbering[origial_data.elementType]
-            localspace = space[origial_data.elementType]
+            original_data, lenb, imesh_data, imesh_elnb = GetElement(iMesh,e)
+            localnumbering = numbering[original_data.elementType]
+            localspace = space[original_data.elementType]
 
-            posnumbering = origial_data.connectivity
-            posspace = LagrangeSpaceGeo[origial_data.elementType]
-            coordAtDofs = originalmesh.nodes[posnumbering[lenb,:],:]
+            posnumbering = original_data.connectivity
+            #posspace = LagrangeSpaceGeo[original_data.elementType]
+            coordAtDofs = originalMesh.nodes[posnumbering[lenb,:],:]
 
-            inside, distv, bary, baryClamped = ComputeInterpolationExtrapolationsBarycentricCoordinates(TP, origial_data.elementType ,coordAtDofs, LagrangeSpaceGeo)
+            inside, distv, bary, baryClamped = ComputeInterpolationExtrapolationsBarycentricCoordinates(TP, original_data.elementType ,coordAtDofs, LagrangeSpaceGeo)
 
             #update the distance**2 with a *exact* distance
             dist[cpt] = dmin2 = distv.dot(distv)
@@ -280,7 +300,7 @@ def GetFieldTransferOp(inputField: FEField, targetPoints:ArrayLike, method:Union
                 col = [CP]
                 row = [p]
                 dat = [1.]
-                AddToOutput(len(col),col,row,dat,cood)
+                AddToOutput(len(col),col,row,dat,cooData)
                 continue
 
             if outsideMethod == 2 and memshapeFunc is not None:
@@ -300,12 +320,13 @@ def GetFieldTransferOp(inputField: FEField, targetPoints:ArrayLike, method:Union
         l = len(col)
         row = p*ones[0:l]
         dat = sF
-        AddToOutput(l,col,row,dat,cood)
+        AddToOutput(l,col,row,dat,cooData)
 
     if verbose:
-        printProgressBar(nbtp, nbtp, prefix = 'Building Transfer '+method+':', suffix = 'Complete', length = 50)
+        printProgressBar(nbTargetPoints, nbTargetPoints, prefix=f'Building Transfer {method}:', suffix='Complete', length=50)
 
-    return coo_matrix((cood[2][0:cood[3]], (cood[1][0:cood[3]], cood[0][0:cood[3]])), shape=(nbtp , inputField.numbering["size"])), status
+    s = np.s_[0:cooData[3]]
+    return coo_matrix((cooData[2][s], (cooData[1][s], cooData[0][s])), shape=(nbTargetPoints , inputField.numbering["size"])), status
 
 def ComputeInterpolationExtrapolationsBarycentricCoordinates(TP,elementType,coordAtDofs,posspace):
     if ElementNames.dimension[elementType]==0:
@@ -379,31 +400,29 @@ def ComputeInterpolationCoefficients(mask, TP, elementsdata, coordAtDofs, posspa
         baryClamped = fshapeFunc.dot(localspace.posN[faceLocalConnectivityMem,:])
         return True, faceDistvMem,  baryClamped
 
-def ComputeShapeFunctionsOnElement(coordAtDofs,localspace,localnumbering,point,faceElementType):
-    inside, xietaphi, xietaphiClamped = ComputeBarycentricCoordinateOnElement(coordAtDofs,localspace,point,faceElementType)
-    N = localspace.GetShapeFunc(xietaphi)
-    NClamped = localspace.GetShapeFunc(xietaphiClamped)
+def ComputeShapeFunctionsOnElement(coordAtDofs, localspace, localnumbering, point, faceElementType):
+    inside, xiEtaPhi, xiEtaPhiClamped = ComputeBarycentricCoordinateOnElement(coordAtDofs,localspace,point,faceElementType)
+    N = localspace.GetShapeFunc(xiEtaPhi)
+    NClamped = localspace.GetShapeFunc(xiEtaPhiClamped)
     return inside, N , NClamped
 
-def ddf(f,xietaphi,dN,GetShapeFuncDerDer,coordAtDofs,linear):
+def ddf(f, xiEtaPhi, dN, GetShapeFuncDerDer, coordAtDofs, linear):
     dNX = dN.dot(coordAtDofs)
     res = dNX.dot(dNX.T)
     # After some investigation the Newton is more stable using only the first part
-    # of the hessian we comment this part only for historic reasons. of if someone
+    # of the hessian we comment this part only for historic reasons. if someone
     # can implement a better (without bugs) version.
     return res
 
     if linear :
         return res
 
-
-
-    ddN = GetShapeFuncDerDer(xietaphi)
+    ddN = GetShapeFuncDerDer(xiEtaPhi)
     # we work for every coordinate
-    for ccpt in range(coordAtDofs.shape[1]):
-        #error of the component ccpt
-        fx = f[ccpt]
-        coordx = coordAtDofs[:,ccpt]
+    for cpt in range(coordAtDofs.shape[1]):
+        #error of the component cpt
+        fx = f[cpt]
+        coordx = coordAtDofs[:,cpt]
         # we build the derivative of the pos field with respect of xi chi
         # d2f_i/dxidchi * pos[i,ccpt]
         pp = [ ddNi.dot(xi) for ddNi,xi in zip(ddN,coordx ) ]
@@ -654,7 +673,7 @@ def CheckIntegrityApplyRotationMatrixTensorField(GUI=False):
     inputmesh.nodeFields["v2"][:,2] = 1
 
 
-    res = ApplyRotationMatrixTensorField(inputmesh.nodeFields,[["Sxx","Sxy","Sxz"],["Sxy","Syy","Syz"],["Sxz","Syz","Szz"]], baseNames=["v1","v2"],inplace=False,prefix="new_",inverse=False)
+    res = ApplyRotationMatrixTensorField(inputmesh.nodeFields,[["Sxx","Sxy","Sxz"],["Sxy","Syy","Syz"],["Sxz","Syz","Szz"]], baseNames=["v1","v2"],inPlace=False,prefix="new_",inverse=False)
 
     for k,v in res.items():
         print(k,v)
