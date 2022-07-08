@@ -35,6 +35,7 @@ Add the abs operator for FieldBase
 The MeshFileConverter can covert temporal data between 2 temporal aware readers/writers
 New GetDataOverALine to extract information of fields on the point of the line
 new ToQuadraticMesh to convert any mesh to quadratic elements
+NodesPermutation change the nodeFields also to be coherent
 
 API Changes:
 ************
@@ -48,6 +49,10 @@ now the CheckIntegrity function can return the string "skip" to tell the user th
 CreateUniformMeshOfBars behavior change, kno work for lines in the 3D space
 the GetCellRepresentation of FEField uses a more generic way to generate cell data
 GetFieldTransferOp argument name change elementfilter -> elementFilter
+(UnstructuredMeshCreationTools.py) change name Creat0DElementAtEveryPoint to  Create0DElementContainerForEveryPoint and change of behavior please read the documentation
+(UnstructuredMeshModificationTools.py) CleanLonelyNodes take a inPlace option, the return values changed
+(UnstructuredMeshModificationTools.py) CleanDoubleElements remove unused option preserveOriginalIds
+(UnstructuredMeshModificationTools.py) DeleteInternalFaces does not return the input mesh any more
 
 Deprecated Functions:
 *********************
@@ -56,7 +61,8 @@ Many argument name changes mainly conversion to pascal case
 (UnstructuredMeshInspectionTools.py) VolumeOfTetrahedrons -> use GetVolumePerElement
 (UnstructuredMeshInspectionTools.py) ExtractElementsByImplicitZone -> use ExtractElementsByElementFilter, CleanLonelyNodes
 (UnstructuredMeshInspectionTools.py) ExtractElementByDimensionalityNoCopy -> ExtractElementsByElementFilter(mesh, ElementFilter(mesh,dimensionality=dim), copy=False)
-(UnstructuredMeshCreationTools.py) change name Creat0DElementAtEveryPoint to  Create0DElementContainerForEveryPoint and change of behavior please read the documentation
+(UnstructuredMeshModificationTools.py) CleanEmptyTags please use mesh.Clean()
+Deprecated function UnstructuredMes.GetDimensionality() please use UnstructuredMes.GetPointsDimensionality()
 
 
 New in version 1.7.1:
