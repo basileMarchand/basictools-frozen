@@ -3,10 +3,11 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-
+from typing import Callable
 
 import numpy as np
 
+from BasicTools.NumpyDefs import ArrayLike, PBasicFloatType
 import BasicTools.Containers.ElementNames as ElementNames
 from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
 from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearMesh
@@ -93,15 +94,16 @@ vtkNumberByElementName[ElementNames.Triangle_6] = 22
 vtkNumberByElementName[ElementNames.Quadrangle_8] = 23
 vtkNumberByElementName[ElementNames.Tetrahedron_10] = 24
 vtkNumberByElementName[ElementNames.Hexaedron_20] = 25
-vtkNumberByElementName[ElementNames.Quadrangle_9] = 28
-
-vtkNumberByElementName[ElementNames.Pyramid_13] = 27
 vtkNumberByElementName[ElementNames.Wedge_15] = 26
+vtkNumberByElementName[ElementNames.Pyramid_13] = 27
+vtkNumberByElementName[ElementNames.Quadrangle_9] = 28
+vtkNumberByElementName[ElementNames.Hexaedron_27] = 29
+
 
 elementNameByVtkNumber = {}
 
-for key,vtknumber in vtkNumberByElementName.items():
-    elementNameByVtkNumber[vtknumber] = key
+for key,vtkNumber in vtkNumberByElementName.items():
+    elementNameByVtkNumber[vtkNumber] = key
 
 elementNameByVtkNumber[4] = ElementNames.Bar_2
 elementNameByVtkNumber[8] = ElementNames.Quadrangle_4   #voxel
@@ -111,7 +113,7 @@ elementNameByVtkNumber[11] = ElementNames.Hexaedron_8   #voxel
 #converted to a tag. the first type is used to encode tags in vtk
 tagsTypes = [np.int8, np.uint8, int]
 
-def VtkFieldToNumpyField(support,vtkField):
+def VtkFieldToNumpyField(support: UnstructuredMesh, vtkField ) -> np.ndarray:
     if support.IsConstantRectilinear():
         return VtkFieldToNumpyFieldWithDims(vtkField,dimensions=support.GetDimensions())
     else:
@@ -128,7 +130,7 @@ def VtkFieldToNumpyFieldWithDims(vtkField,dimensions=None):
 
     data = numpy_support.vtk_to_numpy(vtkField)
 
-    # ConstantRectilinear case 
+    # ConstantRectilinear case
     if dimensions is not None:
         dims = list(dimensions)[::-1]
         if len(data.shape) > 1:
@@ -139,48 +141,49 @@ def VtkFieldToNumpyFieldWithDims(vtkField,dimensions=None):
         data = np.swapaxes(data,0,2)
 
     return (name,data)
-def NumpyFieldToVtkField(support,fielddata,fieldname):
-    if support.IsConstantRectilinear():
-        return NumpyFieldToVtkFieldWithDims(fielddata, fieldname, support.GetDimensions())
-    else:
-        return NumpyFieldToVtkFieldWithDims(fielddata, fieldname)
 
-def NumpyFieldToVtkFieldWithDims(fielddata,fieldname,dimensions=None):
+def NumpyFieldToVtkField(support: UnstructuredMesh, fieldData: ArrayLike, fieldName: str) :
+    if support.IsConstantRectilinear():
+        return NumpyFieldToVtkFieldWithDims(fieldData, fieldName, support.GetDimensions())
+    else:
+        return NumpyFieldToVtkFieldWithDims(fieldData, fieldName)
+
+def NumpyFieldToVtkFieldWithDims(fieldData: ArrayLike, fieldName: str, dimensions=None):
     from vtkmodules.util import numpy_support
     from vtkmodules.vtkCommonCore import vtkStringArray
 
     isimagedata = dimensions is not None
-    if type(fielddata[0]) in [ str, object, np.str_ ]: # working on list of string or numpy of objects
+    if type(fieldData[0]) in [ str, object, np.str_ ]: # working on list of string or numpy of objects
         # for the moment only work for scalar (1 components fields )
         VTK_data = vtkStringArray()
         VTK_data.SetNumberOfComponents(1)
-        VTK_data.SetNumberOfTuples(len(fielddata))
-        for i,v in enumerate(fielddata):
+        VTK_data.SetNumberOfTuples(len(fieldData))
+        for i,v in enumerate(fieldData):
             VTK_data.InsertValue(i,str(v))
-        VTK_data.SetName(fieldname)
+        VTK_data.SetName(fieldName)
         return VTK_data
     else:
-        outputtype = numpy_support.get_vtk_array_type(fielddata.dtype)
+        outputtype = numpy_support.get_vtk_array_type(fieldData.dtype)
 
-    if len(fielddata.shape) > 1:
+    if len(fieldData.shape) > 1:
       if isimagedata:
-          dataView = fielddata.view()
+          dataView = fieldData.view()
           #automatic detection if is a nodeField or a elemField
           if np.prod(dataView.shape[:-1]) == np.prod(dimensions):
               dims = list(dimensions)
           else:
               newshape= list([ (x-1 if x-1 >0 else 1 )  for x in dimensions])
               dims  = newshape
-          dims.append(fielddata.shape[1])
+          dims.append(fieldData.shape[1])
           dataView.shape = tuple(dims)
           VTK_data = numpy_support.numpy_to_vtk(num_array=np.swapaxes(dataView,0,2).ravel(), deep=True, array_type=outputtype)
       else:
-          VTK_data = numpy_support.numpy_to_vtk(num_array=fielddata, deep=True, array_type=outputtype)
-      VTK_data.SetNumberOfComponents(fielddata.shape[1])
+          VTK_data = numpy_support.numpy_to_vtk(num_array=fieldData, deep=True, array_type=outputtype)
+      VTK_data.SetNumberOfComponents(fieldData.shape[1])
     else:
       #cpt = 0
       if isimagedata:
-          dataView = fielddata.view()
+          dataView = fieldData.view()
           #automatic detection if is a nodeField or a elemField
           if np.prod(dataView.shape) == np.prod(dimensions):
               #nodefield
@@ -191,14 +194,14 @@ def NumpyFieldToVtkFieldWithDims(fielddata,fieldname,dimensions=None):
               dataView.shape = newshape
           VTK_data = numpy_support.numpy_to_vtk(num_array=np.swapaxes(dataView,0,2).ravel(), deep=True, array_type=outputtype)
       else:
-          VTK_data = numpy_support.numpy_to_vtk(num_array=fielddata, deep=True, array_type=outputtype)
-    VTK_data.SetName(fieldname)
+          VTK_data = numpy_support.numpy_to_vtk(num_array=fieldData, deep=True, array_type=outputtype)
+    VTK_data.SetName(fieldName)
     return VTK_data
 
-def ApplyVtkPipeline(mesh,op):
+def ApplyVtkPipeline(mesh: UnstructuredMesh, op: Callable) -> UnstructuredMesh:
     vtkMesh = MeshToVtk(mesh)
-    vtkOuputMesh = op(vtkMesh)
-    return VtkToMesh(vtkOuputMesh)
+    vtkOutputMesh = op(vtkMesh)
+    return VtkToMesh(vtkOutputMesh)
 
 def PlotMesh(mesh):# pragma: no cover
     from vtkmodules.vtkFiltersGeometry import vtkGeometryFilter
@@ -213,7 +216,7 @@ def PlotMesh(mesh):# pragma: no cover
 
 
     from BasicTools.Containers.MeshBase import MeshBase
-    
+
     if isinstance(mesh,MeshBase):
         vtkMesh = MeshToVtk(mesh)
     else:
@@ -745,8 +748,8 @@ def checkIntegrity_ApplyVtkPipeline(GUI):
     res = CreateMeshOfTriangles([[0,0,0],[1,0,0],[0,1,0],[0,0,1] ], [[0,1,2],[0,2,3]])
     class op():
         def __call__(self,vtkinput):
-            from vtkmodules.vtkFiltersModeling import vtkLinearExtrusionFilter 
-            from vtkmodules.vtkFiltersCore import vtkTriangleFilter 
+            from vtkmodules.vtkFiltersModeling import vtkLinearExtrusionFilter
+            from vtkmodules.vtkFiltersCore import vtkTriangleFilter
             extrude = vtkLinearExtrusionFilter()
             extrude.SetInputData(vtkinput)
             extrude.SetExtrusionTypeToNormalExtrusion()
