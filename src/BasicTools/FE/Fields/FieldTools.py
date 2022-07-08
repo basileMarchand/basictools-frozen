@@ -3,13 +3,13 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-
-import numpy as np
+from __future__ import annotations
 from typing import Union, List, Tuple, Callable, Optional, Iterable, Dict
 
-from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
+import numpy as np
 
-from BasicTools.NumpyDefs import PBasicFloatType, PBasicIndexType
+from BasicTools.NumpyDefs import PBasicFloatType, PBasicIndexType, ArrayLike
+from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
 from BasicTools.Containers.Filters import ElementFilter,NodeFilter, IntersectionElementFilter, Filter, FilterOP
 import BasicTools.Containers.ElementNames as EN
 from BasicTools.FE.Fields.FEField import FEField
@@ -25,7 +25,7 @@ def ElementWiseIpToFETransferOp(integrationRule: IntegrationRulesType , space:FE
     Parameters
     ----------
     integrationRule : IntegrationRuleType
-        The integration rule of the orginal data
+        The integration rule of the original data
     space : FESpaceType
         The target space
 
@@ -61,28 +61,30 @@ def ElementWiseFEToFETransferOp(originSpace: FESpaceType, targetSpace: FESpaceTy
     res: Dict[str,np.ndarray] = dict()
     for name, ir in targetSpace.items():
         ir = (originSpace[name].posN, np.ones(originSpace[name].GetNumberOfShapeFunctions(),dtype=PBasicFloatType) )
-        space_ipvalues = targetSpace[name].SetIntegrationRule(ir[0],ir[1])
-        valN = np.asarray( space_ipvalues.valN, dtype=PBasicFloatType)
+        spaceIpValues = targetSpace[name].SetIntegrationRule(ir[0],ir[1])
+        valN = np.asarray( spaceIpValues.valN, dtype=PBasicFloatType)
         sol = np.linalg.lstsq(valN, np.eye(valN.shape[0],valN.shape[1]), rcond=None)[0]
         res[name] = sol
     return res
 
-def NodeFieldToFEField(mesh, nodeFields: dict=None):
-    """
-    Create FEField(P isoparametric) from the node field data.
+def NodeFieldToFEField(mesh: UnstructuredMesh, nodeFields: Dict[str,ArrayLike]=None) -> Dict[str,FEField]:
+    """Create FEField(P isoparametric) from the node field data.
     if nodesFields is None the mesh.nodeFields is used
 
     Parameters
     ----------
     mesh : UnstructuredMesh
-    nodeFields : dict
-        containing the nodes fields to be converted to FEFields, if None the mesh.nodeFields is used
+        The support for the FEFields
+    nodeFields : Dict[str,ArrayLike], optional
+        the dictionary containing the nodes fields to be converted to FEFields,
+        if None the mesh.nodeFields is used, by default None
 
     Returns
     -------
-    dict
-        dictionary the keys are field names and the values are the FEFields
+    Dict[str,FEField]
+        A dictionary the keys are field names and the values are the FEFields
     """
+
 
     if nodeFields is None:
         nodeFields = mesh.nodeFields
@@ -96,22 +98,24 @@ def NodeFieldToFEField(mesh, nodeFields: dict=None):
             res[name] = FEField(name=name, mesh=mesh, space=LagrangeSpaceGeo, numbering=numbering,data=np.asarray(values, dtype=PBasicFloatType, order="C"))
     return res
 
-def ElemFieldsToFEField(mesh, elemFields=None):
-    """
-    Create FEField(P0) from the elements field data.
+def ElemFieldsToFEField(mesh: UnstructuredMesh, elemFields: Dict[str,ArrayLike]=None) -> Dict[str,FEField]:
+    """Create FEField(P0) from the elements field data.
     if elemFields is None the mesh.elemFields is used
 
     Parameters
     ----------
     mesh : UnstructuredMesh
-    nodeFields : dict
-        containing the nodes fields to be converted to FEFields
+        The support for the FEFields
+    elemFields : Dict[str,ArrayLike], optional
+        a dict containing the elements fields to be converted to FEFields
+        if elemFields is None the mesh.elemFields is used, by default None
 
     Returns
     -------
-    dict
-        dictionary the keys are field names and the values are the FEFields
+    Dict[str,FEField]
+        A dictionary the keys are field names and the values are the FEFields
     """
+
     if elemFields is None:
         elemFields = mesh.elemFields
     from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceP0
@@ -125,77 +129,74 @@ def ElemFieldsToFEField(mesh, elemFields=None):
             res[name] = FEField(name=name, mesh=mesh, space=LagrangeSpaceP0, numbering=numbering, data=np.asarray(values, dtype=PBasicFloatType, order="C"))
     return res
 
-def FEFieldsDataToVector(listOfFields,outvec=None):
-    """
-    Put FEFields data into a vector format
+def FEFieldsDataToVector(listOfFields: List[FEField], outVector: Optional[ArrayLike]=None) -> np.ndarray:
+    """Put FEFields data into a vector format
 
     Parameters
     ----------
-    listOfFields : list
+    listOfFields : List[FEField]
         list of FEFields (the order is important)
-    outvec :  np.ndarray
-        if provided the output vector
+    outVector : Optional[ArrayLike], optional
+        if provided the output vector, by default None
 
     Returns
     -------
     np.ndarray
-
+        _description_
     """
-    if outvec is None:
+
+    if outVector is None:
         s = sum([f.numbering.size for f in listOfFields])
-        outvec = np.zeros(s,dtype=PBasicFloatType)
+        outVector = np.zeros(s,dtype=PBasicFloatType)
     offset = 0
     for f in listOfFields:
-        outvec[offset:offset+f.numbering.size] = f.data
+        outVector[offset:offset+f.numbering.size] = f.data
         offset += f.numbering.size
-    return outvec
+    return outVector
 
-def VectorToFEFieldsData(invec,listOfFields):
-    """
-    Put vector data in FEFields
+def VectorToFEFieldsData(inVector: ArrayLike, listOfFields: List[FEField]):
+    """Put vector data in FEFields
 
     Parameters
     ----------
-    invec : np.ndarray
+    inVector : ArrayLike
         vector with the data
-    listOfFields : list
+    listOfFields : List[FEField]
         list of FEFields to store the data
-
     """
+
     offset = 0
     for f in listOfFields:
-        f.data = invec[offset:offset+f.numbering.size]
+        f.data = inVector[offset:offset+f.numbering.size]
         offset += f.numbering.size
 
-def GetPointRepresentation(listOfFEFields,fillvalue=0):
-    """
-    Get a np.ndarray compatible with the points of the mesh
+def GetPointRepresentation(listOfFEFields: List[FEField], fillValue: PBasicFloatType=0.) -> np.ndarray:
+    """Get a np.ndarray compatible with the points of the mesh
     for a list of FEFields. Each field in the list is treated
     as a scalar component for the output field
 
     Parameters
     ----------
-    listOfFEFields : list
+    listOfFEFields : List[FEField]
         list of FEFields to extract the information
-    fillvalue: float
+    fillValue : PBasicFloatType, optional
         value to use in the case some field are not defined
-        over all the nodes
+        over all the nodes, by default 0.
 
     Returns
     -------
-    np.array
-        Array  of size ( number of points, number of fields)
-
+    np.ndarray
+        the output and nd array of size (nb points, nb of FEField)
     """
-    nbfields= len(listOfFEFields)
-    res = np.empty((listOfFEFields[0].mesh.GetNumberOfNodes(), nbfields) )
+
+    nbFields= len(listOfFEFields)
+    res = np.empty((listOfFEFields[0].mesh.GetNumberOfNodes(), nbFields) )
     for i,f in enumerate(listOfFEFields):
-        res[:,i] = f.GetPointRepresentation(fillvalue=fillvalue)
+        res[:,i] = f.GetPointRepresentation(fillvalue= fillValue)
     return res
 
-def GetCellRepresentation(listOfFEFields,fillvalue=0):
-    """
-    Get a np.ndarray compatible with the points of the mesh
+def GetCellRepresentation(listOfFEFields: List[FEField], fillValue: PBasicFloatType=0., method="mean") -> np.ndarray:
+    """ Get a np.ndarray compatible with the points of the mesh
     for a list of FEFields. Each field in the list is treated
     as a scalar component for the output field
 
@@ -203,9 +204,11 @@ def GetCellRepresentation(listOfFEFields,fillvalue=0):
     ----------
     listOfFEFields : list
         list of FEFields to extract the information
-    fillvalue: float
+    fillValue: float
         value to use in the case some field are not defined
-        over all the nodes
+        over all the nodes, by default 0.
+    method: str | mean
+        Read FEField.GetCellRepresentation for more information, by default "mean".
 
     Returns
     -------
@@ -213,10 +216,10 @@ def GetCellRepresentation(listOfFEFields,fillvalue=0):
         Array  of size (number of elements, number of fields)
 
     """
-    nbfields= len(listOfFEFields)
-    res = np.empty((listOfFEFields[0].mesh.GetNumberOfElements(), nbfields))
+    nbFields= len(listOfFEFields)
+    res = np.empty((listOfFEFields[0].mesh.GetNumberOfElements(), nbFields))
     for i,f in enumerate(listOfFEFields):
-        res[:,i] = f.GetCellRepresentation(fillvalue=fillvalue)
+        res[:,i] = f.GetCellRepresentation(fillvalue=fillValue, method=method)
     return res
 
 class IntegrationPointWrapper(FieldBase):
@@ -276,7 +279,7 @@ DescriptionUnit = Tuple[Filter,DescriptionValue]
 
 def CreateFieldFromDescription(mesh: UnstructuredMesh,
                                fieldDefinition: Iterable[DescriptionUnit],
-                               ftype: str = "FE") -> Union[FEField,IPField]:
+                               fieldType: str = "FE") -> Union[FEField,IPField]:
     """
     Create a FEField from a field description
 
@@ -287,7 +290,7 @@ def CreateFieldFromDescription(mesh: UnstructuredMesh,
         A field definition is a list of Tuples (with 2 element each ).
         The first element of the tuple is a ElementFilter or a NodeFilter
         The second element of the tuple is a float or float returning callable (argument is a point in the space)
-    ftype : str, optional
+    fieldType : str, optional
         type of field created FEField or IPField
         ("FE", "FE-P0", "IP") by default "FE" (isoparametric)
 
@@ -296,27 +299,27 @@ def CreateFieldFromDescription(mesh: UnstructuredMesh,
     Union[FEField,IPField]
         created Field with values coming from the field description
     """
-    if ftype == "FE":
+    if fieldType == "FE":
         from BasicTools.FE.FETools import PrepareFEComputation
         spaces,numberings,offset, NGauss = PrepareFEComputation(mesh,numberOfComponents=1)
         res = FEField(mesh=mesh,space=spaces,numbering=numberings[0])
         res.Allocate()
         FillFEField(res,fieldDefinition)
 
-    elif ftype == "FE-P0":
+    elif fieldType == "FE-P0":
         from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceP0
         numbering = ComputeDofNumbering(mesh,LagrangeSpaceP0)
         res = FEField(mesh=mesh,space=LagrangeSpaceP0,numbering=numbering)
         res.Allocate()
         FillFEField(res,fieldDefinition)
 
-    elif ftype == "IP":
+    elif fieldType == "IP":
         res = IPField(mesh=mesh,ruleName="LagrangeIsoParam")
         res.Allocate()
         FillIPField(res,fieldDefinition)
 
     else:
-        raise(Exception("ftype not valid"))
+        raise(Exception("fieldType not valid"))
 
     return res
 
@@ -324,46 +327,75 @@ def GetTransferOpToIPField(inField: FEField,
                            ruleName: Optional[str] = None,
                            rule: Optional[Tuple[np.ndarray,np.ndarray]]=None,
                            der: int=-1,
-                           elementFilter:Optional[Union[ElementFilter,None]]=None):
-    """_summary_
+                           elementFilter:Optional[ElementFilter]=None) -> FeToIPOp:
+    """Compute the transfer operator (.dot()) to construct a IPField (of RestrictedIPField)
+        IPField = FeToIPOp.dot(FEField)
 
     Parameters
     ----------
     inField : FEField
-        _description_
+        the input FEField
     ruleName : Optional[str], optional
-        _description_, by default None
+        the ruleName of the integration rule to use, by default None
+        (see BasicTools.FE.IntegrationsRules:GetRule for more info)
     rule : Optional[Tuple[np.ndarray,np.ndarray]], optional
-        _description_, by default None
+        the integration rule to use, by default None
+        (see BasicTools.FE.IntegrationsRules:GetRule for more info)
     der : int, optional
-        _description_, by default -1
-    elementFilter : Optional[Union[ElementFilter,None]], optional
+        the coordinate to be derivated
+        -1 no derivations only evaluation at IP
+        [0,1,2] the coordinate number to compute derivative of the FEField
+        by default -1
+    elementFilter : Optional[ElementFilter], optional
+        An element filter to restrict the operator.
+        In this case a RestrictedIPField is generated
         _description_, by default None
 
     Returns
     -------
-    _type_
-        _description_
+    FeToIPOp
+        An instance of an object with the .dot operator
     """
     from BasicTools.FE.IntegrationsRules import GetRule
     from BasicTools.FE.Spaces.IPSpaces import GenerateSpaceForIntegrationPointInterpolation
     from BasicTools.FE.Integration import IntegrateGeneral
     from BasicTools.FE.DofNumbering import ComputeDofNumbering
 
-    irule = GetRule(ruleName=ruleName,rule=rule)
-    gaussSpace = GenerateSpaceForIntegrationPointInterpolation(irule)
+    iRule = GetRule(ruleName=ruleName,rule=rule)
+    gaussSpace = GenerateSpaceForIntegrationPointInterpolation(iRule)
     mesh = inField.mesh
 
     class FeToIPOp(dict):
-        def __init__(self,irule,elementFilter):
+        """Helper class to hold the transfer matrices between the FEField and the IPField
+
+        Parameters
+        ----------
+        iRule :
+            The integration rule to be used
+        elementFilter : ElementFilter
+            The ElementFilter to generate the RestrictedIPField
+        """
+        def __init__(self,iRule,elementFilter):
             super(FeToIPOp,self).__init__()
-            self.irule = irule
+            self.iRule = iRule
             self.elementFilter = elementFilter
-        def dot(self,inField):
-            return TransferFEFieldToIPField(inField,rule=self.irule,elementFilter=self.elementFilter,op=self)
 
+        def dot(self, inField: FEField) -> Union[IPField,RestrictedIPField]:
+            """Implementation of the transfer
 
-    res = FeToIPOp(irule,elementFilter=elementFilter)
+            Parameters
+            ----------
+            inField : FEField
+                input FEField
+
+            Returns
+            -------
+            Union[IPField,RestrictedIPField]
+                the type depends on the presence or not of a self.elementFilter
+            """
+            return TransferFEFieldToIPField(inField,rule=self.iRule,elementFilter=self.elementFilter,op=self)
+
+    res = FeToIPOp(iRule,elementFilter=elementFilter)
 
     for elemType,d in mesh.elements.items():
 
@@ -389,44 +421,72 @@ def GetTransferOpToIPField(inField: FEField,
         else:
             symForm = LF.diff(space[der]).T*RF
 
-        interpMatrixMatrix,_ = IntegrateGeneral(mesh=mesh,constants={},fields=[],wform=symForm,
+        transferMatrixMatrix,_ = IntegrateGeneral(mesh=mesh,constants={},fields=[],wform=symForm,
                                                 unkownFields= [inField],testFields=[rightField],
-                                                onlyEvaluation=True,integrationRule=irule,
+                                                onlyEvaluation=True,integrationRule=iRule,
                                                 elementFilter=eF)
-        res[elemType] = interpMatrixMatrix
+        res[elemType] = transferMatrixMatrix
 
     return res
 
+def TransferFEFieldToIPField(inFEField: FEField, ruleName:str=None, rule=None,der:int=-1, elementFilter:Optional[ElementFilter]=None, op =None)-> Union[IPField,RestrictedIPField]:
+    """Transfer FEField to a IPField
 
-def TransferFEFieldToIPField(inField, ruleName=None, rule=None,der=-1, elementFilter=None, op=None):
+    Parameters
+    ----------
+    inFEField : FEField
+        the input FEField
+    ruleName : Optional[str], optional
+        the ruleName of the integration rule to use, by default None
+        (see BasicTools.FE.IntegrationsRules:GetRule for more info)
+    rule : Optional[Tuple[np.ndarray,np.ndarray]], optional
+        the integration rule to use, by default None
+        (see BasicTools.FE.IntegrationsRules:GetRule for more info)
+    der : int, optional
+        the coordinate to be derivated
+        -1 no derivations only evaluation at IP
+        [0,1,2] the coordinate number to compute derivative of the FEField
+        by default -1
+    elementFilter : Optional[ElementFilter], optional
+        An element filter to restrict the operator.
+        In this case a RestrictedIPField is generated
+        _description_, by default None
+    op : _type_, optional
+        an object returned by the GetTransferOpToIPField function
+        if not given then this op is calculated internally
+        by default None
 
+    Returns
+    -------
+    Union[IPField,RestrictedIPField]
+        The field evaluated at the integration points
+    """
     if op is None:
-        op = GetTransferOpToIPField(inField=inField, ruleName=ruleName, rule=rule, der=der, elementFilter=elementFilter)
+        op = GetTransferOpToIPField(inField=inFEField, ruleName=ruleName, rule=rule, der=der, elementFilter=elementFilter)
 
     from BasicTools.FE.IntegrationsRules import GetRule
 
-    irule = GetRule(ruleName=ruleName,rule=rule)
+    iRule = GetRule(ruleName=ruleName,rule=rule)
     if elementFilter is None:
-        outField = IPField(name=inField.name,mesh=inField.mesh,rule=irule)
+        outField = IPField(name=inFEField.name,mesh=inFEField.mesh,rule=iRule)
         outField.Allocate()
     else:
-        outField = RestrictedIPField(name=inField.name, mesh=inField.mesh, rule=irule, elementFilter=elementFilter)
+        outField = RestrictedIPField(name=inFEField.name, mesh=inFEField.mesh, rule=iRule, elementFilter=elementFilter)
         outField.Allocate()
 
-    mesh = inField.mesh
+    mesh = inFEField.mesh
     for elemType,d in mesh.elements.items():
         if elemType not in op :
             continue
-        nbelements = op[elemType].shape[0]//len(irule[elemType][1])
+        nbElements = op[elemType].shape[0]//len(iRule[elemType][1])
 
-        data = op[elemType].dot(inField.data)
-        outField.data[elemType] = np.reshape(data,(nbelements, len(irule[elemType][1]) ),'F')
+        data = op[elemType].dot(inFEField.data)
+        outField.data[elemType] = np.reshape(data,(nbElements, len(iRule[elemType][1]) ),'F')
         outField.data[elemType] = np.ascontiguousarray(outField.data[elemType])
 
     return outField
 
-
-def TranferPosToIPField(mesh: UnstructuredMesh,
+def TransferPosToIPField(mesh: UnstructuredMesh,
                         ruleName: Optional[str] = None,
                         rule: Optional[Tuple[np.ndarray,np.ndarray]] = None,
                         elementFilter: Optional[ElementFilter]= None) -> List[IPField] :
@@ -473,7 +533,6 @@ def FillIPField(field : IPField, fieldDefinition) -> None:
     """
     Fill a IPField using a definition
 
-
     Parameters
     ----------
     field : IPField
@@ -486,37 +545,35 @@ def FillIPField(field : IPField, fieldDefinition) -> None:
 
     for f,val in fieldDefinition:
         if callable(val):
-            fval = val
+            fValue = val
         else:
-            fval = lambda x: val
+            fValue = lambda x: val
 
         f.mesh = field.mesh
         if isinstance(f,ElementFilter):
             for name,elements,ids in f:
                 geoSpace = LagrangeSpaceGeo[name]
                 rule = field.GetRuleFor(name)
-                nbip = len(rule[1])
-                geospace_ipvalues = geoSpace.SetIntegrationRule(rule[0],rule[1] )
+                nbIp = len(rule[1])
+                geoSpaceIpValues = geoSpace.SetIntegrationRule(rule[0],rule[1] )
 
-                for elid in ids:
-                    for i in range(nbip):
-                        valN = geospace_ipvalues.valN[i]
-                        xcoor = field.mesh.nodes[elements.connectivity[elid,:],:]
-                        pos = np.dot(valN ,xcoor).T
-                        field.data[name][elid,i] = fval(pos)
+                for elementsId in ids:
+                    for i in range(nbIp):
+                        valN = geoSpaceIpValues.valN[i]
+                        elementNodesCoordinates = field.mesh.nodes[elements.connectivity[elementsId,:],:]
+                        pos = np.dot(valN ,elementNodesCoordinates).T
+                        field.data[name][elementsId,i] = fValue(pos)
             continue
-        raise(Exception("Cant use this type of filter to fill an IPField : {}".format(str(type(f)))))
+        raise ValueError(f"Cant use this type of filter to fill an IPField : {type(f)}")
 
 def FillFEField(field : FEField, fieldDefinition) -> None:
-    """
-    Fill a FEField using a definition
-
+    """ Fill a FEField using a definition
 
     Parameters
     ----------
     field : FEField
         FEField to treat
-    fieldDefinition : List[Tuple[Union[ElementFilter,NodeFilter],Union[float,Callable[[np.ndarray],float]]]]
+    fieldDefinition : List[Tuple[Union[ElementFilter, NodeFilter], Union[float, Callable[[np.ndarray], float]]]]
         A field definition is a list of Tuples (with 2 element each ).
         The first element of the tuple is a ElementFilter or a NodeFilter
         The second element of the tuple is a float or float returning callable (argument is a point in the space)
@@ -524,66 +581,86 @@ def FillFEField(field : FEField, fieldDefinition) -> None:
     for f,val in fieldDefinition:
         needPos = False
         if callable(val):
-            fval = val
+            fValue = val
             needPos = True
         else:
-            fval = lambda x: val
+            fValue = lambda x: val
 
         f.mesh = field.mesh
         if isinstance(f,(ElementFilter,FilterOP)):
 
             for name,elements,ids in f:
+                print(name)
                 geoSpace = LagrangeSpaceGeo[name]
                 sp = field.space[name]
-                nbsf = sp.GetNumberOfShapeFunctions()
-                geospace_ipvalues  = geoSpace.SetIntegrationRule(sp.posN,np.ones(nbsf) )
+                nbShapeFunctions = sp.GetNumberOfShapeFunctions()
+                geoSpaceIpValues  = geoSpace.SetIntegrationRule(sp.posN,np.ones(nbShapeFunctions) )
 
                 if needPos == False:
-                    iddofs = field.numbering[name][ids,:].flatten()
-                    field.data[iddofs] = fval(None)
+                    idDofs = field.numbering[name][ids,:].flatten()
+                    field.data[idDofs] = fValue(None)
                     continue
-                for elid in ids:
-                    for i in range(nbsf):
-                        dofid = field.numbering[name][elid,i]
-                        if needPos:
-                            valN = geospace_ipvalues.valN[i]
-                            xcoor = field.mesh.nodes[elements.connectivity[elid,:],:]
-                            pos = np.dot(valN ,xcoor).T
-                            field.data[dofid] = fval(pos)
-                        else:
-                            field.data[dofid] = fval(None)
+                for elementId in ids:
+                    for i in range(nbShapeFunctions):
+                        dofId = field.numbering[name][elementId,i]
+                        valN = geoSpaceIpValues.valN[i]
+                        elementNodesCoordinates = field.mesh.nodes[elements.connectivity[elementId,:],:]
+                        pos = np.dot(valN ,elementNodesCoordinates).T
+                        field.data[dofId] = fValue(pos)
 
         elif isinstance(f,NodeFilter):
             ids = f.GetIdsToTreat()
             for pid in ids:
-                dofid = field.numbering.GetDofOfPoint(pid)
+                dofId = field.numbering.GetDofOfPoint(pid)
                 pos = field.mesh.nodes[pid,:]
-                field.data[dofid] = fval(pos)
+                field.data[dofId] = fValue(pos)
         else:
-            raise(Exception("Dont know how to treat this type of field {}".format(str(type(f)) )))
+            raise ValueError(f"Don't know how to treat this type of field {type(f)}")
 
+def FieldsAtIp(listOfFields: List[Union[FEField,IPField,RestrictedIPField]], rule, elementFilter:Optional[ElementFilter]=None) -> List[Union[IntegrationPointWrapper,IPField,RestrictedIPField]]:
+    """Convert a list of Field (FEFields,IPField,RestrictedIPField) to a list of IPFields
 
-def FieldsAtIp(listOfFields,rule,efmask=None):
+    Parameters
+    ----------
+    listOfFields : List[Union[IPField,RestrictedIPField]]
+        the list of fields to be treated
+    rule : _type_
+        the integration rule to be used for the evaluation
+    elementFilter : Optional[ElementFilter], optional
+        the filter to select the element to treat, by default None
+
+    Returns
+    -------
+    List[Union[IntegrationPointWrapper,IPField,RestrictedIPField]]
+        the list of IPFilters
+
+    Raises
+    ------
+    Exception
+        in the case of a internal error
+    """
     from BasicTools.FE.Fields.FieldTools import IntegrationPointWrapper
     res = []
     for f in listOfFields:
         if isinstance(f,FEField):
-            res.append(IntegrationPointWrapper(f,rule,efmask=efmask))
+            res.append(IntegrationPointWrapper(f,rule,efmask=elementFilter))
         elif isinstance(f,IPField):
             if f.rule == rule:
-                if efmask is None:
+                if elementFilter is None:
                     res.append(f)
                 else:
-                    res.append(f.GetRestrictedIPField(efmask) )
+                    res.append(f.GetRestrictedIPField(elementFilter) )
             else:
                 print (f.rule)
                 print (rule)
-                print(f"skiping ipfield {f.name} because it has a not compatible IP rule type {str(type(f))}")
+                print(f"skipping IPField {f.name} because it has a not compatible IP rule type {str(type(f))}")
         else:
-            raise(Exception("Dont know how to treat this type of field {}".format(str(type(f)) )))
+            raise Exception(f"Don't know how to treat this type of field {type(f)}")
     return res
 
 class FieldsMeshTransportation():
+    """Class to help the transfer of field (FEField and IPField) between old and new meshes
+    """
     def __init__(self):
         self.cache_numbering = {}
 
@@ -591,94 +668,152 @@ class FieldsMeshTransportation():
         self.cache_numbering = {}
 
     def GetNumbering(self, mesh, space, fromConnectivity=False,discontinuous=False):
-        meshid = str(id(mesh))
-        spaceid = str(id(space))
-        key = (meshid,spaceid,fromConnectivity,discontinuous)
+        meshId = str(id(mesh))
+        spaceId = str(id(space))
+        key = (meshId,spaceId,fromConnectivity,discontinuous)
 
         if key not in self.cache_numbering:
             self.cache_numbering[key] = ComputeDofNumbering(mesh, space, fromConnectivity=True,discontinuous=False)
         return self.cache_numbering[key]
 
-    def TransportFEFieldToOldMesh(self,oldmesh, infield, fillvalue=0.):
-        """ function to define a FEField on the oldmesh, the infield mesh must be a
-        tranformation of the oldmesh. This means the infield mesh originalids
-        (for nodes and elements) must be with respect to the oldmesh
+    def TransportFEFieldToOldMesh(self, oldMesh: UnstructuredMesh, inFEField: FEField, fillValue: PBasicFloatType=0.) -> FEField:
+        """Function to define a FEField on the old mesh, the inFEField mesh must be a
+        transformation of the old mesh. This means the infield mesh originalIds
+        (for nodes and elements) must be with respect to the old mesh.
 
-        if fillvalue is None, a partial field is generated on the old mesh.
-        if fillvalue is not None, a fill over the full mesh is generated with fillvalues
-        on dofs not availables on the infield
+        Parameters
+        ----------
+        oldMesh : UnstructuredMesh
+            the old mesh
+        inFEField : FEField
+            a FEField
+        fillValue : PBasicFloatType, optional
+            Value to fill the values of the dofs not present in the inFEField , by default 0.
+
+        Returns
+        -------
+        FEField
+            a FEField on the old mesh filled with the values of the inFEField
         """
 
-        if id(infield.mesh) == id(oldmesh):
-            return infield
+        if id(inFEField.mesh) == id(oldMesh):
+            return inFEField
 
-        name = infield.name
-        space = infield.space
-        if infield.numbering.fromConnectivity:
-            numbering = ComputeDofNumbering(oldmesh, space, fromConnectivity=True)
-            res = FEField(name = name, mesh=oldmesh, space=space, numbering=numbering)
-            res.Allocate(fillvalue)
-            res.data[infield.mesh.originalIDNodes] = infield.data
+        name = inFEField.name
+        space = inFEField.space
+        if inFEField.numbering.fromConnectivity:
+            numbering = ComputeDofNumbering(oldMesh, space, fromConnectivity=True)
+            res = FEField(name = name, mesh=oldMesh, space=space, numbering=numbering)
+            res.Allocate(fillValue)
+            res.data[inFEField.mesh.originalIDNodes] = inFEField.data
         else :
-            numbering =self.GetNumbering(oldmesh,space)
-            #numbering = ComputeDofNumbering(oldmesh, space)
-            res = FEField(name = name, mesh=oldmesh, space=space, numbering=numbering)
-            res.Allocate(fillvalue)
-            for name,data in oldmesh.elements.items():
-                if name  not in infield.mesh.elements:
+            numbering =self.GetNumbering(oldMesh,space)
+            res = FEField(name = name, mesh=oldMesh, space=space, numbering=numbering)
+            res.Allocate(fillValue)
+            for name,data in oldMesh.elements.items():
+                if name  not in inFEField.mesh.elements:
                     continue
-                newdata = infield.mesh.elements[name]
-                res.data[numbering[name][newdata.originalIds,:].flatten()]= infield.data[infield.numbering[name].flatten()]
+                newData = inFEField.mesh.elements[name]
+                res.data[numbering[name][newData.originalIds,:].flatten()]= inFEField.data[inFEField.numbering[name].flatten()]
         return res
 
-    def TransportFEFieldToNewMesh(self,infield,newmesh):
-        """ function to define a FEField on the newmesh, the new mesh must be a
-        tranformation of the mesh in the infield. This means the newmesh originalids
-        (for nodes and elements) must be with respect tot the mesh of the infield
+    def TransportFEFieldToNewMesh(self, inFEField: FEField, newMesh: UnstructuredMesh)-> FEField:
+        """Function to define a FEField on the new mesh, the new mesh must be a
+        transformation of the mesh in the infield. This means the new mesh originalIds
+        (for nodes and elements) must be with respect to the mesh of the infield
+
+        Parameters
+        ----------
+        inFEField : FEField
+            the FEField to be transported to the new mesh
+        newMesh : UnstructuredMesh
+            the target mesh
+
+        Returns
+        -------
+        FEField
+            a FEField defined on the newMesh
         """
 
-        if id(infield.mesh) == id(newmesh):
-            return infield
+        if id(inFEField.mesh) == id(newMesh):
+            return inFEField
 
-        name = infield.name
-        space = infield.space
-        if  infield.numbering.fromConnectivity:
-            numbering = ComputeDofNumbering(newmesh,space,fromConnectivity=True)
-            res = FEField(name = name, mesh=newmesh, space=space, numbering=numbering)
-            res.data = infield.data[newmesh.originalIDNodes]
+        name = inFEField.name
+        space = inFEField.space
+        if  inFEField.numbering.fromConnectivity:
+            numbering = ComputeDofNumbering(newMesh,space,fromConnectivity=True)
+            res = FEField(name = name, mesh=newMesh, space=space, numbering=numbering)
+            res.data = inFEField.data[newMesh.originalIDNodes]
         else:
-            numbering = ComputeDofNumbering(newmesh, space)
-            res = FEField(name = name, mesh=newmesh, space=space, numbering=numbering)
+            numbering = ComputeDofNumbering(newMesh, space)
+            res = FEField(name = name, mesh=newMesh, space=space, numbering=numbering)
             res.Allocate()
-            for name,data in newmesh.elements.items():
-                res.data[numbering.numbering[name].flatten()] = infield.data[infield.numbering[name][data.originalIds,:].flatten()]
+            for name,data in newMesh.elements.items():
+                res.data[numbering.numbering[name].flatten()] = inFEField.data[inFEField.numbering[name][data.originalIds,:].flatten()]
         return res
 
-    def TransportIPFieldToOldMesh(self,oldmesh,ipfield):
-        if id(ipfield.mesh) == id(oldmesh):
-            return ipfield
+    def TransportIPFieldToOldMesh(self, oldMesh:UnstructuredMesh, inIPField:IPField)->IPField:
+        """function to define a IPField on the old mesh, the old mesh must be the origin
+        of a transformation of the mesh in the IPField. This means the IPField mesh originalIds
+        (for nodes and elements) must be with respect to the old mesh
 
-        outdata = {}
-        for elemType,data in ipfield.mesh.elements.items():
-            indata = ipfield.data[elemType]
-            outdata[elemType] = np.zeros((oldmesh.elements[elemType].GetNumberOfElements(),indata.shape[1]))
-            outdata[elemType][data.originalIds,:] = ipfield.data[elemType]
-        res = IPField(name=ipfield.name,mesh=oldmesh,rule=ipfield.rule,data=outdata)
+        Parameters
+        ----------
+        oldMesh : UnstructuredMesh
+            the old mesh
+        inIPField : IPField
+            the IPField to be transported to the old mesh
+
+        Returns
+        -------
+        IPField
+            a IPField defined on the old Mesh
+        """
+        if id(inIPField.mesh) == id(oldMesh):
+            return inIPField
+
+        outData = {}
+        for elemType,data in inIPField.mesh.elements.items():
+            inData = inIPField.data[elemType]
+            outData[elemType] = np.zeros((oldMesh.elements[elemType].GetNumberOfElements(),inData.shape[1]))
+            outData[elemType][data.originalIds,:] = inIPField.data[elemType]
+        res = inIPField(name=inIPField.name,mesh=oldMesh,rule=inIPField.rule,data=outData)
         return res
 
+    def TransportIPFieldToNewMesh(self, inIPField:IPField, newMesh:UnstructuredMesh)->IPField:
+        """Function to define a IPField on the new mesh, the new mesh must be a
+        transformation of the mesh in the infield. This means the new mesh originalIds
+        (for nodes and elements) must be with respect to the mesh of the infield
 
-    def TransportIPFieldToNewMesh(self,ipfield,newmesh):
-        if id(ipfield.mesh) == id(newmesh):
-            return ipfield
+        Parameters
+        ----------
+        inIPField : IPField
+            the FEField to be transported to the new mesh
+        newMesh : UnstructuredMesh
+            the target mesh
 
-        outputdata = {}
-        for elemType,data in newmesh.elements.items():
-            outputdata[elemType] = ipfield.data[elemType][data.originalIds,:]
-        res = IPField(name=ipfield.name,mesh=newmesh,rule=ipfield.rule,data=outputdata)
+        Returns
+        -------
+        IPField
+            a IPField defined on the newMesh
+        """
+        if id(inIPField.mesh) == id(newMesh):
+            return inIPField
+
+        outputData = {}
+        for elemType,data in newMesh.elements.items():
+            outputData[elemType] = inIPField.data[elemType][data.originalIds,:]
+        res = IPField(name=inIPField.name,mesh=newMesh,rule=inIPField.rule,data=outputData)
         return res
-
 
 class FieldsEvaluator():
+    """helper to evaluate expression using FEField and IPFields
+    The user can add fields and constants
+    Then this class can be used to compute an expression (given using an callable object)
+    the callable can capture some of the argument but the last must be **args (so extra
+    argument are ignored).
+
+    """
     def __init__(self,fields=None):
         self.originals = {}
         from BasicTools.FE.IntegrationsRules import IntegrationRulesAlmanac
@@ -688,26 +823,69 @@ class FieldsEvaluator():
         self.atCenter = {}
         if fields is not None:
             for f in fields:
-                self.Addfield(f)
+                self.AddField(f)
         self.constants = {}
         self.efmask = None
         self.modified = True
 
-    def AddField(self,field):
+    def AddField(self, field: FieldBase):
+        """Add a field to the internal almanac
+
+        Parameters
+        ----------
+        field : FieldBase
+            A field to be added to the almanac
+        """
         self.originals[field.name] = field
 
-    def AddConstant(self,name,val):
+    def AddConstant(self, name: str, val: PBasicFloatType):
+        """Add a constant value to the almanac
+
+        Parameters
+        ----------
+        name : str
+            name of the value
+        val : PBasicFloatType
+            Value
+        """
         self.constants[name] = val
 
-    def Update(self,what="all"):
+    def Update(self, what: str="all"):
+        """Function to update the field calculated at different support
+        (a FEField can be internally evaluated at the integration points)
+        The objective of this function is to update this evaluation
+
+        Parameters
+        ----------
+        what : str, optional
+            ["all", "IPField", "Centroids"], by default "all"
+        """
         for name,field in self.originals.items():
             if what=="all" or what =="IPField":
-                self.atIp[name] = FieldsAtIp([field],self.rule,efmask=self.efmask)[0]
+                self.atIp[name] = FieldsAtIp([field],self.rule,elementFilter=self.efmask)[0]
 
             if what=="all" or what =="Centroids":
-                self.atCenter[name] = FieldsAtIp([field],self.ruleAtCenter,efmask=self.efmask)[0]
+                self.atCenter[name] = FieldsAtIp([field],self.ruleAtCenter,elementFilter=self.efmask)[0]
 
-    def GetFieldsAt(self,on):
+    def GetFieldsAt(self, on:str) -> Dict:
+        """Get the internal representations of the user fields ant different support
+
+        Parameters
+        ----------
+        on : str
+            ["IPField", "Centroids", "FEField", "Nodes"]
+
+        Returns
+        -------
+        Dict
+            A dictionary containing the different representation of the user fields
+
+        Raises
+        ------
+        ValueError
+            In the case the "on" parameter is not valid
+        """
+
         if on == "IPField":
             res =  self.atIp
         elif on == "Nodes":
@@ -719,7 +897,7 @@ class FieldsEvaluator():
         elif on == "FEField":
             res = self.originals
         else:
-            raise Exception("Target support not supported (" + str(on) + ")" )
+            raise ValueError(f"Target support not supported ({on})" )
         result = dict(self.constants)
         result.update(res)
         return result
@@ -730,6 +908,10 @@ class FieldsEvaluator():
         from BasicTools.FE.SymWeakForm import space
 
         class OptimizedFunction():
+            """ Internal function to convert a function written in python into a
+            compiled sympy function.
+
+            """
             def __init__(self,func,constants):
                 self.constants = dict(constants)
                 # get arguments names
@@ -738,30 +920,30 @@ class FieldsEvaluator():
                 if args[0] == "self":
                     args.pop(0)
 
-                symbsimbols = {}
+                symbolicSymbols = {}
 
                 self.args = args
                 for n  in args:
                     if n in self.constants:
-                        symbsimbols[n] = self.constants[n]
+                        symbolicSymbols[n] = self.constants[n]
                     else:
-                        symbsimbols[n] = sympy.Function(n)(*space)
-                #symbolicaly evaluation of the function
-                funcValues = func(**symbsimbols)
+                        symbolicSymbols[n] = sympy.Function(n)(*space)
+                #symbolically evaluation of the function
+                funcValues = func(**symbolicSymbols)
 
-                repl, redu = sympy.cse(funcValues)
+                repl, residual = sympy.cse(funcValues)
 
-                restkeys = list(symbsimbols.keys())
-                restkeys.extend(["x","y","z"])
-                self.auxFuncs = []
+                restKeys = list(symbolicSymbols.keys())
+                restKeys.extend(["x","y","z"])
+                self.auxFunctions = []
                 self.auxNames = []
                 for i, v in enumerate(repl):
-                    funclam = sympy.lambdify(restkeys,v[1])
-                    self.auxFuncs.append(funclam)
-                    funname = str(v[0])
-                    self.auxNames.append(funname)
-                    restkeys.append(str(v[0]))
-                self.mainFunc = sympy.lambdify(restkeys,redu)
+                    funcLam = sympy.lambdify(restKeys,v[1])
+                    self.auxFunctions.append(funcLam)
+                    funcName = str(v[0])
+                    self.auxNames.append(funcName)
+                    restKeys.append(str(v[0]))
+                self.mainFunc = sympy.lambdify(restKeys,residual)
 
             def __call__(self,**args):
                 numericFields = {"x":0,"y":0,"z":0}
@@ -778,46 +960,46 @@ class FieldsEvaluator():
                     else:
                         numericFields[n] = Toto(args[n])
 
-                for name,func in zip(self.auxNames,self.auxFuncs):
+                for name,func in zip(self.auxNames, self.auxFunctions):
                     numericFields[name] = func(**numericFields)
                 return self.mainFunc(**numericFields)[0]
 
         return OptimizedFunction(func,self.constants)
 
-    def Compute(self,func, on,usesympy=False,ef=None):
+    def Compute(self, func: Callable, on:str, useSympy:bool=False):
+        """Compute the function func using the user fields on the support "on"
 
-        if usesympy:
+
+        Parameters
+        ----------
+        func : Callable
+            the function to evaluate
+        on : str
+             ["IPField", "Centroids", "FEField", "Nodes"]
+        useSympy : bool, optional
+            if true the function is compiled using sympy , by default False
+
+        Returns
+        -------
+        Any
+            The callable evaluated
+        """
+
+        if useSympy:
             func = self.GetOptimizedFunction(func)
 
         fields = self.GetFieldsAt(on)
         return func(**fields)
 
-        if on == "IPField":
-            return func(**self.atIp)
-        elif on == "Nodes":
-            fields = {}
-            for f in self.originals.values():
-                if isinstance(f,FEField) and f.space == LagrangeSpaceGeo :
-                    fields[f.name] = f
-            return func(**fields)
-        elif on == "Centroids":
-            return func(**self.atCenter).data
-        elif on == "FEField":
-            return func(**self.originals)
-        elif on == "IPField":
-            return func(**self.atCenter)
-        else:
-            raise
-
-def ComputeTransfertOp(field1: FEField, field2: FEField, force: bool = False):
+def ComputeTransferOp(field1: FEField, field2: FEField, force: bool = False)-> Tuple[np.ndarray, np.ndarray]:
     """
-    Compute the transfert Operator from field1 to field2
-    Boths fields must be compatibles fields: same mesh, same space
+    Compute the transfer Operator from field1 to field2
+    Both fields must be compatibles fields: same mesh, same space
     but with different numberings
 
     - example of use:
 
-        lIndex,rRndex = ComputeTransfertOp(field1,field2):
+        lIndex,rIndex = ComputeTransferOp(field1,field2):
 
         field2.data[lIndex] = field1.data[rIndex]
 
@@ -880,7 +1062,7 @@ def CheckIntegrity(GUI=False):
     fieldDefinition.append( (ElementFilter(tags=["Last" ]), -1) )
     fieldDefinition.append( (ElementFilter(tags=["next3" ]), lambda x : x[0]) )
 
-    field = CreateFieldFromDescription(mesh, fieldDefinition, ftype="IP" )
+    field = CreateFieldFromDescription(mesh, fieldDefinition, fieldType="IP" )
     print(field)
     print(field.data)
 
@@ -894,16 +1076,16 @@ def CheckIntegrity(GUI=False):
 
 
     print("--*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-")
-    nodalTransferedField = TransferFEFieldToIPField(field,ruleName="LagrangeIsoParam",elementFilter=ElementFilter(dimensionality=1,tag="next3"))
+    nodalTransferredField = TransferFEFieldToIPField(field,ruleName="LagrangeIsoParam",elementFilter=ElementFilter(dimensionality=1,tag="next3"))
     print("--*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*--")
     print("input")
     print(field.data)
     print("output")
-    print(nodalTransferedField.data )
+    print(nodalTransferredField.data )
 
-    print(nodalTransferedField.GetIpFieldRepresentation(1).data)
+    print(nodalTransferredField.GetIpFieldRepresentation(1).data)
 
-    res = TranferPosToIPField(mesh,ruleName="LagrangeIsoParam",elementFilter=ElementFilter(dimensionality=1,tag="next3"))
+    res = TransferPosToIPField(mesh,ruleName="LagrangeIsoParam",elementFilter=ElementFilter(dimensionality=1,tag="next3"))
     print(res[0].data)
     print(res[0].GetIpFieldRepresentation().data)
 
@@ -926,7 +1108,7 @@ def CheckIntegrity(GUI=False):
     print(res.data)
 
 
-    res = FE.Compute(op,"FEField",usesympy=True)
+    res = FE.Compute(op,"FEField", useSympy=True)
     print(res.data)
     mesh.nodeFields["FEField_onPoints"] = GetPointRepresentation((res,))
 
@@ -935,9 +1117,9 @@ def CheckIntegrity(GUI=False):
     print(NodeFieldToFEField(mesh))
     print(ElemFieldsToFEField(mesh))
 
-    vect = FEFieldsDataToVector([res])
+    vector = FEFieldsDataToVector([res])
 
-    VectorToFEFieldsData(vect,[res])
+    VectorToFEFieldsData(vector,[res])
     res = FE.GetOptimizedFunction(op)
 
     obj = FieldsMeshTransportation()
