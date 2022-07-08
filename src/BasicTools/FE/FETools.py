@@ -624,8 +624,8 @@ def CellDataToIntegrationPointsData(mesh, scalarFields, elementSet = None, relat
     mesh : UnstructuredMesh
         mesh on which the function is applied
     scalarFields : np.ndarray of size (nbe of fields, nbe of elements) or dict
-        with "nbe of fields" as keys and np.ndarray of size (nbe of elements,) as
-        values fields whose representation in changed by the function
+        with "nbe of fields" as keys and np.ndarray of size (nbe of elements,) or floats
+        as values fields whose representation is changed by the function
     elementSet : elementSet defining the elements on which the function is
         computed. If None, takes all the elements of considered dimension
     relativeDimension : int (0, -1 or -2)
@@ -654,6 +654,12 @@ def CellDataToIntegrationPointsData(mesh, scalarFields, elementSet = None, relat
         raise("scalarFields is neither an np.ndarray nor a dict")
 
     numberOfFields = len(keymap)
+    typeField = []
+    for f in range(numberOfFields):
+        if type(scalarFields[keymap[f]]) == float:
+            typeField.append("scalar")
+        else:
+            typeField.append("vector")
 
     integrationPointsData = np.empty((numberOfFields, NGauss))
 
@@ -667,7 +673,10 @@ def CellDataToIntegrationPointsData(mesh, scalarFields, elementSet = None, relat
         for el in ids:
 
             for f in range(numberOfFields):
-                integrationPointsData[f,countIp:countIp+numberOfIPperEl] = scalarFields[keymap[f]][countEl]
+                if typeField[f] == "vector":
+                    integrationPointsData[f,countIp:countIp+numberOfIPperEl] = scalarFields[keymap[f]][countEl]
+                else:
+                    integrationPointsData[f,countIp:countIp+numberOfIPperEl] = scalarFields[keymap[f]]
 
             countEl += 1
             countIp += numberOfIPperEl
@@ -737,7 +746,8 @@ def CheckIntegrity(GUI=False):
     ComputeIntegrationPointsTags(mesh, 3)
     ComputeNormalsAtIntegPoint(mesh, ["x0"])
     length = len(mesh.elements["quad4"].tags["x0"].GetIds())
-    CellDataToIntegrationPointsData(mesh, np.ones((2,length)), "x0", relativeDimension=-1)
+    fields = {'a': np.ones(length), 'b':1.}
+    CellDataToIntegrationPointsData(mesh, fields, "x0", relativeDimension=-1)
     res = CellDataToIntegrationPointsData(mesh, np.ones((2,216)))
     nGauss = res.shape[1]
     IntegrationPointsToCellData(mesh, np.ones((2,nGauss)))
