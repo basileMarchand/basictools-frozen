@@ -36,20 +36,21 @@ class KWriter(WriterBase):
 
         #Node tags
         for i, tag in enumerate(meshObject.nodesTags):
-            self.writeText("*SET_NODE_LIST\n")
-            self.writeText("$#     sid\n")
-            self.writeText(str(i+1).rjust(10)+"\n")# i+1 is the number of the node tag among the list of nodesTags
-            self.writeText("$#    nid1      nid2      nid3      nid4      nid5      nid6      nid7      nid8\n")
-            listOfIds = [tag.GetIds()[j:j+8] for j in range(0, len(tag.GetIds()), 8)]
-            for line in listOfIds:
-                node_line = ""
-                if useOriginalId:
-                    for n in range(len(line)):
-                        node_line += str(meshObject.originalIDNodes[line[n]]).rjust(10)
-                else:
-                    for ind in line:
-                        node_line += str(ind+1).rjust(10)
-                self.writeText(node_line + "\n")
+            if len(tag.GetIds())>0:
+                self.writeText("*SET_NODE_LIST\n")
+                self.writeText("$#     sid\n")
+                self.writeText(str(i+1).rjust(10)+"\n")# i+1 is the number of the node tag among the list of nodesTags
+                self.writeText("$#    nid1      nid2      nid3      nid4      nid5      nid6      nid7      nid8\n")
+                listOfIds = [tag.GetIds()[j:j+8] for j in range(0, len(tag.GetIds()), 8)]
+                for line in listOfIds:
+                    node_line = ""
+                    if useOriginalId:
+                        for n in range(len(line)):
+                            node_line += str(meshObject.originalIDNodes[line[n]]).rjust(10)
+                    else:
+                        for ind in line:
+                            node_line += str(ind+1).rjust(10)
+                    self.writeText(node_line + "\n")
 
         #Elements
         from BasicTools.Containers import Filters as F
