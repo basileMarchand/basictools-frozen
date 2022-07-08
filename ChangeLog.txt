@@ -34,6 +34,7 @@ Better API for field extraction on the XdmfReader class
 Add the abs operator for FieldBase
 The MeshFileConverter can covert temporal data between 2 temporal aware readers/writers
 New GetDataOverALine to extract information of fields on the point of the line
+new ToQuadraticMesh to convert any mesh to quadratic elements
 
 API Changes:
 ************
@@ -50,10 +51,12 @@ GetFieldTransferOp argument name change elementfilter -> elementFilter
 
 Deprecated Functions:
 *********************
+Many argument name changes mainly conversion to pascal case
 (UnstructuredMeshInspectionTools.py) VolumeOfHexaedrons -> use GetVolumePerElement
 (UnstructuredMeshInspectionTools.py) VolumeOfTetrahedrons -> use GetVolumePerElement
 (UnstructuredMeshInspectionTools.py) ExtractElementsByImplicitZone -> use ExtractElementsByElementFilter, CleanLonelyNodes
 (UnstructuredMeshInspectionTools.py) ExtractElementByDimensionalityNoCopy -> ExtractElementsByElementFilter(mesh, ElementFilter(mesh,dimensionality=dim), copy=False)
+(UnstructuredMeshCreationTools.py) change name Creat0DElementAtEveryPoint to  Create0DElementContainerForEveryPoint and change of behavior please read the documentation
 
 
 New in version 1.7.1:
