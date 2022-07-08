@@ -123,7 +123,7 @@ class XdmfGrid(Xdmfbase):
             res.SetSpacing(self.geometry.GetSpacing())
             swaper = [2,1,0]
             res.SetDimensions(self.topology.GetDimensions()[swaper])
-            return res
+
         if self.geometry.Type == "XYZ":
             from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
             res = UnstructuredMesh()
@@ -134,7 +134,7 @@ class XdmfGrid(Xdmfbase):
             if np.linalg.norm(res.nodes[:,2]) == 0:
                 from BasicTools.Containers.UnstructuredMeshModificationTools import LowerNodesDimension
                 res = LowerNodesDimension(res)
-            return res
+
         if self.geometry.Type == "XY":
             from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
             res = UnstructuredMesh()
@@ -142,7 +142,23 @@ class XdmfGrid(Xdmfbase):
             res.elements = self.topology.GetConnectivity()
             res.GenerateManufacturedOriginalIDs()
             res.PrepareForOutput()
-            return res
+
+        nodeFields = {name : self.GetPointField(name)[0] for name in  self.GetPointFieldsNames()}
+        elemFields = {name : self.GetCellField(name)[0] for name in  self.GetCellFieldsNames()}
+
+        for name,data in nodeFields.items():
+            if data.shape[0] == res.GetNumberOfNodes() and data.dtype == np.int8 and np.min(data) == 0 and np.max(data)==1:
+                res.nodesTags.CreateTag(name).SetIds(np.where(data==1)[0])
+            else:
+                res.nodeFields[name] = data
+
+        for name, data in elemFields.items():
+            if data.shape[0] == res.GetNumberOfElements() and data.dtype == np.int8 and np.min(data) == 0 and np.max(data)==1:
+                res.AddElementsToTag(np.where(data)[0],tagname=name)
+            else:
+                res.elemFields[name] = data
+
+        return res
 
     def ReadAttributes(self,attrs):
         self.Name = self.ReadAttribute(attrs,'Name',default="")
