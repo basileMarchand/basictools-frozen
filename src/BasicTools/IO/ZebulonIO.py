@@ -546,7 +546,6 @@ def GetLoadings(data):
     if temperatureLoading:
         loadings['temperature'] = [[["ALLNODE", temperatureLoading]]]
 
-
     return loadings
 
 
@@ -596,7 +595,11 @@ def GetParameterFiles(data, parameterName = None):
         for j in range(1, len(paraFilesData[i])):
           line = " ".join(paraFilesData[i][j])
           timeStamp = float(rx.findall(line)[0])
-          fileName  = line.split("file ")[-1].split(" ")[0]
+          if line.find("file") == -1:
+              fileName = float(line.split("uniform ")[-1].split(" ")[0])
+          else:
+              res = line.split("file ")[-1].split(" ")
+              fileName = res[0]+"|"+res[1]
           parameterFiles['cycle_conversion']['timeTable'].append(timeStamp)
           parameterFiles['cycle_conversion']['fileTable'].append(fileName)
     return parameterFiles
