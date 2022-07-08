@@ -3,6 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
+from typing import Dict
 
 import numpy as np
 
@@ -414,17 +415,19 @@ class UnstructuredMesh(MeshBase):
         for name,data in other.elements.items():
             self.GetElementsOfType(name).Merge(data)
 
-    def ComputeGlobalOffset(self):
+    def ComputeGlobalOffset(self) -> Dict[str,PBasicIndexType]:
         """
         Recompute the Global Offset,
         This is necessary for some operation.
         Recomendation : Call it after changing the topology
         """
-
+        offsets = dict()
         cpt = 0
         for data in self.elements.values():
+            offsets[data.elementType] = cpt
             data.globaloffset = cpt
             cpt += data.GetNumberOfElements()
+        return offsets
 
     def ComputeBoundingBox(self):
         """
