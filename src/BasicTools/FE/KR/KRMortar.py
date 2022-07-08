@@ -23,7 +23,6 @@ class KRMortar(KRBaseVector):
     def __init__(self):
         super(KRMortar,self).__init__()
         self.type = "Mortar"
-#        self.inttype = "global" # ["PI","first","second","global","experimental"]
 
         self.useSurface = "first_surface" # [ "mean_surface", "first_surface", "second_surface","flat"]
         self.onII =[]
@@ -78,25 +77,25 @@ class KRMortar(KRBaseVector):
         offsetsI , self.__fieldOffsetsI, totalNumberOfDofsI  = self._ComputeOffsets(fields)
         offsetsII, self.__fieldOffsetsII, totalNumberOfDofsII = self._ComputeOffsets(fieldsII)
 
-        def AddElementToViz(visuMesh, points, t,tag=None): # pragma: no cover
-            if visuMesh is None:
+        def AddElementToViz(visualizationMesh, points, t,tag=None): # pragma: no cover
+            if visualizationMesh is None:
                 return
-            n = visuMesh.GetNumberOfNodes()
+            n = visualizationMesh.GetNumberOfNodes()
 
-            visuMesh.SetNodes(np.concatenate((visuMesh.nodes, points), axis=0),generateOriginalIDs=True)
-            data = visuMesh.GetElementsOfType(t)
+            visualizationMesh.SetNodes(np.concatenate((visualizationMesh.nodes, points), axis=0),generateOriginalIDs=True)
+            data = visualizationMesh.GetElementsOfType(t)
             cpt = data.AddNewElement(range(n,n+data.GetNumberOfNodesPerElement()),0)
             if tag is not None:
                 data.GetTag(tag).AddToTag(cpt-1)
 
         bar_p, bar_w =  LagrangeIsoParam[ElementNames.Bar_2]
-        bar_space_ipvalues = LagrangeSpaceGeo[ElementNames.Bar_2].SetIntegrationRule(bar_p,bar_w)
+        barSpaceIPValues = LagrangeSpaceGeo[ElementNames.Bar_2].SetIntegrationRule(bar_p,bar_w)
 
         tri_p,tri_w =  LagrangeIsoParam[ElementNames.Triangle_3]
-        tri_space_ipvalues = LagrangeSpaceGeo[ElementNames.Triangle_3].SetIntegrationRule(tri_p,tri_w)
+        triSpaceIPValues = LagrangeSpaceGeo[ElementNames.Triangle_3].SetIntegrationRule(tri_p,tri_w)
 
         tet_p,tet_w =  LagrangeIsoParam[ElementNames.Tetrahedron_4]
-        tet_space_ipvalues = LagrangeSpaceGeo[ElementNames.Tetrahedron_4].SetIntegrationRule(tet_p,tet_w)
+        tetSpaceIPValues = LagrangeSpaceGeo[ElementNames.Tetrahedron_4].SetIntegrationRule(tet_p,tet_w)
 
         meshI_IPoints = []
         meshII_IPoints = []
@@ -127,17 +126,17 @@ class KRMortar(KRBaseVector):
         #computation of the integration points
         for name1,data1,ids1 in ElementFilter(meshI,tags=self.on):
             cpt = 0
-            for elid1 in ids1:
+            for elementId1 in ids1:
                 printProgressBar(cpt,len(ids1))
                 cpt += 1
                 #pos of node in the real spaces
-                _nodes1 = meshI.nodes[data1.connectivity[elid1],:]
+                _nodes1 = meshI.nodes[data1.connectivity[elementId1],:]
                 #normal in the real space
 
                 if ElementNames.dimension[name1] < 3:
-                    _normal1,_baricentre1, incellvector1  = self.__ConputeNormal(meshI,name1,data1,elid1)
-                    #baricenter in the projection space
-                    #baricentre1 = OS.ApplyTransform(_baricentre1)
+                    _normal1,_barycenter1, inCellVector1  = self.__ComputeNormal(meshI,name1,data1,elementId1)
+                    #barycenter in the projection space
+                    #barycenter1 = OS.ApplyTransform(_barycenter1)
                     #normal in the projection space
                     normal1 = OS.ApplyTransformDirection(_normal1)
                 #nodes in the projection space
@@ -147,9 +146,9 @@ class KRMortar(KRBaseVector):
                 max1 = np.max(nodes1,axis=0)
 
                 for name2,data2,ids2 in ElementFilter(meshII,tags=self.onII,dimensionality=ElementNames.dimension[name1]):
-                    for elid2 in ids2:
+                    for elementId2 in ids2:
 
-                        _nodes2 = meshII.nodes[data2.connectivity[elid2],:]
+                        _nodes2 = meshII.nodes[data2.connectivity[elementId2],:]
                         nodes2 = TS.ApplyTransform(_nodes2)
 
                         # check if bounding box intersect
@@ -168,7 +167,7 @@ class KRMortar(KRBaseVector):
                             continue
 
                         if ElementNames.dimension[name2] < 3:
-                            _normal2,_baricentre2, incellvector2 = self.__ConputeNormal(meshII,name2,data2,elid2)
+                            _normal2,_barycenter2, inCellVector2 = self.__ComputeNormal(meshII,name2,data2,elementId2)
                             normal2 = TS.ApplyTransformDirection(_normal2)
                             # only for 1d and 2d elements
                             # check normal are aligned using the self.ang
@@ -210,25 +209,25 @@ class KRMortar(KRBaseVector):
                             proj2 = proj2_[:,0]
 
                             #compute intersection
-                            projmin = max(min(proj1),min(proj2))
-                            projmax = min(max(proj1),max(proj2))
-                            if projmax < projmin:
+                            projMin = max(min(proj1),min(proj2))
+                            projMax = min(max(proj1),max(proj2))
+                            if projMax < projMin:
                                 continue
 
-                            integrationBar[0,0 ] = projmin
-                            integrationBar[1,0 ] = projmax
+                            integrationBar[0,0 ] = projMin
+                            integrationBar[1,0 ] = projMax
 
                             # compute the coordinate of the integration points
                             for ip_nb in range(len(bar_w)):
-                                Jack, Jdet, Jinv = bar_space_ipvalues.GetJackAndDetI(ip_nb,integrationBar)
-                                iwBar[ip_nb] = Jdet*bar_w[ip_nb]
-                                ipBar[ip_nb,:] = np.dot(bar_space_ipvalues.valN[ip_nb],integrationBar)
+                                Jack, JDet, JInv = barSpaceIPValues.GetJackAndDetI(ip_nb,integrationBar)
+                                iwBar[ip_nb] = JDet*bar_w[ip_nb]
+                                ipBar[ip_nb,:] = np.dot(barSpaceIPValues.valN[ip_nb],integrationBar)
 
                             # if the integration bar is degenerated we skip it
-                            if Jdet < 1e-8:
+                            if JDet < 1e-8:
                                 continue
 
-                            # transfert the coordinate to the original meshes (1 and 2)
+                            # transfer the coordinate to the original meshes (1 and 2)
                             integration_coords_II = T.ApplyInvTransform(ipBar)
 
                             ## compute integration point in the meshI, meshII
@@ -236,13 +235,13 @@ class KRMortar(KRBaseVector):
                             target_int_points = TS.ApplyInvTransform(integration_coords_II)
 
                             if self._debug_IntegrationMesh is not None: # pragma: no cover
-                                AddElementToViz(self._debug_IntegrationMesh,original_int_points,ElementNames.Bar_2,"eint_I")#,"I_E"+str(elid1)+"_E"+str(elid2) )
-                                AddElementToViz(self._debug_IntegrationMesh,target_int_points,ElementNames.Bar_2,"eint_II")#,"I_E"+str(elid1)+"_E"+str(elid2) )
+                                AddElementToViz(self._debug_IntegrationMesh,original_int_points,ElementNames.Bar_2,"eInt_I")
+                                AddElementToViz(self._debug_IntegrationMesh,target_int_points,ElementNames.Bar_2,"eInt_II")
 
                             # Append points and weights
                             weights_IPoints.extend(iwBar)
-                            mesh_IElement.extend(np.ones(len(bar_w))*elid1)
-                            mesh_IIElement.extend(np.ones(len(bar_w))*elid2)
+                            mesh_IElement.extend(np.ones(len(bar_w))*elementId1)
+                            mesh_IIElement.extend(np.ones(len(bar_w))*elementId2)
                             for ip_nb in range(len(bar_w)):
                                 meshI_IPoints.append(original_int_points[ip_nb,:])
                                 meshII_IPoints.append(target_int_points[ip_nb,:])
@@ -252,7 +251,7 @@ class KRMortar(KRBaseVector):
                                     AddElementToViz(self._debug_IntegrationMesh,target_int_points[ip_nb:ip_nb+1,:],ElementNames.Point_1,"int_II")
 
                         elif ElementNames.dimension[name2] == 2:
-                            # element of dimension 2 (tris)
+                            # element of dimension 2 (triangles)
                             if self.useSurface == "flat":
                                 lineNormal = [0,0,1]
                             elif self.useSurface == "mean_surface":
@@ -274,11 +273,11 @@ class KRMortar(KRBaseVector):
                                                  proj2*[1,1,0],range(data2.GetNumberOfNodesPerElement()),tol/100000.)
 
                             if len(inter) < 4 :
-                                # insufficent point to build as 2D domain
+                                # insufficient point to build as 2D domain
                                 continue
                             if len(inter) == 4 :
 
-                                # we have a triangle (first point is repetead at the end)
+                                # we have a triangle (first point is repeated at the end)
                                 center = inter[0,:]
                                 inter = inter[1:3,:]
                             else:
@@ -292,32 +291,32 @@ class KRMortar(KRBaseVector):
                                 integrationTri[1:3,:] = inter[i:i+2,:]
                                 # compute the coordinate of the integration points
                                 for ip_nb in range(len(tri_w)):
-                                    Jack, Jdet, Jinv = tri_space_ipvalues.GetJackAndDetI(ip_nb,integrationTri)
-                                    iwTri[ip_nb] = Jdet*tri_w[ip_nb]
-                                    ipTri[ip_nb,:] = np.dot(tri_space_ipvalues.valN[ip_nb],integrationTri)
+                                    Jack, JDet, JInv = triSpaceIPValues.GetJackAndDetI(ip_nb,integrationTri)
+                                    iwTri[ip_nb] = JDet*tri_w[ip_nb]
+                                    ipTri[ip_nb,:] = np.dot(triSpaceIPValues.valN[ip_nb],integrationTri)
 
                                 # if the integration triangle is degenerated we skip it
-                                if Jdet < 1e-8:
+                                if JDet < 1e-8:
                                     continue
 
-                                # transfert the coordinate to the original meshes (1 and 2)
+                                # transfer the coordinate to the original meshes (1 and 2)
                                 integration_coords_II = T.ApplyInvTransform(ipTri)
                                 if self._debug_IntegrationMesh is not None:# pragma: no cover
-                                    AddElementToViz(self._debug_IntegrationMesh,OS.ApplyInvTransform(T.ApplyInvTransform(integrationTri)),ElementNames.Triangle_3,"eint_I")
-                                    AddElementToViz(self._debug_IntegrationMesh,TS.ApplyInvTransform(T.ApplyInvTransform(integrationTri)),ElementNames.Triangle_3,"eint_II")
+                                    AddElementToViz(self._debug_IntegrationMesh,OS.ApplyInvTransform(T.ApplyInvTransform(integrationTri)),ElementNames.Triangle_3,"eInt_I")
+                                    AddElementToViz(self._debug_IntegrationMesh,TS.ApplyInvTransform(T.ApplyInvTransform(integrationTri)),ElementNames.Triangle_3,"eInt_II")
 
                                 ## compute integration point in the meshI, meshII
 
                                 original_int_points = OS.ApplyInvTransform(integration_coords_II)
                                 target_int_points = TS.ApplyInvTransform(integration_coords_II)
                                 if self._debug_IntegrationMesh is not None:# pragma: no cover
-                                    AddElementToViz(self._debug_IntegrationMesh,original_int_points,ElementNames.Triangle_3,"eint_I")#,"I_E"+str(elid1)+"_E"+str(elid2) )
-                                    AddElementToViz(self._debug_IntegrationMesh,target_int_points,ElementNames.Triangle_3,"eint_II")#,"I_E"+str(elid1)+"_E"+str(elid2) )
+                                    AddElementToViz(self._debug_IntegrationMesh,original_int_points,ElementNames.Triangle_3,"eInt_I")
+                                    AddElementToViz(self._debug_IntegrationMesh,target_int_points,ElementNames.Triangle_3,"eInt_II")
 
                                 # Append points and weights
                                 weights_IPoints.extend(iwTri)
-                                mesh_IElement.extend(np.ones(len(tri_w))*elid1)
-                                mesh_IIElement.extend(np.ones(len(tri_w))*elid2)
+                                mesh_IElement.extend(np.ones(len(tri_w))*elementId1)
+                                mesh_IIElement.extend(np.ones(len(tri_w))*elementId2)
                                 for ip_nb in range(len(tri_w)):
                                     meshI_IPoints.append(original_int_points[ip_nb,:])
                                     meshII_IPoints.append(target_int_points[ip_nb,:])
@@ -325,7 +324,7 @@ class KRMortar(KRBaseVector):
                                     AddElementToViz(self._debug_IntegrationMesh,target_int_points[ip_nb:ip_nb+1,:],ElementNames.Point_1,"int_II")
 
                         elif ElementNames.dimension[name2] == 3:
-                            status, points, tets = IntersectionOf2CovexHulls(nodes1,nodes2)
+                            status, points, tets = IntersectionOf2ConvexHulls(nodes1,nodes2)
                             if status == False:
                                 continue
 
@@ -333,30 +332,29 @@ class KRMortar(KRBaseVector):
                                 # copy the coord to generate a tet
                                 integrationTet[:,:] = points[tets[i,:],:]
                                 for ip_nb in range(len(tet_w)):
-                                    Jack, Jdet, Jinv = tet_space_ipvalues.GetJackAndDetI(ip_nb,integrationTet)
-                                    iwTet[ip_nb] = abs(Jdet)*tet_w[ip_nb]
-                                    ipTet[ip_nb,:] = np.dot(tet_space_ipvalues.valN[ip_nb],integrationTet)
+                                    Jack, JDet, JInv = tetSpaceIPValues.GetJackAndDetI(ip_nb,integrationTet)
+                                    iwTet[ip_nb] = abs(JDet)*tet_w[ip_nb]
+                                    ipTet[ip_nb,:] = np.dot(tetSpaceIPValues.valN[ip_nb],integrationTet)
 
                                 # if the integration triangle is degenerated we skip it
 
-                                if abs(Jdet) < 1e-8:
+                                if abs(JDet) < 1e-8:
                                     continue
 
-                                # transfert the coordinate to the original meshes (1 and 2)
+                                # transfer the coordinate to the original meshes (1 and 2)
                                 if self._debug_IntegrationMesh is not None: # pragma: no cover
-                                    AddElementToViz(self._debug_IntegrationMesh,OS.ApplyInvTransform(integrationTet),ElementNames.Tetrahedron_4,"eint_I_"+str(elid1)+"_"+str(elid2))
-                                    #AddElementToViz(self._debug_IntegrationMesh,TS.ApplyInvTransform(integrationTet),ElementNames.Tetrahedron_4,"eint_II"+str(elid1)+"_"+str(elid2))
+                                    AddElementToViz(self._debug_IntegrationMesh,OS.ApplyInvTransform(integrationTet),ElementNames.Tetrahedron_4,"eInt_I_"+str(elementId1)+"_"+str(elementId2))
                                 original_int_points = OS.ApplyInvTransform(ipTet)
 
                                 target_int_points = TS.ApplyInvTransform(ipTet)
                                 if self._debug_IntegrationMesh is not None: # pragma: no cover
-                                    AddElementToViz(self._debug_IntegrationMesh,original_int_points,ElementNames.Point_1,"Left")#,"I_E"+str(elid1)+"_E"+str(elid2) )
-                                    AddElementToViz(self._debug_IntegrationMesh,target_int_points,ElementNames.Point_1,"Right")#,"I_E"+str(elid1)+"_E"+str(elid2) )
+                                    AddElementToViz(self._debug_IntegrationMesh,original_int_points,ElementNames.Point_1,"Left")
+                                    AddElementToViz(self._debug_IntegrationMesh,target_int_points,ElementNames.Point_1,"Right")
                                 # Append points and weights
                                 weights_IPoints.extend(iwTet)
 
-                                mesh_IElement.extend(np.ones(len(tet_w))*elid1)
-                                mesh_IIElement.extend(np.ones(len(tet_w))*elid2)
+                                mesh_IElement.extend(np.ones(len(tet_w))*elementId1)
+                                mesh_IIElement.extend(np.ones(len(tet_w))*elementId2)
                                 for ip_nb in range(len(tet_w)):
                                     meshI_IPoints.append(original_int_points[ip_nb,:])
                                     meshII_IPoints.append(target_int_points[ip_nb,:])
@@ -381,7 +379,7 @@ class KRMortar(KRBaseVector):
             print("Warning! -> Zero elements in contact")
             return
 
-        # need to code the transfert of the field to the integration points meshI
+        # need to code the transfer of the field to the integration points meshI
         from BasicTools.Containers.UnstructuredMeshFieldOperations import GetFieldTransferOp
         meshIOps = {}
 
@@ -393,7 +391,7 @@ class KRMortar(KRBaseVector):
             op.resize( (totalNumberOfIP,totalNumberOfDofsI) )
             meshIOps[f.name] = (op, status)
 
-        # need to code the transfert of the field to the integration points meshII
+        # need to code the transfer of the field to the integration points meshII
         meshIIOps = {}
         for f,offset in zip(fieldsII,offsetsII):
             op, status = GetFieldTransferOp(f,meshII_IPoints,method="Interp/Clamp",elementFilter=ElementFilter(meshII,tags=self.onII) )
@@ -413,9 +411,9 @@ class KRMortar(KRBaseVector):
             A = diagWMatrix.dot(opI).T.dot(opI)
             B = diagWMatrix.dot(opI).T.dot(opII)
 
-            ## differents types of behabiours
+            ## different types of behaviors
             if meshII is meshI:
-                ## if 2 sides are in the same mesh (monolitic problem)
+                ## if 2 sides are in the same mesh (monolithic problem)
                 ## the we add the constraint to the system
                 data = (A-B)
                 nums= np.where(np.sum(np.abs(data),axis=1)!= 0)[0]
@@ -431,25 +429,25 @@ class KRMortar(KRBaseVector):
         return CH
 
     def __computeNormalSurface(self,nodes,conn):
-        baricentre = np.sum(nodes[conn ,:],axis=0)/len(conn)
+        barycenter = np.sum(nodes[conn ,:],axis=0)/len(conn)
         edgeVector = nodes[conn[0],:] - nodes[conn[1],:]
-        planeVector = baricentre - nodes[conn[1],:]
+        planeVector = barycenter - nodes[conn[1],:]
         normal = np.cross(edgeVector, planeVector)
         normal /= np.linalg.norm(normal)
-        return normal, baricentre, planeVector/np.linalg.norm(planeVector)
+        return normal, barycenter, planeVector/np.linalg.norm(planeVector)
 
     def __computeNormalEdge(self,nodes,conn):
-        baricentre = np.sum(nodes[conn ,:],axis=0)/len(conn)
-        planeVector = baricentre - nodes[conn[0],:]
+        barycenter = np.sum(nodes[conn ,:],axis=0)/len(conn)
+        planeVector = barycenter - nodes[conn[0],:]
         normal = np.array([planeVector[1], -planeVector[0],0])
         normal /= np.linalg.norm(normal)
-        return normal, baricentre, planeVector/np.linalg.norm(planeVector)
+        return normal, barycenter, planeVector/np.linalg.norm(planeVector)
 
-    def __ConputeNormal(self,submesh,name,data,elid):
+    def __ComputeNormal(self,subMesh,name,data,elId):
         if ElementNames.dimension[name] == 1:
-            return self.__computeNormalEdge(submesh.nodes,data.connectivity[elid,:])
+            return self.__computeNormalEdge(subMesh.nodes,data.connectivity[elId,:])
         elif ElementNames.dimension[name] == 2:
-            return self.__computeNormalSurface(submesh.nodes,data.connectivity[elid,:])
+            return self.__computeNormalSurface(subMesh.nodes,data.connectivity[elId,:])
         else: # pragma: no cover
             raise Exception(" Error ")
 
@@ -512,7 +510,7 @@ def Intersection(points1, _poly1,points2,_poly2, tol):
                 Append(res,sp0,tol)
 
             if AreCCW(cp0,cp1,sp0) != AreCCW(cp0,cp1,sp1):
-                # segment must be cutted by cutter
+                # segment must be cut by cutter
                 # keep the intersection
                 x1 = cp0[0]
                 y1 = cp0[1]
@@ -535,7 +533,7 @@ def Intersection(points1, _poly1,points2,_poly2, tol):
 
                 Append(res,[px,py,0],tol)
             if AreCCW(cp0,cp1,sp1):
-                # the last point is treated by the next interation
+                # the last point is treated by the next integration
                 Append(res,sp1,tol)
         poly1 = res
         if len(poly1) < 3:
@@ -545,7 +543,7 @@ def Intersection(points1, _poly1,points2,_poly2, tol):
     return np.array(res)
 
 
-def IntersectionOf2CovexHulls(pointsI,pointsII):
+def IntersectionOf2ConvexHulls(pointsI,pointsII):
     from scipy.spatial import ConvexHull, HalfspaceIntersection
     from scipy.optimize import linprog
 
@@ -556,12 +554,12 @@ def IntersectionOf2CovexHulls(pointsI,pointsII):
     # computation of a interior_point
     # using method from
     # https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.HalfspaceIntersection.html
-    halfspaces = np.vstack((CHI.equations, CHII.equations))
-    norm_vector = np.reshape(np.linalg.norm(halfspaces[:, :-1], axis=1), (halfspaces.shape[0], 1))
-    c = np.zeros((halfspaces.shape[1],))
+    halfSpaces = np.vstack((CHI.equations, CHII.equations))
+    norm_vector = np.reshape(np.linalg.norm(halfSpaces[:, :-1], axis=1), (halfSpaces.shape[0], 1))
+    c = np.zeros((halfSpaces.shape[1],))
     c[-1] = -1
-    A = np.hstack((halfspaces[:, :-1], norm_vector))
-    b = - halfspaces[:, -1:]
+    A = np.hstack((halfSpaces[:, :-1], norm_vector))
+    b = - halfSpaces[:, -1:]
     res = linprog(c, A_ub=A, b_ub=b, bounds=(None, None))
 
     # no intersection return false
@@ -572,26 +570,26 @@ def IntersectionOf2CovexHulls(pointsI,pointsII):
 
     # computation of the intersection
     try:
-        HI = HalfspaceIntersection(halfspaces,interior_point = x, incremental=False)
+        HI = HalfspaceIntersection(halfSpaces,interior_point = x, incremental=False)
     except:
         return False, None, None
 
     # we use all the intersection point to build the intersected convex hull
     CHIntersection = ConvexHull(points=HI.intersections)
 
-    nbpoints = HI.intersections.shape[0]
-    if nbpoints == 4:
-        """ we know the only posibility in 3D is a tetra """
+    nbPoints = HI.intersections.shape[0]
+    if nbPoints == 4:
+        """ we know the only possibility in 3D is a tetra """
         points = HI.intersections
         tets = np.array([np.hstack((CHIntersection.simplices[0],[x  for x in range(4) if x not in CHIntersection.simplices[0]]))])
     else:
-        nbpoints += 1
+        nbPoints += 1
         points = np.vstack((HI.intersections,np.mean(HI.intersections,axis=0)))
 
-        nbpoints = points.shape[0]
+        nbPoints = points.shape[0]
         tets = np.empty((len(CHIntersection.simplices),4),dtype=int)
         tets[:,0:3] = CHIntersection.simplices
-        tets[:,3] = nbpoints -1
+        tets[:,3] = nbPoints -1
 
     ## verification of the order of the tets
     for i in range(tets.shape[0]):
@@ -668,7 +666,7 @@ def CheckIntegrityIntersectionConvexHull3D(GUI=False):
                        [1.5,1,0],
                        [1.5,0,1]])
 
-    status, points, tets = IntersectionOf2CovexHulls(pointsI,pointsII)
+    status, points, tets = IntersectionOf2ConvexHulls(pointsI,pointsII)
 
     if status == False:# pragma: no cover
         raise Exception("Error in the detection of the intersection")
@@ -788,8 +786,8 @@ def CheckIntegrity1DInterface2Meshes(GUI=False):
 
     numberingI = ComputeDofNumbering(meshI,LagrangeSpaceGeo)
     numberingII = ComputeDofNumbering(meshII,LagrangeSpaceGeo)
-    print("ndofs I",numberingI.size)
-    print("ndofs II",numberingII.size)
+    print("nDofs I",numberingI.size)
+    print("nDofs II",numberingII.size)
 
     print("------------------------")
     space = LagrangeSpaceP1
@@ -882,9 +880,9 @@ def CheckIntegrity2DScalar(GUI=False):
     import BasicTools.IO.GmshReader # to register the GmshReader
     mesh = ReadMesh(filename)
     #print(mesh.nodes.shape)
-    nnodes = np.zeros((mesh.nodes.shape[0],3),dtype=float)
-    nnodes[0:,:2] = mesh.nodes
-    mesh.nodes = nnodes
+    newNodes = np.zeros((mesh.nodes.shape[0],3),dtype=float)
+    newNodes[0:,:2] = mesh.nodes
+    mesh.nodes = newNodes
     #print(mesh.nodes.shape)
     #raise
 
@@ -965,7 +963,14 @@ def CheckIntegrity3DVector(GUI=False):
     return "ok"
 
 def CheckIntegrity(GUI=False):
-    func = [CheckIntegrity1DInterface, CheckIntegrity1DInterface2Meshes, CheckIntegrity2DScalar, CheckIntegrity3DVector, CheckIntegrityIntersection, CheckIntegrity3D, CheckIntegrityIntersectionConvexHull3D]
+    func = [CheckIntegrity1DInterface,
+            CheckIntegrity1DInterface2Meshes,
+            CheckIntegrity2DScalar,
+            CheckIntegrity3DVector,
+            CheckIntegrityIntersection,
+            CheckIntegrity3D,
+            CheckIntegrityIntersectionConvexHull3D
+            ]
     for f in func:
         print("working on : ", f)
         res = f(GUI)
