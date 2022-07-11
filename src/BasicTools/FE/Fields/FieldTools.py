@@ -223,26 +223,52 @@ def GetCellRepresentation(listOfFEFields: List[FEField], fillValue: PBasicFloatT
     return res
 
 class IntegrationPointWrapper(FieldBase):
+    """ Class to generate a FEField at the integration points
+        Two important function are available : diff and GetIpField.
 
-    def __init__(self,field,rule,efmask=None):
+
+    Parameters
+    ----------
+    field : FEField
+        the field to evaluate
+    rule : _type_
+        the integration rule
+    elementFilter : ElementFilter, optional
+        in this case a RestrictedIPField is generated, by default None
+
+    """
+
+    def __init__(self, field: FEField, rule, elementFilter: Optional[ElementFilter]=None):
         if not isinstance(field,FEField):
             raise(Exception("IntegrationPointWrapper work only on FEFields"))
 
         self.feField = field
         self.rule = rule
-        self._ipcache = None
-        self._diffipcache = {}
-        self.efmask = efmask
+        self._ipCache = None
+        self._diffIpCache = {}
+        self.elementFilter = elementFilter
 
     @property
     def name(self):
         return self.feField.name
 
     def ResetCache(self):
-        self._ipcache = None
-        self._diffipcache = {}
+        self._ipCache = None
+        self._diffIpCache = {}
 
-    def diff(self,compName):
+    def diff(self, compName:str) -> Union[IPField, RestrictedIPField] :
+        """Get the IPField representation of this field with a derivation in the direction of compName
+
+        Parameters
+        ----------
+        compName : str
+            compName are available in : from BasicTools.FE.SymWeakForm import space
+
+        Returns
+        -------
+        (IPField | RestrictedIPField)
+            Depending on the presence of an elementFilter
+        """
         from BasicTools.FE.SymWeakForm import space
 
         for cm in range(3):
@@ -251,24 +277,30 @@ class IntegrationPointWrapper(FieldBase):
         else:
             cm = compName
 
-        if cm not in self._diffipcache:
+        if cm not in self._diffIpCache:
             from BasicTools.FE.Fields.FieldTools import TransferFEFieldToIPField
-            self._diffipcache[cm] = TransferFEFieldToIPField(self.feField,der=cm,rule=self.rule, elementFilter= self.efmask)
-        return self._diffipcache[cm]
+            self._diffIpCache[cm] = TransferFEFieldToIPField(self.feField,der=cm,rule=self.rule, elementFilter= self.elementFilter)
+        return self._diffIpCache[cm]
 
-    def GetIpField(self):
-        if self._ipcache is None:
+    def GetIpField(self)-> Union[IPField, RestrictedIPField]:
+        """Get the integration point representation of the field
+
+        Returns
+        -------
+        Union[IPField, RestrictedIPField]
+            Depending on the presence of an elementFilter
+        """
+
+        if self._ipCache is None:
             from BasicTools.FE.Fields.FieldTools import TransferFEFieldToIPField
-            self._ipcache =  TransferFEFieldToIPField(self.feField,der=-1,rule=self.rule, elementFilter= self.efmask)
-        return self._ipcache
+            self._ipCache =  TransferFEFieldToIPField(self.feField,der=-1,rule=self.rule, elementFilter= self.elementFilter)
+        return self._ipCache
 
     def unaryOp(self,op):
-        innerself = self.GetIpField()
-        return innerself.unaryOp(op)
+        return self.GetIpField().unaryOp(op)
 
     def binaryOp(self,other,op):
-        innerself = self.GetIpField()
-        return innerself.binaryOp(other,op)
+        return self.GetIpField().binaryOp(other,op)
 
     @property
     def data(self):
@@ -498,11 +530,11 @@ def TransferPosToIPField(mesh: UnstructuredMesh,
     ----------
     mesh : UnstructuredMesh
     ruleName : str, optional
-        The Integration Rulename, by default None ("LagrangeIsoParam")
+        The Integration rule name, by default None ("LagrangeIsoParam")
     rule : Tuple[np.ndarray,np.ndarray], optional
         The Integration Rule, by default None ("LagrangeIsoParam")
     elementFilter : ElementFilter, optional
-        the zone where the tranfer must be applied, by default None (all the elements)
+        the zone where the transfer must be applied, by default None (all the elements)
 
     Returns
     -------
@@ -588,25 +620,37 @@ def FillFEField(field : FEField, fieldDefinition) -> None:
 
         f.mesh = field.mesh
         if isinstance(f,(ElementFilter,FilterOP)):
-
+            treated = np.zeros(field.numbering.size, dtype=bool)
+            nodes = field.mesh.nodes
             for name,elements,ids in f:
-                print(name)
-                geoSpace = LagrangeSpaceGeo[name]
-                sp = field.space[name]
-                nbShapeFunctions = sp.GetNumberOfShapeFunctions()
-                geoSpaceIpValues  = geoSpace.SetIntegrationRule(sp.posN,np.ones(nbShapeFunctions) )
-
+                numbering = field.numbering[name]
                 if needPos == False:
-                    idDofs = field.numbering[name][ids,:].flatten()
+                    idDofs = numbering[ids,:].flatten()
                     field.data[idDofs] = fValue(None)
-                    continue
-                for elementId in ids:
-                    for i in range(nbShapeFunctions):
-                        dofId = field.numbering[name][elementId,i]
-                        valN = geoSpaceIpValues.valN[i]
-                        elementNodesCoordinates = field.mesh.nodes[elements.connectivity[elementId,:],:]
-                        pos = np.dot(valN ,elementNodesCoordinates).T
-                        field.data[dofId] = fValue(pos)
+                else:
+                    sp = field.space[name]
+                    nbShapeFunctions = sp.GetNumberOfShapeFunctions()
+                    geoSpace = LagrangeSpaceGeo[name]
+                    geoSpaceIpValues  = geoSpace.SetIntegrationRule(sp.posN,np.ones(nbShapeFunctions) )
+                    valN = geoSpaceIpValues.valN
+                    connectivity = elements.connectivity
+                    for elementId in ids:
+                        elementNodesCoordinates = nodes[connectivity[elementId,:],:]
+                        dofs  = numbering[elementId,:]
+                        pos = np.dot(valN ,elementNodesCoordinates)
+                        for i in range(nbShapeFunctions):
+                            if treated[dofs[i]]:
+                                continue
+                            field.data[dofs[i]] = fValue(pos[i,:])
+                            treated[dofs[i]] = True
+                    #for i in range(nbShapeFunctions):
+                    #    dofId = field.numbering[name][elementId,i]
+                    #    if treated[dofId]:
+                    #        continue
+                    #    treated[dofId] =True
+                    #    valN = geoSpaceIpValues.valN[i]
+                    #    pos = np.dot(valN ,elementNodesCoordinates).T
+                    #    field.data[dofId] = fValue(pos)
 
         elif isinstance(f,NodeFilter):
             ids = f.GetIdsToTreat()
@@ -643,7 +687,7 @@ def FieldsAtIp(listOfFields: List[Union[FEField,IPField,RestrictedIPField]], rul
     res = []
     for f in listOfFields:
         if isinstance(f,FEField):
-            res.append(IntegrationPointWrapper(f,rule,efmask=elementFilter))
+            res.append(IntegrationPointWrapper(f, rule, elementFilter=elementFilter))
         elif isinstance(f,IPField):
             if f.rule == rule:
                 if elementFilter is None:
@@ -825,7 +869,7 @@ class FieldsEvaluator():
             for f in fields:
                 self.AddField(f)
         self.constants = {}
-        self.efmask = None
+        self.elementFilter = None
         self.modified = True
 
     def AddField(self, field: FieldBase):
@@ -862,10 +906,10 @@ class FieldsEvaluator():
         """
         for name,field in self.originals.items():
             if what=="all" or what =="IPField":
-                self.atIp[name] = FieldsAtIp([field],self.rule,elementFilter=self.efmask)[0]
+                self.atIp[name] = FieldsAtIp([field], self.rule, elementFilter=self.elementFilter)[0]
 
             if what=="all" or what =="Centroids":
-                self.atCenter[name] = FieldsAtIp([field],self.ruleAtCenter,elementFilter=self.efmask)[0]
+                self.atCenter[name] = FieldsAtIp([field], self.ruleAtCenter, elementFilter=self.elementFilter)[0]
 
     def GetFieldsAt(self, on:str) -> Dict:
         """Get the internal representations of the user fields ant different support
