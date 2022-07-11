@@ -7,10 +7,10 @@ BasicTools offer some capabilities to communicate with external mesh dedicated t
 Vtk [#vtk]_
 ###########
 
-If you have a working VTK  installation, you can set the module :py:mod:`BasicTools.Containers.vtkBridge` to convert meshes back and forth BasicTools meshes.
+If you have a working VTK  installation, you can set the module :py:mod:`BasicTools.Bridges.vtkBridge` to convert meshes back and forth BasicTools meshes.
 ::
 
-    from BasicTools.Containers.vtkBridge import MeshToVtk, VtkToMesh
+    from BasicTools.Bridges.vtkBridge import MeshToVtk, VtkToMesh
     BTMesh =  #<-- this is my BasicTools Mesh
     vtkMesh = MeshToVtk(BTMesh,TagsAsFields=True)
     # do some work with VTK
@@ -54,16 +54,16 @@ MeshIO [#meshio]_
 ###################
 MeshIO is a library capable of reading and writing to various mesh file formats.
 
-If you have a working MeshIO installation, you can set the module :py:mod:`BasicTools.Containers.MeshIOBridge` to convert meshes back and forth BasicTools meshes.
+If you have a working MeshIO installation, you can set the module :py:mod:`BasicTools.Bridges.MeshIOBridge` to convert meshes back and forth BasicTools meshes.
 MeshIO offer some reading and writing capabilities.
-More information in :py:mod:`BasicTools.Containers.MeshIOBridge`.
+More information in :py:mod:`BasicTools.Bridges.MeshIOBridge`.
 
 PyVista [#pyvista]_
 ###################
-If you have a working PyVista installation, you can set the module :py:mod:`BasicTools.Containers.PyVistaBridge` to convert meshes back and forth BasicTools meshes.
+If you have a working PyVista installation, you can set the module :py:mod:`BasicTools.Bridges.PyVistaBridge` to convert meshes back and forth BasicTools meshes.
 
 PyVista offer a very simple interface for the visualisation of 3D meshes.
-More information in BasicTools.Containers.PyVistaBridge
+More information in BasicTools.Bridges.PyVistaBridge
 
 
 .. rubric:: Footnotes
