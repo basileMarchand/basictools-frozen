@@ -7,7 +7,7 @@
 """Testing infrastructure for BasicTools extra modules
 
 """
-
+from typing import Callable, List, Tuple
 import sys
 import traceback
 import time
@@ -28,26 +28,79 @@ options :
     -d    Dry run do not execute anything, only show what will be executed
     -c    To activate coverage and generate a html report
           -cb (coverage with browser and local file index.html generated)
-    -l    Generation of the coverage (html) report localy (current path)
-    -b    Launch browser after the covarage report generation
+    -l    Generation of the coverage (html) report locally (current path)
+    -b    Launch browser after the coverage report generation
     -p    Activate profiling
     -t    use mypy to check the typing of every module
     -v    Activate maximal level of verbosity
-    -y    Generate .pyc when inporting modules (default False)
-    -L    Output Localy, Use the current path for all the outputs
-    -P <dir> Settemp output directory to
+    -y    Generate .pyc when importing modules (default False)
+    -L    Output Locally, Use the current path for all the outputs
+    -P <dir> Set temporary output directory to
 """
 
 
-def SkipTest(evironementVaribleName):
+def SkipTest(environnementVariableName:str) -> bool:
+    """chef if a environnement variable is present to help the user to skip test
 
-    if evironementVaribleName in os.environ:
-        print("Warning skiping test (environement variable "+str(evironementVaribleName)+" set)")
+    Parameters
+    ----------
+    environnementVariableName : str
+        the name of a environnement variable
+
+    Returns
+    -------
+    bool
+        true if the variable is present
+        false if absent
+    """
+
+    if environnementVariableName in os.environ:
+        print("Warning skipping test (environnement variable "+str(environnementVariableName)+" set)")
         return True
     return False
 
+def RunListOfCheckIntegrities(  toTest: List[Callable[[bool],str] ], GUI:bool = False ) -> str:
+    """ Execute all the functions in the list. Stop at the first error.
+        the functions must return "ok", "skip" to be treated as successful function
 
-def GetUniqueTempFile(suffix="",prefix='tmp'):
+    Parameters
+    ----------
+    toTest : List[Callable[[bool],str] ]
+        a list of functions
+    GUI : bool, optional
+        bool argument passed to every function , by default False
+
+    Returns
+    -------
+    str
+        "ok" if all functions are executed correctly (the return of every function is "ok")
+        "error..."  at the first error encountered
+    """
+    for func in toTest:
+        print("running test : " + str(func))
+        res = func(GUI)
+        if str(res).lower() in ["ok","skip"] :
+            continue
+        return f"error in {func} res"
+    return "ok"
+
+
+def GetUniqueTempFile(suffix:str="", prefix:str='tmp') -> Tuple[int,str]:
+    """Create a unique temporary file on the temp directory
+
+    Parameters
+    ----------
+    suffix : str, optional
+        If 'suffix' is not None, the file name will end with that suffix, otherwise there will be no suffix., by default ""
+    prefix : str, optional
+        If 'prefix' is not None, the file name will begin with that prefix, otherwise a default prefix is used., by default 'tmp'
+
+    Returns
+    -------
+    Tuple[int,str]
+        please read the doc of module tempfile.mkstemp
+    """
+
     #solution from
     # https://stackoverflow.com/questions/2961509/python-how-to-create-a-unique-file-name
 
@@ -56,13 +109,36 @@ def GetUniqueTempFile(suffix="",prefix='tmp'):
     return (fd,filename)
 
 
-def WriteTempFile(filename,content=None,mode="w" ):
-    pfile = TestTempDir.GetTempPath() + filename
-    with open(pfile, mode) as f:
+def WriteTempFile(filename:str, content:str=None, mode:str="w") ->  str:
+    """Create and fill a temporary file on the temporary folder
+
+    Parameters
+    ----------
+    filename : str
+        the name of the file to be created
+    content : str, optional
+        the content of the file, by default None
+    mode : str, optional
+        read python "open" function documentation for more detail, by default "w"
+
+    Returns
+    -------
+    str
+        the name of the filename (with the path attached)
+
+    Raises
+    ------
+    Exception
+        if error during the file creation
+    """
+
+    pFile = TestTempDir.GetTempPath() + filename
+    with open(pFile, mode) as f:
         if content is not None:
             f.write( content)
-        return pfile
-    raise(Exception("Unable ot create file :" + pfile))
+        return pFile
+
+    raise Exception(f"Unable ot create file :{pFile}" )
 
 class TestTempDir(object):
     """Class to generate and to destroy a temporary directory
@@ -114,7 +190,7 @@ class TestTempDir(object):
             os.makedirs(cls.path)
         cls.__saveTempPath()
 
-    #very useful in conbination of a alias
+    #very useful in combination of a alias
     #alias cdtmp='source ~/.BasicToolsTempPath'
     @classmethod
     def __saveTempPath(cls):
@@ -125,7 +201,7 @@ class TestTempDir(object):
             import stat
             os.chmod(home + os.sep+".BasicToolsTempPath", stat.S_IWUSR | stat.S_IRUSR |stat.S_IXUSR)
 
-def __RunAndCheck(lis,bp,stopAtFirstError,dryrun,profiling,typing):# pragma: no cover
+def __RunAndCheck(lis,bp,stopAtFirstError,dryRun,profiling,typing):# pragma: no cover
 
     res = {}
     from BasicTools.Helpers.TextFormatHelper import TFormat
@@ -140,10 +216,10 @@ def __RunAndCheck(lis,bp,stopAtFirstError,dryrun,profiling,typing):# pragma: no 
         try:
             start_time = time.time()
             stop_time = time.time()
-            if dryrun:
+            if dryRun:
                 r = "Dry Run "
             else:
-                teststr = """
+                testStr = """
 from {} import CheckIntegrity
 res = CheckIntegrity()""".format(name)
                 local = {}
@@ -153,7 +229,7 @@ res = CheckIntegrity()""".format(name)
                     from io import StringIO
                     pr = cProfile.Profile()
                     pr.enable()
-                    exec(teststr,{},local)
+                    exec(testStr,{},local)
                     r = local["res"]
                     pr.disable()
                     s = StringIO()
@@ -162,7 +238,7 @@ res = CheckIntegrity()""".format(name)
                     ps.print_stats()
                     print(s.getvalue())
                 else:
-                    exec(teststr,{},local)
+                    exec(testStr,{},local)
                     r = local["res"]
             sys.stdout.flush()
             sys.stderr.flush()
@@ -183,8 +259,15 @@ res = CheckIntegrity()""".format(name)
             bp.Print( "Unexpected Warning:" + str(sys.exc_info()[0]) )
             res[name] = "error"
             traceback.print_exc(file=bp.stdout_)
-
             r = 'Not OK'
+        except KeyboardInterrupt as e:
+            sys.stdout.flush()
+            sys.stderr.flush()
+            bp.Print( "User interruption " )
+            res[name] = "interrupted"
+            r = 'Interrupted'
+            bp.Restore()
+            raise
         except:
             sys.stdout.flush()
             sys.stderr.flush()
@@ -207,12 +290,12 @@ res = CheckIntegrity()""".format(name)
 
     return res
 
-def __tryImportRecursive(submod, tocheck, stopAtFirstError, modulestotreat, modulestoskip):
+def __tryImportRecursive(subModule, toCheck, stopAtFirstError, modulesToTreat, modulesToSkip):
 
 
     import importlib
     try:
-        sm = importlib.import_module(submod)
+        sm = importlib.import_module(subModule)
     except ImportError as e:
         print(e)
         if stopAtFirstError:
@@ -223,41 +306,41 @@ def __tryImportRecursive(submod, tocheck, stopAtFirstError, modulestotreat, modu
 
     cif = getattr( sm, "CheckIntegrity", None)
     if cif is not None:
-        tocheck[submod ] = cif
+        toCheck[subModule ] = cif
     else :
         try:
-            subsubmods = []
+            subSubModules = []
             try:
                 listToTest = getattr(sm,"__all__",getattr(sm,"_test",None))
-                subsubmods =  [ submod +'.' + x for x in listToTest]
+                subSubModules =  [ subModule +'.' + x for x in listToTest]
             except Exception as e:
                 print(e)
-                print('Error Loading module : ' + submod + ' (Current folder'+os.getcwd()+')'  )
+                print('Error Loading module : ' + subModule + ' (Current folder'+os.getcwd()+')'  )
                 print('-*-*-*-*-*-*> missing _test variable ??? <*-*-*-*-*-*--'  )
                 raise
 
-            for subsubmod  in subsubmods:
-                if any([x.lower() in subsubmod.lower() for x in modulestoskip]):
-                    print("skip module :" +str(subsubmod))
+            for subSubModule  in subSubModules:
+                if any([x.lower() in subSubModule.lower() for x in modulesToSkip]):
+                    print("skip module :" +str(subSubModule))
                     continue
                 try:
-                    __tryImportRecursive(subsubmod,tocheck,stopAtFirstError,modulestotreat,modulestoskip)
+                    __tryImportRecursive(subSubModule,toCheck,stopAtFirstError,modulesToTreat,modulesToSkip)
                 except Exception as e:
                     print(e)
-                    print('Error Loading module : ' + subsubmod + ' (Current folder'+os.getcwd()+')'  )
+                    print('Error Loading module : ' + subSubModule + ' (Current folder'+os.getcwd()+')'  )
                     print('-*-*-*-*-*-*> missing CheckIntegrity()??? <*-*-*-*-*-*--'  )
                     raise
         except:
-            tocheck[submod] = None
+            toCheck[subModule] = None
             if stopAtFirstError:
                 raise
 
 
-def __tryImport(noduleName, bp, stopAtFirstError, modulestotreat, modulestoskip):# pragma: no cover
+def __tryImport(noduleName, bp, stopAtFirstError, modulesToTreat, modulesToSkip):# pragma: no cover
 
-    tocheck = {}
+    toCheck = {}
     try :
-        __tryImportRecursive(noduleName, tocheck, stopAtFirstError, modulestotreat, modulestoskip)
+        __tryImportRecursive(noduleName, toCheck, stopAtFirstError, modulesToTreat, modulesToSkip)
     except:
         print("Error loading module '" + noduleName +"'")
         print("This module will not be tested ")
@@ -269,75 +352,74 @@ def __tryImport(noduleName, bp, stopAtFirstError, modulestotreat, modulestoskip)
 
         if stopAtFirstError:
             raise
-    return tocheck
+    return toCheck
 
 
-def TestAll(modulestotreat=['ALL'],modulestoskip=[], fulloutput=False, stopAtFirstError= False, extraToolsBoxs= None,dryrun=False,profiling=False,coverage=None,typing=False) :# pragma: no cover
+def TestAll(modulesToTreat=['ALL'],modulesToSkip=[], fullOutput=False, stopAtFirstError= False, extraToolsBoxes= None, dryRun=False, profiling=False, coverage=None, typing=False) :# pragma: no cover
 
     print("")
-    print("modulestotreat   : " + str(modulestotreat))
-    print("modulestoskip    : " + str(modulestoskip))
-    print("fulloutput       : " + str(fulloutput) )
+    print("modulesToTreat   : " + str(modulesToTreat))
+    print("modulesToSkip    : " + str(modulesToSkip))
+    print("fullOutput       : " + str(fullOutput) )
     print("stopAtFirstError : " + str(stopAtFirstError))
     print("coverage         : " + str(coverage))
     print("typing           : " + str(typing))
     print("profiling        : " + str(profiling))
-    print("extraToolsBoxs   : " + str(extraToolsBoxs))
-    print("dryrun           : " + str(dryrun))
+    print("extraToolsBoxes   : " + str(extraToolsBoxes))
+    print("dryRun           : " + str(dryRun))
 
 
     cov = None
     if coverage["active"]:
         import coverage as modcoverage
         #ss = [ k for k in lis ]
-        #cov = coverage.coverage(source=ss, omit=['pyexpat','*__init__.py'])
         cov = modcoverage.coverage(omit=['pyexpat','*__init__.py'])
         cov.start()
 
     # calls to print, ie import module1
     from BasicTools.Helpers.PrintBypass import PrintBypass
 
-    print("Runnig Tests : ")
+    print("Running Tests : ")
     start_time = time.time()
     print("--- Begin Test ---")
 
-    tocheck = {}
+    toCheck = {}
 
     with PrintBypass() as bp:
-        if extraToolsBoxs is not None:
-            for tool in extraToolsBoxs:
-                tocheck.update(__tryImport(tool,bp,stopAtFirstError,modulestotreat,modulestoskip))
+        if extraToolsBoxes is not None:
+            for tool in extraToolsBoxes:
+                toCheck.update(__tryImport(tool,bp,stopAtFirstError,modulesToTreat,modulesToSkip))
 
-        if not fulloutput:
+        if not fullOutput:
             bp.ToSink()
             bp.Print("Sending all the output of the tests to sink")
 
-        if modulestotreat[0] != 'ALL':
-            filtered =  dict((k, v) for k, v in tocheck.items() if any(s in k for s in modulestotreat ) )
-            tocheck = filtered
+        if modulesToTreat[0] != 'ALL':
+            filtered =  dict((k, v) for k, v in toCheck.items() if any(s in k for s in modulesToTreat ) )
+            toCheck = filtered
 
-        if len(modulestoskip):
-            filtered =  dict((k, v) for k, v in tocheck.items() if not any(s in k for s in modulestoskip ) )
-            tocheck = filtered
+        if len(modulesToSkip):
+            filtered =  dict((k, v) for k, v in toCheck.items() if not any(s in k for s in modulesToSkip ) )
+            toCheck = filtered
 
-        res = __RunAndCheck(tocheck,bp,stopAtFirstError,dryrun,profiling,typing)
+        res = __RunAndCheck(toCheck,bp,stopAtFirstError,dryRun,profiling,typing)
 
     if coverage["active"] :
         cov.stop()
         cov.save()
 
         # create a temp file
-        if coverage["localhtml"]:
+        if coverage["localHtml"]:
             #tempdir = "./"
             tempdir = os.getcwd() + os.sep
         else:
             tempdir = TestTempDir.GetTempPath()
 
-        ss = [ ("*"+os.sep.join(k.split("."))+"*") for k in tocheck ]
-        cov.html_report(directory = tempdir, include=ss  ,title="Coverage report of "+ " and ".join(extraToolsBoxs) )
+        ss = [ ("*"+os.sep.join(k.split("."))+"*") for k in toCheck ]
+        cov.html_report(directory = tempdir, include=ss  ,title="Coverage report of "+ " and ".join(extraToolsBoxes) )
         print('Coverage Report in : ' + tempdir +"index.html")
         cov.report( include=ss )
-        if coverage["lauchBrowser"]:
+        if coverage["launchBrowser"]:
             import webbrowser
             webbrowser.open(tempdir+"index.html")
 
@@ -346,17 +428,16 @@ def TestAll(modulestotreat=['ALL'],modulestoskip=[], fulloutput=False, stopAtFir
     bp.Print( "Total Time : %.3f seconds " %  (stop_time -start_time ))
 
     print("--- End Test ---")
-    #print(tocheck)
-    if len(modulestotreat) == 1 and modulestotreat[0] == "ALL" :
-        #we verified that all thepython files in the repository are tested
-        CheckIfAllThePresentFilesAreTested(extraToolsBoxs,res)
+    if len(modulesToTreat) == 1 and modulesToTreat[0] == "ALL" :
+        #we verified that all the python files in the repository are tested
+        CheckIfAllThePresentFilesAreTested(extraToolsBoxes,res)
     return res
 
-def CheckIfAllThePresentFilesAreTested(extraToolsBoxs,testedFiles):
+def CheckIfAllThePresentFilesAreTested(extraToolsBoxes,testedFiles):
 
     pythonPaths = os.environ.get('PYTHONPATH', os.getcwd()).split(":")
 
-    toignore = ['.git', # git file
+    toIgnore = ['.git', # git file
                 "__pycache__", # python 3
                 "__init__.py",# infra
                 "setup.py", # compilation
@@ -365,27 +446,27 @@ def CheckIfAllThePresentFilesAreTested(extraToolsBoxs,testedFiles):
     testedFiles = testedFiles.keys()
     presentFiles = []
     for pythonPath in pythonPaths:
-        for eTB in extraToolsBoxs:
+        for eTB in extraToolsBoxes:
             path = pythonPath + os.sep + eTB
 
             for dirname, dirnames, filenames in os.walk(path):
-                cleandirname = dirname.replace(pythonPath+os.sep,"")#.replace(os.sep,".")
+                cleanDirName = dirname.replace(pythonPath+os.sep,"")#.replace(os.sep,".")
 
 
                 # print path to all filenames.
                 for filename in filenames:
-                    if filename in toignore:
+                    if filename in toIgnore:
                         continue
 
                     if len(filename) > 3 and filename[-3:] == ".py":
-                        if len(cleandirname) == 0:
+                        if len(cleanDirName) == 0:
                             presentFiles.append(filename)
                         else:
-                            presentFiles.append(cleandirname+os.sep+filename)
+                            presentFiles.append(cleanDirName+os.sep+filename)
 
                 # Advanced usage:
                 # editing the 'dirnames' list will stop os.walk() from recursing into there.
-                for dti in toignore:
+                for dti in toIgnore:
                     if dti in dirnames:
                         dirnames.remove(dti)
 
@@ -403,9 +484,16 @@ def CheckIntegrity():
     TestTempDir().GetTempPath()
     return "Ok"
 
-def RunTests():
+def RunTests() -> int:
+    """Base function to run all tests, all the option are captured from the command line arguments.
+
+    Returns
+    -------
+    int
+        return the number of failed tests
+    """
     if len(sys.argv) == 1:
-        res = TestAll(modulestotreat=['ALL'],extraToolsBoxs= ["BasicTools"], fulloutput=False,coverage={"active":False},typing=False)# pragma: no cover
+        res = TestAll(modulesToTreat=['ALL'],extraToolsBoxes= ["BasicTools"], fullOutput=False,coverage={"active":False},typing=False)# pragma: no cover
     else:
         try:
             opts, args = getopt.getopt(sys.argv[1:],"thcblfsdpvyLe:m:k:P:")
@@ -416,15 +504,15 @@ def RunTests():
 
         coverage = False
         typing = False
-        fulloutput = False
+        fullOutput = False
         stopAtFirstError = False
-        extraToolsBoxs = []
-        modulestotreat=[]
-        modulestoskip=[]
-        dryrun = False
+        extraToolsBoxes = []
+        modulesToTreat=[]
+        modulesToSkip=[]
+        dryRun = False
         profiling = False
         browser = False
-        localhtml = False
+        localHtml = False
 
         sys.dont_write_bytecode = True
 
@@ -439,16 +527,16 @@ def RunTests():
                 typing = True
                 os.environ["MYPYPATH"] = os.environ["PYTHONPATH"]
             elif opt in ("-l"):
-                localhtml = True
+                localHtml = True
                 browser = False
             elif opt in ("-b"):
                 browser = True
             elif opt in ("-f"):
-                fulloutput = True
+                fullOutput = True
             elif opt in ("-s"):
                 stopAtFirstError = True
             elif opt in ("-d"):
-                dryrun = True
+                dryRun = True
             elif opt in ("-v"):
                 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
                 myObj = BaseOutputObject()
@@ -456,11 +544,11 @@ def RunTests():
             elif opt in ("-p"):
                 profiling = True
             elif opt in ("-e"):
-                extraToolsBoxs.append(arg)
+                extraToolsBoxes.append(arg)
             elif opt in ("-m"):
-                modulestotreat.append(arg)
+                modulesToTreat.append(arg)
             elif opt in ("-k"):
-                modulestoskip.append(arg)
+                modulesToSkip.append(arg)
             elif opt in ("-P"):
                 print('Setting temp output directory to ' + arg)
                 TestTempDir.SetTempPath(arg)
@@ -471,19 +559,19 @@ def RunTests():
                 from BasicTools.Helpers.Tests import TestTempDir as TestTempDir2
                 TestTempDir2().SetTempPath(os.getcwd())
 
-        if len(modulestotreat) == 0:
-            modulestotreat.append("ALL")
+        if len(modulesToTreat) == 0:
+            modulesToTreat.append("ALL")
 
-        if len(extraToolsBoxs) == 0:
-            extraToolsBoxs.append("BasicTools")
+        if len(extraToolsBoxes) == 0:
+            extraToolsBoxes.append("BasicTools")
 
-        res = TestAll(  modulestotreat=modulestotreat,
-                        modulestoskip=modulestoskip,
-                    coverage={"active":coverage,"localhtml":localhtml,"lauchBrowser": browser},
-                    fulloutput=fulloutput,
+        res = TestAll(  modulesToTreat=modulesToTreat,
+                        modulesToSkip=modulesToSkip,
+                    coverage={"active":coverage,"localHtml":localHtml,"launchBrowser": browser},
+                    fullOutput=fullOutput,
                     stopAtFirstError= stopAtFirstError,
-                    extraToolsBoxs=extraToolsBoxs,
-                    dryrun = dryrun,
+                    extraToolsBoxes=extraToolsBoxes,
+                    dryRun = dryRun,
                     profiling  = profiling,
                     typing=typing
                     )
@@ -502,11 +590,11 @@ def RunTests():
     print("Number of skipped test  : " + str(len(skipped)))
     print("Number of test KO       : " + str(len(errors)))
 
-    noks = len(oks)
-    nerrors = len(errors)
-    if noks ==  0 and nerrors == 0:
-        noks = 1
-    print(f"Percentage of OK test : {(noks*100.0)/(noks+nerrors):.2f} %")
+    nbOks = len(oks)
+    nbErrors = len(errors)
+    if nbOks ==  0 and nbErrors == 0:
+        nbOks = 1
+    print(f"Percentage of OK test : {(nbOks*100.0)/(nbOks+nbErrors):.2f} %")
     return errors
 
 if __name__ == '__main__':# pragma: no cover

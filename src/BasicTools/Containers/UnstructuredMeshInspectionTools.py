@@ -58,7 +58,7 @@ def GetDataOverALine(startPoint: ArrayLike, stopPoint: ArrayLike, nbPoints: int,
     from BasicTools.Containers.UnstructuredMeshFieldOperations import GetFieldTransferOp
     from BasicTools.FE.Fields.FieldTools import NodeFieldToFEField, ElemFieldsToFEField
 
-    #transfert of nodalfields
+    #transfer of nodal fields
     nodeFieldsAsFEFields = NodeFieldToFEField(mesh)
     if len(nodeFieldsAsFEFields) != 0:
         firstField = next(iter(nodeFieldsAsFEFields.values()))
@@ -67,7 +67,7 @@ def GetDataOverALine(startPoint: ArrayLike, stopPoint: ArrayLike, nbPoints: int,
             res[name] = op.dot(data)
 
 
-    #transfert of celldata
+    #transfer of cell data
     cellFieldsAsFEFields = ElemFieldsToFEField(mesh)
     if len(cellFieldsAsFEFields) != 0:
         firstField = next(iter(cellFieldsAsFEFields.values()))
@@ -75,13 +75,13 @@ def GetDataOverALine(startPoint: ArrayLike, stopPoint: ArrayLike, nbPoints: int,
         for name, data in mesh.elemFields.items():
             res[name] = op.dot(data)
 
-    #transfert of FEFields
-    for effield in fields:
-        if isinstance(effield,FEField):
-            op, status = GetFieldTransferOp(effield, lineMesh.nodes, method=method)
-            res[effield.name] = op.dot(effield.data)
+    #transfer of FEFields
+    for efField in fields:
+        if isinstance(efField,FEField):
+            op, status = GetFieldTransferOp(efField, lineMesh.nodes, method=method)
+            res[efField.name] = op.dot(efField.data)
         else:# pragma: no cover
-            raise Exception(f"Don't know how to treat field of type ({type(effield)})")
+            raise Exception(f"Don't know how to treat field of type ({type(efField)})")
 
     lineMesh.nodeFields = res
     return lineMesh
@@ -111,7 +111,7 @@ def GetElementsFractionInside(field, points, name, elements, ids):
         return minuses, pluses
 
 
-    # helper fucntion for tets
+    # helper function for tets
 
     def tetrahedron_volumic_fraction(phis):
         assert phis.size == 4
@@ -122,7 +122,7 @@ def GetElementsFractionInside(field, points, name, elements, ids):
         elif minuses.size == 1:
             return tetrahedron_volumic_fraction_dominated(minuses, pluses)
         elif minuses.size == 2:
-            return tetrahedron_volumic_fraction_nondominated(minuses, pluses)
+            return tetrahedron_volumic_fraction_non_dominated(minuses, pluses)
         elif minuses.size == 3:
             return 1.0 - tetrahedron_volumic_fraction_dominated(pluses, minuses)
         else:
@@ -131,7 +131,7 @@ def GetElementsFractionInside(field, points, name, elements, ids):
     def tetrahedron_volumic_fraction_dominated(phi_in, phis_out):
         return np.prod(phi_in / (phi_in - phis_out))
 
-    def tetrahedron_volumic_fraction_nondominated(phis_in, phis_out):
+    def tetrahedron_volumic_fraction_non_dominated(phis_in, phis_out):
         phis_in_r = np.reshape(phis_in, (2, 1))
         phis_out_r = np.reshape(phis_out, (1, 2))
         ratios = phis_in_r / (phis_in_r - phis_out_r)
@@ -248,8 +248,8 @@ def GetVolume(inmesh: UnstructuredMesh) -> PBasicFloatType:
 
     F = FEField("F",inmesh,LagrangeSpaceGeo,numbering)
     F.Allocate(1.)
-    gnumbering = ComputeDofNumbering(inmesh,ConstantSpaceGlobal)
-    unkownFields = [ FEField("T",mesh=inmesh,space=ConstantSpaceGlobal,numbering=gnumbering) ]
+    gNumbering = ComputeDofNumbering(inmesh,ConstantSpaceGlobal)
+    unkownFields = [ FEField("T",mesh=inmesh,space=ConstantSpaceGlobal,numbering=gNumbering) ]
     _,f  = IntegrateGeneral( mesh=inmesh, wform=wform, constants={}, fields=[F], unkownFields=unkownFields)
     return f[0]
 
@@ -260,9 +260,9 @@ def GetDualGraphNodeToElement(inmesh, maxNumConnections=200):
 
     cpt =0
 
-    for name,elems in inmesh.elements.items():
-        for i in range(elems.GetNumberOfElements()):
-            coon = elems.connectivity[i,:]
+    for name, elements in inmesh.elements.items():
+        for i in range(elements.GetNumberOfElements()):
+            coon = elements.connectivity[i,:]
             for j in coon:
                 dualGraph[j,usedPoints[j]] =  cpt
                 usedPoints[j] += 1
@@ -279,10 +279,10 @@ def GetDualGraph(inmesh, maxNumConnections=200):
     dualGraph = np.zeros((inmesh.GetNumberOfNodes(),maxNumConnections), dtype=PBasicIndexType )-1
     usedPoints = np.zeros(inmesh.GetNumberOfNodes(), dtype=PBasicIndexType )
 
-    for name,elems in inmesh.elements.items():
-        size = elems.GetNumberOfNodesPerElement()
-        for i in range(elems.GetNumberOfElements()):
-            coon = elems.connectivity[i,:]
+    for name, elements in inmesh.elements.items():
+        size = elements.GetNumberOfNodesPerElement()
+        for i in range(elements.GetNumberOfElements()):
+            coon = elements.connectivity[i,:]
             for j in range(size):
                 myIndex = coon[j]
                 for k in range(size):
@@ -290,11 +290,11 @@ def GetDualGraph(inmesh, maxNumConnections=200):
                         continue
                     dualGraph[myIndex,usedPoints[myIndex]] =  coon[k]
                     usedPoints[myIndex] += 1
-                    # we reached the maximun number of connection
+                    # we reached the maximum number of connection
                     # normally we have some data duplicated
                     # we try to shrink the vector
                     if usedPoints[myIndex] == maxNumConnections :# pragma: no cover
-                        # normaly we shouldn't pas here
+                        # normally we shouldn't pas here
                         c = np.unique(dualGraph[myIndex,:])
                         dualGraph[myIndex,0:len(c)] = c
                         usedPoints[myIndex] = len(c)
@@ -333,17 +333,17 @@ def ExtractElementsByElementFilter(inmesh: UnstructuredMesh, elementFilter: Elem
     """
 
     inmesh.ComputeGlobalOffset()
-    outmesh = type(inmesh)()
+    outMesh = type(inmesh)()
     if copy:
-        outmesh.CopyProperties(inmesh)
-        outmesh.nodes = np.copy(inmesh.nodes)
-        outmesh.nodesTags = inmesh.nodesTags.Copy()
+        outMesh.CopyProperties(inmesh)
+        outMesh.nodes = np.copy(inmesh.nodes)
+        outMesh.nodesTags = inmesh.nodesTags.Copy()
     else:
-        outmesh.props = inmesh.props
-        outmesh.nodes = inmesh.nodes
-        outmesh.nodesTags = inmesh.nodesTags
+        outMesh.props = inmesh.props
+        outMesh.nodes = inmesh.nodes
+        outMesh.nodesTags = inmesh.nodesTags
 
-    outmesh.originalIDNodes = np.arange(inmesh.GetNumberOfNodes(), dtype=PBasicIndexType)
+    outMesh.originalIDNodes = np.arange(inmesh.GetNumberOfNodes(), dtype=PBasicIndexType)
 
 
     elementFilter.mesh = inmesh
@@ -354,14 +354,14 @@ def ExtractElementsByElementFilter(inmesh: UnstructuredMesh, elementFilter: Elem
             outElements.originalIds = np.arange(data.GetNumberOfElements(), dtype=PBasicIndexType)
             outElements.cpt = data.GetNumberOfElements()
             outElements.tags = data.tags
-            outmesh.elements[name] = outElements
+            outMesh.elements[name] = outElements
         else:
-            outmesh.elements[name] = ExtractElementsByMask(data,ids)
+            outMesh.elements[name] = ExtractElementsByMask(data,ids)
 
-    outmesh.PrepareForOutput()
-    return outmesh
+    outMesh.PrepareForOutput()
+    return outMesh
 
-def ExtractElementsByMask(inelems: ElementsContainer, mask: ArrayLike) -> ElementsContainer:
+def ExtractElementsByMask(inElementContainer: ElementsContainer, mask: ArrayLike) -> ElementsContainer:
     """Create a new ElementContainer with the element selected by the mask
     Note: The connectivity of the element is not changed.
 
@@ -379,67 +379,67 @@ def ExtractElementsByMask(inelems: ElementsContainer, mask: ArrayLike) -> Elemen
     """
 
 
-    outelems = type(inelems)(inelems.elementType)
+    outElements = type(inElementContainer)(inElementContainer.elementType)
 
-    newIndex = np.empty(inelems.GetNumberOfElements(),dtype=PBasicIndexType)
+    newIndex = np.empty(inElementContainer.GetNumberOfElements(),dtype=PBasicIndexType)
 
     mask = np.asarray(mask)
     if mask.dtype == bool:
-        nbels =0
-        for i in range(inelems.GetNumberOfElements()):
-           newIndex[i] = nbels
-           nbels += 1 if mask[i] else 0
-        imask = mask
+        nbElements =0
+        for i in range(inElementContainer.GetNumberOfElements()):
+           newIndex[i] = nbElements
+           nbElements += 1 if mask[i] else 0
+        iMask = mask
     else:
-        nbels = len(mask)
-        imask = np.zeros(inelems.GetNumberOfElements(),dtype=bool)
+        nbElements = len(mask)
+        iMask = np.zeros(inElementContainer.GetNumberOfElements(),dtype=bool)
         cpt =0
         for index in mask:
            newIndex[index ] = cpt
-           imask[index] = True
+           iMask[index] = True
            cpt += 1
 
-    outelems.Allocate(nbels)
-    outelems.connectivity = inelems.connectivity[imask,:]
-    outelems.originalIds = np.where(imask)[0]
+    outElements.Allocate(nbElements)
+    outElements.connectivity = inElementContainer.connectivity[iMask,:]
+    outElements.originalIds = np.where(iMask)[0]
 
-    for tag in inelems.tags  :
-       temp = np.extract(imask[tag.GetIds()],tag.GetIds())
+    for tag in inElementContainer.tags  :
+       temp = np.extract(iMask[tag.GetIds()],tag.GetIds())
        newid = newIndex[temp]
-       outelems.tags.CreateTag(tag.name).SetIds(newid)
+       outElements.tags.CreateTag(tag.name).SetIds(newid)
 
-    return outelems
+    return outElements
 
 def ExtractElementByTags(inmesh,tagsToKeep, allNodes=False,dimensionalityFilter= None, cleanLonelyNodes=True):
 
-    outmesh = UnstructuredMesh()
-    outmesh.CopyProperties(inmesh)
+    outMesh = UnstructuredMesh()
+    outMesh.CopyProperties(inmesh)
 
-    outmesh.nodes = np.copy(inmesh.nodes)
-    outmesh.originalIDNodes = np.copy(inmesh.originalIDNodes)
+    outMesh.nodes = np.copy(inmesh.nodes)
+    outMesh.originalIDNodes = np.copy(inmesh.originalIDNodes)
 
     import copy
     for tag in inmesh.nodesTags:
-        outmesh.nodesTags.AddTag(copy.deepcopy(tag) )
+        outMesh.nodesTags.AddTag(copy.deepcopy(tag) )
 
 
     nodalMask = np.zeros(inmesh.GetNumberOfNodes(),dtype = bool)
-    for name,elems in inmesh.elements.items():
+    for name, elements in inmesh.elements.items():
 
        #if dimensionalityFilter is not None:
        #    if dimensionalityFilter !=  ElementNames.dimension[name]:
        #        continue
 
-       if (np.any([x in elems.tags for x in tagsToKeep] ) == False) and (dimensionalityFilter is None) :
+       if (np.any([x in elements.tags for x in tagsToKeep] ) == False) and (dimensionalityFilter is None) :
            if np.any([x in inmesh.nodesTags for x in tagsToKeep]) == False:
                continue# pragma: no cover
 
 
-       toKeep = np.zeros(elems.GetNumberOfElements(), dtype=bool)
+       toKeep = np.zeros(elements.GetNumberOfElements(), dtype=bool)
        # check elements tags
        for tagToKeep in tagsToKeep:
-           if tagToKeep in elems.tags:
-               toKeep[elems.tags[tagToKeep].GetIds()] = True
+           if tagToKeep in elements.tags:
+               toKeep[elements.tags[tagToKeep].GetIds()] = True
 
        # check for nodes tags
        for tagToKeep in tagsToKeep:
@@ -447,9 +447,9 @@ def ExtractElementByTags(inmesh,tagsToKeep, allNodes=False,dimensionalityFilter=
              nodalMask.fill(False)
              tag = inmesh.GetNodalTag(tagToKeep)
              nodalMask[tag.GetIds()] = True
-             elemMask = np.sum(nodalMask[elems.connectivity],axis=1)
+             elemMask = np.sum(nodalMask[elements.connectivity],axis=1)
              if allNodes :
-                 toKeep[elemMask == elems.GetNumberOfNodesPerElement()] = True
+                 toKeep[elemMask == elements.GetNumberOfNodesPerElement()] = True
              else:
                  toKeep[elemMask > 0] = True
 
@@ -460,9 +460,9 @@ def ExtractElementByTags(inmesh,tagsToKeep, allNodes=False,dimensionalityFilter=
            #if len(tagsToKeep)  == 0:
            #    toKeep[:] = True
 
-       newIndex = np.empty(elems.GetNumberOfElements(), dtype=PBasicIndexType )
+       newIndex = np.empty(elements.GetNumberOfElements(), dtype=PBasicIndexType )
        cpt =0
-       for i in range(elems.GetNumberOfElements()):
+       for i in range(elements.GetNumberOfElements()):
            newIndex[i] = cpt
            cpt += 1 if toKeep[i] else 0
 
@@ -470,21 +470,21 @@ def ExtractElementByTags(inmesh,tagsToKeep, allNodes=False,dimensionalityFilter=
 
 
 
-       outelem = outmesh.GetElementsOfType(name)
-       nbTokeep = np.sum(toKeep)
-       outelem.Allocate(nbTokeep)
-       outelem.connectivity = elems.connectivity[toKeep,:]
-       outelem.originalIds = np.where(toKeep)[0]
+       outElements = outMesh.GetElementsOfType(name)
+       nbToKeep = np.sum(toKeep)
+       outElements.Allocate(nbToKeep)
+       outElements.connectivity = elements.connectivity[toKeep,:]
+       outElements.originalIds = np.where(toKeep)[0]
 
-       for tag in elems.tags  :
+       for tag in elements.tags  :
            temp = np.extract(toKeep[tag.GetIds()],tag.GetIds())
-           newid = newIndex[temp]
-           outelem.tags.CreateTag(tag.name,errorIfAlreadyCreated=False).SetIds(newid)
+           newId = newIndex[temp]
+           outElements.tags.CreateTag(tag.name,errorIfAlreadyCreated=False).SetIds(newId)
 
     if cleanLonelyNodes:
-        CleanLonelyNodes(outmesh)
-    outmesh.PrepareForOutput()
-    return outmesh
+        CleanLonelyNodes(outMesh)
+    outMesh.PrepareForOutput()
+    return outMesh
 
 def ComputeMeshDensityAtNodes(mesh: UnstructuredMesh)-> np.ndarray:
     """Function to compute the mesh size at each point
@@ -590,7 +590,7 @@ def MeshQualityAspectRatioBeta(mesh: UnstructuredMesh):
             pass
         elif ElementNames.dimension[name] == 3:
             if name == ElementNames.Tetrahedron_4:
-               mmax = 0
+               mMax = 0
                for el in range(data.GetNumberOfElements()):
                    n = data.connectivity[el,:]
                    nodes = mesh.nodes[n,:]
@@ -620,14 +620,14 @@ def MeshQualityAspectRatioBeta(mesh: UnstructuredMesh):
                    B = np.linalg.norm(p1-p3)
                    C = np.linalg.norm(p2-p1)
 
-                   circumradius_sphere_radius = np.sqrt((a*A+b*B+c*C)*
+                   circumRadius_sphere_radius = np.sqrt((a*A+b*B+c*C)*
                                                          (a*A+b*B-c*C)*
                                                          (a*A-b*B+c*C)*
                                                          (-a*A+b*B+c*C))/(24*volume)
 
-                   AspectRatioBeta = circumradius_sphere_radius/(3.0 * inscribed_sphere_radius)
+                   AspectRatioBeta = circumRadius_sphere_radius/(3.0 * inscribed_sphere_radius)
 
-                   mmax = max([mmax,AspectRatioBeta])
+                   mMax = max([mMax,AspectRatioBeta])
                    if AspectRatioBeta > 1000:
                        raise Exception("Element " +str(el) + " has quality of " +str(AspectRatioBeta))
         else:
@@ -654,33 +654,33 @@ def ComputeMeshMinMaxLengthScale(mesh) -> Tuple[PBasicFloatType,PBasicFloatType]
     for name,data in mesh.elements.items():
         if data.GetNumberOfNodesPerElement() < 2: continue
         if data.GetNumberOfElements() == 0: continue
-        posx = mesh.nodes[data.connectivity,0]
-        posy = mesh.nodes[data.connectivity,1]
-        meanx = np.sum(posx,axis=1)/data.GetNumberOfNodesPerElement()
-        meany = np.sum(posy,axis=1)/data.GetNumberOfNodesPerElement()
-        meanx.shape = (len(meanx),1)
-        meany.shape = (len(meanx),1)
+        posX = mesh.nodes[data.connectivity,0]
+        posY = mesh.nodes[data.connectivity,1]
+        meanX = np.sum(posX,axis=1)/data.GetNumberOfNodesPerElement()
+        meanY = np.sum(posY,axis=1)/data.GetNumberOfNodesPerElement()
+        meanX.shape = (len(meanX),1)
+        meanY.shape = (len(meanX),1)
 
-        distToBaricenter2 = (posx-meanx)**2 + (posy-meany)**2
+        distToBarycenter2 = (posX-meanX)**2 + (posY-meanY)**2
 
         if mesh.nodes.shape[1] == 3:
-            posz = mesh.nodes[data.connectivity,2]
-            meanz = np.sum(posz,axis=1)/data.GetNumberOfNodesPerElement()
-            meanz.shape = (len(meanx),1)
-            distToBaricenter2 += (posz-meanz)**2
+            posZ = mesh.nodes[data.connectivity,2]
+            meanZ = np.sum(posZ,axis=1)/data.GetNumberOfNodesPerElement()
+            meanZ.shape = (len(meanX),1)
+            distToBarycenter2 += (posZ-meanZ)**2
 
-        distToBaricenter = np.sqrt(distToBaricenter2)
-        mmin = np.min(distToBaricenter)
-        mmax = np.max(distToBaricenter)
+        distToBarycenter = np.sqrt(distToBarycenter2)
+        mMin = np.min(distToBarycenter)
+        mMax = np.max(distToBarycenter)
         if resMin is None:
-            resMin = mmin
+            resMin = mMin
         else:
-            resMin = min(resMin,mmin)
+            resMin = min(resMin,mMin)
 
         if resMax is None:
-            resMax = mmax
+            resMax = mMax
         else:
-            resMax = min(resMax,mmax)
+            resMax = min(resMax,mMax)
     return (2*resMin,2*resMax)
 
 def PrintMeshInformation(mesh: UnstructuredMesh):
@@ -805,10 +805,10 @@ def CheckIntegrity_EnsureUniquenessElements(GUI=False):
 def CheckIntegrity_GetElementsFractionInside(GUI=False):
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshOfTriangles,CreateMeshOf
 
-    meshTris = CreateMeshOfTriangles([[0,0,0],[1,0,0],[0,1,0],[0,0,1] ], [[0,1,2],[0,2,3]])
+    meshTriangles = CreateMeshOfTriangles([[0,0,0],[1,0,0],[0,1,0],[0,0,1] ], [[0,1,2],[0,2,3]])
     field = np.array([-1, -1, -1, 1])
-    for name,elements in meshTris.elements.items():
-        res = GetElementsFractionInside(field,meshTris.nodes,name,elements,range(elements.GetNumberOfElements()))
+    for name,elements in meshTriangles.elements.items():
+        res = GetElementsFractionInside(field,meshTriangles.nodes,name,elements,range(elements.GetNumberOfElements()))
         print(res)
 
     points = [[0,0,0],[1,0,0],[0,1,0],[0,0,1],[0,0,0] ]
@@ -825,7 +825,7 @@ def CheckIntegrity_GetDualGraph(GUI=False):
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshOfTriangles
 
     res = CreateMeshOfTriangles([[0,0,0],[1,0,0],[0,1,0],[0,0,1] ], [[0,1,2],[0,2,3]])
-    dg, nused = GetDualGraph(res)
+    dg, unUsed = GetDualGraph(res)
 
     return "ok"
 
@@ -856,24 +856,24 @@ def CheckIntegrity_ExtractElementsByMask(GUI=False):
     print(tri.originalIds)
     return "ok"
 
-def Checkintegrity_MeshQualityAspectRatioBeta(GUI=False):
+def CheckIntegrity_MeshQualityAspectRatioBeta(GUI=False):
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateCube
     mesh  = CreateCube(dimensions = [20,20,20], origin = [0.1,0.1,0.,], spacing=[0.9/19]*3)
     MeshQualityAspectRatioBeta(mesh)
     return "ok"
 
-def Checkintegrity_GetDataOverALine(GUI=False):
+def CheckIntegrity_GetDataOverALine(GUI=False):
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateCube
     mesh  = CreateCube(dimensions = [20,20,20], origin = [0.1,0.1,0.,], spacing=[0.9/19]*3)
     mesh.nodeFields["xpos"] = mesh.nodes[:,0]
 
     from BasicTools.FE.Fields.FieldTools import CreateFieldFromDescription
     field = CreateFieldFromDescription(mesh,[(ElementFilter(mesh,zone = lambda x :  x[:,2]>0.5),1)])
-    field.name = "bimat"
-    mesh.elemFields["bimatAtElem"] = field.GetCellRepresentation()
+    field.name = "biMaterial"
+    mesh.elemFields["biMaterialAtElem"] = field.GetCellRepresentation()
 
     print("---")
-    print(mesh.elemFields["bimatAtElem"])
+    print(mesh.elemFields["biMaterialAtElem"])
     print("---")
 
     res = GetDataOverALine([0,0,0], [1,1,1], 100, mesh, [field])
@@ -886,15 +886,15 @@ def Checkintegrity_GetDataOverALine(GUI=False):
 
     if GUI:
         from BasicTools.Actions.OpenInParaView import OpenInParaView
-        OpenInParaView(mesh,filename="Checkintegrity_GetDataOverALine_bulk.xdmf",run =False)
-        OpenInParaView(res,filename="Checkintegrity_GetDataOverALine_line.xdmf")
+        OpenInParaView(mesh,filename="CheckIntegrity_GetDataOverALine_bulk.xdmf",run =False)
+        OpenInParaView(res,filename="CheckIntegrity_GetDataOverALine_line.xdmf")
 
     return "ok"
 
 def CheckIntegrity(GUI=False):
-    totest= [
-    Checkintegrity_GetDataOverALine,
-    Checkintegrity_MeshQualityAspectRatioBeta,
+    toTest= [
+    CheckIntegrity_GetDataOverALine,
+    CheckIntegrity_MeshQualityAspectRatioBeta,
     CheckIntegrity_EnsureUniquenessElements,
     CheckIntegrity_ExtractElementsByMask,
     CheckIntegrity_GetVolume,
@@ -903,12 +903,9 @@ def CheckIntegrity(GUI=False):
     CheckIntegrity_GetElementsFractionInside,
     CheckIntegrity_ExtractElementByTags,
     ]
-    for f in totest:
-        print("running test : " + str(f))
-        res = f(GUI)
-        if str(res).lower() != "ok":
-            return "error in "+str(f) + " res"
-    return "ok"
+
+    from BasicTools.Helpers.Tests import RunListOfCheckIntegrities
+    return RunListOfCheckIntegrities(toTest, GUI)
 
 if __name__ == '__main__':
     print(CheckIntegrity(True))# pragma: no cover
