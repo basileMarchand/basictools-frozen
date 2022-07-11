@@ -523,18 +523,18 @@ def ComputeMeshDensityAtNodes(mesh: UnstructuredMesh)-> np.ndarray:
             cpt[connectivityOfBars[:,i]] += 1
 
 
-    for dim in [3,2,1]:
-        for name, data, ids in ElementFilter(mesh=mesh,dimensionality=dim):
-            if dim == 3:
-                faces = ElementNames.faces2[name]
-                for fname, facesConnectivity in faces:
-                    AddBarSizesToOutput(data.connectivity[:,facesConnectivity][:,0:2])
-            elif dim == 2:
-                faces = ElementNames.faces[name]
-                for fname, facesConnectivity in faces:
-                    AddBarSizesToOutput(data.connectivity[:,facesConnectivity][:,0:2])
-            else:
-                AddBarSizesToOutput(data.connectivity[:,0:2])
+    for name, data, ids in ElementFilter(mesh=mesh,dimensionality=3):
+        faces = ElementNames.faces2[name]
+        for fname, facesConnectivity in faces:
+            AddBarSizesToOutput(data.connectivity[:,facesConnectivity][:,0:2])
+
+    for name, data, ids in ElementFilter(mesh=mesh,dimensionality=2):
+        faces = ElementNames.faces[name]
+        for fname, facesConnectivity in faces:
+            AddBarSizesToOutput(data.connectivity[:,facesConnectivity][:,0:2])
+
+    for name, data, ids in ElementFilter(mesh=mesh,dimensionality=1):
+        AddBarSizesToOutput(data.connectivity[:,0:2])
 
     cpt[cpt==0] = 1
     result /= cpt

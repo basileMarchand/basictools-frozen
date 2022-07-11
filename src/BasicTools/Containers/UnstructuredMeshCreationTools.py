@@ -438,7 +438,8 @@ def MeshToSimplex(mesh: UnstructuredMesh) -> UnstructuredMesh:
 
 
 def ToQuadraticMesh(inputMesh: UnstructuredMesh) -> UnstructuredMesh:
-    """Function to convert any mesh to a quadratic mesh
+    """Function to convert any mesh to a quadratic mesh.
+    Nodes fields and element fields are lost.
 
     Parameters
     ----------
@@ -468,8 +469,6 @@ def ToQuadraticMesh(inputMesh: UnstructuredMesh) -> UnstructuredMesh:
     for i in range(3):
         newPos_ =  FEField("newPos_", inputMesh, LagrangeSpaceP2, numbering)
         newPos_.data = res.nodes[:,i]
-        def GetPos(j):
-            return lambda x: x[j]
         FillFEField(newPos_,[(ElementFilter(inputMesh),GetPos(i))])
 
     res.originalIDNodes = np.zeros(numbering.size, dtype=PBasicIndexType)-1
@@ -1140,7 +1139,7 @@ def CheckIntegrity_ToQuadraticMesh(GUI=False):
     return "ok"
 
 def CheckIntegrity(GUI=False):
-    totest= [
+    toTest= [
     CheckIntegrity_ToQuadraticMesh,
     CheckIntegrity_CreateUniformMeshOfBars,
     CheckIntegrity_CreateCube,
@@ -1153,7 +1152,7 @@ def CheckIntegrity(GUI=False):
     CheckIntegrity_SubDivideMesh,
     CheckIntegrity_CreateDisk,
     ]
-    for f in totest:
+    for f in toTest:
         print("running test : " + str(f))
         res = f(GUI)
         if str(res).lower() != "ok":
