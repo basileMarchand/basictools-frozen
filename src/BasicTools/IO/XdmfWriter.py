@@ -872,14 +872,14 @@ class XdmfWriter(WriterBase):
            name = 'PField'+str(i)
            if len(PointFields)  == len(PointFieldsNames):
                name = PointFieldsNames[i]
-           self.pointFieldsStorage[name] = self.__WriteAttribute(np.array(PointFields[i]), name, "Node",baseMeshObject)
+           self.pointFieldsStorage[name] = self.__WriteAttribute(np.asarray(PointFields[i]), name, "Node",baseMeshObject)
 
          for i in range(len(CellFields)):
            name = 'CField'+str(i)
            if len(CellFields) == len(CellFieldsNames):
                name = CellFieldsNames[i]
 
-           self.cellFieldsStorage[name] = self.__WriteAttribute(np.array(CellFields[i]), name, "Cell",baseMeshObject)
+           self.cellFieldsStorage[name] = self.__WriteAttribute(np.asarray(CellFields[i]), name, "Cell",baseMeshObject)
 
          for i in range(len(GridFields)):
 
@@ -887,7 +887,7 @@ class XdmfWriter(WriterBase):
            if len(GridFields) == len(GridFieldsNames):
                name = GridFieldsNames[i]
 
-           self.gridFieldsStorage[name] = self.__WriteAttribute(np.array(GridFields[i]), name, "Grid",baseMeshObject)
+           self.gridFieldsStorage[name] = self.__WriteAttribute(np.asarray(GridFields[i]), name, "Grid",baseMeshObject)
 
     def __WriteNodesTagsElementsTags(self,baseMeshObject,PointFieldsNames,CellFieldsNames):
          for tag in baseMeshObject.nodesTags:
@@ -898,7 +898,7 @@ class XdmfWriter(WriterBase):
 
              data = np.zeros((baseMeshObject.GetNumberOfNodes(),1),dtype=np.int8)
              data[baseMeshObject.nodesTags[tag.name].GetIds()] = 1
-             self.__WriteAttribute(np.array(data), name, "Node",baseMeshObject)
+             self.__WriteAttribute(np.asarray(data), name, "Node",baseMeshObject)
 
          #Cell Tags
          baseMeshObject.PrepareForOutput()
@@ -919,7 +919,7 @@ class XdmfWriter(WriterBase):
              res = np.zeros((baseMeshObject.GetNumberOfElements(),1),dtype=np.int8)
              res[data] = 1
 
-             self.__WriteAttribute(np.array(res), name, "Cell", baseMeshObject)
+             self.__WriteAttribute(np.asarray(res), name, "Cell", baseMeshObject)
 
     def __WriteTime(self):
         """ this function is called by the WriteTail, this function must NOT change
@@ -933,10 +933,10 @@ class XdmfWriter(WriterBase):
     def __WriteDataItem(self,_data, _shape= None,name=None):
 
         import numpy as np
-        data = np.array(_data)
+        data = np.asarray(_data)
         if _shape is None:
             _shape = _data.shape
-        shape = np.array(_shape)
+        shape = np.asarray(_shape)
 
         if self.isOpen():
             if data.dtype == np.float64:
@@ -1113,7 +1113,7 @@ def CheckIntegrity(GUI=False):
 
     tempdir = TestTempDir.GetTempPath()
 
-    res = CreateMeshOfTriangles([[0.,0.,0],[1.,2.,3],[1, 3, 2]], np.array([[0,1,2]]))
+    res = CreateMeshOfTriangles([[0.,0.,0],[1.,2.,3],[1, 3, 2]], np.asarray([[0,1,2]]))
     print(res)
     res.SetGlobalDebugMode()
 

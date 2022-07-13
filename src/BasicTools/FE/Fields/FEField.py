@@ -82,7 +82,6 @@ class FEField(FieldBase):
         for name, data in self.mesh.elements.items():
             nbelems = data.GetNumberOfElements()
 
-            print(name)
             numbering = self.numbering[name]
             if name is None:
                 cpt += nbelems
