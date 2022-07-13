@@ -570,6 +570,7 @@ class XdmfDataItem(Xdmfbase):
             f = __File(os.path.join(self.path, filename),'r')
             #print(f[dataSetPath])
             self.Data =  np.array(f[dataSetPath])
+            self.Data = self.Data.reshape(self.Dimensions)
             #print(self.Data)
             self.CDATA = ''
 
