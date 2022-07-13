@@ -205,13 +205,13 @@ class XdmfWriter(WriterBase):
         self.automaticOpen = False
 
         self.__isHdf5 = True
-        self.__hdf5FileName = None
+        self.__hdf5FileName = ""
         self.__hdf5FileNameOnly = None
         self.__hdf5FilePointer = None
         self.__hdf5NameCpt = 0
 
         self.SetBinary(True)
-        self.__binFileName = None
+        self.__binFileName = ""
         self.__filePointer = None
         #self.__isOpen = False
         self.__binaryCpt = 0
@@ -234,15 +234,15 @@ class XdmfWriter(WriterBase):
         self.maxStorageSize = 50
 
     def IsHdf5(self):
-        return self.__isHdf5 and self.isBinary()
+        return self.__isHdf5 and super().isBinary()
 
-    def SetBinary(self,val=True):
+    def SetBinary(self, val=True):
         super(XdmfWriter,self).SetBinary(val)
 
     def isBinary(self):
         return super().isBinary() and not self.__isHdf5
 
-    def SetHdf5(self,val=True):
+    def SetHdf5(self, val=True):
         if val :
             self.SetBinary(True)
 
