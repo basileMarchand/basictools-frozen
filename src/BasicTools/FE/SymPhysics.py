@@ -7,6 +7,8 @@ from collections import defaultdict
 
 import numpy as np
 
+from sympy.matrices import Matrix
+
 from BasicTools.NumpyDefs import PBasicFloatType
 from BasicTools.Containers.Filters import ElementFilter
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject as BOO
@@ -14,6 +16,7 @@ from BasicTools.FE.SymWeakForm import Gradient,Divergence, GetField,GetTestField
 import BasicTools.FE.SymWeakForm as swf
 
 class Physics(BOO):
+    """Basic class to hold the information about symbolic terms"""
     def __init__(self):
         self.integrationRule = None
         self.spaces = [None]
@@ -43,8 +46,7 @@ class Physics(BOO):
 
         a = GetScalarField(alpha)
 
-        ener = u.T*ut*a
-        return ener
+        return  u.T*ut*a
 
     def SetSpaceToLagrange(self,P=None,isoParam=None):
         if P is None and isoParam is None:
@@ -63,7 +65,7 @@ class Physics(BOO):
                 space = LagrangeSpaceP2
                 self.integrationRule =  "LagrangeP2"
             else:
-                raise(ValueError("I dont understand"))
+                raise(ValueError("I don't understand"))
         else:
             from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
             space = LagrangeSpaceGeo
@@ -71,7 +73,7 @@ class Physics(BOO):
 
         self.spaces = [space]*len(self.GetPrimalNames())
 
-    def AddBFormulation(self, zoneOrElementFilter, data ) :
+    def AddBFormulation(self, zoneOrElementFilter, data):
 
         if type(zoneOrElementFilter) == str:
             ef = ElementFilter(tag=zoneOrElementFilter)
@@ -80,7 +82,7 @@ class Physics(BOO):
 
         self.bilinearWeakFormulations.append((ef,data) )
 
-    def AddLFormulation(self, zoneOrElementFilter, data ) :
+    def AddLFormulation(self, zoneOrElementFilter, data):
 
 
         if type(zoneOrElementFilter) == str:
@@ -203,14 +205,14 @@ class MecaPhysics(Physics):
         return  np.array([[ GetScalarField(self.coeffs[c]) for c in line] for line in hookOrtho]) *GetScalarField(factor)
 
     def GetHookeOperatorAnisotropic(self,factor=None):
-        hookAniso = [["C1111","C1122","C1133","C1123","C1131","C1112"],
-                     ["C2211","C2222","C2233","C2223","C2231","C2212"],
-                     ["C3311","C3322","C3333","C3323","C3331","C3312"],
-                     ["C2311","C2322","C2333","C2323","C2331","C2312"],
-                     ["C3111","C3122","C3133","C3123","C3131","C3112"],
-                     ["C1211","C1222","C1233","C1223","C1231","C1212"]]
+        hookAnisotropic = [["C1111","C1122","C1133","C1123","C1131","C1112"],
+                          ["C2211","C2222","C2233","C2223","C2231","C2212"],
+                          ["C3311","C3322","C3333","C3323","C3331","C3312"],
+                          ["C2311","C2322","C2333","C2323","C2331","C2312"],
+                          ["C3111","C3122","C3133","C3123","C3131","C3112"],
+                          ["C1211","C1222","C1233","C1223","C1231","C1212"]]
 
-        return  np.array([[ GetScalarField(self.coeffs[c]) for c in line] for line in hookAniso]) *GetScalarField(factor)
+        return  np.array([[ GetScalarField(self.coeffs[c]) for c in line] for line in hookAnisotropic]) *GetScalarField(factor)
 
 
     def GetStressVoigt(self,utGlobal,HookeLocalOperator=None):
@@ -231,8 +233,7 @@ class MecaPhysics(Physics):
         HookeLocalOperator = self.GetHookeOperator(young,poisson,alpha)
         stress = self.GetStressVoigt(uGlobal,HookeLocalOperator)
 
-        Symwfb = stress*ToVoigtEpsilon(Strain(utLocal,self.dim))
-        return Symwfb
+        return  stress*ToVoigtEpsilon(Strain(utLocal,self.dim))
 
     def GetPressureFormulation(self,pressure):
         ut = self.primalTest
@@ -242,20 +243,21 @@ class MecaPhysics(Physics):
         from BasicTools.FE.SymWeakForm import GetNormal
         Normal = GetNormal(self.dim)
 
-        Symwfp = p*Normal.T*ut
-
-        return Symwfp
+        return p*Normal.T*ut
 
     def GetForceFormulation(self,direction,flux="f"):
-
         ut = self.primalTest
         f = GetScalarField(flux)
 
-        from sympy.matrices import Matrix
         if not isinstance(direction,Matrix):
             direction = Matrix([direction]).T
-
         return  f*direction.T*ut
+
+    def GetDistributedForceFormulation(self, direction):
+        ut = self.primalTest
+        force = Matrix([GetScalarField(f) for f in direction])
+
+        return  Inner(force.T,ut)
 
     def GetAccelerationFormulation(self,direction,density=None):
 
@@ -264,14 +266,14 @@ class MecaPhysics(Physics):
 
         ut = self.primalTest
         density = GetScalarField(density)
-        from sympy.matrices import Matrix
+
         if not isinstance(direction,Matrix):
             direction = [GetScalarField(d) for d in direction]
             direction = Matrix([direction]).T
 
         return  density*direction.T*ut
 
-    def PostTraitementFormulations(self):
+    def PostTreatmentFormulations(self):
         """For the moment this work only if GetBulkFormulation is called only once per instance
         the problem is the use of self.Hook"""
         import BasicTools.FE.SymWeakForm as wf
@@ -279,7 +281,7 @@ class MecaPhysics(Physics):
         utLocal = Inner(self.materialOrientations,uGlobal)
 
         nodalEnergyT = GetTestField("elastic_energy",1)
-        symEner = 0.5*wf.ToVoigtEpsilon(wf.Strain(utLocal)).T*self.HookeLocalOperator*wf.ToVoigtEpsilon(wf.Strain(utLocal))*nodalEnergyT
+        symEnergy = 0.5*wf.ToVoigtEpsilon(wf.Strain(utLocal)).T*self.HookeLocalOperator*wf.ToVoigtEpsilon(wf.Strain(utLocal))*nodalEnergyT
 
 
         trStrainT = GetTestField("tr_strain_",1)
@@ -288,7 +290,7 @@ class MecaPhysics(Physics):
         trStressT = GetTestField("tr_stress_",1)
         symTrStress = wf.Trace(wf.FromVoigtSigma(wf.ToVoigtEpsilon(wf.Strain(utLocal)).T*self.HookeLocalOperator))*trStressT
 
-        postQuantities = {"elastic_energy" : symEner,
+        postQuantities = {"elastic_energy" : symEnergy,
                           "tr_strain_": symTrStrain,
                           "tr_stress_": symTrStress }
 
@@ -302,7 +304,7 @@ class MecaPhysicsAxi(MecaPhysics):
     def GetFieldR(self):
         return GetScalarField("r")
 
-    def GetBulkFormulation(self,young=None, poisson=None,alpha=None ):
+    def GetBulkFormulation(self,young=None, poisson=None, alpha=None ):
         from BasicTools.FE.MaterialHelp import HookeLaw
 
         u = self.primalUnknown
@@ -324,8 +326,7 @@ class MecaPhysicsAxi(MecaPhysics):
         from BasicTools.FE.SymWeakForm import StrainAxyCol
         epsilon_u = StrainAxyCol(u,r)
         epsilon_ut = StrainAxyCol(ut,r)
-        Symwfb = 2*np.pi*epsilon_u*self.HookeLocalOperator*epsilon_ut*r
-        return Symwfb
+        return 2*np.pi*epsilon_u*self.HookeLocalOperator*epsilon_ut*r
 
     def GetPressureFormulation(self,pressure):
         return super().GetPressureFormulation(pressure)*self.GetFieldR()
@@ -336,27 +337,27 @@ class MecaPhysicsAxi(MecaPhysics):
     def GetAccelerationFormulation(self,direction,density=None):
         return super().GetForceFormulation(direction,density)*self.GetFieldR()
 
-    def PostTraitementFormulations(self):
+    def PostTreatmentFormulations(self):
 
         import BasicTools.FE.SymWeakForm as wf
-        symdep = self.primalUnknown
+        symDep = self.primalUnknown
 
         pir2 = 2*np.pi*self.GetFieldR()
 
         nodalEnergyT = GetTestField("strain_energy",1)
-        symEner = pir2*0.5*wf.ToVoigtEpsilon(wf.Strain(symdep)).T*self.HookeLocalOperator*wf.ToVoigtEpsilon(wf.Strain(symdep))*nodalEnergyT
+        symEnergy = pir2*0.5*wf.ToVoigtEpsilon(wf.Strain(symDep)).T*self.HookeLocalOperator*wf.ToVoigtEpsilon(wf.Strain(symDep))*nodalEnergyT
 
         from sympy import prod
 
         trStrainT = GetTestField("tr(strain)",1)
-        strain = wf.StrainAxyCol(symdep)
+        strain = wf.StrainAxyCol(symDep)
         symTrStrain = prod(strain[0:3]).T*trStrainT
 
         trStressT = GetTestField("tr(stress)",1)
         stress = strain*self.HookeLocalOperator
         symTrStress = prod(stress[0:3]).T*trStressT
 
-        postQuantities = {"strain_energy" : symEner,
+        postQuantities = {"strain_energy" : symEnergy,
                           "tr(strain)": symTrStrain,
                           "tr(stress)": symTrStress }
 
@@ -370,10 +371,10 @@ class BasicPhysics(Physics):
         self.Space = None
         self.SetPrimalName(self.PrimalNameTrial[0])
 
-    def SetPrimalName(self,unknowName,testName=None,unknowDim=1,testDim=1):
-        self.PrimalNameTrial = (unknowName,unknowDim)
+    def SetPrimalName(self,unknownName,testName=None,unknownDim=1,testDim=1):
+        self.PrimalNameTrial = (unknownName,unknownDim)
         if testName is None:
-            testName = unknowName
+            testName = unknownName
         self.PrimalNameTest = (testName,testDim)
         self.primalUnknown = GetField(self.PrimalNameTrial[0],self.PrimalNameTrial[1])
         self.primalTest = GetTestField(self.PrimalNameTest[0],self.PrimalNameTest[1])
@@ -393,26 +394,24 @@ class BasicPhysics(Physics):
         unk = self.primalUnknown
 
         if self.PrimalNameTrial[1] > 1:
-            dtestdj = Gradient(unk,self.spaceDimension)[i,u]
+            DTestDj = Gradient(unk,self.spaceDimension)[i,u]
         else:
-            dtestdj = Gradient(unk,self.spaceDimension)[i]
+            DTestDj = Gradient(unk,self.spaceDimension)[i]
 
         ut = self.primalTest
         if self.PrimalNameTest[1] > 1:
-            dtrialdi = Gradient(ut,self.spaceDimension)[j,t]
+            DTrialDi = Gradient(ut,self.spaceDimension)[j,t]
         else:
-            dtrialdi = Gradient(ut,self.spaceDimension)[j]
+            DTrialDi = Gradient(ut,self.spaceDimension)[j]
 
-        Symwfb = dtrialdi*(a)*dtestdj
-        return Symwfb
+        return DTrialDi*(a)*DTestDj
 
     def GetBulkLaplacian(self,alpha=1):
         from BasicTools.FE.SymWeakForm import Gradient
         a = GetScalarField(alpha)
         u = self.primalUnknown
         ut = self.primalTest
-        Symwfb = Gradient(u,self.spaceDimension).T*(a)*Gradient(ut,self.spaceDimension)
-        return Symwfb
+        return Gradient(u,self.spaceDimension).T*(a)*Gradient(ut,self.spaceDimension)
 
     def GetFlux(self,flux="f"):
         tt = self.primalTest
@@ -431,7 +430,7 @@ class ThermalPhysics(Physics):
         return [ self.thermalPrimalName[0]]
 
     def SetPrimalNames(self,data):
-        self.thermalPrilamName = data
+        self.thermalPrimalName = data
         self.primalUnknown = GetField(self.thermalPrimalName[0],1)
         self.primalTest = GetTestField(self.thermalPrimalName[0],1)
 
@@ -445,12 +444,11 @@ class ThermalPhysics(Physics):
         if hasattr(alpha, '__iter__'):
             from sympy import diag
             K = diag(*alpha)
-            Symwfb = Gradient(t,self.spaceDimension).T*K*Gradient(tt,self.spaceDimension)
+            return Gradient(t,self.spaceDimension).T*K*Gradient(tt,self.spaceDimension)
         else:
             alpha = GetScalarField(alpha)
-            Symwfb = Gradient(t,self.spaceDimension).T*(alpha)*Gradient(tt,self.spaceDimension)
+            return Gradient(t,self.spaceDimension).T*(alpha)*Gradient(tt,self.spaceDimension)
 
-        return Symwfb
 
     def GetNormalFlux(self,flux="f"):
 
@@ -472,9 +470,9 @@ class StokesPhysics(Physics):
         res.append(self.pressurePrimalName)
         return res
 
-    def SetMecaPrimalName(self,vname,pname):
-        self.velocityPrimalName = (vname,self.dim)
-        self.pressurePrimalName = (pname,1)
+    def SetMecaPrimalName(self, vName, pName):
+        self.velocityPrimalName = (vName,self.dim)
+        self.pressurePrimalName = (pName,1)
         self.primalUnknownV = GetField(self.velocityPrimalName[0],self.velocityPrimalName[1])
         self.primalUnknownP = GetField(self.pressurePrimalName[0],self.pressurePrimalName[1])
         self.primalTestV = GetTestField(self.velocityPrimalName[0],self.velocityPrimalName[1])
@@ -557,6 +555,8 @@ def CheckIntegrity(GUI=False):
     print(M3DA.GetHookeOperator())
     print(M3DA.GetPressureFormulation(1))
     print(M3DA.GetAccelerationFormulation([1,0,0]))
+    print(M3DA.GetDistributedForceFormulation([1,0,0]))
+
 
     return "ok"
 
