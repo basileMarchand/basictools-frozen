@@ -4,7 +4,7 @@
 # file 'LICENSE.txt', which is part of this source code package.
 #
 
-""" Class to treat Constants Rectilinear Finit Element Problems
+""" Class to treat Constants Rectilinear Finite Element Problems
 
 """
 
@@ -556,9 +556,9 @@ def CheckIntegrityThermal3D():
                     PointFieldsNames= ['Themperature','q'],
                     GridFieldsNames=[])
     print('DONE')
-    print(max(myProblem.u))
+    print(np.max(myProblem.u))
 
-    if abs(max(myProblem.u)-50.) > 1e-4:
+    if abs(np.max(myProblem.u)-50.) > 1e-4:
         raise Exception()# pragma: no cover
     return("ok")
 
@@ -622,9 +622,9 @@ def CheckIntegrityDep3D():
                     CellFieldsNames=['densities','EEnergie'],
                     GridFieldsNames=[])
 
-    print(max(myProblem.u))
+    print(np.max(myProblem.u))
 
-    if abs(max(myProblem.u)-1.00215295) > 1e-5:
+    if abs(np.max(myProblem.u)-1.00215295) > 1e-5:
         print(TestTempDir.GetTempPath())
         raise   Exception("The value must be 1.00215295")# pragma: no cover
 
@@ -689,9 +689,9 @@ def CheckIntegrityThermal2D():
                     PointFieldsNames= ['Themperature','q'],
                     GridFieldsNames=[])
     print('DONE')
-    print(max(myProblem.u))
+    print(np.max(myProblem.u))
 
-    if abs(max(myProblem.u)-.5) > 1e-5:
+    if abs(np.max(myProblem.u)-.5) > 1e-5:
         raise Exception()# pragma: no cover
 
     return 'OK'
