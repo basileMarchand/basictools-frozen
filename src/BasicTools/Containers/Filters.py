@@ -513,10 +513,7 @@ class UnionElementFilter(FilterOP):
         super(UnionElementFilter,self).__init__(mesh=mesh,filters=filters)
 
     def GetIdsToTreat(self, data):
-        ids = set()
-        for ff in self.filters:
-            ids.update(ff.GetIdsToTreat(data))
-        return list(ids)
+        return reduce(np.union1d, (np.asarray(ff.GetIdsToTreat(data),dtype=PBasicIndexType) for ff in self.filters))
 
 class IntersectionElementFilter(FilterOP):
     """
