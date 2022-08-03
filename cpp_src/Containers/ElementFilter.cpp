@@ -9,21 +9,21 @@
 namespace BasicTools
 {
 
-const MatrixID1 ElementFilterBase::GetIdsToTreatComplementaty( UnstructuredMesh& mesh, const std::string& elemtype)  {
-    const MatrixID1& ids =  this->GetIdsToTreat(mesh, elemtype);
+const MatrixID1 ElementFilterBase::GetIdsToTreatComplementary( UnstructuredMesh& mesh, const std::string& elementType)  {
+    const MatrixID1 ids =  this->GetIdsToTreat(mesh, elementType);
     //std::cout << "line:" << __LINE__  << ": ids "<< ids << std::endl;
     MatrixID1 cids;
-    const CBasicIndexType nbelements = mesh.elements[elemtype].GetNumberOfElements();
+    const CBasicIndexType nbElements = mesh.elements[elementType].GetNumberOfElements();
 
     CBasicIndexType cpt = 0;
     if(ids.rows()==0 ) {
-        PRINTDEBUG(elemtype)
-        PRINTDEBUG(nbelements)
-        cids.resize(nbelements-ids.size(),1);
-        cids.setLinSpaced(nbelements,0,nbelements-1);
+        PRINTDEBUG(elementType)
+        PRINTDEBUG(nbElements)
+        cids.resize(nbElements-ids.size(),1);
+        cids.setLinSpaced(nbElements,0,nbElements-1);
         return cids;
     };
-    cids.resize(nbelements-ids.size(),1);
+    cids.resize(nbElements-ids.size(),1);
 
     PRINTDEBUG( ": id "<< ids.rows() << "  cid" << cids.rows() <<  " " << cids.cols())
 
@@ -39,7 +39,7 @@ const MatrixID1 ElementFilterBase::GetIdsToTreatComplementaty( UnstructuredMesh&
         }
     }
 
-    for(CBasicIndexType j = ids(ids.rows()-1,0)+1; j < nbelements; ++j ) {
+    for(CBasicIndexType j = ids(ids.rows()-1,0)+1; j < nbElements; ++j ) {
         cids(cpt,0) = j;
         ++cpt ;
     }
@@ -59,7 +59,6 @@ const MatrixID1 ElementFilterIntersection::GetIdsToTreat(UnstructuredMesh& mesh,
 const MatrixID1 ElementFilterEvaluated::GetIdsToTreat(UnstructuredMesh& mesh, const std::string& elemtype)  {
     if( this->ids.count(elemtype) == 0 ) {
         this->ids[elemtype] = MatrixID1();//(nullptr, 0, 1);
-        this->ids[elemtype].resize(0,1);
     }
     return this->ids[elemtype];
 }

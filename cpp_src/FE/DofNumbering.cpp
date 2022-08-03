@@ -51,7 +51,7 @@ void DofKey::Print() const {
 bool DofKey::IsPointDof()const{
     return Point == this->s;
 }
-CBasicIndexType DofKey::GetPoit()const {
+CBasicIndexType DofKey::GetPoint()const {
     return this->id0(0,0);
 }
 //------------------------------------------------------------
@@ -137,7 +137,7 @@ void DofNumbering::ComputeNumberingGeneral(UnstructuredMesh& mesh, Space& space,
     for (auto& x : mesh.elements.storage){
         if ( useddim <= ElementNames[x.first].dimension()) continue;
 
-        MatrixID1 ids = elementFilter.GetIdsToTreatComplementaty(mesh, x.first);
+        MatrixID1 ids = elementFilter.GetIdsToTreatComplementary(mesh, x.first);
 
         CBasicIndexType  nel = static_cast<CBasicIndexType>(ids.rows());
         if (nel == 0) continue;
@@ -225,7 +225,7 @@ void DofNumbering::computeDofToPoint(){
     cpt =0;
     for(const  auto& dof : this->almanac){
         if (dof.first.IsPointDof() ){
-            this->doftopointLeft(cpt,0) = dof.first.GetPoit();
+            this->doftopointLeft(cpt,0) = dof.first.GetPoint();
             this->doftopointRight(cpt,0) = dof.second;
             cpt += 1;
         }

@@ -37,7 +37,7 @@ public:
     void Print() const ;
     //
     bool IsPointDof()const;
-    CBasicIndexType GetPoit()const ;
+    CBasicIndexType GetPoint()const ;
 };
 
 DofKey GetPointDofKey(const CBasicIndexType&pid ) ;

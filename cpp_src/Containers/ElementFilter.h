@@ -21,8 +21,8 @@ namespace BasicTools
 
 class ElementFilterBase {
 public:
-    virtual const MatrixID1 GetIdsToTreat(UnstructuredMesh& mesh, const std::string& elemtype)  =0;
-    const MatrixID1 GetIdsToTreatComplementaty(UnstructuredMesh& mesh, const std::string& elemtype);
+    virtual const MatrixID1 GetIdsToTreat(UnstructuredMesh& mesh, const std::string& elementType)  =0;
+    const MatrixID1 GetIdsToTreatComplementary(UnstructuredMesh& mesh, const std::string& elementType);
 };
 
 class ElementFilterEvaluated : public ElementFilterBase {
