@@ -12,6 +12,9 @@ from BasicTools.Containers import Filters
 
 class DofNumberingDict(BaseOutputObject ):
     def __init__(self):
+        """Class to generate the numbering.
+        The internal implementation uses Dict.
+        """
         super(DofNumberingDict,self).__init__()
         self.numbering = dict()
         self.size = 0
@@ -49,7 +52,6 @@ class DofNumberingDict(BaseOutputObject ):
            # print("Please use the new API of DofNumbering : DofNumbering.doftopointRight")
             return self.doftocellRight
 
-
         return self.numbering[key]
 
     def get(self,key,default=None):
@@ -83,21 +85,21 @@ class DofNumberingDict(BaseOutputObject ):
 
         return self
 
-    def ComputeNumberingGeneral(self,mesh,space,elementFilter=None,discontinuous=False):
+    def ComputeNumberingGeneral(self, mesh, space, elementFilter=None, discontinuous=False):
         self.fromConnectivity = False
         almanac = self.almanac
 
         if elementFilter is None:
             elementFilter = Filters.ElementFilter(mesh)
+        else:
+            elementFilter.SetMesh(mesh)
 
         cpt = self.size
         self.PrintDebug("bulk ")
-        useddim = 0
-        cctt = 0
-        for name,data, elids in elementFilter:
-            cctt  += len(elids)
-            useddim = max(useddim,EN.dimension[name] )
-            res = self.GetHashFor(data,space[name],elids,discontinuous)
+        usedDim = 0
+        for name, data, elementsIds in elementFilter:
+            usedDim = max(usedDim,EN.dimension[name] )
+            res = self.GetHashFor(data, space[name], elementsIds, discontinuous)
 
             if name in self.numbering:
                 dofs = self.numbering[name]
@@ -106,34 +108,33 @@ class DofNumberingDict(BaseOutputObject ):
 
             self.PrintDebug(name + " Done")
             for i in range(len(res)):
-                lres = res[i]
-                ldofs = dofs[:,i]
-                for j,elid in enumerate(elids):
-                    d = almanac.setdefault(lres[j],cpt)
+                localRes = res[i]
+                localDofs = dofs[:,i]
+                for j, elementId in enumerate(elementsIds):
+                    d = almanac.setdefault(localRes[j],cpt)
                     cpt += (d == cpt)
-                    ldofs[elid] = d
+                    localDofs[elementId] = d
 
             self.numbering[name] = dofs
             self.PrintDebug(name + " Done Done")
         self.PrintDebug("bulk Done")
         self.PrintDebug("complementary ")
         from BasicTools.Containers.Filters import IntersectionElementFilter, ElementFilter, ComplementaryObject
-        outside = IntersectionElementFilter(mesh=mesh, filters =[ElementFilter(dimensionality=useddim-1), ComplementaryObject( filters = [elementFilter])] )
-        cctt = 0
-        for name,data,elids in outside:
-            cctt += len(elids)
-            res = self.GetHashFor(data,space[name],elids,discontinuous)
+        outside = IntersectionElementFilter(mesh=mesh, filters =[ElementFilter(dimensionality=usedDim-1), ComplementaryObject( filters = [elementFilter])] )
+
+        for name,data,elementsIds in outside:
+            res = self.GetHashFor(data,space[name],elementsIds,discontinuous)
             if name in self.numbering:
                 dofs = self.numbering[name]
             else:
                 dofs = self.numbering.setdefault(name,np.zeros((data.GetNumberOfElements(),space[name].GetNumberOfShapeFunctions()), dtype=PBasicIndexType) -1)
             for i in range(len(res)):
-                lres = res[i]
-                ldofs = dofs[:,i]
-                for j,elid in enumerate(elids):
-                    if ldofs[elid] >= 0:
+                localRes = res[i]
+                localDofs = dofs[:,i]
+                for j,elementId in enumerate(elementsIds):
+                    if localDofs[elementId] >= 0:
                         continue
-                    ldofs[elid] = almanac.get(lres[j],-1)
+                    localDofs[elementId] = almanac.get(localRes[j],-1)
             self.numbering[name] = dofs
         self.PrintDebug("complementary Done")
         self.size = cpt
@@ -161,16 +162,16 @@ class DofNumberingDict(BaseOutputObject ):
         extractorLeftSide = np.empty(self.size,dtype=PBasicIndexType)
         extractorRightSide = np.empty(self.size,dtype=PBasicIndexType)
 
-        tmpcpt = 0
+        cpt = 0
         # if k[0] is 'P' then k[1] is the node number
         for k,v in self.almanac.items():
             if k[0] == 'P':
-                extractorLeftSide[tmpcpt] = k[1]
-                extractorRightSide[tmpcpt] = v
-                tmpcpt += 1
+                extractorLeftSide[cpt] = k[1]
+                extractorRightSide[cpt] = v
+                cpt += 1
 
-        self._doftopointLeft = np.resize(extractorLeftSide, (tmpcpt,))
-        self._doftopointRight = np.resize(extractorRightSide, (tmpcpt,))
+        self._doftopointLeft = np.resize(extractorLeftSide, (cpt,))
+        self._doftopointRight = np.resize(extractorRightSide, (cpt,))
 
     @property
     def doftocellLeft(self):
@@ -190,77 +191,77 @@ class DofNumberingDict(BaseOutputObject ):
         extractorLeftSide = np.empty(self.size,dtype=PBasicIndexType)
         extractorRightSide = np.empty(self.size,dtype=PBasicIndexType)
 
-        tmpcpt = 0
-        # if k[0] is the elementname then k[1] is the connecivity
+        cpt = 0
+        # if k[0] is the elementName then k[1] is the connectivity
         # we generate the same almanac with the number of each element
         elemDic = {}
-        for name,data in mesh.elements.items():
+        for name, data in mesh.elements.items():
             elemDic[name] = {}
             elemDic2 = elemDic[name]
-            sortedconnectivity = np.sort(data.connectivity,axis=1)
+            sortedConnectivity = np.sort(data.connectivity,axis=1)
 
             for i in range(data.GetNumberOfElements()):
-                elemDic2[tuple(sortedconnectivity[i,:])] = i
+                elemDic2[tuple(sortedConnectivity[i,:])] = i
 
         for k,v in self.almanac.items():
             #if not k[0] in {'P',"F","F2","G"} :
             #we need the global number of the element (not the local to the element container)
             if k[0] in elemDic.keys():
-                localdic = elemDic[k[0]]
-                if k[1] in localdic.keys():
-                    extractorLeftSide[tmpcpt] = mesh.elements[k[0]].globaloffset + localdic[k[1]]
-                    extractorRightSide[tmpcpt] = v
-                    tmpcpt += 1
+                localDict = elemDic[k[0]]
+                if k[1] in localDict.keys():
+                    extractorLeftSide[cpt] = mesh.elements[k[0]].globaloffset + localDict[k[1]]
+                    extractorRightSide[cpt] = v
+                    cpt += 1
 
-        self._doftocellLeft = np.resize(extractorLeftSide, (tmpcpt,))
-        self._doftocellRight = np.resize(extractorRightSide, (tmpcpt,))
+        self._doftocellLeft = np.resize(extractorLeftSide, (cpt,))
+        self._doftocellRight = np.resize(extractorRightSide, (cpt,))
 
-    def GetHashFor(self,data,sp,elids,discontinuous):
+    def GetHashFor(self, data, sp, elementIds, discontinuous):
 
         numberOfShapeFunctions = sp.GetNumberOfShapeFunctions()
         res = []
         name = data.elementType
 
-        elidsConnectivity  = data.connectivity[elids,:]
+        elementsIdsConnectivity  = data.connectivity[elementIds,:]
 
         for j in range(numberOfShapeFunctions):
             on,idxI,idxII = sp.dofAttachments[j]
             if on == "P":
                 T = "P"
-                shapeFunctionConnectivity = elidsConnectivity [:,idxI]
+                shapeFunctionConnectivity = elementsIdsConnectivity [:,idxI]
 
                 if discontinuous :
-                    res.append( [ (T+str(elids),x,idxII) for i,x in zip(elids,shapeFunctionConnectivity)  ]  )
+                    res.append( [ (T+str(elementIds),x,idxII) for i,x in zip(elementIds,shapeFunctionConnectivity)  ]  )
                 else:
                     res.append( [ (T,x,idxII) for x in shapeFunctionConnectivity  ]  )
             elif on == "C":
-                sortedConnectivity = np.sort(elidsConnectivity,axis=1)
+                sortedConnectivity = np.sort(elementsIdsConnectivity,axis=1)
                 T = name
                 if idxII is not None:
                     raise
-                res.append([(T,tuple(sortedConnectivity[i,:]),idxI) for i in range(len(elids)) ] )
+                res.append([(T,tuple(sortedConnectivity[i,:]),idxI) for i in range(len(elementIds)) ] )
             elif on == "F2":
                 edge = EN.faces2[name][idxI]
                 T = edge[0]
-                nn = np.sort(elidsConnectivity[:,edge[1]],axis=1)
+                nn = np.sort(elementsIdsConnectivity[:,edge[1]],axis=1)
                 if discontinuous :
-                    res.append( [ (T+str(elids),tuple(x) ,0) for i,x in zip(elids,nn)  ]  )
+                    res.append( [ (T+str(elementIds),tuple(x) ,0) for i,x in zip(elementIds,nn)  ]  )
                 else:
                     res.append( [ (T,tuple(x),0) for x in nn  ]  )
             elif on == "F":
                 edge = EN.faces[name][idxI]
                 T = edge[0]
-                nn = np.sort(elidsConnectivity[:,edge[1]],axis=1)
+                nn = np.sort(elementsIdsConnectivity[:,edge[1]],axis=1)
                 if discontinuous :
-                    res.append( [ (T,tuple(x),i) for i,x in zip(elids,nn)  ]  )
+                    res.append( [ (T,tuple(x),i) for i,x in zip(elementIds,nn)  ]  )
                 else:
                     res.append( [ (T,tuple(x),0) for x in nn  ]  )
             elif on == "G":
                 """G is for global """
                 key = (on,0,idxII)
-                res.append( [ key for x in elids ]  )
+                res.append( [ key for x in elementIds ]  )
             elif on == "IP":
-                res.append( [ (on,tuple(lcoon),idxI) for lcoon,i in zip(elidsConnectivity,elids) ]  )
+                res.append( [ (on,tuple(localCoon),idxI) for localCoon,i in zip(elementsIdsConnectivity,elementIds) ]  )
             else:
                 print(on)
                 raise
