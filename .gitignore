@@ -72,6 +72,7 @@ Zone.sav
 *.c~
 docs/_build/*
 docs/_source/*
+docs/xml/*
 *~
 .spyproject/*
 public/
