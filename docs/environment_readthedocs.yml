@@ -25,3 +25,4 @@ dependencies:
 #    - pyvista [not py==36]
 #    - scikit-sparse [not win]
     - compilers
+    - breathe
