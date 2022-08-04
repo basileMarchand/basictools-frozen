@@ -13,11 +13,11 @@ def Generate(prefix = "cpp_src"):
     from sympy import cse, ccode
     import BasicTools.FE.Spaces.FESpaces as FES
 
-    hfilename = prefix + "/FE/GeneratedSpaces.h"
-    with open(hfilename,"w", encoding="utf8") as hfile:
+    hFileName = prefix + "/FE/GeneratedSpaces.h"
+    with open(hFileName,"w", encoding="utf8") as hfile:
         PrintHeader(hfile)
         PrintToFile(hfile,"#include <FE/Space.h>")
-        PrintToFile(hfile,"const Space& GetSpaceFor(const std::string& spacename);")
+        PrintToFile(hfile,"const Space& GetSpaceFor(const std::string& spaceName);")
         PrintToFile(hfile,"const std::vector<std::string> GetAvailableSpaces();")
 
 
@@ -28,77 +28,77 @@ def Generate(prefix = "cpp_src"):
               ("LagrangeSpaceP1", FES.LagrangeSpaceP1),
               ("LagrangeSpaceP2", FES.LagrangeSpaceP2)]
 
-    with open(filename,"w", encoding="utf8") as cppfile:
-        PrintHeader(cppfile)
-        PrintToFile(cppfile,"#include <memory>")
-        PrintToFile(cppfile,"#include <stdexcept>")
-        PrintToFile(cppfile,"#include <cmath>")
-        PrintToFile(cppfile,"#include <LinAlg/EigenTypes.h>")
-        PrintToFile(cppfile,"#include <FE/Space.h>")
-        PrintToFile(cppfile,"using std::pow;")
-        PrintToFile(cppfile,"using namespace BasicTools;")
-        PrintToFile(cppfile,"")
+    with open(filename,"w", encoding="utf8") as cppFile:
+        PrintHeader(cppFile)
+        PrintToFile(cppFile,"#include <memory>")
+        PrintToFile(cppFile,"#include <stdexcept>")
+        PrintToFile(cppFile,"#include <cmath>")
+        PrintToFile(cppFile,"#include <LinAlg/EigenTypes.h>")
+        PrintToFile(cppFile,"#include <FE/Space.h>")
+        PrintToFile(cppFile,"using std::pow;")
+        PrintToFile(cppFile,"using namespace BasicTools;")
+        PrintToFile(cppFile,"")
 
-        PrintToFile(cppfile,"namespace BasicTools{")
+        PrintToFile(cppFile,"namespace BasicTools{")
 
-        for FEspn, FEspd in spaces:
-            for spn in FEspd:
-                spd = FEspd[spn]
+        for FESpaceName, FEspace in spaces:
+            for spn in FEspace:
+                spd = FEspace[spn]
                 spd.Create()
-                NOSF = spd.GetNumberOfShapeFunctions()
+                numberOfShapeFunctions = spd.GetNumberOfShapeFunctions()
                 nbDim = spd.GetDimensionality()
 
-                cppfile.write(f"""
-const int {FEspn}_{spn}_GetNumberOfShapeFunctions(){{ return {NOSF}; }};
-const int {FEspn}_{spn}_GetDimensionality(){{ return {nbDim}; }};""")
-                cppfile.write(f"""
-MatrixDDD {FEspn}_{spn}_GetShapeFunctions(const double& phi, const double&  xi, const double&  eta  ){{
-    MatrixDDD res = MatrixDDD::Zero({NOSF},1);
+                cppFile.write(f"""
+const int {FESpaceName}_{spn}_GetNumberOfShapeFunctions(){{ return {numberOfShapeFunctions}; }};
+const int {FESpaceName}_{spn}_GetDimensionality(){{ return {nbDim}; }};""")
+                cppFile.write(f"""
+MatrixDDD {FESpaceName}_{spn}_GetShapeFunctions(const double& phi, const double&  xi, const double&  eta  ){{
+    MatrixDDD res = MatrixDDD::Zero({numberOfShapeFunctions},1);
 """)
-                repl, redu = cse(spd.symN)
-                for i, v in repl:
-                    cppfile.write(f"    const double {i} = " +  ccode(v) + ";\n" )
-                for ns in range(NOSF):
-                    cppfile.write( f"    res.coeffRef({ns},1) =  "+ ccode(redu[0][ns]) )
-                    cppfile.write(";\n")
-                cppfile.write("""    return res;
+                replacements, reducedExprs  = cse(spd.symN)
+                for i, v in replacements:
+                    cppFile.write(f"    const double {i} = " +  ccode(v) + ";\n" )
+                for ns in range(numberOfShapeFunctions):
+                    cppFile.write( f"    res.coeffRef({ns},1) =  "+ ccode(reducedExprs [0][ns]) )
+                    cppFile.write(";\n")
+                cppFile.write("""    return res;
 };
 """)
-                cppfile.write(f"""
-MatrixDDD {FEspn}_{spn}_GetShapeFunctionsDer(const double& phi, const double&  xi, const double&  eta  ){{
-    MatrixDDD res = MatrixDDD::Zero({NOSF},3);
+                cppFile.write(f"""
+MatrixDDD {FESpaceName}_{spn}_GetShapeFunctionsDer(const double& phi, const double&  xi, const double&  eta  ){{
+    MatrixDDD res = MatrixDDD::Zero({numberOfShapeFunctions},3);
 """)
-                repl, redu = cse(spd.symdNdxi)
-                for i, v in repl:
-                    cppfile.write(f"    const double {i} = " +  ccode(v) + ";\n" )
+                replacements, reducedExprs  = cse(spd.symdNdxi)
+                for i, v in replacements:
+                    cppFile.write(f"    const double {i} = " +  ccode(v) + ";\n" )
 
-                for j in range(NOSF):
+                for j in range(numberOfShapeFunctions):
                     for i in range(nbDim):
-                        text = ccode(redu[0][i,j])
-                        cppfile.write( f"    res.coeffRef({i},{j}) =  "+ text + ";\n")
+                        text = ccode(reducedExprs [0][i,j])
+                        cppFile.write( f"    res.coeffRef({i},{j}) =  "+ text + ";\n")
 
-                cppfile.write("""    return res;\n};
+                cppFile.write("""    return res;\n};
 """)
 
-        cppfile.write("""
+        cppFile.write("""
 
 std::map<std::string,Space> GetBasicSpaceAlmanac(){
 std::map<std::string,Space> SpacesAlmanac;
 
 \n""")
-        for FEspn, FEspd in spaces:
-            PrintToFile(cppfile,f"{{// working on space {FEspn}")
-            PrintToFile(cppfile,"    Space localsp;")
+        for FESpaceName, FEspace in spaces:
+            PrintToFile(cppFile,f"{{// working on space {FESpaceName}")
+            PrintToFile(cppFile,"    Space localsp;")
 
-            for spn in FEspd:
-                spd = FEspd[spn]
+            for spn in FEspace:
+                spd = FEspace[spn]
                 spd.Create()
 
-                PrintToFile(cppfile,f"    {{// working on space: {spn}")
-                PrintToFile(cppfile,"        ElementSpace fesp;")
-                NOSF = spd.GetNumberOfShapeFunctions()
+                PrintToFile(cppFile,f"    {{// working on space: {spn}")
+                PrintToFile(cppFile,"        ElementSpace fesp;")
+                numberOfShapeFunctions = spd.GetNumberOfShapeFunctions()
 
-                for nsf in range(NOSF):
+                for nsf in range(numberOfShapeFunctions):
                     on,idxI,idxII = spd.dofAttachments[nsf]
                     if idxI is None :
                         idxI = -1
@@ -106,20 +106,20 @@ std::map<std::string,Space> SpacesAlmanac;
                         idxII = -1
                     if on == "F2" :
                         on = "E"
-                    PrintToFile(cppfile,f"        fesp.AppendDofAttachement('{on[0]}', {idxI},{idxII});")
-                PrintToFile(cppfile,f"        fesp.SFV = &{FEspn}_{spn}_GetShapeFunctions;")
-                PrintToFile(cppfile,f"        fesp.SFDV = &{FEspn}_{spn}_GetShapeFunctionsDer;")
-                PrintToFile(cppfile,f'        localsp.storage["{spn}"] = fesp;')
-                PrintToFile(cppfile,f"    }};// end of space: {spn}")
-            PrintToFile(cppfile,f'    SpacesAlmanac["{FEspn}"] = localsp;')
-            PrintToFile(cppfile,f"}};// end of space: {FEspn}")
-        PrintToFile(cppfile,"return SpacesAlmanac; \n}")
+                    PrintToFile(cppFile,f"        fesp.AppendDofAttachment('{on[0]}', {idxI},{idxII});")
+                PrintToFile(cppFile,f"        fesp.SFV = &{FESpaceName}_{spn}_GetShapeFunctions;")
+                PrintToFile(cppFile,f"        fesp.SFDV = &{FESpaceName}_{spn}_GetShapeFunctionsDer;")
+                PrintToFile(cppFile,f'        localsp.storage["{spn}"] = fesp;')
+                PrintToFile(cppFile,f"    }};// end of space: {spn}")
+            PrintToFile(cppFile,f'    SpacesAlmanac["{FESpaceName}"] = localsp;')
+            PrintToFile(cppFile,f"}};// end of space: {FESpaceName}")
+        PrintToFile(cppFile,"return SpacesAlmanac; \n}")
 
 
-        PrintToFile(cppfile,"std::map<std::string,Space> SpacesAlmanacI = GetBasicSpaceAlmanac();")
+        PrintToFile(cppFile,"std::map<std::string,Space> SpacesAlmanacI = GetBasicSpaceAlmanac();")
 
-        PrintToFile(cppfile,"""const Space& GetSpaceFor(const std::string& spacename){
-    return SpacesAlmanacI[spacename];
+        PrintToFile(cppFile,"""const Space& GetSpaceFor(const std::string& spaceName){
+    return SpacesAlmanacI[spaceName];
 };
 
 const std::vector<std::string> GetAvailableSpaces(){

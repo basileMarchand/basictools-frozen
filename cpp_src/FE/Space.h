@@ -29,26 +29,24 @@ struct ElementSpace{
     MatrixDDD (*SFV)(const double&,const double&,const double& );
     MatrixDDD (*SFDV)(const double&,const double&,const double& );
     CBasicIndexType GetNumberOfShapeFunctions();
-    const DofAttachment& GetDofAttachment(const int& dofnumber) const ;
-    void AppendDofAttachement(const char& entity, const int& entityNumber, const int& extraKey);
+    const DofAttachment& GetDofAttachment(const int& dofNumber) const ;
+    void AppendDofAttachment(const char& entity, const int& entityNumber, const int& extraKey);
     const MatrixDDD GetValOfShapeFunctionsAt(const double& phi, const double&  xi, const double&  eta  ) const ;
-    const MatrixDDD GetValOfShapeFunctionsAt(const MatrixDDD& phixieta) const ;
+    const MatrixDDD GetValOfShapeFunctionsAt(const MatrixDDD& phiXiEta) const ;
     const MatrixDDD GetValOfShapeFunctionsDerAt(const double& phi, const double&  xi, const double&  eta) const  ;
-    const MatrixDDD GetValOfShapeFunctionsDerAt(const MatrixDDD& phixieta) const ;
+    const MatrixDDD GetValOfShapeFunctionsDerAt(const MatrixDDD& phiXiEta) const ;
 };
 
 class Space{
 public:
     std::map<std::string, ElementSpace > storage;
 public:
-    CBasicIndexType GetNumberOfShapeFunctionsFor(const std::string& elemtype);
-    void AddDofTo(const std::string& elemtype, const char& entity, const int& entityNumber, const int& extraKey);
-    const ElementSpace& GetSpaceFor(const std::string& elemtype);
+    CBasicIndexType GetNumberOfShapeFunctionsFor(const std::string& elementType);
+    void AddDofTo(const std::string& elementType, const char& entity, const int& entityNumber, const int& extraKey);
+    const ElementSpace& GetSpaceFor(const std::string& elementType);
     void Print();
     std::string ToStr();
 };
-
-const Space& GetSpaceFor(const std::string& spacename);
 
 class SpaceAtIP{
 public:

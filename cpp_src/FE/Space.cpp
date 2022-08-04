@@ -13,24 +13,24 @@ CBasicIndexType ElementSpace::GetNumberOfShapeFunctions(){
     return static_cast<CBasicIndexType>(this->storage.size());
 }
 //
-const DofAttachment& ElementSpace::GetDofAttachment(const int& dofnumber) const {
-    return this->storage[dofnumber];
+const DofAttachment& ElementSpace::GetDofAttachment(const int& dofNumber) const {
+    return this->storage[dofNumber];
 };
 
-void ElementSpace::AppendDofAttachement(const char& entity, const int& entityNumber, const int& extraKey){
+void ElementSpace::AppendDofAttachment(const char& entity, const int& entityNumber, const int& extraKey){
     storage.push_back( DofAttachment(entity,entityNumber, extraKey) ) ;
 }
 
-const MatrixDDD ElementSpace::GetValOfShapeFunctionsAt(const MatrixDDD& phixieta  ) const {
-    return this->GetValOfShapeFunctionsAt(phixieta.coeff(0,0), phixieta.coeff(1,0),phixieta.coeff(2,0));
+const MatrixDDD ElementSpace::GetValOfShapeFunctionsAt(const MatrixDDD& phiXiEta  ) const {
+    return this->GetValOfShapeFunctionsAt(phiXiEta.coeff(0,0), phiXiEta.coeff(1,0),phiXiEta.coeff(2,0));
 };
 
 const MatrixDDD ElementSpace::GetValOfShapeFunctionsAt(const double& phi, const double&  xi, const double&  eta  ) const {
     return this->SFV(phi, xi, eta);
 };
 
-const MatrixDDD ElementSpace::GetValOfShapeFunctionsDerAt(const MatrixDDD& phixieta  ) const {
-    return this->GetValOfShapeFunctionsDerAt(phixieta.coeff(0,0), phixieta.coeff(1,0),phixieta.coeff(2,0));
+const MatrixDDD ElementSpace::GetValOfShapeFunctionsDerAt(const MatrixDDD& phiXiEta  ) const {
+    return this->GetValOfShapeFunctionsDerAt(phiXiEta.coeff(0,0), phiXiEta.coeff(1,0),phiXiEta.coeff(2,0));
 };
 
 const MatrixDDD ElementSpace::GetValOfShapeFunctionsDerAt(const double& phi, const double&  xi, const double&  eta  ) const {
@@ -38,16 +38,16 @@ const MatrixDDD ElementSpace::GetValOfShapeFunctionsDerAt(const double& phi, con
 };
 
 // ***************  Space ******************
-CBasicIndexType Space::GetNumberOfShapeFunctionsFor(const std::string& elemtype){
-    return this->storage[elemtype].GetNumberOfShapeFunctions();
+CBasicIndexType Space::GetNumberOfShapeFunctionsFor(const std::string& elementType){
+    return this->storage[elementType].GetNumberOfShapeFunctions();
 };
 //
-void Space::AddDofTo(const std::string& elemtype, const char& entity, const int& entityNumber, const int& extraKey){
-    this->storage[elemtype].AppendDofAttachement(entity, entityNumber, extraKey);
+void Space::AddDofTo(const std::string& elementType, const char& entity, const int& entityNumber, const int& extraKey){
+    this->storage[elementType].AppendDofAttachment(entity, entityNumber, extraKey);
 }
 //
-const ElementSpace& Space::GetSpaceFor(const std::string& elemtype)  {
-    return this->storage[elemtype];
+const ElementSpace& Space::GetSpaceFor(const std::string& elementType)  {
+    return this->storage[elementType];
 }
 //
 void Space::Print(){
