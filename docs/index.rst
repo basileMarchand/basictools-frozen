@@ -19,13 +19,14 @@ Contents
    :maxdepth: 4
 
    Intro
+   Examples
+   Containers
+   ParaViewAndOthersExternalTools
+   MeshFileConverter
+   Kinematics
    Admin
    Utilities
-   Containers
-   Kinematics
-   MeshFileConverter
-   ParaViewAndOthersExternalTools
-   Examples
+   BasicToolsCpp
 
 BasicTools Package Tree
 =======================
