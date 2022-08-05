@@ -566,6 +566,8 @@ class XdmfWriter(WriterBase):
             raise Exception                                                    # pragma: no cover
 
     def __WriteAttribute(self,data,name,center,baseMeshObject):
+       data = data.view()
+
        shape = None
        if center == "Node":
            nbData = baseMeshObject.GetNumberOfNodes()
