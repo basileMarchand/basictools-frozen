@@ -136,14 +136,14 @@ class DofNumberingNumpy(BaseOutputObject ):
         sizes = dict()
 
         self.PrintVerbose("Numbering counting ")
-        #count the total number of shape funtions per element
-        for name,data, elids in elementFilter:
+        #count the total number of shape functions per element
+        for name,data, elementsIds in elementFilter:
             sp = space[name]
             nsf= sp.GetNumberOfShapeFunctions()
             for sf in range(nsf):
                 on,idxI,idxII = sp.dofAttachments[sf]
                 key = self.GetKeyFromNameAndIdxI(on,name,idxI)
-                sizes[key] = sizes.get(key,0) + len(elids)
+                sizes[key] = sizes.get(key,0) + len(elementsIds)
 
         self.PrintDebug("Numbering memory allocation")
         ## allocation of matrices to store all the dofs
@@ -159,10 +159,10 @@ class DofNumberingNumpy(BaseOutputObject ):
             #BOO.ResetStartTime()
             sp = space[elemName]
             nsf= sp.GetNumberOfShapeFunctions()
-            elidsConnectivity  = data.connectivity[ids,:]
+            elementIdsConnectivity  = data.connectivity[ids,:]
             for sf in range(nsf):
                 nn = GetNumberingColsSize(k)
-                key, idxI, idxII = self.GetHashFor(data,sp,ids,sf,False,elidsConnectivity=elidsConnectivity)
+                key, idxI, idxII = self.GetHashFor(data, sp, ids, sf, False, elidsConnectivity=elementIdsConnectivity)
                 cpt = sizes[key]
                 storage[key][cpt:cpt+len(ids),:] = idxI
                 sizes[key] = cpt + len(ids)
@@ -174,8 +174,8 @@ class DofNumberingNumpy(BaseOutputObject ):
         # recover the unique dofs and generate the numbering
         for k,v in storage.items():
             unique, indices, inverse = np.unique(np.sort(v,axis=1),return_index=True,return_inverse=True,axis=0)
-            newdofs = np.arange(len(indices)) + cpt
-            tempAlmanac[k] = (unique,newdofs,inverse)
+            newDofs = np.arange(len(indices)) + cpt
+            tempAlmanac[k] = (unique, newDofs, inverse)
             cpt += len(indices)
             sizes[k] = 0
 
@@ -184,7 +184,7 @@ class DofNumberingNumpy(BaseOutputObject ):
         self.PrintDebug("Numbering the bulk")
 
         #push the new dofs to the almanac
-        maxuseddim = 0
+        maxUsedDim = 0
 
         extractorLeftSide = np.empty(self.size,dtype=PBasicIndexType)
         extractorRightSide = np.empty(self.size,dtype=PBasicIndexType)
@@ -197,7 +197,7 @@ class DofNumberingNumpy(BaseOutputObject ):
             if len(ids) == 0:
                 elementcpt += data.GetNumberOfElements()
                 continue
-            maxuseddim = max(maxuseddim,EN.dimension[elemName] )
+            maxUsedDim = max(maxUsedDim,EN.dimension[elemName] )
 
             sp = space[elemName]
             nsf= sp.GetNumberOfShapeFunctions()
@@ -208,8 +208,8 @@ class DofNumberingNumpy(BaseOutputObject ):
                 on,idxI,idxII = sp.dofAttachments[sf]
                 key = self.GetKeyFromNameAndIdxI(on,elemName,idxI)
                 cpt = sizes[key]
-                (unique,newdofs,inverse) = tempAlmanac[key]
-                dofs = newdofs[inverse][cpt:cpt+len(ids)]
+                (unique,newDofs,inverse) = tempAlmanac[key]
+                dofs = newDofs[inverse][cpt:cpt+len(ids)]
                 self.numbering[elemName][ids,sf] = dofs
                 sizes[key] = cpt + len(ids)
 
@@ -231,7 +231,7 @@ class DofNumberingNumpy(BaseOutputObject ):
         from BasicTools.Containers.Filters import IntersectionElementFilter, ElementFilter, ComplementaryObject,UnionElementFilter
         # we work on the elements of dim < maxuseddim not present in the original filter
         complementary = ComplementaryObject(mesh=mesh, filters = [elementFilter])
-        filters = [ElementFilter(mesh=mesh,dimensionality=i) for i in range(maxuseddim) ]
+        filters = [ElementFilter(mesh=mesh,dimensionality=i) for i in range(maxUsedDim) ]
         #filters.append(complementary)
         outside = IntersectionElementFilter(mesh=mesh, filters=[UnionElementFilter(mesh=mesh,filters=filters) ,complementary ]  )
 
@@ -242,19 +242,19 @@ class DofNumberingNumpy(BaseOutputObject ):
             sp = space[elemName]
             nsf= sp.GetNumberOfShapeFunctions()
             if elemName not in self.numbering:
-                self.numbering[elemName] = np.zeros((data.GetNumberOfElements(),nsf),dtype=PBasicIndexType)
-            elidsConnectivity  = data.connectivity[ids,:]
+                self.numbering[elemName] = np.zeros((data.GetNumberOfElements(),nsf),dtype=PBasicIndexType)-1
+            elementIdsConnectivity  = data.connectivity[ids,:]
             for sf in range(nsf):
                 nn = GetNumberingColsSize(k)
                 on,idxI,idxII = sp.dofAttachments[sf]
                 key = self.GetKeyFromNameAndIdxI(on,elemName,idxI)
                 if key not in tempAlmanac:
                     continue
-                (unique,newdofs,inverse) = tempAlmanac[key]
-                name, idxI, idxII = self.GetHashFor(data,sp,ids,sf,False,elidsConnectivity=elidsConnectivity)
+                (unique,newDofs,inverse) = tempAlmanac[key]
+                name, idxI, idxII = self.GetHashFor(data,sp,ids,sf,False,elidsConnectivity=elementIdsConnectivity)
                 v = np.vstack((unique,idxI))
                 uniqueII, indices, inverse = np.unique(np.sort(v,axis=1),return_index=True,return_inverse=True,axis=0)
-                newnewdofs = np.hstack((newdofs,np.zeros(len(idxI),dtype=PBasicIndexType)-1 ))[inverse][len(unique):]
+                newnewdofs = np.hstack((newDofs,np.zeros(len(idxI),dtype=PBasicIndexType)-1 ))[inverse][len(unique):]
                 self.numbering[elemName][ids,sf] = newnewdofs
         self.PrintVerbose("Numbering Done")
         self._almanac = tempAlmanac
