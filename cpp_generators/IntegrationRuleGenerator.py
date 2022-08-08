@@ -3,30 +3,54 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-#from BasicTools.Containers.ElementNames import ElementsInfo
+import os
+from typing import Tuple
 
-def GetGeneratedFiles(prefix = "cpp_src/"):
-    """Get the list of generated files for this generator"""
-    return (prefix + "FE/GeneratedIntegrationsRules.cpp",)
+def GetGeneratedFiles(prefix:str  = "cpp_src") -> Tuple[str]:
+    """ Get the list of generated files for this generator
 
-def Generate(prefix = "cpp_src/"):
+    Parameters
+    ----------
+    prefix : str, optional
+        prefix for the generated files, by default "cpp_src/"
+
+    Returns
+    -------
+    Tuple[str]
+        list of generated files for this generator
+    """
+    return ( os.path.join(prefix ,"FE", "GeneratedIntegrationsRules.cpp"), )
+
+def Generate(prefix:str = "cpp_src"):
+    """ Run the generation of cpp file using the prefix.
+    the file created: prefix + "Containers/GeneratedElementNames.cpp"
+    This file contains all the integration rules defined in the python
+    files.
+
+    Parameters
+    ----------
+    prefix : str, optional
+        prefix for the generated files, by default "cpp_src"
+
+
+    """
     from cpp_generators.Tools import PrintHeader, PrintToFile, PrintFillMatrix
     import BasicTools.FE.IntegrationsRules as IR
 
     """Run the generation of cpp file using the prefix"""
-    filename = prefix +  "FE/GeneratedIntegrationsRules.cpp"
+    filename = GetGeneratedFiles(prefix)[0]
 
-    with open(filename, 'w', encoding="utf8") as cppfile:
-        PrintHeader(cppfile)
-        PrintToFile(cppfile,"#include <map>")
-        PrintToFile(cppfile,"#include <stdexcept>")
-        PrintToFile(cppfile,"#include <cmath>")
-        PrintToFile(cppfile,"#include <LinAlg/EigenTypes.h>")
-        PrintToFile(cppfile,"#include <FE/Space.h>")
-        PrintToFile(cppfile,"#include <FE/IntegrationRule.h>")
-        PrintToFile(cppfile,"using std::pow;")
-        PrintToFile(cppfile,"using namespace BasicTools;")
-        PrintToFile(cppfile,"""
+    with open(filename, 'w', encoding="utf8") as cppFile:
+        PrintHeader(cppFile)
+        PrintToFile(cppFile,"#include <map>")
+        PrintToFile(cppFile,"#include <stdexcept>")
+        PrintToFile(cppFile,"#include <cmath>")
+        PrintToFile(cppFile,"#include <LinAlg/EigenTypes.h>")
+        PrintToFile(cppFile,"#include <FE/Space.h>")
+        PrintToFile(cppFile,"#include <FE/IntegrationRule.h>")
+        PrintToFile(cppFile,"using std::pow;")
+        PrintToFile(cppFile,"using namespace BasicTools;")
+        PrintToFile(cppFile,"""
 namespace BasicTools {
 
 std::map<std::string,SpaceIntegrationRule>  GetPythonDefinedIntegrationRules(){
@@ -34,18 +58,18 @@ std::map<std::string,SpaceIntegrationRule>  GetPythonDefinedIntegrationRules(){
 """)
         for k,v in IR.IntegrationRulesAlmanac.items():
 
-            PrintToFile(cppfile,f"""    {{ // working on {k}
+            PrintToFile(cppFile,f"""    {{ // working on {k}
             SpaceIntegrationRule ir; """)
             for k2,v2 in v.items():
-                PrintToFile(cppfile,f"""        {{ // working on {k2}
+                PrintToFile(cppFile,f"""        {{ // working on {k2}
                 IntegrationRule eir;""")
-                PrintFillMatrix(cppfile,12*" "+"eir.p", v2[0])
-                PrintFillMatrix(cppfile,12*" "+"eir.w", v2[1])
-                PrintToFile(cppfile,12*" "+f"""ir.storage["{k2}"] = eir;""" )
-                PrintToFile(cppfile,8*" "+"}")
-            PrintToFile(cppfile,8*" "+f"""res["{k}"] = ir;""" )
-            PrintToFile(cppfile,8*" "+"}")
-        PrintToFile(cppfile,"""
+                PrintFillMatrix(cppFile,12*" "+"eir.p", v2[0])
+                PrintFillMatrix(cppFile,12*" "+"eir.w", v2[1])
+                PrintToFile(cppFile,12*" "+f"""ir.storage["{k2}"] = eir;""" )
+                PrintToFile(cppFile,8*" "+"}")
+            PrintToFile(cppFile,8*" "+f"""res["{k}"] = ir;""" )
+            PrintToFile(cppFile,8*" "+"}")
+        PrintToFile(cppFile,"""
     return res;
 };
 

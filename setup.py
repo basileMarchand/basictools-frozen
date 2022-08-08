@@ -147,9 +147,9 @@ class GenerateCommand(Command):
                 code = compile(open(generator).read(),generator,"exec")
                 res = {}
                 exec(code,res)
-                generated_file  = res["GetGeneratedFiles"]("")
-                print("generation of files : \n"+ "\n".join("cpp_src/"+str(gf)for gf in generated_file))
-                res["Generate"]("cpp_src/")
+                generated_file  = res["GetGeneratedFiles"]()
+                print("generation of files : \n"+ "\n".join(str(gf) for gf in generated_file))
+                res["Generate"]()
                 #cpp_src = generated_file + cpp_src
 
 class my_build(build):

@@ -4,21 +4,44 @@
 # file 'LICENSE.txt', which is part of this source code package.
 #
 #
+import os
+from typing import Tuple
 
-def GetGeneratedFiles(prefix = "cpp_src/"):
-    """Get the list of generated files for this generator"""
-    return ( prefix+ "Containers/GeneratedElementNames.cpp",)
+def GetGeneratedFiles(prefix: str = "cpp_src") -> Tuple[str]:
+    """ Get the list of generated files for this generator
 
-def Generate(prefix = "cpp_src/"):
+    Parameters
+    ----------
+    prefix : str, optional
+        prefix for the generated files, by default "cpp_src/"
+
+    Returns
+    -------
+    Tuple[str]
+        list of generated files for this generator
+    """
+    return ( os.path.join(prefix ,"FE", "GeneratedElementNames.cpp"), )
+
+def Generate(prefix:str = "cpp_src") :
+    """ Run the generation of cpp file using the prefix.
+    the file created: prefix + "Containers/GeneratedElementNames.cpp"
+    This file contains all the element related data: name, dimensionality,
+    faces...
+
+    Parameters
+    ----------
+    prefix : str, optional
+        prefix for the generated files, by default "cpp_src"
+
+
+    """
     from BasicTools.Containers.ElementNames import ElementsInfo
     from cpp_generators.Tools import PrintHeader, PrintToFile, PrintFillMatrix, PrintBool, PrintFillVMatrix
+    filename = GetGeneratedFiles(prefix)[0]
 
-    """Run the generation of cpp file using the prefix"""
-    filename = prefix + "Containers/GeneratedElementNames.cpp"
-
-    with open(filename,"w", encoding="utf8") as cppfile:
-        PrintHeader(cppfile)
-        cppfile.write("""
+    with open(filename,"w", encoding="utf8") as cppFile:
+        PrintHeader(cppFile)
+        cppFile.write("""
 #include <Containers/ElementNames.h>
 #include <map>
 
@@ -54,30 +77,30 @@ const std::string Hexaedron_27 = "hex27";
 std::map<std::string,ElementInfo> InitElementNames() {
     std::map<std::string,ElementInfo> ElementNames;
 """)
-        for elemtype,ei in ElementsInfo.items() :
+        for elementType,ei in ElementsInfo.items() :
 
-            PrintToFile(cppfile,"""
-    ElementNames["{elemtype}"] = ElementInfo();
-    ElementNames["{elemtype}"].numberOfNodes = {non};
-    ElementNames["{elemtype}"].geoSupport = Geo{geoname};
-    ElementNames["{elemtype}"].name = "{elemtype}";""".format(elemtype=elemtype,non = ei.numberOfNodes,geoname=ei.geoSupport.name.capitalize()))
+            PrintToFile(cppFile,f"""
+    ElementNames["{elementType}"] = ElementInfo();
+    ElementNames["{elementType}"].numberOfNodes = {ei.numberOfNodes};
+    ElementNames["{elementType}"].geoSupport = Geo{ei.geoSupport.name.capitalize()};
+    ElementNames["{elementType}"].name = "{elementType}";""")
 
-            PrintFillMatrix(cppfile,f"""    ElementNames["{elemtype}"].mirrorPermutation""",ei.mirrorPermutation)
-            PrintBool(cppfile,f"""    ElementNames["{elemtype}"].linear """, ei.linear)
-            PrintToFile(cppfile,f"""    ElementNames["{elemtype}"].degree = {ei.degree}; """ )
+            PrintFillMatrix(cppFile,f"""    ElementNames["{elementType}"].mirrorPermutation""",ei.mirrorPermutation)
+            PrintBool(cppFile,f"""    ElementNames["{elementType}"].linear """, ei.linear)
+            PrintToFile(cppFile,f"""    ElementNames["{elementType}"].degree = {ei.degree}; """ )
             for e,n in ei.faces:
-                PrintToFile(cppfile,"    {")
-                PrintToFile(cppfile,"        MatrixID1 faces;")
-                PrintFillVMatrix(cppfile,"""        faces""",n)
-                PrintToFile(cppfile,f"""        ElementNames["{elemtype}"].faces.push_back(std::pair<ElementInfo,MatrixID1>(ElementNames["{e}"],faces) );""" )
-                PrintToFile(cppfile,"    }")
+                PrintToFile(cppFile,"    {")
+                PrintToFile(cppFile,"        MatrixID1 faces;")
+                PrintFillVMatrix(cppFile,"""        faces""",n)
+                PrintToFile(cppFile,f"""        ElementNames["{elementType}"].faces.push_back(std::pair<ElementInfo,MatrixID1>(ElementNames["{e}"],faces) );""" )
+                PrintToFile(cppFile,"    }")
             for e,n in ei.faces2:
-                PrintToFile(cppfile,"    {")
-                PrintToFile(cppfile,"        MatrixID1 faces2;")
-                PrintFillVMatrix(cppfile,"""        faces2""",n)
-                PrintToFile(cppfile,f"""        ElementNames["{elemtype}"].faces2.push_back(std::pair<ElementInfo,MatrixID1>(ElementNames["{e}"],faces2) );""" )
-                PrintToFile(cppfile,"    }")
-        PrintToFile(cppfile,"""
+                PrintToFile(cppFile,"    {")
+                PrintToFile(cppFile,"        MatrixID1 faces2;")
+                PrintFillVMatrix(cppFile,"""        faces2""",n)
+                PrintToFile(cppFile,f"""        ElementNames["{elementType}"].faces2.push_back(std::pair<ElementInfo,MatrixID1>(ElementNames["{e}"],faces2) );""" )
+                PrintToFile(cppFile,"    }")
+        PrintToFile(cppFile,"""
     return ElementNames;
 };
 

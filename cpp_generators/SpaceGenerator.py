@@ -4,11 +4,36 @@
 # file 'LICENSE.txt', which is part of this source code package.
 #
 #
+import os
+from  typing import Tuple
+def GetGeneratedFiles(prefix:str = "cpp_src") -> Tuple[str]:
+    """ Get the list of generated files for this generator
 
-def GetGeneratedFiles(prefix = "cpp_src"):
-    return (prefix + "FE/GeneratedSpaces.cpp",)
+    Parameters
+    ----------
+    prefix : str, optional
+        prefix for the generated files, by default "cpp_src"
 
-def Generate(prefix = "cpp_src"):
+    Returns
+    -------
+    Tuple[str]
+        list of generated files for this generator
+    """
+    return ( os.path.join(prefix ,"FE", "GeneratedSpaces.cpp"), )
+
+def Generate(prefix:str = "cpp_src"):
+    """ Run the generation of cpp file using the prefix.
+    the file created: prefix + "Containers/GeneratedElementNames.cpp"
+    This file contains all shape functions defined in the python
+    files.
+
+    Parameters
+    ----------
+    prefix : str, optional
+        prefix for the generated files, by default "cpp_src"
+
+
+    """
     from cpp_generators.Tools import PrintHeader, PrintToFile
     from sympy import cse, ccode
     import BasicTools.FE.Spaces.FESpaces as FES
@@ -21,7 +46,7 @@ def Generate(prefix = "cpp_src"):
         PrintToFile(hfile,"const std::vector<std::string> GetAvailableSpaces();")
 
 
-    filename = prefix + "/FE/GeneratedSpaces.cpp"
+    filename = GetGeneratedFiles(prefix)[0]
     spaces = [("LagrangeSpaceGeo", FES.LagrangeSpaceGeo),
               ("ConstantSpaceGlobal", FES.ConstantSpaceGlobal),
               ("LagrangeSpaceP0", FES.LagrangeSpaceP0),
