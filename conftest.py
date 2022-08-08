@@ -7,14 +7,14 @@
 
 import pytest
 
-
 class fail_if_not_ok:
     def __init__(self, f):
         self.f = f
 
     def __call__(self):
         res = self.f()
-        assert res.lower() == "ok"
+
+        assert (res.lower() in ["ok", "skip"] )
 
 def pytest_pycollect_makeitem(collector, name, obj):
     if name == "CheckIntegrity" and hasattr(obj, "__call__"):
