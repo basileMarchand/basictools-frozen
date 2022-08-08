@@ -21,23 +21,23 @@ The only deviations from PEP 8 are the following :
 
 
 3). Please read the contributing rules :
-    
+
 - All changes are integrated by Safran.
 
-- API must be kept simple and evolutive.
+- API must be kept simple and flexible.
 
-- Data structures are defined in Containers, we limit the number of advanced 
-functions in these classes at maximum. This advanced functions are defined
+- Data structures are defined in Containers, we limit the number of advanced
+functions in these classes at maximum. Advanced functions are defined
 in other files.
 
 - Unitary tests are in Containers classes and functional tests in files
-containing more advanced classes. The latter also serve as exemples and
+containing more advanced classes. The latter also serve as examples and
 client code for the library.
 
-- Each file preferably contain at most one class 
+- Each file preferably contain at most one class
 
-- CheckIntegrities must be local (as litte imports as possible), aiming to test
-only the functions defined in the file, as much a spossible. All functions
+- CheckIntegrities must be local (as little imports as possible), aiming to test
+only the functions defined in the file, as much as possible. All functions
 in the file must be tested, if possible. Please limit the use of functions
 from other file to reach that goal, and use small and simple data, otherwise
 changes will be painful to propagate if many CheckIntegrities must be updated
@@ -46,7 +46,7 @@ as well.
 - Favor imports at the beginning of files (to be available for CheckIntegrities
 as well without repeat).
 
-- Coverage must be kept higher than 80%. 
+- Coverage must be kept higher than 80%.
 
 --
 
