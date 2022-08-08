@@ -31,17 +31,17 @@ def ComputeDofNumbering(mesh,Space,dofs=None,fromConnectivity=False,elementFilte
         cachedData = GetNumberingFromCache(mesh=mesh, space=Space, fromConnectivity=fromConnectivity, elementFilter=elementFilter, discontinuous=discontinuous )
     if cachedData is not None:
         return cachedData
-	
-    global numberingAlgorithm 
+
+    global numberingAlgorithm
     res = None
     if numberingAlgorithm == "CppBase":
         try:
             from BasicTools.FE.Numberings.NativeDofNumbering import NativeDofNumbering
             res = NativeDofNumbering()
         except:
-           numberingAlgorithm = "NumpyBase" 
+           numberingAlgorithm = "NumpyBase"
            print("Warning CppBase Numbering non available (missing compilation) Using NumpyBase")
-        
+
     if numberingAlgorithm == "NumpyBase":
         from BasicTools.FE.Numberings.DofNumberingNumpy import DofNumberingNumpy
         res = DofNumberingNumpy()
@@ -85,49 +85,38 @@ def CheckIntegrity(GUI=False):
     gaussSpace = GenerateSpaceForIntegrationPointInterpolation(irule)
     spacesToTest["gaussSpace"] =gaussSpace
     import time
-    for spacename, space in spacesToTest.items():
-        print("*************************** {} {}*******************************************".format(DN.numberingAlgorithm, spacename))
+
+    def printData(numbering,st):
+        for k,v in res2.elements.items():
+            print(k,numbering.get(k,None))
+        print(f"numbering.size = {numbering.size}")
+        print(f" time : {time.time()-st}" )
+
+    for spaceName, space in spacesToTest.items():
+        print("*************************** {} {}*******************************************".format(DN.numberingAlgorithm, spaceName))
         # on a tag
-        print("----------------------{} tag -----------------------------".format(spacename))
+        print(f"vvvvvvvvvvv {spaceName} tag vvvvvvvvvvvvvvv")
         st = time.time()
         numbering = DN.ComputeDofNumbering(res2,space,elementFilter= Filters.ElementFilter(mesh=res2,tag="X0") )
-
-        for k,v in res2.elements.items():
-            print(k,numbering.get(k,None))
-        print(numbering.size)
-        print("----------------------{} tag -----------------------------".format(spacename))
-        print(time.time()-st)
+        printData(numbering,st)
 
         # all
-        print("----------------------{} all -----------------------------".format(spacename))
+        print("----------------------{} all -----------------------------".format(spaceName))
         st = time.time()
         numbering = DN.ComputeDofNumbering(res2,space)
-        for k,v in res2.elements.items():
-            print(k,numbering.get(k,None))
-        print(numbering.size)
-        print("----------------------{} all -----------------------------".format(spacename))
-        print(time.time()-st)
-
+        printData(numbering,st)
 
         # from connectivity
-        print("----------------------{} from connectivity -----------------------------".format(spacename))
+        print("----------------------{} from connectivity -----------------------------".format(spaceName))
         st = time.time()
         numbering = DN.ComputeDofNumbering(res2, space,fromConnectivity=True)
-        for k,v in res2.elements.items():
-            print(k,numbering.get(k,None))
-        print(numbering.size)
-        print("----------------------{} from connectivity -----------------------------".format(spacename))
-        print(time.time()-st)
+        printData(numbering,st)
 
         # 3D using filter
-        print("----------------------{} 3D filter-----------------------------".format(spacename))
+        print("----------------------{} 3D filter-----------------------------".format(spaceName))
         st = time.time()
         numbering = DN.ComputeDofNumbering(res2,space,elementFilter=Filters.ElementFilter(mesh=res2,dimensionality=3) )
-        for k,v in res2.elements.items():
-            print(k,numbering.get(k,None))
-        print(numbering.size)
-        print("----------------------{} 3D filter-----------------------------".format(spacename))
-        print(time.time()-st)
+        printData(numbering,st)
     return "ok"
 
 def CheckIntegrityUsingAlgo(algo,GUI=False):
@@ -142,7 +131,6 @@ def CheckIntegrityUsingAlgo(algo,GUI=False):
     except:
         DN.numberingAlgorithm = tmpAlgo
         raise
-
 
 if __name__ == '__main__':
     print(CheckIntegrity(True))# pragma: no cover
