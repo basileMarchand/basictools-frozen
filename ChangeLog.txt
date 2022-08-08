@@ -2,6 +2,11 @@ New in version Master:
 **********************
 **********************
 
+
+New in version 1.8.0:
+*********************
+*********************
+
 General Changes:
 ****************
 
@@ -18,10 +23,9 @@ Better memory handling for multi thread integration
 OpenMP activated on windows packages
 During compilation "generate"  is automatically called during the "build_clib" step
 Now the IntegrationClass. SetElementFilter can take a frozen filter
-(BasicTools.Containers.UnstructuredMeshCreationTools) Bew CreateDisk function to create a mesh of disk section
+(BasicTools.Containers.UnstructuredMeshCreationTools) New CreateDisk function to create a mesh of disk section
 New module BasicTools.Containers.FiltersTools with useful functions over filters
 (Bug correction) on some cases the skin (ComputeSkin ) had one element missing
-(Bug correction) ElementFilter using mask
 New LSDyna Reader and Writer
 The user has the possibility to set the number of thread used by the library (BasicTools.Helpers.CPU:SetNumberOfThreadsPerInstance)
 (GeofWriter) correct output of elset whe useOriginalId is True
@@ -33,18 +37,47 @@ Add nTags for the ElementFilter: The user can select element using nodal tags. T
 Add orthotropic and anisotropic behavior to the SymPhysics module
 Better API for field extraction on the XdmfReader class
 Add the abs operator for FieldBase
-The MeshFileConverter can covert temporal data between 2 temporal aware readers/writers
+The MeshFileConverter can covert temporal data between 2 temporal aware readers/writers (-T option)
 New GetDataOverALine to extract information of fields on the point of the line
 new ToQuadraticMesh to convert any mesh to quadratic elements
 NodesPermutation change the nodeFields also to be coherent
+Remove double implementation of __str__ in FEField.py
+Now the documentation of the C++ source file is extracted (using doxygen) and exposed using sphinx
+(Filters.py) Ensure UnionElementFilter generate sorted ids
+(SymPhysics.py) Add of GetDistributedForceFormulation
+(Test.py) New function RunListOfCheckIntegrities
+(vtkBridge.py) Add Wedge_15 Pyramid_13 and Hexaedron_27 for the converions, some typing
+CellDataToIntegrationPointsData: now compatible with mixed fields and scalars data
+ZebulonIO.py : GetParameterFiles: treat case of fields defined by a scalar
+(UnstructuredMeshInspectionTools.py) Add ComputeMeshDensityAtNodes, solve problem with the originalIds on ExtractElementsByElementFilter
+(IPField.py) RestrictedIPField use a frozen filter internally
+(FiltersTools.py) Add string parser for ElementFilters
+(Filters.py) Faster CheckTags
+New CGNS Bridge/Reader/Writer
+(XdmfReader.py) Better API for field extraction
+ParaViewPlugin documentation
+(ImplicitGeometryTools.py) ComputeInterfaceMesh print warning when iso zero not present in the field
+(ImplicitGeometryBase.py) Add GetGradientDistanceToPoint, this function uses finite differences to compute the gradient (this can be expensive).
+Add AnsysToolspy, reading of quadratic Solid186 elements in AnsysReader
+Add GmshToolspy, export of tet10, pyr13, wed15 and hex20 elems in GmshWriter
+(FieldBase.py) add abs (absolute value) function to work with the unaryOp
+(LinearSolver.py) solve error registering Eigen constructors
+(FiltersTools.py) ListOfElementFiltersFromMask, create a list of element filters using a mask over the elements
+(FiltersTools.py) ListOfElementFiltersFromETagList, construct a list of filter from a list of tags (or a list of tags)
+(FiltersTools.py) VerifyExclusiveFilters, to check if a list of ElementFilter is exclusive
+(Filters.py) ElementFilter can take a boolean mask to select elements
+Better MultiThread  selector for the integrator
+Add possibility to control the number of thread in the eigen solver
+(BaseOutputObject.py) Add memory usage in debug print
 
 API Changes:
 ************
 
+All the bridges file are now in a separated folder BasicTools.Bridges for more clarity
 BasicTools.Containers.UnstructuredMeshFieldOperations:GetFieldTransferOp ; change of the named argument  elementfilter -> elementFilter
 The native Eigen Linear solver uses the available cpu reported by the GetNumberOfAvailableCpus() function
 Argument forceUseCpp removed from IntegrationClass.SetIntegrator(self, userIntegrator=None) use BasicTools parameter UseCpp
-Tags and Tag clases are now defined on there own file BasicTools.Containers.Tags
+Tags and Tag classes are now defined on there own file BasicTools.Containers.Tags
 MeshBase.GenerateManufacturedOriginalIDs can take an offset to generate OriginalId not starting from zero
 now the CheckIntegrity function can return the string "skip" to tell the user the test was intentionally skipped
 CreateUniformMeshOfBars behavior change, kno work for lines in the 3D space
@@ -54,6 +87,15 @@ GetFieldTransferOp argument name change elementfilter -> elementFilter
 (UnstructuredMeshModificationTools.py) CleanLonelyNodes take a inPlace option, the return values changed
 (UnstructuredMeshModificationTools.py) CleanDoubleElements remove unused option preserveOriginalIds
 (UnstructuredMeshModificationTools.py) DeleteInternalFaces does not return the input mesh any more
+(src/BasicTools/IO/XdmfWriter.py) default HDF5 on XdmfWriter
+(XdmfReader.py) now the xdmf reader read all the field automatically (like all the other readers)
+(UnstructuredMesh.py) change api of ComputeGlobalOffset. the internal state (.globaloffset) will be depreciated
+(SymExpr.py) Better API
+the exit value when calling 'python -m BasicTools' will be the number of KO tests
+pycgns is a requirement of the conda package. Add pycgns in the meta.yml
+(GeofWriter;py) correct output of elset whe useOriginalId is True.
+(FilterTools.py) FilterToETag, store the selection of a element filter into a eTag
+(FilterTools.py) new function ComputeTransfertOp to compute the transfer operator between 2 fields
 
 Deprecated Functions:
 *********************
@@ -64,6 +106,19 @@ Many argument name changes mainly conversion to pascal case
 (UnstructuredMeshInspectionTools.py) ExtractElementByDimensionalityNoCopy -> ExtractElementsByElementFilter(mesh, ElementFilter(mesh,dimensionality=dim), copy=False)
 (UnstructuredMeshModificationTools.py) CleanEmptyTags please use mesh.Clean()
 Deprecated function UnstructuredMes.GetDimensionality() please use UnstructuredMes.GetPointsDimensionality()
+
+
+New in version 1.7.2:
+*********************
+*********************
+
+This is the last version compatible with python 2.7. This version is not longer supported.
+
+General Changes:
+****************
+
+(MeshFileConverter.py) Add conversion for temporal data option -T. Add WdmfWriter in "Abaqus mode"
+
 
 
 New in version 1.7.1:
