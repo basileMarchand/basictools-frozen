@@ -29,14 +29,7 @@ class FEField(FieldBase):
 #        num = self.numbering[elemtype][el,:]
 #        return sp.Eval_FieldI(ip,self.data[num],None,None,der=-1)
 
-    def __str__(self):
-        TFormat.II()
-        res =  TFormat.InBlue("NodalField")+"\n"
-        if self.name is not None:
-          res += TFormat.GetIndent()
-          res += TFormat.InGreen("Name : ") + self.name
-        TFormat.DI()
-        return res
+
 
     def GetPointRepresentation(self,fillvalue=0):
         """
@@ -157,6 +150,9 @@ class FEField(FieldBase):
 
     def __str__(self):
         return  f"<FEField object '{self.name}' ({id(self)})>"
+
+    def __repr__(self):
+        return str(self)
 
 def CheckIntegrity(GUI=False):
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateCube
