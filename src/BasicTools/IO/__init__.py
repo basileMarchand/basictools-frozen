@@ -32,6 +32,7 @@ _test = [
 'MeshWriter',
 'MeshFileConverter',
 #'OdbWriter',
+'OpenFoamReader',
 'PathControler',
 'PickleTools',
 'PostReader',

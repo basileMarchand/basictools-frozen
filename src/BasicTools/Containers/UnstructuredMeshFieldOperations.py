@@ -566,6 +566,44 @@ def PointToCellData(mesh,pointfield,dim=None):
         cpt += len(ids)
     return res
 
+
+def CellDataToPoint(mesh:UnstructuredMesh, cellfield:np.ndarray) -> np.ndarray:
+    """Applies the CellDataToPointData from paraview.
+    Supported only for the dimensionality of the mesh (no mix of elements of different
+    dimensions)
+
+    Parameters
+    ----------
+    mesh : UnstructuredMesh
+        Mesh containing the cells and vertices concerned by the conversion.
+    cellfield : np.ndarray
+        of size (number of elements). Cell field to convert to Point field.
+
+    Returns
+    -------
+    np.ndarray
+        of size (number of points, number of fields). Field converted at the vertices of the mesh.
+    """
+    from BasicTools.Bridges import vtkBridge as vB
+    import vtk
+
+    VTK_field = vB.NumpyFieldToVtkField(mesh, cellfield, "field")
+
+    vtkMesh = vB.MeshToVtk(mesh)
+    vtkMesh.GetCellData().AddArray(VTK_field)
+
+    cellToPoint = vtk.vtkCellDataToPointData()
+    cellToPoint.SetInputData(vtkMesh)
+    cellToPoint.Update()
+
+    nbArrays = vtkMesh.GetPointData().GetNumberOfArrays()
+    from vtkmodules.util import numpy_support
+    vtkField = cellToPoint.GetOutput().GetPointData().GetArray(nbArrays)
+    res = numpy_support.vtk_to_numpy(vtkField)
+
+    return res
+
+
 def QuadFieldToLinField(quadMesh, quadField, linMesh = None):
 
     if linMesh == None:
@@ -885,10 +923,22 @@ def CheckIntegrity_PointToCellData(GUI = False):
         return ("Error CheckIntegrity_PointToCellData")
     return "ok"
 
+
+def CheckIntegrity_CellDataToPoint(GUI = False):
+    from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshOf
+    points = [[-0.5,-0.5,-0.5],[2.5,-0.5,-0.5],[-0.5,2.5,-0.5],[-0.5,-0.5,2.5],[2.5,2.5,2.5]]
+    tets = [[0,1,2,3]]
+    mesh = CreateMeshOf(points,tets,ElementNames.Tetrahedron_4)
+    cellField = np.array([1.])
+    CellDataToPoint(mesh, cellField)
+
+    return "ok"
+
 def CheckIntegrity(GUI=False):
     totest= [
     CheckIntegrity_GetValueAtPosLinearSymplecticMesh,
     CheckIntegrity_PointToCellData,
+    CheckIntegrity_CellDataToPoint,
     CheckIntegrity1DSecondOrderTo2D,
     CheckIntegrity1DTo2D,
     CheckIntegrity1D,

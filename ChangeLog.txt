@@ -69,6 +69,8 @@ Add GmshToolspy, export of tet10, pyr13, wed15 and hex20 elems in GmshWriter
 Better MultiThread  selector for the integrator
 Add possibility to control the number of thread in the eigen solver
 (BaseOutputObject.py) Add memory usage in debug print
+New module IO/OpenFoamReader.py, containing the ReadField function, reading a field at a given time step from an openfoam computation
+New function Containers/UnstructuredMeshFieldOperations.py:CellDataToPoint applying the CellDataToPointData paraview filter to a unstructuredMesh type object
 
 API Changes:
 ************

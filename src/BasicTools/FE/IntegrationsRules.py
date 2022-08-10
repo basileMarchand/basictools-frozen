@@ -117,7 +117,7 @@ def TensorProd(p1:ArrayLike, w1:ArrayLike,
         #p23,w23 = TensorProd(p2,w2,p3,w3)
         #return TensorProd(p1,w1,p23,w23)
 
-### integration Point in the center of the elemetn #####
+### integration Point in the center of the element #####
 ElementCenter = IntegrationRulesType({})
 
 IntegrationRulesAlmanac["ElementCenterEval"] = ElementCenter
