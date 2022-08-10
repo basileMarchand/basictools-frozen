@@ -209,7 +209,7 @@ class BaseOutputObject(object):
             res += "\n"
         return res
 
-def CheckIntegrity():
+def CheckIntegrity(GUI=False):
 
     myObj = BaseOutputObject()
 
@@ -298,7 +298,9 @@ def CheckIntegrity():
         obj.UnFrozen()
         obj.c = 7
 
+    myObj.SetGlobalDebugMode(False)
+    myObj.SetInstanceDebugMode(False)
     return "OK"
 
 if __name__ == '__main__':
-    print(CheckIntegrity())# pragma: no cover
+    print(CheckIntegrity(GUI=True))# pragma: no cover

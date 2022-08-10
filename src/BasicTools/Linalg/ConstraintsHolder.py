@@ -655,7 +655,8 @@ def CheckIntegrityTTC(ttc,GUI=False):
     CH = ConstraintsHolder()
     CH.SetConstraintsMethod(ttc)
 
-    CH.SetGlobalDebugMode()
+    if GUI:
+        CH.SetGlobalDebugMode()
     CH.SetNumberOfDofs(4)
 
     # Reference solution

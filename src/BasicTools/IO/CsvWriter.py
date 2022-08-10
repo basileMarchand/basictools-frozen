@@ -291,7 +291,8 @@ def CheckIntegrity(GUI=False):
 
     res = CreateMeshOfTriangles([[0.,0.,0],[1.,2.,3],[1, 3, 2]], np.array([[0,1,2]]))
     print(res)
-    res.SetGlobalDebugMode()
+    if GUI:
+        res.SetGlobalDebugMode()
 
     elements = res.GetElementsOfType(EN.Bar_2)
     elements.AddNewElement([1,2],1)

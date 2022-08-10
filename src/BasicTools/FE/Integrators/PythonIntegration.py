@@ -546,7 +546,7 @@ class MonoElementsIntegral(BOO):
 
 
 
-def CheckIntegrity():
+def CheckIntegrity(GUI=False):
     import BasicTools.FE.Integration as Integration
     backup  = Integration.UseCpp
 
@@ -554,7 +554,7 @@ def CheckIntegrity():
     res = "ok"
     try:
         from BasicTools.FE.UnstructuredFeaSym import CheckIntegrity as CI
-        res = CI()
+        res = CI(GUI)
     except:
         Integration.UseCpp = backup
         raise
@@ -562,4 +562,4 @@ def CheckIntegrity():
     return res
 
 if __name__ == '__main__':# pragma: no cover
-    print(CheckIntegrity())
+    print(CheckIntegrity(True))

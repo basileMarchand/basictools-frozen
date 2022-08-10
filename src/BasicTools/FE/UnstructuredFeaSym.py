@@ -182,7 +182,8 @@ def CheckIntegrityFlexion(P,tetra,GUI=False):
 
     # the main class
     problem = UnstructuredFeaSym()
-    problem.SetGlobalDebugMode(True)
+    if GUI:
+        problem.SetGlobalDebugMode(True)
 
     # the mecanical problem
     from BasicTools.FE.SymPhysics import MecaPhysics

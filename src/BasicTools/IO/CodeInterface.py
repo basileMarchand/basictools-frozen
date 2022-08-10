@@ -195,7 +195,8 @@ def CheckIntegrity(GUI=False):
     import BasicTools.TestData as BasicToolsTestData
 
     interface = Interface(BasicToolsTestData.GetTestDataPath())
-    interface.SetGlobalDebugMode(True)
+    if GUI:
+        interface.SetGlobalDebugMode(True)
     interface.keepExternalWindows = GUI
     interface.parameters['calcul']        = 'thermal_transient'
     interface.parameters['Ti']            = 1000.0

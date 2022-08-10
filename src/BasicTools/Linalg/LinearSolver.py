@@ -359,7 +359,8 @@ class LinearProblem(BOO):
 def CheckSolver(GUI,solver):
     print("Solver "+ str(solver))
     LS = LinearProblem ()
-    LS.SetGlobalDebugMode()
+    if GUI:
+        LS.SetGlobalDebugMode()
     LS.SetAlgo(solver)
 
     print("Number of dofs")

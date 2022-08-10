@@ -475,7 +475,7 @@ def CreateMeshWriterBinary(ops):
     return obj
 RegisterWriterClass(".meshb",MeshWriter,CreateMeshWriterBinary)
 
-def CheckIntegrity():
+def CheckIntegrity(GUI=False):
     import BasicTools.Containers.UnstructuredMesh as UM
 
     from BasicTools.Helpers.Tests import TestTempDir
@@ -516,7 +516,8 @@ def CheckIntegrity():
 
     OW = MeshWriter()
     OW.SetBinary(False)
-    OW.SetGlobalDebugMode(True)
+    if GUI:
+        OW.SetGlobalDebugMode(True)
     OW.Open(tempdir+"Test_MmgWriter_ASCII.mesh")
     print(OW)
     OW.Write(mymesh)
@@ -540,4 +541,4 @@ def CheckIntegrity():
     return "ok"
 
 if __name__ == '__main__':
-    print(CheckIntegrity())# pragma: no cover
+    print(CheckIntegrity(GUI=True))# pragma: no cover

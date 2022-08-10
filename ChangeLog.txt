@@ -5,6 +5,7 @@ New in version Master:
 General Changes:
 ****************
 
+Speed up with a factor of 2.5 for the testing. (CheckIntegrity)
 Heavy use of typing so this make impossible to use BasicTools on python prior to version 3.7 and numpy verison 1.19
    this implies the use of BasicTools type defined in the BasicTools.NumpyDefs module
 Optimization or MeshWriter + Code cleaning

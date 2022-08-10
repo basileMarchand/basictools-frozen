@@ -1117,7 +1117,8 @@ def CheckIntegrity(GUI=False):
 
     res = CreateMeshOfTriangles([[0.,0.,0],[1.,2.,3],[1, 3, 2]], np.asarray([[0,1,2]]))
     print(res)
-    res.SetGlobalDebugMode()
+    if GUI:
+        res.SetGlobalDebugMode()
 
     WriteMeshToXdmf(tempdir+"TestUnstructured.xdmf", res, PointFields = [np.array([1.,2,3])], CellFields =[ np.array([1])] ,GridFields= [[0],  np.array([1,2,3]).astype(np.int64) ],
                                                                     PointFieldsNames = ["PS"],
