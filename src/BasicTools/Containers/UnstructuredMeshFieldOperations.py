@@ -567,7 +567,7 @@ def PointToCellData(mesh,pointfield,dim=None):
     return res
 
 
-def CellDataToPoint(mesh:UnstructuredMesh, cellfield:np.ndarray) -> np.ndarray:
+def CellDataToPoint(mesh:UnstructuredMesh, cellfields:np.ndarray) -> np.ndarray:
     """Applies the CellDataToPointData from paraview.
     Supported only for the dimensionality of the mesh (no mix of elements of different
     dimensions)
@@ -577,7 +577,7 @@ def CellDataToPoint(mesh:UnstructuredMesh, cellfield:np.ndarray) -> np.ndarray:
     mesh : UnstructuredMesh
         Mesh containing the cells and vertices concerned by the conversion.
     cellfield : np.ndarray
-        of size (number of elements). Cell field to convert to Point field.
+        of size (number of fields, number of elements). Cell fields to convert to Point field.
 
     Returns
     -------
@@ -585,23 +585,24 @@ def CellDataToPoint(mesh:UnstructuredMesh, cellfield:np.ndarray) -> np.ndarray:
         of size (number of points, number of fields). Field converted at the vertices of the mesh.
     """
     from BasicTools.Bridges import vtkBridge as vB
+    from vtkmodules.util import numpy_support
     import vtk
 
-    VTK_field = vB.NumpyFieldToVtkField(mesh, cellfield, "field")
-
     vtkMesh = vB.MeshToVtk(mesh)
-    vtkMesh.GetCellData().AddArray(VTK_field)
+
+    nbFields = cellfields.shape[0]
+    for i in range(nbFields):
+        vtkMesh.GetCellData().AddArray(vB.NumpyFieldToVtkField(mesh, cellfields[i,:], "field_"+str(i)))
 
     cellToPoint = vtk.vtkCellDataToPointData()
     cellToPoint.SetInputData(vtkMesh)
     cellToPoint.Update()
 
-    nbArrays = vtkMesh.GetPointData().GetNumberOfArrays()
-    from vtkmodules.util import numpy_support
-    vtkField = cellToPoint.GetOutput().GetPointData().GetArray(nbArrays)
-    res = numpy_support.vtk_to_numpy(vtkField)
+    nbArrays = vtkMesh.GetCellData().GetNumberOfArrays()
+    cellData = cellToPoint.GetOutput().GetPointData()
+    res = [numpy_support.vtk_to_numpy(cellData.GetArray(i)) for i in range(nbArrays-nbFields, nbArrays)]
 
-    return res
+    return np.array(res)
 
 
 def QuadFieldToLinField(quadMesh, quadField, linMesh = None):
@@ -929,7 +930,7 @@ def CheckIntegrity_CellDataToPoint(GUI = False):
     points = [[-0.5,-0.5,-0.5],[2.5,-0.5,-0.5],[-0.5,2.5,-0.5],[-0.5,-0.5,2.5],[2.5,2.5,2.5]]
     tets = [[0,1,2,3]]
     mesh = CreateMeshOf(points,tets,ElementNames.Tetrahedron_4)
-    cellField = np.array([1.])
+    cellField = np.array([[1.], [2.]])
     CellDataToPoint(mesh, cellField)
 
     return "ok"
