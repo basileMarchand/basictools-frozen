@@ -197,7 +197,7 @@ class TestTempDir(object):
         from os.path import expanduser
         home = expanduser("~")
         with open(home + os.sep+".BasicToolsTempPath","w") as f:
-            f.write("cd " + TestTempDir.path + "\n")
+            f.write("cd " + TestTempDir.path.replace("\\","/") + "\n")
             import stat
             os.chmod(home + os.sep+".BasicToolsTempPath", stat.S_IWUSR | stat.S_IRUSR |stat.S_IXUSR)
 
