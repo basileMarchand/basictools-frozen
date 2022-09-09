@@ -10,4 +10,5 @@ _test = ["KRBase",
          "KRMasterSlaves",
          "KRDofs",
          "KRConformalTie",
-         "KRMortar"]
+         "KRMortar",
+         "KRFromDistribution"]
