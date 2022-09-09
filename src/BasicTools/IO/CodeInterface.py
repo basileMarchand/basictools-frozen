@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 """ Class to help the execution of an external program
 """
 
@@ -36,7 +36,7 @@ class Interface(BaseOutputObject):
         try:
           self.tpl = self.ReadFile(self.workingDirectory + os.sep + self.tplFilename)
         except IOError:# pragma: no cover
-          True
+          self.tpl = ""
 
         # Temporary files folder creation
         self.processDirectory = self.workingDirectory + os.sep
@@ -65,8 +65,8 @@ class Interface(BaseOutputObject):
                         break
                     string = expanded
                 return string
-            inpString = expand_vars( self.tpl,self.parameters)
-            #inpString = self.tpl.format(**self.parameters)
+            inpString = expand_vars( self.tpl.replace("{{","OPEN_DOUBLE_CURLY_BRACE").replace("}}","CLOSE_DOUBLE_CURLY_BRACE"),self.parameters)
+            inpString = inpString.replace("OPEN_DOUBLE_CURLY_BRACE","{").replace("CLOSE_DOUBLE_CURLY_BRACE","}")
         except KeyError as e: # pragma: no cover
             print("The user must supply the key: %s" % str(e))
             raise
