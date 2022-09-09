@@ -932,3 +932,86 @@ except:
     print("BasicTools in the PYTHONPATH ??? ")
     if debug:
         raise
+
+
+###Generic algorithm interface
+# This interface is intended to facilitate the interface of single function BasicTools algorithm.
+# this means a function with the signature :
+#    Func(UnstructuredMesh inputA, UnstructuredMesh inputB, ...) -> (UnstructuredMesh outputA, ...)
+
+from BasicTools.Bridges.vtkBridge import MeshToVtk
+
+def WrapBasicToolsFunctionToVTK(function, inputs, outputs, options, description=""):
+    if isinstance(inputs,str):
+        inputs = (inputs,)
+
+    if isinstance(outputs,str):
+        outputs = (outputs,)
+
+    def GetInit(function,nInputPorts=1,nOutputPorts=1):
+
+        def myFunctionAsFilterInit(self):
+            VTKPythonAlgorithmBase.__init__(self, nInputPorts=nInputPorts, nOutputPorts=nOutputPorts, outputType='vtkUnstructuredGrid')
+            self.function = function
+            self.nInputPorts = nInputPorts
+            self.nOutputPorts = nOutputPorts
+            self.__TagsAsFields = True
+
+        return myFunctionAsFilterInit
+
+    @smproperty.xml ("""
+    <IntVectorProperty name="Tags As Fields"
+                            command="SetTagsAsFields"
+                            number_of_elements="1"
+                            default_values="1">
+            <BooleanDomain name="bool"/>
+    <Documentation>
+        This property indicates if tags (points/cells) must be conerted to
+        a 0/1 char field
+    </Documentation>
+        </IntVectorProperty>""")
+    def SetTagsAsFields(self, val):
+        self.__TagsAsFields = bool(val)
+        self.Modified()
+
+    def RequestData(self, request, inInfoVec, outInfoVec):
+
+        inputmesh = []
+        for i in range(self.nInputPorts):
+            mesh = GetInputBasicTools(request, inInfoVec, outInfoVec,FieldsAsTags=False, connection=0, port=i)
+            inputmesh.append(mesh)
+
+
+        meshs = self.function(*inputmesh)
+
+        if self.nOutputPorts > 1:
+            for i in range(self.nOutputPorts):
+                vtkoutputi = GetOutputVtk(request,inInfoVec, outInfoVec,False,i)
+                MeshToVtk(meshs[i], vtkoutputi,TagsAsFields=self.__TagsAsFields)
+        else:
+            SetOutputBasicTools(request, inInfoVec, outInfoVec, meshs,TagsAsFields=self.__TagsAsFields)
+
+        return 1
+
+
+    wrapperClassName = "BasicToolsWrapped" + function.__name__
+    obj = type(wrapperClassName,
+               (VTKPythonAlgorithmBase,),
+                {"__init__":GetInit(function, len(inputs), len(outputs) ),
+                "RequestData":RequestData,
+                "SetTagsAsFields":SetTagsAsFields}
+    )
+
+    for i,inputtype in enumerate(inputs):
+        obj2_tmp = smdomain.datatype(dataTypes=[inputtype], composite_data_supported=False)(obj)
+        obj = smproperty.input(name=f"Input Mesh {i}", port_index=i)(obj2_tmp)
+    obj2 = smhint.xml("""<ShowInMenu category="BasicTools" />""")(obj)
+    obj3 = smproxy.filter(name=description)(obj2)
+
+    PrintDebug(f"{wrapperClassName} registered")
+    return wrapperClassName, obj3
+
+################ Stl to mesh ##########################
+from BasicTools.Bridges.gmshBridge import StlToMesh
+name,cl = WrapBasicToolsFunctionToVTK( StlToMesh,("vtkPolyData",),("vtkUnstructuredGrid",),(), description= "2D Mesh To 3D Mesh (gmsh)" )
+locals()[name] = cl
