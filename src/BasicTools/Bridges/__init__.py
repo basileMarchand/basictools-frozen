@@ -7,6 +7,6 @@
 
 _test = ["CGNSBridge",
          "vtkBridge",
-         'MeshIOBridge',
-         'PyVistaBridge',
-         ]
+         "MeshIOBridge",
+         "PyVistaBridge",
+         "gmshBridge"]
