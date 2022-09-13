@@ -180,7 +180,7 @@ class ReaderBase(BaseOutputObject):
 
         res = self.filePointer.read(cpt)
         if withError and len(res) == 0:
-           raise(Exception("Problem reading file :" +str(self.fileName) + " EOF"))
+           raise EOFError("Problem reading file :" +str(self.fileName) + " EOF")
         else:
            return res
 
