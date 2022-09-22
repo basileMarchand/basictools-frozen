@@ -114,6 +114,10 @@ class BaseOutputObject(object):
     def SetGlobalDebugMode(cls, mode = True):
         BaseOutputObject.__globalDebugMode = mode
 
+    @classmethod
+    def IsGlobalDebugMode(cls):
+        return BaseOutputObject.__globalDebugMode
+
     def SetInstanceDebugMode(self, mode = True):
         self.__classDebugMode = mode
 
