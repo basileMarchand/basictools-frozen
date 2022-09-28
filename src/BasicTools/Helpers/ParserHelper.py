@@ -33,6 +33,37 @@ class LocalVariables(BaseOutputObject):
 
 globalDict = LocalVariables()
 
+def AddCommonConstants():
+    from scipy import constants
+    siPrefixes = {"yotta":constants.yotta,
+                  "zetta":constants.zetta,
+                  "exa"  :constants.exa,
+                  "peta" :constants.peta,
+                  "tera" :constants.tera,
+                  "giga" :constants.giga,
+                  "mega" :constants.mega,
+                  "kilo" :constants.kilo,
+                  "hecto":constants.hecto,
+                  "deka" :constants.deka,
+                  "deci" :constants.deci,
+                  "centi":constants.centi,
+                  "milli":constants.milli,
+                  "micro":constants.micro,
+                  "nano" :constants.nano,
+                  "pico" :constants.pico,
+                  "femto":constants.femto,
+                  "atto" :constants.atto,
+                  "zepto":constants.zepto,
+                  "yocto":constants.yocto,
+
+                  "pi"   : constants.pi,
+                  "GradToDegree": (180/constants.pi),
+                  "DegreeToGrad": (constants.pi/180)}
+
+    for name,value in siPrefixes.items():
+        AddToGlobalDictionary(name,value)
+
+
 def AddToGlobalDictionary(key,value):
     globalDict.SetVariable(key,value)
 
@@ -53,25 +84,25 @@ def Read(inputData, inout):
         else:
             return ReadScalar(inputData, type(inout) )
 
-def ReadScalar(inputData,inputtype):
+def ReadScalar(inputData, inputType):
     inputData = ApplyGlobalDictionary(inputData)
-    if inputtype is bool:
+    if inputType is bool:
         return ReadBool(inputData)
 
     try:
         if type(inputData) is str:
-            return inputtype(inputData.lstrip().rstrip())
+            return inputType(inputData.lstrip().rstrip())
         else:
-            return inputtype(inputData)
+            return inputType(inputData)
     except ValueError:
         from BasicTools.Containers.SymExpr import SymExprBase
         try:
-            return inputtype(SymExprBase(inputData).GetValue())
+            return inputType(SymExprBase(inputData).GetValue())
         except TypeError as e:
-            print("Cannot convert expression to  {}, expr : {}".format(inputtype,inputData))
+            print("Cannot convert expression to  {}, expr : {}".format(inputType,inputData))
             raise(e)
 
-def ReadVector(string,dtype):
+def ReadVector(string, dtype):
 
     if isinstance(string,(list,tuple,np.ndarray)) :
         return np.array([ ReadScalar(x,dtype) for x in string] ,dtype=dtype )
@@ -79,7 +110,7 @@ def ReadVector(string,dtype):
         tmp = string.lstrip().rstrip()
         return np.array([ ReadScalar(x,dtype) for x in tmp.split()] ,dtype=dtype )
 
-def ReadString(string,d=None):
+def ReadString(string, d=None):
     if d is not None:
          string = string.replace(d)
     string = ApplyGlobalDictionary(string)
@@ -128,7 +159,7 @@ def ReadBool(string):
     except:
         pass
 
-    raise Exception("cant conver '" + string +"' into bool")
+    raise ValueError("cant convert '" + string +"' into bool")
 
 def ReadBools(string):
     return ReadVector(string,bool)
@@ -205,7 +236,7 @@ def ReadProperties(data, props ,obj_or_dic,typeConversion=True):
            else:
               theSetter(inputData)
     except KeyError as e:
-        print(" object of type " +str(type(obj_or_dic)) + " does not have atribute {0}: ".format( str(e) ))
+        print(" object of type " +str(type(obj_or_dic)) + " does not have attribute {0}: ".format( str(e) ))
         raise
 
 
@@ -246,7 +277,10 @@ def CheckIntegrity():
     TestFunction(ReadFloats,"1 2 3 ", np.array([1,2,3],dtype=float))
     TestFunction(ReadFloats,"1 4/2 9/3 ", np.array([1,2,3],dtype=float))
     TestFunction(ReadInts,"1 4/2 9/3 ", np.array([1,2,3],dtype=int))
-
+    AddCommonConstants()
+    TestFunction(ReadFloat,"{pico}",1e-12)
+    TestFunction(ReadFloat,"{pi}*{GradToDegree}*{DegreeToGrad}", 3.1415926535897927)
+    TestFunction(ReadFloat,"arctan(1)*{GradToDegree}",45.)
 
     TestFunction(ReadStrings,"Hola Chao", np.array(["Hola","Chao"],dtype=str))
 
@@ -258,29 +292,29 @@ def CheckIntegrity():
         pass
 
     #### Reading data into a class of dictionary with type conversion
-    data = {"monint":"2.2","monfloat":"3.14159"}
+    data = {"monInt":"2.2","monFloat":"3.14159"}
 
     class Options():
         def __init__(self):
-            self.monint = 1
-            self.monfloat = 0.1
-        def SetMonfloat(self,data):
-            self.monfloat = ReadFloat(data)
+            self.monInt = 1
+            self.monFloat = 0.1
+        def SetMonFloat(self,data):
+            self.monFloat = ReadFloat(data)
 
 
     ops = Options()
     ReadProperties(data,data.keys(),ops)
-    if type(ops.monint) != int or  ops.monint != 2:
+    if type(ops.monInt) != int or  ops.monInt != 2:
         raise
-    if type(ops.monfloat) != float or  ops.monfloat != 3.14159:
+    if type(ops.monFloat) != float or  ops.monFloat != 3.14159:
         raise
 
-    outputdata = {"monint":00,"monfloat":00.00}
-    ReadProperties(data,data.keys(),outputdata)
+    outputData = {"monInt":00,"monFloat":00.00}
+    ReadProperties(data,data.keys(),outputData)
 
-    if type(outputdata['monint']) != int or  outputdata['monint'] != 2:
+    if type(outputData['monInt']) != int or  outputData['monInt'] != 2:
         raise
-    if type(outputdata['monfloat']) != float or  outputdata['monfloat'] != 3.14159:
+    if type(outputData['monFloat']) != float or  outputData['monFloat'] != 3.14159:
         raise
 
 
