@@ -91,6 +91,7 @@ def Convert(inputfilename,outputfilename,ops):
             if len(outputfilename) == 0:
                 from BasicTools.Containers.UnstructuredMeshInspectionTools import PrintMeshInformation
                 PrintMeshInformation(mesh)
+                print(mesh)
                 print("No output file name")
                 print("Done")
                 return
@@ -182,7 +183,7 @@ def CheckIntegrity(GUI=False):
 def Main():
     import sys, getopt
     if len(sys.argv) == 1:
-        PrintHelp()
+        PrintHelp({})
         sys.exit()
     else:
       #try:
