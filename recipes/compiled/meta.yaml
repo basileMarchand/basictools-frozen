@@ -8,7 +8,7 @@ source:
   path: ../../.
 
 build:
-  skip : True # [py==36]
+  skip : True # [py==36 or py==37]
 
   number: 0
   entry_points:
@@ -40,7 +40,7 @@ requirements:
     - psutil
     - python
     - pyparsing
-    - scipy
+    - scipy>=1.9
     - sympy
     - eigency=1.78
     - mkl
