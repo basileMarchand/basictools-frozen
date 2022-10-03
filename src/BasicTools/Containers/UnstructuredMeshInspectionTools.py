@@ -221,6 +221,7 @@ def GetVolumePerElement(inmesh: UnstructuredMesh, elementFilter: Optional[Elemen
 def GetVolume(inmesh: UnstructuredMesh) -> PBasicFloatType:
     """Compute the volume of the mesh
     Only element of the bigger dimensionality are taken into account
+    if no elements on mesh we return zero.
 
     Parameters
     ----------
@@ -241,6 +242,9 @@ def GetVolume(inmesh: UnstructuredMesh) -> PBasicFloatType:
     from BasicTools.FE.SymWeakForm import GetTestField
     from BasicTools.FE.Fields.FEField import FEField
     from BasicTools.FE.Integration import IntegrateGeneral
+
+    if inmesh.GetNumberOfElements() == 0:
+        return 0.
 
     numbering = ComputeDofNumbering(inmesh,LagrangeSpaceGeo,fromConnectivity=True)
 
