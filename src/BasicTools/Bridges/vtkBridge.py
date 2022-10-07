@@ -7,12 +7,24 @@ from typing import Callable
 
 import numpy as np
 
-from BasicTools.NumpyDefs import ArrayLike, PBasicFloatType
+
+try:
+    from paraview.vtk import vtkPolyData, vtkUnstructuredGrid, vtkPoints,vtkIdList, vtkImageData, vtkCellArray
+    from paraview.vtk.util import numpy_support
+except :
+    #faster import only needed classes
+    from vtkmodules.vtkCommonCore import vtkPoints, vtkIdList#, vtkUnsignedCharArray, , vtkIdTypeArray
+    from vtkmodules.vtkCommonDataModel import vtkPolyData, vtkUnstructuredGrid, vtkImageData, vtkCellArray
+    from vtkmodules.util import numpy_support
+
+from BasicTools.NumpyDefs import ArrayLike, PBasicFloatType, PBasicIndexType
 import BasicTools.Containers.ElementNames as ElementNames
-from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
+from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh, ElementsContainer
 from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearMesh
 from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshOfTriangles
 from BasicTools.TestData import GetTestDataPath
+
+nbPointsTo2DCells = np.array([0,1,3,5,9],dtype=PBasicIndexType)
 
 #from file vtkCellType.h  of the vtk sources
 vtkNameByNumber = {}
@@ -348,15 +360,6 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
 
     # From www.vtk;org/wp-content/updloads/2015/04/file-formats.pdf
 
-    try:
-        from paraview.vtk import vtkPolyData, vtkUnstructuredGrid, vtkPoints,vtkIdList, vtkImageData
-        from paraview.vtk.util import numpy_support
-    except :
-        #faster import only needed classes
-        from vtkmodules.vtkCommonCore import vtkPoints, vtkIdList
-        from vtkmodules.vtkCommonDataModel import vtkPolyData, vtkUnstructuredGrid, vtkImageData
-        from vtkmodules.util import numpy_support
-
     isimagedata = False
     if vtkobject is None:
         if mesh.IsConstantRectilinear():
@@ -364,8 +367,8 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
             isimagedata = True
         else:
             usePoly = True
-            for  elementsname,elementContainer in mesh.elements.items():
-                if ElementNames.dimension[elementsname] == 3:
+            for  elementsName,elementContainer in mesh.elements.items():
+                if ElementNames.dimension[elementsName] == 3:
                     usePoly = False
                     break
             if usePoly:
@@ -374,6 +377,10 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
                 output = vtkUnstructuredGrid()
     else:
         output = vtkobject # pragma: no cover
+        if isinstance(output, vtkPolyData):
+            usePoly = True
+        else:
+            usePoly = False
 
     if isimagedata:
         output.SetDimensions(mesh.GetDimensions())
@@ -396,7 +403,7 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
         if mesh.nodes.shape[1] == 3 :
             pts.SetData(numpy_support.numpy_to_vtk(num_array=mesh.nodes, deep=False))
         else:
-            p = np.zeros((mesh.GetNumberOfNodes(),3));
+            p = np.zeros((mesh.GetNumberOfNodes(),3),dtype=PBasicFloatType)
             p[:,0:2] = mesh.nodes
             pts.SetData(numpy_support.numpy_to_vtk(num_array=p, deep=False))
 
@@ -405,15 +412,49 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
         VTK_originalIDsEl = NumpyFieldToVtkField(mesh,mesh.GetElementsOriginalIDs(),"originalIds")
         output.GetCellData().AddArray(VTK_originalIDsEl)
 
-        for elementsname,elementContainer in mesh.elements.items():
-            pointIds = vtkIdList()
-            npe = elementContainer.GetNumberOfNodesPerElement()
-            pointIds.SetNumberOfIds(npe)
-            vtknumber = vtkNumberByElementName[elementsname]
-            for e in range(elementContainer.GetNumberOfElements()):
-                for i in range(npe):
-                    pointIds.SetId(i,elementContainer.connectivity[e,i])
-                output.InsertNextCell(vtknumber, pointIds)
+        if usePoly == False:
+            cellTypes = np.empty(mesh.GetNumberOfElements(), dtype= PBasicIndexType)
+            offsets = np.empty(mesh.GetNumberOfElements()+1,dtype=PBasicIndexType)
+
+            cpt =0
+            offsetcpt = 0
+            for elementsName,elementContainer in mesh.elements.items():
+                nbElement = elementContainer.GetNumberOfElements()
+
+                cellTypes[cpt:cpt+nbElement] = vtkNumberByElementName[elementsName]
+                offsets[cpt:cpt+nbElement] = offsetcpt + np.arange(nbElement)*elementContainer.GetNumberOfNodesPerElement()
+
+                offsetcpt += elementContainer.GetNumberOfNodesPerElement()*nbElement
+                cpt += nbElement
+
+            offsets[cpt] = offsetcpt
+            connectivity = np.empty(offsetcpt,dtype=PBasicIndexType )
+
+            offsetcpt = 0
+            for elementsName, elementContainer in mesh.elements.items():
+                nbElement = elementContainer.GetNumberOfElements()
+                nbObjects = elementContainer.GetNumberOfNodesPerElement() *nbElement
+                connectivity[offsetcpt:offsetcpt+nbObjects] = elementContainer.connectivity.flatten()
+                offsetcpt += nbObjects
+
+
+            offsets   = numpy_support.numpy_to_vtkIdTypeArray(offsets,deep=True)
+            connectivity   = numpy_support.numpy_to_vtkIdTypeArray(connectivity,deep=True)
+
+            cellArray = vtkCellArray()
+            cellArray.SetData(offsets,connectivity)
+            output.SetCells(cellTypes.tolist(), cellArray)
+
+        else:
+            for elementsName,elementContainer in mesh.elements.items():
+                pointIds = vtkIdList()
+                npe = elementContainer.GetNumberOfNodesPerElement()
+                pointIds.SetNumberOfIds(npe)
+                vtkNumber = vtkNumberByElementName[elementsName]
+                for e in range(elementContainer.GetNumberOfElements()):
+                    for i in range(npe):
+                        pointIds.SetId(i,elementContainer.connectivity[e,i])
+                    output.InsertNextCell(vtkNumber, pointIds)
 
     if hasattr(mesh,"nodeFields"):
         for name,data in mesh.nodeFields.items():
@@ -447,7 +488,6 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
 
             if np.size(data)/mesh.GetNumberOfElements() !=  np.size(data)//mesh.GetNumberOfElements() : # pragma: no cover
                 print("field ("+str(name)+") is not consistent : it has " + str(np.size(data)) +" values and the mesh has " +str(mesh.GetNumberOfElements())+ " elements" )
-                raise
                 continue
 
             VTK_data = NumpyFieldToVtkField(mesh,data,name)
@@ -482,6 +522,11 @@ def VtkToMeshOnlyMeta(vtkmesh, FieldsAsTags=False):
             self.elemFields = []
 
     res = UnstructuredMeshMetaData()
+    if vtkmesh is None :
+        return res
+
+    if vtkmesh.GetPoints() is None :
+        return res
     res.nbnodes = vtkmesh.GetPoints().GetNumberOfPoints()
     res.nbelements = vtkmesh.GetNumberOfCells()
 
@@ -527,6 +572,55 @@ def VtkToMeshOnlyMeta(vtkmesh, FieldsAsTags=False):
                 res.nodeFields.append(name)
     return res
 
+def AddCellsFromVtkCellArrayToMesh(cells:vtkCellArray, cellTypesArray:ArrayLike, out:UnstructuredMesh):
+    """Function to migrate cells from a vtkCellArray to a BasicTools Unstructured Mesh
+
+    Parameters
+    ----------
+    cells : vtkCellArray
+        the cell to be created in the mehs
+    cellTypesArray : ArrayLike
+        the vtk cell type to use for in the vtkCellArray. In the case is none we infer
+        the type of cell from the number of nodes (for the polys in a vtkPolyData)
+    out : UnstructuredMesh
+        the output mesh
+    """
+
+    offsets = numpy_support.vtk_to_numpy(cells.GetOffsetsArray())
+    if cellTypesArray is None:
+        cellTypesArray = nbPointsTo2DCells[offsets[1:] - offsets[:-1]]
+
+    types, typeNB = np.unique(cellTypesArray,return_counts=True)
+    npmaxpoints = 0
+    elemtype_index = dict()
+    for t,tnb in zip(types, typeNB):
+        et = elementNameByVtkNumber[t]
+        elements = out.GetElementsOfType(et)
+        elements.Reserve(tnb)
+        npmaxpoints = max(elements.GetNumberOfNodesPerElement(),npmaxpoints)
+        elemtype_index[t] = (elements, np.where(cellTypesArray==t)[0] )
+
+    connectivity = numpy_support.vtk_to_numpy(cells.GetConnectivityArray())
+
+    for vtktype, (elements, index) in elemtype_index.items():
+        cpt0 = elements.cpt
+        numberOfNodesPerElement = elements.GetNumberOfNodesPerElement()
+        nbNewElements = len(index)
+        cpt1 = cpt0+nbNewElements
+        mask=np.arange(numberOfNodesPerElement, dtype=PBasicIndexType)*np.ones((len(index),numberOfNodesPerElement), dtype=PBasicIndexType)+offsets[index,None]
+        localConnectivity = connectivity[mask]
+        localConnectivity.shape = (nbNewElements,numberOfNodesPerElement)
+        elements.connectivity[cpt0:cpt1,:] = localConnectivity
+        elements.originalIds[cpt0:cpt1] = index
+
+        if vtktype == 11:
+            elements.connectivity[cpt0:cpt1,:] = elements.connectivity[cpt0:cpt1,[0,1,3,2,4,5,7,6]]
+        elif vtktype ==  8:
+            elements.connectivity[cpt0:cpt1,:] = elements.connectivity[cpt0:cpt1,[0,1,3,2]]
+
+        elements.cpt += nbNewElements
+
+
 def VtkToMesh(vtkmesh, meshobject=None, FieldsAsTags=True):
 
     if meshobject is None:
@@ -542,41 +636,34 @@ def VtkToMesh(vtkmesh, meshobject=None, FieldsAsTags=True):
         out.SetOrigin(vtkmesh.GetOrigin() )
         out.SetSpacing(vtkmesh.GetSpacing() )
         out.SetDimensions(vtkmesh.GetDimensions() )
-
-    else:
+    elif vtkmesh.IsA("vtkPolyData"):
         data = vtkmesh.GetPoints().GetData()
         out.nodes = numpy_support.vtk_to_numpy(data)
-
-        out.originalIDNodes = np.arange(out.GetNumberOfNodes())
+        out.originalIDNodes = None
         nc = vtkmesh.GetNumberOfCells()
 
-        for i in range(nc):
-            cell= vtkmesh.GetCell(i)
-            ct = cell.GetCellType()
-            et = elementNameByVtkNumber[ct]
-            nps = cell.GetNumberOfPoints()
-            #polyline case
-            # we have to be careful because we potentialy change the number of
-            # elements in the mesh if we have polylines
-            if ct == 4:
-                if nps > 2 :
-                    print("Warning polyline with more than 2 nodes, elemfield are incompatible after conversion ")
-                for j in range(nps-1):
-                    out.GetElementsOfType(et).AddNewElement([cell.GetPointId(j),cell.GetPointId(j+1) ] ,i)
-            elif ct ==  11:
-                # 11 is a voxel and the numbering is not the same as the hexahedron
-                #https://vtk.org/wp-content/uploads/2015/04/file-formats.pdf
-                original_coonectivity = np.array([cell.GetPointId(j) for j in range(nps)])
-                connectivity = original_coonectivity[[0,1,3,2,4,5,7,6]]
-                out.GetElementsOfType(et).AddNewElement(connectivity  ,i)
-            elif ct ==  8:
-                # 8 is a pixel and the numbering is not the same as the quad
-                original_coonectivity = np.array([cell.GetPointId(j) for j in range(nps)])
-                connectivity = original_coonectivity[[0,1,3,2]]
-                out.GetElementsOfType(et).AddNewElement(connectivity  ,i)
-            else:
-                out.GetElementsOfType(et).AddNewElement([cell.GetPointId(j) for j in range(nps)] ,i)
-    out.PrepareForOutput()
+        verts = vtkmesh.GetVerts()
+        if verts.GetNumberOfCells() != 0 :
+            AddCellsFromVtkCellArrayToMesh(verts, np.full(verts.GetNumberOfCells(),1),out)
+
+        lines = vtkmesh.GetLines()
+        if lines.GetNumberOfCells() != 0 :
+            AddCellsFromVtkCellArrayToMesh(lines,  np.full(verts.GetNumberOfCells(),3),out)
+
+        strips = vtkmesh.GetStrips()
+        if strips.GetNumberOfCells() != 0 :
+            AddCellsFromVtkCellArrayToMesh(strips, np.full(verts.GetNumberOfCells(),5), out)
+
+        polys = vtkmesh.GetPolys()
+        if polys.GetNumberOfCells() != 0 :
+            AddCellsFromVtkCellArrayToMesh(polys, None, out)
+    else:
+
+        data = vtkmesh.GetPoints().GetData()
+        out.nodes = numpy_support.vtk_to_numpy(data)
+        out.originalIDNodes = None
+        AddCellsFromVtkCellArrayToMesh(vtkmesh.GetCells(), vtkmesh.GetCellTypesArray(), out)
+
 
     if vtkmesh.GetPointData().GetNumberOfArrays():
         for f in range(vtkmesh.GetPointData().GetNumberOfArrays()):
@@ -589,6 +676,11 @@ def VtkToMesh(vtkmesh, meshobject=None, FieldsAsTags=True):
                     out.nodesTags.CreateTag(name).SetIds(np.where(field)[0])
                 else:
                     out.nodeFields[name] = field
+
+    if out.originalIDNodes is None:
+        out.originalIDNodes = np.arange(out.GetNumberOfNodes())
+
+    out.PrepareForOutput()
 
     EOIds = out.GetElementsOriginalIDs()
     EOIds = np.argsort(EOIds)
