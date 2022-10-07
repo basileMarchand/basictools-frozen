@@ -12,6 +12,7 @@ from BasicTools.Containers.MeshBase import Tags
 from BasicTools.Containers.UnstructuredMesh import AllElements as AllElements
 import BasicTools.Containers.ElementNames as ElementNames
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject, froze_it
+from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceP1
 
 @froze_it
 class ConstantRectilinearElementContainer(BaseOutputObject):
@@ -47,12 +48,10 @@ class ConstantRectilinearElementContainer(BaseOutputObject):
 
         if len(self.__dimensions)  == 3:
             self.elementType = ElementNames.Hexaedron_8
-            from BasicTools.FE.Spaces.HexaSpaces import Hexa_P1_Lagrange
-            self.space = Hexa_P1_Lagrange()
+            self.space = LagrangeSpaceP1[ElementNames.Hexaedron_8]
         elif len(self.__dimensions) == 2 :
             self.elementType = ElementNames.Quadrangle_4
-            from BasicTools.FE.Spaces.QuadSpaces import Quad_P1_Lagrange
-            self.space = Quad_P1_Lagrange()
+            self.space =  LagrangeSpaceP1[ElementNames.Quadrangle_4]
         else:
              raise(Exception("cant build a mesh of this dimensionality"))
         self.space.Create()
