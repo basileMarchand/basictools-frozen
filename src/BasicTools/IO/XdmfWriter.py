@@ -234,13 +234,16 @@ class XdmfWriter(WriterBase):
         self.maxStorageSize = 50
 
     def IsHdf5(self):
-        return self.__isHdf5 and super().isBinary()
+        return self.GetHdf5()
 
     def SetBinary(self, val=True):
         super(XdmfWriter,self).SetBinary(val)
 
     def isBinary(self):
         return super().isBinary() and not self.__isHdf5
+
+    def GetHdf5(self):
+        return self.__isHdf5 and super().isBinary()
 
     def SetHdf5(self, val=True):
         if val :
