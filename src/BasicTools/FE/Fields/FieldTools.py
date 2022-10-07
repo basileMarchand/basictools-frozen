@@ -38,7 +38,7 @@ def ElementWiseIpToFETransferOp(integrationRule: IntegrationRulesType , space:FE
     for name, ir in integrationRule.items():
         space_ipValues = space[name].SetIntegrationRule(ir[0],ir[1])
         valN = np.asarray( space_ipValues.valN, dtype=PBasicFloatType)
-        sol = np.linalg.lstsq(valN, np.eye(valN.shape[0],valN.shape[1]), rcond=None)[0]
+        sol = np.linalg.lstsq(valN, np.eye(valN.shape[0],valN.shape[0]), rcond=None)[0]
         res[name] = sol
     return res
 
@@ -821,7 +821,7 @@ class FieldsMeshTransportation():
             inData = inIPField.data[elemType]
             outData[elemType] = np.zeros((oldMesh.elements[elemType].GetNumberOfElements(),inData.shape[1]))
             outData[elemType][data.originalIds,:] = inIPField.data[elemType]
-        res = inIPField(name=inIPField.name,mesh=oldMesh,rule=inIPField.rule,data=outData)
+        res = IPField(name=inIPField.name,mesh=oldMesh,rule=inIPField.rule,data=outData)
         return res
 
     def TransportIPFieldToNewMesh(self, inIPField:IPField, newMesh:UnstructuredMesh)->IPField:
