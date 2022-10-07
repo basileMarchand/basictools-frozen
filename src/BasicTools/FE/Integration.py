@@ -248,7 +248,7 @@ class IntegrationClass(BaseOutputObject):
             if self.mesh is None:
                 raise Exception("Need a mesh")
             else:
-                self.elementFilter = ElementFilter( dimensionality=self.mesh.GetDimensionality()).GetFrozenFilter(mesh=self.mesh)
+                self.elementFilter = ElementFilter( dimensionality=self.mesh.GetElementsDimensionality()).GetFrozenFilter(mesh=self.mesh)
         else:
             if type(elementFilter) == FrozenFilter:
                 self.elementFilter = elementFilter
