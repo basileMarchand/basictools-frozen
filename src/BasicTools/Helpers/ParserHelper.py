@@ -234,7 +234,11 @@ def ReadProperties(data, props ,obj_or_dic,typeConversion=True):
               #except:
               #    raise (ValueError("Error setting  '"+str(prop)+"'  to object of type " + str(type(obj_or_dic)) ) )
            else:
-              theSetter(inputData)
+                theGetter = getattr( obj_or_dic, "Get"+prop[0].upper()+ str(prop[1:]), None)
+                if theGetter is not None and typeConversion:
+                    theSetter(Read(inputData,theGetter()))
+                else:
+                    theSetter(inputData)
     except KeyError as e:
         print(" object of type " +str(type(obj_or_dic)) + " does not have attribute {0}: ".format( str(e) ))
         raise
