@@ -368,18 +368,6 @@ class UnstructuredMesh(MeshBase):
         """
         return self.nodes.shape[1]
 
-    def GetElementsDimensionality(self) -> int:
-        """return the maximal dimension of the elements
-
-
-        Returns
-        -------
-        int
-            the max of all elements dimensionality
-        """
-
-        return np.max([ElementNames.dimension[elemtype] for elemtype in self.elements.keys() ])
-
     def GetDimensionality(self):
         """
         DEPRECATED: please use GetPointsDimensionality()

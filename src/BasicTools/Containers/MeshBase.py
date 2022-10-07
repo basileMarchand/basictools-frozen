@@ -9,6 +9,7 @@ import numpy as np
 
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 from BasicTools.NumpyDefs import PBasicIndexType
+import BasicTools.Containers.ElementNames as ElementNames
 from BasicTools.Containers.Tags import Tag, Tags
 
 class MeshBase(BaseOutputObject):
@@ -17,7 +18,7 @@ class MeshBase(BaseOutputObject):
         self.nodesTags = Tags()
         self.nodeFields = {}
         self.elemFields = {}
-        """Metadata this is just a dictionary that can be used to tranport
+        """Metadata this is just a dictionary that can be used to transport
         information with the mesh, please use the class name as key of the
         object using/setting the information
         """
@@ -104,6 +105,17 @@ class MeshBase(BaseOutputObject):
 
     def PrepareForOutput(self):
         pass    # pragma: no cover
+
+    def GetElementsDimensionality(self) -> int:
+        """return the maximal dimension of the elements
+
+        Returns
+        -------
+        int
+            the max of all elements dimensionality
+        """
+
+        return np.max([ElementNames.dimension[elemtype] for elemtype in self.elements.keys() ])
 
     def IsConstantRectilinear(self): return False
     def IsRectilinear(self): return False
