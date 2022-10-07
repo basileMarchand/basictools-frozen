@@ -502,12 +502,20 @@ class UnstructuredMesh(MeshBase):
         """
         return a single list with all the originalid concatenated
         """
-        res = np.empty(self.GetNumberOfElements(dim=dim),dtype=PBasicIndexType)
-        cpt = 0
-        from BasicTools.Containers.Filters import ElementFilter
-        for name,data,ids in ElementFilter(self,dimensionality = dim):
-            res[0+cpt:len(ids)+cpt] = data.originalIds[ids]
-            cpt += len(ids)
+        if dim is None:
+            res = np.empty(self.GetNumberOfElements(),dtype=PBasicIndexType)
+            cpt =0
+            for name, data in self.elements.items():
+                n = data.originalIds.shape[0]
+                res[0+cpt:n+cpt] = data.originalIds
+                cpt += n
+        else:
+            res = np.empty(self.GetNumberOfElements(dim=dim),dtype=PBasicIndexType)
+            cpt = 0
+            from BasicTools.Containers.Filters import ElementFilter
+            for name, data, ids in ElementFilter(self,dimensionality = dim):
+                res[0+cpt:len(ids)+cpt] = data.originalIds[ids]
+                cpt += len(ids)
         return res
 
     def SetElementsOriginalIDs(self,originalIDs):
