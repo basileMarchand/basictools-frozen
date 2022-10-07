@@ -117,7 +117,10 @@ class ImplicitGeometryByETag(ImplicitGeometryBase):
         from BasicTools.Containers.UnstructuredMeshInspectionTools import ExtractElementByTags
 
         sup = ExtractElementByTags(support, etags)
-        self.op.SetSurface(sup)
+        if sup.GetElementsDimensionality() == support.GetElementsDimensionality():
+            self.op.SetMesh(sup)
+        else:
+            self.op.SetSurface(sup)
 
     def __str__(self):
         res = "ImplicitGeometryByETag\n"
