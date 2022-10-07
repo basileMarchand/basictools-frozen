@@ -218,10 +218,57 @@ def GetVolumePerElement(inmesh: UnstructuredMesh, elementFilter: Optional[Elemen
     _,f  = IntegrateGeneral( mesh=inmesh, wform=wform, constants={}, fields=[F], unkownFields=unkownFields,elementFilter=elementFilter)
     return f
 
+def GetMeasure(inmesh: UnstructuredMesh, elementFilter:Optional[ElementFilter] = None):
+    """Compute the measure of the mesh (volume in 3D, surface in 2D)
+    Only element of the higher dimensionality are taken into account if no element filter
+    is supplied
+
+    Attention: if the element filter contain dimensionality mixed elements the result is the
+    sum of the measure (volume + surface for example)
+
+    Parameters
+    ----------
+    inmesh : UnstructuredMesh
+        the mesh to use for the computation
+
+    elementFilter : ElementFilter
+        element to take into account in the computation of the measure, if none
+        all the element of the higher dimensionality are used.
+
+    Returns
+    -------
+    PBasicFloatType
+        the volume if the mesh contains 3D elements
+        the surface if the mesh contains 2D elements and no 3D elements
+        the length if the mesh contains 1D elements and no 3D elements nor 2D elements
+    """
+    if elementFilter is None:
+        elementFilter = ElementFilter(inmesh,dimensionality=inmesh.GetElementsDimensionality())
+
+    from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo, ConstantSpaceGlobal
+    from BasicTools.FE.DofNumbering import ComputeDofNumbering
+    from BasicTools.FE.SymWeakForm import GetField
+    from BasicTools.FE.SymWeakForm import GetTestField
+    from BasicTools.FE.Fields.FEField import FEField
+    from BasicTools.FE.Integration import IntegrateGeneral
+
+    numbering = ComputeDofNumbering(inmesh,LagrangeSpaceGeo,fromConnectivity=True)
+
+    wform = GetField("F",1).T*GetTestField("T",1)
+
+    F = FEField("F",inmesh,LagrangeSpaceGeo,numbering)
+    F.Allocate(1.)
+    gNumbering = ComputeDofNumbering(inmesh,ConstantSpaceGlobal)
+    unkownFields = [ FEField("T",mesh=inmesh,space=ConstantSpaceGlobal,numbering=gNumbering) ]
+    _,f  = IntegrateGeneral( mesh=inmesh, wform=wform, constants={}, fields=[F], unkownFields=unkownFields, elementFilter=elementFilter)
+    return f[0]
+
 def GetVolume(inmesh: UnstructuredMesh) -> PBasicFloatType:
     """Compute the volume of the mesh
     Only element of the bigger dimensionality are taken into account
     if no elements on mesh we return zero.
+
+    for a more general function see: GetMeasure
 
     Parameters
     ----------
@@ -234,28 +281,10 @@ def GetVolume(inmesh: UnstructuredMesh) -> PBasicFloatType:
         the volume if the mesh contains 3D elements
         the surface if the mesh contains 2D elements and no 3D elements
         the length if the mesh contains 1D elements and no 3D elements nor 2D elements
+
+
     """
-
-    from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo, ConstantSpaceGlobal
-    from BasicTools.FE.DofNumbering import ComputeDofNumbering
-    from BasicTools.FE.SymWeakForm import GetField
-    from BasicTools.FE.SymWeakForm import GetTestField
-    from BasicTools.FE.Fields.FEField import FEField
-    from BasicTools.FE.Integration import IntegrateGeneral
-
-    if inmesh.GetNumberOfElements() == 0:
-        return 0.
-
-    numbering = ComputeDofNumbering(inmesh,LagrangeSpaceGeo,fromConnectivity=True)
-
-    wform = GetField("F",1).T*GetTestField("T",1)
-
-    F = FEField("F",inmesh,LagrangeSpaceGeo,numbering)
-    F.Allocate(1.)
-    gNumbering = ComputeDofNumbering(inmesh,ConstantSpaceGlobal)
-    unkownFields = [ FEField("T",mesh=inmesh,space=ConstantSpaceGlobal,numbering=gNumbering) ]
-    _,f  = IntegrateGeneral( mesh=inmesh, wform=wform, constants={}, fields=[F], unkownFields=unkownFields)
-    return f[0]
+    return GetMeasure(inmesh)
 
 def GetDualGraphNodeToElement(inmesh, maxNumConnections=200):
     # generation of the dual graph
