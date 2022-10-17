@@ -7,29 +7,31 @@
 import numpy as np
 
 import BasicTools.Containers.ElementNames as EN
+from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
 from BasicTools.IO.ReaderBase import ReaderBase
 from BasicTools.Bridges.vtkBridge import VtkToMesh
 from BasicTools.IO.IOFactory import RegisterReaderClass
 
 class VtkReader(ReaderBase):
-    def __init__(self,fileName = None):
-        super(VtkReader,self).__init__(fileName=fileName)
+    def __init__(self,fileName = None) -> None:
+        super().__init__(fileName=fileName)
 
-    def Read(self, fileName=None):
-      from vtkmodules.vtkCommonDataModel import vtkUnstructuredGrid, vtkPolyData
-      from  vtkmodules.vtkIOLegacy import vtkGenericDataObjectReader
+    def Read(self, fileName:str=None) -> UnstructuredMesh:
+        from vtkmodules.vtkCommonDataModel import vtkUnstructuredGrid, vtkPolyData
+        from  vtkmodules.vtkIOLegacy import vtkGenericDataObjectReader
 
-      if fileName is not None:
-          self.SetFileName(fileName)
+        if fileName is not None:
+            self.SetFileName(fileName)
 
-      reader = vtkGenericDataObjectReader()
-      reader.SetFileName(self.fileName)
-      reader.Update()
-      res = reader.GetUnstructuredGridOutput()
-      if res is None:
-          res = reader.GetPolyDataOutput()
-      self.output = VtkToMesh(res)
-      return self.output
+        reader = vtkGenericDataObjectReader()
+        reader.SetFileName(self.fileName)
+        reader.Update()
+        res = reader.GetUnstructuredGridOutput()
+        if res is None:
+            res = reader.GetPolyDataOutput()
+        self.output = VtkToMesh(res)
+        self.output.ConvertDataForNativeTreatment()
+        return self.output
 
 RegisterReaderClass(".vtk",VtkReader)
 
@@ -48,18 +50,19 @@ def LoadVtuWithVTK(filename):
 
     return data
 
-
 class VtuReader(ReaderBase):
     def __init__(self,fileName = None):
         super(VtuReader,self).__init__(fileName =fileName)
 
     def Read(self, fileName=None,string=None,out=None):
 
-      if fileName is not None:
-          self.SetFileName(fileName)
+        if fileName is not None:
+            self.SetFileName(fileName)
 
-      self.output = VtkToMesh(LoadVtuWithVTK(self.fileName))
-      return self.output
+        self.output = VtkToMesh(LoadVtuWithVTK(self.fileName))
+        self.output.ConvertDataForNativeTreatment()
+
+        return self.output
 
 RegisterReaderClass(".vtu",VtuReader)
 
