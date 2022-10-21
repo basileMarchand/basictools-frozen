@@ -22,6 +22,8 @@ binaryOps = {"__add__":np.add,
              "__ge__":np.ndarray.__ge__,
              "__lt__":np.ndarray.__lt__,
              "__le__":np.ndarray.__le__,
+             "__eq__":np.ndarray.__eq__,
+             "__ne__":np.ndarray.__ne__,
 
              }
 
@@ -68,6 +70,11 @@ class FieldBase(BaseOutputObject):
     def __le__(self,other):
         return self.binaryOp(other,binaryOps["__le__"])
 
+    def __eq__(self,other):
+        return self.binaryOp(other,binaryOps["__eq__"])
+    def __ne__(self,other):
+        return self.binaryOp(other,binaryOps["__ne__"])
+
     def __sub__(self,other):
         return self.binaryOp(other,binaryOps["__sub__"])
 
@@ -78,6 +85,9 @@ class FieldBase(BaseOutputObject):
 
     def __truediv__(self,other):
         return self.binaryOp(other,binaryOps["__truediv__"])
+
+    def __bool__(self):
+        raise ValueError("The truth value of a field is ambiguous.")
 
     def __getattr__(self,name):
         op = getattr(np,name,None)
