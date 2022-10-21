@@ -448,7 +448,7 @@ class ThermalPhysics(Physics):
         t = self.primalUnknown
         tt = self.primalTest
 
-        if hasattr(alpha, '__iter__'):
+        if hasattr(alpha, '__iter__') and not isinstance(alpha, str):
             from sympy import diag
             K = diag(*alpha)
             return Gradient(t,self.spaceDimension).T*K*Gradient(tt,self.spaceDimension)
@@ -456,6 +456,14 @@ class ThermalPhysics(Physics):
             alpha = GetScalarField(alpha)
             return Gradient(t,self.spaceDimension).T*(alpha)*Gradient(tt,self.spaceDimension)
 
+    def GetMassOperator(self, rho=1,cp=1 ):
+        t = self.primalUnknown
+        tt = self.primalTest
+
+        rho = GetScalarField(rho)
+        cp = GetScalarField(cp)
+
+        return rho*cp*(t)*tt
 
     def GetNormalFlux(self,flux="f"):
 
@@ -463,6 +471,14 @@ class ThermalPhysics(Physics):
         f = GetScalarField(flux)
 
         return f*tt
+
+    def GetRobinFlux(self, beta=None, Tinf=None):
+        t = self.primalUnknown[0,0]
+        tt = self.primalTest[0,0]
+
+        beta = GetScalarField(beta)
+        Tinf = GetScalarField(Tinf)
+        return beta*(t - Tinf)*tt
 
 class StokesPhysics(Physics):
     def __init__(self):
