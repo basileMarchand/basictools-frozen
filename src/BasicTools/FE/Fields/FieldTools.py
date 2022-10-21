@@ -18,6 +18,13 @@ from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo, FESpaceType
 from BasicTools.FE.DofNumbering import ComputeDofNumbering
 from BasicTools.FE.IntegrationsRules import IntegrationRulesType
 
+
+def Maximum(A,B):
+    return A.binaryOp(B,np.maximum)
+
+def Minimum(A,B):
+    return A.binaryOp(B,np.minimum)
+
 def ElementWiseIpToFETransferOp(integrationRule: IntegrationRulesType , space:FESpaceType )-> Dict[str,np.ndarray]:
     """Generate transfer operator (element wise) to pass information from integration points to a FE field. This is done
     by solving a least-squares problem.
