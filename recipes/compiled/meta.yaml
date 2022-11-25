@@ -52,6 +52,7 @@ requirements:
     - scikit-sparse [not win]
     - pywin32 [win]
     - pycgns
+    - networkx
 
 test:
   requirements:

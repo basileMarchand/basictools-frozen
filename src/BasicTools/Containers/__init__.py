@@ -11,6 +11,7 @@ _test = [
            'UnstructuredMeshFieldOperations',
            'UnstructuredMeshInspectionTools',
            'UnstructuredMeshModificationTools',
+           'UnstructuredMeshGraphTools',
            'ConstantRectilinearMesh',
            'ConstantRectilinearMeshTools',
            'MeshBase',

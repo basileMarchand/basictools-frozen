@@ -18,6 +18,7 @@ from BasicTools.FE.IntegrationsRules import LagrangeIsoParam
 from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
 from BasicTools.Containers.Filters import ElementFilter
 
+
 def GetElementaryMatrixForFormulation(elemName, wform, unknownNames, space=LagrangeSpaceP1,geoFactor=None):
     # Explicitly specify signature to cleanly display default argument values
     # in sphinx autodoc generated documentation
@@ -718,10 +719,12 @@ def IntegrationPointsToCellData(mesh, scalarFields):
 
     cellData = []
 
+    ef = ElementFilter(mesh=mesh,dimensionality =mesh.GetDimensionality())
+
     for f in range(numberOfFields):
-        iPField = IPF.IPField("",mesh,rule=LagrangeIsoParam)
+        iPField = IPF.IPField("", mesh, rule=LagrangeIsoParam)
         iPField.Allocate()
-        iPField.SetDataFromNumpy(scalarFields[keymap[f]], ElementFilter(mesh=mesh,dimensionality =mesh.GetDimensionality())  )
+        iPField.SetDataFromNumpy(scalarFields[keymap[f]], ef)
         cellData.append(iPField.GetCellRepresentation())
 
     return np.array(cellData)

@@ -23,6 +23,7 @@
     setuptools-scm
     pyvista
     psutil
+    networkx
     pywin32 [Only for windows]
 
 

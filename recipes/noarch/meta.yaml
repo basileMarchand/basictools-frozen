@@ -34,6 +34,7 @@ requirements:
     - scipy
     - sympy
     - scikit-learn
+    - networkx
 
 test:
   requires:
@@ -42,6 +43,7 @@ test:
     - pyvista
     - meshio
     - vtk
+    - networkx
   imports:
      -  BasicTools
   commands :

@@ -488,6 +488,7 @@ def ComputeBarycentricCoordinateOnElement(coordAtDofs,localspace,targetPoint,ele
     N = localspace.GetShapeFunc(xietaphi)
     currentPoint = N.dot(coordAtDofs)
     f = targetPoint - currentPoint
+
     for x in range(10):
         dN = localspace.GetShapeFuncDer(xietaphi)
         df_num = df(f,dN,coordAtDofs)
