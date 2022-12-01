@@ -681,8 +681,8 @@ def AddTagPerBody(inmesh:UnstructuredMesh)-> np.ndarray:
     Exception
         in the case of an internal error
     """
-    from BasicTools.Containers.UnstructuredMeshInspectionTools import GetDualGraph
-    dualGraph,usedPoints = GetDualGraph(inmesh)
+    from BasicTools.Containers.UnstructuredMeshInspectionTools import ComputeNodeToNodeConnectivity
+    dualGraph,usedPoints = ComputeNodeToNodeConnectivity(inmesh)
 
     # Connectivity walk
     nbOfNodes = inmesh.GetNumberOfNodes()

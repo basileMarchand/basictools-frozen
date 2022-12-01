@@ -9,7 +9,7 @@ import networkx
 from scipy.sparse.linalg import eigsh
 from scipy import sparse, optimize
 
-from BasicTools.Containers.UnstructuredMeshInspectionTools import GetDualGraphNodeToElement, GetDualGraph
+from BasicTools.Containers.UnstructuredMeshInspectionTools import ComputeNodeToElementConnectivity, ComputeElementToElementConnectivity
 import BasicTools.Containers.UnstructuredMeshModificationTools as UMMT
 import BasicTools.Containers.UnstructuredMeshInspectionTools as UMIT
 from BasicTools.Containers import UnstructuredMesh
@@ -24,7 +24,7 @@ def PartitionMesh(inmesh, nbSubdomains, driver="Metis"): # TBD: add other driver
     '''Generates a subdomain vector providing labels ordered for each element of the input mesh
     based on a third party graph partitionning solver. Current working options are: Metis'''
 
-    elemGraph, usedCells = GetElementGraph(inmesh)
+    elemGraph, usedCells = ComputeElementToElementConnectivity(inmesh)
 
     if driver=="Metis":
         import pymetis
@@ -41,39 +41,6 @@ def PartitionMesh(inmesh, nbSubdomains, driver="Metis"): # TBD: add other driver
 
     #elementsBySubdomain = [np.argwhere(np.array(maskVector) == sd).ravel() for sd in [i for i in range(nbSubdomains)]]
     return subdomainMap
-
-def GetElementGraph(inmesh, maxNumConnections = 200): # TBD: Test on 1M elts mesh, make use of dimensionality
-    '''Generates the graph connecting elements through faces (in 3D) or edges (in 2D).
-    Also provides the array of cells used.'''
-
-    meshGraph, dump = GetDualGraphNodeToElement(inmesh) # build node connectivity table first
-    elemGraph = np.zeros((inmesh.GetNumberOfElements(), maxNumConnections), dtype = PBasicIndexType) - 1
-    usedCells = np.zeros(inmesh.GetNumberOfElements(), dtype = PBasicIndexType)
-    maxDim = max([ElementNames.dimension[groupName] for groupName, elemGroup in inmesh.elements.items()]) # check largest dimensionality
-    if min([ElementNames.dimension[groupName] for groupName, elemGroup in inmesh.elements.items()]) < maxDim:
-        warnings.warn("Input mesh has more than one dimensionality: Only the largest will be used to build element graph.")
-
-    for groupName, elemGroup, ids in Filters.ElementFilter(inmesh,dimensionality=maxDim): # for each element group of largest dimensionality
-        neighboringElems = np.zeros((elemGroup.connectivity.shape[1], meshGraph.shape[1]), dtype = PBasicIndexType)
-        nbNodesPerFace = []
-        for face in ElementNames.faces[groupName]: # evaluate face connectivity
-            nbNodesPerFace.append(len(face[1]))
-        for element in ids: # for each element in the filtered groups
-            elementNodes = elemGroup.connectivity[element,:]
-            neighboringElems.fill(0)
-            for j, node in enumerate(elementNodes):
-                neighboringElems[j] = meshGraph[node]
-            unique, counts = np.unique(neighboringElems, return_counts=True) # count how many time each other element is connected to a node
-            yindex = 0
-            for j in range(len(unique)):
-                if counts[j] in nbNodesPerFace: # if nb of connections correspond to face connectivity, add it to graph
-                    elemGraph[element,yindex] = unique[j]
-                    usedCells[element] += 1
-                    yindex += 1
-
-    maxsize = np.max(np.sum(elemGraph>=0,axis=1)) # crop output data
-    elemGraph = elemGraph[:,0:maxsize]
-    return elemGraph, usedCells
 
 
 
@@ -127,8 +94,146 @@ def InitializeGraphPointsFromMeshElements(inMesh, dimensionality = None):
     return G
 
 
+def ComputeNodeToNodeGraph(inMesh, dimensionality = None, distFunc = None):
+    '''Creates a networkx graph from the node connectivity on an UnstructuredMesh through edges
+
+    Parameters
+    ----------
+    inMesh : UnstructuredMesh
+        input mesh
+    dimensionality : int
+        dimension of the elements considered to initalize the graph
+    distFunc : func
+        function applied to the lengh of the edges of the mesh, and attached of the
+        corresponding edge of the graph of the mesh
+
+    Returns
+    -------
+    networkx.Graph
+        Element to element graph
+    '''
+    if dimensionality == None:
+        dimensionality = inMesh.GetDimensionality()
+
+    elFilter = Filters.ElementFilter(inMesh, dimensionality = dimensionality)
+
+    if distFunc == None:
+        def distFunc(x):
+            return x
+
+    edges = {}
+    for name, data, ids in elFilter:
+        if dimensionality == 3:
+            bars = ElementNames.faces2[name]
+        elif dimensionality == 2:
+            bars = ElementNames.faces[name]
+        else:
+            bars = [('bar2', [0, 1])]
+        for idd in ids:
+            for bar in bars:
+                localBar = np.array([bar[1][0],bar[1][-1]])
+                edge = np.sort(data.connectivity[idd][localBar])
+                length = np.linalg.norm(inMesh.nodes[edge[1]]-inMesh.nodes[edge[0]])
+                edges[(edge[0], edge[1])] = distFunc(length)
+
+    G = InitializeGraphPointsFromMeshPoints(inMesh)
+    for edge, length in edges.items():
+        G.add_edge(edge[0], edge[1], weight = length)
+
+    return G
+
+
+def ComputeElementToElementGraph(inMesh, dimensionality = None, connectivityDimension = None):
+    '''Creates a networkx graph from the element connectivity on an UnstructuredMesh in the following sense:
+    an element is linked to another in the graph if they share:
+        - a face   if connectivityDimension = 2
+        - an edge  if connectivityDimension = 1
+        - a vertex if connectivityDimension = 0
+        (if connectivityDimension is initialized to None, it will be set to dimensionality - 1)
+
+    Parameters
+    ----------
+    inMesh : UnstructuredMesh
+        input mesh
+    dimensionality : int
+        dimension of the elements considered to initalize the graph
+    connectivityDimension : int
+        dimension of the connectivity
+
+    Returns
+    -------
+    networkx.Graph
+        Element to element graph
+    '''
+    from functools import reduce
+
+    if dimensionality == None:
+        dimensionality = inMesh.GetDimensionality()
+
+    if connectivityDimension == None:
+        connectivityDimension = dimensionality - 1
+
+    G = networkx.Graph()
+
+    elFilter = Filters.ElementFilter(inMesh, dimensionality = dimensionality)
+    count = 0
+    for _, _, ids in elFilter:
+        for _ in range(len(ids)):
+            G.add_node(count)
+            count += 1
+
+    if connectivityDimension == 0:
+        for _, data, ids in elFilter:
+            for i, id in enumerate(ids):
+                inMesh.GetNodalTag("current").SetIds(data.connectivity[id])
+                ff = Filters.ElementFilter(inMesh, dimensionality = dimensionality, nTags=["current"], nTagsTreatment="leastonenode")
+                for _, _, ids2 in ff:
+                    for el in ids2[ids2!=i]:
+                        G.add_edge(i, el)
+
+    else:
+
+        def AppendEdges(G, connectingObjects, ids):
+            for i, id in enumerate(ids):
+                for connectingObject in connectingObjects:
+                    nodes = data.connectivity[id][connectingObject[1]]
+                    indices = []
+                    for j, p in enumerate(nodes):
+                        inMesh.GetNodalTag("current"+str(j)).SetIds(p)
+                        ff = Filters.ElementFilter(inMesh, dimensionality = dimensionality, nTags=["current"+str(j)], nTagsTreatment="leastonenode")
+                        indices.append(ff.GetIdsToTreat(data))
+
+                    #inMesh.GetNodalTag("current").SetIds(nodes)
+                    #ff2 = Filters.ElementFilter(inMesh, dimensionality = dimensionality, nTags=["current"], nTagsTreatment="allnodes")
+
+                    ids2 = reduce(np.intersect1d, tuple(indices))
+                    for el in ids2[ids2!=i]:
+                        G.add_edge(i, el)
+
+        if connectivityDimension == 1:
+            assert dimensionality >= 2, "connectivityDimension = 1 can be used only for 2D and 3D elements"
+
+            for name, data, ids in elFilter:
+                if dimensionality ==2:
+                    connectingObjects = ElementNames.faces[name]
+                elif dimensionality ==3:
+                    connectingObjects = ElementNames.faces2[name]
+
+                AppendEdges(G, connectingObjects, ids)
+
+        elif connectivityDimension == 2:
+            assert dimensionality == 3, "connectivityDimension = 2 can be used only for 3D elements"
+
+            for name, data, ids in elFilter:
+                connectingObjects = ElementNames.faces[name]
+
+                AppendEdges(G, connectingObjects, ids)
+
+    return G
+
+
 def GetExtendedElementGraph(inMesh, dimensionality = None):
-    '''Creates a networkx graph from the element connectivity on an UnstrucutredMesh in the following sense:
+    '''Creates a networkx graph from the element connectivity on an UnstructuredMesh in the following sense:
     an element is linked to another in the graph if they share a vertex.
 
     Parameters
@@ -160,7 +265,7 @@ def GetExtendedElementGraph(inMesh, dimensionality = None):
 
 
 
-def ComputeMeshLaplacianEigenmaps(mesh, dimensionality = None, nEigenmaps = 10, distFunc = None, normalizedLaplacian = False):
+def ComputeMeshLaplacianEigenmaps(inMesh, dimensionality = None, nEigenmaps = 10, distFunc = None, normalizedLaplacian = False):
     '''Computes the Laplacian engenmaps of a mesh
 
     Parameters
@@ -185,27 +290,7 @@ def ComputeMeshLaplacianEigenmaps(mesh, dimensionality = None, nEigenmaps = 10, 
         Laplacian eigenmaps
     '''
 
-    if dimensionality == None:
-        dimensionality = mesh.GetDimensionality()
-
-    elFilter = Filters.ElementFilter(mesh, dimensionality = dimensionality)
-
-    if distFunc == None:
-        def distFunc(x):
-            return x
-
-    edges = {}
-    for name, data ,ids in elFilter:
-        for idd in ids:
-            for face in ElementNames.faces[name]:
-                edge = np.sort(data.connectivity[idd][face[1]])
-                length = np.linalg.norm(mesh.nodes[edge[1]]-mesh.nodes[edge[0]])
-                edges[(edge[0], edge[1])] = distFunc(length)
-
-
-    G = InitializeGraphPointsFromMeshPoints(mesh)
-    for edge, length in edges.items():
-        G.add_edge(edge[0], edge[1], weight = length)
+    G = ComputeNodeToNodeGraph(inMesh, dimensionality = dimensionality, distFunc = distFunc)
 
     if normalizedLaplacian == False:
         L = networkx.laplacian_matrix(G).asfptype()
@@ -224,8 +309,8 @@ def ComputeMeshLaplacianEigenmaps(mesh, dimensionality = None, nEigenmaps = 10, 
 def RenumberMeshForParametrization(inMesh, inPlace = True, boundaryOrientation = "direct", fixedBoundaryPoints = None):
     """
     Only for linear triangle meshes
-    Renumbering: the last nodeIDs correspond to the boundary, ordered
-
+    Renumber the node IDs, such that the points on the boundary are placed at the
+    end of the numbering. Serves as a preliminary step for mesh parametrization.
 
     Parameters
     ----------
@@ -270,8 +355,9 @@ def RenumberMeshForParametrization(inMesh, inPlace = True, boundaryOrientation =
     # and going in the direction increasing the value of the second coordinate the least
 
     bars = skin.elements[ElementNames.Bar_2].connectivity
-    nodeGraph = UMIT.GetDualGraph(skin)[0]
-    assert nodeGraph.shape[1] == 2, "skin is not a mesh of bars"
+
+    nodeGraph0 = ComputeNodeToNodeGraph(skin, dimensionality=1)
+    nodeGraph = [list(nodeGraph0[i].keys()) for i in range(nodeGraph0.number_of_nodes())]
 
     indicesBars = np.sort(np.unique(bars.flatten()))
 
@@ -330,7 +416,7 @@ def RenumberMeshForParametrization(inMesh, inPlace = True, boundaryOrientation =
     path = [p1, p2]
     while p2 != p1init:
         p2save = p2
-        p2 = nodeGraph[p2][nodeGraph[p2]!=p1][0]
+        p2 = np.array(nodeGraph[p2])[nodeGraph[p2]!=p1][0]
         p1 = p2save
         path.append(p2)
     path = path[:-1]
@@ -1020,7 +1106,7 @@ def ComputeNodalAveragedStretchMetric(originMesh, parametrizedMesh):
     """
     stretchMetric, area = ComputeStretchMetric(originMesh, parametrizedMesh)
 
-    NodeToElementConnectivity, _ = GetDualGraphNodeToElement(originMesh)
+    NodeToElementConnectivity, _ = ComputeNodeToElementConnectivity(originMesh)
 
     nNodes = originMesh.GetNumberOfNodes()
     nodalStretchMetric = np.zeros(nNodes)
@@ -1054,10 +1140,13 @@ def ComputeMeanEdgeAtPoints(mesh):
     """
     N = mesh.GetNumberOfNodes()
     meanEdgeAtPoints = np.zeros(N)
-    nodalGraph = GetDualGraph(mesh)[0]
+
+    nodalGraph0 = ComputeNodeToNodeGraph(mesh)
+    nodalGraph = [list(nodalGraph0[i].keys()) for i in range(nodalGraph0.number_of_nodes())]
+
 
     for i in range(N):
-        linkedNodes = nodalGraph[i][nodalGraph[i]>0]
+        linkedNodes = np.array(nodalGraph[i])[np.array(nodalGraph[i])>0]
         d = len(linkedNodes)
 
         for j in linkedNodes:
@@ -1095,7 +1184,7 @@ def Create3DMeshForCheckIntegrity():
 def CheckIntegrity_PartitionMesh_Metis(GUI=False):
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshOfTriangles
     res = CreateMeshOfTriangles([[0,0,0],[1,0,0],[0,1,0],[0,0,1] ], [[0,1,2],[0,2,3]])
-    dg, nused = GetElementGraph(res)
+    dg, nused = ComputeElementToElementConnectivity(res)
 
     # must convert dg in UnstructTuredMeshFormat for next line to run
     #mv = PartitionMesh(dg, 2, driver="Metis")
@@ -1109,7 +1198,6 @@ def CheckIntegrity_InitializeGraphPointsFromMeshPoints(GUI=False):
     G = InitializeGraphPointsFromMeshPoints(mesh)
 
     np.testing.assert_almost_equal(G.nodes, np.arange(9))
-    #print("1 =", G.nodes)
 
     return "ok"
 
@@ -1119,19 +1207,46 @@ def CheckIntegrity_InitializeGraphPointsFromMeshElements(GUI=False):
     mesh = CreateMeshForCheckIntegrity()
     G = InitializeGraphPointsFromMeshElements(mesh)
     np.testing.assert_almost_equal(G.nodes, np.arange(8))
-    #print("2 =", G.nodes)
 
     return "ok"
 
 
-
-def CheckIntegrity_GetExtendedElementGraph(GUI=False):
+def CheckIntegrity_ComputeNodeToNodeGraph(GUI=False):
 
     mesh = CreateMeshForCheckIntegrity()
-    G = GetExtendedElementGraph(mesh)
+    G = ComputeNodeToNodeGraph(mesh)
 
+    np.testing.assert_almost_equal(G.nodes, np.arange(9))
+    np.testing.assert_almost_equal(G.edges, [(0, 3), (0, 4), (0, 1), (1, 4), (1, 5), (1, 2), (2, 5), (3, 4), (3, 6), (3, 7), (4, 5), (4, 7), (4, 8), (5, 8), (6, 7), (7, 8)])
+
+    return "ok"
+
+
+def CheckIntegrity_ComputeElementToElementGraph(GUI=False):
+
+    ############# 2D mesh ###############
+    mesh = CreateMeshForCheckIntegrity()
+
+    G = ComputeElementToElementGraph(mesh, connectivityDimension = 0)
     np.testing.assert_almost_equal(G.nodes, np.arange(8))
-    #print("3 =", G.nodes)
+    np.testing.assert_almost_equal(G.edges, [(0, 1), (0, 2), (0, 4), (0, 5), (0, 6), (0, 7), (1, 2), (1, 3), (1, 5), (1, 6), (1, 7), (2, 3), (2, 5), (2, 6), (2, 7), (3, 7), (4, 5), (4, 6), (5, 6), (5, 7), (6, 7)])
+
+    G = ComputeElementToElementGraph(mesh, connectivityDimension = 1)
+    np.testing.assert_almost_equal(G.nodes, np.arange(8))
+    np.testing.assert_almost_equal(G.edges, [(0, 5), (0, 1), (1, 2), (2, 7), (2, 3), (4, 5), (5, 6), (6, 7)])
+
+    ############# 3D mesh ###############
+    mesh = Create3DMeshForCheckIntegrity()
+
+    G = ComputeElementToElementGraph(mesh, connectivityDimension = 1)
+
+    np.testing.assert_almost_equal(G.nodes, np.arange(384))
+    np.testing.assert_almost_equal(list(G.edges)[:21], [(0, 1), (0, 2), (0, 3), (0, 4), (0, 5), (0, 28), (0, 97), (0, 122), (0, 123), (0, 27), (0, 29), (1, 2), (1, 3), (1, 4), (1, 5), (1, 27), (1, 28), (1, 6), (1, 34), (1, 35), (1, 26)])
+
+    G = ComputeElementToElementGraph(mesh, connectivityDimension = 2)
+
+    np.testing.assert_almost_equal(G.nodes, np.arange(384))
+    np.testing.assert_almost_equal(list(G.edges)[:23], [(0, 5), (0, 1), (0, 28), (1, 2), (1, 27), (2, 3), (2, 6), (3, 4), (3, 11), (4, 5), (4, 98), (5, 97), (6, 11), (6, 7), (6, 34), (7, 8), (7, 33), (8, 9), (8, 12), (9, 10), (9, 17), (10, 11), (10, 104)])
 
     return "ok"
 
@@ -1320,7 +1435,8 @@ def CheckIntegrity(GUI=False):
     CheckIntegrity_PartitionMesh_Metis,
     CheckIntegrity_InitializeGraphPointsFromMeshPoints,
     CheckIntegrity_InitializeGraphPointsFromMeshElements,
-    CheckIntegrity_GetExtendedElementGraph,
+    CheckIntegrity_ComputeNodeToNodeGraph,
+    CheckIntegrity_ComputeElementToElementGraph,
     CheckIntegrity_ComputeMeshLaplacianEigenmaps,
     CheckIntegrity_FloaterMeshParametrization,
     CheckIntegrity_FloaterMesh3DParametrizationStarDomain,
