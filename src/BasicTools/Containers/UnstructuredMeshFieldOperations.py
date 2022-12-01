@@ -182,8 +182,8 @@ def GetFieldTransferOp(inputField: FEField, targetPoints: ArrayLike, method: Uni
                 LagrangeSpaceGeo[elementType2].Create()
 
     # we build de Dual Connectivity
-    from BasicTools.Containers.UnstructuredMeshInspectionTools import GetDualGraphNodeToElement
-    dualGraph, nbUsed = GetDualGraphNodeToElement(iMesh)
+    from BasicTools.Containers.UnstructuredMeshInspectionTools import ComputeNodeToElementConnectivity
+    dualGraph, nbUsed = ComputeNodeToElementConnectivity(iMesh)
 
     from BasicTools.Containers.MeshTools import  GetElementsCenters
 

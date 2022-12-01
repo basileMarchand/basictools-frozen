@@ -288,7 +288,7 @@ def GetVolume(inmesh: UnstructuredMesh) -> PBasicFloatType:
     """
     return GetMeasure(inmesh)
 
-def GetDualGraphNodeToElement(inmesh, maxNumConnections=200):
+def ComputeNodeToElementConnectivity(inmesh, maxNumConnections=200):
     # generation of the dual graph
     dualGraph = np.zeros((inmesh.GetNumberOfNodes(),maxNumConnections), dtype=PBasicIndexType )-1
     usedPoints = np.zeros(inmesh.GetNumberOfNodes(), dtype=PBasicIndexType )
@@ -308,7 +308,7 @@ def GetDualGraphNodeToElement(inmesh, maxNumConnections=200):
     dualGraph = dualGraph[:,0:maxsize]
     return dualGraph,usedPoints
 
-def GetDualGraph(inmesh, maxNumConnections=200):
+def ComputeNodeToNodeConnectivity(inmesh, maxNumConnections=200):
 
     # generation of the dual graph
     dualGraph = np.zeros((inmesh.GetNumberOfNodes(),maxNumConnections), dtype=PBasicIndexType )-1
@@ -346,6 +346,42 @@ def GetDualGraph(inmesh, maxNumConnections=200):
     #we crop the output data
     dualGraph = dualGraph[:,0:maxsize]
     return dualGraph,usedPoints
+
+
+
+def ComputeElementToElementConnectivity(inmesh, maxNumConnections = 200):
+    '''Generates the elements to element connectivity through faces (in 3D) or edges (in 2D).
+    Also provides the array of cells used.'''
+
+    meshGraph, dump = ComputeNodeToElementConnectivity(inmesh) # build node connectivity table first
+    elemGraph = np.zeros((inmesh.GetNumberOfElements(), maxNumConnections), dtype = PBasicIndexType) - 1
+    usedCells = np.zeros(inmesh.GetNumberOfElements(), dtype = PBasicIndexType)
+    maxDim = max([ElementNames.dimension[groupName] for groupName, elemGroup in inmesh.elements.items()]) # check largest dimensionality
+    if min([ElementNames.dimension[groupName] for groupName, elemGroup in inmesh.elements.items()]) < maxDim:
+        warnings.warn("Input mesh has more than one dimensionality: Only the largest will be used to build element graph.")
+
+    for groupName, elemGroup, ids in Filters.ElementFilter(inmesh,dimensionality=maxDim): # for each element group of largest dimensionality
+        neighboringElems = np.zeros((elemGroup.connectivity.shape[1], meshGraph.shape[1]), dtype = PBasicIndexType)
+        nbNodesPerFace = []
+        for face in ElementNames.faces[groupName]: # evaluate face connectivity
+            nbNodesPerFace.append(len(face[1]))
+        for element in ids: # for each element in the filtered groups
+            elementNodes = elemGroup.connectivity[element,:]
+            neighboringElems.fill(0)
+            for j, node in enumerate(elementNodes):
+                neighboringElems[j] = meshGraph[node]
+            unique, counts = np.unique(neighboringElems, return_counts=True) # count how many time each other element is connected to a node
+            yindex = 0
+            for j in range(len(unique)):
+                if counts[j] in nbNodesPerFace: # if nb of connections correspond to face connectivity, add it to graph
+                    elemGraph[element,yindex] = unique[j]
+                    usedCells[element] += 1
+                    yindex += 1
+
+    maxsize = np.max(np.sum(elemGraph>=0,axis=1)) # crop output data
+    elemGraph = elemGraph[:,0:maxsize]
+    return elemGraph, usedCells
+
 
 def ExtractElementsByElementFilter(inmesh: UnstructuredMesh, elementFilter: ElementFilter, copy:bool=True) -> UnstructuredMesh:
     """Create a new mesh with the selected element by elementFilter
@@ -856,11 +892,11 @@ def CheckIntegrity_GetElementsFractionInside(GUI=False):
 
     return "ok"
 
-def CheckIntegrity_GetDualGraph(GUI=False):
+def CheckIntegrity_ComputeNodeToNodeConnectivity(GUI=False):
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshOfTriangles
 
     res = CreateMeshOfTriangles([[0,0,0],[1,0,0],[0,1,0],[0,0,1] ], [[0,1,2],[0,2,3]])
-    dg, unUsed = GetDualGraph(res)
+    dg, unUsed = ComputeNodeToNodeConnectivity(res)
 
     return "ok"
 
@@ -933,7 +969,7 @@ def CheckIntegrity(GUI=False):
     CheckIntegrity_EnsureUniquenessElements,
     CheckIntegrity_ExtractElementsByMask,
     CheckIntegrity_GetVolume,
-    CheckIntegrity_GetDualGraph,
+    CheckIntegrity_ComputeNodeToNodeConnectivity,
     CheckIntegrity_ComputeMeshMinMaxLengthScale,
     CheckIntegrity_GetElementsFractionInside,
     CheckIntegrity_ExtractElementByTags,
