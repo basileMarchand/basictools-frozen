@@ -9,7 +9,6 @@ import networkx
 from scipy.sparse.linalg import eigsh
 from scipy import sparse, optimize
 
-from BasicTools.Containers.UnstructuredMeshInspectionTools import ComputeNodeToElementConnectivity, ComputeElementToElementConnectivity
 import BasicTools.Containers.UnstructuredMeshModificationTools as UMMT
 import BasicTools.Containers.UnstructuredMeshInspectionTools as UMIT
 from BasicTools.Containers import UnstructuredMesh
@@ -24,7 +23,7 @@ def PartitionMesh(inmesh, nbSubdomains, driver="Metis"): # TBD: add other driver
     '''Generates a subdomain vector providing labels ordered for each element of the input mesh
     based on a third party graph partitionning solver. Current working options are: Metis'''
 
-    elemGraph, usedCells = ComputeElementToElementConnectivity(inmesh)
+    elemGraph, usedCells = UMIT.ComputeElementToElementConnectivity(inmesh)
 
     if driver=="Metis":
         import pymetis
@@ -59,8 +58,7 @@ def InitializeGraphPointsFromMeshPoints(inMesh):
         initialized graph
     '''
     G = networkx.Graph()
-    for i in range(inMesh.GetNumberOfNodes()):
-        G.add_node(i)
+    G.add_nodes_from(np.arange(inMesh.GetNumberOfNodes()))
     return G
 
 
@@ -84,13 +82,8 @@ def InitializeGraphPointsFromMeshElements(inMesh, dimensionality = None):
         dimensionality = inMesh.GetDimensionality()
 
     G = networkx.Graph()
+    G.add_nodes_from(np.arange(inMesh.GetNumberOfElements(dim = dimensionality)))
 
-    elFilter = Filters.ElementFilter(inMesh, dimensionality = dimensionality)
-    count = 0
-    for _, _, ids in elFilter:
-        for _ in range(len(ids)):
-            G.add_node(count)
-            count += 1
     return G
 
 
@@ -115,30 +108,23 @@ def ComputeNodeToNodeGraph(inMesh, dimensionality = None, distFunc = None):
     if dimensionality == None:
         dimensionality = inMesh.GetDimensionality()
 
-    elFilter = Filters.ElementFilter(inMesh, dimensionality = dimensionality)
-
     if distFunc == None:
         def distFunc(x):
             return x
 
-    edges = {}
-    for name, data, ids in elFilter:
-        if dimensionality == 3:
-            bars = ElementNames.faces2[name]
-        elif dimensionality == 2:
-            bars = ElementNames.faces[name]
-        else:
-            bars = [('bar2', [0, 1])]
-        for idd in ids:
-            for bar in bars:
-                localBar = np.array([bar[1][0],bar[1][-1]])
-                edge = np.sort(data.connectivity[idd][localBar])
-                length = np.linalg.norm(inMesh.nodes[edge[1]]-inMesh.nodes[edge[0]])
-                edges[(edge[0], edge[1])] = distFunc(length)
+
+    elFilter = Filters.ElementFilter(inMesh, dimensionality = dimensionality)
+    mesh = UMIT.ExtractElementsByElementFilter(inMesh, elFilter)
+
+    nodeConnectivity, _ = UMIT.ComputeNodeToNodeConnectivity(mesh)
 
     G = InitializeGraphPointsFromMeshPoints(inMesh)
-    for edge, length in edges.items():
-        G.add_edge(edge[0], edge[1], weight = length)
+    edges = []
+    for i in range(nodeConnectivity.shape[0]):
+        for j in nodeConnectivity[i][nodeConnectivity[i]>i]:
+            length = np.linalg.norm(inMesh.nodes[i]-inMesh.nodes[j])
+            edges.append((i,j, distFunc(length)))
+    G.add_weighted_edges_from(edges)
 
     return G
 
@@ -165,104 +151,16 @@ def ComputeElementToElementGraph(inMesh, dimensionality = None, connectivityDime
     networkx.Graph
         Element to element graph
     '''
-    from functools import reduce
+    elementConnectivity, _ = UMIT.ComputeElementToElementConnectivity(inMesh, dimensionality, connectivityDimension)
 
-    if dimensionality == None:
-        dimensionality = inMesh.GetDimensionality()
-
-    if connectivityDimension == None:
-        connectivityDimension = dimensionality - 1
-
-    G = networkx.Graph()
-
-    elFilter = Filters.ElementFilter(inMesh, dimensionality = dimensionality)
-    count = 0
-    for _, _, ids in elFilter:
-        for _ in range(len(ids)):
-            G.add_node(count)
-            count += 1
-
-    if connectivityDimension == 0:
-        for _, data, ids in elFilter:
-            for i, id in enumerate(ids):
-                inMesh.GetNodalTag("current").SetIds(data.connectivity[id])
-                ff = Filters.ElementFilter(inMesh, dimensionality = dimensionality, nTags=["current"], nTagsTreatment="leastonenode")
-                for _, _, ids2 in ff:
-                    for el in ids2[ids2!=i]:
-                        G.add_edge(i, el)
-
-    else:
-
-        def AppendEdges(G, connectingObjects, ids):
-            for i, id in enumerate(ids):
-                for connectingObject in connectingObjects:
-                    nodes = data.connectivity[id][connectingObject[1]]
-                    indices = []
-                    for j, p in enumerate(nodes):
-                        inMesh.GetNodalTag("current"+str(j)).SetIds(p)
-                        ff = Filters.ElementFilter(inMesh, dimensionality = dimensionality, nTags=["current"+str(j)], nTagsTreatment="leastonenode")
-                        indices.append(ff.GetIdsToTreat(data))
-
-                    #inMesh.GetNodalTag("current").SetIds(nodes)
-                    #ff2 = Filters.ElementFilter(inMesh, dimensionality = dimensionality, nTags=["current"], nTagsTreatment="allnodes")
-
-                    ids2 = reduce(np.intersect1d, tuple(indices))
-                    for el in ids2[ids2!=i]:
-                        G.add_edge(i, el)
-
-        if connectivityDimension == 1:
-            assert dimensionality >= 2, "connectivityDimension = 1 can be used only for 2D and 3D elements"
-
-            for name, data, ids in elFilter:
-                if dimensionality ==2:
-                    connectingObjects = ElementNames.faces[name]
-                elif dimensionality ==3:
-                    connectingObjects = ElementNames.faces2[name]
-
-                AppendEdges(G, connectingObjects, ids)
-
-        elif connectivityDimension == 2:
-            assert dimensionality == 3, "connectivityDimension = 2 can be used only for 3D elements"
-
-            for name, data, ids in elFilter:
-                connectingObjects = ElementNames.faces[name]
-
-                AppendEdges(G, connectingObjects, ids)
+    G = InitializeGraphPointsFromMeshElements(inMesh)
+    edges = []
+    for i in range(elementConnectivity.shape[0]):
+        for j in elementConnectivity[i][elementConnectivity[i]>i]:
+            edges.append((i,j))
+    G.add_edges_from(edges)
 
     return G
-
-
-def GetExtendedElementGraph(inMesh, dimensionality = None):
-    '''Creates a networkx graph from the element connectivity on an UnstructuredMesh in the following sense:
-    an element is linked to another in the graph if they share a vertex.
-
-    Parameters
-    ----------
-    inMesh : UnstructuredMesh
-        input mesh
-    dimensionality : int
-        dimension of the elements considered to initalize the graph
-
-    Returns
-    -------
-    networkx.Graph
-        initialized graph
-    '''
-    if dimensionality == None:
-        dimensionality = inMesh.GetDimensionality()
-
-    G = InitializeGraphPointsFromMeshElements(inMesh, dimensionality = dimensionality)
-
-    elFilter = Filters.ElementFilter(inMesh, dimensionality = dimensionality)
-    for _, data, ids in elFilter:
-        for idd in range(len(ids)):
-            inMesh.GetNodalTag("current").SetIds(data.connectivity[idd])
-            ff = Filters.ElementFilter(inMesh, dimensionality = dimensionality, nTags=["current"], nTagsTreatment="leastonenode")
-            for _, _, ids2 in ff:
-                for el in ids2:
-                    G.add_edge(idd, el)
-    return G
-
 
 
 def ComputeMeshLaplacianEigenmaps(inMesh, dimensionality = None, nEigenmaps = 10, distFunc = None, normalizedLaplacian = False):
@@ -1106,7 +1004,7 @@ def ComputeNodalAveragedStretchMetric(originMesh, parametrizedMesh):
     """
     stretchMetric, area = ComputeStretchMetric(originMesh, parametrizedMesh)
 
-    NodeToElementConnectivity, _ = ComputeNodeToElementConnectivity(originMesh)
+    NodeToElementConnectivity, _ = UMIT.ComputeNodeToElementConnectivity(originMesh)
 
     nNodes = originMesh.GetNumberOfNodes()
     nodalStretchMetric = np.zeros(nNodes)
@@ -1119,40 +1017,6 @@ def ComputeNodalAveragedStretchMetric(originMesh, parametrizedMesh):
 
     return nodalStretchMetric
 
-
-
-def ComputeMeanEdgeAtPoints(mesh):
-    """
-    Computes a notion of node density at each vertex,
-    defined by the mean length of the edged connected to this point in the mesh
-
-    Parameters
-    ----------
-    originMesh : mesh
-        input mesh whose node density is searched
-    parametrizedMesh : int
-        Parametrization of originMesh
-
-    Returns
-    -------
-    np.ndarray, of size(nNodes)
-         mean length of the edged connected to each point
-    """
-    N = mesh.GetNumberOfNodes()
-    meanEdgeAtPoints = np.zeros(N)
-
-    nodalGraph0 = ComputeNodeToNodeGraph(mesh)
-    nodalGraph = [list(nodalGraph0[i].keys()) for i in range(nodalGraph0.number_of_nodes())]
-
-
-    for i in range(N):
-        linkedNodes = np.array(nodalGraph[i])[np.array(nodalGraph[i])>0]
-        d = len(linkedNodes)
-
-        for j in linkedNodes:
-            meanEdgeAtPoints[i] += np.linalg.norm(mesh.nodes[i] - mesh.nodes[j])/d
-
-    return meanEdgeAtPoints
 
 
 # INTEGRITY CHECKS # -----------------------------------------------------------------------------------
@@ -1184,7 +1048,7 @@ def Create3DMeshForCheckIntegrity():
 def CheckIntegrity_PartitionMesh_Metis(GUI=False):
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshOfTriangles
     res = CreateMeshOfTriangles([[0,0,0],[1,0,0],[0,1,0],[0,0,1] ], [[0,1,2],[0,2,3]])
-    dg, nused = ComputeElementToElementConnectivity(res)
+    dg, nused = UMIT.ComputeElementToElementConnectivity(res, dimensionality=2)
 
     # must convert dg in UnstructTuredMeshFormat for next line to run
     #mv = PartitionMesh(dg, 2, driver="Metis")
@@ -1217,7 +1081,7 @@ def CheckIntegrity_ComputeNodeToNodeGraph(GUI=False):
     G = ComputeNodeToNodeGraph(mesh)
 
     np.testing.assert_almost_equal(G.nodes, np.arange(9))
-    np.testing.assert_almost_equal(G.edges, [(0, 3), (0, 4), (0, 1), (1, 4), (1, 5), (1, 2), (2, 5), (3, 4), (3, 6), (3, 7), (4, 5), (4, 7), (4, 8), (5, 8), (6, 7), (7, 8)])
+    np.testing.assert_almost_equal(G.edges, [(0, 1), (0, 3), (0, 4), (1, 2), (1, 4), (1, 5), (2, 5), (3, 4), (3, 6), (3, 7), (4, 5), (4, 7), (4, 8), (5, 8), (6, 7), (7, 8)])
 
     return "ok"
 
@@ -1233,20 +1097,21 @@ def CheckIntegrity_ComputeElementToElementGraph(GUI=False):
 
     G = ComputeElementToElementGraph(mesh, connectivityDimension = 1)
     np.testing.assert_almost_equal(G.nodes, np.arange(8))
-    np.testing.assert_almost_equal(G.edges, [(0, 5), (0, 1), (1, 2), (2, 7), (2, 3), (4, 5), (5, 6), (6, 7)])
+    np.testing.assert_almost_equal(G.edges, [(0, 1), (0, 5), (1, 2), (2, 3), (2, 7), (4, 5), (5, 6), (6, 7)])
 
     ############# 3D mesh ###############
+    # Below are non regression tests with respect to current not verified implementation
     mesh = Create3DMeshForCheckIntegrity()
 
     G = ComputeElementToElementGraph(mesh, connectivityDimension = 1)
 
     np.testing.assert_almost_equal(G.nodes, np.arange(384))
-    np.testing.assert_almost_equal(list(G.edges)[:21], [(0, 1), (0, 2), (0, 3), (0, 4), (0, 5), (0, 28), (0, 97), (0, 122), (0, 123), (0, 27), (0, 29), (1, 2), (1, 3), (1, 4), (1, 5), (1, 27), (1, 28), (1, 6), (1, 34), (1, 35), (1, 26)])
+    np.testing.assert_almost_equal(list(G.edges)[:21], [(0, 2), (0, 3), (0, 4), (0, 27), (0, 29), (0, 97), (0, 122), (0, 123), (1, 3), (1, 4), (1, 5), (1, 6), (1, 26), (1, 28), (1, 34), (1, 35), (2, 4), (2, 5), (2, 7), (2, 11), (2, 27)])
 
     G = ComputeElementToElementGraph(mesh, connectivityDimension = 2)
 
     np.testing.assert_almost_equal(G.nodes, np.arange(384))
-    np.testing.assert_almost_equal(list(G.edges)[:23], [(0, 5), (0, 1), (0, 28), (1, 2), (1, 27), (2, 3), (2, 6), (3, 4), (3, 11), (4, 5), (4, 98), (5, 97), (6, 11), (6, 7), (6, 34), (7, 8), (7, 33), (8, 9), (8, 12), (9, 10), (9, 17), (10, 11), (10, 104)])
+    np.testing.assert_almost_equal(list(G.edges)[:23], [(0, 1), (0, 5), (0, 28), (1, 2), (1, 27), (2, 3), (2, 6), (3, 4), (3, 11), (4, 5), (4, 98), (5, 97), (6, 7), (6, 11), (6, 34), (7, 8), (7, 33), (8, 9), (8, 12), (9, 10), (9, 17), (10, 11), (10, 104)])
 
     return "ok"
 
@@ -1412,23 +1277,6 @@ def CheckIntegrity_ComputeNodalAveragedStretchMetric(GUI=False):
 
 
 
-def CheckIntegrity_ComputeMeanEdgeAtPoints(GUI=False):
-
-    mesh = CreateMeshForCheckIntegrity()
-
-    meshRenumb, renumb, nBoundary = RenumberMeshForParametrization(mesh, inPlace = False)
-    meshParam, infos = FloaterMeshParametrization(meshRenumb, nBoundary)
-
-    res = ComputeMeanEdgeAtPoints(meshParam)
-    ref = np.array([1., 0.76536686, 0.9816491, 0.76536686, 0.9816491, 0.76536686, 0.9816491, 0.76536686, 0.9816491])
-
-    np.testing.assert_almost_equal(res, ref)
-
-    return "ok"
-
-
-
-
 
 def CheckIntegrity(GUI=False):
     totest= [
@@ -1441,8 +1289,7 @@ def CheckIntegrity(GUI=False):
     CheckIntegrity_FloaterMeshParametrization,
     CheckIntegrity_FloaterMesh3DParametrizationStarDomain,
     CheckIntegrity_FloaterMesh3DParametrization,
-    CheckIntegrity_ComputeNodalAveragedStretchMetric,
-    CheckIntegrity_ComputeMeanEdgeAtPoints
+    CheckIntegrity_ComputeNodalAveragedStretchMetric
     ]
     for f in totest:
         print("running test : " + str(f))

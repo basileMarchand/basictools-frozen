@@ -349,31 +349,57 @@ def ComputeNodeToNodeConnectivity(inmesh, maxNumConnections=200):
 
 
 
-def ComputeElementToElementConnectivity(inmesh, maxNumConnections = 200):
-    '''Generates the elements to element connectivity through faces (in 3D) or edges (in 2D).
-    Also provides the array of cells used.'''
+def ComputeElementToElementConnectivity(inmesh, dimensionality = None, connectivityDimension = None, maxNumConnections = 200):
+    '''Generates the elements to element connectivity of an UnstructuredMesh in the following sense:
+    an element is linked to another in the graph if they share:
+        - a face   if connectivityDimension = 2
+        - an edge  if connectivityDimension = 1
+        - a vertex if connectivityDimension = 0
+        (if connectivityDimension is initialized to None, it will be set to dimensionality - 1)
+
+    Also provides the array of cells used.
+    '''
+
+    if dimensionality == None:
+        dimensionality = inmesh.GetDimensionality()
+
+    if connectivityDimension == None:
+        connectivityDimension = dimensionality - 1
+
+    assert dimensionality > connectivityDimension
+
+    elFilter = Filters.ElementFilter(inmesh, dimensionality = dimensionality)
 
     meshGraph, dump = ComputeNodeToElementConnectivity(inmesh) # build node connectivity table first
     elemGraph = np.zeros((inmesh.GetNumberOfElements(), maxNumConnections), dtype = PBasicIndexType) - 1
     usedCells = np.zeros(inmesh.GetNumberOfElements(), dtype = PBasicIndexType)
-    maxDim = max([ElementNames.dimension[groupName] for groupName, elemGroup in inmesh.elements.items()]) # check largest dimensionality
-    if min([ElementNames.dimension[groupName] for groupName, elemGroup in inmesh.elements.items()]) < maxDim:
-        warnings.warn("Input mesh has more than one dimensionality: Only the largest will be used to build element graph.")
 
-    for groupName, elemGroup, ids in Filters.ElementFilter(inmesh,dimensionality=maxDim): # for each element group of largest dimensionality
+    for groupName, elemGroup, ids in elFilter:
         neighboringElems = np.zeros((elemGroup.connectivity.shape[1], meshGraph.shape[1]), dtype = PBasicIndexType)
         nbNodesPerFace = []
-        for face in ElementNames.faces[groupName]: # evaluate face connectivity
-            nbNodesPerFace.append(len(face[1]))
+
+        if connectivityDimension == 2 or (connectivityDimension == 1 and dimensionality == 2):
+            connectingObjects = ElementNames.faces[groupName]
+        elif connectivityDimension == 1 and dimensionality == 3:
+            connectingObjects = ElementNames.faces2[groupName]
+        else: # hence connectivityDimension == 0
+            connectingObjects = [(ElementNames.Point_1,[0])]
+
+        for connectingObject in connectingObjects: # evaluate connectivity
+            nbNodesPerFace.append(len(connectingObject[1]))
+
         for element in ids: # for each element in the filtered groups
             elementNodes = elemGroup.connectivity[element,:]
             neighboringElems.fill(0)
             for j, node in enumerate(elementNodes):
                 neighboringElems[j] = meshGraph[node]
             unique, counts = np.unique(neighboringElems, return_counts=True) # count how many time each other element is connected to a node
+
             yindex = 0
             for j in range(len(unique)):
-                if counts[j] in nbNodesPerFace: # if nb of connections correspond to face connectivity, add it to graph
+                condition1 = (counts[j] in nbNodesPerFace and connectivityDimension > 0)# if nb of connections correspond to face connectivity, add it to graph
+                condition2 = (element!=unique[j] and j>0 and connectivityDimension == 0)
+                if condition1 or condition2:
                     elemGraph[element,yindex] = unique[j]
                     usedCells[element] += 1
                     yindex += 1
