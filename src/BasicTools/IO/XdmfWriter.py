@@ -977,11 +977,11 @@ class XdmfWriter(WriterBase):
                 gsData,gsStorage = self.globalStorage.get(str(name),(None,None))
 
                 dataToWrite = data.ravel()
-                if np.array_equal(gsData,dataToWrite):
+                if np.array_equal(gsData, dataToWrite):
                     binaryFile = gsStorage.filenameOnly
                     seek = gsStorage.offset
                     gsStorage.usedByNInstances += 1
-                    self.globalStorage[str(name)] = (gsData,gsStorage)
+                    self.globalStorage[str(name)] = (gsData.copy(),gsStorage)
                     res = gsStorage
                 else:
                     res = BinaryStorage(data=data,filePointer=self.__binaryFilePointer)
@@ -1004,7 +1004,7 @@ class XdmfWriter(WriterBase):
                                 continue
                             newGlobalStorage[i]=d
                         self.globalStorage = newGlobalStorage
-                    self.globalStorage[str(name)] = (dataToWrite,res)
+                    self.globalStorage[str(name)] = (dataToWrite.copy(),res)
 
 
                 self.filePointer.write(' <DataItem Format="Binary"'+
