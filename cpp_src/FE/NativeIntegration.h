@@ -231,7 +231,7 @@ struct MonoElementsIntegralCpp{
   void SetPoints(double* pd, const int& rows, const int& columns);
   void SetConnectivity(CBasicIndexType* pd, const int& rows, const int& columns);
   void ProcessWeakForm(WeakForm* wform);
-  void Integrate( WeakForm* wform, std::vector<int>& idstotreat);
+  void Integrate( WeakForm* wform, const CBasicIndexType& size, CBasicIndexType* pidstotreat );
 
 };
 

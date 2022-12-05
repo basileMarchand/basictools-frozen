@@ -155,8 +155,7 @@ MatrixDDD solve(MatrixDDD& Jinv,MapMatrixDDD &valdphidxi){
 
 
 //
-void MonoElementsIntegralCpp::Integrate( WeakForm* wform, std::vector<int>& idstotreat){
-
+void MonoElementsIntegralCpp::Integrate( WeakForm* wform, const CBasicIndexType& idstotreat_s, CBasicIndexType* pidstotreat ){
 
     bool hasright = false;
     const CBasicIndexType NumberOfTerms = wform->GetNumberOfTerms();
@@ -184,17 +183,16 @@ void MonoElementsIntegralCpp::Integrate( WeakForm* wform, std::vector<int>& idst
     LocalSpace& geoSpace = this->lspaces[this->geoSpaceNumber];
     const int elemdim = geoSpace.dimensionality;
 
-    const CBasicIndexType idstotreat_s = static_cast<CBasicIndexType>(idstotreat.size());
     QRType Jinv;
     int n;
     int rightIndex=0;
     int leftIndex=0;
-    ElementMatrix =  MatrixDDD::Zero(maxsizelocalTestDofs,maxsizelocalUnkownDofs);
+    ElementMatrix =  MatrixDDD::Zero(maxsizelocalTestDofs, maxsizelocalUnkownDofs);
     MatrixDDD Jack(3,3);
 
     for(int elem_counter =0; elem_counter< idstotreat_s; ++elem_counter){
         ElementMatrix.setZero();
-        n = idstotreat[elem_counter];
+        n = pidstotreat[elem_counter];
 //      the coordinates of the nodes
         for( int j = 0; j < nbcols;++j){
             xcoor.row(j) = this->nodes->row((*this->connectivity)(n,j));

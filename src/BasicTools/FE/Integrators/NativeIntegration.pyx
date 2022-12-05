@@ -1,10 +1,15 @@
 # distutils: language = c++
-#cython: language_level=3, boundscheck=False, wraparound=False, initializedcheck=False
+#cython: language_level=3, boundscheck=False, wraparound=False, initializedcheck=False, annotate=True
 #
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
 import numpy as np
+cimport numpy as cnp
+cnp.import_array()
+
+from eigency.core cimport *
+
 
 from BasicTools.FE.Fields.FEField import FEField
 from BasicTools.FE.SymWeakForm import testcharacter
@@ -37,8 +42,8 @@ cdef class PyMonoElementsIntegralCpp():
 
     cdef dict integrationRule
 
-    cdef int numberOfVIJ
-    cdef int maxNumberOfElementVIJ
+    cdef CBasicIndexType numberOfVIJ
+    cdef CBasicIndexType maxNumberOfElementVIJ
 
     cdef cnp.ndarray nodes
     cdef dict geoSpace
@@ -140,12 +145,15 @@ cdef class PyMonoElementsIntegralCpp():
             self.constantsNames.append(name)
             self.NativeIntegrator.SetConstants(cpt,value)
 
-    def ComputeNumberOfVIJ(self,mesh,elementFilter): # OK
+    def ComputeNumberOfVIJ(self,mesh,elementFilter)-> CBasicIndexType: # OK
        """
         Compute and return the number triplets to be calculated during integration
        """
        self.numberOfVIJ = 0
        self.maxNumberOfElementVIJ = 0
+       cdef  CBasicIndexType numberOfUsedElements;
+       cdef  CBasicIndexType us;
+       cdef  CBasicIndexType ts;
        for name,data,ids in elementFilter:
             if len(ids) == 0:
                 continue
@@ -459,11 +467,11 @@ cdef class PyMonoElementsIntegralCpp():
     def Integrate(self,NNWF.PyWeakForm wform,
                   cnp.ndarray[CBasicIndexType, ndim=1, mode="c"] idstotreat not None ):
 
-        cdef vector[int] im_buff = idstotreat
         cdef NNWF.WeakForm* wfobject =  wform.GetCppPointer()
-
+        cdef CBasicIndexType idsize = idstotreat.shape[0]
+        cdef CBasicIndexType* idpointer = &idstotreat[0]
         with nogil:
-            self.NativeIntegrator.Integrate(wfobject, im_buff )
+            self.NativeIntegrator.Integrate(wfobject, idsize, idpointer)
 
     def GetTotalTestDofs(self):
         return self.NativeIntegrator.totalTestDofs

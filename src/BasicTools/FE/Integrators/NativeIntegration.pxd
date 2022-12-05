@@ -56,8 +56,8 @@ cdef extern from "FE/NativeIntegration.h" namespace "BasicTools" :
         void SetNumberOfIPValues(int i)
         void SetIPValueI(int i, int n, int m, double* dp)
 
-        void SetLocalOffsets(int, vector[int]&,vector[int]&,int, vector[int]&,vector[int]&)
-        void Integrate(NNWF.WeakForm*, vector[int]) nogil
+        void SetLocalOffsets(int, vector[int]&, vector[int]&, int, vector[int]&, vector[int]&)
+        void Integrate(NNWF.WeakForm*, CBasicIndexType idsize, CBasicIndexType* ids )  nogil
         int GetNumberOfUsedIvij()
         int AddToNumbefOfUsedIvij(int)
         double* vK
