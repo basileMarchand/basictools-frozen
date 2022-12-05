@@ -24,6 +24,9 @@ class FEField(FieldBase):
         else:
             self.data = np.ones(self.numbering["size"],dtype=PBasicFloatType)*val
 
+    def copy(self):
+        return FEField(name=self.name,mesh=self.mesh,space=self.space,numbering=self.numbering, data=self.data.copy())
+
 #    def GetValueAtIP(self,elemtype,el,ip):
 #        sp = self.space[elemtype]
 #        num = self.numbering[elemtype][el,:]
