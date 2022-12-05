@@ -475,8 +475,7 @@ def ExtractElementsByMask(inElementContainer: ElementsContainer, mask: ArrayLike
         a new container with the extracted elements (the tags are updated)
     """
 
-
-    outElements = type(inElementContainer)(inElementContainer.elementType)
+    outElements = ElementsContainer(inElementContainer.elementType)
 
     newIndex = np.empty(inElementContainer.GetNumberOfElements(),dtype=PBasicIndexType)
 
@@ -513,7 +512,6 @@ def ExtractElementByTags(inmesh,tagsToKeep, allNodes=False,dimensionalityFilter=
     outMesh.CopyProperties(inmesh)
 
     outMesh.nodes = np.copy(inmesh.nodes)
-    outMesh.originalIDNodes = np.copy(inmesh.originalIDNodes)
 
     import copy
     for tag in inmesh.nodesTags:
@@ -579,7 +577,11 @@ def ExtractElementByTags(inmesh,tagsToKeep, allNodes=False,dimensionalityFilter=
            outElements.tags.CreateTag(tag.name,errorIfAlreadyCreated=False).SetIds(newId)
 
     if cleanLonelyNodes:
+        outMesh.originalIDNodes = np.arange(inmesh.GetNumberOfNodes(), dtype=PBasicIndexType)
         CleanLonelyNodes(outMesh)
+    else:
+        outMesh.originalIDNodes = np.copy(inmesh.originalIDNodes)
+
     outMesh.PrepareForOutput()
     return outMesh
 
