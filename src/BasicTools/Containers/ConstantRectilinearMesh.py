@@ -244,6 +244,9 @@ class ConstantRectilinearMesh(MeshBase):
     def GetDimensionality(self):
         return len(self.__dimensions)
 
+    def GetPointsDimensionality(self):
+        return len(self.__dimensions)
+
     def GetMultiIndexOfNodes(self,indices):
         indices = np.asarray(indices,dtype=PBasicIndexType)
 
