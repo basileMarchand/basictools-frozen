@@ -16,11 +16,15 @@ src/BasicTools/FE/Numberings/NativeDofNumbering.cpp
 src/BasicTools/Containers/NativeUnstructuredMesh.cpp
 src/BasicTools/Containers/NativeFilters.cpp
 src/BasicTools/FE/Spaces/NativeSpace.cpp
+src/BasicTools/Linalg/NativeMumpsSolver.cpp
+
 cpp_src/Containers/ElementNames.cpp
 cpp_src/FE/GeneratedIntegrationsRules.cpp
 cpp_src/FE/GeneratedSpaces.cpp
 cpp_src/FE/GeneratedSpaces.h
 cpp_src/Containers/GeneratedElementNames.cpp
+
+
 *.html
 *.obj
 *.exp
@@ -77,6 +81,7 @@ docs/xml/*
 .spyproject/*
 public/
 .vscode/
+*.mypy_cache*
 
 # Zebulon generated files #
 ###########################
