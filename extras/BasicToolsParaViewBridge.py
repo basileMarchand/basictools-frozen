@@ -948,7 +948,7 @@ def WrapBasicToolsFunctionToVTK(function, inputs, outputs, options, description=
     if isinstance(outputs,str):
         outputs = (outputs,)
 
-    def GetInit(function,nInputPorts=1,nOutputPorts=1):
+    def GetInit(function, nInputPorts=1, nOutputPorts=1, ops={}):
 
         def myFunctionAsFilterInit(self):
             VTKPythonAlgorithmBase.__init__(self, nInputPorts=nInputPorts, nOutputPorts=nOutputPorts, outputType='vtkUnstructuredGrid')
@@ -956,6 +956,7 @@ def WrapBasicToolsFunctionToVTK(function, inputs, outputs, options, description=
             self.nInputPorts = nInputPorts
             self.nOutputPorts = nOutputPorts
             self.__TagsAsFields = True
+            self.ops = dict(ops)
 
         return myFunctionAsFilterInit
 
@@ -978,11 +979,12 @@ def WrapBasicToolsFunctionToVTK(function, inputs, outputs, options, description=
 
         inputmesh = []
         for i in range(self.nInputPorts):
-            mesh = GetInputBasicTools(request, inInfoVec, outInfoVec,FieldsAsTags=False, connection=0, port=i)
+            mesh = GetInputBasicTools(request, inInfoVec, outInfoVec,FieldsAsTags=True, connection=0, port=i)
+            mesh.ConvertDataForNativeTreatment()
             inputmesh.append(mesh)
 
 
-        meshs = self.function(*inputmesh)
+        meshs = self.function(*inputmesh,**self.ops)
 
         if self.nOutputPorts > 1:
             for i in range(self.nOutputPorts):
@@ -993,13 +995,61 @@ def WrapBasicToolsFunctionToVTK(function, inputs, outputs, options, description=
 
         return 1
 
+    data = {}
+    ops = {}
+    def get_default_args(func):
+        import inspect
+        signature = inspect.signature(func)
+        return {
+            k: v.default
+            for k, v in signature.parameters.items()
+            if v.default is not inspect.Parameter.empty
+        }
+
+    signature = get_default_args(function)
+    for name, otype in options:
+
+        default = signature.get(name,otype())
+        if otype == int:
+            @smproperty.xml (f"""
+            <IntVectorProperty name="Set {name}"
+                                command="Set{name}"
+                                number_of_elements="1"
+                                default_values="{default}">
+            <Documentation>
+                This is an automatic property setter
+            </Documentation>
+            </IntVectorProperty>""")
+            def SetParam(self, val):
+                if val != self.ops[name]:
+                    self.ops[name] = val
+                    self.Modified()
+        elif otype == bool:
+            @smproperty.xml (f"""
+            <IntVectorProperty name="Set {name}"
+                                command="Set{name}"
+                                number_of_elements="1"
+                                default_values="{default}">
+                <BooleanDomain name="bool"/>
+            <Documentation>
+                This is an automatic property setter
+            </Documentation>
+            </IntVectorProperty>""")
+            def SetParam(self, val):
+                if val != self.ops[name]:
+                    self.ops[name] = val
+                    self.Modified()
+
+        data[f"Set{name}"] = SetParam
+        ops[name] = default
 
     wrapperClassName = "BasicToolsWrapped" + function.__name__
+    data.update({"__init__":GetInit(function, len(inputs), len(outputs),ops ),
+                "RequestData":RequestData,
+                "SetTagsAsFields":SetTagsAsFields})
     obj = type(wrapperClassName,
                (VTKPythonAlgorithmBase,),
-                {"__init__":GetInit(function, len(inputs), len(outputs) ),
-                "RequestData":RequestData,
-                "SetTagsAsFields":SetTagsAsFields}
+                data
     )
 
     for i,inputtype in enumerate(inputs):
@@ -1009,9 +1059,15 @@ def WrapBasicToolsFunctionToVTK(function, inputs, outputs, options, description=
     obj3 = smproxy.filter(name=description)(obj2)
 
     PrintDebug(f"{wrapperClassName} registered")
+    obj3.wrappedNameBasicTools = wrapperClassName
     return wrapperClassName, obj3
 
 ################ Stl to mesh ##########################
 from BasicTools.Bridges.gmshBridge import StlToMesh
 name,cl = WrapBasicToolsFunctionToVTK( StlToMesh,("vtkPolyData",),("vtkUnstructuredGrid",),(), description= "2D Mesh To 3D Mesh (gmsh)" )
 locals()[name] = cl
+
+from BasicTools.Containers.UnstructuredMeshCreationTools import SubDivideMesh
+name,cl = WrapBasicToolsFunctionToVTK( SubDivideMesh,("vtkUnstructuredGrid",),("vtkUnstructuredGrid",),( ("level",int),  ), description= "SubDivide a Mesh " )
+locals()[cl.wrappedNameBasicTools] = cl
+
