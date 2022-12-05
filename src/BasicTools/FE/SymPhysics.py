@@ -280,6 +280,27 @@ class MecaPhysics(Physics):
 
         return  density*direction.T*ut
 
+    def GetCentrifugalTerm(self, axe=[0,0,1], pointOnAxe=[0,0,0], angularSpeed=1, density=1):
+        ut = self.primalTest
+
+        if density is None:
+            density = self.coeffs["density"]
+
+        density = GetScalarField(density)
+
+        if not isinstance(axe,Matrix):
+                axe = [GetScalarField(d) for d in axe]
+                axe = Matrix([axe]).T
+
+        if not isinstance(pointOnAxe,Matrix):
+            pointOnAxe = [GetScalarField(d) for d in pointOnAxe]
+            pointOnAxe = Matrix([pointOnAxe]).T
+
+        pos = GetField("Pos",self.dim) - pointOnAxe
+        r = pos - pos.dot(axe)*pos
+
+        return -density*angularSpeed**2*r.T*ut
+
     def PostTreatmentFormulations(self):
         """For the moment this work only if GetBulkFormulation is called only once per instance
         the problem is the use of self.Hook"""
@@ -522,8 +543,6 @@ class StokesPhysics(Physics):
         res = Gradient(v,self.spaceDimension).T*mu*Gradient(vt,self.spaceDimension)  -  Divergence(vt,self.spaceDimension)*p + pt*Divergence(v,self.spaceDimension)
 
         return res
-
-
 
 class ThermoMecaPhysics(Physics):
     def __init__(self):
