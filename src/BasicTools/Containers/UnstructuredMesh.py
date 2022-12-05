@@ -356,7 +356,7 @@ class UnstructuredMesh(MeshBase):
         if originalIDNodes is not None:
             self.originalIDNodes = np.require(originalIDNodes,dtype=PBasicIndexType,requirements=['C','A'])
         elif generateOriginalIDs:
-            self.originalIDNodes = np.arange(self.GetNumberOfNodes())
+            self.originalIDNodes = np.arange(self.GetNumberOfNodes(), dtype=PBasicIndexType)
 
     def GetPointsDimensionality(self) -> int:
         """Return the number of coordinates of the points
