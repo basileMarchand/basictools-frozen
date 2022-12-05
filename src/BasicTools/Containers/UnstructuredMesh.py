@@ -535,13 +535,14 @@ class UnstructuredMesh(MeshBase):
         """
         res = np.zeros((self.GetNumberOfElements(),),dtype=PBasicIndexType)
         cpt =0
-        for data in self.elements.values():
+        offsets = self.ComputeGlobalOffset()
+        for name,data in self.elements.items():
             if tagname in data.tags:
                 tag = data.tags[tagname].GetIds()
                 if useOriginalId:
                     res[cpt:cpt+len(tag) ] = data.originalIds[tag]
                 else:
-                    res[cpt:cpt+len(tag) ] = data.globaloffset+tag
+                    res[cpt:cpt+len(tag) ] = offsets[name]+tag
                 cpt +=  len(tag)
         return res[0:cpt]
 
