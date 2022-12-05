@@ -47,11 +47,19 @@ def CreateImplicitGeometryExternalSurface(ops):
     ImplicitGeometry of the external surface of a mesh (support)
     support : Grid to compute the surface
 
-    <All id="x" support="" >
+    <All id="x" [support=""| ls=""] >
     """
-    res = ImplicitGeometryExternalSurface(ops["support"])
-    if "support" in ops:
-        res.SetSupport(ops["support"])
+    res = ImplicitGeometryExternalSurface()
+
+    if ("support" in ops or "ls" in ops ) :
+        if "ls" in ops:
+            sup = ops["ls"].support
+        else:
+            sup = ops["support"]
+        res.SetSupport(sup)
+    else:
+        raise(Exception('Need a (ls or support) '))
+
     return res
 
 class ImplicitGeometryExternalSurface(ImplicitGeometryBase):
@@ -87,11 +95,16 @@ def CreateImplicitGeometryByETag(ops):
             sup = ops["ls"].support
         else:
             sup = ops["support"]
-        res.SetSupportAndZones(sup,PH.ReadStrings(ops["eTags"] ))
     else:
         raise(Exception('Need a (ls or support) '))
 
     res.offset = (PH.ReadFloat(ops.get("offset",res.offset)))
+    res.eps = (PH.ReadFloat(ops.get("eps",res.eps)))
+
+    if "dim" in ops:
+        res.dim = PH.ReadInt(ops["dim"])
+
+    res.SetSupportAndZones(sup,PH.ReadStrings(ops["eTags"] ))
     return res
 
 class ImplicitGeometryByETag(ImplicitGeometryBase):
@@ -112,11 +125,12 @@ class ImplicitGeometryByETag(ImplicitGeometryBase):
         # in the iso (case of a tetra in a corrner/edge of a zone)
         self.eps = -1.e-4
         self.offset = 0.
+        self.dim = None
 
     def SetSupportAndZones(self,support, etags):
-        from BasicTools.Containers.UnstructuredMeshInspectionTools import ExtractElementByTags
-
-        sup = ExtractElementByTags(support, etags)
+        from BasicTools.Containers.UnstructuredMeshInspectionTools import ExtractElementsByElementFilter
+        from BasicTools.Containers.Filters import ElementFilter
+        sup = ExtractElementsByElementFilter(support, elementFilter=ElementFilter(mesh= support, tags= etags, dimensionality= self.dim) )
         if sup.GetElementsDimensionality() == support.GetElementsDimensionality():
             self.op.SetMesh(sup)
         else:
@@ -146,7 +160,13 @@ def CreateImplicitGeometryByETagII(ops):
             sup = ops["ls"].support
         else:
             sup = ops["support"]
-        res.SetSupportAndZones(sup,PH.ReadStrings(ops["eTags"] ))
+
+        if "dim" in ops:
+            dim = PH.ReadInt(ops["dim"])
+        else:
+            dim = None
+
+        res.SetSupportAndZones(sup,PH.ReadStrings(ops["eTags"] ), dim = dim)
     else:
         raise(Exception('Need a (ls or support) '))
 
@@ -175,9 +195,10 @@ class ImplicitGeometryByETagII(ImplicitGeometryBase):
         self.offset = 0.
         self.numberOfElementPseudoDistance = 10
 
-    def SetSupportAndZones(self,support, etags):
+    def SetSupportAndZones(self,support, etags, dim=None):
         self.elementFilter.mesh = support
         self.elementFilter.tags = etags
+        self.elementFilter.dimensionality = dim
 
     def __str__(self):
         res = "ImplicitGeometryByETagII\n"
@@ -207,7 +228,7 @@ RegisterClass("ETagII",ImplicitGeometryByETagII,CreateImplicitGeometryByETagII)
 class ImplicitGeometryAxisAlignBox(ImplicitGeometryBase):
     """ImplicitGeometry based ona Axis Alinged Box
         origin : origin in the mox (Xmin Ymin Zmin)
-        dimensions : size of the box (Xl, Yl Zl)
+        size : size of the box (Xl, Yl Zl)
     """
     def __init__(self, origin=None, size=None ):
         super(ImplicitGeometryAxisAlignBox,self).__init__()
@@ -227,7 +248,7 @@ class ImplicitGeometryAxisAlignBox(ImplicitGeometryBase):
     def __str__(self):
         res = "ImplicitGeometryAxisAlignBox \n"
         res += "  origin: " + str(self.origin)+"\n"
-        res += "  dimensions: " + str(self.size)+"\n"
+        res += "  size: " + str(self.size)+"\n"
         return res
 
     def GetBoundingMin(self):
@@ -675,8 +696,6 @@ class ImplicitGeometryStl(ImplicitGeometryBase):
         self.ismanifold = True
         self.onLines = False
 
-
-
     def GetBoundingMin(self):
         return self.boundingMin
 
@@ -714,12 +733,12 @@ class ImplicitGeometryStl(ImplicitGeometryBase):
         # check if we have only element of dimensionality 2 or less
         from BasicTools.Containers.ElementNames import dimension
         for name,data in mesh.elements.items():
-            if data.GetNumberOfElements() == 0: continue
+            if data.GetNumberOfElements() == 0:
+                continue
             if dimension[name] == 3:
                 break
         else:
-             return self.SetSurface(mesh)
-
+            return self.SetSurface(mesh)
 
         from vtkmodules.vtkFiltersGeometry import vtkDataSetSurfaceFilter
         from BasicTools.Bridges.vtkBridge import MeshToVtk
@@ -729,7 +748,6 @@ class ImplicitGeometryStl(ImplicitGeometryBase):
         filt.SetInputData(vtkmesh)
         filt.Update()
         self.SetSurfaceUsingVtkPolyData(filt.GetOutput())
-
 
     def SetSurface(self,mesh):
         # check if we have element of dimensionality 3
@@ -767,6 +785,7 @@ class ImplicitGeometryStl(ImplicitGeometryBase):
         numberOfOpenEdges = checkFilter.GetOutput().GetNumberOfCells()
         if numberOfOpenEdges > 0  :
             self.ismanifold = False
+            self.PrintDebug("Warning the surface mesh is not close. ")
         else:
             self.ismanifold = True
 
