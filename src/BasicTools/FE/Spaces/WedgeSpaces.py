@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
 
 import numpy as np
 from sympy.matrices import Matrix
@@ -31,7 +31,7 @@ class WedgeSpaceBase(SymSpaceBase):
 class Wedge_P0_Global(WedgeSpaceBase):
     def __init__(self):
         super(Wedge_P0_Global,self).__init__()
- 
+
         self.symN = Matrix([1])
         self.posN = np.array([ [ None, None, None] ])
         self.dofAttachments = [("G",None,None)]
@@ -50,10 +50,10 @@ class Wedge_P1_Lagrange(WedgeSpaceBase):
         xi = self.xi
         eta = self.eta
         phi = self.phi
-        self.symN = Matrix([(1-xi-eta)*(1-phi), 
+        self.symN = Matrix([(1-xi-eta)*(1-phi),
                             xi*(1-phi),
                             eta*(1-phi),
-                            (1-xi-eta)*phi, 
+                            (1-xi-eta)*phi,
                             xi*phi,
                             eta*phi
                             ])
@@ -87,30 +87,48 @@ class Wedge_P2_Lagrange(WedgeSpaceBase):
                             4*xi*eta,
                             4*eta*T])
 
-        triposN = np.array([[0,0],
-                              [1,0],
-                              [0,1],
-                              [0.5,0],
-                              [0.5,0.5],
-                              [0,0.5]])
 
-        L1 = 1-xi
-        L2 = xi
+
+        L1 = 1-phi
+        L2 = phi
         barsymN = Matrix([L1*(2*L1-1),L2*(2*L2-1),4*L1*L2 ])
-        barposN = np.array([[0],
-                              [1],
-                              [0.5],])
+
+
+        self.posN = np.array([[0,0,0],
+                             [1,0,0],
+                             [0,1,0],
+                             [0,0,1],
+                             [1,0,1],
+                             [0,1,1],
+
+                            [0.5,  0,0],
+                            [0.5,0.5,0],
+                            [0  ,0.5,0],
+
+                            [0.5,  0,1],
+                            [0.5,0.5,1],
+                            [0  ,0.5,1],
+
+                            [0,0,0.5],
+                            [1,0,0.5],
+                            [0,1,0.5],
+
+                            [0.5,  0,0.5],
+                            [0.5,0.5,0.5],
+                            [0  ,0.5,0.5],
+
+                             ])
 
         self.symN = Matrix([trisf[0]*barsymN[0], #P 0
                             trisf[1]*barsymN[0], #P 1
                             trisf[2]*barsymN[0], #P 2
-                            trisf[3]*barsymN[0], #F2 0
-                            trisf[4]*barsymN[0], #F2 1
-                            trisf[5]*barsymN[0], #F2 2
-
                             trisf[0]*barsymN[1], #P 3
                             trisf[1]*barsymN[1], #P 4
                             trisf[2]*barsymN[1], #P 5
+
+                            trisf[3]*barsymN[0], #F2 0
+                            trisf[4]*barsymN[0], #F2 1
+                            trisf[5]*barsymN[0], #F2 2
                             trisf[3]*barsymN[1], #F2 6
                             trisf[4]*barsymN[1], #F2 7
                             trisf[5]*barsymN[1], #F2 8
@@ -118,26 +136,23 @@ class Wedge_P2_Lagrange(WedgeSpaceBase):
                             trisf[0]*barsymN[2], #F2 3
                             trisf[1]*barsymN[2], #F2 4
                             trisf[2]*barsymN[2], #F2 5
-                            trisf[3]*barsymN[2], #F 0 
-                            trisf[4]*barsymN[2], #F 1 
+                            trisf[3]*barsymN[2], #F 0
+                            trisf[4]*barsymN[2], #F 1
                             trisf[5]*barsymN[2]] #F 2
                             )
-        posN = []
-        for i in range(3):
-            for j in range(6):
-                posN.append([triposN[j,0],triposN[j,1], barposN[i,0] ])
-        self.posN = np.array(posN)
+
+
 
         self.dofAttachments = [("P",0,None),
                                ("P",1,None),
                                ("P",2,None),
-                               ("F2",0,None),
-                               ("F2",1,None),
-                               ("F2",2,None),
-                               
                                ("P",3,None),
                                ("P",4,None),
                                ("P",5,None),
+
+                               ("F2",0,None),
+                               ("F2",1,None),
+                               ("F2",2,None),
                                ("F2",6,None),
                                ("F2",7,None),
                                ("F2",8,None),
@@ -145,8 +160,8 @@ class Wedge_P2_Lagrange(WedgeSpaceBase):
                                ("F2",3,None),
                                ("F2",4,None),
                                ("F2",5,None),
-                               ("F",0,None),
-                               ("F",1,None),
                                ("F",2,None),
-                               
+                               ("F",3,None),
+                               ("F",4,None),
+
                                 ]
