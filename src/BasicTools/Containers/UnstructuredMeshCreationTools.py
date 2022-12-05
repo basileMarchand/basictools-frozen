@@ -931,6 +931,24 @@ def SubDivideMesh(mesh: UnstructuredMesh, level: PBasicIndexType=1) -> Unstructu
                                                     (ElementNames.Hexaedron_8, [26,21,18,23,25,13, 6,14]),
                                                     (ElementNames.Hexaedron_8, [20,26,23,19,15,25,14, 7])]
 
+    subdivisionAlmanac[ElementNames.Triangle_3] =  [(ElementNames.Triangle_3, [ 0, 3, 5]),
+                                                    (ElementNames.Triangle_3, [ 3, 1, 4]),
+                                                    (ElementNames.Triangle_3, [ 3, 4, 5]),
+                                                    (ElementNames.Triangle_3, [ 5, 4, 2])]
+
+    subdivisionAlmanac[ElementNames.Tetrahedron_4] =  [(ElementNames.Tetrahedron_4, [ 0, 4, 6, 7]),
+                                                       (ElementNames.Tetrahedron_4, [ 1, 5, 4, 8]),
+                                                       (ElementNames.Tetrahedron_4, [ 2, 6, 5, 9]),
+                                                       (ElementNames.Tetrahedron_4, [ 7, 8, 9, 3]),
+
+                                                       (ElementNames.Tetrahedron_4, [ 5, 6, 7, 9]),
+                                                       (ElementNames.Tetrahedron_4, [ 5, 6, 4, 7]),
+                                                       (ElementNames.Tetrahedron_4, [ 5, 7, 4, 8]),
+                                                       (ElementNames.Tetrahedron_4, [ 5, 9, 7, 8]),
+
+                                                       ]
+
+
     from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo, LagrangeSpaceP2
     from BasicTools.FE.DofNumbering import ComputeDofNumbering
     from BasicTools.FE.IntegrationsRules import NodalEvaluationP2
@@ -942,17 +960,17 @@ def SubDivideMesh(mesh: UnstructuredMesh, level: PBasicIndexType=1) -> Unstructu
     res.nodes = np.empty((numberingP2.size,3), dtype=PBasicFloatType)
     res.originalIDNodes = np.zeros(res.nodes.shape[0],dtype=PBasicIndexType)-1
 
-    oldToNewDofs = []
+    oldToNewDofs =  np.zeros(mesh.GetNumberOfNodes(),dtype=PBasicIndexType)
 
-    for i in range(mesh.GetNumberOfNodes()):
-        oldToNewDofs.append(numberingP2.GetDofOfPoint(i))
+    oldToNewDofs[numberingP2["doftopointLeft"]] = numberingP2["doftopointRight"]
 
-    oldToNewDofs = np.array(oldToNewDofs,dtype=PBasicIndexType)
     res.originalIDNodes[oldToNewDofs] = mesh.originalIDNodes
+
     for tag in mesh.nodesTags.keys():
         name = mesh.nodesTags[tag].name
         ids = mesh.nodesTags[tag].GetIds()
         res.nodesTags.CreateTag(name).SetIds(oldToNewDofs[ids])
+
     for elemType, data in mesh.elements.items():
         spaceGeo = LagrangeSpaceGeo[elemType]
         spaceGeo.Create()
@@ -969,17 +987,18 @@ def SubDivideMesh(mesh: UnstructuredMesh, level: PBasicIndexType=1) -> Unstructu
                 res.nodes[nP2[:,sf], c] = np.sum(mesh.nodes[:,c][nGeo]*geoNs,axis=1)
 
        #generation of elements
-        for t,nn in subdivisionAlmanac[elemType]:
+        for t, nn in subdivisionAlmanac[elemType]:
             newElements = res.GetElementsOfType(t)
             offset = newElements.GetNumberOfElements()
             tne =  newElements.AddNewElements(nP2[:,nn], data.originalIds)
             for tag in data.tags.keys():
                 name = data.tags[tag].name
                 ids = data.tags[tag].GetIds()
-                if len(ids) == 00:
+                if len(ids) == 0:
                     continue
                 newElements.tags.CreateTag(name,False).AddToTag(ids+offset)
 
+    mesh.PrepareForOutput()
     return SubDivideMesh(res,level-1)
 #------------------------- CheckIntegrity ------------------------
 def CheckIntegrity_CreateDisk(GUI=False):
