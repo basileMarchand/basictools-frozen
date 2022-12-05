@@ -184,6 +184,12 @@ class IntegrationClass(BaseOutputObject):
         ----------
         efs : list(FEField or IPField) list of fields
         """
+        fields = list(fields)
+        from BasicTools.FE.DofNumbering import ComputeDofNumbering
+        LSGNum = ComputeDofNumbering(self.mesh, Space=LagrangeSpaceGeo, fromConnectivity=True,)
+        for i in range(self.mesh.GetPointsDimensionality()):
+            fields.append(FEField(f"Pos_{i}", mesh=self.mesh, space=LagrangeSpaceGeo,numbering=LSGNum, data=np.ascontiguousarray(self.mesh.nodes[:,i]) ))
+
         self.extraFields = fields
         self.integrator.SetExtraFields(fields )
 
