@@ -934,7 +934,7 @@ def ConvertNTagsToETags(mesh: UnstructuredMesh, prefix="NTag", targetDim:Optiona
         toTreat.append(skin)
 
     for nTag in nTags:
-        mask = mesh.nodesTags[nTag].GetIdsAsMask(mesh.GetNumberOfNodes())
+        #mask = mesh.nodesTags[nTag].GetIdsAsMask(mesh.GetNumberOfNodes())
 
         for m in toTreat:
             elementFilter.mesh = m
@@ -964,7 +964,7 @@ def ConvertNTagsToETags(mesh: UnstructuredMesh, prefix="NTag", targetDim:Optiona
 
             subData = ExtractElementsByMask(data,mask)
             mesh.GetElementsOfType(name).Merge(subData)
-
+    CleanDoubleElements(mesh)
 #------------------------- CheckIntegrity ------------------------
 
 def CheckIntegrity_AddTagPerBody(GUI=False):
