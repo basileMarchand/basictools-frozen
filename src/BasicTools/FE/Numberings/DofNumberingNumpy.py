@@ -111,6 +111,7 @@ class DofNumberingNumpy(BaseOutputObject ):
 
         if elementFilter is None:
             elementFilter = Filters.ElementFilter(mesh)
+        elementFilter.mesh = mesh
 
         self.totalNumberOfPoints = mesh.GetNumberOfNodes()
 
