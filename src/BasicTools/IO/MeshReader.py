@@ -178,11 +178,18 @@ class MeshReader(ReaderBase):
                         continue
 
                     s = list(map(int, l.split()))
-                    elements.AddNewElement(s[0:nbNodes], cpt)
-                    ref = s[nbNodes]
-                    elements.GetTag("ETag"+str(ref)).AddToTag(cpt)
+                    if (len(s)/(nbNodes+1)) != (len(s)//(nbNodes+1)):
+                        print(len(s))
+                        raise Exception("Incorrect Number of int in the file")
+                    offset = 0
+                    for elemNB in range(len(s)//(nbNodes+1)):
 
-                    cpt += 1
+                        elements.AddNewElement(s[offset:nbNodes+offset], cpt)
+                        ref = s[nbNodes+offset]
+                        elements.GetTag("ETag"+str(ref)).AddToTag(cpt)
+                        offset += nbNodes + 1
+
+                        cpt += 1
                     if nbElements == cpt:  # pragma: no cover
                         break
 
