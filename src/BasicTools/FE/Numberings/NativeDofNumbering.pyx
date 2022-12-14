@@ -31,8 +31,8 @@ cdef extern from "FE/DofNumbering.h" namespace "BasicTools" :
         CBasicIndexType GetDofOfPoint(int)
         int GetFromConnectivity()
         void SetFromConnectivity(bool )
-        void ComputeNumberingFromConnectivity(cNUM.UnstructuredMesh& )
-        void ComputeNumberingGeneral(cNUM.UnstructuredMesh&, cNS.Space&, cNF.ElementFilterBase&)
+        void ComputeNumberingFromConnectivity(cNUM.UnstructuredMesh& ) nogil
+        void ComputeNumberingGeneral(cNUM.UnstructuredMesh&, cNS.Space&, cNF.ElementFilterBase&) nogil
         void computeDofToPoint()
 
         MatrixXd & GetNumberingFor(const string & elemtype)
@@ -108,7 +108,8 @@ cdef class NativeDofNumbering:
         self.mesh = mesh
         cdef cNUM.CUnstructuredMesh obj = NUM.CUnstructuredMesh()
         obj.SetDataFromPython(mesh)
-        self.dn_cpp.ComputeNumberingFromConnectivity(obj.GetCppPointer()[0])
+        with nogil:
+            self.dn_cpp.ComputeNumberingFromConnectivity(obj.GetCppPointer()[0])
         return self
 
     def ComputeNumberingGeneral(self,mesh,space,elementFilter=None,discontinuous=False):
@@ -118,12 +119,21 @@ cdef class NativeDofNumbering:
         cdef cNUM.CUnstructuredMesh obj = NUM.CUnstructuredMesh()
         obj.SetDataFromPython(mesh)
 
+
         cdef cNS.CSpace s = cNS.CSpace()
         s.SetDataFromPython(space)
 
         cdef cNF.CElementFilterEvaluated ef = cNF.CElementFilterEvaluated()
         ef.SetIdsToTreat(mesh,elementFilter)
-        self.dn_cpp.ComputeNumberingGeneral(obj.GetCppPointer()[0], s.GetCppPointer()[0], ef.GetCppPointer()[0])
+
+
+        cdef DofNumbering* dn_cpp = &self.dn_cpp
+
+        cdef cNUM.UnstructuredMesh* cpp_mesh = obj.GetCppPointer()
+        cdef cNS.Space* cpp_space = s.GetCppPointer()
+        cdef cNF.ElementFilterEvaluated* cpp_elementFilter = ef.GetCppPointer()
+        with nogil:
+            dn_cpp.ComputeNumberingGeneral(cpp_mesh[0], cpp_space[0], cpp_elementFilter[0])
 
         return self
 
