@@ -399,7 +399,7 @@ class FilterOP(BOO):
         mesh : UnstructuredMesh
             The mesh to be used
         """
-        self.mesh = mesh
+        self._mesh = mesh
 
     @property
     def mesh(self):
@@ -568,6 +568,26 @@ class ComplementaryObject(FilterOP):
         mask = np.ones(data.GetNumberOfElements(),dtype=bool)
         mask[ids] = False
         return np.where(mask)[0]
+
+
+class PartialElementFilter(FilterOP):
+    """ Utility class to create a partition of a ElementFilter"""
+
+    def __init__(self, elementFilter, partitions, partitionNumber):
+        super().__init__(self,[elementFilter])
+        self.partitions = partitions
+        self.partitionNumber = partitionNumber
+
+    def GetIdsToTreat(self,elements):
+        res = self.filters[0].GetIdsToTreat(elements)
+        return np.array_split(res,self.partitions)[self.partitionNumber]
+
+    def Complementary(self):
+        for name,data,ids  in self.filters[0].Complementary():
+            ids = np.array_split(ids,self.partitions)[self.partitionNumber]
+            if len(ids) == 0:
+                continue
+            yield name, data, ids
 
 class IdsAsNumpyMask(FilterOP):
     def __init__(self,mesh=None,filters=None):
@@ -1088,10 +1108,10 @@ class FrozenFilter(FilterOP):
                 return
             raise Exception("You cant set the mesh 2 times")
         self._mesh = m
-
-        self.filters[0].mesh = m
-        for name,data in self.filters[0].mesh.elements.items():
-            self.__frozenData[name] = (data,self.filters[0].GetIdsToTreat(data) )
+        if len(self.filters) > 0:
+            self.filters[0].mesh = m
+            for name,data in self.filters[0].mesh.elements.items():
+                self.__frozenData[name] = (data, self.filters[0].GetIdsToTreat(data))
 
     def IsEquivalent(self, other):
         for name,(data,ids) in self.__frozenData.items():
@@ -1103,6 +1123,9 @@ class FrozenFilter(FilterOP):
         return True
 
         return self.filters[0].IsEquivalent(other)
+
+    def SetIdsToTreatFor(self, elements, localIds):
+        self.__frozenData[elements.elementType] = (elements, localIds)
 
     def GetIdsToTreat(self, elements):
         return self.__frozenData[elements.elementType][1] # (data, ids)
