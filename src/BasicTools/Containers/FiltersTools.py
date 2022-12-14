@@ -8,8 +8,22 @@ import numpy as np
 from typing import List, Union, Optional
 from numpy.typing import ArrayLike
 
-from BasicTools.Containers.Filters import ElementFilter, FilterOP
+from BasicTools.Containers.Filters import ElementFilter, FilterOP, FrozenFilter, PartialElementFilter
 from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
+
+def GetListOfPartialElementFilter(elementFilter, nbPartitions, frozen=True):
+    if frozen:
+        elementFilterFrozen = elementFilter.GetFrozenFilter()
+        res = [ FrozenFilter(elementFilter.mesh) for f in range(nbPartitions) ]
+        #print("toto")
+        for name, data, ids  in elementFilterFrozen:
+            localIds = np.array_split(ids, nbPartitions)
+            for r, lids in zip(res,localIds):
+                r.SetIdsToTreatFor(data,lids)
+    else:
+        res = [PartialElementFilter(elementFilter,nbPartitions, i )  for i in range(nbPartitions) ]
+
+    return res
 
 def VerifyExclusiveFilters(listOfFilters: List[Union[ElementFilter,FilterOP]], mesh: UnstructuredMesh) -> bool :
     """Function to check if a list of ElementFilter is exclusive.
