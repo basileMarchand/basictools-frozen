@@ -16,6 +16,7 @@ from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 
 import BasicTools.Containers.ElementNames as EN
 from BasicTools.Containers.Filters import ElementFilter, ElementCounter, FrozenFilter
+from BasicTools.Containers.FiltersTools import GetListOfPartialElementFilter
 
 from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
 from BasicTools.FE.Fields.FEField import FEField
@@ -100,30 +101,52 @@ class IntegrationClass(BaseOutputObject):
     """ Class to define and execute an integration of a weak form
 
     """
-    def __init__(self):
+    def __init__(self, other=None):
         super(IntegrationClass,self).__init__()
-        #inputs
-        self.mesh = None
-        self.elementFilter = None
-        self.weakForm = None
-        self.numericalWeakForm = None
-        self.integrator = None
-        self.integrationRule = None
-        self.extraFields = []
-        self.unkownFields = None
-        self.testFields = None
-        self.nbCPUs = GetNumberOfAvailableCpus()
-        self.onlyEvaluation = False
-        self.constants = {}
-        #----
-        self.vK = None
-        self.iK = None
-        self.jK = None
-        self.numberOfUsedvij = 0
-        self.rhs = None
-        #----
+        if other is None:
+            #inputs
+            self.mesh = None
+            self.elementFilter = None
+            self.weakForm = None
+            self.numericalWeakForm = None
+            self.integrator = None
+            self.integrationRule = None
+            self.extraFields = []
+            self.posFields = []
+            self.unkownFields = None
+            self.testFields = None
+            self.nbCPUs = GetNumberOfAvailableCpus()
+            self.onlyEvaluation = False
+            self.constants = {}
+            #----
+            self.vK = None
+            self.iK = None
+            self.jK = None
+            self.numberOfUsedvij = 0
+            self.rhs = None
 
-        self.SetIntegrator()
+            #----
+
+            self.SetIntegrator()
+        else:
+            import BasicTools.FE.Integrators.NativeIntegration as NI
+            self.integrator = NI.PyMonoElementsIntegralCpp()
+            self.nbCPUs = 1
+            self.mesh = other.mesh
+            self.mesh = other.mesh
+            self.onlyEvaluation = other.onlyEvaluation
+            self.integrator.SetOnlyEvaluation(other.onlyEvaluation)
+            self.constants = other.constants
+            self.integrator.SetConstants(other.constants)
+            self.SetUnkownFields(other.unkownFields)
+            self.SetTestFields(other.testFields)
+            self.extraFields = other.extraFields
+            self.integrator.SetExtraFields(other.extraFields + other.posFields )
+            self.integrationRule = other.integrationRule
+            self.integrator.SetIntegrationRule(other.integrationRule)
+            self.numericalWeakForm = other.numericalWeakForm
+            self.posFields = other.posFields
+
 
     def Reset(self):
         self.integrator.Reset()
@@ -184,14 +207,8 @@ class IntegrationClass(BaseOutputObject):
         ----------
         efs : list(FEField or IPField) list of fields
         """
-        fields = list(fields)
-        from BasicTools.FE.DofNumbering import ComputeDofNumbering
-        LSGNum = ComputeDofNumbering(self.mesh, Space=LagrangeSpaceGeo, fromConnectivity=True,)
-        for i in range(self.mesh.GetPointsDimensionality()):
-            fields.append(FEField(f"Pos_{i}", mesh=self.mesh, space=LagrangeSpaceGeo,numbering=LSGNum, data=np.ascontiguousarray(self.mesh.nodes[:,i]) ))
-
         self.extraFields = fields
-        self.integrator.SetExtraFields(fields )
+        self.integrator.SetExtraFields(fields + self.posFields )
 
     def SetIntegrationRule(self,integrationRuleName=None, integrationRule=None ):
         """Set the Integration rule to be used during integration
@@ -246,6 +263,12 @@ class IntegrationClass(BaseOutputObject):
             mesh containing the geometry
         """
         self.mesh = mesh
+
+        fields = list()
+        LSGNum = ComputeDofNumbering(self.mesh, Space=LagrangeSpaceGeo, fromConnectivity=True)
+        for i in range(self.mesh.GetPointsDimensionality()):
+            fields.append(FEField(f"Pos_{i}", mesh=self.mesh, space=LagrangeSpaceGeo,numbering=LSGNum, data=np.ascontiguousarray(self.mesh.nodes[:,i]) ))
+        self.posFields = fields
 
     def SetElementFilter(self, elementFilter=None):
         """Set the element filter to select the elements of the integration
@@ -373,58 +396,38 @@ class IntegrationClass(BaseOutputObject):
         if self.testFields is not None:
             InitSpaces(self.testFields)
 
-        class PartialElementFilter(ElementFilter):
-            """ Utility class to create a partition of a ElementFilter"""
 
-            def __init__(self,elementFilter,partitions,partitionNumber):
-                super(PartialElementFilter,self).__init__()
-                self.partitions = partitions
-                self.parentfilter = elementFilter
-                self.partitionNumber = partitionNumber
-                self.mesh = elementFilter.mesh
 
-            def GetIdsToTreat(self,elements):
-                res = self.parentfilter.GetIdsToTreat(elements)
-                return np.array_split(res,self.partitions)[self.partitionNumber]
 
-            def Complementary(self):
-                for name,data,ids  in self.parentfilter.Complementary():
-                    ids = np.array_split(ids,self.partitions)[self.partitionNumber]
-                    if len(ids) == 0:
-                        continue
-                    yield name, data, ids
 
-        allworkload = [ PartialElementFilter(self.elementFilter,self.nbCPUs,i) for i in range(self.nbCPUs)  ]
+        allworkload = GetListOfPartialElementFilter(self.elementFilter, self.nbCPUs)
         workload = []
 
+
         cpt = 0
+        totalTestDofs = self.integrator.GetTotalTestDofs()
         for f in allworkload:
             if f.ApplyOnElements(ElementCounter()).cpt > 0:
                 numberOfVIJ = self.integrator.ComputeNumberOfVIJ(self.mesh,f)
-                workload.append((f,self.vK[cpt:numberOfVIJ+cpt],self.iK[cpt:numberOfVIJ+cpt],self.jK[cpt:numberOfVIJ+cpt]) )
+                workload.append((f,self.vK[cpt:numberOfVIJ+cpt],self.iK[cpt:numberOfVIJ+cpt],self.jK[cpt:numberOfVIJ+cpt], totalTestDofs) )
                 cpt += numberOfVIJ
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=self.nbCPUs) as executor:
-            results =  executor.map(self._InternalComputeMonoThreadSafe,workload)
+            results =  executor.map(self._InternalComputeMonoThreadSafe, workload)
             for rhs in results:
                 self.rhs += rhs
         self.numberOfUsedvij = cpt
 
-    def _InternalComputeMonoThreadSafe(self,elementFilter_vK_iK_jK):
-        elementFilter,vK,iK,jK =elementFilter_vK_iK_jK
-        res = IntegrationClass()
-        res.nbCPUs = 1
-        res.SetMesh(self.mesh)
-        res.SetOnlyEvaluation(self.onlyEvaluation)
-        res.SetConstants(self.constants)
-        res.SetUnkownFields(self.unkownFields)
-        res.SetTestFields(self.testFields)
-        res.SetExtraFields(self.extraFields)
-        res.SetIntegrationRule(integrationRule=self.integrationRule)
+    def _InternalComputeMonoThreadSafe(self, elementFilter_vK_iK_jK):
+        elementFilter,vK,iK,jK, totalTestDofs  =elementFilter_vK_iK_jK
+        res = IntegrationClass(self)
+        #res.elementFilter = self.elementFilter
+        self.PrintDebug("_InternalComputeMonoThreadSafe in II")
+        #res.SetWeakForm(self.numericalWeakForm)
         res.SetElementFilter(elementFilter)
-        res.SetWeakForm(self.numericalWeakForm)
-        res.PreStartCheck()
-        rhs = np.zeros(res.integrator.GetTotalTestDofs(),dtype=PBasicFloatType)
+        #res.PreStartCheck()
+
+        rhs = np.zeros(totalTestDofs,dtype=PBasicFloatType)
         res.SetOutputObjects(vK,iK,jK,rhs)
 
         res.ComputeMonoThread()
@@ -719,7 +722,7 @@ def CheckIntegrityKF(edim, sdim,testCase):
     lwf = numericakWeakForm.GetLeftPart(dofs)
 
     constants = {}
-    fields  = {}
+    fields  = []
 
     startt = time.time()
 
