@@ -115,7 +115,7 @@ class MeshBase(BaseOutputObject):
             the max of all elements dimensionality
         """
 
-        return np.max([ElementNames.dimension[elemtype] for elemtype in self.elements.keys() ])
+        return int(np.max([ElementNames.dimension[elemtype] for elemtype in self.elements.keys() ]) )
 
     def IsConstantRectilinear(self): return False
     def IsRectilinear(self): return False
