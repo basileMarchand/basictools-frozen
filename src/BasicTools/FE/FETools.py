@@ -145,7 +145,7 @@ def ComputeL2ScalarProducMatrix(mesh, numberOfComponents, elementFilter = None):
     wf = T.T*Tt
 
     constants = {}
-    fields  = {}
+    fields  = []
 
     if numberOfComponents == 1:
         unkownFields = [FEField("T",mesh=mesh,space=spaces,numbering=numberings[0])]
