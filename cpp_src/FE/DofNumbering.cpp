@@ -86,10 +86,12 @@ void DofNumbering::ComputeNumberingFromConnectivity(UnstructuredMesh& mesh){
     for (auto& x : mesh.elements.storage){
         this->numbering[x.first] = x.second.GetConnectivityMatrix();
     }
-    this->almanac.clear();
-    for(CBasicIndexType i =0; i<this->size; i++ ){
-        this->almanac[GetPointDofKey(i)] = i ;
-    }
+    //std::cout << "in the middle" << std::endl;
+    //this->almanac.clear();
+    //for(CBasicIndexType i =0; i<this->size; i++ ){
+    //    this->almanac[ DofKey(Point,i,0)] = i ;
+    //}
+
 }
 
 void DofNumbering::ComputeNumberingGeneral(UnstructuredMesh& mesh, Space& space, ElementFilterBase& elementFilter){
@@ -193,10 +195,15 @@ MatrixIDD& DofNumbering::GetNumberingFor(const std::string & elemtype){
 }
 
 CBasicIndexType DofNumbering::GetDofOfPoint(const CBasicIndexType& pid){
-    if(this->almanac.count(GetPointDofKey(pid)))
+    if(this->almanac.count(GetPointDofKey(pid))){
         return this->almanac[GetPointDofKey(pid)];
-    else
-        return -1;
+    }else{
+        if(this->fromConnectivity){
+            this->almanac[GetPointDofKey(pid)] = pid;
+            return pid;
+        } else
+            return -1;
+    }
 }
 
 MatrixID1& DofNumbering::GetdoftopointLeft(){
@@ -212,22 +219,26 @@ MatrixID1& DofNumbering::GetdoftopointRight(){
 void DofNumbering::computeDofToPoint(){
     if (this->dofToPointComputed) return ;
 
-    CBasicIndexType cpt =0;
-    for(const  auto& dof : this->almanac){
-        if (dof.first.IsPointDof()){
-            cpt += 1;
+    if(this->fromConnectivity){
+        this->doftopointLeft.setLinSpaced(this->size,0,this->size-1);
+        this->doftopointRight.setLinSpaced(this->size,0,this->size-1);
+    }else {
+        CBasicIndexType cpt =0;
+        for(const  auto& dof : this->almanac){
+            if (dof.first.IsPointDof()){
+                cpt += 1;
+            }
         }
-    }
-    if (cpt == 0) return;
-    this->doftopointLeft.resize(cpt,1);
-    this->doftopointRight.resize(cpt,1);
-
-    cpt =0;
-    for(const  auto& dof : this->almanac){
-        if (dof.first.IsPointDof() ){
-            this->doftopointLeft(cpt,0) = dof.first.GetPoint();
-            this->doftopointRight(cpt,0) = dof.second;
-            cpt += 1;
+        if (cpt == 0) return;
+        this->doftopointLeft.resize(cpt,1);
+        this->doftopointRight.resize(cpt,1);
+        cpt =0;
+        for(const  auto& dof : this->almanac){
+            if (dof.first.IsPointDof() ){
+                this->doftopointLeft(cpt,0) = dof.first.GetPoint();
+                this->doftopointRight(cpt,0) = dof.second;
+                cpt += 1;
+            }
         }
     }
     this->dofToPointComputed = true;
