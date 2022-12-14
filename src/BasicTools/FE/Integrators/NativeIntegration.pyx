@@ -89,7 +89,8 @@ cdef class PyMonoElementsIntegralCpp():
 
     def Reset(self):
         self.maxNumberOfElementVIJ = 0
-        self.NativeIntegrator.Reset()
+        with nogil:
+            self.NativeIntegrator.Reset()
 
     def IsMultiThread(self):
         return True
@@ -98,31 +99,42 @@ cdef class PyMonoElementsIntegralCpp():
 
         self.__ufs__ = ufs
         if ufs is None:
-            self.NativeIntegrator.SetNumberOfUnkownFields(0)
-            self.NativeIntegrator.SetTotalUnkownDofs(0)
+            with nogil:
+                self.NativeIntegrator.SetNumberOfUnkownFields(0)
+                self.NativeIntegrator.SetTotalUnkownDofs(0)
 
-        self.NativeIntegrator.SetNumberOfUnkownFields(len(ufs))
+        cdef int cpt = len(ufs)
+        with nogil:
+            self.NativeIntegrator.SetNumberOfUnkownFields(cpt)
+
         cdef int totalUnkownDofs = 0
-        cdef int cpt = 0
+        cpt = 0
         for uf in ufs:
-           self.NativeIntegrator.SetUnkownOffset(cpt,totalUnkownDofs)
-           totalUnkownDofs += uf.numbering["size"]
-           cpt += 1
-        self.NativeIntegrator.SetTotalUnkownDofs(totalUnkownDofs)
+            with nogil:
+               self.NativeIntegrator.SetUnkownOffset(cpt,totalUnkownDofs)
+            totalUnkownDofs += uf.numbering["size"]
+            cpt += 1
+        with nogil:
+            self.NativeIntegrator.SetTotalUnkownDofs(totalUnkownDofs)
+
     def SetTestFields(self,list tfs = None): #ok
         if tfs is None:
             self.__tfs__ = [ uf.GetTestField() for uf in self.__ufs__ ]
         else:
             self.__tfs__ = tfs
-
-        self.NativeIntegrator.SetNumberOfTestFields(len(self.__tfs__))
+        cdef int nbtfs
+        nbtfs = len(self.__tfs__)
+        with nogil:
+            self.NativeIntegrator.SetNumberOfTestFields(nbtfs)
         cdef int totalTestDofs = 0
         cdef int cpt = 0
         for tf in self.__tfs__:
-            self.NativeIntegrator.SetTestOffset(cpt,totalTestDofs)
+            with nogil:
+                self.NativeIntegrator.SetTestOffset(cpt,totalTestDofs)
             totalTestDofs += tf.numbering["size"]
             cpt += 1
-        self.NativeIntegrator.SetTotalTestDofs(totalTestDofs)
+        with nogil:
+            self.NativeIntegrator.SetTotalTestDofs(totalTestDofs)
 
     def SetExtraFields(self,efs): #ok
         self.__efs__ = []
@@ -136,14 +148,18 @@ cdef class PyMonoElementsIntegralCpp():
     def SetConstants(self,cfs):
         self.__cfs__ = cfs
 
+        cdef int cpt =len(cfs)
 
-        self.NativeIntegrator.SetNumberOfConstants(len(cfs))
+        with nogil:
+            self.NativeIntegrator.SetNumberOfConstants(cpt)
 
+        cpt =0
         self.constantsNames = []
-        cdef int cpt =0
+        cdef double value =0
         for name,value in cfs.items():
             self.constantsNames.append(name)
-            self.NativeIntegrator.SetConstants(cpt,value)
+            with nogil:
+                self.NativeIntegrator.SetConstants(cpt,value)
 
     def ComputeNumberOfVIJ(self,mesh,elementFilter)-> CBasicIndexType: # OK
        """
@@ -214,7 +230,8 @@ cdef class PyMonoElementsIntegralCpp():
             if hasnormal == True:
                 break
 
-        self.NativeIntegrator.SetComputeNormal(hasnormal)
+        with nogil:
+            self.NativeIntegrator.SetComputeNormal(hasnormal)
 
         ## spaces treatement
         spacesId = {}
@@ -325,7 +342,9 @@ cdef class PyMonoElementsIntegralCpp():
         #self.SetPoints(mesh.nodes)
 
         ########### sending values  ################################
-        self.NativeIntegrator.SetNumberOfValues(len(self.__usedValues__))
+        cdef int i = len(self.__usedValues__)
+        with nogil:
+            self.NativeIntegrator.SetNumberOfValues(i)
         self.__values = [None]*len(self.__usedValues__)
         self.__ipvalues = [None]*len(self.__ipefs__)
         cdef cnp.ndarray[CBasicFloatType, ndim=1, mode = 'c' ] vdata
@@ -355,11 +374,12 @@ cdef class PyMonoElementsIntegralCpp():
 
         cdef CBasicIndexType m, n
         m, n = self.__nodes.shape[0], self.__nodes.shape[1]
-        self.NativeIntegrator.SetPoints(&nodes[0,0],m,n)
+        with nogil:
+            self.NativeIntegrator.SetPoints(&nodes[0,0],m,n)
 
         return None
 
-    def SetOnlyEvaluation(self, onlyEvaluation):
+    cpdef SetOnlyEvaluation(self, onlyEvaluation: bool) :
         self.NativeIntegrator.onlyEvaluation = onlyEvaluation
 
     def ActivateElementType(self, domain):
@@ -393,8 +413,9 @@ cdef class PyMonoElementsIntegralCpp():
 
         self.NativeIntegrator.SetLocalOffsets(su,self.__localUnkownDofsOffset,self.unkownDofsNumbering,st,self.__localtTestDofsOffset,self.testDofsNumbering)
 
+        with nogil:
+            self.NativeIntegrator.SetNumberOfIntegrationPoints(numberOfIntegrationPoints)
 
-        self.NativeIntegrator.SetNumberOfIntegrationPoints(numberOfIntegrationPoints)
         for i in range(numberOfIntegrationPoints):
             if p.shape[1] == 1:
                 self.NativeIntegrator.SetIntegrationPointI(i, w[i],p[i,0],0.,0.)
@@ -413,7 +434,8 @@ cdef class PyMonoElementsIntegralCpp():
         cdef cnp.ndarray[CBasicIndexType, ndim=2, mode="c"] conn = domain.connectivity
         self.__conn = conn
 
-        self.NativeIntegrator.SetConnectivity(&conn[0,0],m,n)
+        with nogil:
+            self.NativeIntegrator.SetConnectivity(&conn[0,0],m,n)
 
         self.NativeIntegrator.SetNumberOfSpaces(len(self.__usedSpaces__))
         cdef cnp.ndarray[CBasicFloatType , ndim=1, mode = 'c' ] valN

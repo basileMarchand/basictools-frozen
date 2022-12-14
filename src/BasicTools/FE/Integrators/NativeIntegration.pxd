@@ -12,54 +12,54 @@ cimport BasicTools.FE.WeakForms.NativeNumericalWeakForm as NNWF
 cdef extern from "FE/NativeIntegration.h" namespace "BasicTools" :
     cdef cppclass MonoElementsIntegralCpp:
         MonoElementsIntegralCpp() except +
-        void Reset()
-        void SetNumberOfUnkownFields(CBasicIndexType)
-        void SetUnkownOffset(int,int)
-        void SetTotalUnkownDofs(int)
+        void Reset() nogil
+        void SetNumberOfUnkownFields(CBasicIndexType) nogil
+        void SetUnkownOffset(int,int)  nogil
+        void SetTotalUnkownDofs(int)  nogil
 
-        void SetNumberOfTestFields(CBasicIndexType)
-        void SetTestOffset(int,int)
-        void SetTotalTestDofs(int)
+        void SetNumberOfTestFields(CBasicIndexType) nogil
+        void SetTestOffset(int,int) nogil
+        void SetTotalTestDofs(int) nogil
 
-        void SetNumberOfConstants(CBasicIndexType)
-        void SetConstants(int,double)
+        void SetNumberOfConstants(CBasicIndexType) nogil
+        void SetConstants(int,double) nogil
 
-        void AllocateWorkingElementVIJ(int size)
+        void AllocateWorkingElementVIJ(int size) nogil
 
-        void SetNumberOfIntegrationPoints(int)
-        void SetIntegrationPointI(int, double,double,double,double)
+        void SetNumberOfIntegrationPoints(int) nogil
+        void SetIntegrationPointI(int, double,double,double,double) nogil
         int totalUnkownDofs,totalTestDofs
 
-        void SetComputeNormal(int)
-        void SetDomainToTreat()
-        void SetPoints(double*, int, int)
-        void SetConnectivity(CBasicIndexType*, int, int)
+        void SetComputeNormal(int) nogil
+        void SetDomainToTreat() nogil
+        void SetPoints(double*, int, int) nogil
+        void SetConnectivity(CBasicIndexType*, int, int) nogil
 
-        void SetNumberOfSpaces(int)
+        void SetNumberOfSpaces(int) nogil
         void InitSpaceS(const int& s,
                  const int& dim ,
                  const int& NumberOfShapeFunctions,
-                 const int& numberOfIntegrationPoints )
+                 const int& numberOfIntegrationPoints ) nogil
         void SetSpaceSvalNI(const int& spaceNumber,
                       const int& integrationPoint,
-                      double* pd)
+                      double* pd) nogil
         void SetSpaceSvaldphidxiI(const int& spaceNumber,
                       const int& integrationPoint,
-                      double* pd)
+                      double* pd) nogil
 
 
-        void SetNumberOfNumberings(int i)
-        void SetNumberingI(int i, int n, int m, CBasicIndexType* ip)
-        void SetNumberOfValues(CBasicIndexType i)
-        void SetValueI(int i, int n, int m, double* dp)
+        void SetNumberOfNumberings(int i) nogil
+        void SetNumberingI(int i, int n, int m, CBasicIndexType* ip) nogil
+        void SetNumberOfValues(CBasicIndexType i) nogil
+        void SetValueI(int i, int n, int m, double* dp) nogil
 
-        void SetNumberOfIPValues(int i)
-        void SetIPValueI(int i, int n, int m, double* dp)
+        void SetNumberOfIPValues(int i) nogil
+        void SetIPValueI(int i, int n, int m, double* dp) nogil
 
-        void SetLocalOffsets(int, vector[int]&, vector[int]&, int, vector[int]&, vector[int]&)
+        void SetLocalOffsets(int, vector[int]&, vector[int]&, int, vector[int]&, vector[int]&) nogil
         void Integrate(NNWF.WeakForm*, CBasicIndexType idsize, CBasicIndexType* ids )  nogil
-        int GetNumberOfUsedIvij()
-        int AddToNumbefOfUsedIvij(int)
+        int GetNumberOfUsedIvij() nogil
+        int AddToNumbefOfUsedIvij(int)  nogil
         double* vK
         CBasicIndexType* iK
         CBasicIndexType* jK
