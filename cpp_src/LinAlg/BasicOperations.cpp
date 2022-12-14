@@ -41,7 +41,7 @@ void inv33(MatrixDDD& m,MatrixDDD &minv,double& det ){
 };
 
 void GetInv_Jacobian_Det(MapMatrixDDD& valdphidxi,
-                   MatrixDDD&  xcoor,
+                   const Eigen::Ref<const MatrixDDD>& xcoor,
                    int& Dimensionality,
                    MatrixDDD&  Jack,
                    double&    Jdet,
@@ -168,7 +168,7 @@ void GetInv_Jacobian_Det(MapMatrixDDD& valdphidxi,
 
 //
 void GetInv_Jacobian_Det(MapMatrixDDD& valdphidxi,
-                   MatrixDD3&  xcoor,
+                   const Eigen::Ref<const MatrixDDD>& xcoor,
                    int& Dimensionality,
                    MatrixDDD&  Jack,
                    double&    Jdet,

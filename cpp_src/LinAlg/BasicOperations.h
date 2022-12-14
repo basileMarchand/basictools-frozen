@@ -12,9 +12,9 @@ void inv22(MatrixDDD& m,MatrixDDD &minv,double& det );
 
 void inv33(MatrixDDD& m,MatrixDDD &minv,double& det );
 
-void GetInv_Jacobian_Det(MapMatrixDDD& valdphidxi, MatrixDDD& xcoor, int& Dimensionality, MatrixDDD& Jack, double& Jdet, MatrixDDD& Jinv);
+void GetInv_Jacobian_Det(MapMatrixDDD& valdphidxi, const Eigen::Ref<const MatrixDDD>& xcoor, int& Dimensionality, MatrixDDD& Jack, double& Jdet, MatrixDDD& Jinv);
 
-void GetInv_Jacobian_Det(MapMatrixDDD& valdphidxi, MatrixDD3& xcoor, int& Dimensionality, MatrixDDD& Jack, double& Jdet, Eigen::ColPivHouseholderQR<MatrixDDD>& Jinv);
+void GetInv_Jacobian_Det(MapMatrixDDD& valdphidxi, const Eigen::Ref<const MatrixDD3>& xcoor, int& Dimensionality, MatrixDDD& Jack, double& Jdet, Eigen::ColPivHouseholderQR<MatrixDDD>& Jinv);
 
 void GetNormal(const int&  SpaceDim, const int& elementDim,MatrixDDD& Jack,MatrixD31& Normal);
 
