@@ -107,7 +107,7 @@ def CheckIntegrity(GUI=False):
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateSquare
 
     n = 8
-    mesh = CreateSquare(dimensions=[n,n],origin=[0,0],spacing=[0.875/(n-1),1.75/(n-1)],ofTriangles=False)
+    mesh = CreateSquare(dimensions=[n,n],origin=[0,0],spacing=[0.875/(n-1),1.75/(n-1)],ofTriangles=True)
 
     mask = mesh.nodes[:,1] >.8625
     mesh.nodes[mask,0] += .6

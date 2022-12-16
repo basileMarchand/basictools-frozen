@@ -204,7 +204,7 @@ def ComputeMeshLaplacianEigenmaps(inMesh, dimensionality = None, nEigenmaps = 10
     return w, v
 
 
-def RenumberMeshForParametrization(inMesh, inPlace = True, boundaryOrientation = "direct", fixedBoundaryPoints = None):
+def RenumberMeshForParametrization(inMesh, inPlace = True, boundaryOrientation = "direct", fixedBoundaryPoints = None, startingPointRankOnBoundary = None):
     """
     Only for linear triangle meshes
     Renumber the node IDs, such that the points on the boundary are placed at the
@@ -222,7 +222,9 @@ def RenumberMeshForParametrization(inMesh, inPlace = True, boundaryOrientation =
         if "indirect", the boundary of the parametrisation is constructed in the indirect trigonometric orderc order
     fixedBoundaryPoints : list
         list containing lists of two np.ndarrays. Each 2-member list is used to identify one
-    point on the boundary: the first array contains the specified components, and the second the
+        point on the boundary: the first array contains the specified components, and the second the
+    startingPointRankOnBoundary : int
+        node id (in the complete mesh) of the point on the boundary where the mapping starts
 
     Returns
     -------
@@ -259,31 +261,38 @@ def RenumberMeshForParametrization(inMesh, inPlace = True, boundaryOrientation =
 
     indicesBars = np.sort(np.unique(bars.flatten()))
 
+
     if fixedBoundaryPoints == None:
 
-        indicesNodesXmin = inMesh.nodes[indicesBars,0] == inMesh.nodes[np.argmin(inMesh.nodes[indicesBars,0]),0]
-        nodesXmin = inMesh.nodes[indicesBars[indicesNodesXmin], :]
+        if startingPointRankOnBoundary == None:
+            vec = inMesh.nodes[indicesBars,0]
+            indicesNodesXmin = vec == vec[np.argmin(vec)]
+            nodesXmin = inMesh.nodes[indicesBars[indicesNodesXmin], :]
 
-        indicesNodesmin = nodesXmin[:,1] == nodesXmin[np.argmin(nodesXmin[:,1]),1]
-        nodesmin = nodesXmin[indicesNodesmin, :]
+            indicesNodesmin = nodesXmin[:,1] == nodesXmin[np.argmin(nodesXmin[:,1]),1]
+            nodesmin = nodesXmin[indicesNodesmin, :]
 
-        if inMesh.GetDimensionality() == 3:
-            indicesNodesmin = nodesmin[:,2] == nodesmin[np.argmin(nodesmin[:,2]),2]
-            nodesmin = nodesmin[indicesNodesmin, :]
 
-        indexInBars = np.where((inMesh.nodes[indicesBars,:] == nodesmin).all(axis=1))[0]
-        assert indexInBars.shape == (1,)
-        indexInBars = indexInBars[0]
-        assert (inMesh.nodes[indicesBars[indexInBars],:] == nodesmin).all()
+            if inMesh.GetDimensionality() == 3:
+                indicesNodesmin = nodesmin[:,2] == nodesmin[np.argmin(nodesmin[:,2]),2]
+                nodesmin = nodesmin[indicesNodesmin, :]
 
-        pMin = indicesBars[indexInBars]
-        print("starting walking along line boundary at point... =", str(nodesmin))
+            indexInBars = np.where((inMesh.nodes[indicesBars,:] == nodesmin).all(axis=1))[0]
+            assert indexInBars.shape == (1,)
+            indexInBars = indexInBars[0]
+            assert (inMesh.nodes[indicesBars[indexInBars],:] == nodesmin).all()
+
+            pMin = indicesBars[indexInBars]
+
+        else:
+            pMin = startingPointRankOnBoundary
+        print("starting walking along line boundary at point... =", str(inMesh.nodes[pMin,:]), "of rank:", str(pMin))
 
     else:
         inds, point = fixedBoundaryPoints[0][0], fixedBoundaryPoints[0][1]
         indexInBars = (np.linalg.norm(np.subtract(inMesh.nodes[indicesBars,:][:,inds], point), axis = 1)).argmin()
         pMin = indicesBars[indexInBars]
-        print("starting walking along line boundary at point... =", str(inMesh.nodes[pMin,:]))
+        print("starting walking along line boundary at point... =", str(inMesh.nodes[pMin,:]), "of rank:", str(pMin))
 
 
     p1 = p1init = pMin
@@ -309,12 +318,13 @@ def RenumberMeshForParametrization(inMesh, inPlace = True, boundaryOrientation =
 
         p2 = p2_candidate[np.linalg.norm(error_delta_candidate, axis = 1).argmin()]
 
-    print("... walking toward point =", str(inMesh.nodes[p2,:]))
+    print("... walking toward point =", str(inMesh.nodes[p2,:]), "of rank:", str(p2))
 
     path = [p1, p2]
     while p2 != p1init:
         p2save = p2
-        p2 = np.array(nodeGraph[p2])[nodeGraph[p2]!=p1][0]
+        tempArray = np.array(nodeGraph[p2])
+        p2 = tempArray[tempArray!=p1][0]
         p1 = p2save
         path.append(p2)
     path = path[:-1]
@@ -344,7 +354,7 @@ def RenumberMeshForParametrization(inMesh, inPlace = True, boundaryOrientation =
 
 
 
-def FloaterMeshParametrization(inMesh, nBoundary, outShape = "circle", boundaryOrientation = "direct", fixedInteriorPoints = None, fixedBoundaryPoints = None):
+def FloaterMeshParametrization(inMesh, nBoundary, outShape = "circle", boundaryOrientation = "direct", curvAbsBoundary = True, fixedInteriorPoints = None, fixedBoundaryPoints = None):
     """
     STILL LARGELY EXPERIMENTAL
 
@@ -367,6 +377,10 @@ def FloaterMeshParametrization(inMesh, nBoundary, outShape = "circle", boundaryO
     boundaryOrientation : str
         if "direct, the boundary of the parametrisation is constructed in the direct trigonometric order
         if "indirect", the boundary of the parametrisation is constructed in the indirect trigonometric order
+    curvAbsBoundary : bool
+        only if fixedInteriorPoints = None
+        if True, the point density on the boundary of outShape is the same as the point density on the boundary of inMesh
+        if False, the point density on the boundary is uniform
     fixedInteriorPoints : dict
         with one key, and corresponding value, a list: [ndarray(n), ndarray(n,2)],
         with n the number of interior points to be fixed; the first ndarray is the index of the considered
@@ -383,8 +397,8 @@ def FloaterMeshParametrization(inMesh, nBoundary, outShape = "circle", boundaryO
     UnstructuredMesh
         parametrization of mesh
     dict
-        containing two keys: "minEdge" and "maxEdge", with values floats containing the minimal
-        and maximal edged length of the parametrized mesh
+        containing 3 keys: "minEdge", "maxEdge" and "weights", with values floats containing the minimal
+        and maximal edged length of the parametrized mesh, and the weights (lambda) in the Floater algorithm
 
     Notes
     -----
@@ -466,8 +480,10 @@ def FloaterMeshParametrization(inMesh, nBoundary, outShape = "circle", boundaryO
             angles = np.hstack((angles, 2.*np.pi))
 
         else:
-            angles = np.linspace(2*np.pi/nBoundary, 2*np.pi, nBoundary)
-            #angles = 2*np.pi*lengthAlongBoundary/cumulativeLength
+            if curvAbsBoundary == True:
+                angles = (2*np.pi)*(1-1/nBoundary)*lengthAlongBoundary/cumulativeLength
+            else:
+                angles = np.linspace(2*np.pi/nBoundary, 2*np.pi, nBoundary)
 
         if boundaryOrientation == "direct":
             for i, a in enumerate(angles):
@@ -480,6 +496,7 @@ def FloaterMeshParametrization(inMesh, nBoundary, outShape = "circle", boundaryO
 
     else:
         raise NotImplementedError("outShape"+str(outShape)+" not implemented")
+
 
     # Compute a node graphe for the mesh
     edges = set()
@@ -502,8 +519,6 @@ def FloaterMeshParametrization(inMesh, nBoundary, outShape = "circle", boundaryO
         weights[i] = 1./np.sum(Ad[i,:])
 
     # Construct the sparse linear system to solve to find the position of the interior points in the parametrization
-
-
     A = sparse.eye(n).tolil()
     RHSmat = sparse.lil_matrix((n, N))
     for edge in edges:
@@ -573,7 +588,7 @@ def FloaterMeshParametrization(inMesh, nBoundary, outShape = "circle", boundaryO
     for edge in edges:
         endgeLengths.append(np.linalg.norm(mesh.nodes[edge[1],:]-mesh.nodes[edge[0],:]))
 
-    infos = {"minEdge":np.min(endgeLengths), "maxEdge":np.max(endgeLengths)}
+    infos = {"minEdge":np.min(endgeLengths), "maxEdge":np.max(endgeLengths), "weights":weights}
 
     return mesh, infos
 
@@ -674,8 +689,7 @@ def FloaterMesh3DParametrizationStarDomain(inMesh: UnstructuredMesh, boundaryTag
 
 
     G2 = InitializeGraphPointsFromMeshPoints(mesh)
-    for edge in edges:
-        G2.add_edge(edge[0], edge[1])
+    G2.add_edges_from(edges)
 
     # Compute the weights of each node of the mesh (number of edges linked to each node): the inverse of the degrees
     Ad = networkx.adjacency_matrix(G2)
@@ -1145,16 +1159,17 @@ def CheckIntegrity_FloaterMeshParametrization(GUI=False):
 
     np.testing.assert_almost_equal(infos['minEdge'], 0.7653668647301795)
     np.testing.assert_almost_equal(infos['maxEdge'], 1.4142135623730951)
+    np.testing.assert_almost_equal(infos['weights'], [0.16666667, 0.33333333, 0.25, 0.5, 0.25, 0.33333333, 0.25, 0.5, 0.25])
 
-    refNodes = np.array([[ 0.00000000e+00, -1.30659844e-17],
+    refNodes = np.array([[-2.77555756e-17,  4.16333634e-17],
+    [ 1.00000000e+00,  0.00000000e+00],
     [ 7.07106781e-01,  7.07106781e-01],
     [ 6.12323400e-17,  1.00000000e+00],
     [-7.07106781e-01,  7.07106781e-01],
     [-1.00000000e+00,  1.22464680e-16],
     [-7.07106781e-01, -7.07106781e-01],
     [-1.83697020e-16, -1.00000000e+00],
-    [ 7.07106781e-01, -7.07106781e-01],
-    [ 1.00000000e+00, -2.44929360e-16]])
+    [ 7.07106781e-01, -7.07106781e-01]])
 
     np.testing.assert_almost_equal(meshParam.nodes, refNodes)
 
@@ -1222,10 +1237,10 @@ def CheckIntegrity_FloaterMesh3DParametrization(GUI=False):
     np.testing.assert_almost_equal(infos['minEdge'], 0.15893069864588907)
     np.testing.assert_almost_equal(infos['maxEdge'], 0.7653668647301797)
 
-    refNodes = np.array([[ 0.33118664,  0.137182,    0.45861232],
-                         [-0.04485619,  0.34618882,  0.45766116],
-                         [-0.42191731,  0.48060774,  0.41107971],
-                         [ 0.51377967,  0.21281451,  0.01164092]])
+    refNodes = np.array([[ 3.5847384e-01, -9.0205621e-17,  4.5861232e-01],
+       [ 9.1039013e-02,  3.3700249e-01,  4.5766116e-01],
+       [-2.0588015e-01,  6.0548442e-01,  4.1107971e-01],
+       [ 5.5611111e-01, -1.5308935e-16,  1.1640921e-02]])
 
     np.testing.assert_almost_equal(meshParam.nodes[:4,:], refNodes)
 
@@ -1248,13 +1263,13 @@ def CheckIntegrity_FloaterMesh3DParametrization(GUI=False):
 
     print("infos FloaterMesh3DParametrization :", infos)
 
-    np.testing.assert_almost_equal(infos['minEdge'], 0.06353546953412406)
-    np.testing.assert_almost_equal(infos['maxEdge'], 0.8096752560898939)
+    np.testing.assert_almost_equal(infos['minEdge'], 0.11124179872418195)
+    np.testing.assert_almost_equal(infos['maxEdge'], 0.7653668647301799)
 
-    refNodes = np.array([[ 0.21487737,  0.04148949,  0.50421315],
-                         [-0.16425121,  0.25739021,  0.48133962],
-                         [-0.51055236,  0.41595872,  0.41360663],
-                         [ 0.48672766,  0.14950934,  0.03759597]])
+    refNodes = np.array([[ 0.2157777, -0.0394311,  0.5044662],
+       [-0.0523037,  0.3038109,  0.4818311],
+       [-0.312202 ,  0.5807106,  0.4138475],
+       [ 0.5126741, -0.0293534,  0.0382572]])
 
     np.testing.assert_almost_equal(meshParam.nodes[:4,:], refNodes)
 
