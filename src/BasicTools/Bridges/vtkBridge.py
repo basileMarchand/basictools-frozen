@@ -414,7 +414,7 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
 
         if usePoly == False:
             cellTypes = np.empty(mesh.GetNumberOfElements(), dtype= PBasicIndexType)
-            offsets = np.empty(mesh.GetNumberOfElements()+1,dtype=PBasicIndexType)
+            offsets = np.empty(mesh.GetNumberOfElements()+1,dtype=np.int64)
 
             cpt =0
             offsetcpt = 0
@@ -428,7 +428,7 @@ def MeshToVtk(mesh, vtkobject=None, TagsAsFields=False):
                 cpt += nbElement
 
             offsets[cpt] = offsetcpt
-            connectivity = np.empty(offsetcpt,dtype=PBasicIndexType )
+            connectivity = np.empty(offsetcpt,dtype=np.int64 )
 
             offsetcpt = 0
             for elementsName, elementContainer in mesh.elements.items():
