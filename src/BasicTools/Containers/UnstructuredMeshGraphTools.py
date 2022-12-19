@@ -38,7 +38,7 @@ def PartitionMesh(inmesh, nbSubdomains, driver="Metis"): # TBD: add other driver
         raise ValueError("""The driver option you have selected is not implemented or incorrectly spelled!
             Choose between Scotch, Metis, or Chaco.""")
 
-    #elementsBySubdomain = [np.argwhere(np.array(maskVector) == sd).ravel() for sd in [i for i in range(nbSubdomains)]]
+    #elementsBySubdomain = [np.argwhere(np.asarray(maskVector) == sd).ravel() for sd in [i for i in range(nbSubdomains)]]
     return subdomainMap
 
 
@@ -273,7 +273,7 @@ def RenumberMeshForParametrization(inMesh, inPlace = True, boundaryOrientation =
             nodesmin = nodesXmin[indicesNodesmin, :]
 
 
-            if inMesh.GetDimensionality() == 3:
+            if inMesh.GetPointsDimensionality() == 3:
                 indicesNodesmin = nodesmin[:,2] == nodesmin[np.argmin(nodesmin[:,2]),2]
                 nodesmin = nodesmin[indicesNodesmin, :]
 
@@ -286,13 +286,13 @@ def RenumberMeshForParametrization(inMesh, inPlace = True, boundaryOrientation =
 
         else:
             pMin = startingPointRankOnBoundary
-        print("starting walking along line boundary at point... =", str(inMesh.nodes[pMin,:]), "of rank:", str(pMin))
+        print("starting walking along line boundary at point... =", str(inMesh.nodes[pMin,:]), " of rank:", str(pMin))
 
     else:
         inds, point = fixedBoundaryPoints[0][0], fixedBoundaryPoints[0][1]
         indexInBars = (np.linalg.norm(np.subtract(inMesh.nodes[indicesBars,:][:,inds], point), axis = 1)).argmin()
         pMin = indicesBars[indexInBars]
-        print("starting walking along line boundary at point... =", str(inMesh.nodes[pMin,:]), "of rank:", str(pMin))
+        print("starting walking along line boundary at point... =", str(inMesh.nodes[pMin,:]), " of rank:", str(pMin))
 
 
     p1 = p1init = pMin
@@ -300,7 +300,7 @@ def RenumberMeshForParametrization(inMesh, inPlace = True, boundaryOrientation =
 
     if fixedBoundaryPoints == None:
         # choose direction
-        p2 = p2_candidate[np.argmin(np.array([inMesh.nodes[p2_candidate[0],1], inMesh.nodes[p2_candidate[1],1]]))]
+        p2 = p2_candidate[np.argmin(np.asarray([inMesh.nodes[p2_candidate[0],1], inMesh.nodes[p2_candidate[1],1]]))]
 
     else:
         # choose direction from second point set on boundary
@@ -308,7 +308,7 @@ def RenumberMeshForParametrization(inMesh, inPlace = True, boundaryOrientation =
         delta_fixedBoundaryPoints = fixedBoundaryPoints[1][1] - fixedBoundaryPoints[0][1]
         delta_fixedBoundaryPoints /= np.linalg.norm(delta_fixedBoundaryPoints)
 
-        delta_candidate = np.array([inMesh.nodes[p2c,inds] - inMesh.nodes[pMin,inds] for p2c in p2_candidate])
+        delta_candidate = np.asarray([inMesh.nodes[p2c,inds] - inMesh.nodes[pMin,inds] for p2c in p2_candidate])
         delta_candidate[0] /= np.linalg.norm(delta_candidate[0])
         delta_candidate[1] /= np.linalg.norm(delta_candidate[1])
 
@@ -318,12 +318,12 @@ def RenumberMeshForParametrization(inMesh, inPlace = True, boundaryOrientation =
 
         p2 = p2_candidate[np.linalg.norm(error_delta_candidate, axis = 1).argmin()]
 
-    print("... walking toward point =", str(inMesh.nodes[p2,:]), "of rank:", str(p2))
+    print("... walking toward point =", str(inMesh.nodes[p2,:]), " of rank:", str(p2))
 
     path = [p1, p2]
     while p2 != p1init:
         p2save = p2
-        tempArray = np.array(nodeGraph[p2])
+        tempArray = np.asarray(nodeGraph[p2])
         p2 = tempArray[tempArray!=p1][0]
         p1 = p2save
         path.append(p2)
@@ -453,7 +453,7 @@ def FloaterMeshParametrization(inMesh, nBoundary, outShape = "circle", boundaryO
             p2 = mesh.nodes[i,:]
             cumulativeLength += np.linalg.norm(p2-p1)
             lengthAlongBoundary.append(cumulativeLength)
-        lengthAlongBoundary = np.array(lengthAlongBoundary)
+        lengthAlongBoundary = np.asarray(lengthAlongBoundary)
 
         if fixedBoundaryPoints != None:
             fixedRanksOnBoundary = [0]
@@ -637,7 +637,7 @@ def FloaterMesh3DParametrizationStarDomain(inMesh: UnstructuredMesh, boundaryTag
     N = mesh.GetNumberOfNodes()
     n = N - len(skinNodesIds)
 
-    skinNodesIds = np.array(skinNodesIds)
+    skinNodesIds = np.asarray(skinNodesIds)
     otherIds = np.delete(np.arange(N), nf.GetIdsToTreat())
     renumb2 = np.hstack((otherIds, skinNodesIds))
     invRenumb2 = np.argsort(renumb2)
@@ -1135,10 +1135,10 @@ def CheckIntegrity_ComputeMeshLaplacianEigenmaps(GUI=False):
     mesh = CreateMeshForCheckIntegrity()
     w, v = ComputeMeshLaplacianEigenmaps(mesh, nEigenmaps = 3)
 
-    refW = np.array([-1.2490009e-15,  1.0000000e+00,  2.1559265e+00])
+    refW = np.asarray([-1.2490009e-15,  1.0000000e+00,  2.1559265e+00])
     np.testing.assert_almost_equal(w, refW)
 
-    refV = np.array([[3.33333333e-01,  2.06105878e-16,  3.59572691e-01],
+    refV = np.asarray([[3.33333333e-01,  2.06105878e-16,  3.59572691e-01],
     [ 3.33333333e-01, -2.88675135e-01,  4.50452206e-02],
     [ 3.33333333e-01, -5.77350269e-01, -5.77775050e-01]])
     np.testing.assert_almost_equal(v[:3,:], refV)
@@ -1161,7 +1161,7 @@ def CheckIntegrity_FloaterMeshParametrization(GUI=False):
     np.testing.assert_almost_equal(infos['maxEdge'], 1.4142135623730951)
     np.testing.assert_almost_equal(infos['weights'], [0.16666667, 0.33333333, 0.25, 0.5, 0.25, 0.33333333, 0.25, 0.5, 0.25])
 
-    refNodes = np.array([[-2.77555756e-17,  4.16333634e-17],
+    refNodes = np.asarray([[-2.77555756e-17,  4.16333634e-17],
     [ 1.00000000e+00,  0.00000000e+00],
     [ 7.07106781e-01,  7.07106781e-01],
     [ 6.12323400e-17,  1.00000000e+00],
@@ -1191,7 +1191,7 @@ def CheckIntegrity_FloaterMesh3DParametrizationStarDomain(GUI=False):
     np.testing.assert_almost_equal(infos['minEdge'], 0.27477100047357156)
     np.testing.assert_almost_equal(infos['maxEdge'], 0.8023930268619969)
 
-    refNodes = np.array([[-0.36304405, -0.36304405, -0.36304405],
+    refNodes = np.asarray([[-0.36304405, -0.36304405, -0.36304405],
                          [-0.39871955, -0.39871955,  0.01773299],
                          [-0.40280694, -0.40280694,  0.43490912],
                          [-0.39871955,  0.01773299, -0.39871955]])
@@ -1206,7 +1206,7 @@ def CheckIntegrity_FloaterMesh3DParametrizationStarDomain(GUI=False):
     np.testing.assert_almost_equal(infos['minEdge'], 0.02499999999999969)
     np.testing.assert_almost_equal(infos['maxEdge'], 0.09354143466934872)
 
-    refNodes = np.array([[0.975, 0.45,  0.025],
+    refNodes = np.asarray([[0.975, 0.45,  0.025],
                          [0.975, 0.45,  0.1  ],
                          [0.975, 0.45,  0.175],
                          [0.975, 0.5 ,  0.025]])
@@ -1237,27 +1237,27 @@ def CheckIntegrity_FloaterMesh3DParametrization(GUI=False):
     np.testing.assert_almost_equal(infos['minEdge'], 0.15893069864588907)
     np.testing.assert_almost_equal(infos['maxEdge'], 0.7653668647301797)
 
-    refNodes = np.array([[ 3.5847384e-01, -9.0205621e-17,  4.5861232e-01],
+    refNodes = np.asarray([[ 3.5847384e-01, -9.0205621e-17,  4.5861232e-01],
        [ 9.1039013e-02,  3.3700249e-01,  4.5766116e-01],
        [-2.0588015e-01,  6.0548442e-01,  4.1107971e-01],
        [ 5.5611111e-01, -1.5308935e-16,  1.1640921e-02]])
 
     np.testing.assert_almost_equal(meshParam.nodes[:4,:], refNodes)
 
-    positions1 = np.array(
+    positions1 = np.asarray(
     [[0.2 , 0.],
      [0.  , 0.2],
      [-0.2, 0.],
      [0.  , -0.2]])
 
-    positions2 = np.array(
+    positions2 = np.asarray(
     [[0.45,0.05]])
 
     fixedInteriorPoints = {}
     fixedInteriorPoints['skinIds1'] = {}
-    fixedInteriorPoints['skinIds1']["mean"] = [np.array([10, 0, 2, 11]), positions1]
+    fixedInteriorPoints['skinIds1']["mean"] = [np.asarray([10, 0, 2, 11]), positions1]
     fixedInteriorPoints['skinIds2'] = {}
-    fixedInteriorPoints['skinIds2']["value"] = [np.array([6]), positions2]
+    fixedInteriorPoints['skinIds2']["value"] = [np.asarray([6]), positions2]
 
     meshParam, renumb, infos = FloaterMesh3DParametrization(mesh, boundaryTag = 'skinIds1', inPlace = False, fixedInteriorPoints = fixedInteriorPoints)
 
@@ -1266,7 +1266,7 @@ def CheckIntegrity_FloaterMesh3DParametrization(GUI=False):
     np.testing.assert_almost_equal(infos['minEdge'], 0.11124179872418195)
     np.testing.assert_almost_equal(infos['maxEdge'], 0.7653668647301799)
 
-    refNodes = np.array([[ 0.2157777, -0.0394311,  0.5044662],
+    refNodes = np.asarray([[ 0.2157777, -0.0394311,  0.5044662],
        [-0.0523037,  0.3038109,  0.4818311],
        [-0.312202 ,  0.5807106,  0.4138475],
        [ 0.5126741, -0.0293534,  0.0382572]])
@@ -1284,7 +1284,7 @@ def CheckIntegrity_ComputeNodalAveragedStretchMetric(GUI=False):
     meshParam, infos = FloaterMeshParametrization(meshRenumb, nBoundary)
 
     res = ComputeNodalAveragedStretchMetric(meshRenumb, meshParam)
-    ref = np.array([1.16252822, 1.25928013, 1.48563346, 1.84775907, 1.41421356, 1.25928013, 1.41421356, 1.84775907, 1.41421356])
+    ref = np.asarray([1.16252822, 1.25928013, 1.48563346, 1.84775907, 1.41421356, 1.25928013, 1.41421356, 1.84775907, 1.41421356])
 
     np.testing.assert_almost_equal(res, ref)
 
