@@ -554,7 +554,9 @@ def ComputeFeatures(inputMesh: UnstructuredMesh, featureAngle:PBasicFloatType=90
                     surf2[elementHash][0] +=1
                     normal1 = surf2[elementHash][1]
                     cross = np.cross(normal, normal1)
-                    angle = np.arcsin(np.linalg.norm(cross))
+                    norm = np.linalg.norm(cross)
+                    norm =  norm if norm <=1 else 1.
+                    angle = np.arcsin(norm)
                     surf2[elementHash][2] = 180*angle/np.pi
                 else:
                     #[number of of used, normal of the first insertion,angle,   connectivity
@@ -625,7 +627,9 @@ def ComputeFeatures(inputMesh: UnstructuredMesh, featureAngle:PBasicFloatType=90
 
                 if p in almanac:
                     vec2 = almanac[p][1]
-                    angle = (180/np.pi)*np.arccos(np.dot(vec1, vec2*sign) )
+                    norm = np.dot(vec1, vec2*sign)
+                    norm = norm if norm <= 1 else 1
+                    angle = (180/np.pi)*np.arccos( norm )
                     almanac[p][2] = angle
                     almanac[p][0] +=1
                 else:
