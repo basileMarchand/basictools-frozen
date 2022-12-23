@@ -37,12 +37,12 @@ MultiThreadThreshold = 100
 def IntegrateGeneralMonoThread( mesh, wform, constants, fields, unkownFields=None, testFields=None, integrationRuleName=None,onlyEvaluation=False, elementFilter=None,userIntegrator=None, integrationRule=None):
     """Integration of a weak formulation using only one thread
 
-    For more information about the argument please refert to IntegrationClass
+    For more information about the argument please refer to IntegrationClass
 
     Returns
     -------
     K : coo_matrix
-        the asembled matrix
+        the assembled matrix
     rhs : ndarray
         Array with the values of the right hand side term
     """
@@ -70,12 +70,12 @@ def IntegrateGeneral( mesh, wform, constants, fields, unkownFields=None, testFie
 
     """Integration of a weak formulation
 
-    For more information about the argument please refert to IntegrationClass
+    For more information about the argument please refer to IntegrationClass
 
     Returns
     -------
     K : coo_matrix
-        the asembled matrix
+        the assembled matrix
     rhs : ndarray
         Array with the values of the right hand side term
     """
@@ -129,6 +129,7 @@ class IntegrationClass(BaseOutputObject):
 
             self.SetIntegrator()
         else:
+            """this is a internal use to prepare a class instance for multithread integration """
             import BasicTools.FE.Integrators.NativeIntegration as NI
             self.integrator = NI.PyMonoElementsIntegralCpp()
             self.nbCPUs = 1
@@ -152,7 +153,7 @@ class IntegrationClass(BaseOutputObject):
         self.integrator.Reset()
 
     def SetConstants(self, constants):
-        """Set the contants to be used in the weak form
+        """Set the contacts to be used in the weak form
 
         Parameters
         ----------
@@ -165,7 +166,7 @@ class IntegrationClass(BaseOutputObject):
 
     def SetOnlyEvaluation(self, onlyEvaluation):
         """Set the onlyEvaluation option. If true the contribution of the determinant of the
-        tranformation and the weight of the integration points is ignored. the user is
+        transformation and the weight of the integration points is ignored. the user is
         responsible of dividing by the mass matrix (if necessary) to get the correct values.
 
         Parameters
@@ -178,7 +179,7 @@ class IntegrationClass(BaseOutputObject):
         self.integrator.SetOnlyEvaluation(onlyEvaluation)
 
     def SetUnkownFields(self, unkownFields):
-        """Set the fields used for the unkown space
+        """Set the fields used for the unknown space
 
         Parameters
         ----------
@@ -195,7 +196,7 @@ class IntegrationClass(BaseOutputObject):
         Parameters
         ----------
         tfs : list(FEField) list of fields
-            if tfs is none then the unkown fields are used (Galerkin projection)
+            if tfs is none then the unknown fields are used (Galerkin projection)
         """
         self.testFields = testFields
         self.integrator.SetTestFields(testFields)
@@ -219,7 +220,7 @@ class IntegrationClass(BaseOutputObject):
             name of the integrationRule
 
         integrationRule : dict, optional
-            integraton rule for every element type key->str: value: tuple(intPoints ndarray, intWeights )
+            integration rule for every element type key->str: value: tuple(intPoints ndarray, intWeights )
         """
         if integrationRuleName is None:
             if integrationRule is None:
@@ -289,7 +290,7 @@ class IntegrationClass(BaseOutputObject):
         Parameters
         ----------
 
-        wfrom :  NativeNumericalWeakForm or PyWeakForm
+        weakForm :  NativeNumericalWeakForm or PyWeakForm
             Weak form to be integrated
         """
 
@@ -339,7 +340,7 @@ class IntegrationClass(BaseOutputObject):
 
     def Allocate(self):
         """ Function to allocate the memory to do the integration
-        This function must be called right before the integation
+        This function must be called right before the integration
 
         """
         numberOfVIJ = self.integrator.ComputeNumberOfVIJ(self.mesh,self.elementFilter)
@@ -361,7 +362,7 @@ class IntegrationClass(BaseOutputObject):
         self.SetOutputObjects( vK, iK, jK, rhs)
 
     def Compute(self, forceMonoThread=False):
-        """Execute the integration in multitrhead
+        """Execute the integration in multithread
 
         Parameters
         ----------
@@ -369,15 +370,14 @@ class IntegrationClass(BaseOutputObject):
             true to force the use of only one thread
 
         """
-        if not self.integrator.IsMultiThread():
-            self.PrintDebug("Integration with only one thread")
+        numberOfElementToTreat = self.elementFilter.ApplyOnElements(ElementCounter()).cpt
+        if numberOfElementToTreat == 0:
+            print("Warning no elements selected for integration. Please Check your Element Filter")
+            return
+        elif not self.integrator.IsMultiThread() or forceMonoThread or self.nbCPUs == 1:
+            self.PrintDebug(f"Integration forceMonoThread={forceMonoThread}, nbCPUs={self.nbCPUs}")
             return self.ComputeMonoThread()
-
-        self.PrintDebug(f"Integration forceMonoThread={forceMonoThread}, nbCPUs={self.nbCPUs}")
-        if forceMonoThread or self.nbCPUs == 1:
-            return self.ComputeMonoThread()
-
-        if self.elementFilter.ApplyOnElements(ElementCounter()).cpt < MultiThreadThreshold:
+        elif numberOfElementToTreat < MultiThreadThreshold:
             return self.ComputeMonoThread()
 
         def InitSpaces(fields):
@@ -396,17 +396,12 @@ class IntegrationClass(BaseOutputObject):
         if self.testFields is not None:
             InitSpaces(self.testFields)
 
-
-
-
-
-        allworkload = GetListOfPartialElementFilter(self.elementFilter, self.nbCPUs)
+        allWorkload = GetListOfPartialElementFilter(self.elementFilter, self.nbCPUs)
         workload = []
-
 
         cpt = 0
         totalTestDofs = self.integrator.GetTotalTestDofs()
-        for f in allworkload:
+        for f in allWorkload:
             if f.ApplyOnElements(ElementCounter()).cpt > 0:
                 numberOfVIJ = self.integrator.ComputeNumberOfVIJ(self.mesh,f)
                 workload.append((f,self.vK[cpt:numberOfVIJ+cpt],self.iK[cpt:numberOfVIJ+cpt],self.jK[cpt:numberOfVIJ+cpt], totalTestDofs) )
@@ -419,38 +414,27 @@ class IntegrationClass(BaseOutputObject):
         self.numberOfUsedvij = cpt
 
     def _InternalComputeMonoThreadSafe(self, elementFilter_vK_iK_jK):
-        elementFilter,vK,iK,jK, totalTestDofs  =elementFilter_vK_iK_jK
+        elementFilter,vK,iK,jK, totalTestDofs = elementFilter_vK_iK_jK
         res = IntegrationClass(self)
-        #res.elementFilter = self.elementFilter
-        self.PrintDebug("_InternalComputeMonoThreadSafe in II")
-        #res.SetWeakForm(self.numericalWeakForm)
         res.SetElementFilter(elementFilter)
-        #res.PreStartCheck()
-
-        rhs = np.zeros(totalTestDofs,dtype=PBasicFloatType)
-        res.SetOutputObjects(vK,iK,jK,rhs)
-
+        res.SetOutputObjects(vK, iK, jK, np.zeros(totalTestDofs, dtype=PBasicFloatType))
         res.ComputeMonoThread()
         return res.GetRhs()
 
-    def ComputeMonoThread(self,elementFilter=None):
-        """Execute the integration using only one tread (this function is no threadsafe)
-
+    def ComputeMonoThread(self, elementFilter=None):
+        """Execute the integration using only one tread (this function is no thread safe)
         """
 
         self.integrator.PrepareFastIntegration(self.mesh,self.numericalWeakForm,self.vK,self.iK,self.jK,0,self.rhs)
 
-        totalNumberOfElementTreated = 0
         if elementFilter is None:
             elementFilter = self.elementFilter
 
-        for _name, data, idstotreat in elementFilter:
-            if len(idstotreat) == 0:
+        for _name, data, idsToTreat in elementFilter:
+            if len(idsToTreat) == 0:
                 continue
-            totalNumberOfElementTreated += len(idstotreat)
-            ids = np.asarray(idstotreat,dtype=PBasicIndexType)
             self.integrator.ActivateElementType(data)
-            self.integrator.Integrate(self.numericalWeakForm,ids)
+            self.integrator.Integrate(self.numericalWeakForm, np.asarray(idsToTreat, dtype=PBasicIndexType))
 
         self.numberOfUsedvij = self.integrator.GetNumberOfUsedIvij()
 
