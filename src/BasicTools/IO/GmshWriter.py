@@ -7,6 +7,8 @@
 """ Gmsh  File Writer (gmesh mesh files)
 
 """
+from itertools import combinations
+
 import numpy as np
 import BasicTools.Containers.ElementNames as EN
 
@@ -41,36 +43,32 @@ class GmshWriter(WriterBase):
         return res
 
     def SetFileName(self,fileName):
-        self.fileName = fileName;
+        self.fileName = fileName
 
     def Write(self,meshObject,useOriginalId=False,PointFieldsNames=None,PointFields=None,CellFieldsNames=None,CellFields=None):
-        self.filePointer.write("$MeshFormat\n");
-        self.filePointer.write("2.2 0 8\n");
-        self.filePointer.write("$EndMeshFormat\n");
-        self.filePointer.write("$Nodes\n");
+        self.filePointer.write("$MeshFormat\n")
+        self.filePointer.write("2.2 0 8\n")
+        self.filePointer.write("$EndMeshFormat\n")
+        self.filePointer.write("$Nodes\n")
         numberofpoints = meshObject.GetNumberOfNodes()
-        self.filePointer.write("{}\n".format(numberofpoints) )
-        #
+        self.filePointer.write(f"{numberofpoints}\n")
+
         posn = meshObject.GetPosOfNodes()
         if useOriginalId:
            for n in range(numberofpoints):
                self.filePointer.write("{} ".format(int(meshObject.originalIDNodes[n])))
-               #np.savetxt(self.filePointer, posn[np.newaxis,n,:] )
                posn[np.newaxis,n,:].tofile(self.filePointer, sep=" ")
                self.filePointer.write("\n")
         else:
            for n in range(numberofpoints):
-               self.filePointer.write("{} ".format(n+1) )
-               #np.savetxt(self.filePointer, posn[np.newaxis,n,:] )
+               self.filePointer.write(f"{n+1} ")
                posn[np.newaxis,n,:].tofile(self.filePointer, sep=" ")
                self.filePointer.write("\n")
-        self.filePointer.write("$EndNodes\n");
-        self.filePointer.write("$Elements\n");
-        self.filePointer.write("{}\n".format(meshObject.GetNumberOfElements()))
+        self.filePointer.write("$EndNodes\n")
+        self.filePointer.write("$Elements\n")
+        self.filePointer.write(f"{meshObject.GetNumberOfElements()}\n")
 
         cpt = 1
-
-        #meshObject.PrepareForOutput();
 
         celltags = meshObject.GetNamesOfElemTags()
         elements = meshObject.elements
@@ -88,10 +86,9 @@ class GmshWriter(WriterBase):
             elemtype = gmshName[elementContainer]
             #try:
             data = meshObject.elements[elementContainer]
-            phyGeoTags=np.ones(data.GetNumberOfElements())
+            phyGeoTags=np.ones(data.GetNumberOfElements(), PBasicIndexType)
 
             elemIdsInTags={tagName:data.tags[tagName].GetIds() for tagName in self.userRequiredTags if tagName in data.tags}
-            from itertools import combinations
 
             if elemIdsInTags.keys():
                 tagPairs=list(combinations(elemIdsInTags.keys(), 2))
@@ -99,8 +96,8 @@ class GmshWriter(WriterBase):
                     idsTag1,idsTag2=elemIdsInTags[tag1],elemIdsInTags[tag2]
                     commonIds=np.intersect1d(idsTag1,idsTag2)
                     if commonIds.size > 0:
-                        print("Commong element ids for pair "+str(tag1)+","+str(tag2)+" are: ",str(commonIds))
-                        raise OverlappingTagException("At least 2 tags are overlaping, cannot be handled properly naturally in .msh 2.2 format")
+                        print("Common element ids for pair "+str(tag1)+","+str(tag2)+" are: ",str(commonIds))
+                        raise OverlappingTagException("At least 2 tags are overlapping, cannot be handled properly naturally in .msh 2.2 format")
 
             for tagName in self.tagMapping.keys():
                 if tagName in data.tags:
@@ -108,8 +105,7 @@ class GmshWriter(WriterBase):
                     phyGeoTags[elemIds] = self.tagMapping[tagName]
             if useOriginalId:
                  for i in range(data.GetNumberOfElements() ):
-                    self.filePointer.write("{} {} {} {} {} ".format(data.originalIds[i],elemtype,2,int(phyGeoTags[i]),int(phyGeoTags[i])))
-                    # print("{} {} {} {} {} ".format(data.originalIds[i],elemtype,2,int(phyGeoTags[i]),int(phyGeoTags[i])))
+                    self.filePointer.write(f"{data.originalIds[i]} {elemtype} 2 {phyGeoTags[i]} {phyGeoTags[i]} ")
                     self.filePointer.write(" ".join([str(meshObject.originalIDNodes[x]) for x in data.connectivity[i,:].ravel()]))
                     cpt += 1
                     self.filePointer.write("\n")
@@ -119,8 +115,7 @@ class GmshWriter(WriterBase):
                   connectivity = data.connectivity[i,:]
                   if elementContainer in PermutationBasicToolsToGmsh:
                       connectivity = [connectivity[x] for x in PermutationBasicToolsToGmsh[elementContainer]]
-                  #self.filePointer.write("{} {} {} {} {} ".format(cpt,elemtype,2,tagcounter,tagcounter) )
-                  self.filePointer.write("{} {} {} {} {} ".format(cpt,elemtype,2,int(phyGeoTags[i]),int(phyGeoTags[i])) )
+                  self.filePointer.write(f"{cpt} {elemtype} 2 {phyGeoTags[i]} {phyGeoTags[i]} ")
                   self.filePointer.write(" ".join([str(x+1) for x in connectivity]))
                   cpt += 1
                   self.filePointer.write("\n")
@@ -133,11 +128,9 @@ class GmshWriter(WriterBase):
 from BasicTools.IO.IOFactory import RegisterWriterClass
 RegisterWriterClass(".msh",GmshWriter)
 
-from BasicTools.Helpers.Tests import TestTempDir
-from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshOfTriangles
 def CheckIntegrity_OriginalIdsForTags():
+    from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshOfTriangles
     import BasicTools.Containers.UnstructuredMesh as UM
-    tempdir = TestTempDir.GetTempPath()
 
     mymesh = UM.UnstructuredMesh()
     mymesh.nodes = np.array([[0.00000000001,0,0],[1,0,0],[0,1,0],[1,1,0]],dtype=PBasicFloatType)
@@ -166,14 +159,11 @@ def CheckIntegrity_OriginalIdsForTags():
 
     print(mymesh)
     WriteMeshToGmsh("Test_GmshWriter_II.geof", mymesh,useOriginalId=True,tagMapping=tagMapping)
-    #print(tempdir)
-    #print(open(tempdir+"Test_GmshWriter_II.geof").read())
 
     return "ok"
 
 def CheckIntegrity_SeparatedTags():
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshOfTriangles
-    tempdir = TestTempDir.GetTempPath()
 
     nodes = np.array([[0,0,0],[1,0,0],[1,1,0],[0,1,0],[0.5,0.5,0]],dtype=PBasicFloatType)
     elements = np.array([[0,1,4],[1,2,4],[2,3,4],[3,4,0]])
@@ -216,7 +206,7 @@ def CheckIntegrity_SeparatedTags():
         return "ok"
 
 def CheckIntegrity_OverlappingTags():
-    tempdir = TestTempDir.GetTempPath()
+    from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshOfTriangles
 
     nodes = np.array([[0,0,0],[1,0,0],[1,1,0],[0,1,0],[0.5,0.5,0]],dtype=PBasicFloatType)
     elements = np.array([[0,1,4],[1,2,4],[2,3,4],[3,4,0]])
