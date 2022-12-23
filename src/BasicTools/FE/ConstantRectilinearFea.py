@@ -212,9 +212,10 @@ class Fea(FeaBase.FeaBase):
 
         # FE: Build the index vectors for the for coo matrix format
         self.PrintDebug("Building Connectivity matrix")
-        self.edofMat = np.zeros((self.support.GetNumberOfElements(), self.nodesPerElement*self.dofpernode), dtype=PBasicIndexType)
+        nbBulkElements = self.support.GetNumberOfElements(self.support.GetElementsDimensionality())
+        self.edofMat = np.zeros((nbBulkElements, self.nodesPerElement*self.dofpernode), dtype=PBasicIndexType)
         self.PrintDebug("Building Connectivity matrix 2")
-        for i in  range(self.support.GetNumberOfElements()):
+        for i in  range(nbBulkElements):
             coon = self.support.GetConnectivityForElement(i)
             self.edofMat[i, :] = np.array([(coon*self.dofpernode+y) for y in range(self.dofpernode)]).ravel('F')
 
@@ -269,11 +270,12 @@ class Fea(FeaBase.FeaBase):
             self.f[:,0] += nodal_f[:,0]
         self.PrintDebug("Treating Neumann Done")
 
-        self.eed = np.zeros(self.support.GetNumberOfElements())
+        self.eed = np.zeros(nbBulkElements)
 
     def AssemblyMatrix(self,Op, Eeff = None):
+        nbBulkElements = self.support.GetNumberOfElements(self.support.GetElementsDimensionality())
         if Eeff is None:
-            Eeff = np.ones(self.support.GetNumberOfElements())
+            Eeff = np.ones(nbBulkElements)
             sM = ((Op.flatten()[np.newaxis]).T * Eeff.ravel()).flatten(order='F')
             self.GenerateIJs()
             M = coo_matrix((sM, (self.iK, self.jK)), shape=(self.ndof, self.ndof),dtype=PBasicFloatType)
@@ -357,7 +359,8 @@ class Fea(FeaBase.FeaBase):
 
         # Compute element elastic energy density
         u_reshaped = self.u[self.edofMat]
-        u_reshaped.shape = (self.support.GetNumberOfElements(), self.nodesPerElement*self.dofpernode)
+        nbBulkElements = self.support.GetNumberOfElements(self.support.GetElementsDimensionality())
+        u_reshaped.shape = (nbBulkElements, self.nodesPerElement*self.dofpernode)
         Ku_reshaped = np.dot(u_reshaped, self.KE)
         np.einsum('ij,ij->i', Ku_reshaped, u_reshaped, out=self.eed)
         # we divide by the volume of one element to get the energy density
@@ -388,8 +391,9 @@ class Fea(FeaBase.FeaBase):
 
     def nodal_elastic_energy(self, Eeff=None, OnlyOnInterface = False):
 
+        nbBulkElements = self.support.GetNumberOfElements(self.support.GetElementsDimensionality())
         if Eeff is None:
-            Eeff = np.ones(self.support.GetNumberOfElements())
+            Eeff = np.ones(nbBulkElements)
 
         return node_averaged_element_field(self.element_elastic_energy(Eeff,OnlyOnInterface=OnlyOnInterface),self.support)
 
@@ -610,7 +614,7 @@ def CheckIntegrityDep3D():
     print("Time for Fea definition : " + str(time.time() -starttime))
 
     starttime = time.time()
-    densities  = np.ones(myMesh.GetNumberOfElements());
+    densities  = np.ones(myMesh.GetNumberOfElements(dim=3))
     myProblem.Solve(densities)
     print("Time for Fea solve : " + str(time.time() -starttime))
 
@@ -637,11 +641,12 @@ def CheckIntegrityThermal2D():
     print('----------------------------  Thermal2D -------------------------------------------------')
 
     myMesh = CRM.ConstantRectilinearMesh(2)
-    nx = 11; ny = 11;
+    nx = 11
+    ny = 11
 
-    myMesh.SetDimensions([nx,ny]);
-    myMesh.SetSpacing([0.1, 0.1]);
-    myMesh.SetOrigin([0, 0]);
+    myMesh.SetDimensions([nx,ny])
+    myMesh.SetSpacing([0.1, 0.1])
+    myMesh.SetOrigin([0, 0])
     print(myMesh)
 
     dirichlet_bcs = BundaryCondition(dim = 2)
@@ -742,7 +747,7 @@ def CheckIntegrityDep2D():
     print("Time for Fea definition : " + str(time.time() -starttime))
 
     starttime = time.time()
-    densities  = np.ones(myMesh.GetNumberOfElements());
+    densities  = np.ones(myMesh.GetNumberOfElements(dim=2))
     myProblem.Solve(densities)
 
     print("Time for Fea solve : " + str(time.time() -starttime))

@@ -109,26 +109,9 @@ class ConstantRectilinearElementContainer(BaseOutputObject):
     def GetMultiIndexOfElement(self,index):
         return self.GetMultiIndexOfElements([index])[0,:]
 
-    def GetNumberOfElements(self,dim=None):
-        if dim is None:
-            dim = len(self.__dimensions)
+    def GetNumberOfElements(self):
+        return np.prod((self.__dimensions-1)[self.__dimensions>=1] )
 
-        res = 1
-
-        if self.__dimensions[0] >= 1:
-            res = res * (self.__dimensions[0]-1)
-
-        if self.__dimensions[1] >= 1:
-            res = res * (self.__dimensions[1]-1)
-
-        if dim == 2:
-            return res
-
-        if self.__dimensions[2] >= 1:
-            res = res * (self.__dimensions[2]-1)
-
-        if dim == 3:
-            return  res
 
     def GetNumberOfNodesPerElement(self):
         return 2**len(self.__dimensions)
@@ -144,6 +127,9 @@ class ConstantRectilinearElementContainer(BaseOutputObject):
         res += "  Type : ({},{}), ".format(self.elementType,self.GetNumberOfElements())
         res += "  Tags : " + " ".join([ ("("+x.name+":"+str(len(x)) +")") for x in self.tags]) + "\n"
         return res
+
+    def tighten(self):
+        self.tags.Tighten()
 
 @froze_it
 class ConstantRectilinearMesh(MeshBase):
@@ -233,7 +219,20 @@ class ConstantRectilinearMesh(MeshBase):
         return np.prod(self.__dimensions)
 
     def GetNumberOfElements(self,dim=None):
-        return self.structElements.GetNumberOfElements()
+        """
+        Compute and return the total number of elements in the mesh
+        """
+
+        numberOfElements = 0
+        if dim == None:
+            for elemname, data in self.elements.items():
+                numberOfElements += data.GetNumberOfElements()
+        else:
+            for elemname, data in self.elements.items():
+                if ElementNames.dimension[elemname] == dim:
+                    numberOfElements += data.GetNumberOfElements()
+
+        return numberOfElements
 
     def GetMultiIndexOfElements(self,indices):
         return self.structElements.GetMultiIndexOfElements(indices)

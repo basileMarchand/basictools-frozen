@@ -46,13 +46,18 @@ def GetNodeTrasfertMatrix(inputmesh,destinationmesh):
 
 def GetElementTrasfertMatrix(inputmesh, destinationmesh):
 
+    if not isinstance(inputmesh, ConstantRectilinearMesh):
+        raise Exception("First argument must be a ConstantRectilinearMesh")
     nps = 3
     nps3 = nps**inputmesh.GetDimensionality()
     oldToNewVals = np.zeros((destinationmesh.GetNumberOfNodes(),nps3))
     oldToNewIK = np.zeros((destinationmesh.GetNumberOfNodes(),nps3), dtype=np.int_)
     oldToNewJK = np.zeros((destinationmesh.GetNumberOfNodes(),nps3), dtype=np.int_)
 
-    for i in  range(destinationmesh.GetNumberOfElements()):
+    numberOfElementsDest = destinationmesh.GetNumberOfElements(dim = destinationmesh.GetElementsDimensionality() )
+    numberOfElementsInp = inputmesh.GetNumberOfElements(dim = inputmesh.GetElementsDimensionality() )
+
+    for i in  range(numberOfElementsDest):
         coon = destinationmesh.GetConnectivityForElement(i)
 
         n0pos = destinationmesh.GetPosOfNode(coon[0])
@@ -75,7 +80,7 @@ def GetElementTrasfertMatrix(inputmesh, destinationmesh):
                     oldToNewJK[i,cpt] += el
                     cpt +=1
 
-    oldToNew =  coo_matrix((oldToNewVals.ravel(), (oldToNewIK.flatten(), oldToNewJK.flatten())), shape=(destinationmesh.GetNumberOfElements(), inputmesh.GetNumberOfElements())).tocsc()
+    oldToNew =  coo_matrix((oldToNewVals.ravel(), (oldToNewIK.flatten(), oldToNewJK.flatten())), shape=(numberOfElementsDest, numberOfElementsInp)).tocsc()
 
     return oldToNew
 
