@@ -70,7 +70,7 @@ BinaryKeywords = {
     "GmfTrianglesP3": 25,
     "GmfTrianglesP4": 26,
     "GmfQuadrilateralsP2": 27,
-    "GmfQuadrilateralsP3": 27,
+    "GmfQuadrilateralsP3": 28,
     "GmfQuadrilateralsP4": 29,
     "GmfTetrahedraP2": 30,
     "GmfTetrahedraP3": 31,
@@ -80,7 +80,7 @@ BinaryKeywords = {
     "GmfHexahedraP4": 35,
     "GmfReserved17": 36,
     "GmfReserved18": 37,
-    "GmfReserved19": 37,
+    "GmfReserved19": 38,
     "GmfReserved20": 39,
     "GmfReserved21": 40,
     "GmfReserved22": 41,
@@ -90,7 +90,7 @@ BinaryKeywords = {
     "GmfReserved26": 45,
     "GmfReserved27": 46,
     "GmfReserved28": 47,
-    "GmfReserved29": 47,
+    "GmfReserved29": 48,
     "GmfReserved30": 49,
     "GmfBoundingBox": 50,
     "GmfReserved31": 51,
@@ -100,7 +100,7 @@ BinaryKeywords = {
     "GmfReserved34": 55,
     "GmfReserved35": 56,
     "GmfReserved36": 57,
-    "GmfReserved37": 57,
+    "GmfReserved37": 58,
     "GmfTangents": 59,
     "GmfNormals": 60,
     "GmfTangentAtVertices": 61,
@@ -110,7 +110,7 @@ BinaryKeywords = {
     "GmfSolAtQuadrilaterals": 65,
     "GmfSolAtTetrahedra": 66,
     "GmfSolAtPentahedra": 67,
-    "GmfSolAtHexahedra": 67,
+    "GmfSolAtHexahedra": 68,
     "GmfDSolAtVertices": 69,
     "GmfISolAtVertices": 70,
     "GmfISolAtEdges": 71,
@@ -120,7 +120,7 @@ BinaryKeywords = {
     "GmfISolAtPentahedra": 75,
     "GmfISolAtHexahedra": 76,
     "GmfIterations": 77,
-    "GmfTime": 77,
+    "GmfTime": 78,
     "GmfReserved38": 79}
 
 FieldTypes = {
@@ -133,7 +133,6 @@ FieldTypes = {
 BinaryNumber = {}
 BinaryNumber[EN.Point_1] = BinaryKeywords["GmfVertices"]
 BinaryNumber[EN.Bar_2] = BinaryKeywords["GmfEdges"]
-
 BinaryNumber[EN.Triangle_3] = BinaryKeywords["GmfTriangles"]
 BinaryNumber[EN.Quadrangle_4] = BinaryKeywords["GmfQuadrilaterals"]
 BinaryNumber[EN.Tetrahedron_4] = BinaryKeywords["GmfTetrahedra"]
@@ -142,6 +141,18 @@ BinaryNumber[EN.Pyramid_5] = BinaryKeywords["GmfReserved30"]
 BinaryNumber[EN.Wedge_6] = BinaryKeywords["GmfPentahedra"]
 BinaryNumber[EN.Hexaedron_20] = BinaryKeywords["GmfHexahedraP2"]
 BinaryNumber[EN.Quadrangle_8] = BinaryKeywords["GmfQuadrilateralsP2"]
+
+BinaryName = {}
+BinaryName[EN.Point_1] = "GmfVertices"
+BinaryName[EN.Bar_2] = "GmfEdges"
+BinaryName[EN.Triangle_3] = "GmfTriangles"
+BinaryName[EN.Quadrangle_4] = "GmfQuadrilaterals"
+BinaryName[EN.Tetrahedron_4] = "GmfTetrahedra"
+BinaryName[EN.Hexaedron_8] = "GmfHexahedra"
+BinaryName[EN.Pyramid_5] = "GmfReserved30"
+BinaryName[EN.Wedge_6] = "GmfPentahedra"
+BinaryName[EN.Hexaedron_20] = "GmfHexahedraP2"
+BinaryName[EN.Quadrangle_8] = "GmfQuadrilateralsP2"
 
 
 BinaryTypes = {}
@@ -156,6 +167,38 @@ BinaryTags[BinaryKeywords["GmfRequiredTriangles"]] = (EN.Triangle_3, RequiredTri
 BinaryFields = {}
 BinaryFields[BinaryKeywords["GmfSolAtVertices"]] = ("SolAtVertices")
 
+def GetTypesForVersion(version:int):
+    import numpy as np
+
+    posSize = 4
+    posFormat = 'i'
+    posType = np.int32
+
+    intSize = 4
+    intFormat = 'i'
+    intType = np.int32
+
+    floatSize = 4
+    floatFormat = 'f'
+    floatType = np.float32
+
+
+    if version > 1:
+        floatSize = 8
+        floatFormat = 'd'
+        floatType = np.float64
+
+    if version > 2:
+        posSize = 8
+        posFormat = 'q'
+        posType = np.int64
+
+    if version > 3:
+        intSize = 8
+        intFormat = 'q'
+        intType = np.int64
+
+    return (posSize,posFormat,posType), (intSize,intFormat,intType), (floatSize, floatFormat, floatType)
 
 def CheckIntegrity():
     return "ok"

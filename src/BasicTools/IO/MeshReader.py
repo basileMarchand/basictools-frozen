@@ -14,7 +14,7 @@ from BasicTools.IO.IOFactory import RegisterReaderClass
 
 from BasicTools.IO.MeshTools import ASCIITypes, ASCIITags, RequiredVertices, FieldTypes
 from BasicTools.IO.MeshTools import BinaryTypes, BinaryTags, BinaryFields
-from BasicTools.IO.MeshTools import BinaryKeywords as BKeys
+from BasicTools.IO.MeshTools import BinaryKeywords as BKeys, GetTypesForVersion
 from BasicTools.NumpyDefs import PBasicIndexType, PBasicFloatType
 
 def ReadMesh(fileName:str=None, string:str=None, ReadRefsAsField:bool=False)-> UnstructuredMesh:
@@ -264,10 +264,16 @@ class MeshReader(ReaderBase):
         fieldSizes = [int(x) for x in line.split()[1:]]
 
         for i in range(len(fieldSizes)):
-            if fieldSizes[i] == 2:
+            if fieldSizes[i] == FieldTypes["GmfSca"]:
+                fieldSizes[i] = 1
+            elif fieldSizes[i] == FieldTypes["GmfVec"]:
                 fieldSizes[i] = dim
-            elif fieldSizes[i] == 3:
-                raise
+            elif fieldSizes[i] == FieldTypes["GmfSymMat"]:
+                fieldSizes[i] = dim*(dim+1)//2
+            elif fieldSizes[i] == FieldTypes["GmfMat"]:
+                fieldSizes[i] = dim*dim
+            else:
+                raise Exception(f"Field {i} not conform to format")
 
         ncoomp = np.sum(fieldSizes)
 
@@ -281,41 +287,51 @@ class MeshReader(ReaderBase):
         return datares
 
 ##BINARY PART ################################################################################
-    def _ReadBinaryInt(self):
-        if self.version <= 3:
+    def ReadBinaryInt(self):
+        if self.intSize == 4:
             return self.readInt32()
         else:
             return self.readInt64()
 
-    def _ReadBinaryHeader(self):
-        key = self.readInt32()
+    def ReadEndOfInformation(self):
+        if self.posSize == 4:
+            return self.readInt32()
+        else:
+            return self.readInt64()
 
-        dataType = np.float32
-        dataSize = 4
+    def ReadKeyWord(self):
+        return self.readInt32()
+
+    def ReadIntArray(self):
+        nbEntries = self.ReadBinaryInt()
+        ids = np.fromfile(self.filePointer, dtype=self.intType, count=nbEntries, sep="")
+        return ids
+
+    def ReadBinaryHeader(self):
+        key = self.ReadKeyWord()
+
         if key == BKeys["GmfVersionFormatted"]:
             self.version = self.readInt32()
-            if self.version >= 2:
-                dataType = np.float64
-                dataSize = 8
-                #print("data in double")
+            posData, intData, floatData = GetTypesForVersion(self.version)
+
+            self.posSize, self.posFormat, self.posType = posData
+            self.intSize, self.intFormat, self.intType = intData
+            self.floatSize, self.floatFormat, self.floatType = floatData
         else:
             raise Exception('Expected key value equal to '+str(BKeys["GmfVersionFormatted"]) +
                             ' (GmfVersionFormatted), got : '+str(key)+' are you sure this file is binary??')
 
-        key = self.readInt32()
-        if key == BKeys["GmfDimension"]:
-            if self.version == 3:
-                endOfInformation = self.readInt64()
-            else:
-                endOfInformation = self.readInt32()
 
+        key = self.ReadKeyWord()
+        if key == BKeys["GmfDimension"]:
+            endOfInformation = self.ReadEndOfInformation()
             dimension = self.readInt32()
             self.filePointer.seek(endOfInformation)
         else:
             raise Exception('Expected key value equal to ' +
                             str(BKeys["GmfDimension"])+' (GmfDimension), got : '+str(key)+' are you sure this file is binary??')
 
-        return dataType, dataSize, dimension
+        return dimension
 
     def ReadMeshBinary(self, out=None):
         self.readFormat = 'rb'
@@ -330,40 +346,41 @@ class MeshReader(ReaderBase):
 
         self.output = res
 
-        dataType, dataSize, dimension = self._ReadBinaryHeader()
-
-        def ReadEndOfInformation():
-            if self.version == 3:
-                return self.readInt64()
-            else:
-                return self.readInt32()
+        dimension = self.ReadBinaryHeader()
 
         globalElementCounter = 0
         elemRefsDic = {}
 
+        endOfInformation = self.filePointer.tell()
         while True:
+            if endOfInformation != self.filePointer.tell():
+                print(f"endOfInformation : {endOfInformation}")
+                print(f"tell {self.filePointer.tell()}")
+                print(f"key {key}")
+                raise Exception("Error in endOfInformation")
+
             try:
-                key = self.readInt32()
+                key = self.ReadKeyWord()
             except EOFError:
                 break
             self.PrintVerbose("key" + str(key))
             if key == BKeys["GmfEnd"]:
                 break
 
-            endOfInformation = ReadEndOfInformation()
+            endOfInformation = self.ReadEndOfInformation()
             # Vertices
             if key == BKeys["GmfVertices"]:
-                nbNodes = self.readInt32()
+                nbNodes = self.ReadBinaryInt()
 
                 self.PrintVerbose("Reading " + str(nbNodes) + " nodes ")
 
                 res.nodes = np.empty((nbNodes, dimension), dtype=PBasicFloatType)
                 res.originalIDNodes = np.empty((nbNodes,), dtype=PBasicIndexType)
-                dt = np.dtype([('pos', dataType, (dimension,)), ('ref', np.int32, (1,))])
+                dt = np.dtype([('pos', self.floatType, (dimension,)), ('ref', self.intType, (1,))])
 
                 data = np.fromfile(self.filePointer, dtype=dt, count=nbNodes, sep="")
 
-                res.nodes[:, :] = data[:]["pos"]
+                res.nodes[:, :] = data[:]["pos"].astype(PBasicFloatType)
                 res.originalIDNodes[:] = np.arange(nbNodes, dtype=PBasicIndexType)
 
                 refs = data[:]["ref"]
@@ -373,14 +390,14 @@ class MeshReader(ReaderBase):
                     cpt = 0
                     while (cpt < len(refs)):
                         ref = refs[cpt][0]
-                        # print(ref)
                         res.GetNodalTag("NTag"+str(ref)).AddToTag(cpt)
                         cpt += 1
                 continue
 
             if key == BKeys["GmfCorners"]:
-                nbCorners = self.readInt32()
-                data = np.fromfile(self.filePointer, dtype=np.int32, count=nbCorners, sep="")
+                data =self.ReadIntArray()
+                #nbCorners = self.ReadBinaryInt()
+                #data = np.fromfile(self.filePointer, dtype=self.intType, count=nbCorners, sep="")
                 res.nodesTags.CreateTag("Corners").SetIds(data-1)
                 continue
 
@@ -390,18 +407,16 @@ class MeshReader(ReaderBase):
                 elements = res.GetElementsOfType(BinaryTypes[key])
                 self.PrintVerbose("Reading elements of type " + elements.elementType)
                 nbNodes = elements.GetNumberOfNodesPerElement()
-                nbElements = self.readInt32()
-
-                elements.Reserve(nbElements)
-
+                nbElements = self.ReadBinaryInt()
                 self.PrintVerbose('Reading ' + str(nbElements) + " Elements ")
+                elements.Reserve(nbElements)
                 elements.cpt = 0
 
-                dt = np.dtype([('conn', np.int32, (nbNodes,)), ('ref', np.int32, (1,))])
+                dt = np.dtype([('conn', self.intType, (nbNodes,)), ('ref', self.intType, (1,))])
 
                 data = np.fromfile(self.filePointer, dtype=dt, count=nbElements, sep="")
 
-                elements.connectivity = (data[:]["conn"]-1).astype(np.int_)
+                elements.connectivity = (data[:]["conn"]-1).astype(PBasicIndexType)
 
                 elements.originalIds = np.arange(globalElementCounter, globalElementCounter+nbElements)
                 elements.cpt = nbElements
@@ -411,39 +426,34 @@ class MeshReader(ReaderBase):
                 if self.refsAsAField:
                     elemRefsDic[elements.elementType] = refs
                 else:
-                    for ref in np.unique(refs):
-                        elements.GetTag("ETag"+str(ref)).SetIds(np.where(refs == ref)[0])
-                continue
-
-                self.PrintVerbose('Reading ' + str(nbElements) + " Elements Done ")
-
+                    urefs = np.unique(refs)
+                    if len(urefs) > 1 or urefs[0] != 0:
+                        for ref in urefs:
+                            elements.GetTag("ETag"+str(ref)).SetIds(np.where(refs == ref)[0])
                 continue
 
             if key == BKeys["GmfRequiredVertices"]:
                 tagname = RequiredVertices
                 self.PrintVerbose("Reading " + str(tagname))
-                nbentries = self.readInt32()
-                ids = np.fromfile(self.filePointer, dtype=np.int32, count=nbentries, sep="")-1
-                res.nodesTags.CreateTag(tagname).SetIds(ids)
+                res.nodesTags.CreateTag(tagname).SetIds( self.ReadIntArray()-1)
+
                 continue
 
             if key in BinaryTags:
                 elemtype, tagname = BinaryTags[key]
                 self.PrintVerbose("Reading " + str(tagname))
-                nbentries = self.readInt32()
-                ids = np.fromfile(self.filePointer, dtype=np.int32, count=nbentries, sep="")-1
                 elements = res.GetElementsOfType(elemtype)
-                elements.tags.CreateTag(tagname).SetIds(ids)
+                elements.tags.CreateTag(tagname).SetIds(self.ReadIntArray()-1)
                 continue
 
             if key in BinaryFields:
-                data = self._readExtraFieldBinary(self, dataSize, dimension)
+                data = self._readExtraFieldBinary(dimension)
                 for i in range(len(data)):
                     res.elemFields[BinaryFields[key]+str(i)] = data[i]
                 continue
 
             if key == BKeys["GmfSolAtVertices"]:
-                data = self._readExtraFieldBinary(self, dataSize, dimension)
+                data = self._readExtraFieldBinary(dimension)
                 for i in range(len(data)):
                     res.nodeFields["SolAtVertices"+str(i)] = data[i]
                 continue
@@ -467,29 +477,28 @@ class MeshReader(ReaderBase):
         res.ConvertDataForNativeTreatment()
         return res
 
-    def _readExtraFieldBinary(self, myFile, dataSize, dim):
-        nbEntities = myFile._ReadBinaryInt()
-        nbfields = myFile._ReadBinaryInt()
+    def _readExtraFieldBinary(self, dim):
+        nbEntities = self.ReadBinaryInt()
+        nbfields = self.ReadBinaryInt()
 
         fieldSizes = np.empty(nbfields, dtype=PBasicIndexType)
         res = []
         for i in range(nbfields):
-            fieldType = myFile._ReadBinaryInt()
+            fieldType = self.ReadBinaryInt()
             if fieldType == FieldTypes["GmfSca"]:
                 fieldSizes[i] = 1
             elif fieldSizes[i] == FieldTypes["GmfVec"]:
                 fieldSizes[i] = dim
             elif fieldSizes[i] == FieldTypes["GmfSymMat"]:
                 fieldSizes[i] = dim*(dim+1)//2
+            elif fieldSizes[i] == FieldTypes["GmfMat"]:
+                fieldSizes[i] = dim*dim
             else:
                 raise Exception(f"Field {i} not conform to format")
 
         ncoomp = np.sum(fieldSizes)
-        if dataSize == 4:
-            data = myFile.readFloats32(nbEntities*ncoomp)
-        else:
-            data = myFile.readFloats64(nbEntities*ncoomp)
 
+        data = np.fromfile(self.filePointer, dtype=self.floatType, count=nbEntities*ncoomp, sep="")
         data.shape = (nbEntities, ncoomp)
 
         cpt = 0
