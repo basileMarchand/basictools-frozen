@@ -4,7 +4,7 @@
 # file 'LICENSE.txt', which is part of this source code package.
 #
 from collections import defaultdict
-
+from typing import Union
 import numpy as np
 
 from sympy.matrices import Matrix
@@ -41,7 +41,7 @@ class Physics(BOO):
             return data[0]
         return [ data[0] + "_" +str(d)  for d in range(data[1]) ]
 
-    def GetBulkMassFormulation(self,alpha=1.):
+    def GetBulkMassFormulation(self,alpha: Union[PBasicFloatType,str]=1.):
         u = self.primalUnknown
         ut = self.primalTest
 
@@ -434,7 +434,7 @@ class BasicPhysics(Physics):
 
         return DTrialDi*(a)*DTestDj
 
-    def GetBulkLaplacian(self,alpha=1):
+    def GetBulkLaplacian(self, alpha=1.):
         from BasicTools.FE.SymWeakForm import Gradient
         a = GetScalarField(alpha)
         u = self.primalUnknown
