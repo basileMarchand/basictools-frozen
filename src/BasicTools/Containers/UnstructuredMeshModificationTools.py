@@ -202,6 +202,12 @@ def CleanDoubleElements(mesh: UnstructuredMesh):
     elementCpt = 0 # element counter
     newElementContainer = type(mesh.elements)()
     for elemName, data in mesh.elements.items():
+        if data.mutable == False:
+            newElementContainer[elemName] = data
+            elemFieldMask[maskCpt:maskCpt+data.GetNumberOfElements()] = np.arange(data.GetNumberOfElements())+elementCpt
+            maskCpt  += data.GetNumberOfElements()
+            elementCpt += data.GetNumberOfElements()
+            continue
 
         nbe = data.GetNumberOfElements()
         if  nbe == 0:
@@ -213,8 +219,11 @@ def CleanDoubleElements(mesh: UnstructuredMesh):
         newElements = ExtractElementsByMask(data, mask)
         newElementContainer[elemName] = newElements
         elemFieldMask[maskCpt:maskCpt+newElements.GetNumberOfElements()] = newElements.originalIds+elementCpt
-        maskCpt  += newElements.GetNumberOfElements()
         newElementContainer[elemName].originalIds = data.originalIds[newElementContainer[elemName].originalIds]
+
+        maskCpt  += newElements.GetNumberOfElements()
+        elementCpt += data.GetNumberOfElements()
+
 
     mesh.elements = newElementContainer
     elemFieldMask = elemFieldMask[0:maskCpt]
