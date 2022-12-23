@@ -130,6 +130,7 @@ def MeshIOToMesh(mesh, TagsAsFields=False):
         elems.cpt = nbelems
         for tagname,tagdata in mesh.cell_sets.items():
             #ids = list(filter(lambda x : x >= cpt and x < nbelems +cpt ,tagdata))
+            tagdata = np.asarray(tagdata)
             mask = np.logical_and(tagdata >= cpt, tagdata < nbelems + cpt )
             ids = tagdata[mask] - cpt
             if len(ids) :
@@ -164,7 +165,8 @@ def InitAllReaders():
 
         def GetRead():
             def Read(self,out=None):
-                mesh_io  = meshio.Mesh.read(self.filename, self.meshIOInternalfiletype)
+                mesh_io  = meshio.read(self.filename, self.meshIOInternalfiletype)
+
                 return MeshIOToMesh(mesh_io)
             return Read
 
