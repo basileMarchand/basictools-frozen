@@ -159,7 +159,6 @@ class ConstantRectilinearMesh(MeshBase):
         res.originalIDNodes = self.originalIDNodes
         res.elements = self.elements
         res.structElements = self.structElements
-        res.elements = self.elements[self.structElements.elementType]
         return res
 
     def GetElementsOriginalIDs(self,dim = None):
@@ -449,7 +448,7 @@ class ConstantRectilinearMesh(MeshBase):
         """
         All fields must have same mask (i.e. NaN values outside the support)
         """
-
+        pos = np.asarray(pos)
         alPos = [pos]
 
         dim = len(self.__dimensions)
@@ -554,10 +553,19 @@ def CheckIntegrity():
     except:
         pass
 
+    # Error checking tests
+    try:
+        # not implemented for dim = 1 this line must fail
+        myMesh = ConstantRectilinearMesh( dim=2)
+        myMesh.SetDimensions([1,2,3])
+        raise("Error detecting bad argument") # pragma: no cover
+    except:
+        pass
+
+
     myMesh = ConstantRectilinearMesh()
     myMesh.SetDimensions([1,1,1])
     myMesh.SetSpacing([1, 1, 1])
-
 
     try:
         # not implemented for dim = 1 this line must fail
@@ -570,7 +578,38 @@ def CheckIntegrity():
     myMesh = ConstantRectilinearMesh()
     myMesh.SetDimensions([2,2,2])
     myMesh.SetSpacing([1, 1, 1])
+    myMesh.ComputeGlobalOffset()
+    myMesh.nodeFields["simpleNF"] = np.arange(myMesh.GetNumberOfNodes())
+    myMesh.elemFields["simpleEF"] = np.arange(myMesh.GetNumberOfElements())
+    myMesh.structElements.tags.CreateTag("First Element").SetIds([1])
     #myMesh.SetOrigin([-2.5,-1.2,-1.5])
+
+
+    print(myMesh)
+    if myMesh.GetNumberOfElements() != 1:
+        raise Exception("Wrong number of elements")# pragma: no cover
+
+    myMesh.structElements.tighten()
+
+    import copy
+    myNewMesh = copy.copy(myMesh)
+
+    if myMesh.GetNumberOfElements() != myNewMesh.GetNumberOfElements():
+        raise Exception("Error int the copy") # pragma: no cover
+
+    print(myMesh.GetElementsOriginalIDs())
+    print(myMesh.GetNamesOfElemTagsBulk())
+    print(myMesh.GetdV())
+    print(myMesh.boundingMin)
+    print(myMesh.boundingMax)
+    if myMesh.GetPointsDimensionality() != 3:
+        raise Exception("Wrong dim of points") # pragma: no cover
+
+    myMesh.GetElementsInTag("")
+    myMesh.GetElementsInTag("First Element")
+
+
+    myMesh.GetValueAtPosMultipleField(np.zeros((3,myMesh.GetNumberOfNodes())), [0,0,0])
 
     print(myMesh)
     print(myMesh.elements[ElementNames.Hexaedron_8].GetNumberOfElements())

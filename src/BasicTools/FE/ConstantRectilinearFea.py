@@ -53,7 +53,7 @@ class BundaryCondition(BaseOutputObject):
         m *= 3
         cachesize = np.insert(np.delete(m,len(m)-1),0,3)
 
-        i = 0 ;
+        i = 0
         while (i < self.cpt):
 
           node = self.nodes[i]
@@ -171,7 +171,7 @@ class Fea(FeaBase.FeaBase):
         self.init = True
 
         if support is not None:
-            self.support = support ;
+            self.support = support
 
         if self.support.IsConstantRectilinear() == False :
             raise Exception("Must be a ConstantRectilinear mesh type ") #pragma: no cover
@@ -254,7 +254,7 @@ class Fea(FeaBase.FeaBase):
             if self.neumann_bcs.cpt:
               self.support.GenerateFullConnectivity()
               z = np.zeros((self.support.GetNumberOfNodes(),))
-              z[self.support.GetMonoIndexOfNode(self.neumann_bcs.nodes)] +=  1.;
+              z[self.support.GetMonoIndexOfNode(self.neumann_bcs.nodes)] +=  1.
               eff = np.clip((np.sum(z[self.support.GenerateFullConnectivity()],axis=1) ),0, 1)
 
               MassMatrix = self.BuildMassMatrix(eff)
@@ -499,12 +499,14 @@ def CheckIntegrityThermal3D():
     from BasicTools.Helpers.Tests import TestTempDir
 
     myMesh = CRM.ConstantRectilinearMesh()
-    nx = 11; ny = 12; nz = 13;
+    nx = 11
+    ny = 12
+    nz = 13
 
 
-    myMesh.SetDimensions([nx,ny,nz]);
-    myMesh.SetSpacing([0.1, 0.1, 10./(nz-1)]);
-    myMesh.SetOrigin([0, 0, 0]);
+    myMesh.SetDimensions([nx,ny,nz])
+    myMesh.SetSpacing([0.1, 0.1, 10./(nz-1)])
+    myMesh.SetOrigin([0, 0, 0])
     print(myMesh)
 
     # thermal problem
@@ -577,11 +579,13 @@ def CheckIntegrityDep3D():
 
     print('------------------------------- Dep3D ----------------------------------------------')
 
-    nx = 11; ny = 12; nz = 13;
+    nx = 11
+    ny = 12
+    nz = 13
     myMesh = CRM.ConstantRectilinearMesh()
-    myMesh.SetDimensions([nx,ny,nz]);
-    myMesh.SetSpacing([0.1, 0.1, 10./(nz-1)]);
-    myMesh.SetOrigin([0, 0, 0]);
+    myMesh.SetDimensions([nx,ny,nz])
+    myMesh.SetSpacing([0.1, 0.1, 10./(nz-1)])
+    myMesh.SetOrigin([0, 0, 0])
 
     # block all the faces rith
     dirichlet_bcs = BundaryCondition()
@@ -713,11 +717,12 @@ def CheckIntegrityDep2D():
 
     print('----------------------- 2D dep ------------------------------------------------------')
     myMesh = CRM.ConstantRectilinearMesh(2)
-    nx = 11; ny = 12;
+    nx = 11
+    ny = 12
 
-    myMesh.SetDimensions([nx,ny]);
-    myMesh.SetSpacing([1./(nx-1), 1./(ny-1)]);
-    myMesh.SetOrigin([0, 0]);
+    myMesh.SetDimensions([nx,ny])
+    myMesh.SetSpacing([1./(nx-1), 1./(ny-1)])
+    myMesh.SetOrigin([0, 0])
     print(myMesh)
     # block all the faces rith
 
@@ -754,8 +759,8 @@ def CheckIntegrityDep2D():
     print(myProblem.u.T)
 
     # build mass matrix
-    myProblem.BuildMassMatrix();
-    myProblem.BuildMassMatrix(densities);
+    myProblem.BuildMassMatrix()
+    myProblem.BuildMassMatrix(densities)
 
     XdmfWriter.WriteMeshToXdmf(TestTempDir.GetTempPath() +'TestDep2D.xmf',myMesh,
                     [myProblem.u, myProblem.f, myProblem.nodal_elastic_energy(), myProblem.fixed.astype(int) ],
