@@ -2,6 +2,79 @@ New in version Master:
 **********************
 **********************
 
+New in version 1.9.0:
+*********************
+*********************
+
+(CodeInterface.py) correctly treat templates si braces
+(test.py) Correct generation of file .BasicToolsTempPath on windows
+(BasicToolsParaViewBridge.py) prototype of WrapBasicToolsFunctionToVTK
+Add gmshBridge
+(KRFromDistribution.y) KR to impose a primal solution over a full domain (using a field)
+Mesh Reader and Writer:   cleaner, more robust
+(ReaderBase.py) Better EOF Exception
+(vtkBridge.py) More flexible nodeFields conversion
+(Zset IO) add s3d6 and format
+(StlReader.py) Add color reading
+(MeshFileconverter.py) Add more output information
+(SpaceBase) Clean Jack and better names
+(ParserHelper.py) Add SIprefixes and some other constants
+(meta.yaml) drop of python 3.7
+(UnstructuredMeshInspectionTools.py) GetVolume. Fast return in case of zero element on mesh
+(ConstantRectilinearMesh.py) Faster SetDimensions
+Move GetElementsDimensionality to MeshBase.py
+(UnstructuredMesh.py) Fast path for GetElementsOriginalIDs with (dim =None)
+(vtkBridge.py) Optimization
+(XdmfWriter.py) Add GetHdf5 to check if the hdf5 option is activated
+(Integration.py) if no element filter is given the higher dimensionality element are used
+(FESpaces.py) InitAllSpaces for multi threated app
+(ParserHelper.py) can do typeConversion using getters
+(ImplicitGeometryObjects.py) ImplicitGeometryByETag better treatment on SetSupportAndZones
+(UnstructuredMeshInspectionTools.py) New Function GetMeasure
+(FieldTools.py) ElementWiseIpToFETransferOp correction, typo correction
+(VtuReader.py) Ensure mesh in Native format
+(FieldBase.py) add eq and ne operators, forbidden conversion to bool
+(FieldTools.py) add Maximum and Minimum operators
+(SymPhysics.py) Add Thermal Mass and Robin
+add IO/OpenFoamReader
+extend CellDataToPoint to multiple cellFields
+added getmeshfilename function to ZIO
+Created the GetElementGraph function
+(MeshReadr.py) Faster element reading
+(DofNumberingNumpy.py) Add missing line to set the mesh of the ElementFilter
+(NativeIntegration.cpp) Elimination std conversion
+(BasicToolsParaViewBridge.py) Better functions wrapping to paraview, add SubDivideMesh filter
+(UnstructuredMesh.py) Correction in the GetElementsInTag
+(UnstructuredMeshCreationTools.py) faster SubDivideMesh, and add tris and Tets.
+(UnstructuredMeshInspectionTools.py) Correct generation of originalIDNodes in ExtractElementsByElementFilter
+(FEField.py) Add copy operator
+(ImplicitGeometryObject.py) add dim option to ImplicitGeometryByETag , ImplicitGeometryByETagII.
+(Integration.py) Add Pos_0, Pos_1 and Pos_2 as extraFields
+(WedgeSpace.py) Correction of P2 shape functions
+(XdmfWriter.py) save a copy in the internal storage to prevent external changes to it
+(SymPhysics.py) Add centrifugal term
+ConvertNTagsToETags add CleanDoubleElements call
+(ConstantRectilinearMesh.py) add GetPointsDimensionality
+(NativeDofNumbering) release GIL in c++
+(DofNumbering.cpp) lazy evaluation of computeDofToPoint
+(NativeIntegration) release GIL in c++
+NativeIntegration. Cleaning reformating
+(Filters.py) New PartialElementFilter for parallel processing
+(FiltersTools.py) New funtion GetListOfPartialElementFilter for parallel processing
+(Integration.py) add positions fields to the ExtraFields
+(vtkBridge.py) vtk allways uses 64 ints
+(UnstructuredMeshMappingTools.py) Mapping tools in BT!!!
+(ConstantRectilinearMesh.py) work on API homogeneisation
+(UnstructuredMeshModificationTools.py) make CleanDoubleElements work on ConstantRectilinearMesh
+(ConstantRectilinearFea.py) Cleaning, testing, and 100% coverage
+(UnstructuredMeshModificationTools.py) Better treatment of numerical values for arcsin and arcos
+Mesh Reader/writer compatible with versions 1,2,3,4. Read vector and tensors field
+(GmshWriter.py) Enable to export tag in .msh file
+(GmshWriter.py) Some cleaning before merge
+(MeshIOBridge.py) conform to new API, use asarray
+
+
+
 
 New in version 1.8.0:
 *********************
