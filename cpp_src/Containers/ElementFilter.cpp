@@ -48,7 +48,7 @@ const MatrixID1 ElementFilterBase::GetIdsToTreatComplementary( UnstructuredMesh&
 }
 //////////////// ElementFilterIntersection
 
-const MatrixID1 ElementFilterIntersection::GetIdsToTreat(UnstructuredMesh& mesh, const std::string& elemtype)  {
+const MatrixID1 ElementFilterIntersection::GetIdsToTreat(UnstructuredMesh& mesh, const std::string& elemtype) const {
     MatrixID1 res = storage[0]->GetIdsToTreat(mesh, elemtype);
     for (unsigned int i = 0; i< this->storage.size(); ++i) {
         res = Intersect1D(res,storage[i]->GetIdsToTreat(mesh, elemtype));
@@ -56,11 +56,12 @@ const MatrixID1 ElementFilterIntersection::GetIdsToTreat(UnstructuredMesh& mesh,
     return res;
 };
 ////////////// ElementFilterEvaluated
-const MatrixID1 ElementFilterEvaluated::GetIdsToTreat(UnstructuredMesh& mesh, const std::string& elemtype)  {
-    if( this->ids.count(elemtype) == 0 ) {
-        this->ids[elemtype] = MatrixID1();//(nullptr, 0, 1);
+const MatrixID1 ElementFilterEvaluated::GetIdsToTreat(UnstructuredMesh& mesh, const std::string& elemtype)  const {
+    const auto it =  this->ids.find(elemtype);
+    if( it == this->ids.end() ) {
+        return MatrixID1();
     }
-    return this->ids[elemtype];
+    return it->second;
 }
 //
 void ElementFilterEvaluated::SetIdsToTreatFor(const std::string& elemtype, const Eigen::Ref<const MatrixID1>& ids) {

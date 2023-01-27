@@ -10,7 +10,7 @@
 
 namespace BasicTools
 {
-    
+
 class GeoSupport {
 public:
     std::string name;
@@ -36,7 +36,7 @@ public:
     int numberOfNodes;
     GeoSupport geoSupport;
     std::string name;
-    MatrixID1 mirrorPermutation;
+    MatrixI1D mirrorPermutation;
     bool linear;
     int degree;
     std::vector<std::pair<ElementInfo,MatrixID1> > faces;
@@ -48,7 +48,9 @@ public:
 extern const std::string Point_1;
 extern const std::string Bar_2;
 extern const std::string Bar_3;
+extern const std::string Triangle_3;
 extern const std::string Triangle_6;
+extern const std::string Quadrangle_4;
 extern const std::string Quadrangle_8;
 extern const std::string Quadrangle_9;
 extern const std::string Tetrahedron_4;
