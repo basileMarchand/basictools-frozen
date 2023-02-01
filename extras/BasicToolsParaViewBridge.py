@@ -264,7 +264,7 @@ try:
 
 
         def RequestData(self, request, inInfoVec, outInfoVec):
-            mesh = GetInputBasicTools(request,inInfoVec,outInfoVec,FieldsAsTags=True,connection=0,port=0)
+            mesh = GetInputBasicTools(request, inInfoVec, outInfoVec, FieldsAsTags=True, port=0)
 
             from BasicTools.IO.IOFactory import CreateWriter
             writer = self.basicToolsReader
@@ -548,9 +548,8 @@ try:
             return 1
 
         def RequestData(self, request, inInfoVec, outInfoVec):
-            from vtkmodules.vtkCommonDataModel import  vtkDataSet
-            input0 = GetInputBasicTools(request, inInfoVec, outInfoVec,FieldsAsTags=True,connection=0)
-            input1 = GetInputBasicTools(request, inInfoVec, outInfoVec,FieldsAsTags=False,connection=1)
+            input0 = GetInputBasicTools(request, inInfoVec, outInfoVec, FieldsAsTags=True, port=0)
+            input1 = GetInputBasicTools(request, inInfoVec, outInfoVec, FieldsAsTags=False, port=1)
 
             mean0 = np.sum(input0.nodes,axis=0)/input0.GetNumberOfNodes()
             mean1 = np.sum(input1.nodes,axis=0)/input1.GetNumberOfNodes()
@@ -583,9 +582,8 @@ try:
         def RequestData(self, request, inInfoVec, outInfoVec):
             possibleMethods =["Interp/Nearest","Nearest/Nearest","Interp/Clamp","Interp/Extrap","Interp/ZeroFill"]
 
-            from vtkmodules.vtkCommonDataModel import  vtkDataSet
-            input0 = GetInputBasicTools(request, inInfoVec, outInfoVec,FieldsAsTags=True,connection=0)
-            input1 = GetInputBasicTools(request, inInfoVec, outInfoVec,FieldsAsTags=False,connection=1)
+            input0 = GetInputBasicTools(request, inInfoVec, outInfoVec, FieldsAsTags=True, port=0)
+            input1 = GetInputBasicTools(request, inInfoVec, outInfoVec, FieldsAsTags=False, port=1)
             input0.ConvertDataForNativeTreatment()
             input1.ConvertDataForNativeTreatment()
 
@@ -645,8 +643,7 @@ try:
             self.__inverse = False
 
         def RequestData(self, request, inInfoVec, outInfoVec):
-            from vtkmodules.vtkCommonDataModel import  vtkDataSet
-            input0 = GetInputBasicTools(request, inInfoVec, outInfoVec,FieldsAsTags=True,connection=0)
+            input0 = GetInputBasicTools(request, inInfoVec, outInfoVec,FieldsAsTags=True, port=0)
 
             mean0 = np.sum(input0.nodes,axis=0)/input0.GetNumberOfNodes()
             #mean1 = np.sum(input1.nodes,axis=0)/input1.GetNumberOfNodes()
@@ -979,7 +976,7 @@ def WrapBasicToolsFunctionToVTK(function, inputs, outputs, options, description=
 
         inputmesh = []
         for i in range(self.nInputPorts):
-            mesh = GetInputBasicTools(request, inInfoVec, outInfoVec,FieldsAsTags=True, connection=0, port=i)
+            mesh = GetInputBasicTools(request, inInfoVec, outInfoVec,FieldsAsTags=True, port=i)
             mesh.ConvertDataForNativeTreatment()
             inputmesh.append(mesh)
 

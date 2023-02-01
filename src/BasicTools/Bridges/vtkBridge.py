@@ -709,15 +709,15 @@ def VtkToMesh(vtkmesh, meshobject=None, FieldsAsTags=True):
 
     return out
 
-def GetInputVtk(request, inInfoVec, outInfoVec, connection=0, port=0):
+def GetInputVtk(request, inInfoVec, outInfoVec, port=0):
     from vtkmodules.vtkCommonDataModel import vtkUnstructuredGrid, vtkPolyData
-    input0 = vtkUnstructuredGrid.GetData(inInfoVec[connection], port)
+    input0 = vtkUnstructuredGrid.GetData(inInfoVec[port])
     if input0 is None:
-        input0 = vtkPolyData.GetData(inInfoVec[connection], port)
+        input0 = vtkPolyData.GetData(inInfoVec[port])
     return input0
 
-def GetInputBasicTools(request, inInfoVec, outInfoVec,FieldsAsTags=False, connection=0, port=0):
-    vtkobj = GetInputVtk(request, inInfoVec, outInfoVec, connection=connection, port=port)
+def GetInputBasicTools(request, inInfoVec, outInfoVec, FieldsAsTags=False, port=0):
+    vtkobj = GetInputVtk(request, inInfoVec, outInfoVec, port=port)
     return VtkToMesh(vtkobj,FieldsAsTags=FieldsAsTags)
 
 def GetOutputVtk(request, inInfoVec, outInfoVec, copyAttr = True, outputNumber= 0):
