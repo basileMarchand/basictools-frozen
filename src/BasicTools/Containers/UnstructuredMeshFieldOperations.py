@@ -271,13 +271,16 @@ def GetFieldTransferOp(inputField: FEField, targetPoints: ArrayLike, method: Uni
             inside, distv, bary, baryClamped = ComputeInterpolationExtrapolationsBarycentricCoordinates(TP, original_data.elementType ,coordAtDofs, LagrangeSpaceGeo)
 
             #update the distance**2 with a *exact* distance
-            dist[cpt] = dmin2 = distv.dot(distv)
+            dist[cpt] = distv.dot(distv)
 
             #compute shape function of the incomming space using the xi eta phi
             shapeFunc = localspace.GetShapeFunc(bary)
             shapeFuncClamped = localspace.GetShapeFunc(baryClamped)
 
-            if inside:
+            #need to add a tolerance over the distv (real distance). this is needed because
+            # we can have a point that the projection is inside an element (surface or line)
+            # but not on the surface/line. Need to add a better test
+            if inside and normsquared(distv) <= 1e-14 :
                 sF =  shapeFunc
                 status[p] = 1
                 break
