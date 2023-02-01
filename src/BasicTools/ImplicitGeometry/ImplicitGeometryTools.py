@@ -13,7 +13,7 @@ import BasicTools.Containers.ElementNames as EN
 from BasicTools.Containers.UnstructuredMeshFieldOperations import TransportPosToPoints
 
 
-def DistanceToSurface(mesh,surfMesh,out = None,method="Interp/Extrap"):
+def DistanceToSurface(mesh,surfMesh,out = None,method="Interp/Clamp"):
     from BasicTools.Containers.UnstructuredMeshFieldOperations import TransportPos
     from BasicTools.FE.FETools import PrepareFEComputation
     from BasicTools.FE.Fields.FEField import FEField

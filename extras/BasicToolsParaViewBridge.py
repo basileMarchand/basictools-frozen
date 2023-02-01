@@ -1042,6 +1042,7 @@ def WrapBasicToolsFunctionToVTK(function, inputs, outputs, options, description=
 
     wrapperClassName = "BasicToolsWrapped" + function.__name__
     data.update({"__init__":GetInit(function, len(inputs), len(outputs),ops ),
+#                "FillInputPortInformation":GetMyFillInputPortInformation(inputs),
                 "RequestData":RequestData,
                 "SetTagsAsFields":SetTagsAsFields})
     obj = type(wrapperClassName,
@@ -1068,3 +1069,11 @@ from BasicTools.Containers.UnstructuredMeshCreationTools import SubDivideMesh
 name,cl = WrapBasicToolsFunctionToVTK( SubDivideMesh,("vtkUnstructuredGrid",),("vtkUnstructuredGrid",),( ("level",int),  ), description= "SubDivide a Mesh " )
 locals()[cl.wrappedNameBasicTools] = cl
 
+from BasicTools.ImplicitGeometry.ImplicitGeometryTools import DistanceToSurface
+def DistanceToSurfaceWrapper(surfMesh, mesh):
+    dist = DistanceToSurface(mesh, surfMesh )
+    mesh.nodeFields["ls"] = dist
+    return mesh
+
+name,cl = WrapBasicToolsFunctionToVTK( DistanceToSurfaceWrapper,("vtkUnstructuredGrid","vtkUnstructuredGrid"),("vtkUnstructuredGrid",),list(), description= "Distance To Surface" )
+locals()[cl.wrappedNameBasicTools] = cl
