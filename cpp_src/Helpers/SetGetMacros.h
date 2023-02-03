@@ -4,10 +4,13 @@
 //
 #pragma once
 
-#define MAPSETGETTYPEII(Name,attribute,dtype)                                   \
+#define MAPSETGETTYPEII(Name,attribute,dtype,btype)                                   \
     template<typename T>                                                        \
     void Set##Name(Eigen::Map<T>  &arg1){                                       \
         this->attribute.reset(new dtype(arg1.data(), arg1.rows(), arg1.cols()));\
+    };                                                                          \
+    void Set##Name(std::shared_ptr<btype>  &arg1){                                                   \
+        this->attribute.reset(new dtype(arg1->data(), arg1->rows(), arg1->cols()));\
     };                                                                          \
     template<typename T>                                                        \
     void Set##Name(std::shared_ptr<T>  &arg1){                                  \
@@ -23,9 +26,9 @@
         return *(this->attribute.get());                                        \
     };
 
-#define MAPSETGET_MatrixID1(Name,attribute) MAPSETGETTYPEII(Name,attribute,MapMatrixID1)
-#define MAPSETGET_MatrixIDD(Name,attribute) MAPSETGETTYPEII(Name,attribute,MapMatrixIDD)
-#define MAPSETGET_MatrixDDD(Name,attribute) MAPSETGETTYPEII(Name,attribute,MapMatrixDDD)
+#define MAPSETGET_MatrixID1(Name,attribute) MAPSETGETTYPEII(Name,attribute,MapMatrixID1,MatrixID1)
+#define MAPSETGET_MatrixIDD(Name,attribute) MAPSETGETTYPEII(Name,attribute,MapMatrixIDD,MatrixIDD)
+#define MAPSETGET_MatrixDDD(Name,attribute) MAPSETGETTYPEII(Name,attribute,MapMatrixDDD,MatrixDDD)
 
 
 #define MACRO_SetGet_EIGEN(Name,attribute,dtype)                                \
