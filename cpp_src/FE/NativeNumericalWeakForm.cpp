@@ -31,9 +31,15 @@ std::ostream& operator <<(std::ostream& stream, const WeakMonom& monom) {
         const WeakTerm& term = monom.prod[prodn];
         if(prodn ) stream << "*";
         stream << term;
-
     }
-
     return stream;
 }
+
+std::ostream& operator <<(std::ostream& stream, const WeakForm& wf){
+    stream << "Number of term : " << wf.GetNumberOfTerms() << std::endl;
+    for (const WeakMonom& monom : wf.form){
+        stream << monom << std::endl ;
+    }
+    return stream;
+};
 } // namespace BasicTools

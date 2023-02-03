@@ -42,11 +42,13 @@ struct WeakMonom {
 
 struct WeakForm{
     std::vector<WeakMonom> form;
-    CBasicIndexType GetNumberOfTerms(){return static_cast<CBasicIndexType>(this->form.size());}
+    CBasicIndexType GetNumberOfTerms() const {return static_cast<CBasicIndexType>(this->form.size());}
+    friend std::ostream& operator <<(std::ostream& stream, const WeakForm& WeakForm) ;
 };
 
 std::ostream& operator <<(std::ostream& stream, const WeakTerm& term);
 
 std::ostream& operator <<(std::ostream& stream, const WeakMonom& monom) ;
 
+std::ostream& operator <<(std::ostream& stream, const WeakForm& wf) ;
 } // namespace BasicTools
