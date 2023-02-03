@@ -27,6 +27,7 @@ public:
     }
 };
 
+extern std::map<std::string,SpaceIntegrationRule> IntegrationRulesAlmanac ;
 
 };// BasicTools namespace
 
