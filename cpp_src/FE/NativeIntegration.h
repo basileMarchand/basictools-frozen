@@ -13,6 +13,15 @@
 namespace BasicTools
 {
 
+extern const int EnumError;
+extern const int EnumNormal;
+extern const int EnumConstant;
+extern const int EnumUnknownField;
+extern const int EnumTestField;
+extern const int EnumExtraField;
+extern const int EnumExtraIPField;
+
+
 template<typename T>
 MatrixDDD solve(T& Jinv,MapMatrixDDD &valdphidxi);
 template<>
@@ -115,7 +124,7 @@ struct MonoElementsIntegralCpp{
   bool onlyUpper;
 
   MapMatrixDDD* nodes;
-  MapMatrixIDD* connectivity;
+  MapConstMatrixIDD* connectivity;
 
   MonoElementsIntegralCpp();
   ~MonoElementsIntegralCpp(){
@@ -229,9 +238,9 @@ struct MonoElementsIntegralCpp{
   void SetNumberOfIntegrationPoints(const int& n);
   void SetIntegrationPointI(const int& n,const double& w,const double& p0,const double& p1,const double& p2);
   void SetPoints(double* pd, const int& rows, const int& columns);
-  void SetConnectivity(CBasicIndexType* pd, const int& rows, const int& columns);
+  void SetConnectivity(const CBasicIndexType* pd, const int& rows, const int& columns);
   void ProcessWeakForm(WeakForm* wform);
-  void Integrate( WeakForm* wform, const CBasicIndexType& size, CBasicIndexType* pidstotreat );
+  void Integrate( WeakForm* wform, const CBasicIndexType& size, const CBasicIndexType* pidstotreat );
 
 };
 

@@ -138,11 +138,11 @@ void MonoElementsIntegralCpp::SetPoints(double* pd, const int& rows,
   this->nodes = new MapMatrixDDD(pd, rows, columns);
 }
 //
-void MonoElementsIntegralCpp::SetConnectivity(CBasicIndexType* pd,
+void MonoElementsIntegralCpp::SetConnectivity(const CBasicIndexType* pd,
                                               const int& rows,
                                               const int& columns) {
   if (this->connectivity != nullptr) delete this->connectivity;
-  this->connectivity = new MapMatrixIDD(pd, rows, columns);
+  this->connectivity = new MapConstMatrixIDD(pd, rows, columns);
 }
 //
 void MonoElementsIntegralCpp::ProcessWeakForm(WeakForm* wform) {
@@ -163,13 +163,10 @@ MatrixDDD solve(MatrixDDD& Jinv, MapMatrixDDD& valdphidxi) {
 //
 void MonoElementsIntegralCpp::Integrate(WeakForm* wform,
                                         const CBasicIndexType& idstotreat_s,
-                                        CBasicIndexType* pidstotreat) {
+                                        const CBasicIndexType* pidstotreat) {
   bool hasright = false;
   const CBasicIndexType NumberOfTerms = wform->GetNumberOfTerms();
-  const CBasicIndexType NumberOfIntegrationPoints =
-      static_cast<CBasicIndexType>(this->iw.rows());
-  const CBasicIndexType nbcols =
-      static_cast<CBasicIndexType>(this->connectivity->cols());
+  const CBasicIndexType NumberOfIntegrationPoints = static_cast<CBasicIndexType>(this->iw.rows());
   int l1 = 0;
   int l2 = 0;
   MatrixID1 leftNumbering;
@@ -235,8 +232,7 @@ void MonoElementsIntegralCpp::Integrate(WeakForm* wform,
         }
         hasright = false;
 
-        const CBasicIndexType numberOfProds =
-            static_cast<CBasicIndexType>(monom.prod.size());
+        const CBasicIndexType numberOfProds = static_cast<CBasicIndexType>(monom.prod.size());
 
         for (CBasicIndexType prodn = 0; prodn < numberOfProds; ++prodn) {
           const WeakTerm& term = monom.prod[prodn];
