@@ -59,6 +59,14 @@ typedef Eigen::Map<MatrixIDD> MapMatrixIDD;
 typedef Eigen::Map<MatrixDD1> MapMatrixDD1;
 typedef Eigen::Map<MatrixID1> MapMatrixID1;
 
+// Maps of const
+
+typedef Eigen::Map<const MatrixDDD> MapConstMatrixDDD;
+typedef Eigen::Map<const MatrixIDD> MapConstMatrixIDD;
+
+typedef Eigen::Map<const MatrixDD1> MapConstMatrixDD1;
+typedef Eigen::Map<const MatrixID1> MapConstMatrixID1;
+
 typedef MatrixDDD QRType;
 
 } // BasicTools namespace
