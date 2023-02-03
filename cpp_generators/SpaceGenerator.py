@@ -42,8 +42,12 @@ def Generate(prefix:str = "cpp_src"):
     with open(hFileName,"w", encoding="utf8") as hfile:
         PrintHeader(hfile)
         PrintToFile(hfile,"#include <FE/Space.h>")
-        PrintToFile(hfile,"const Space& GetSpaceFor(const std::string& spaceName);")
+        PrintToFile(hfile,"namespace BasicTools {")
+        PrintToFile(hfile,"")
+        PrintToFile(hfile,"const BasicTools::Space& GetFESpaceFor(const std::string& spaceName);")
         PrintToFile(hfile,"const std::vector<std::string> GetAvailableSpaces();")
+        PrintToFile(hfile,"")
+        PrintToFile(hfile,"};// BasicTools namespace")
 
 
     filename = GetGeneratedFiles(prefix)[0]
@@ -66,6 +70,10 @@ def Generate(prefix:str = "cpp_src"):
 
         PrintToFile(cppFile,"namespace BasicTools{")
 
+        #recover the order of the variables
+        from  BasicTools.FE.Spaces.SymSpace import SymSpaceBase
+        coord0, coord1, coord2 = [str(x) for x in (SymSpaceBase().xi,SymSpaceBase().eta,SymSpaceBase().phi) ]
+
         for FESpaceName, FEspace in spaces:
             for spn in FEspace:
                 spd = FEspace[spn]
@@ -76,21 +84,22 @@ def Generate(prefix:str = "cpp_src"):
                 cppFile.write(f"""
 const int {FESpaceName}_{spn}_GetNumberOfShapeFunctions(){{ return {numberOfShapeFunctions}; }};
 const int {FESpaceName}_{spn}_GetDimensionality(){{ return {nbDim}; }};""")
+
                 cppFile.write(f"""
-MatrixDDD {FESpaceName}_{spn}_GetShapeFunctions(const double& phi, const double&  xi, const double&  eta  ){{
+MatrixDDD {FESpaceName}_{spn}_GetShapeFunctions(const double {coord0}, const double {coord1}, const double {coord2} ){{
     MatrixDDD res = MatrixDDD::Zero({numberOfShapeFunctions},1);
 """)
                 replacements, reducedExprs  = cse(spd.symN)
                 for i, v in replacements:
                     cppFile.write(f"    const double {i} = " +  ccode(v) + ";\n" )
                 for ns in range(numberOfShapeFunctions):
-                    cppFile.write( f"    res.coeffRef({ns},1) =  "+ ccode(reducedExprs [0][ns]) )
+                    cppFile.write( f"    res.coeffRef({ns},0) =  "+ ccode(reducedExprs [0][ns]) )
                     cppFile.write(";\n")
                 cppFile.write("""    return res;
 };
 """)
                 cppFile.write(f"""
-MatrixDDD {FESpaceName}_{spn}_GetShapeFunctionsDer(const double& phi, const double&  xi, const double&  eta  ){{
+MatrixDDD {FESpaceName}_{spn}_GetShapeFunctionsDer(const double {coord0}, const double {coord1}, const double {coord2} ){{
     MatrixDDD res = MatrixDDD::Zero({numberOfShapeFunctions},3);
 """)
                 replacements, reducedExprs  = cse(spd.symdNdxi)
@@ -143,7 +152,7 @@ std::map<std::string,Space> SpacesAlmanac;
 
         PrintToFile(cppFile,"std::map<std::string,Space> SpacesAlmanacI = GetBasicSpaceAlmanac();")
 
-        PrintToFile(cppFile,"""const Space& GetSpaceFor(const std::string& spaceName){
+        PrintToFile(cppFile,"""const Space& GetFESpaceFor(const std::string& spaceName){
     return SpacesAlmanacI[spaceName];
 };
 
