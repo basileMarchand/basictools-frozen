@@ -28,7 +28,7 @@ struct ElementSpace{
 
     MatrixDDD (*SFV)(const double&,const double&,const double& );
     MatrixDDD (*SFDV)(const double&,const double&,const double& );
-    CBasicIndexType GetNumberOfShapeFunctions();
+    CBasicIndexType GetNumberOfShapeFunctions() const;
     const DofAttachment& GetDofAttachment(const int& dofNumber) const ;
     void AppendDofAttachment(const char& entity, const int& entityNumber, const int& extraKey);
     const MatrixDDD GetValOfShapeFunctionsAt(const double& phi, const double&  xi, const double&  eta  ) const ;
@@ -43,15 +43,15 @@ public:
 public:
     CBasicIndexType GetNumberOfShapeFunctionsFor(const std::string& elementType);
     void AddDofTo(const std::string& elementType, const char& entity, const int& entityNumber, const int& extraKey);
-    const ElementSpace& GetSpaceFor(const std::string& elementType);
+    const ElementSpace& GetSpaceFor(const std::string& elementType) const ;
     void Print();
     std::string ToStr();
 };
 
 class SpaceAtIP{
 public:
-    MatrixDDD SFV;
-    MatrixDDD SFDV;
+    std::vector<MatrixDDD> SFV;
+    std::vector<MatrixDDD> SFDV;
 };
 
 std::map<std::string, SpaceAtIP> EvaluateSpaceAt(const Space&, const SpaceIntegrationRule& );

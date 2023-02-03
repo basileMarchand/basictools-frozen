@@ -9,7 +9,7 @@ namespace BasicTools
 {
 
 // ************ ElementSpace ****************
-CBasicIndexType ElementSpace::GetNumberOfShapeFunctions(){
+CBasicIndexType ElementSpace::GetNumberOfShapeFunctions() const {
     return static_cast<CBasicIndexType>(this->storage.size());
 }
 //
@@ -46,8 +46,8 @@ void Space::AddDofTo(const std::string& elementType, const char& entity, const i
     this->storage[elementType].AppendDofAttachment(entity, entityNumber, extraKey);
 }
 //
-const ElementSpace& Space::GetSpaceFor(const std::string& elementType)  {
-    return this->storage[elementType];
+const ElementSpace& Space::GetSpaceFor(const std::string& elementType) const {
+    return this->storage.at(elementType);
 }
 //
 void Space::Print(){
@@ -70,9 +70,11 @@ std::map<std::string, SpaceAtIP> EvaluateSpaceAt(const Space& sp, const SpaceInt
 SpaceAtIP EvaluateSpaceAt(const ElementSpace& es , const IntegrationRule& ir ){
     SpaceAtIP res;
     const int nbp = ir.GetNumberOfPoints();
+    res.SFV.resize(nbp);
+    res.SFDV.resize(nbp);
     for(int i=0; i<nbp; ++i){
-        res.SFV = es.GetValOfShapeFunctionsAt(ir.p.row(i));
-        res.SFDV = es.GetValOfShapeFunctionsDerAt(ir.p.row(i));
+        res.SFV[i] =  es.GetValOfShapeFunctionsAt(ir.p.row(i).transpose());
+        res.SFDV[i] = es.GetValOfShapeFunctionsDerAt(ir.p.row(i).transpose());
     }
     return res;
 };
