@@ -26,14 +26,14 @@ struct ElementSpace{
     std::vector<DofAttachment > storage;
     ElementSpace(){};
 
-    MatrixDDD (*SFV)(const double&,const double&,const double& );
-    MatrixDDD (*SFDV)(const double&,const double&,const double& );
+    MatrixDDD (*SFV)(const double, const double, const double );
+    MatrixDDD (*SFDV)(const double, const double, const double );
     CBasicIndexType GetNumberOfShapeFunctions() const;
     const DofAttachment& GetDofAttachment(const int& dofNumber) const ;
     void AppendDofAttachment(const char& entity, const int& entityNumber, const int& extraKey);
-    const MatrixDDD GetValOfShapeFunctionsAt(const double& phi, const double&  xi, const double&  eta  ) const ;
+    const MatrixDDD GetValOfShapeFunctionsAt(const double phi, const double xi, const double eta) const ;
     const MatrixDDD GetValOfShapeFunctionsAt(const MatrixDDD& phiXiEta) const ;
-    const MatrixDDD GetValOfShapeFunctionsDerAt(const double& phi, const double&  xi, const double&  eta) const  ;
+    const MatrixDDD GetValOfShapeFunctionsDerAt(const double phi, const double xi, const double eta) const  ;
     const MatrixDDD GetValOfShapeFunctionsDerAt(const MatrixDDD& phiXiEta) const ;
 };
 

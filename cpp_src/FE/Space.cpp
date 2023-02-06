@@ -25,7 +25,7 @@ const MatrixDDD ElementSpace::GetValOfShapeFunctionsAt(const MatrixDDD& phiXiEta
     return this->GetValOfShapeFunctionsAt(phiXiEta.coeff(0,0), phiXiEta.coeff(1,0),phiXiEta.coeff(2,0));
 };
 
-const MatrixDDD ElementSpace::GetValOfShapeFunctionsAt(const double& phi, const double&  xi, const double&  eta  ) const {
+const MatrixDDD ElementSpace::GetValOfShapeFunctionsAt(const double phi, const double  xi, const double  eta  ) const {
     return this->SFV(phi, xi, eta);
 };
 
@@ -33,7 +33,7 @@ const MatrixDDD ElementSpace::GetValOfShapeFunctionsDerAt(const MatrixDDD& phiXi
     return this->GetValOfShapeFunctionsDerAt(phiXiEta.coeff(0,0), phiXiEta.coeff(1,0),phiXiEta.coeff(2,0));
 };
 
-const MatrixDDD ElementSpace::GetValOfShapeFunctionsDerAt(const double& phi, const double&  xi, const double&  eta  ) const {
+const MatrixDDD ElementSpace::GetValOfShapeFunctionsDerAt(const double phi, const double  xi, const double eta ) const {
     return this->SFDV(phi, xi, eta);
 };
 
