@@ -28,7 +28,7 @@ bibliography: paper.bib
 
 Numerical simulations of physical phenomena can be computed by many (commercial/free) software packages, but despite the apparent variety, they rely on a relatively small set of operations when producing, preparing and consuming these simulations. For instance, post-treatments of physical fields are a common need, as well as handling and modifying meshes and fields. BasicTools is a Python library designed to address these supporting tasks. It features an efficient data model for meshes and field objects and input/output routines compatible with various formats. A finite element engine allows to assemble abstract variational formulations, take into account differential operators and integrate fields on volumes and surfaces.
 
-BasicTools has been (and is still actively) used in various projects in artificial intelligence and model order reduction for physical problems [@ROM-net; @mca26010017; @UQindustrialDesign; @datatargetVAE], topology optimization [@nardoni] and material sciences [@pymicro].
+BasicTools has been (and is still actively) used in various projects in artificial intelligence and model order reduction for physical problems [@ROM-net; @mca26010017; @UQindustrialDesign; @datatargetVAE], topology optimization [@nardoni], and material sciences [@pymicro].
 
 # Statement of need
 
@@ -38,7 +38,7 @@ With BasicTools, we address these concerns by proposing a data model for meshes 
 
 # State of the field
 
-In the computational fluid dynamics community, the CGNS [@cgns] standard has been proposed for analysis data. In the solid mechanics community, in the authors' knowledge, no such de facto standard exists. As far as meshes are concerned, one may consider MeshIO for converting between various file formats, or Vtk for the manipulation of meshes, although it lacks some capabilities of tremendous value for the solid mechanics community (e.g. integration point data). Finite element engines allowing to assemble abstract variational formulations are available in FreeFem++[@freefempp] and FEniCS [@fenics].
+In the computational fluid dynamics community, the CGNS [@cgns] standard has been proposed for analysis data. In the solid mechanics community, in the authors' knowledge, no such de facto standard exists. As far as meshes are concerned, one may consider MeshIO for converting between various file formats, or Vtk for the manipulation of meshes, although it lacks some capabilities of tremendous value for the solid mechanics community (e.g. integration point data). Finite element engines allowing to assemble abstract variational formulations are available in FreeFem++ [@freefempp] and FEniCS [@fenics].
 
 # Overview
 
