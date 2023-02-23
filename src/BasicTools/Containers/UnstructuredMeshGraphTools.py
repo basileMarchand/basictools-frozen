@@ -4,6 +4,7 @@
 # file 'LICENSE.txt', which is part of this source code package.
 #
 import numpy as np
+from scipy import sparse
 import warnings
 import networkx
 from scipy.sparse.linalg import eigsh
@@ -513,6 +514,7 @@ def FloaterMeshParametrization(inMesh, nBoundary, outShape = "circle", boundaryO
 
     # Compute the weights of each node of the mesh (number of edges linked to each node): the inverse of the degrees
     Ad = networkx.adjacency_matrix(G2)
+    Ad = sparse.csr_matrix(Ad)
 
     weights = np.zeros(N)
     for i in range(N):
@@ -693,6 +695,8 @@ def FloaterMesh3DParametrizationStarDomain(inMesh: UnstructuredMesh, boundaryTag
 
     # Compute the weights of each node of the mesh (number of edges linked to each node): the inverse of the degrees
     Ad = networkx.adjacency_matrix(G2)
+    Ad = sparse.csr_matrix(Ad)
+
 
     weights = np.zeros(N)
     for i in range(N):
@@ -882,6 +886,7 @@ def FloaterMesh3DParametrization(inMesh: UnstructuredMesh, boundaryTag: str, inP
 
     # Compute the weights of each node of the mesh (number of edges linked to each node): the inverse of the degrees
     Ad = networkx.adjacency_matrix(G2)
+    Ad = sparse.csr_matrix(Ad)
 
     weights = np.zeros(N)
     for i in range(N):
