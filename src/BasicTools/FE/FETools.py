@@ -56,7 +56,7 @@ def GetElementaryMatrixForFormulation(elemName, wform, unknownNames, space=Lagra
 
     return M.toarray(), f
 
-def PrepareFEComputation(mesh, elementFilter = None, numberOfComponents = None):
+def PrepareFEComputation(mesh, elementFilter = None, numberOfComponents = None, space = LagrangeSpaceGeo, integrationRule = LagrangeIsoParam):
     """
     Prepares a finite element computation with Lagrange isoparametric finite
     elements by computing FESpace, numberings, offset and NGauss
@@ -86,13 +86,12 @@ def PrepareFEComputation(mesh, elementFilter = None, numberOfComponents = None):
         numberOfComponents = dim
 
     NGauss = 0
-    spaces = LagrangeSpaceGeo
 
     for name, data, ids in elementFilter:
-        p,w =  LagrangeIsoParam[name]
+        p,w =  integrationRule[name]
         NGauss += len(ids)*len(w)
 
-    numbering = ComputeDofNumbering(mesh,LagrangeSpaceGeo,fromConnectivity=True)
+    numbering = ComputeDofNumbering(mesh,space,fromConnectivity=True)
     numberings = [numbering]*numberOfComponents
 
     offset = []
@@ -101,7 +100,7 @@ def PrepareFEComputation(mesh, elementFilter = None, numberOfComponents = None):
         offset.append(totaldofs)
         totaldofs += n["size"]
 
-    return spaces, numberings, offset, NGauss
+    return space, numberings, offset, NGauss
 
 def ComputeL2ScalarProducMatrix(mesh, numberOfComponents, elementFilter = None):
     """
@@ -157,7 +156,7 @@ def ComputeL2ScalarProducMatrix(mesh, numberOfComponents, elementFilter = None):
 
     return K
 
-def ComputeH10ScalarProductMatrix(mesh, numberOfComponents):
+def ComputeH10ScalarProductMatrix(mesh, numberOfComponents, integrationRule = LagrangeIsoParam):
     """
     Computes the H10 scalar product used to compute the correlations
     between the primal solution snapshots. The numberOfComponents
@@ -191,7 +190,7 @@ def ComputeH10ScalarProductMatrix(mesh, numberOfComponents):
 
 
     for name,data,ids in ff:
-        p,w = LagrangeIsoParam[name]
+        p,w = integrationRule[name]
 
         lenNumbering = len(numberings[0][name][0,:])
         ones = np.ones(lenNumbering,dtype=int)
@@ -250,7 +249,7 @@ def ComputeInterpolationMatrix_FE_GaussPoint(mesh, feSpace, integrationRule,feNu
     interpMatrixMatrix,_ = IntegrateGeneral(mesh=mesh,constants={},fields=[],wform=symForm, unkownFields= [leftField],testFields=[rightField],onlyEvaluation=True,integrationRule=integrationRule,elementFilter=elementFilter)
     return interpMatrixMatrix
 
-def ComputeJdetAtIntegPoint(mesh, elementSets = None, relativeDimension = 0):
+def ComputeJdetAtIntegPoint(mesh, elementSets = None, relativeDimension = 0, integrationRule = LagrangeIsoParam):
     """
     Computes determinant of the Jacobian of the transformation of the
     transformation between the reference element and the mesh element, at
@@ -289,7 +288,7 @@ def ComputeJdetAtIntegPoint(mesh, elementSets = None, relativeDimension = 0):
     countTotal = 0
     for name,data,ids in ff:
 
-        p,w =  LagrangeIsoParam[name]
+        p,w =  integrationRule[name]
         NGaussperEl = len(w)
 
         for el in ids:
@@ -304,7 +303,7 @@ def ComputeJdetAtIntegPoint(mesh, elementSets = None, relativeDimension = 0):
 
     return jDet
 
-def ComputePhiAtIntegPoint(mesh, elementSets = None, relativeDimension = 0):
+def ComputePhiAtIntegPoint(mesh, elementSets = None, relativeDimension = 0, integrationRule = LagrangeIsoParam):
     """
     Computes the value of the finite element shape functions at the integration
     points. (Lagrange isoparametric finite elements)
@@ -350,7 +349,7 @@ def ComputePhiAtIntegPoint(mesh, elementSets = None, relativeDimension = 0):
     countTotal = 0
     for name,data,ids in ff:
 
-        p,w =  LagrangeIsoParam[name]
+        p,w =  integrationRule[name]
         NGaussperEl = len(w)
         lenNumbering = len(numberings[0][name][0,:])
 
@@ -376,7 +375,7 @@ def ComputePhiAtIntegPoint(mesh, elementSets = None, relativeDimension = 0):
 
     return integrationWeights, phiAtIntegPointMatrix
 
-def ComputePhiAtIntegPointFromElFilter(mesh, elFilter):
+def ComputePhiAtIntegPointFromElFilter(mesh, elFilter, space = LagrangeSpaceGeo, integrationRule = LagrangeIsoParam):
     """
     Computes the shape functions on the integration
     points and the integration weights associated with the integration scheme
@@ -395,7 +394,7 @@ def ComputePhiAtIntegPointFromElFilter(mesh, elFilter):
         phiAtIntegPointMatrix
     """
 
-    numbering = ComputeDofNumbering(mesh,LagrangeSpaceGeo,fromConnectivity=True)
+    numbering = ComputeDofNumbering(mesh,space,fromConnectivity=True)
 
     nbNodes = mesh.GetNumberOfNodes()
 
@@ -407,7 +406,7 @@ def ComputePhiAtIntegPointFromElFilter(mesh, elFilter):
     countTotal = 0
     for name,data,ids in elFilter:
 
-        p,w =  LagrangeIsoParam[name]
+        p,w =  integrationRule[name]
         NGaussperEl = len(w)
         lenNumbering = len(numbering[name][0,:])
 
@@ -415,7 +414,7 @@ def ComputePhiAtIntegPointFromElFilter(mesh, elFilter):
 
         for el in ids:
             xcoor = mesh.nodes[data.connectivity[el],:]
-            space_ipvalues = LagrangeSpaceGeo[name].SetIntegrationRule(p,w)
+            space_ipvalues = space[name].SetIntegrationRule(p,w)
             for ip in range(NGaussperEl):
                 Jack, Jdet, Jinv = space_ipvalues.GetJackAndDetI(ip,xcoor)
 
@@ -436,7 +435,7 @@ def ComputePhiAtIntegPointFromElFilter(mesh, elFilter):
 
     return integrationWeights, phiAtIntegPointMatrix
 
-def ComputeGradPhiAtIntegPoint(mesh, elementSets = None, relativeDimension = 0):
+def ComputeGradPhiAtIntegPoint(mesh, elementSets = None, relativeDimension = 0, integrationRule = LagrangeIsoParam):
     """
     Computes the components of the gradient of the shape functions on the
     integration points and the integration weights associated with the
@@ -487,7 +486,7 @@ def ComputeGradPhiAtIntegPoint(mesh, elementSets = None, relativeDimension = 0):
     countTotal = 0
     for name,data,ids in ff:
 
-        p,w =  LagrangeIsoParam[name]
+        p,w =  integrationRule[name]
         NGaussperEl = len(w)
         lenNumbering = len(numberings[0][name][0,:])
 
@@ -515,7 +514,7 @@ def ComputeGradPhiAtIntegPoint(mesh, elementSets = None, relativeDimension = 0):
 
     return integrationWeights, GradPhiAtIntegPointMatrix
 
-def ComputeNormalsAtIntegPoint(mesh, elementSets):
+def ComputeNormalsAtIntegPoint(mesh, elementSets, integrationRule = LagrangeIsoParam):
 
     """
     Computes the normals at the elements from the sets elementSets in the
@@ -553,7 +552,7 @@ def ComputeNormalsAtIntegPoint(mesh, elementSets):
     countTotal = 0
     for name,data,ids in ff:
 
-        p,w =  LagrangeIsoParam[name]
+        p,w =  integrationRule[name]
         NGaussperEl = len(w)
 
         for el in ids:
@@ -569,7 +568,7 @@ def ComputeNormalsAtIntegPoint(mesh, elementSets):
 
 
 
-def ComputeIntegrationPointsTags(mesh, dimension = None):
+def ComputeIntegrationPointsTags(mesh, dimension = None, integrationRule = LagrangeIsoParam):
     """
     Returns a list of lists (of str) at each integration point (Lagrange
     isoparametric finite elements). Each list contains all the tags of the
@@ -601,7 +600,7 @@ def ComputeIntegrationPointsTags(mesh, dimension = None):
     totalIntPointOffset = 0
     elementOffset = 0
     for name,data,ids in ff:
-        _,w = LagrangeIsoParam[name]
+        _,w = integrationRule[name]
         elNbeOfIntPoints = len(w)
         for tag in data.tags:
             for id in tag.GetIds():
@@ -614,7 +613,7 @@ def ComputeIntegrationPointsTags(mesh, dimension = None):
     return listOfTags
 
 
-def CellDataToIntegrationPointsData(mesh, scalarFields, elementSet = None, relativeDimension = 0):
+def CellDataToIntegrationPointsData(mesh, scalarFields, elementSet = None, relativeDimension = 0, integrationRule = LagrangeIsoParam):
     """
     Change the representation of scalarFields from data constant by cell
     (elements) to data at integration points. (Lagrange isoparametric finite
@@ -668,7 +667,7 @@ def CellDataToIntegrationPointsData(mesh, scalarFields, elementSet = None, relat
     countIp = 0
     for name,data,ids in ff:
 
-        p,w = LagrangeIsoParam[name]
+        p,w = integrationRule[name]
         numberOfIPperEl = len(w)
 
         for el in ids:
@@ -685,7 +684,7 @@ def CellDataToIntegrationPointsData(mesh, scalarFields, elementSet = None, relat
     return integrationPointsData
 
 
-def IntegrationPointsToCellData(mesh, scalarFields):
+def IntegrationPointsToCellData(mesh, scalarFields, integrationRule = LagrangeIsoParam):
     """
     Change the representation of scalarFields from data at integration points
     to data constant by cell (elements) - taking the mean of values at the
@@ -722,7 +721,7 @@ def IntegrationPointsToCellData(mesh, scalarFields):
     ef = ElementFilter(mesh=mesh,dimensionality =mesh.GetDimensionality())
 
     for f in range(numberOfFields):
-        iPField = IPF.IPField("", mesh, rule=LagrangeIsoParam)
+        iPField = IPF.IPField("", mesh, rule=integrationRule)
         iPField.Allocate()
         iPField.SetDataFromNumpy(scalarFields[keymap[f]], ef)
         cellData.append(iPField.GetCellRepresentation())
