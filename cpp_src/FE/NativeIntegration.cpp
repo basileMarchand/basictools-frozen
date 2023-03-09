@@ -4,12 +4,10 @@
 //
 
 #include "NativeIntegration.h"
-
 #include <LinAlg/EigenTypes.h>
-
+#include "LinAlg/BasicOperations.h"
 #include <Eigen/SparseCore>
 
-#include "LinAlg/BasicOperations.h"
 
 // http://cython.readthedocs.io/en/latest/src/userguide/wrapping_CPlusPlus.html
 
@@ -18,8 +16,6 @@
 
 namespace BasicTools {
 
-// typedef Eigen::SparseMatrix<double> SpMat; // declares a column-major sparse
-// matrix type of double
 
 const int EnumError = -1;
 const int EnumNormal = 0;
@@ -56,12 +52,12 @@ void MonoElementsIntegralCpp::SetNumberOfIPValues(int i) {
 };
 
 //
-void MonoElementsIntegralCpp::SetValueI(int i, int n, int m, double* dp) {
+void MonoElementsIntegralCpp::SetValueI(int i, int n, int m, CBasicFloatType* dp) {
   if (this->values[i] != nullptr) delete this->values[i];
   this->values[i] = new MapMatrixDD1(dp, n, m);
 }
 //
-void MonoElementsIntegralCpp::SetIPValueI(int i, int n, int m, double* dp) {
+void MonoElementsIntegralCpp::SetIPValueI(int i, int n, int m, CBasicFloatType* dp) {
   if (this->ipvalues[i] != nullptr) delete this->ipvalues[i];
   this->ipvalues[i] = new MapMatrixDDD(dp, n, m);
 }
@@ -100,7 +96,7 @@ void MonoElementsIntegralCpp::SetNumberOfConstants(const CBasicIndexType& n) {
   this->constants.resize(n, 1);
 }
 //
-void MonoElementsIntegralCpp::SetConstants(const int& n, const double& val) {
+void MonoElementsIntegralCpp::SetConstants(const int& n, const CBasicFloatType& val) {
   this->constants(n, 0) = val;
 }
 //////////////////Prepare Fast Integration related functions
@@ -122,17 +118,17 @@ void MonoElementsIntegralCpp::SetNumberOfIntegrationPoints(const int& n) {
 }
 //
 void MonoElementsIntegralCpp::SetIntegrationPointI(const int& n,
-                                                   const double& w,
-                                                   const double& p0,
-                                                   const double& p1,
-                                                   const double& p2) {
+                                                   const CBasicFloatType& w,
+                                                   const CBasicFloatType& p0,
+                                                   const CBasicFloatType& p1,
+                                                   const CBasicFloatType& p2) {
   this->iw(n, 0) = w;
   this->ip(n, 0) = p0;
   this->ip(n, 1) = p1;
   this->ip(n, 2) = p2;
 }
 //
-void MonoElementsIntegralCpp::SetPoints(double* pd, const int& rows,
+void MonoElementsIntegralCpp::SetPoints(CBasicFloatType* pd, const int& rows,
                                         const int& columns) {
   if (this->nodes != nullptr) delete this->nodes;
   this->nodes = new MapMatrixDDD(pd, rows, columns);
@@ -150,20 +146,60 @@ void MonoElementsIntegralCpp::ProcessWeakForm(WeakForm* wform) {
   assert(0);
 }
 //
-template <typename T>
-MatrixDDD solve(T& Jinv, MapMatrixDDD& valdphidxi) {
-  return Jinv.solve(valdphidxi);
-}
-
-template <>
-MatrixDDD solve(MatrixDDD& Jinv, MapMatrixDDD& valdphidxi) {
-  return Jinv * valdphidxi;
-}
-
-//
 void MonoElementsIntegralCpp::Integrate(WeakForm* wform,
                                         const CBasicIndexType& idstotreat_s,
                                         const CBasicIndexType* pidstotreat) {
+
+const int elemDim = this->lspaces[this->geoSpaceNumber].dimensionality;
+const int spaceDim = static_cast<int>(this->nodes->cols());
+
+
+switch(spaceDim) {
+  case (0): {
+    switch(elemDim) {
+      case 0: return this->IntegrateSpaceDimElementDim<0,0>(wform, idstotreat_s, pidstotreat);
+      default : break;
+    }
+    break;
+  }
+  case (1):{
+    switch(elemDim) {
+      case 0: return this->IntegrateSpaceDimElementDim<1,0>(wform, idstotreat_s, pidstotreat);
+      case 1: return this->IntegrateSpaceDimElementDim<1,1>(wform, idstotreat_s, pidstotreat);
+      default : break;
+    }
+    break;
+  }
+  case (2):{
+    switch(elemDim) {
+      case 0: return this->IntegrateSpaceDimElementDim<2,0>(wform, idstotreat_s, pidstotreat);
+      case 1: return this->IntegrateSpaceDimElementDim<2,1>(wform, idstotreat_s, pidstotreat);
+      case 2: return this->IntegrateSpaceDimElementDim<2,2>(wform, idstotreat_s, pidstotreat);
+      default : break;
+    }
+    break;
+  }
+  case (3):{
+    switch(elemDim) {
+      case 0: return this->IntegrateSpaceDimElementDim<3,0>(wform, idstotreat_s, pidstotreat);
+      case 1: return this->IntegrateSpaceDimElementDim<3,1>(wform, idstotreat_s, pidstotreat);
+      case 2: return this->IntegrateSpaceDimElementDim<3,2>(wform, idstotreat_s, pidstotreat);
+      case 3: return this->IntegrateSpaceDimElementDim<3,3>(wform, idstotreat_s, pidstotreat);
+      default : break;
+    }
+    break;
+  }
+}
+std::cerr  << " Impossible to treat element of dimensionality " << elemDim << " on space of dimension " << spaceDim << std::endl;
+exit(1);
+}
+//
+
+template<unsigned int SpaceDim, unsigned int ElementDim>
+void MonoElementsIntegralCpp::IntegrateSpaceDimElementDim(WeakForm* wform,
+                                        const CBasicIndexType& idstotreat_s,
+                                        const CBasicIndexType* pidstotreat) {
+
   bool hasright = false;
   const CBasicIndexType NumberOfTerms = wform->GetNumberOfTerms();
   const CBasicIndexType NumberOfIntegrationPoints = static_cast<CBasicIndexType>(this->iw.rows());
@@ -171,33 +207,40 @@ void MonoElementsIntegralCpp::Integrate(WeakForm* wform,
   int l2 = 0;
   MatrixID1 leftNumbering;
   MatrixDD1 left;
+
   MatrixID1 rightNumbering;
   MatrixDD1 right;
 
   MatrixID1 centerNumbering;
   MatrixDD1 center;
+
   MatrixDD1 vals;
 
   MatrixD31 normal;
-  //MatrixDDD xcoor;
-
-  //xcoor.resize(nbcols, this->nodes->cols());
 
   MatrixDDD ElementMatrix(maxsizelocalTestDofs, maxsizelocalUnkownDofs);
 
   LocalSpace& geoSpace = this->lspaces[this->geoSpaceNumber];
-  const int elemdim = geoSpace.dimensionality;
 
-  QRType Jinv;
-  // MatrixDDD Jinv;
   int n;
   int rightIndex = 0;
   int leftIndex = 0;
-  ElementMatrix = MatrixDDD::Zero(maxsizelocalTestDofs, maxsizelocalUnkownDofs);
-  MatrixDDD Jack(3, 3);
-  double Jdet;
-  // MatrixDDD Jack;
-  double factor;
+
+  typedef ElementHelper::SpaceDimElementDim<SpaceDim, ElementDim> EH;
+
+  Eigen::Matrix<CBasicFloatType, EH::size, EH::spaceSize, Eigen::RowMajor> Jac;
+  CBasicFloatType Jdet;
+  Eigen::Matrix<CBasicFloatType, EH::spaceSize, EH::size> Jinv;
+
+  CBasicFloatType localfactor;
+  CBasicFloatType factor;
+
+  EH::ResizeContainers(Jac, Jinv);
+
+  if ( !EH::CanProvideNormal() && this->hasnormal ){
+    std::cout << "Cant use a weak form with normal on physical space of dimension ("<< SpaceDim << ") with element of dimensionality ("<< ElementDim <<  ")" << std::endl;
+    exit(1);
+  }
 
   for (int elem_counter = 0; elem_counter < idstotreat_s; ++elem_counter) {
     ElementMatrix.setZero();
@@ -205,31 +248,29 @@ void MonoElementsIntegralCpp::Integrate(WeakForm* wform,
     const auto xcoor = this->nodes->operator()(this->connectivity->row(n),Eigen::all);
 
     for (int ip = 0; ip < NumberOfIntegrationPoints; ++ip) {
-      //            """ we recover the jacobian matrix """
-
-      GetInv_Jacobian_Det(*geoSpace.valdphidxi[ip], xcoor,
-                          geoSpace.dimensionality, Jack, Jdet, Jinv);
+      EH::InverseJacobianDeterminant(*geoSpace.valdphidxi[ip], xcoor, Jac, Jdet, Jinv);
 
       for (unsigned int s = 0; s < this->lspaces.size(); ++s) {
         this->lspaces[s].SetActiveIntegrationPoint(ip, Jinv);
       }
 
-      if (this->hasnormal) GetNormal(3, elemdim, Jack, normal);
+      EH::Normal(Jac, normal);
+
+      if (this->onlyEvaluation) {
+        // For the onlyEvaluation we only add the contribution without doing the integration
+        // the user is responsible of dividing by the mass matrix to get the correct values.
+        // also the user can use a discontinues field to generate element surface stress (for example)
+        localfactor = 1;
+      } else {
+        localfactor = Jdet;
+        localfactor *= iw(ip, 0);
+      }
 
       for (int termn = 0; termn < NumberOfTerms; ++termn) {
         const WeakMonom& monom = wform->form[termn];
         factor = monom.prefactor;
-        if (this->onlyEvaluation) {
-          //                    # For the evaluation we only add the
-          //                    contribution without doing the integration #
-          //                    the user is responsible of dividing by the mass
-          //                    matrix to get the correct values # also the user
-          //                    can use a discontinues field to generate element
-          //                    surface stress (for example)
-        } else {
-          factor *= Jdet;
-          factor *= iw(ip, 0);
-        }
+        factor *= localfactor;
+
         hasright = false;
 
         const CBasicIndexType numberOfProds = static_cast<CBasicIndexType>(monom.prod.size());
@@ -319,7 +360,7 @@ void MonoElementsIntegralCpp::Integrate(WeakForm* wform,
         rightNumbering.array() += this->unkownDofsOffset(vj, 0);
         for (int i = 0; i < leftNumbering.rows(); ++i) {
           for (int j = 0; j < rightNumbering.rows(); ++j) {
-            const double val = ElementMatrix(localTestDofsOffset[vi] + i, localUnkownDofsOffset[vj] + j);
+            const CBasicFloatType val = ElementMatrix(localTestDofsOffset[vi] + i, localUnkownDofsOffset[vj] + j);
             if (val != 0.0) {
               const CBasicIndexType ii = leftNumbering[i];
               const CBasicIndexType jj = rightNumbering[j];

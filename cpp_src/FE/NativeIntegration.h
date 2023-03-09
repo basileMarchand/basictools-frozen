@@ -4,14 +4,13 @@
 //
 #pragma once
 
-#include <string>
-#include <iostream>
-#include <vector>
-
 #include <FE/NativeNumericalWeakForm.h>
 #include <LinAlg/EigenTypes.h>
-namespace BasicTools
-{
+
+#include <iostream>
+#include <string>
+#include <vector>
+namespace BasicTools {
 
 extern const int EnumError;
 extern const int EnumNormal;
@@ -21,79 +20,68 @@ extern const int EnumTestField;
 extern const int EnumExtraField;
 extern const int EnumExtraIPField;
 
+struct LocalSpace {
+  int dimensionality;
+  int numberOfShapeFunctions;
+  int numberOfIntegrationPoints;
+  int activeIntegrationPoint;
 
-template<typename T>
-MatrixDDD solve(T& Jinv,MapMatrixDDD &valdphidxi);
-template<>
-MatrixDDD solve(MatrixDDD& Jinv,MapMatrixDDD &valdphidxi);
+  std::vector<MapMatrixDDD*> valN;
+  std::vector<MapMatrixDDD*> valdphidxi;
+  MatrixDDD BxByBz;
 
-struct LocalSpace{
-   int dimensionality;
-   int numberOfShapeFunctions;
-   int numberOfIntegrationPoints;
-   int activeIntegrationPoint;
+  void Init(const int& dim,
+            const int& NumberOfShapeFunctions,
+            const int& numberOfIntegrationPoints) {
+    this->dimensionality = dim;
+    this->numberOfShapeFunctions = NumberOfShapeFunctions;
+    this->activeIntegrationPoint = -1;
+    this->valN.resize(numberOfIntegrationPoints, 0);
+    this->valdphidxi.resize(numberOfIntegrationPoints, 0);
+  }
+  void resize(int& s) {
+    this->RelseaseData();
+    for (unsigned i = 0; i < this->valN.size(); ++i) {
+      this->valN.push_back(0);
+      this->valdphidxi.push_back(0);
+    }
+  }
+  void SetvalNI(const int& integrationPoint, CBasicFloatType* pd) {
+    this->valN[integrationPoint] = new MapMatrixDDD(pd, this->numberOfShapeFunctions, 1);
+  }
+  void RelseaseData() {
+    for (unsigned i = 0; i < this->valN.size(); i++) {
+      if (this->valN[i]) delete this->valN[i];
+      if (this->valdphidxi[i]) delete this->valdphidxi[i];
+    }
+    this->valN.resize(0);
+    this->valdphidxi.resize(0);
+  }
+  LocalSpace() {
+    this->valN.resize(0);
+    this->valdphidxi.resize(0);
+  }
+  ~LocalSpace() { this->RelseaseData(); }
+  void SetvaldphidxiI(const int& integrationPoint, CBasicFloatType* pd) {
+    this->valdphidxi[integrationPoint] = new MapMatrixDDD(pd, this->dimensionality, this->numberOfShapeFunctions);
+  }
 
-   std::vector< MapMatrixDDD* > valN;
-   std::vector< MapMatrixDDD* > valdphidxi;
-   MatrixDDD BxByBz;
+  MapMatrixDDD& GetNxNyNz() {
+    return *this->valN[this->activeIntegrationPoint];
+  }
 
-   void Init(const int& dim ,
-             const int& NumberOfShapeFunctions,
-             const int& numberOfIntegrationPoints){
-      this->dimensionality = dim;
-      this->numberOfShapeFunctions = NumberOfShapeFunctions;
-      this->activeIntegrationPoint=-1;
-      this->valN.resize(numberOfIntegrationPoints,0);
-      this->valdphidxi.resize(numberOfIntegrationPoints,0);
-   }
-   void resize(int& s){
-       this->RelseaseData();
-       for(unsigned i=0; i < this->valN.size() ; ++i){
-           this->valN.push_back(0 );
-           this->valdphidxi.push_back(0 );
-       }
-   }
-   void SetvalNI(const int& integrationPoint,double* pd){
-       this->valN[integrationPoint] =   new MapMatrixDDD(pd,this->numberOfShapeFunctions,1);
-   }
-   void RelseaseData(){
-       for(unsigned i=0; i < this->valN.size() ; i++){
-        if(this->valN[i]) delete this->valN[i];
-        if(this->valdphidxi[i]) delete this->valdphidxi[i];
-       }
-       this->valN.resize(0);
-       this->valdphidxi.resize(0);
-   }
-   LocalSpace(){
-       this->valN.resize(0);
-       this->valdphidxi.resize(0);
-   }
-   ~LocalSpace(){
-       this->RelseaseData();
-   }
-   void SetvaldphidxiI(const int& integrationPoint,double* pd){
-    this->valdphidxi[integrationPoint] = new MapMatrixDDD(pd,this->dimensionality,this->numberOfShapeFunctions);
-
-   }
-
-
-   MapMatrixDDD& GetNxNyNz(){
-       return *this->valN[this->activeIntegrationPoint];
-   }
-
-   MatrixDDD & GetBxByBz(){
-           return this->BxByBz;
-   }
-
-   void SetActiveIntegrationPoint(const int& ip,QRType& Jinv ){
-       this->activeIntegrationPoint = ip;
-       if(this->valdphidxi[ip])
-           this->BxByBz = solve(Jinv,*this->valdphidxi[ip]);
-   }
+  MatrixDDD& GetBxByBz() { return this->BxByBz; }
+  template <typename T>
+  void SetActiveIntegrationPoint(const int& ip, T& Jinv) {
+    this->activeIntegrationPoint = ip;
+    if (this->valdphidxi[ip]) {
+      this->BxByBz = Jinv * (*this->valdphidxi[ip]);
+    }
+  }
 };
 
 //
-struct MonoElementsIntegralCpp{
+struct MonoElementsIntegralCpp {
   int totalUnkownDofs;
   MatrixID1 unkownDofsOffset;
   MatrixID1 unkownDofsNumbering;
@@ -114,10 +102,10 @@ struct MonoElementsIntegralCpp{
   MatrixDD3 ip;
 
   int totalvijcpt;
-  CBasicFloatType *vK;
-  CBasicIndexType *iK;
-  CBasicIndexType *jK;
-  CBasicFloatType *F;
+  CBasicFloatType* vK;
+  CBasicIndexType* iK;
+  CBasicIndexType* jK;
+  CBasicFloatType* F;
 
   bool hasnormal;
   bool onlyEvaluation;
@@ -127,98 +115,89 @@ struct MonoElementsIntegralCpp{
   MapConstMatrixIDD* connectivity;
 
   MonoElementsIntegralCpp();
-  ~MonoElementsIntegralCpp(){
-      if(this->nodes) delete this->nodes;
-      if(this->connectivity) delete this->connectivity;
-      for(unsigned int i=0; i < this->lnumbering.size() ; ++i){
-        delete this->lnumbering[i];
-      }
-      for(unsigned int i=0; i < this->values.size() ; ++i){
-        delete this->values[i];
-      }
+  ~MonoElementsIntegralCpp() {
+    if (this->nodes) delete this->nodes;
+    if (this->connectivity) delete this->connectivity;
+    for (unsigned int i = 0; i < this->lnumbering.size(); ++i) {
+      delete this->lnumbering[i];
+    }
+    for (unsigned int i = 0; i < this->values.size(); ++i) {
+      delete this->values[i];
+    }
   }
   int geoSpaceNumber;
 
   std::vector<LocalSpace> lspaces;
-  std::vector<MapMatrixIDD* >  lnumbering;
-  std::vector<MapMatrixDD1*>  values;
-  std::vector<MapMatrixDDD*>  ipvalues;
+  std::vector<MapMatrixIDD*> lnumbering;
+  std::vector<MapMatrixDD1*> values;
+  std::vector<MapMatrixDDD*> ipvalues;
 
   void SetLocalOffsets(const int& maxSizeUDof,
                        const std::vector<int>& ludof,
                        const std::vector<int>& luNumberingindex,
                        const int& maxSizeTDof,
                        const std::vector<int>& ltdof,
-                       const std::vector<int>& ltNumberingindex){
-      this->maxsizelocalUnkownDofs = maxSizeUDof;
-      for(unsigned int i =0; i < ludof.size(); ++i){
-          this->localUnkownDofsOffset[i] = ludof[i];
-          this->unkownDofsNumbering[i] =luNumberingindex[i];
-          }
-      this->maxsizelocalTestDofs = maxSizeTDof;
-      for(unsigned int i =0; i < ltdof.size(); ++i){
-          this->localTestDofsOffset[i] =ltdof[i];
-          this->testDofsNumbering[i] =ltNumberingindex[i];
-          }
+                       const std::vector<int>& ltNumberingindex) {
+    this->maxsizelocalUnkownDofs = maxSizeUDof;
+    for (unsigned int i = 0; i < ludof.size(); ++i) {
+      this->localUnkownDofsOffset[i] = ludof[i];
+      this->unkownDofsNumbering[i] = luNumberingindex[i];
+    }
+    this->maxsizelocalTestDofs = maxSizeTDof;
+    for (unsigned int i = 0; i < ltdof.size(); ++i) {
+      this->localTestDofsOffset[i] = ltdof[i];
+      this->testDofsNumbering[i] = ltNumberingindex[i];
+    }
   }
 
-  void Reset(){
+  void Reset() {
     this->hasnormal = false;
     this->totalvijcpt = 0;
     this->onlyUpper = false;
   };
 
-  void SetGeoSpace(const int& i){
-          this->geoSpaceNumber = i ;
-  };
-  void SetNumberOfSpaces(const int& i){
-          this->lspaces.resize(i);
-  };
+  void SetGeoSpace(const int& i) { this->geoSpaceNumber = i; };
+  void SetNumberOfSpaces(const int& i) { this->lspaces.resize(i); };
 
   void InitSpaceS(const int& s,
-                 const int& dim ,
-                 const int& NumberOfShapeFunctions,
-                 const int& numberOfIntegrationPoints ){
-    this->lspaces[s].Init(dim, NumberOfShapeFunctions,numberOfIntegrationPoints  );
+                  const int& dim,
+                  const int& NumberOfShapeFunctions,
+                  const int& numberOfIntegrationPoints) {
+    this->lspaces[s].Init(dim, NumberOfShapeFunctions, numberOfIntegrationPoints);
   };
   void SetSpaceSvalNI(const int& spaceNumber,
                       const int& integrationPoint,
-                      double* pd){
-     this->lspaces[spaceNumber].SetvalNI(integrationPoint,pd);
+                      CBasicFloatType* pd) {
+    this->lspaces[spaceNumber].SetvalNI(integrationPoint, pd);
   }
   void SetSpaceSvaldphidxiI(const int& spaceNumber,
-                      const int& integrationPoint,
-                      double* pd){
-     this->lspaces[spaceNumber].SetvaldphidxiI(integrationPoint, pd);
+                            const int& integrationPoint,
+                            CBasicFloatType* pd) {
+    this->lspaces[spaceNumber].SetvaldphidxiI(integrationPoint, pd);
   }
   //////////////////////////////////////////
-  void SetNumberOfNumberings(int i){
-
-      for(unsigned int i=0; i < this->lnumbering.size() ; ++i){
-        if(this->lnumbering[i]) {
-            delete this->lnumbering[i];
-            this->lnumbering[i] = nullptr;
-        }
+  void SetNumberOfNumberings(int i) {
+    for (unsigned int i = 0; i < this->lnumbering.size(); ++i) {
+      if (this->lnumbering[i]) {
+        delete this->lnumbering[i];
+        this->lnumbering[i] = nullptr;
       }
-      this->lnumbering.resize(i,0);
-      //for(unsigned int i=0; i < this->lnumbering.size() ; ++i){
-      //  this->lnumbering[i] = nullptr;
-      //}
-
+    }
+    this->lnumbering.resize(i, 0);
   };
   //
-  void SetNumberingI(int i, int n, int m, CBasicIndexType* ip){
-     if(this->lnumbering[i] != nullptr) {
-         delete this->lnumbering[i];
-         this->lnumbering[i] = nullptr;
-     }
-     this->lnumbering[i] = new MapMatrixIDD(ip,n,m);
-   }
+  void SetNumberingI(int i, int n, int m, CBasicIndexType* ip) {
+    if (this->lnumbering[i] != nullptr) {
+      delete this->lnumbering[i];
+      this->lnumbering[i] = nullptr;
+    }
+    this->lnumbering[i] = new MapMatrixIDD(ip, n, m);
+  }
   //////////////////////////////////////////
   void SetNumberOfValues(int i);
-  void SetValueI(int i, int n, int m, double* dp);
+  void SetValueI(int i, int n, int m, CBasicFloatType* dp);
   void SetNumberOfIPValues(int i);
-  void SetIPValueI(int i, int n, int m, double* dp);
+  void SetIPValueI(int i, int n, int m, CBasicFloatType* dp);
   ///////////////  Unkown Fields  ///////////////////////////////////////
   void SetNumberOfUnkownFields(const int& n);
   void SetUnkownOffset(const int& n, const int& s);
@@ -229,19 +208,28 @@ struct MonoElementsIntegralCpp{
   void SetTestOffset(const int& n, const int& s);
   ///////////////// constants ///////////////////////////////////
   void SetNumberOfConstants(const CBasicIndexType& n);
-  void SetConstants(const int& n,const double& val);
+  void SetConstants(const int& n, const CBasicFloatType& val);
   //////////////// Working Memory ///////////////////////////////
   void AllocateWorkingElementVIJ(int size);
   ///////// PrepareFastIntegration /////////////////////////////
   void SetComputeNormal(const bool& val);
   ///////////////// Integration ///////////////////////////////////
   void SetNumberOfIntegrationPoints(const int& n);
-  void SetIntegrationPointI(const int& n,const double& w,const double& p0,const double& p1,const double& p2);
-  void SetPoints(double* pd, const int& rows, const int& columns);
-  void SetConnectivity(const CBasicIndexType* pd, const int& rows, const int& columns);
+  void SetIntegrationPointI(const int& n,
+                            const CBasicFloatType& w,
+                            const CBasicFloatType& p0,
+                            const CBasicFloatType& p1,
+                            const CBasicFloatType& p2);
+  void SetPoints(CBasicFloatType* pd, const int& rows, const int& columns);
+  void SetConnectivity(const CBasicIndexType* pd, const int& rows,
+                       const int& columns);
   void ProcessWeakForm(WeakForm* wform);
-  void Integrate( WeakForm* wform, const CBasicIndexType& size, const CBasicIndexType* pidstotreat );
-
+  void Integrate(WeakForm* wform, const CBasicIndexType& size,
+                 const CBasicIndexType* pidstotreat);
+  template <unsigned int SpaceDim, unsigned int ElementDim>
+  void IntegrateSpaceDimElementDim(WeakForm* wform,
+                                   const CBasicIndexType& idstotreat_s,
+                                   const CBasicIndexType* pidstotreat);
 };
 
-} // namespace BasicTools
+}  // namespace BasicTools
