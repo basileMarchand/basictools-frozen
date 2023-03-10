@@ -94,7 +94,7 @@ try:
             res = {}
             exec(code,res)
             generated_file  = res["GetGeneratedFiles"]("")
-            cpp_src = generated_file + cpp_src
+            cpp_src = cpp_src + generated_file
 
     modules = []
     cpp_src_with_path = [os.path.join("cpp_src", src) for src in cpp_src]
@@ -125,8 +125,8 @@ except Exception as e:
     print(e)
 
 extra_compile_args = {
-            'unix': ['-fopenmp'],
-            'msvc': ['/openmp']
+            'unix': ['-fopenmp','-std=c++17' ],
+            'msvc': ['/openmp', '/std:c++17']
     }
 extra_link_args = {
             'unix': ['-fopenmp'],
