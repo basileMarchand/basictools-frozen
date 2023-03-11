@@ -25,25 +25,25 @@ If you already have Python, you can install BasicTools with:
 If you don't have Python yet, you might want to consider using Anaconda.
 It's the easiest way to get started.
 
-We are currently working to include BasicTools package on conda-forge to increase the supported platform.
+We are currently working to include BasicTools package on conda-forge to increase the number of supported platforms.
 
 Manual installation (from sources) for developers
 =================================================
 
 In the case you want to make changes to BasicTools (and potentially contribute), an installation from sources is mandatory.
 The sources can be downloaded from Gitlab.com [#gitlaburlpublic]_.
-Then inside the repository folder the user must compile the c++ extensions to take profit of optimized algorithms.
+Then inside the repository folder, the user must compile the c++ extensions to take profit of optimized algorithms.
 
     ``> python setup.py build_clib``
 
     ``> python setup.py build_ext --inplace``
 
-Then the user is responsible to add the ``BASICTOOLS_REPOSITORY/src/`` folder to the ``PYTHONPATH`` environment variables (more information on [#pythonpathdoc]_).
+Then the user is responsible for adding the ``BASICTOOLS_REPOSITORY/src/`` folder to the ``PYTHONPATH`` environment variables (more information on [#pythonpathdoc]_).
 Or using pip for development:
 
     ``> pip install -e .``
 
-also you can do a permanent installation using (this is not recommended):
+The user can also install permanently using (this is not recommended):
 
     ``> pip install .``
 
@@ -51,8 +51,8 @@ also you can do a permanent installation using (this is not recommended):
 For Windows
 ^^^^^^^^^^^
 
-Scikit-sparse package not available in anaconda for windows, should be able to compile it for windows following [#scikitwindows]_.
-I good stating point for the installation is https://github.com/EmJay276/scikit-sparse .
+The scikit-sparse package is not available in anaconda for windows, but the user should be able to compile it for windows following [#scikitwindows]_.
+A good starting point for the installation is https://github.com/EmJay276/scikit-sparse .
 
 Extra pre-requirement:
     - Microsoft Build Tools for C++.
@@ -63,16 +63,16 @@ Extra pre-requirement:
 Asking for Help
 ***************
 
-All question can be addressed using the issues system of gitlab https://gitlab.com/drti/basic-tools/-/issues.
+All questions can be addressed using the issues system of gitlab https://gitlab.com/drti/basic-tools/-/issues.
 
 ***************************
 To contribute to BasicTools
 ***************************
 
 To contribute to BasicTools you can fill a bug report on [#gitlaburlpublic]_ with a *minimal non working example*.
-This makes the debugging easier in ours side.
+This makes the debugging easier on our side.
 
-If you want to contribute with code you must.
+If you want to contribute with your code you must:
 
 *  clone the master branch of BasicTools from [#gitlaburlpublic]_
 *  make a development branch
