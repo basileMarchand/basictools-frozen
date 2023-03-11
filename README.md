@@ -1,30 +1,38 @@
 1) DEPENDENCIES
 
-    python minimal version: 3.7
+    python minimal version: 3.8
 
     PYTHON OPEN-SOURCE DEPENDENCIES
-    numpy
-    scipy
-    sympy
-    pyparsing
-    cython
-    scikit-learn
-    scikit-sparse
-    vtk
-    eigency=1.78
-    mkl
-    mkl-include
-    psutil
-    pyamg
-    h5py
-    meshio
-    sphinx
-    sphinx-rtd-theme
-    setuptools-scm
-    pyvista
-    psutil
-    networkx
-    pywin32 [Only for windows]
+
+    * numpy >= 1.20
+    * scipy
+    * sympy
+    * pyparsing
+    * cython
+    * scikit-learn
+    * scikit-sparse
+    * vtk
+    * eigency>=1.78
+    * mkl
+    * mkl-include
+    * psutil
+    * networkx
+
+
+    Optionals Python packages (some functionalities may not be available without this packages):
+
+    * matplotlib
+    * pyamg
+    * h5py
+    * meshio
+    * sphinx
+    * sphinx-rtd-theme
+    * setuptools-scm
+    * pyvista
+    * sksparse
+    * CGNS
+    * paraview
+    * pywin32 [Only for windows]
 
 
     C++ OPEN-SOURCE DEPENDENCIES
@@ -41,6 +49,14 @@
 2) INSTALLATION
 
     FOR USER:
+
+    The easiest way for installing BasicTools is with conda using the conda one of the channel: 'drti' or "conda-forge".
+
+        > conda install -c drti basictools
+
+    note: We are currently working on a better conda-forge integration.
+
+
 
     For conda you can create packages using the recipes available on the sources:
 
