@@ -59,6 +59,12 @@ Extra pre-requirement:
     - suitesparse package
 
 
+***************
+Asking for Help
+***************
+
+All question can be addressed using the issues system of gitlab https://gitlab.com/drti/basic-tools/-/issues.
+
 ***************************
 To contribute to BasicTools
 ***************************
