@@ -518,7 +518,7 @@ def FloaterMeshParametrization(inMesh, nBoundary, outShape = "circle", boundaryO
 
     weights = np.zeros(N)
     for i in range(N):
-        weights[i] = 1./np.sum(Ad[i,:])
+        weights[i] = 1./np.sum(Ad[[i],:])
 
     # Construct the sparse linear system to solve to find the position of the interior points in the parametrization
     A = sparse.eye(n).tolil()
@@ -700,7 +700,7 @@ def FloaterMesh3DParametrizationStarDomain(inMesh: UnstructuredMesh, boundaryTag
 
     weights = np.zeros(N)
     for i in range(N):
-        weights[i] = 1./np.sum(Ad[i,:])
+        weights[i] = 1./np.sum(Ad[[i],:])
 
     # Construct the sparse linear system to solve to find the position of the interior points in the parametrization
     A = sparse.eye(n).tolil()
@@ -890,8 +890,8 @@ def FloaterMesh3DParametrization(inMesh: UnstructuredMesh, boundaryTag: str, inP
 
     weights = np.zeros(N)
     for i in range(N):
-        if 1./np.sum(Ad[i,:])>0:
-            weights[i] = 1./np.sum(Ad[i,:])
+        if 1./np.sum(Ad[[i],:])>0:
+            weights[i] = 1./np.sum(Ad[[i],:])
         else:
             weights[i] = 0.
 
