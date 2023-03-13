@@ -373,7 +373,7 @@ def TestAll(modulesToTreat=['ALL'],modulesToSkip=[], fullOutput=False, stopAtFir
     if coverage["active"]:
         import coverage as modcoverage
         #ss = [ k for k in lis ]
-        cov = modcoverage.coverage(omit=['pyexpat','*__init__.py'])
+        cov = modcoverage.Coverage(omit=['pyexpat','*__init__.py'])
         cov.start()
 
     # calls to print, ie import module1
@@ -415,7 +415,7 @@ def TestAll(modulesToTreat=['ALL'],modulesToSkip=[], fullOutput=False, stopAtFir
         else:
             tempdir = TestTempDir.GetTempPath()
 
-        ss = [ ("*"+os.sep.join(k.split("."))+"*") for k in toCheck ]
+        ss = [ ("*/"+os.sep.join(k.split("."))+"*") for k in toCheck ]
         cov.html_report(directory = tempdir, include=ss  ,title="Coverage report of "+ " and ".join(extraToolsBoxes) )
         print('Coverage Report in : ' + tempdir +"index.html")
         cov.report( include=ss )
