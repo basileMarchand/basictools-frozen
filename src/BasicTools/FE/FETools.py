@@ -102,7 +102,7 @@ def PrepareFEComputation(mesh, elementFilter = None, numberOfComponents = None, 
 
     return space, numberings, offset, NGauss
 
-def ComputeL2ScalarProducMatrix(mesh, numberOfComponents, elementFilter = None):
+def ComputeL2ScalarProducMatrix(mesh, numberOfComponents, elementFilter = None, integrationRule = LagrangeIsoParam):
     """
     Computes the L2 scalar product used to compute the correlations
     between the primal solution snapshots. The numberOfComponents
@@ -132,7 +132,7 @@ def ComputeL2ScalarProducMatrix(mesh, numberOfComponents, elementFilter = None):
         elementFilter = ElementFilter(mesh)
         elementFilter.SetDimensionality(dim)
 
-    spaces, numberings, offset, NGauss = PrepareFEComputation(mesh, elementFilter, numberOfComponents)
+    spaces, numberings, offset, NGauss = PrepareFEComputation(mesh, elementFilter, numberOfComponents, integrationRule = integrationRule)
 
     from BasicTools.FE.SymWeakForm import GetField
     from BasicTools.FE.SymWeakForm import GetTestField
@@ -182,7 +182,7 @@ def ComputeH10ScalarProductMatrix(mesh, numberOfComponents, integrationRule = La
     ff = ElementFilter(mesh)
     ff.SetDimensionality(dim)
 
-    spaces, numberings, offset, NGauss = PrepareFEComputation(mesh, ff, numberOfComponents)
+    spaces, numberings, offset, NGauss = PrepareFEComputation(mesh, ff, numberOfComponents, integrationRule = integrationRule)
 
     ev = []
     ei = []
@@ -281,7 +281,7 @@ def ComputeJdetAtIntegPoint(mesh, elementSets = None, relativeDimension = 0, int
             if elementSet:
                 ff.AddTag(elementSet)
 
-    spaces, numberings, offset, NGauss = PrepareFEComputation(mesh, ff)
+    spaces, numberings, offset, NGauss = PrepareFEComputation(mesh, ff, integrationRule = integrationRule)
 
     jDet = np.zeros(NGauss)
 
@@ -336,7 +336,7 @@ def ComputePhiAtIntegPoint(mesh, elementSets = None, relativeDimension = 0, inte
             if elementSet:
                 ff.AddTag(elementSet)
 
-    spaces, numberings, offset, NGauss = PrepareFEComputation(mesh, ff)
+    spaces, numberings, offset, NGauss = PrepareFEComputation(mesh, ff, integrationRule = integrationRule)
 
     nbNodes = mesh.GetNumberOfNodes()
 
@@ -471,7 +471,7 @@ def ComputeGradPhiAtIntegPoint(mesh, elementSets = None, relativeDimension = 0, 
                 ff.AddTag(elementSet)
 
 
-    spaces, numberings, offset, NGauss = PrepareFEComputation(mesh, ff)
+    spaces, numberings, offset, NGauss = PrepareFEComputation(mesh, ff, integrationRule = integrationRule)
 
 
     nbNodes = mesh.GetNumberOfNodes()
@@ -545,7 +545,7 @@ def ComputeNormalsAtIntegPoint(mesh, elementSets, integrationRule = LagrangeIsoP
             if elementSet:
                 ff.AddTag(elementSet)
 
-    spaces, numberings, offset, NGauss = PrepareFEComputation(mesh, ff)
+    spaces, numberings, offset, NGauss = PrepareFEComputation(mesh, ff, integrationRule = integrationRule)
 
     normalsAtIntegPoint = np.empty((mesh.GetDimensionality(), NGauss))
 
@@ -593,7 +593,7 @@ def ComputeIntegrationPointsTags(mesh, dimension = None, integrationRule = Lagra
     ff = ElementFilter(mesh)
     ff.SetDimensionality(dimension)
 
-    _, _, _, NGauss = PrepareFEComputation(mesh, ff, dimension)
+    _, _, _, NGauss = PrepareFEComputation(mesh, ff, dimension, integrationRule = integrationRule)
 
     listOfTags = [[] for i in range(NGauss)]
 
@@ -644,7 +644,7 @@ def CellDataToIntegrationPointsData(mesh, scalarFields, elementSet = None, relat
     if elementSet != None:
         ff.AddTag(elementSet)
 
-    _, _, _, NGauss = PrepareFEComputation(mesh, ff, dimension)
+    _, _, _, NGauss = PrepareFEComputation(mesh, ff, dimension, integrationRule = integrationRule)
 
     if type(scalarFields) == dict:
         keymap = list(scalarFields.keys())
