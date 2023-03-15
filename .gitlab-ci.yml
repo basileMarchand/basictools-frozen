@@ -84,21 +84,13 @@ test_and_doc_py39:
     PYTHON_VERSION: "3.9"
     PYTHON_VERSION_SHORT: "39"
 
-test_and_doc_py310:
-  extends:
-    - .test_and_doc_py
-  variables:
-    PYTHON_VERSION: "3.10"
-    PYTHON_VERSION_SHORT: "310"
-
 pages:
   extends:
     - .job_rules
   stage: deploydoc
   needs: [test_and_doc_py38]
   script:
-    - mkdir public
-    - mv -r docs/_build/html/* public/.
+    - mv docs/_build/html public
   artifacts:
       name: "WebSite"
       paths:
