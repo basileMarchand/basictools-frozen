@@ -55,7 +55,10 @@ def ComputeDofNumbering(mesh,Space,dofs=None,fromConnectivity=False,elementFilte
     if fromConnectivity:
         if dofs is not None or elementFilter is not None or discontinuous:
            raise(Exception("cant take dofs, sign, discontinuous or elementFilter different from the default values"))
-        res.ComputeNumberingFromConnectivity(mesh,Space)
+        from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
+        if  Space is not LagrangeSpaceGeo:
+            raise(Exception("Incompatible case! Can't use a non iso-parametric and fromConnectivity at the same time"))
+        res.ComputeNumberingFromConnectivity(mesh, Space)
         SetNumberingToCache(res,mesh=mesh, space=Space, fromConnectivity=fromConnectivity, elementFilter=elementFilter, discontinuous=discontinuous )
         return res
     else:
@@ -106,11 +109,12 @@ def CheckIntegrity(GUI=False):
         numbering = DN.ComputeDofNumbering(res2,space)
         printData(numbering,st)
 
-        # from connectivity
-        print("----------------------{} from connectivity -----------------------------".format(spaceName))
-        st = time.time()
-        numbering = DN.ComputeDofNumbering(res2, space,fromConnectivity=True)
-        printData(numbering,st)
+        if space is LagrangeSpaceGeo:
+            # from connectivity
+            print("----------------------{} from connectivity -----------------------------".format(spaceName))
+            st = time.time()
+            numbering = DN.ComputeDofNumbering(res2, space,fromConnectivity=True)
+            printData(numbering,st)
 
         # 3D using filter
         print("----------------------{} 3D filter-----------------------------".format(spaceName))
