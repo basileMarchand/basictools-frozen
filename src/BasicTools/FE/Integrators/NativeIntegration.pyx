@@ -390,7 +390,7 @@ cdef class PyMonoElementsIntegralCpp():
             print("Dont know this element : ", elementType)
 
         if not elementType in self.integrationRule :
-            print("Integration rule incomplete for this type of geo element : "+  str(elementType) + "  integration rule : "+ str(list(self.integrationrule.keys())))
+            print("Integration rule incomplete for this type of geo element : "+  str(elementType) + "  integration rule : "+ str(list(self.integrationRule.keys())))
 
         p, w = self.integrationRule[elementType]
         cdef CBasicIndexType numberOfIntegrationPoints = len(w)
