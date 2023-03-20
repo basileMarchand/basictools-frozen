@@ -15,6 +15,7 @@ class SpaceBase(BaseOutputObject):
     def __init__(self):
         super(SpaceBase,self).__init__()
         self.name = None
+        self.fromConnectivityCompatible = False
 
     def Create(self):
         pass

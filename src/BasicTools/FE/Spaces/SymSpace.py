@@ -3,13 +3,13 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
+from typing import Optional
 import numpy as np
 
 from sympy import Symbol, DiracDelta, Matrix
 from sympy.utilities.lambdify import lambdify
 
-from BasicTools.FE.Spaces.SpaceBase import SpaceBase
-from BasicTools.FE.Spaces.SpaceBase import SpaceAtIntegrationPoints
+from BasicTools.FE.Spaces.SpaceBase import SpaceBase, SpaceAtIntegrationPoints
 
 class SymSpaceBase(SpaceBase):
     def __init__(self):
@@ -32,7 +32,10 @@ class SymSpaceBase(SpaceBase):
     def GetNumberOfShapeFunctions(self):
         return len(self.symN)
 
-    def Create(self,force=False):
+    def Created(self):
+        return self.__created__
+
+    def Create(self, force=False):
         if self.__created__ and not force:
             return
         self.__created__ = True
@@ -82,6 +85,11 @@ class SymSpaceBase(SpaceBase):
             self.symdNdxidxi[i] = Matrix(self.symdNdxidxi[i])
 
             self.fct_dNdxidxi_Matrix[i] = lambdify(allcoords,self.symdNdxidxi[i].subs(subsList) , lambdifyList )
+
+
+        #This is not perfect because for P2 spaces we check only the number of shape functions
+        if np.all([ dof[0]=="P" and nb==dof[1]  for nb,dof in  enumerate(self.dofAttachments)]) :
+            self.fromConnectivityCompatible = True
 
     def SetIntegrationRule(self, points, weights):
         self.Create()

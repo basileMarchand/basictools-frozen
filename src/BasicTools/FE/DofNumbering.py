@@ -5,6 +5,8 @@
 #
 
 from BasicTools.Containers import Filters
+import BasicTools.Containers.ElementNames as EN
+
 
 __cache__ = {}
 __cacheSize__ = 1
@@ -56,8 +58,14 @@ def ComputeDofNumbering(mesh,Space,dofs=None,fromConnectivity=False,elementFilte
         if dofs is not None or elementFilter is not None or discontinuous:
            raise(Exception("cant take dofs, sign, discontinuous or elementFilter different from the default values"))
         from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
-        if  Space is not LagrangeSpaceGeo:
-            raise(Exception("Incompatible case! Can't use a non iso-parametric and fromConnectivity at the same time"))
+        #check the compatibility of the spaces, this is not perfect, the user is responsible of putting the shape function in the same order
+        # as the nodes of the reference element
+        for k in mesh.elements.keys():
+            Space[k].Create()
+            if Space[k].fromConnectivityCompatible == True or Space[k].GetNumberOfShapeFunctions() == EN.numberOfNodes[k]  :
+                continue
+            raise Exception(f"Incompatible case! Can't use a non compatible space {(type(Space[k]))} and fromConnectivity at the same time")
+
         res.ComputeNumberingFromConnectivity(mesh, Space)
         SetNumberingToCache(res,mesh=mesh, space=Space, fromConnectivity=fromConnectivity, elementFilter=elementFilter, discontinuous=discontinuous )
         return res
