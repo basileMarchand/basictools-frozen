@@ -339,7 +339,7 @@ def CheckIntegrity():
     except RuntimeError as e:
        #raise
        import sys
-       raise(UserWarning (e.message,sys.exc_info()[2]))
+       raise UserWarning(str(e),sys.exc_info()[2])
 
 
     return "ok"
