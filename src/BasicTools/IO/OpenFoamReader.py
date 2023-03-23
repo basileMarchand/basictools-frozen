@@ -121,7 +121,7 @@ boundaryField
     from BasicTools.Helpers.Tests import TestTempDir
     tempdir = TestTempDir.GetTempPath()
 
-    os.system("mkdir -p "+tempdir+"0.1")
+    os.makedirs(tempdir+"0.1")
 
     f = open(tempdir+"0.1"+os.sep+"U", "w")
     f.write(string)
