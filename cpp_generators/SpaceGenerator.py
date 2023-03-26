@@ -82,8 +82,8 @@ def Generate(prefix:str = "cpp_src"):
                 nbDim = spd.GetDimensionality()
 
                 cppFile.write(f"""
-const int {FESpaceName}_{spn}_GetNumberOfShapeFunctions(){{ return {numberOfShapeFunctions}; }};
-const int {FESpaceName}_{spn}_GetDimensionality(){{ return {nbDim}; }};""")
+int {FESpaceName}_{spn}_GetNumberOfShapeFunctions(){{ return {numberOfShapeFunctions}; }};
+int {FESpaceName}_{spn}_GetDimensionality(){{ return {nbDim}; }};""")
 
                 cppFile.write(f"""
 MatrixDDD {FESpaceName}_{spn}_GetShapeFunctions(const double {coord0}, const double {coord1}, const double {coord2} ){{
@@ -93,14 +93,14 @@ MatrixDDD {FESpaceName}_{spn}_GetShapeFunctions(const double {coord0}, const dou
                 for i, v in replacements:
                     cppFile.write(f"    const double {i} = " +  ccode(v) + ";\n" )
                 for ns in range(numberOfShapeFunctions):
-                    cppFile.write( f"    res.coeffRef({ns},0) =  "+ ccode(reducedExprs [0][ns]) )
+                    cppFile.write( f"    res({ns},0) =  "+ ccode(reducedExprs [0][ns]) )
                     cppFile.write(";\n")
                 cppFile.write("""    return res;
 };
 """)
                 cppFile.write(f"""
 MatrixDDD {FESpaceName}_{spn}_GetShapeFunctionsDer(const double {coord0}, const double {coord1}, const double {coord2} ){{
-    MatrixDDD res = MatrixDDD::Zero({numberOfShapeFunctions},3);
+    MatrixDDD res = MatrixDDD::Zero(3,{numberOfShapeFunctions});
 """)
                 replacements, reducedExprs  = cse(spd.symdNdxi)
                 for i, v in replacements:
@@ -109,7 +109,7 @@ MatrixDDD {FESpaceName}_{spn}_GetShapeFunctionsDer(const double {coord0}, const 
                 for j in range(numberOfShapeFunctions):
                     for i in range(nbDim):
                         text = ccode(reducedExprs [0][i,j])
-                        cppFile.write( f"    res.coeffRef({i},{j}) =  "+ text + ";\n")
+                        cppFile.write( f"    res({i},{j}) =  "+ text + ";\n")
 
                 cppFile.write("""    return res;\n};
 """)
