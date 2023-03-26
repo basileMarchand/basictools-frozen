@@ -38,8 +38,8 @@ const MatrixDDD ElementSpace::GetValOfShapeFunctionsDerAt(const double phi, cons
 };
 
 // ***************  Space ******************
-CBasicIndexType Space::GetNumberOfShapeFunctionsFor(const std::string& elementType){
-    return this->storage[elementType].GetNumberOfShapeFunctions();
+CBasicIndexType Space::GetNumberOfShapeFunctionsFor(const std::string& elementType) const {
+    return this->storage.at(elementType).GetNumberOfShapeFunctions();
 };
 //
 void Space::AddDofTo(const std::string& elementType, const char& entity, const int& entityNumber, const int& extraKey){

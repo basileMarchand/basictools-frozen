@@ -61,7 +61,7 @@ public:
     void SetFromConnectivity(const bool& val);
     void ComputeNumberingFromConnectivity(UnstructuredMesh& mesh);
     //
-    void ComputeNumberingGeneral(UnstructuredMesh& mesh, Space& space, ElementFilterBase& elementFilter);
+    void ComputeNumberingGeneral(UnstructuredMesh& mesh, const Space& space, ElementFilterBase& elementFilter);
     //
     bool HasNumberingFor(const std::string & elemtype);
     //

@@ -94,7 +94,7 @@ void DofNumbering::ComputeNumberingFromConnectivity(UnstructuredMesh& mesh){
 
 }
 
-void DofNumbering::ComputeNumberingGeneral(UnstructuredMesh& mesh, Space& space, ElementFilterBase& elementFilter){
+void DofNumbering::ComputeNumberingGeneral(UnstructuredMesh& mesh, const Space& space, ElementFilterBase& elementFilter){
     CBasicIndexType& size = this->size;
 
     CBasicIndexType useddim = 0;

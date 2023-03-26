@@ -41,7 +41,7 @@ class Space{
 public:
     std::map<std::string, ElementSpace > storage;
 public:
-    CBasicIndexType GetNumberOfShapeFunctionsFor(const std::string& elementType);
+    CBasicIndexType GetNumberOfShapeFunctionsFor(const std::string& elementType) const ;
     void AddDofTo(const std::string& elementType, const char& entity, const int& entityNumber, const int& extraKey);
     const ElementSpace& GetSpaceFor(const std::string& elementType) const ;
     void Print();
