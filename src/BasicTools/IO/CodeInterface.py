@@ -219,7 +219,7 @@ def CheckIntegrity(GUI=False):
 
     interface.SetProcessDirectory(T.TestTempDir.GetTempPath())
 
-    interface.SetCodeCommand("dir")
+    interface.SetCodeCommand("echo")
     interface.ReadTemplateFile('template.tpl')
     interface.WriteFile(1)
 
@@ -229,7 +229,7 @@ def CheckIntegrity(GUI=False):
     print("lastCommandExecuted: " + str(interface.lastCommandExecuted))
 
 
-    interface.SetCodeCommand("dir")
+    interface.SetCodeCommand("echo")
     interface.SetOptions(["{filter}"])
     interface.parameters['filter']        = 'calcul1.inp'
     interface.withFilename = False
