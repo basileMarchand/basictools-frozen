@@ -590,7 +590,7 @@ def CellDataToPoint(mesh:UnstructuredMesh, cellfields:np.ndarray) -> np.ndarray:
     """
     from BasicTools.Bridges import vtkBridge as vB
     from vtkmodules.util import numpy_support
-    import vtk
+    from vtkmodules.vtkFiltersCore import vtkCellDataToPointData
 
     vtkMesh = vB.MeshToVtk(mesh)
 
@@ -598,7 +598,7 @@ def CellDataToPoint(mesh:UnstructuredMesh, cellfields:np.ndarray) -> np.ndarray:
     for i in range(nbFields):
         vtkMesh.GetCellData().AddArray(vB.NumpyFieldToVtkField(mesh, cellfields[i,:], "field_"+str(i)))
 
-    cellToPoint = vtk.vtkCellDataToPointData()
+    cellToPoint = vtkCellDataToPointData()
     cellToPoint.SetInputData(vtkMesh)
     cellToPoint.Update()
 
