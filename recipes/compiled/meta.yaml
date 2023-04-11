@@ -52,7 +52,8 @@ requirements:
     - scikit-sparse
     - pywin32 [win]
     - pycgns
-    - networkx
+    - networkx >=3.0 [not win]
+#networkx not available on conda-forge, can be installed using pip
 
 test:
   requirements:
