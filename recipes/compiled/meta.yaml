@@ -49,7 +49,7 @@ requirements:
     - meshio
     - h5py
     - pyvista
-    - scikit-sparse [not win]
+    - scikit-sparse
     - pywin32 [win]
     - pycgns
     - networkx
