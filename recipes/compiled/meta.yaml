@@ -27,7 +27,7 @@ requirements:
     - {{ compiler('cxx') }}
   host:
     - python {{ python }}
-    - numpy>=1.20
+    - numpy >=1.20
     - cython
     - eigency
     - mkl
@@ -40,9 +40,9 @@ requirements:
     - psutil
     - python
     - pyparsing
-    - scipy>=1.9
+    - scipy >=1.9
     - sympy
-    - eigency=1.78
+    - eigency
     - mkl
     - scikit-learn
     - vtk
