@@ -129,6 +129,11 @@ from BasicTools.IO.IOFactory import RegisterWriterClass
 RegisterWriterClass(".msh",GmshWriter)
 
 def CheckIntegrity_OriginalIdsForTags():
+
+    import os
+    from BasicTools.Helpers.Tests import TestTempDir
+    tempdir = TestTempDir.GetTempPath()
+
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshOfTriangles
     import BasicTools.Containers.UnstructuredMesh as UM
 
@@ -152,17 +157,21 @@ def CheckIntegrity_OriginalIdsForTags():
     OW.tagMapping=tagMapping
 
     print(OW)
-    OW.Open("Test_GmshWriter.geof")
+    OW.Open(tempdir+os.sep+"Test_GmshWriter.geof")
     OW.Write(mymesh, useOriginalId=False)
     OW.Close()
 
 
     print(mymesh)
-    WriteMeshToGmsh("Test_GmshWriter_II.geof", mymesh,useOriginalId=True,tagMapping=tagMapping)
+    WriteMeshToGmsh(tempdir+os.sep+"Test_GmshWriter_II.geof", mymesh,useOriginalId=True,tagMapping=tagMapping)
 
     return "ok"
 
 def CheckIntegrity_SeparatedTags():
+
+    import os
+    from BasicTools.Helpers.Tests import TestTempDir
+    tempdir = TestTempDir.GetTempPath()
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshOfTriangles
 
     nodes = np.array([[0,0,0],[1,0,0],[1,1,0],[0,1,0],[0.5,0.5,0]],dtype=PBasicFloatType)
@@ -173,7 +182,7 @@ def CheckIntegrity_SeparatedTags():
     mesh.AddElementToTag(1,"ZTag2")
     mesh.AddElementToTag(2,"ZTag3")
 
-    fileName="Test_GmshWriterBasic.msh"
+    fileName=tempdir+os.sep+"Test_GmshWriterBasic.msh"
 
     print(mesh)
     OW = GmshWriter()
@@ -206,6 +215,10 @@ def CheckIntegrity_SeparatedTags():
         return "ok"
 
 def CheckIntegrity_OverlappingTags():
+    import os
+    from BasicTools.Helpers.Tests import TestTempDir
+    tempdir = TestTempDir.GetTempPath()
+
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshOfTriangles
 
     nodes = np.array([[0,0,0],[1,0,0],[1,1,0],[0,1,0],[0.5,0.5,0]],dtype=PBasicFloatType)
@@ -218,7 +231,7 @@ def CheckIntegrity_OverlappingTags():
     mesh.AddElementToTag(2,"ZTag2")
     mesh.AddElementToTag(2,"ZTag3")
 
-    fileName="Test_GmshWriterBasic.msh"
+    fileName=tempdir+os.sep+"Test_GmshWriterBasic.msh"
 
     print(mesh)
     OW = GmshWriter()
