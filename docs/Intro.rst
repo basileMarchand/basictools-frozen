@@ -16,21 +16,26 @@ The main functionalities of the library are:
 Installing BasicTools
 *********************
 
-To install BasicTools, we recommend using a scientific Python distribution [#anacondaurl]_.
+Conda
+-----
 
-If you already have Python, you can install BasicTools with:
+If you use conda, you can install BasicTools from the conda-forge channels [#anacondaurl]_:
 
-    ``> conda install -c conda-forge basictools``
+    # Best practice, use an environment rather than install in the base env
+    ``conda create -n my-env``
+    ``conda activate my-env``
+    # The actual install command
+    ``conda install -c conda-forge numpy``
 
-If you don't have Python yet, you might want to consider using Anaconda or mamba.
-It's the easiest way to get started.
+PIP
+---
 
-Another way of installing BasicTools is using pip (this required a local compilation step):
+If you use pip, you can install NumPy with:
 
     ``> set BASICTOOLS_USE_EIGENCYEIGEN=True``
-    ``> pip install https://gitlab.com/drti/basic-tools/-/archive/1.9.1/basic-tools-1.9.1.tar.bz2``
+    ``> pip install  https://gitlab.com/drti/basic-tools/-/archive/1.9.1/basic-tools-1.9.1.tar.bz2``
 
-
+Also when using pip, it’s good practice to use a virtual environment
 
 Manual installation (from sources) for developers
 =================================================
