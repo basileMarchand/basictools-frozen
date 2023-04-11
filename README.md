@@ -1,4 +1,37 @@
-1) DEPENDENCIES
+******************
+What is BasicTools
+******************
+
+BasicTools was primary designed as a basic set of tools to work on meshes in the context of finite element computation.
+The main functionalities of the library are:
+
+* IO routine : A set of classes to read and write meshes (and solutions fields) from/to a large variety of file formats. BasicTools does not have a proper file format mainly because existent formats provide most, if not all, of the functionalities needed.
+* Mesh manipulation: Routines to filter, define, extract and manipulate meshes in many ways.
+* Fields manipulation: finite element fields can be defined using different kinds of interpolation (P0/P1/P2), in the full mesh or only in restricted zones, and also at integration points. This classes have overloaded operators to make computation of quantities of interest an easy task.
+* Integration: Routines for the integration of weak formulations (tangent matrices, right hand terms, integral over only a part of a mesh).
+* Field transfer: Basic routine to transfer field from one mesh to another.
+* Finite element solver: using all the previous tools, some basic finite element solver are  available to solve generic partial differential equations on non structured meshes.
+
+*************
+Important URL
+*************
+
+- Documentation: https://basictools.readthedocs.io/en/latest/
+- Conda-forge Package: https://anaconda.org/conda-forge/basictools
+- Sources: https://gitlab.com/drti/basic-tools
+- Conda-forge feedstock: https://github.com/conda-forge/basictools-feedstock
+
+************************
+Project Using BasicTools
+************************
+
+OpenPisco, topology optimization using the level set method: https://gitlab.com/openpisco/openpisco, https://openpisco.readthedocs.io
+GenericROM, Reduced Order Modeling library: https://gitlab.com/drti/genericrom, https://genericrom.readthedocs.io/en/latest/
+
+
+************
+DEPENDENCIES
+************
 
     python minimal version: 3.8
 
@@ -35,111 +68,43 @@
     * pywin32 [Only for windows]
 
 
-    C++ OPEN-SOURCE DEPENDENCIES
-    Eigen (http://eigen.tuxfamily.org)
+    C++ OPEN-SOURCE DEPENDENCIES:
 
-    THIRD-PARTY PROPRIETARY DEPENDENCIES
-    odbAccess
-    abaqusConstants
+    * Eigen (http://eigen.tuxfamily.org)
+      (the pypi eigency package has the Eigen library already inside the package)
+      ( a conda-forge package is available for eigen)
+
+    THIRD-PARTY PROPRIETARY DEPENDENCIES (optional):
+
+    * odbAccess and abaqusConstants ( Abaqus )
+
 
     FOR WINDOWS:
       install Microsoft Visual C++ Build Tools to use eigen,
-      scikit-sparse package not available in anaconda for windows, some functionality will be missing,
 
-2) INSTALLATION
+*********************
+Installing BasicTools
+*********************
 
-    FOR USER:
+To install BasicTools, we recommend using a scientific Python distribution [#anacondaurl]_.
 
-    The easiest way for installing BasicTools is with conda using the conda one of the channel: 'drti' or "conda-forge".
+If you already have Python, you can install BasicTools with:
 
-        > conda install -c drti basictools
+    ``> conda install -c conda-forge basictools``
 
-    note: We are currently working on a better conda-forge integration.
+If you don't have Python yet, you might want to consider using Anaconda or mamba.
+It's the easiest way to get started.
 
+Another way of installing BasicTools is using pip (this required a local compilation step):
 
-
-    For conda you can create packages using the recipes available on the sources:
-
-        recipes/compiled/  -> for compiled version of BasicTools
-        recipes/noarch/  -> (not recommended) for a pure python (slower) version of BasicTools
-
-    FOR DEVELOPERS:
-
-    For development using a conda or other type of environment manager :
-
-        create an environment with all the requirements
+    ``> set BASICTOOLS_USE_EIGENCYEIGEN=True``
+    ``> pip install  https://gitlab.com/drti/basic-tools/-/archive/1.9.1/basic-tools-1.9.1.tar.bz2``
 
 
-    if the compilation script cant find eigen please add the environment  variable with the path to the EIGEN library must be defined (normally you don't have to do this):
+For more complex installation (from sources) for developers please read the documentation.
 
-        > export EIGEN_INC=/Path/To/Eigen/Library
+***************
+Asking for Help
+***************
 
-    COMPILATION:
-
-    Run the following command in the root directory :
-
-        > python setup.py build_clib
-        > python -m pip install --no-deps  -e . -vv
-
-    This will install the library in developer mode (-e), to reinstall please remove the "build" before running
-    the commands again.
-
-    WARNING: if you use a shared conda environnement, then you must only compile (not install) BasicTools
-
-        > python setup.py build_clib
-        > python setup.py build_ext --inplace
-        > export PYTHONPATH=${PYTHONPATH}:/path/to/BasicTools/src/
-        (for bash)
-
-
-3) TESTING INFRASTRUCTURE
-
-    Every module must have a function called "CheckIntegrity" that takes no
-    argument and returns the string "ok" if and only if the test was successful.
-
-    The __init__.py must have a variable named _test (the use of the variable
-    __all__ is depreciated) listing all submodules to be tested so that the test
-    infrastructure works as intended.
-
-    Two functions are available to help writing tests :
-
-    -   GetTestDataPath() : Returns the path of the data directory
-    -   TestTempDir(): Returns a directory to hold temporary data
-
-    The function TestAll() is used to test the library (see documentation of
-    this function for more information).
-
-    With a correct configuration of the environment, the following command should
-    return 100% of successful tests:
-
-        > python -m BasicTools -k Catalyst
-
-    COVERAGE :
-
-    If you want to tell coverage.py to ignore some part of the code, use the
-    "#pragma : no cover" comment. See also :
-    http://coverage.readthedocs.org/en/coverage-4.0.3/excluding.html
-
-    DISABLING TESTS :
-
-    Some tests can be disabled using an environment variable. A typical use
-    case arises when a test relies on an external dependency that may not be
-    available.
-
-    The feature relies on the definition of non-empty environment variables of
-    the form :
-
-        "appsname_NO_FAIL"
-
-    An example is available in the file BasicTools/FE/ZmatFemProblem.py at the
-    beginning of the CheckIntegrity() function.
-
-4) DOCUMENTATION
-
-    The documentation for BasicTools can be compiled using sphinx
-
-        > python setup.py build_sphinx
-
-    Also the documentation can be found at
-
-        https://basictools.readthedocs.io/en/latest/
+All questions can be addressed using the issues system of gitlab https://gitlab.com/drti/basic-tools/-/issues.

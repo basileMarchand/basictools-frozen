@@ -20,18 +20,26 @@ To install BasicTools, we recommend using a scientific Python distribution [#ana
 
 If you already have Python, you can install BasicTools with:
 
-    ``> conda install -c drti basictools``
+    ``> conda install -c conda-forge basictools``
 
-If you don't have Python yet, you might want to consider using Anaconda.
+If you don't have Python yet, you might want to consider using Anaconda or mamba.
 It's the easiest way to get started.
 
-We are currently working to include BasicTools package on conda-forge to increase the number of supported platforms.
+Another way of installing BasicTools is using pip (this required a local compilation step):
+
+    ``> set BASICTOOLS_USE_EIGENCYEIGEN=True``
+    ``> pip install https://gitlab.com/drti/basic-tools/-/archive/1.9.1/basic-tools-1.9.1.tar.bz2``
+
+
 
 Manual installation (from sources) for developers
 =================================================
 
 In the case you want to make changes to BasicTools (and potentially contribute), an installation from sources is mandatory.
 The sources can be downloaded from Gitlab.com [#gitlaburlpublic]_.
+
+    ``> git clone https://gitlab.com/drti/basic-tools.git``
+
 Then inside the repository folder, the user must compile the c++ extensions to take profit of optimized algorithms.
 
     ``> python setup.py build_clib``
@@ -47,17 +55,9 @@ The user can also install permanently using (this is not recommended):
 
     ``> pip install .``
 
+The documentation for BasicTools can be compiled using sphinx
 
-For Windows
-^^^^^^^^^^^
-
-The scikit-sparse package is not available in anaconda for windows, but the user should be able to compile it for windows following [#scikitwindows]_.
-A good starting point for the installation is https://github.com/EmJay276/scikit-sparse .
-
-Extra pre-requirement:
-    - Microsoft Build Tools for C++.
-    - suitesparse package
-
+    ``> python setup.py build_sphinx``
 
 ***************
 Asking for Help
@@ -99,19 +99,11 @@ Python packages:
 * scikit-learn
 * scikit-sparse
 * vtk
-* eigency>=1.78
+* eigency
 * mkl
 * mkl-include
 * psutil
 * networkx
-
-Eigency is the only dependency not already on conda-forge.
-A package is available in ours channel `drti` (use `conda install -c drti eigency`).
-We are currently working to have only conda-forge dependencies
-
-C++ packages:
-
-* Eigen [#eigenurl]_
 
 Optionals Python packages (some functionalities may not be available without these packages):
 
@@ -127,6 +119,12 @@ Optionals Python packages (some functionalities may not be available without the
 * CGNS
 * paraview
 * pywin32 [Only for windows]
+
+C++ OPEN-SOURCE DEPENDENCIES:
+
+* Eigen (http://eigen.tuxfamily.org)
+    (the pypi eigency package has the Eigen library already inside the package, need to set the env variable BASICTOOLS_USE_EIGENCYEIGEN=True)
+    ( a conda-forge package is available for eigen)
 
 Optionals Proprietary packages (some functionalities may not be available without these packages) only for old version 1.7:
 
