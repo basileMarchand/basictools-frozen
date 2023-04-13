@@ -20,14 +20,14 @@ methodFactory : Dict[str,Any] = {}
 
 class ConstraintsHolder(BOO):
     """
-    Constrained linear problem: Class to store and to enforce constrains to a
-    quadratic system on the form:
+    Constrained linear problem: Class to store and to enforce constraints for a
+    quadratic system of the form:
 
         minimize 1/2 u.K.u - u.f
-        with the constrain :
+        subject to:
         A.u = b
 
-    This class can store, and manipulate the system Au=b and enforced on the Ku=f
+    This class can store, and manipulate the system Au=b and enforced the constraint on Ku=f
     by different methods (penalisation, subtitution, lagrange multiplier)
 
     the first set of function is used to fill this class with the system Au=b:
@@ -781,4 +781,3 @@ def CheckIntegrityTTC(ttc,GUI=False):
 
 if __name__ == '__main__':
     print(CheckIntegrity(GUI=True))# pragma: no cover
-
