@@ -239,6 +239,31 @@ try:
 except:
     pass
 
+class LinearSolverPardiso(LinearSolverDirect):
+    def __init__(self):
+        super().__init__()
+        self.name = "Pardiso"
+        self._internal_solver = None
+
+    def _setop_imp(self,op):
+        if self._internal_solver is not None:
+            self._internal_solver.free_memory(everything=True)
+            self._internal_solver = None
+
+        from pypardiso import PyPardisoSolver
+        self._internal_solver = PyPardisoSolver()
+        self._internal_solver.factorize(op)
+
+    def _solve_imp(self, rhs, u0= None):
+        return self._internal_solver.solve(self.op, rhs).squeeze()
+
+try:
+    import pypardiso
+    RegisterSolverClassUsingName(LinearSolverPardiso)
+except:
+    pass
+
+
 class LinearSolverEigen(LinearSolverIterativeBase):
     def __init__(self,subtype):
         super().__init__()
