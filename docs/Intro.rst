@@ -2,15 +2,15 @@
 What is BasicTools
 ******************
 
-BasicTools was primary designed as a basic set of tools to work on meshes in the context of finite element computation.
+BasicTools was primary designed as a basic set of tools to work on meshes in the context of finite element computations.
 The main functionalities of the library are:
 
-* IO routine : A set of classes to read and write meshes (and solutions fields) from/to a large variety of file formats. BasicTools does not have a proper file format mainly because existent formats provide most, if not all, of the functionalities needed.
+* IO support: A set of classes to read and write meshes (and solutions fields) from/to a large variety of file formats. BasicTools does not have a proper file format mainly because existent formats provide most, if not all, of the functionalities needed.
 * Mesh manipulation: Routines to filter, define, extract and manipulate meshes in many ways.
-* Fields manipulation: finite element fields can be defined using different kinds of interpolation (P0/P1/P2), in the full mesh or only in restricted zones, and also at integration points. This classes have overloaded operators to make computation of quantities of interest an easy task.
+* Fields manipulation: Finite element fields can be defined using different kinds of interpolation (P0/P1/P2), in the full mesh or only in restricted zones, and also at integration points. This classes have overloaded operators to make computation of quantities of interest an easy task.
 * Integration: Routines for the integration of weak formulations (tangent matrices, right hand terms, integral over only a part of a mesh).
 * Field transfer: Basic routine to transfer field from one mesh to another.
-* Finite element solver: using all the previous tools, some basic finite element solver are  available to solve generic partial differential equations on non structured meshes.
+* Finite element solver: Using all the previous tools, some basic finite element solvers are available to solve generic partial differential equations on unstructured meshes.
 
 *********************
 Installing BasicTools
@@ -22,20 +22,20 @@ Conda
 If you use conda, you can install BasicTools from the conda-forge channels [#anacondaurl]_:
 
     # Best practice, use an environment rather than install in the base env
-    ``conda create -n my-env``
-    ``conda activate my-env``
+    ``> conda create -n my-env``
+    ``> conda activate my-env``
     # The actual install command
-    ``conda install -c conda-forge numpy``
+    ``> conda install -c conda-forge numpy``
 
 PIP
 ---
 
-If you use pip, you can install NumPy with:
+If you use pip, you can install BasicTools with:
 
     ``> set BASICTOOLS_USE_EIGENCYEIGEN=True``
     ``> pip install  https://gitlab.com/drti/basic-tools/-/archive/1.9.1/basic-tools-1.9.1.tar.bz2``
 
-Also when using pip, it’s good practice to use a virtual environment
+It is also good practice to use a virtual environment when using pip.
 
 Manual installation (from sources) for developers
 =================================================
@@ -68,23 +68,22 @@ The documentation for BasicTools can be compiled using sphinx
 Asking for Help
 ***************
 
-All questions can be addressed using the issues system of gitlab https://gitlab.com/drti/basic-tools/-/issues.
+Questions can be addressed using the Issues system of Gitlab [#gitlaburlpublicissues]_.
 
-***************************
-To contribute to BasicTools
-***************************
+Bugs should ideally be reported with a *minimal non working example* to make the debugging easier for the developers.
 
-To contribute to BasicTools you can fill a bug report on [#gitlaburlpublic]_ with a *minimal non working example*.
-This makes the debugging easier on our side.
+**************************
+Contributing to BasicTools
+**************************
 
-If you want to contribute with your code you must:
+If you want to contribute some code you must:
 
 *  clone the master branch of BasicTools from [#gitlaburlpublic]_
 *  make a development branch
 *  modify/created changes, commit changes
 *  compile BasicTools
-*  test you branch (see section :ref:`fordevs` )
-*  accept the Contribution Agreement (see section :ref:`License` )
+*  test you branch (see section :ref:`fordevs`)
+*  accept the Contribution Agreement (see section :ref:`License`)
 *  push your branch to the server
 *  create a merge request (on the web)
 
@@ -128,8 +127,8 @@ Optionals Python packages (some functionalities may not be available without the
 C++ OPEN-SOURCE DEPENDENCIES:
 
 * Eigen (http://eigen.tuxfamily.org)
-    (the pypi eigency package has the Eigen library already inside the package, need to set the env variable BASICTOOLS_USE_EIGENCYEIGEN=True)
-    ( a conda-forge package is available for eigen)
+    (the pypi eigency package has the Eigen library already inside the package, used by setting the env variable BASICTOOLS_USE_EIGENCYEIGEN=True)
+    (Note: a conda-forge package is available for eigen)
 
 Optionals Proprietary packages (some functionalities may not be available without these packages) only for old version 1.7:
 
@@ -138,7 +137,8 @@ Optionals Proprietary packages (some functionalities may not be available withou
 
 
 .. rubric:: Footnotes
-.. [#gitlaburlpublic]  https://gitlab.com/drti/basic-tools
+.. [#gitlaburlpublic] https://gitlab.com/drti/basic-tools
+.. [#gitlaburlpublicissues] https://gitlab.com/drti/basic-tools/-/issues
 .. [#anacondaurl] https://anaconda.org/
 .. [#scikitwindows] https://github.com/xmlyqing00/Cholmod-Scikit-Sparse-Windows
 .. [#eigenurl] http://eigen.tuxfamily.org
