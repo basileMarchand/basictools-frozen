@@ -23,7 +23,7 @@ class ConstraintsHolder(BOO):
     Constrained linear problem: Class to store and to enforce constrains to a
     quadratic system on the form:
 
-        1/2 u.K.u = u.f
+        minimize 1/2 u.K.u - u.f
         with the constrain :
         A.u = b
 
@@ -33,7 +33,7 @@ class ConstraintsHolder(BOO):
     the first set of function is used to fill this class with the system Au=b:
 
         NextEquation must be called after the call of a set of : AddFactor, AddConstant
-        One per contraint
+        One per constraint
 
         AddEquationSparse, AddEquation, AddEquationsFromIJV to add a full
         constraint at once

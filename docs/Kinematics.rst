@@ -12,7 +12,7 @@ Treatment of kinematic constraints
 .. math::
     \begin{equation}
     \begin{matrix}
-    \text{Solve } \UFE \text{ for:} &\KFE \UFE = \FFE \\
+    \text{minimize } \UFE \text{ for:} & \frac{1}{2} \UFE^T \KFE \UFE - \UFE^T \FFE \\
     \end{matrix}
     \end{equation}
     :label: KUF
@@ -20,7 +20,7 @@ Treatment of kinematic constraints
 .. math::
     \begin{equation}
     \begin{matrix}
-    \text{Under the constraint} &\CFE \UFE = \GFE \\
+    \text{subject to} &\CFE \UFE = \GFE \\
     \end{matrix}
     \end{equation}
     :label: CUG
