@@ -1,6 +1,5 @@
 name: BasicTools3.8
 channels:
-    - piscodevteam
     - conda-forge
     - nodefaults
 dependencies:
