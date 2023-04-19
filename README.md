@@ -1,6 +1,6 @@
-******************
+
 What is BasicTools
-******************
+==================
 
 BasicTools was primary designed as a basic set of tools to work on meshes in the context of finite element computation.
 The main functionalities of the library are:
@@ -12,52 +12,70 @@ The main functionalities of the library are:
 * Field transfer: Basic routine to transfer field from one mesh to another.
 * Finite element solver: Using all the previous tools, some basic finite element solvers are available to solve generic partial differential equations on unstructured meshes.
 
-**************
+
 Important URLs
-**************
+==============
 
 - Documentation: https://basictools.readthedocs.io/en/latest/
 - Conda-forge Package: https://anaconda.org/conda-forge/basictools
 - Sources: https://gitlab.com/drti/basic-tools
 - Conda-forge feedstock: https://github.com/conda-forge/basictools-feedstock
 
-*********************
+
 Installing BasicTools
-*********************
+=====================
 
 Conda
 -----
 
-If you use conda, you can install BasicTools from the conda-forge channels [#anacondaurl]_:
+If you use conda, you can install BasicTools from the conda-forge channel:
 
-    # Best practice, use an environment rather than install in the base env
-    ``> conda create -n my-env``
-    ``> conda activate my-env``
-    # The actual install command
-    ``> conda install -c conda-forge numpy``
+Best practice, use an environment rather than install in the base env
+
+    > conda create -n my-env
+    > conda activate my-env
+
+The actual install command
+
+    > conda install -c conda-forge basictools
 
 PIP
 ---
 
-If you use pip, you can install BasicTools with:
+The pip installation requires a local compilation, so you need to have a C++ (C++17 compatible) compiler installed locally on your system.
+To compile and install BasicTools (version 1.9.2 in this case) with pip:
 
-    ``> set BASICTOOLS_USE_EIGENCYEIGEN=True``
-    ``> pip install  https://gitlab.com/drti/basic-tools/-/archive/1.9.1/basic-tools-1.9.1.tar.bz2``
+    > set BASICTOOLS_USE_EIGENCYEIGEN=True
+    > pip install eigency mkl numpy sympy mkl-include cython
+    > pip install  https://gitlab.com/drti/basic-tools/-/archive/1.9.2/basic-tools-1.9.2.tar.bz2
 
-Also when using pip, it is good practice to use a virtual environment.
+or for the latest master version:
+
+    > set BASICTOOLS_USE_EIGENCYEIGEN=True
+    > pip install eigency mkl numpy sympy mkl-include cython
+    > pip install BasicTools@git+https://gitlab.safrantech.safran/MS/BasicTools.git
+
+It is also good practice to use a virtual environment when using pip.
+
+
+>Note
+We can not guarantee that all combinations of OS, Python Versions, packaging systems works.
+>The current know issues are :
+>- networkx version 3.x not available on conda-forge for windows and OsX ([Gitlab Issue](https://gitlab.com/drti/basic-tools/-/issues/10)).
+>- pycgns not working on windows with pip insallation ([Gitlab Issue](https://gitlab.com/drti/basic-tools/-/issues/11)).
+
 
 For more complex installation (from sources) for developers please read the documentation.
 
-***************
+
 Asking for help
-***************
+===============
 
 All questions can be addressed using the Issues system of Gitlab https://gitlab.com/drti/basic-tools/-/issues.
 
 
-************
 Dependencies
-************
+============
 
     python minimal version: 3.8
 
@@ -71,11 +89,11 @@ Dependencies
     * scikit-learn
     * scikit-sparse
     * vtk
-    * eigency>=1.78
+    * eigency >=2
     * mkl
     * mkl-include
     * psutil
-    * networkx
+    * networkx >=3
 
 
     Optionals Python packages (some functionalities may not be available without this packages):
@@ -104,14 +122,9 @@ Dependencies
 
     * odbAccess and abaqusConstants ( Abaqus )
 
-
-    FOR WINDOWS:
-      install Microsoft Visual C++ Build Tools to use eigen,
-
-*************************
 Projects using BasicTools
-*************************
+=========================
 
-OpenPisco, topology optimization using the level set method: https://gitlab.com/openpisco/openpisco, https://openpisco.readthedocs.io
-GenericROM, Reduced Order Modeling library: https://gitlab.com/drti/genericrom, https://genericrom.readthedocs.io/en/latest/
+[OpenPisco Home Page](https://gitlab.com/openpisco/openpisco), topology optimization using the level set method ([OpenPisco Documentation](https://openpisco.readthedocs.io)).
+[GenericROM](https://gitlab.com/drti/genericrom), Reduced Order Modeling library  ([GenericROM Documentation](https://genericrom.readthedocs.io/en/latest/)).
 
