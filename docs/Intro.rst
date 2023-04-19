@@ -21,21 +21,48 @@ Conda
 
 If you use conda, you can install BasicTools from the conda-forge channels [#anacondaurl]_:
 
-    # Best practice, use an environment rather than install in the base env
-    ``> conda create -n my-env``
-    ``> conda activate my-env``
-    # The actual install command
-    ``> conda install -c conda-forge numpy``
+Best practice, use an environment rather than install in the base env
+
+.. code-block::
+
+    > conda create -n my-env
+    > conda activate my-env
+
+The actual install command
+
+.. code-block::
+
+    > conda install -c conda-forge basictools
 
 PIP
 ---
 
-If you use pip, you can install BasicTools with:
+The pip installation requires a local compilation, so you need to have a C++ (C++17 compatible) compiler installed locally on your system.
+To compile and install BasicTools (version 1.9.2 in this case) with pip:
 
-    ``> set BASICTOOLS_USE_EIGENCYEIGEN=True``
-    ``> pip install  https://gitlab.com/drti/basic-tools/-/archive/1.9.1/basic-tools-1.9.1.tar.bz2``
+.. code-block::
+
+    > set BASICTOOLS_USE_EIGENCYEIGEN=True
+    > pip install eigency mkl numpy sympy mkl-include cython
+    > pip install  https://gitlab.com/drti/basic-tools/-/archive/1.9.2/basic-tools-1.9.2.tar.bz2
+
+or for the latest master version:
+
+.. code-block::
+
+    > set BASICTOOLS_USE_EIGENCYEIGEN=True
+    > pip install eigency mkl numpy sympy mkl-include cython
+    > pip install BasicTools@git+https://gitlab.safrantech.safran/MS/BasicTools.git
 
 It is also good practice to use a virtual environment when using pip.
+
+.. note::
+    We can not guarantee that all combinations of OS, Python Versions, packaging systems works.
+    The current know issues are :
+
+        - networkx version 3.x not available on conda-forge for windows and OsX (`Gitlab Issue <https://gitlab.com/drti/basic-tools/-/issues/10>`_).
+        - pycgns not working on windows with pip insallation (`Gitlab Issue <https://gitlab.com/drti/basic-tools/-/issues/11>`_).
+
 
 Manual installation (from sources) for developers
 =================================================
@@ -43,26 +70,35 @@ Manual installation (from sources) for developers
 In the case you want to make changes to BasicTools (and potentially contribute), an installation from sources is mandatory.
 The sources can be downloaded from Gitlab.com [#gitlaburlpublic]_.
 
-    ``> git clone https://gitlab.com/drti/basic-tools.git``
+.. code-block::
+
+    > git clone https://gitlab.com/drti/basic-tools.git
 
 Then inside the repository folder, the user must compile the c++ extensions to take profit of optimized algorithms.
 
-    ``> python setup.py build_clib``
+.. code-block::
 
-    ``> python setup.py build_ext --inplace``
+    > python setup.py build_clib
+    > python setup.py build_ext --inplace
 
 Then the user is responsible for adding the ``BASICTOOLS_REPOSITORY/src/`` folder to the ``PYTHONPATH`` environment variables (more information on [#pythonpathdoc]_).
 Or using pip for development:
 
-    ``> pip install -e .``
+.. code-block::
+
+    > pip install -e .
 
 The user can also install permanently using (this is not recommended):
 
-    ``> pip install .``
+.. code-block::
+
+    > pip install .
 
 The documentation for BasicTools can be compiled using sphinx
 
-    ``> python setup.py build_sphinx``
+.. code-block::
+
+    > python setup.py build_sphinx
 
 ***************
 Asking for Help
