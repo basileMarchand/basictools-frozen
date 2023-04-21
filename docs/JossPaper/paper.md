@@ -42,23 +42,23 @@ Other features available in BasicTools include various mesh handling routines, f
 
 In the computational fluid dynamics community, the CFD General Notation System (CGNS) [@cgns] format is a de-facto standard. However, to the authors' knowledge, no such standard exists for solid mechanics.
 One may consider respectively VTK and MeshIO for mesh manipulation and file format conversion, but the post-processing of integration point data, a key requirement in solid mechanics, would not be possible. Most available tools implement the simple, but potentially dangerous, approach of extrapolating the integration point values to the nodes of the mesh or averaging in every cell. This can lead to a misinterpretation of the solution and incorrect engineering decisions.
-Also, only a few finite element engines allow assembling abstract variational formulations on arbitrary geometries (e.g. FreeFem++ [@freefempp] and FEniCS [@fenics]).
+Also, only a few finite element engines allow assembling abstract variational formulations on arbitrary geometries, like FreeFem++ [@freefempp] or FEniCS [@fenics], amongst others.
 
 # Overview
 
 The main features of BasicTools are:
 
-- Meshes (in module `Containers`):
+- Meshes (in the `Containers` module):
   `ConstantRectilinearMesh` and `UnstructuredMesh` encapsulate respectively the data model for constant rectilinear and unstructured mesh types. Unstructured meshes are efficient: Elements are stored using only one array for each element type. Both mesh types can feature nodes and element tags. Many functions are available for creating, cleaning and modifying meshes (e.g. field projection and mesh morphing).
-- Filters (in module `Containers`):
+- Filters (in the `Containers` module):
   Various types of `ElementFilter`s and `NodeFilter`s allow to handle subparts of meshes by selecting element- and node-sets using threshold functions, tags, element types, element dimensionality and masks. Filters can be combined using Boolean operations (union, complementary,...).
-- A finite element engine (in module `FE`):
+- A finite element engine (in the `FE` module):
   A general weak formulation engine able to integrate fields over parts of the meshes is available. The `FETools` submodule contains specific functions for Lagrange P1 finite elements, including the computation of stiffness and mass matrices. The domain of integration is defined using `ElementFilter`s making the integration domain flexible. P0 and P2 Lagrange finite element spaces are implemented and tested. The framework is non-isoparametric: the user can write weak formulations mixing P0, P1 and P2 fields on P1 or P2 meshes.
-- Input/Output functions (in module `IO`):
+- Input/Output functions (in the `IO` module):
   Various readers (respectively, writers) for importing (respectively, exporting) meshes and solution fields from (respectively, to) BasicTools' internal data model are available. Supported formats include geo/geof (Z-set [@zset]), VTK, XDMF, SAMCEF, ABAQUS, and a bridge with MeshIO is provided. Readers for the ABAQUS and SAMCEF proprietary formats are also enabled when properly licensed software is available locally. See [BasicTools documentation](https://basictools.readthedocs.io/en/latest/_source/BasicTools.IO.html#submodules) for more details.
-- Implicit geometry engine (in module `ImplicitGeometry`):
+- Implicit geometry engine (in the `ImplicitGeometry` module):
   Arbitrary subdomains can be defined using implicit geometries (level-set function). Basic shapes (spheres, half-spaces, cylinders, cubes), transformations (symmetry, translation, rotation) and binary operators (union, difference and intersection) can be used to construct complex shapes. These shapes can be used to select elements (using `ElementFilter`), or be evaluated on point clouds to explicitly construct iso-zero surfaces.
-- Linear algebra functions (in module `Linalg`):
+- Linear algebra functions (in the `Linalg` module):
   Some common operations on linear systems for finite elements are implemented: penalization, elimination, Lagrange multipliers and the Ainsworth [@AINSWORTH20016323] method to impose essential boundary conditions or linear multi-point constraints. The submodule `LinearSolver` offers an abstraction layer for sparse linear solvers, including: Cholesky of the `sksparse` package; factorized, CG, lsqr, gmres, lgmres of the `scipy.sparse.linalg` module; CG, LU, BiCGSTAB, SPQR of the C++ Eigen library; and the AMG solver of `pyamg` package.
 
 The large majority of functions are illustrated in the same file where they are defined, in `CheckIntegrity` functions.
@@ -71,12 +71,12 @@ We present two examples, see [BasicTools documentation](https://basictools.readt
 
 Convolution-based deep learning algorithms generally rely on structured data. BasicTools is used to transfer a field computed on an unstructured mesh using finite elements to a structured grid and vice versa. To validate the operation, the error on the final field is evaluated with respect to the original field.
 
-![Deep learning workflow coupled to finite element simulator a) Initial field on unstructured mesh, b) transferred field into regular grid (projection step) c) inverse projection into original unstructured mesh d) projection error on unstructured mesh.\label{fig:DeepLearningPrepost}](DeepLearningPrepost.png)
+![Deep learning workflow coupled to finite element simulator a) Initial field on unstructured mesh, b) transferred field into regular grid (projection step), c) inverse projection into original unstructured mesh, d) projection error on unstructured mesh.\label{fig:DeepLearningPrepost}](DeepLearningPrepost.png)
 
 ## Mechanical analysis: Thick plate with two inclusions
 
-Consider a thick plate with two inclusions, one softer and the other stiffer than the base material. The plate is clamped on the left side with a negative pressure applied on the right side. We compute the strain energy on only one inclusion. The linear elasticity problem is solved using P1 Lagrange finite elements on an unstructured mesh.
+Consider a thick plate with two inclusions, one softer and the other stiffer than the base material. The plate is clamped on the left side with a constant traction applied on the right side. We compute the strain energy on only one inclusion. The linear elasticity problem is solved using P1 Lagrange finite elements on an unstructured mesh.
 
-![Analysis of a mechanical thick plate with two inclusions.\label{fig:TwoInclusions}](TwoInclusions_img1.png)
+![Analysis of a mechanical thick plate with two inclusions a) illustration of the mesh with highlighting of the two inclusions, b) magnitude of the displacement solution on the deformed mesh (with applied traction illustrated), c) strain energy in the large inclusion, d) cutaway view of the strain energy in the large inclusion (with applied traction illustrated).\label{fig:TwoInclusions}](TwoInclusions_img1.png)
 
 # References
