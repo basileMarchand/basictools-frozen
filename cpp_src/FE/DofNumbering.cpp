@@ -168,9 +168,10 @@ void DofNumbering::ComputeNumberingGeneral(UnstructuredMesh& mesh, const Space& 
     }
 }
 
-bool DofNumbering::HasNumberingFor(const std::string & elemtype){
-    if (this->numbering.count(elemtype)>0){
-        return this->numbering[elemtype].rows() >0 && this->numbering[elemtype].cols() >0;
+bool DofNumbering::HasNumberingFor(const std::string & elemtype) const {
+    const auto it = this->numbering.find(elemtype);
+    if(it != this->numbering.end()){
+        return it->second.rows() >0 && it->second.cols() >0;
     }
     return false;
 }
@@ -179,8 +180,9 @@ void DofNumbering::InitNumberingFor(const std::string & elemtype, const CBasicIn
         this->numbering.erase(elemtype);
         return ;
     }
-    this->numbering[elemtype].resize(nbOfElement,nbOfShapeFuntions);
-    this->numbering[elemtype].fill(-1);
+    auto& numbering = this->numbering[elemtype];
+    numbering.resize(nbOfElement,nbOfShapeFuntions);
+    numbering.fill(-1);
 }
 
 MatrixIDD& DofNumbering::GetNumberingFor(const std::string & elemtype){
@@ -195,8 +197,9 @@ MatrixIDD& DofNumbering::GetNumberingFor(const std::string & elemtype){
 }
 
 CBasicIndexType DofNumbering::GetDofOfPoint(const CBasicIndexType& pid){
-    if(this->almanac.count(GetPointDofKey(pid))){
-        return this->almanac[GetPointDofKey(pid)];
+    const auto it = this->almanac.find(GetPointDofKey(pid));
+    if(it != this->almanac.end()){
+        return it->second;
     }else{
         if(this->fromConnectivity){
             this->almanac[GetPointDofKey(pid)] = pid;

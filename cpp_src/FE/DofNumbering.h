@@ -63,7 +63,7 @@ public:
     //
     void ComputeNumberingGeneral(UnstructuredMesh& mesh, const Space& space, ElementFilterBase& elementFilter);
     //
-    bool HasNumberingFor(const std::string & elemtype);
+    bool HasNumberingFor(const std::string & elemtype) const ;
     //
     void InitNumberingFor(const std::string & elemtype, const CBasicIndexType& nbOfElement, const CBasicIndexType& nbOfShapeFuntions );
     //
