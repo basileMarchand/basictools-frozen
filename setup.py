@@ -133,6 +133,9 @@ extra_link_args = {
             'msvc': []
     }
 
+if debug:
+    extra_compile_args["unix"].extend([ "-g3", "-O0", "-DDEBUG=1", "-UNDEBUG", "-gdwarf-4", "-gstrict-dwarf"])
+
 class GenerateCommand(Command):
     description = "custom generate command that generate the c++ sources from python "
     user_options = []
