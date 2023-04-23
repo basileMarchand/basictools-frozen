@@ -360,7 +360,7 @@ cdef class PyMonoElementsIntegralCpp():
 
     def SetValues(self,int i,cnp.ndarray[CBasicFloatType, ndim=1,mode="c"] vdata not None):
         self.__values[i] = vdata
-        self.NativeIntegrator.SetValueI(i,vdata.shape[0],vdata.shape[1], &vdata[0])
+        self.NativeIntegrator.SetValueI(i,vdata.shape[0], 1, &vdata[0])
 
     def SetIPValues(self,int i,cnp.ndarray[CBasicFloatType, ndim=2,mode="c"] vdata not None):
         self.__ipvalues[i] = vdata
