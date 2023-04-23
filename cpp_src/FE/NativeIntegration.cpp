@@ -235,8 +235,6 @@ void MonoElementsIntegralCpp::IntegrateSpaceDimElementDim(WeakForm* wform,
   CBasicFloatType localfactor;
   CBasicFloatType factor;
 
-  EH::ResizeContainers(Jac, Jinv);
-
   if ( !EH::CanProvideNormal() && this->hasnormal ){
     std::cout << "Cant use a weak form with normal on physical space of dimension ("<< SpaceDim << ") with element of dimensionality ("<< ElementDim <<  ")" << std::endl;
     exit(1);
