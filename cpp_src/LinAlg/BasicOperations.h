@@ -102,8 +102,8 @@ class SpaceDimElementDim<2, 1> {
     const double der1 = Jack(0, 1);  // dy
     Jdet = std::sqrt(der0 * der0 + der1 * der1);
     MatrixD21 Normal;
-    Normal(0) = der1;
-    Normal(1) = -der0;
+    Normal(0) =  der1/Jdet;
+    Normal(1) = -der0/Jdet;
 
     MatrixDDD m;
     m.resize(2, 2), m(0, 0) = der0;
@@ -115,9 +115,13 @@ class SpaceDimElementDim<2, 1> {
   };
   template<typename JT>
   static void Normal(JT& Jack, MatrixD31& Normal) {
-    Normal[0] = Jack(1, 0) - Jack(0, 0);
-    Normal[1] = Jack(1, 1) - Jack(0, 1);
-    Normal[2] = 0;
+    const double der0 = Jack(0, 0);  // dx
+    const double der1 = Jack(0, 1);  // dy
+    const double Jdet = std::sqrt(der0 * der0 + der1 * der1);
+    Normal(0,0) =  der1/Jdet;
+    Normal(1,0) = -der0/Jdet;
+    Normal(2,0) = 0;
+
   }
   static bool CanProvideNormal() { return true; }
   constexpr static unsigned int size = 1U;
@@ -206,7 +210,7 @@ template <>
 class SpaceDimElementDim<3, 2> {
  public:
   template<typename JT, typename IJT>
-  static void InverseJacobianDeterminant( MapMatrixDDD& valdphidxi, const Eigen::Ref<const MatrixDDD>& xcoor, JT& Jack, double& Jdet, IJT& Jinv) {    Jinv.resize(2, 3);
+  static void InverseJacobianDeterminant( MapMatrixDDD& valdphidxi, const Eigen::Ref<const MatrixDDD>& xcoor, JT& Jack, double& Jdet, IJT& Jinv) {
     Jack = valdphidxi * xcoor;
     MatrixD31 Normal = Jack.row(0).template head<3>().cross(Jack.row(1).template head<3>());
     Jdet = Normal.norm();
