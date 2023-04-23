@@ -35,7 +35,7 @@ cdef extern from "FE/DofNumbering.h" namespace "BasicTools" :
         void ComputeNumberingGeneral(cNUM.UnstructuredMesh&, cNS.Space&, cNF.ElementFilterBase&) nogil
         void computeDofToPoint()
 
-        MatrixXd & GetNumberingFor(const string & elemtype)
+        MatrixXi & GetNumberingFor(const string & elemtype)
         CBasicIndexType GetSizeOfDofToPoint()
         PlainObjectBase & GetdoftopointLeft()
         PlainObjectBase & GetdoftopointRight()
