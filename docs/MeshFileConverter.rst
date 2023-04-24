@@ -11,13 +11,13 @@ The command line option to show the help is :
 
 .. code-block::
 
-   >MeshFileConverter -h
+   MeshFileConverter -h
 
 And the corresponding output
 
 .. code-block::
 
-   >python  MeshFileConverter -i <inputfile> -o <outputfile>
+   python  MeshFileConverter -i <inputfile> -o <outputfile>
    options:
         -i    Input file name
         -o    output file name
@@ -41,6 +41,3 @@ And the corresponding output
 
 
 The available Readers/Writers may vary dependent on the BasicTools version installed.
-
-
-

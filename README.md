@@ -32,12 +32,12 @@ If you use conda, you can install BasicTools from the conda-forge channel:
 
 Best practice, use an environment rather than install in the base env
 
-    > conda create -n my-env
-    > conda activate my-env
+    conda create -n my-env
+    conda activate my-env
 
 The actual install command
 
-    > conda install -c conda-forge basictools
+    conda install -c conda-forge basictools
 
 PIP
 ---
@@ -45,15 +45,15 @@ PIP
 The pip installation requires a local compilation, so you need to have a C++ (C++17 compatible) compiler installed locally on your system.
 To compile and install BasicTools (version 1.9.2 in this case) with pip:
 
-    > set BASICTOOLS_USE_EIGENCYEIGEN=True
-    > pip install eigency mkl numpy sympy mkl-include cython
-    > pip install  https://gitlab.com/drti/basic-tools/-/archive/1.9.2/basic-tools-1.9.2.tar.bz2
+    set BASICTOOLS_USE_EIGENCYEIGEN=True
+    pip install eigency mkl numpy sympy mkl-include cython
+    pip install  https://gitlab.com/drti/basic-tools/-/archive/1.9.2/basic-tools-1.9.2.tar.bz2
 
 or for the latest master version:
 
-    > set BASICTOOLS_USE_EIGENCYEIGEN=True
-    > pip install eigency mkl numpy sympy mkl-include cython
-    > pip install BasicTools@git+https://gitlab.safrantech.safran/MS/BasicTools.git
+    set BASICTOOLS_USE_EIGENCYEIGEN=True
+    pip install eigency mkl numpy sympy mkl-include cython
+    pip install BasicTools@git+https://gitlab.safrantech.safran/MS/BasicTools.git
 
 It is also good practice to use a virtual environment when using pip.
 
@@ -127,4 +127,3 @@ Projects using BasicTools
 
 [OpenPisco Home Page](https://gitlab.com/openpisco/openpisco), topology optimization using the level set method ([OpenPisco Documentation](https://openpisco.readthedocs.io)).
 [GenericROM](https://gitlab.com/drti/genericrom), Reduced Order Modeling library  ([GenericROM Documentation](https://genericrom.readthedocs.io/en/latest/)).
-

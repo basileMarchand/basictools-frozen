@@ -25,14 +25,14 @@ Best practice, use an environment rather than install in the base env
 
 .. code-block::
 
-    > conda create -n my-env
-    > conda activate my-env
+    conda create -n my-env
+    conda activate my-env
 
 The actual install command
 
 .. code-block::
 
-    > conda install -c conda-forge basictools
+    conda install -c conda-forge basictools
 
 PIP
 ---
@@ -42,17 +42,17 @@ To compile and install BasicTools (version 1.9.2 in this case) with pip:
 
 .. code-block::
 
-    > set BASICTOOLS_USE_EIGENCYEIGEN=True
-    > pip install eigency mkl numpy sympy mkl-include cython
-    > pip install  https://gitlab.com/drti/basic-tools/-/archive/1.9.2/basic-tools-1.9.2.tar.bz2
+    set BASICTOOLS_USE_EIGENCYEIGEN=True
+    pip install eigency mkl numpy sympy mkl-include cython
+    pip install  https://gitlab.com/drti/basic-tools/-/archive/1.9.2/basic-tools-1.9.2.tar.bz2
 
 or for the latest master version:
 
 .. code-block::
 
-    > set BASICTOOLS_USE_EIGENCYEIGEN=True
-    > pip install eigency mkl numpy sympy mkl-include cython
-    > pip install BasicTools@git+https://gitlab.safrantech.safran/MS/BasicTools.git
+    set BASICTOOLS_USE_EIGENCYEIGEN=True
+    pip install eigency mkl numpy sympy mkl-include cython
+    pip install BasicTools@git+https://gitlab.safrantech.safran/MS/BasicTools.git
 
 It is also good practice to use a virtual environment when using pip.
 
@@ -72,33 +72,33 @@ The sources can be downloaded from Gitlab.com [#gitlaburlpublic]_.
 
 .. code-block::
 
-    > git clone https://gitlab.com/drti/basic-tools.git
+    git clone https://gitlab.com/drti/basic-tools.git
 
 Then inside the repository folder, the user must compile the c++ extensions to take profit of optimized algorithms.
 
 .. code-block::
 
-    > python setup.py build_clib
-    > python setup.py build_ext --inplace
+    python setup.py build_clib
+    python setup.py build_ext --inplace
 
 Then the user is responsible for adding the ``BASICTOOLS_REPOSITORY/src/`` folder to the ``PYTHONPATH`` environment variables (more information on [#pythonpathdoc]_).
 Or using pip for development:
 
 .. code-block::
 
-    > pip install -e .
+    pip install -e .
 
 The user can also install permanently using (this is not recommended):
 
 .. code-block::
 
-    > pip install .
+    pip install .
 
 The documentation for BasicTools can be compiled using sphinx
 
 .. code-block::
 
-    > python setup.py build_sphinx
+    python setup.py build_sphinx
 
 ***************
 Asking for Help

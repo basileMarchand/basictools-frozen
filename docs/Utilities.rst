@@ -69,5 +69,3 @@ please refers to the module help for more information.
     #default "EigenCG"
     #IS.defaultIfError = "EigenCG"
     #IS.defaultIfError = "CG"
-
-
