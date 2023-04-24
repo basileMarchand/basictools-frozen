@@ -10,6 +10,7 @@ Testing Infrastructure
 
 BasicTools comes with two ways of executing the automated tests.
 First, pytest [#pytestdoc]_ by simply executing in root directory of the library:
+
 .. code-block::
     pytest
 
