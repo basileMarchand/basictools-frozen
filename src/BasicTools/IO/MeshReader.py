@@ -104,6 +104,7 @@ class MeshReader(ReaderBase):
         self.output = res
 
         dataType = float
+        refs_per_elementType = {}
         while (True):
             line = self.filePointer.readline()
             if line == "":
@@ -141,6 +142,7 @@ class MeshReader(ReaderBase):
                 res.nodes = np.empty((nbNodes, dimension), dtype=dataType)
                 res.originalIDNodes = np.empty((nbNodes,), dtype=PBasicIndexType)
                 cpt = 0
+                refs = np.empty(nbNodes, dtype=PBasicIndexType)
                 while (True):
                     line = self.filePointer.readline()
                     l = line.strip('\n').lstrip().rstrip()
@@ -149,15 +151,27 @@ class MeshReader(ReaderBase):
                     s = l.split()
 
                     res.nodes[cpt, :] = list(map(float, s[0:dimension]))
-                    res.originalIDNodes[int(cpt)] = int(cpt)
+                    #res.originalIDNodes[cpt] = cpt
 
-                    ref = s[dimension]
+                    #ref = s[dimension]
+                    refs[cpt] = int(s[dimension])
 
-                    res.GetNodalTag("NTag"+ref).AddToTag(cpt)
+                    #if not self.refsAsAField:
+                    #    res.GetNodalTag("NTag"+ref).AddToTag(cpt)
 
                     cpt += 1
                     if cpt == nbNodes:
                         break
+
+                res.originalIDNodes = np.arange(nbNodes, dtype=PBasicIndexType)
+
+                if self.refsAsAField:
+                    res.nodeFields['refs'] = refs
+                else :
+                    nb_refs = np.unique(refs)
+                    for iref in nb_refs:
+                        res.GetNodalTag("NTag"+str(iref)).AddToTag(np.where(refs==iref)[0])
+
                 continue
 
             if l in ASCIITypes:
@@ -171,6 +185,7 @@ class MeshReader(ReaderBase):
                     continue
                 self.PrintVerbose("Reading "+str(nbElements) + " Elements")
                 cpt = 0
+                refs = np.empty(nbElements, dtype=PBasicIndexType)
                 while (True):
                     line = self.filePointer.readline()
                     l = line.strip('\n').lstrip().rstrip()
@@ -186,12 +201,14 @@ class MeshReader(ReaderBase):
 
                         elements.AddNewElement(s[offset:nbNodes+offset], cpt)
                         ref = s[nbNodes+offset]
-                        elements.GetTag("ETag"+str(ref)).AddToTag(cpt)
+                        #elements.GetTag("ETag"+str(ref)).AddToTag(cpt)
                         offset += nbNodes + 1
 
+                        refs[cpt] = int(ref)
                         cpt += 1
                     if nbElements == cpt:  # pragma: no cover
                         break
+                refs_per_elementType[elements.elementType] = refs
 
                 elements.connectivity -= 1
                 continue
@@ -251,6 +268,20 @@ class MeshReader(ReaderBase):
 
             self.PrintVerbose("ignoring line :->" + l + "<-")
         res.PrepareForOutput()
+        if self.refsAsAField:
+            refs = np.empty(res.GetNumberOfElements(), dtype=PBasicIndexType)
+            cpt = 0
+            for elementType, data in res.elements.items():
+                refs[cpt:cpt+data.GetNumberOfElements()] = refs_per_elementType[elementType]
+                cpt += data.GetNumberOfElements()
+            res.elemFields['refs'] = refs
+        else:
+            for elementType, data in res.elements.items():
+                refs = refs_per_elementType[elementType]
+                nb_refs = np.unique(refs)
+                for iref in nb_refs:
+                    data.tags.CreateTag("ETag"+str(iref)).AddToTag(np.where(refs==iref)[0])
+
         self.EndReading()
         return res
 
