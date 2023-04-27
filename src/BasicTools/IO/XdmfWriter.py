@@ -133,6 +133,8 @@ class InMemoryFile():
        return 0
    def close(self):
        pass
+   def flush():
+       pass
 
 class BinaryStorage(object):
 
