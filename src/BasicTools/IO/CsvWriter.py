@@ -3,7 +3,10 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
+"""CSV file reader
+"""
+
 import numpy as np
 import os
 
@@ -12,8 +15,32 @@ from BasicTools.Helpers.TextFormatHelper import TFormat
 from BasicTools.Containers.Filters import ElementFilter, NodeFilter
 from BasicTools.IO.WriterBase import WriterBase as WriterBase
 
-def WriteMeshToCsv(filename, baseMeshObject, PointFields = None, CellFields = None,GridFields= None, PointFieldsNames = None, CellFieldsNames=None, GridFieldsNames=None , nFilter= None,eFilter=None):
+def WriteMeshToCsv(filename, baseMeshObject, PointFields = None, CellFields = None, GridFields= None, PointFieldsNames = None, CellFieldsNames=None, GridFieldsNames=None , nFilter= None, eFilter=None):
+    """Function API for writing data into a CSV file
 
+    Parameters
+    ----------
+    fileName : str
+        name of the file to be written
+    baseMeshObject : UnstructuredMesh
+        support of the data to be written
+    PointFields : list[np.ndarray], optional
+        list of fields defined at the vertices of the mesh, by default None
+    CellFields : list[np.ndarray], optional
+        list of fields defined at the cells of the mesh, by default None
+    GridFields : list[np.ndarray], optional
+        list of grid data, by default None
+    PointFieldsNames : list[str], optional
+        list of field names defined at the vertices of the mesh, by default None
+    CellFieldsNames : list[str], optional
+        list of field names defined at the cells of the mesh, by default None
+    GridFieldsNames : list[str], optional
+        list of grid data names, by default None
+    nFilter : NodeFilter, optional
+        node filter to select a part of baseMeshObject, by default None
+    eFilter : ElementFilter, optional
+        element filter to select a part of baseMeshObject, by default None
+    """
     if PointFields is None:
         PointFields = [];
 
@@ -73,6 +100,8 @@ class NodalOP():
 
 
 class CsvWriter(WriterBase):
+    """Class to writes a CSV file on disk
+    """
     def __init__(self, fileName = None):
         super(CsvWriter,self).__init__()
         self.canHandleTemporal = True
@@ -93,21 +122,48 @@ class CsvWriter(WriterBase):
         res  = 'CsvWriter : \n'
         res += '   FileName : '+ str(self.fileName) +'\n'
         if self.isOpen():
-           res += '   The File is Open!! \n'
+            res += '   The File is Open!! \n'
         res += str(self.nodalFilter) + '\n'
         res += str(self.elementFilter)
         return res
 
     def SetETag(self,string):
+        """Add the tag "string" to the class element filter
+
+        Parameters
+        ----------
+        string : str
+            element tag to add
+        """
         self.elementFilter = ElementFilter(None)
         self.elementFilter.AddTag(string)
 
     def SetNTag(self,string):
+        """Add the tag "string" to the class node filter
+
+        Parameters
+        ----------
+        string : str
+            node tag to add
+        """
         self.nodalFilter = NodeFilter(None)
         self.nodalFilter.AddTag(string)
 
 
-    def WriteHead(self,mesh, PointFieldsNames, CellFieldsNames, GridFieldsNames):
+    def WriteHead(self, mesh, PointFieldsNames, CellFieldsNames, GridFieldsNames):
+        """Function to write the header of the output CSV file
+
+        Parameters
+        ----------
+        mesh : UnstructuredMesh
+            support of the data to be written
+        PointFieldsNames : list[str], optional
+            list of field names defined at the vertices of the mesh, by default None
+        CellFieldsNames : list[str], optional
+            list of field names defined at the cells of the mesh, by default None
+        GridFieldsNames : list[str], optional
+            list of grid data names, by default None
+        """
         sep = self.separator + " "
 
         self.writeText("Step")
@@ -162,32 +218,66 @@ class CsvWriter(WriterBase):
 
         self.writeText("\n")
 
-    def Step(self, dt = 1):
-        self.currentTime += dt;
+    def Step(self, dt = 1.):
+        """Function to increase current time by a time increment
 
-    def Write(self,baseMeshObject, PointFields = None, CellFields = None, GridFields= None, PointFieldsNames = None, CellFieldsNames= None, GridFieldsNames=None , Time= None, TimeStep = None,domainName=None ):
+        Parameters
+        ----------
+        dt : int, optional
+            time increment, by default 1.
+        """
+        self.currentTime += dt
 
-         sep = self.separator + " "
+    def Write(self,baseMeshObject, PointFields = None, CellFields = None, GridFields= None, PointFieldsNames = None, CellFieldsNames= None, GridFieldsNames=None , Time= None, TimeStep = None, domainName=None):
+        """Function to writes a CSV file on disk
 
-         if PointFields is None:
-             PointFields = [];
+        Parameters
+        ----------
+        fileName : str
+            name of the file to be written
+        baseMeshObject : UnstructuredMesh
+            support of the data to be written
+        PointFields : list[np.ndarray], optional
+            list of fields defined at the vertices of the mesh, by default None
+        CellFields : list[np.ndarray], optional
+            list of fields defined at the cells of the mesh, by default None
+        GridFields : list[np.ndarray], optional
+            list of grid data, by default None
+        PointFieldsNames : list[str], optional
+            list of field names defined at the vertices of the mesh, by default None
+        CellFieldsNames : list[str], optional
+            list of field names defined at the cells of the mesh, by default None
+        GridFieldsNames : list[str], optional
+            list of grid data names, by default None
+        Time : float, optional
+            time at which the data is written, by default None
+        TimeStep : float, optional
+            number of the time step at which the data is written, by default None
+        domainName : str, optional
+            name of domain to write, by default None
+        """
 
-         if CellFields  is None:
+        sep = self.separator + " "
+
+        if PointFields is None:
+            PointFields = [];
+
+        if CellFields  is None:
             CellFields   = [];
 
-         if GridFields is None:
+        if GridFields is None:
             GridFields  = [];
 
-         if PointFieldsNames is None:
+        if PointFieldsNames is None:
             PointFieldsNames  = [];
 
-         if CellFieldsNames is None:
+        if CellFieldsNames is None:
             CellFieldsNames  = [];
 
-         if GridFieldsNames is None:
+        if GridFieldsNames is None:
             GridFieldsNames  = [];
 
-         if not self.isOpen() :
+        if not self.isOpen() :
             if self.automaticOpen:
                 self.Open()
             else:
@@ -195,28 +285,27 @@ class CsvWriter(WriterBase):
                 raise Exception
 
 
-         if self.filePointer.tell() == 0:
-             self.WriteHead(baseMeshObject,PointFieldsNames=PointFieldsNames,CellFieldsNames=CellFieldsNames,GridFieldsNames=GridFieldsNames)
+        if self.filePointer.tell() == 0:
+            self.WriteHead(baseMeshObject,PointFieldsNames=PointFieldsNames,CellFieldsNames=CellFieldsNames,GridFieldsNames=GridFieldsNames)
 
-         dt = 1
-         if Time is not None:
-             dt = Time - self.currentTime
-         elif TimeStep is not None:
-             dt = TimeStep
+        dt = 1
+        if Time is not None:
+            dt = Time - self.currentTime
+        elif TimeStep is not None:
+            dt = TimeStep
 
-         if self.IsTemporalOutput():
-             self.Step(dt)
-
-
-
-         #self.currentTime
-         self.writeText(str(self.cpt))
-         self.writeText(sep)
+        if self.IsTemporalOutput():
+            self.Step(dt)
 
 
-         data = { a:b for a,b in zip(GridFieldsNames,GridFields) }
+        #self.currentTime
+        self.writeText(str(self.cpt))
+        self.writeText(sep)
 
-         for name in self.globalFields:
+
+        data = { a:b for a,b in zip(GridFieldsNames, GridFields) }
+
+        for name in self.globalFields:
             if name in data:
                 self.writeText(str(data[name]))
             else:
@@ -224,7 +313,7 @@ class CsvWriter(WriterBase):
             self.writeText(sep)
 
 
-         if self.nodalFilter is not None:
+        if self.nodalFilter is not None:
             self.nodalFilter.mesh = baseMeshObject
             op = NodalOP()
             self.nodalFilter.ApplyOnNodes(op)
@@ -242,8 +331,8 @@ class CsvWriter(WriterBase):
                     self.writeText("nan")
                 self.writeText(sep)
 
-         nprint = False
-         if self.elementFilter is not None:
+        nprint = False
+        if self.elementFilter is not None:
             self.elementFilter.mesh = baseMeshObject
 
             op = ElementOP()
@@ -269,10 +358,10 @@ class CsvWriter(WriterBase):
                 nprint = True
 
 
-         self.writeText("\n")
+        self.writeText("\n")
 
-         self.filePointer.flush()
-         self.cpt += 1
+        self.filePointer.flush()
+        self.cpt += 1
 
     def Close(sefl):
         pass
@@ -309,13 +398,12 @@ def CheckIntegrity(GUI=False):
     efilt.AddTag("First_bar")
 
     WriteMeshToCsv(tempdir+"TestUnstructured.csv", res, PointFields = [np.array([1.,2,3]),res.nodes],
-                                                                         CellFields =[ np.array([1])] ,GridFields= [[0],  np.array([1,2,3]).astype(np.int64) ],
-                                                                    PointFieldsNames = ["PS","nodes"],
-                                                                    CellFieldsNames = ["CS"],
-                                                                    GridFieldsNames = ["GS", "GV"], nFilter=nfilt, eFilter=efilt )
+                    CellFields =[ np.array([1])] ,GridFields= [[0],  np.array([1,2,3]).astype(np.int64) ],
+                    PointFieldsNames = ["PS","nodes"],
+                    CellFieldsNames = ["CS"],
+                    GridFieldsNames = ["GS", "GV"], nFilter=nfilt, eFilter=efilt)
 
     return 'ok'
 
 if __name__ == '__main__':
     print(CheckIntegrity(GUI=True)) # pragma: no cover
-

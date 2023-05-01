@@ -4,6 +4,9 @@
 # file 'LICENSE.txt', which is part of this source code package.
 #
 
+"""Xdmf tools
+"""
+
 import BasicTools.Containers.ElementNames as EN
 
 XdmfName = {}
@@ -52,13 +55,13 @@ XdmfNumberToEN = {v:k for k,v in XdmfNumber.items()}
 XdmfNameToEN = {v:k for k,v in XdmfName.items()}
 
 class FieldNotFound(ValueError):
-     """Exception to treat Field Not found """
+    """Exception to treat Field Not found """
 
-     def __init__(self, value):
-         self.value = 'Field "' + value + '" not found, Sorry!!'
+    def __init__(self, value):
+        self.value = 'Field "' + value + '" not found, Sorry!!'
 
-     def __str__(self):
-         return repr(self.value) # pragma: no cover
+    def __str__(self):
+        return repr(self.value) # pragma: no cover
 
 
 def CheckIntegrity():

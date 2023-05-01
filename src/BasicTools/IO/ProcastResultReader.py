@@ -3,55 +3,72 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
+"""Procast result file reader
+"""
 
 import numpy as np
 
 import BasicTools.Containers.UnstructuredMesh  as UM
 
+
 def ReadResult(nbNodes, fileName=None, string=None):
+    """Function API for reading a Procast result file
 
+    Parameters
+    ----------
+    nbNodes : int
+        number of nodes to read
+    fileName : str, optional
+        name of the file to be read, by default None
+    string : str, optional
+        data to be read as a string instead of a file, by default None
 
+    Returns
+    -------
+    np.ndarray, np.ndarray
+        times steps and temperature read from the procast result file
+    """
     if fileName is not None:
-       string = open(fileName, 'r')
+        string = open(fileName, 'r')
     elif string is not None:
-       from io import StringIO
-       string = StringIO(string)
+        from io import StringIO
+        string = StringIO(string)
 
     timeSteps   = []
     temperature = np.empty((nbNodes,0),dtype=np.double)
 
 
     while (True) :
-       line = string.readline()
-       if line == "":
-          break
+        line = string.readline()
+        if line == "":
+            break
     #for line in string:
-       l = line.strip('\n').lstrip().rstrip()
-       if len(l) == 0: continue
+        l = line.strip('\n').lstrip().rstrip()
+        if len(l) == 0: continue
 
-       if l.find("2         4         1         5         2         1")>-1:
-           line = string.readline()
-           l = line.strip('\n').lstrip().rstrip()
-           s = l.split()
-           timeSteps.append(int(s[3]))
-           newTemp = np.empty((nbNodes,1),dtype=np.double)
+        if l.find("2         4         1         5         2         1")>-1:
+            line = string.readline()
+            l = line.strip('\n').lstrip().rstrip()
+            s = l.split()
+            timeSteps.append(int(s[3]))
+            newTemp = np.empty((nbNodes,1),dtype=np.double)
 
-           line = string.readline(); line = string.readline(); l = line.strip('\n').lstrip().rstrip()
-           while(True):
-               s = l.split()
-               index = int(s[0])-1
-               line = string.readline()
-               l = line.strip('\n').lstrip().rstrip()
-               s = l.split()
-               newTemp[index] = float(s[0])
-               line = string.readline()
-               l = line.strip('\n').lstrip().rstrip()
-               if len(l) == 0: continue
-               if l.find("-1") > -1:
-                   break
-           temperature = np.hstack((temperature, newTemp))
-           continue
+            line = string.readline(); line = string.readline(); l = line.strip('\n').lstrip().rstrip()
+            while(True):
+                s = l.split()
+                index = int(s[0])-1
+                line = string.readline()
+                l = line.strip('\n').lstrip().rstrip()
+                s = l.split()
+                newTemp[index] = float(s[0])
+                line = string.readline()
+                l = line.strip('\n').lstrip().rstrip()
+                if len(l) == 0: continue
+                if l.find("-1") > -1:
+                    break
+            temperature = np.hstack((temperature, newTemp))
+            continue
 
     return timeSteps, temperature
 

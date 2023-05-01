@@ -4,16 +4,19 @@
 # file 'LICENSE.txt', which is part of this source code package.
 #
 
+"""Classes for input/output pipe handling
+"""
+
 import sys
 
 from BasicTools.IO.IOFactory import RegisterWriterClass,RegisterReaderClass
 
 class PipeReader(object):
     def __init__(self):
-       super(PipeReader,self).__init__()
+        super(PipeReader,self).__init__()
 
     def Open(self):
-       self.inbuffer = sys.stdin.buffer
+        self.inbuffer = sys.stdin.buffer
 
     def SetFileName(self,val):
         pass
@@ -27,7 +30,7 @@ class PipeReader(object):
 
 ##    def ReadStr(self):
 ##        import pickle
- #       return pickle.loads(self.inbuffer,encoding = 'latin1')
+#       return pickle.loads(self.inbuffer,encoding = 'latin1')
 
 
     def Open(self):
@@ -39,9 +42,9 @@ class PipeReader(object):
 
 class PipeWriter(object):
     def __init__(self):
-       super(PipeWriter,self).__init__()
-       self.outbuffer = None
-       self.canHandleBinaryChange = False
+        super(PipeWriter,self).__init__()
+        self.outbuffer = None
+        self.canHandleBinaryChange = False
 
     def SetFileName(self,val):
         pass
@@ -49,7 +52,7 @@ class PipeWriter(object):
     def SetBinary(self,val):
         pass
 
-    def Write(self,outmesh,PointFieldsNames=None,PointFields=None,CellFieldsNames=None,CellFields=None):
+    def Write(self, outmesh, PointFieldsNames = None, PointFields = None, CellFieldsNames = None, CellFields = None):
         import pickle
         pickle.dump(outmesh,self.outbuffer,0)
         self.outbuffer.flush()

@@ -4,7 +4,7 @@
 # file 'LICENSE.txt', which is part of this source code package.
 #
 
-""" Class to help the execution of an external program
+"""Class to help the execution of an external program
 """
 
 import subprocess
@@ -34,9 +34,9 @@ class Interface(BaseOutputObject):
         # Template
         self.tplFilename = 'template.tpl'
         try:
-          self.tpl = self.ReadFile(self.workingDirectory + os.sep + self.tplFilename)
+            self.tpl = self.ReadFile(self.workingDirectory + os.sep + self.tplFilename)
         except IOError:# pragma: no cover
-          self.tpl = ""
+            self.tpl = ""
 
         # Temporary files folder creation
         self.processDirectory = self.workingDirectory + os.sep
@@ -94,7 +94,7 @@ class Interface(BaseOutputObject):
 
 
         for i in range(len(cmd)):
-           cmd[i] = cmd[i].format(**self.parameters)
+            cmd[i] = cmd[i].format(**self.parameters)
         return cmd
 
     def SingleRunComputation(self, idProc,stdout = None):
@@ -115,9 +115,9 @@ class Interface(BaseOutputObject):
         if self.openExternalWindows:
             if platform.system() == "Windows":
                 if self.keepExternalWindows:
-                   cmd.insert(0,"/K")
+                    cmd.insert(0,"/K")
                 else:
-                   cmd.insert(0,"/C")
+                    cmd.insert(0,"/C")
                 cmd.insert(0,"cmd")
                 cmd.insert(0,"/wait")
                 cmd.insert(0,"start")
@@ -184,7 +184,7 @@ class Interface(BaseOutputObject):
         import shutil
 
         shutil.copy(self.workingDirectory + os.sep + filetocopy,
-                   self.processDirectory + os.sep +filetocopy.split('/') [-1])
+                    self.processDirectory + os.sep +filetocopy.split('/') [-1])
 
 
 def CheckIntegrity(GUI=False):
@@ -242,5 +242,3 @@ def CheckIntegrity(GUI=False):
 
 if __name__ == '__main__':
     print(CheckIntegrity(True))# pragma: no cover
-
-

@@ -4,19 +4,34 @@
 # file 'LICENSE.txt', which is part of this source code package.
 #
 
+"""Stl file writer
+"""
 import numpy as np
 
 from BasicTools.IO.WriterBase import WriterBase as WriterBase
 import BasicTools.Containers.ElementNames as EN
 
 
-def WriteMeshToStl(filename,mesh, normals= None):
+def WriteMeshToStl(filename, mesh, normals = None):
+    """Function API for writing mesh in the stl format file.
+
+    Parameters
+    ----------
+    filename : str
+        name with path to the file to be created (relative or absolute)
+    mesh : UnstructuredMesh
+        the mesh to be exported
+    normals : np.ndarray, optional
+        containing the normal at each element of the surface, by default None
+    """
     OW = StlWriter()
     OW.Open(filename)
     OW.Write(mesh, normals=normals)
     OW.Close()
 
 class StlWriter(WriterBase):
+    """Class to write Unstructured surface mesh on disk in the stl format file
+    """
     def __init__(self):
         super(StlWriter,self).__init__()
         self.extractSkin = True
@@ -27,13 +42,43 @@ class StlWriter(WriterBase):
         return res
 
     def SetFileName(self,fileName):
-        self.fileName = fileName;
+        """Sets the name of the file to read
+
+        Parameters
+        ----------
+        fileName : str
+            name of the file to read
+        """
+        self.fileName = fileName
 
     def Close(self):
         if self.isOpen():
             super(StlWriter,self).Close()
 
-    def Write(self,meshObject,normals=None,Name= None,PointFieldsNames=None,PointFields=None,CellFieldsNames=None,CellFields=None,GridFieldsNames=None,GridFields=None):
+    def Write(self, meshObject, normals=None, Name= None, PointFieldsNames=None, PointFields=None, CellFieldsNames=None, CellFields=None, GridFieldsNames=None, GridFields=None):
+        """Write mesh to file in stl format
+
+        Parameters
+        ----------
+        meshObject : UnstructuredMesh
+            the mesh to be written
+        normals : np.ndarray, optional
+            containing the normal at each element of the surface, by default None
+        Name : str, optional
+            name of the surface to write, by default None
+        PointFieldsNames : None
+            Not Used, by default None
+        PointFields : None
+            Not Used, by default None
+        CellFieldsNames : None
+            Not Used, by default None
+        CellFields : None
+            Not Used, by default None
+        GridFieldsNames : None
+            Not Used, by default None
+        GridFields : None
+            Not Used, by default None
+        """
         from BasicTools.Containers.UnstructuredMesh import ElementsContainer
         tris = ElementsContainer(EN.Triangle_3)
         tris.Merge(meshObject.GetElementsOfType(EN.Triangle_3))
@@ -74,34 +119,34 @@ RegisterWriterClass(".stl",StlWriter)
 
 def CheckIntegrity():
     data = u"""   solid cube_corner
-          facet normal 0.0 -1.0 0.0
-            outer loop
-              vertex 0.0 0.0 0.0
-              vertex 1.0 0.0 0.0
-              vertex 0.0 0.0 1.0
-            endloop
-          endfacet
-          facet normal 0.0 0.0 -1.0
-            outer loop
-              vertex 0.0 0.0 0.0
-              vertex 0.0 1.0 0.0
-              vertex 1.0 0.0 0.0
-            endloop
-          endfacet
-          facet normal -1.0 0.0 0.0
-            outer loop
-              vertex 0.0 0.0 0.0
-              vertex 0.0 0.0 1.0
-              vertex 0.0 1.0 0.0
-            endloop
-          endfacet
-          facet normal 0.577 0.577 0.577
-            outer loop
-              vertex 1.0 0.0 0.0
-              vertex 0.0 1.0 0.0
-              vertex 0.0 0.0 1.0
-            endloop
-          endfacet
+            facet normal 0.0 -1.0 0.0
+                outer loop
+                    vertex 0.0 0.0 0.0
+                    vertex 1.0 0.0 0.0
+                    vertex 0.0 0.0 1.0
+                endloop
+            endfacet
+            facet normal 0.0 0.0 -1.0
+                outer loop
+                    vertex 0.0 0.0 0.0
+                    vertex 0.0 1.0 0.0
+                    vertex 1.0 0.0 0.0
+                endloop
+            endfacet
+            facet normal -1.0 0.0 0.0
+                outer loop
+                    vertex 0.0 0.0 0.0
+                    vertex 0.0 0.0 1.0
+                    vertex 0.0 1.0 0.0
+                endloop
+            endfacet
+            facet normal 0.577 0.577 0.577
+                outer loop
+                    vertex 1.0 0.0 0.0
+                    vertex 0.0 1.0 0.0
+                    vertex 0.0 0.0 1.0
+                endloop
+            endfacet
         endsolid"""
     from BasicTools.IO.StlReader import ReadStl as ReadStl
     from BasicTools.Helpers.Tests import TestTempDir

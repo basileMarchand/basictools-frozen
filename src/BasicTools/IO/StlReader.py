@@ -3,6 +3,8 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
+"""Stl file reader
+"""
 
 from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
 from BasicTools.IO.IOFactory import RegisterReaderClass
@@ -83,17 +85,13 @@ class StlReader(ReaderBase):
             The name of the file to read, by default None
         string : str, optional
             the string to read in the case of reading from memory, by default None
+        out : UnstructuredMesh, optional
+            output unstructured mesh object containing reading result, by default None
 
         Returns
         -------
         UnstructuredMesh
-            the stl surface
-
-        Returns
-        -------
-        UnstructuredMesh
-                    the stl surface
-
+            the read stl surface
         """
 
         if fileName is not None:
@@ -149,9 +147,9 @@ class StlReader(ReaderBase):
         #resUM.nodes = np.empty((nbTriangles*3,3), dtype=float)
 
         dt = np.dtype([('normal', (np.float32, 3)),
-                       ('points', (np.float32, 9)),
-                       ('att', (np.uint16)),
-                       ])
+                        ('points', (np.float32, 9)),
+                        ('att', (np.uint16)),
+                        ])
 
         data = self.readData(nbTriangles, dt)
         normals = np.array(data["normal"])
@@ -181,7 +179,13 @@ class StlReader(ReaderBase):
         return resUM
 
     def ReadStlAscii(self):
+        """ Read an ASCII stl file
 
+        Returns
+        -------
+        UnstructuredMesh
+            the read stl surface
+        """
         self.readFormat = "r"
         self.StartReading()
 

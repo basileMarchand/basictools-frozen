@@ -4,6 +4,9 @@
 # file 'LICENSE.txt', which is part of this source code package.
 #
 
+"""Gmsh tools
+"""
+
 import BasicTools.Containers.ElementNames as EN
 
 gmshName = {}

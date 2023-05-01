@@ -4,9 +4,9 @@
 # file 'LICENSE.txt', which is part of this source code package.
 #
 
-""" CGNS mesh file reader
-
+"""CGNS file reader
 """
+
 import os
 
 from BasicTools.Bridges.CGNSBridge import CGNSToMesh
@@ -19,13 +19,13 @@ except:
     cgnsLoaded = False
 
 
-def ReadCGNS(fileName, time  =None, baseNumberOrName=0, zoneNumberOrName=0):
-    """Read a CGNS File from disk
+def ReadCGNS(fileName, time = None, baseNumberOrName = 0, zoneNumberOrName = 0):
+    """Function API for reading a CGNS file
 
     Parameters
     ----------
     fileName : str
-        filename of the file to be read
+        name of the file to be read
     time : float, optional
         not coded yet, by default None
     baseNumberOrName : int or str, optional
@@ -36,7 +36,7 @@ def ReadCGNS(fileName, time  =None, baseNumberOrName=0, zoneNumberOrName=0):
     Returns
     -------
     UnstructuredMesh
-        a BasicTools UnstructuredMesh
+        output unstructured mesh object containing reading result
     """
     reader = CGNSReader()
     reader.SetFileName(fileName)
@@ -48,6 +48,9 @@ def ReadCGNS(fileName, time  =None, baseNumberOrName=0, zoneNumberOrName=0):
 
 
 class CGNSReader(BaseOutputObject):
+    """CGNS Reader class
+    """
+
     def __init__(self):
         super().__init__()
         self.fileName = None
@@ -60,7 +63,13 @@ class CGNSReader(BaseOutputObject):
         self.canHandleTemporal = False
 
     def SetFileName(self,fileName):
+        """Function to set fileName to read
 
+        Parameters
+        ----------
+        fileName : str
+            name of the file to be read
+        """
         self.fileName = fileName
         if fileName is None :
             self.__path = None
@@ -68,7 +77,13 @@ class CGNSReader(BaseOutputObject):
             self.filePath = os.path.abspath(os.path.dirname(fileName))+os.sep
 
     def SetTimeToRead(self, time=None):
+        """Function to set time value to read
 
+        Parameters
+        ----------
+        time : float, optional
+            not coded yet, by default None
+        """
         if time is None:
             self.timeToRead = 0.
         else:
@@ -77,7 +92,24 @@ class CGNSReader(BaseOutputObject):
 
 
     def Read(self, fileName=None, time=None, baseNumberOrName=0, zoneNumberOrName=0):
+        """Function that performs the reading of a CGNS result file
 
+        Parameters
+        ----------
+        fileName : str
+            name of the file to be read
+        time : float, optional
+            not coded yet, by default None
+        baseNumberOrName : int or str, optional
+            name of the base to use, by default 0 (first)
+        zoneNumberOrName : int or str, optional
+            name of the zone to be read, by default 0 (first)
+
+        Returns
+        -------
+        UnstructuredMesh
+            output unstructured mesh object containing reading result
+        """
         if fileName is not None:
             self.SetFileName(fileName)
 

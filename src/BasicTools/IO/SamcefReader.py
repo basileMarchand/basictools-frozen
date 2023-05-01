@@ -4,6 +4,9 @@
 # file 'LICENSE.txt', which is part of this source code package.
 #
 
+"""Samcef dat (bank) file reader
+"""
+
 import numpy as np
 
 import BasicTools.Containers.ElementNames as EN
@@ -12,24 +15,24 @@ from BasicTools.Helpers import ParserHelper as PH
 from BasicTools.NumpyDefs import PBasicFloatType, PBasicIndexType
 
 KeywordToIgnore = ["INIT",
-                   "MCNL",
-                   "ASEF",
-                   "HYP",
-                   "DES",
-                   "MAT",
-                   "UNIT",
-                   "GEL",
-                   "SAM",
-                   "OPT",
-                   "SAI",
-                   "UNITE",
-                   "PHP",
-                   "RBE",
-                   "BPR",
-                   "FCT",
-                   "SUB",
-                   "MCT",
-                   ]
+                    "MCNL",
+                    "ASEF",
+                    "HYP",
+                    "DES",
+                    "MAT",
+                    "UNIT",
+                    "GEL",
+                    "SAM",
+                    "OPT",
+                    "SAI",
+                    "UNITE",
+                    "PHP",
+                    "RBE",
+                    "BPR",
+                    "FCT",
+                    "SUB",
+                    "MCT",
+                    ]
 
 def DischardTillNextSection(func):
     while(True):
@@ -37,13 +40,13 @@ def DischardTillNextSection(func):
         if courrentText is None:
             break
         if len(courrentText) > 1 and courrentText[0] == ".":
-           break
+            break
 
     return  courrentText
 
 def LineToList(text):
-   import csv
-   return  list(csv.reader([text], delimiter=' ', quotechar='"'))[0]
+    import csv
+    return  list(csv.reader([text], delimiter=' ', quotechar='"'))[0]
 
 def LineToDic(text,res = None):
     if res is None:
@@ -86,6 +89,8 @@ def LineToDic(text,res = None):
 
 
 class DatReader(ReaderBase):
+    """Samcef dat (bank) Reader class
+    """
     def __init__(self):
         super(DatReader,self).__init__()
         self.commentChar= "!"
@@ -109,14 +114,30 @@ class DatReader(ReaderBase):
 
 
     def Read(self,fileName=None,string=None, out=None):
+        """Function that performs the reading of a samcef bank file
+
+        Parameters
+        ----------
+        fileName : str, optional
+            name of the file to be read, by default None
+        string : str, optional
+            data to be read as a string instead of a file, by default None
+        out : UnstructuredMesh, optional
+            output unstructured mesh object containing reading result, by default None
+
+        Returns
+        -------
+        UnstructuredMesh
+            output unstructured mesh object containing reading result
+        """
         import BasicTools.FE.ProblemData as ProblemData
         import BasicTools.Containers.UnstructuredMesh as UM
 
         if fileName is not None:
-          self.SetFileName(fileName)
+            self.SetFileName(fileName)
 
         if string is not None:
-          self.SetStringToRead(string)
+            self.SetStringToRead(string)
 
         self.StartReading()
 
@@ -153,9 +174,9 @@ class DatReader(ReaderBase):
             ldata = LineToDic(l)
 
             if ldata["KEYWORD"] in KeywordToIgnore:
-              self.PrintVerbose("Ignoring: " + ldata["KEYWORD"] )
-              l = DischardTillNextSection(self.ReadCleanLine )
-              continue
+                self.PrintVerbose("Ignoring: " + ldata["KEYWORD"] )
+                l = DischardTillNextSection(self.ReadCleanLine )
+                continue
 
             if ldata["KEYWORD"] == "NOE":
                 self.PrintVerbose('Reading Nodes')
@@ -280,7 +301,7 @@ class DatReader(ReaderBase):
 
 
                     if tagname is None:
-                       tagname = "G"+str(group)
+                        tagname = "G"+str(group)
                     if onElements:
                         if ALL:
                             for name,data in res.elements.items():

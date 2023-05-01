@@ -5,7 +5,6 @@
 #
 
 """Geof file writer (Zset mesh files)
-
 """
 from typing import Optional
 
@@ -51,13 +50,13 @@ GeofName[EN.Hexaedron_20] = "c3d20"
 
 GeofName[EN.Wedge_6] = "c3d6"
 
-def WriteMeshToGeof(filename :str , mesh:UnstructuredMesh, useOriginalId:Optional[bool]=False,lowerDimElementsAsElsets:bool=False)-> None:
-    """Export Mesh to disk in the geof format files.
-        A file is created using the path and name of filename
+def WriteMeshToGeof(fileName :str , mesh:UnstructuredMesh, useOriginalId:Optional[bool]=False,lowerDimElementsAsElsets:bool=False)-> None:
+    """Function API for writing mesh in the geof format file.
+        A file is created using the path and name of fileName
 
     Parameters
     ----------
-    filename : str
+    fileName : str
         name with path to the file to be created (relative or absolute)
     mesh : UnstructuredMesh
         the mesh to be exported
@@ -69,13 +68,13 @@ def WriteMeshToGeof(filename :str , mesh:UnstructuredMesh, useOriginalId:Optiona
     """
 
     geofWriter = GeofWriter()
-    geofWriter.Open(filename)
+    geofWriter.Open(fileName)
     geofWriter.SetWriteLowerDimElementsAsSets(lowerDimElementsAsElsets)
     geofWriter.Write(mesh,useOriginalId = useOriginalId)
     geofWriter.Close()
 
 class GeofWriter(WriterBase):
-    """Class to write Unstructured mesh on disk in the geof format files
+    """Class to write Unstructured mesh on disk in the geof format file
     """
     def __init__(self) -> None:
         super(GeofWriter,self).__init__()
@@ -107,7 +106,7 @@ class GeofWriter(WriterBase):
         Parameters
         ----------
         meshObject : UnstructuredMesh
-            The mesh
+            the mesh to be written
         useOriginalId : Optional[bool], optional
             use the Original Id for the number of nodes and elements
             (the user is responsible of the consistency of this data),
@@ -128,7 +127,6 @@ class GeofWriter(WriterBase):
         Exception
             in the case 1D element are presents in the mesh (doset)
         """
-
         if PointFieldsNames is not None or PointFields      is not None or \
             CellFieldsNames  is not None or CellFields       is not None:
             print("warning GeofWriter only can write the mesh, fields are ignored")

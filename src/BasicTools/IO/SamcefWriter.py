@@ -4,6 +4,9 @@
 # file 'LICENSE.txt', which is part of this source code package.
 #
 
+"""Samcef dat (bank) file writer
+"""
+
 import numpy as np
 
 from BasicTools.IO.WriterBase import WriterBase as WriterBase
@@ -11,11 +14,6 @@ import BasicTools.Containers.ElementNames as EN
 from BasicTools.NumpyDefs import PBasicIndexType
 from BasicTools.NumpyDefs import PBasicFloatType
 
-def WriteMeshToDat(filename,mesh, normals= None):
-    OW = DatWriter()
-    OW.Open(filename)
-    OW.Write(mesh, normals=normals)
-    OW.Close()
 
 BasicToolToSamcef = dict()
 BasicToolToSamcef[EN.Bar_2] = (np.array([1,1]), np.arange(2),2)
@@ -23,6 +21,8 @@ BasicToolToSamcef[EN.Triangle_3] = (np.array([1,1,1]), np.arange(3),3)
 BasicToolToSamcef[EN.Tetrahedron_4] = (np.array([1,1,1,1]), np.arange(4),4)
 
 class DatWriter(WriterBase):
+    """Class to write a Samcef dat (bank) file
+    """
     def __init__(self):
         super(DatWriter,self).__init__()
     def __str__(self):
@@ -31,6 +31,25 @@ class DatWriter(WriterBase):
         return res
 
     def Write(self,meshObject,PointFieldsNames=None,PointFields=None,CellFieldsNames=None,CellFields=None,GridFieldsNames=None,GridFields=None):
+        """Write mesh to file in Samcef dat format
+
+        Parameters
+        ----------
+        meshObject : UnstructuredMesh
+            the mesh to be written
+        PointFieldsNames : None
+            Not Used, by default None
+        PointFields : None
+            Not Used, by default None
+        CellFieldsNames : list[str], optional
+            name of the fields defined at the cell to write, by default None
+        CellFields : list[np.ndarray], optional
+            fields defined at the cell to write, by default None
+        GridFieldsNames : None
+            Not Used, by default None
+        GridFields : None
+            Not Used, by default None
+        """
         #Nodes
         numberofpoints = meshObject.GetNumberOfNodes()
         posn = meshObject.GetPosOfNodes()

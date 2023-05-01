@@ -3,6 +3,10 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
+
+"""Xdmf file reader
+"""
+
 import os
 import sys
 import numpy as np
@@ -16,6 +20,18 @@ import BasicTools.Containers.ElementNames as ElementNames
 
 
 def ReadXdmf(fileName):
+    """Function API for reading an xdmf file
+
+    Parameters
+    ----------
+    fileName : str
+        name of the file to be read
+
+    Returns
+    -------
+    UnstructuredMesh
+        output unstructured mesh object containing reading result
+    """
     obj = XdmfReader(filename=fileName)
     return obj.Read()
 
@@ -81,7 +97,7 @@ class XdmfDomain(Xdmfbase):
         self.Name = ''
         self.informations =[]
 
-    def GetGrid(self,nameornumber):
+    def GetGrid(self, nameornumber):
         """ Get a Grid (XdmfGrid) using a name or a number """
         if isinstance(nameornumber,str):
             for g in self.grids:
@@ -116,6 +132,13 @@ class XdmfGrid(Xdmfbase):
         self.time = None
 
     def GetSupport(self):
+        """Returns the support defined in the Xdmf file
+
+        Returns
+        -------
+        UnstructuredMesh or ConstantRectilinearMesh
+            output mesh object containing reading result
+        """
         if self.geometry.Type == "ORIGIN_DXDYDZ":
             from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearMesh
             res = ConstantRectilinearMesh()
@@ -170,6 +193,13 @@ class XdmfGrid(Xdmfbase):
         return False
 
     def GetTime(self):
+        """Returns time at which data is read
+
+        Returns
+        -------
+        float
+            time at which data is read
+        """
         if self.time is None:
             return None
         else:
@@ -222,7 +252,6 @@ class XdmfGrid(Xdmfbase):
                 res.append(np.copy(data))
         return res
 
-
     def GetFieldData(self,name,noTranspose=False):
         for att in self.attributes:
             if att.Name == name :
@@ -269,6 +298,7 @@ class XdmfGrid(Xdmfbase):
             res[:,i] = self.GetFieldData(fieldname+str(offset+i).zfill(padding) ).reshape(d_0.size)
 
         return res
+
     def GetFieldTermsAsTensor(self,fieldname,sep='_',offseti=0,offsetj=0):
         from itertools import product
         #first we check the padding max 8 zeros of padding
@@ -614,7 +644,8 @@ class XdmfDataItem(Xdmfbase):
 
 
 class XdmfReader(xml.sax.ContentHandler):
-
+    """Xdmf Reader class
+    """
     def __init__(self,filename=''):
         super(XdmfReader,self).__init__()
         self.xdmf = Xdmf()
@@ -630,13 +661,22 @@ class XdmfReader(xml.sax.ContentHandler):
         self.encoding = None
 
     def Reset(self):
+        """Resets the reader
+        """
         self.xdmf = Xdmf()
         self.pile = []
         self.readed = False
         self.timeToRead = -1
         self.time = np.array([])
 
-    def SetFileName(self,filename):
+    def SetFileName(self, filename):
+        """Sets the name of file to read
+
+        Parameters
+        ----------
+        filename : str
+            file name to set
+        """
         #if same filename no need to read the file again
         if  self.filename == filename: return
 
@@ -645,6 +685,9 @@ class XdmfReader(xml.sax.ContentHandler):
         self.path = os.path.dirname(filename)
 
     def ReadMetaData(self):
+        """Function that performs the reading of the metadata of a xdmf file:
+        sets the time attribute of the reader
+        """
         self.lazy = True
         times = []
         self.Read()
@@ -656,9 +699,30 @@ class XdmfReader(xml.sax.ContentHandler):
         self.time = np.array(times)
 
     def GetAvailableTimes(self):
+        """Returns the available times at which data can be read
+
+        Returns
+        -------
+        np.ndarray
+            available times at which data can be read
+        """
         return self.time
 
     def SetTimeToRead(self, time=None, timeIndex=None):
+        """Sets the time at which the data is read
+
+        Parameters
+        ----------
+        time : float, optional
+            time at which the data is read, by default None
+        timeIndex : int, optional
+            time index at which the data is read, by default None
+
+        Returns
+        -------
+        int
+            time index at which the data is read
+        """
         if time is not None:
             self.timeToRead = time
         else:
@@ -667,8 +731,19 @@ class XdmfReader(xml.sax.ContentHandler):
             else:
                 self.timeToRead = -1
 
-    def Read(self,fileName=None):
+    def Read(self, fileName = None):
+        """Function that performs the reading of the data defined in an ut file
 
+        Parameters
+        ----------
+        fileName : str, optional
+            name of the file to read, by default None
+
+        Returns
+        -------
+        UnstructuredMesh or ConstantRectilinearMesh
+            output mesh object containing reading result
+        """
 
         if self.timeToRead == -1.:
             timeIndex = len(self.time)-1

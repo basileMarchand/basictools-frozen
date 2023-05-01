@@ -4,9 +4,7 @@
 # file 'LICENSE.txt', which is part of this source code package.
 #
 
-
-""" Geo file reader (Zset mesh file)
-
+"""Geo file reader (Zset mesh file)
 """
 
 import numpy as np
@@ -18,17 +16,49 @@ from BasicTools.IO.ZsetTools import GeofNumber,PermutationZSetToBasicTools, nbIn
 from BasicTools.NumpyDefs import PBasicIndexType
 
 def ReadGeo(fileName=None,out=None,readElset=True,readFaset=True):
+    """Function API for reading a geo mesh file
+
+    Parameters
+    ----------
+    fileName : str, optional
+        name of the file to be read, by default None
+    out : UnstructuredMesh, optional
+        output unstructured mesh object containing reading result, by default None
+    readElset : bool, optional
+        if False, ignores the elset informations, by default True
+    readFaset : bool, optional
+        if False, ignores the faset informations, by default True
+
+    Returns
+    -------
+    UnstructuredMesh
+        output unstructured mesh object containing reading result
+    """
     reader = GeoReader()
     reader.SetFileName(fileName)
     reader.Read(fileName=fileName, out=out,readElset=readElset,readFaset=readFaset)
     return reader.output
 
 def ReadMetaData(fileName=None):
+    """Function API for reading the metadata of a geo mesh file
+
+    Parameters
+    ----------
+    fileName : str, optional
+        name of the file to be read, by default None
+
+    Returns
+    -------
+    dict
+        global information on the mesh to read
+    """
     reader = GeoReader()
     reader.SetFileName(fileName)
     return reader.ReadMetaData()
 
 class GeoReader(ReaderBase):
+    """Geo Reader class
+    """
     def __init__(self):
         super(GeoReader,self).__init__()
         self.readFormat = 'rb'
@@ -41,7 +71,7 @@ class GeoReader(ReaderBase):
     def readMagic(self):
             magic = self.rawread(13)
             if not (b'Z7BINARYGEOF\x00' == magic ) :
-               raise(Exception("Bad file"))
+                raise(Exception("Bad file"))
 
     def readInt32(self):
         return struct.unpack(">i", self.rawread(4))[0]
@@ -50,12 +80,38 @@ class GeoReader(ReaderBase):
         return np.array(struct.unpack(">"+"i"*cpt, self.rawread(4*cpt)))
 
     def ReadMetaData(self):
+        """Function that performs the reading of the metadata of a geof mesh file
+
+        Returns
+        -------
+        dict
+            global information on the mesh to read
+        """
         return self.Read(onlyMeta = True)
 
     def Read(self, fileName=None,out=None,readElset=True,readFaset=True, onlyMeta = False):
+        """Function that performs the reading of a geo mesh file
 
+        Parameters
+        ----------
+        fileName : str, optional
+            name of the file to be read, by default None
+        out : UnstructuredMesh, optional
+            Not Used, by default None
+        readElset : bool, optional
+            Not Used, by default None
+        readFaset : bool, optional
+            Not Used, by default None
+        onlyMeta : bool, optional
+            if True, only read metadata, by default False
+
+        Returns
+        -------
+        UnstructuredMesh
+            output unstructured mesh object containing reading result
+        """
         if fileName is not None:
-           self.SetFileName(fileName)
+            self.SetFileName(fileName)
 
         self.StartReading()
 
@@ -71,22 +127,22 @@ class GeoReader(ReaderBase):
             self.readMagic()
             tag = self._getTag()
             if tag == u"node":
-               nbNodes = self.readInt32()
-               metadata["nbNodes"] = int(nbNodes)
-               dims = self.readInt32()
-               metadata["dimensionality"] = int(dims)
+                nbNodes = self.readInt32()
+                metadata["nbNodes"] = int(nbNodes)
+                dims = self.readInt32()
+                metadata["dimensionality"] = int(dims)
 
-               if onlyMeta :
-                   self.filePointer.seek((dims*8+4)*nbNodes,1 )
-               else:
-                   res.nodes = np.zeros((nbNodes,3))
-                   res.originalIDNodes = np.empty((nbNodes,),dtype=PBasicIndexType)
+                if onlyMeta :
+                    self.filePointer.seek((dims*8+4)*nbNodes,1 )
+                else:
+                    res.nodes = np.zeros((nbNodes,3))
+                    res.originalIDNodes = np.empty((nbNodes,),dtype=PBasicIndexType)
 
-                   for i in range(nbNodes):
-                       data = self.rawread((dims*8+4))
-                       data = struct.unpack((">i"+"d"*dims), data)
-                       res.originalIDNodes[i] = data[0]
-                       res.nodes[i,0:dims] = data[1:]
+                    for i in range(nbNodes):
+                        data = self.rawread((dims*8+4))
+                        data = struct.unpack((">i"+"d"*dims), data)
+                        res.originalIDNodes[i] = data[0]
+                        res.nodes[i,0:dims] = data[1:]
 
             elif tag == u"element":
                 n_elem = self.readInt32()

@@ -4,6 +4,9 @@
 # file 'LICENSE.txt', which is part of this source code package.
 #
 
+"""Mesh file reader
+"""
+
 import struct
 import numpy as np
 
@@ -18,7 +21,7 @@ from BasicTools.IO.MeshTools import BinaryKeywords as BKeys, GetTypesForVersion
 from BasicTools.NumpyDefs import PBasicIndexType, PBasicFloatType
 
 def ReadMesh(fileName:str=None, string:str=None, ReadRefsAsField:bool=False)-> UnstructuredMesh:
-    """Read file or string in the mesh format
+    """Function API for reading a Mesh file
 
     Parameters
     ----------
@@ -28,8 +31,8 @@ def ReadMesh(fileName:str=None, string:str=None, ReadRefsAsField:bool=False)-> U
         string to convert, by default None
     ReadRefsAsField : bool, optional
         if true the two fiels will be preset (at the nodes and element) with the nbame refs
-        if false the values of the refs will be converted tags, using the prefix NTag or ETag plus the number of the ref
-        , by default False
+        if false the values of the refs will be converted tags, using the prefix NTag or ETag plus the number of the ref,
+        by default False
 
     Returns
     -------
@@ -45,12 +48,28 @@ def ReadMesh(fileName:str=None, string:str=None, ReadRefsAsField:bool=False)-> U
 
 
 def ReadSol(fileName, out=None):
+    """Function API for reading a solution file associated to a Mesh file
+
+    Parameters
+    ----------
+    fileName : str, optional
+        file to read, by default None
+    out : UnstructuredMesh, optional
+        output unstructured mesh object containing reading result, by default None
+
+    Returns
+    -------
+    UnstructuredMesh
+        output unstructured mesh object containing reading result
+    """
     reader = MeshSolutionReaderWrapper()
     reader.SetFileName(fileName)
     reader.Read(out=out)
     return reader.output
 
 class MeshReader(ReaderBase):
+    """Mesh Reader class
+    """
     def __init__(self):
         super(MeshReader, self).__init__()
         self.refsAsAField = False
@@ -61,12 +80,31 @@ class MeshReader(ReaderBase):
         self.refsAsAField = bool(val)
 
     def Read(self, out=None):
+        """Function that performs the reading of a Mesh file
+
+        Parameters
+        ----------
+        out : UnstructuredMesh, optional
+            output unstructured mesh object containing reading result, by default None
+
+        Returns
+        -------
+        UnstructuredMesh
+            output unstructured mesh object containing reading result
+        """
         if self.binary:
             return self.ReadMeshBinary(out=out)
         else:
             return self.ReadMeshAscii(out=out)
 
     def SetFileName(self, fileName):
+        """Sets the name of the file to read
+
+        Parameters
+        ----------
+        fileName : str
+            name of the file to read
+        """
         super(MeshReader, self).SetFileName(fileName)
 
         if fileName is not None and fileName[-1] == "b":
@@ -86,7 +124,24 @@ class MeshReader(ReaderBase):
 
 ##ASCII PART #################################################################
     def ReadMeshAscii(self, _fileName=None, _string=None, fieldFileName=None, out=None):
+        """Function that performs the reading of an ascii Mesh file
 
+        Parameters
+        ----------
+        _fileName : str, optional
+            name of the file to be read, by default None
+        _string : str, optional
+            data to be read as a string instead of a file, by default None
+        fieldFileName : str, optional
+            Not Used, by default None
+        out : UnstructuredMesh, optional
+            output unstructured mesh object containing reading result, by default None
+
+        Returns
+        -------
+        UnstructuredMesh
+            output unstructured mesh object containing reading result
+        """
         if _fileName is not None:
             self.SetFileName(_fileName)
 
@@ -339,6 +394,13 @@ class MeshReader(ReaderBase):
         return ids
 
     def ReadBinaryHeader(self):
+        """Function that performs the reading of the header of a binary Mesh file
+
+        Returns
+        -------
+        int
+            dimension of the read mesh
+        """
         key = self.ReadKeyWord()
 
         if key == BKeys["GmfVersionFormatted"]:
@@ -365,6 +427,18 @@ class MeshReader(ReaderBase):
         return dimension
 
     def ReadMeshBinary(self, out=None):
+        """Function that performs the reading of a binary Mesh file
+
+        Parameters
+        ----------
+        out : UnstructuredMesh, optional
+            output unstructured mesh object containing reading result, by default None
+
+        Returns
+        -------
+        UnstructuredMesh
+            output unstructured mesh object containing reading result
+        """
         self.readFormat = 'rb'
         self.StartReading()
 
@@ -540,6 +614,8 @@ class MeshReader(ReaderBase):
 
 
 class MeshSolutionReaderWrapper():
+    """Class to handle a solution file associated to a Mesh file
+    """
     def __init__(self):
         super(MeshSolutionReaderWrapper, self).__init__()
         import locale
@@ -547,6 +623,13 @@ class MeshSolutionReaderWrapper():
         self.encoding = locale.getpreferredencoding(False)
 
     def SetFileName(self, fileName):
+        """Sets the name of the file to read
+
+        Parameters
+        ----------
+        fileName : str
+            name of the file to read
+        """
         import os.path
         self.fileName = fileName
         if fileName is None or fileName == "None":
@@ -573,6 +656,18 @@ class MeshSolutionReaderWrapper():
         self.reader.SetFileName(fileName=f)
 
     def Read(self, out=None):
+        """Function that performs the reading of a solution file associated to a Mesh file
+
+        Parameters
+        ----------
+        out : UnstructuredMesh, optional
+            output unstructured mesh object containing reading result, by default None
+
+        Returns
+        -------
+        UnstructuredMesh
+            output unstructured mesh object containing reading result
+        """
         if out:
             raise
 

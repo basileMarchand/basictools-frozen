@@ -3,6 +3,10 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
+
+"""Catalyst
+"""
+
 import os
 
 from BasicTools.IO.WriterBase import WriterBase as WriterBase
@@ -12,6 +16,7 @@ class Catalyst(WriterBase):
 
     bridge_initialize = False
     bridge_finalize = False
+
     def __init__(self):
         super(Catalyst,self).__init__()
         self.canHandleTemporal = True
@@ -27,6 +32,7 @@ class Catalyst(WriterBase):
         self.userscript = None
 
         self.mpiInterface= MPIInterface()
+
     def SetFileName(self,fileName):
         #possible options are ()
         #   None

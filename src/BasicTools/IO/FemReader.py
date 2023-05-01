@@ -4,8 +4,7 @@
 # file 'LICENSE.txt', which is part of this source code package.
 #
 
-""" Fem file reader
-
+"""Fem file reader
 """
 
 import numpy as np
@@ -17,6 +16,20 @@ from BasicTools.IO.ReaderBase import ReaderBase
 
 
 def ReadFem(fileName=None,string=None):
+    """Function API for reading a Fem result file
+
+    Parameters
+    ----------
+    fileName : str, optional
+        name of the file to be read, by default None
+    string : str, optional
+        data to be read as a string instead of a file, by default None
+
+    Returns
+    -------
+    UnstructuredMesh
+        output unstructured mesh object containing reading result
+    """
     obj = FemReader()
     if fileName is not None:
         obj.SetFileName(fileName)
@@ -44,7 +57,7 @@ keysToIgnore = [ "CORD1R",
                 ]
 
 keysToIgnoreSubcase = [ "",
-                       ]
+                    ]
 
 keysToIgnoreBulk = [ "PSOLID",
                 "DOPTPRM",
@@ -67,9 +80,9 @@ class ignored():
 
 class NastranLineParcer(object):
     def __init__(self):
-         self.fields = []
-         self.data = {}
-         self.structured = False
+        self.fields = []
+        self.data = {}
+        self.structured = False
 
     def Parse(self,line,file=None):
         #k = GetField(line,0)
@@ -94,7 +107,7 @@ class NastranLineParcer(object):
                 line += (8*(fn+1) - len(line))*" "
             return line[8*fn:8*(fn+1)].lstrip().rstrip()
         else:
-           return line.split()[fn]
+            return line.split()[fn]
 
     def ParseType(self,field,typ):
         if typ == float:
@@ -145,6 +158,8 @@ class IgnoredOneMultiline(NastranLineParcer):
     pass
 
 class FemReader(ReaderBase):
+    """Fem Reader class
+    """
     def __init__(self,fileName = None):
         super(FemReader,self).__init__()
         self.commentChar = "$"
@@ -161,6 +176,13 @@ class FemReader(ReaderBase):
         return re.sub(r'([,/\\]+)(?![ ])', r'\1 ', res)
 
     def Read(self):
+        """Function that performs the reading of a Fem file
+
+        Returns
+        -------
+        UnstructuredMesh
+            output unstructured mesh object containing reading result
+        """
         self.StartReading()
 
         NLP = NastranLineParcer()
@@ -208,57 +230,57 @@ class FemReader(ReaderBase):
                 data = {}
 
                 while(True):
-                  line = self.ReadCleanLine()
-                  key = line.split()[0]
+                    line = self.ReadCleanLine()
+                    key = line.split()[0]
 
-                  if key in keysToIgnoreSubcase and self.ignoreNotTreated :
-                    while(True):
-                        line = self.ReadCleanLine()
-                        if line[0] != "+":
-                            break
-                    need_to_read = False
-                    continue
+                    if key in keysToIgnoreSubcase and self.ignoreNotTreated :
+                        while(True):
+                            line = self.ReadCleanLine()
+                            if line[0] != "+":
+                                break
+                        need_to_read = False
+                        continue
 
 
-                  #print("tt" +line)
-                  if line.find("LABEL") > -1:
-                  #https://knowledge.autodesk.com/support/nastran/learn-explore/caas/CloudHelp/cloudhelp/2019/ENU/NSTRN-Reference/files/GUID-99CAEA1D-352E-4CDA-B74B-C58E4D12D020-htm.html?st=label
-                     data['label'] = line.split("LABEL")[1].strip()
-                     continue
-                  if key == 'ANALYSIS':
-                     #https://knowledge.autodesk.com/support/nastran/learn-explore/caas/CloudHelp/cloudhelp/2019/ENU/NSTRN-Reference/files/GUID-E7589B2F-C046-4B34-A668-B4E796172645-htm.html
-                     #print(line)
-                     data['analisys'] = line.split()[1].strip()
-                     continue
-                  if key == 'SPC' :
-                     #https://knowledge.autodesk.com/support/nastran/learn-explore/caas/CloudHelp/cloudhelp/2019/ENU/NSTRN-Reference/files/GUID-A456B121-CEB2-48B6-9EBA-7F19EF250AA5-htm.html
-                     data['SPC'] = int(line.split("=")[1].strip())
-                     continue
-                  if key == 'LOAD':
-                     # External Static Load Set Selection
-                     #https://knowledge.autodesk.com/support/nastran/learn-explore/caas/CloudHelp/cloudhelp/2019/ENU/NSTRN-Reference/files/GUID-02DF840A-A5EB-4F04-AB79-DC82A5691105-htm.html
-                     data['LOAD'] = int(line.split("=")[1].strip())
-                     continue
+                    #print("tt" +line)
+                    if line.find("LABEL") > -1:
+                    #https://knowledge.autodesk.com/support/nastran/learn-explore/caas/CloudHelp/cloudhelp/2019/ENU/NSTRN-Reference/files/GUID-99CAEA1D-352E-4CDA-B74B-C58E4D12D020-htm.html?st=label
+                        data['label'] = line.split("LABEL")[1].strip()
+                        continue
+                    if key == 'ANALYSIS':
+                        #https://knowledge.autodesk.com/support/nastran/learn-explore/caas/CloudHelp/cloudhelp/2019/ENU/NSTRN-Reference/files/GUID-E7589B2F-C046-4B34-A668-B4E796172645-htm.html
+                        #print(line)
+                        data['analisys'] = line.split()[1].strip()
+                        continue
+                    if key == 'SPC' :
+                        #https://knowledge.autodesk.com/support/nastran/learn-explore/caas/CloudHelp/cloudhelp/2019/ENU/NSTRN-Reference/files/GUID-A456B121-CEB2-48B6-9EBA-7F19EF250AA5-htm.html
+                        data['SPC'] = int(line.split("=")[1].strip())
+                        continue
+                    if key == 'LOAD':
+                        # External Static Load Set Selection
+                        #https://knowledge.autodesk.com/support/nastran/learn-explore/caas/CloudHelp/cloudhelp/2019/ENU/NSTRN-Reference/files/GUID-02DF840A-A5EB-4F04-AB79-DC82A5691105-htm.html
+                        data['LOAD'] = int(line.split("=")[1].strip())
+                        continue
 
-                  if key == 'MPCFORCE'  :
-                      print("MPCFORCE intensionally ignored")
-                      continue
-                     # OUTPOUT
-                     #  Requests multipoint constraint force vector output
-                     #https://knowledge.autodesk.com/support/nastran/learn-explore/caas/CloudHelp/cloudhelp/2019/ENU/NSTRN-Reference/files/GUID-97B55735-D7B3-4396-A161-BC6B8B694B98-htm.html?st=MPCFORCES
+                    if key == 'MPCFORCE'  :
+                        print("MPCFORCE intensionally ignored")
+                        continue
+                        # OUTPOUT
+                        #  Requests multipoint constraint force vector output
+                        #https://knowledge.autodesk.com/support/nastran/learn-explore/caas/CloudHelp/cloudhelp/2019/ENU/NSTRN-Reference/files/GUID-97B55735-D7B3-4396-A161-BC6B8B694B98-htm.html?st=MPCFORCES
 
-                  if key == 'STRAIN'  :
-                      print("STRAIN intensionally ignored")
-                      continue
-                     # OUTPOUT
-                     #  Element Strain Output Request
-                     #https://knowledge.autodesk.com/support/nastran/learn-explore/caas/CloudHelp/cloudhelp/2019/ENU/NSTRN-Reference/files/GUID-5DE89858-947A-4B35-B244-03BEE2CA779C-htm.html
-                  if key == 'DESSUB'  :
-                     # Subcase Level Design Constraints Selection
-                     #https://knowledge.autodesk.com/support/nastran/learn-explore/caas/CloudHelp/cloudhelp/2019/ENU/NSTRN-Reference/files/GUID-093E2B66-D5C4-4C2E-8494-7E6AD36F8B01-htm.html
-                     data['DESSUB'] = int(line.split("=")[1].strip())
-                     continue
-                  break
+                    if key == 'STRAIN'  :
+                        print("STRAIN intensionally ignored")
+                        continue
+                        # OUTPOUT
+                        #  Element Strain Output Request
+                        #https://knowledge.autodesk.com/support/nastran/learn-explore/caas/CloudHelp/cloudhelp/2019/ENU/NSTRN-Reference/files/GUID-5DE89858-947A-4B35-B244-03BEE2CA779C-htm.html
+                    if key == 'DESSUB'  :
+                        # Subcase Level Design Constraints Selection
+                        #https://knowledge.autodesk.com/support/nastran/learn-explore/caas/CloudHelp/cloudhelp/2019/ENU/NSTRN-Reference/files/GUID-093E2B66-D5C4-4C2E-8494-7E6AD36F8B01-htm.html
+                        data['DESSUB'] = int(line.split("=")[1].strip())
+                        continue
+                    break
                 resdic['Cases'][subcase] = data
                 need_to_read = False
                 continue
@@ -391,7 +413,7 @@ class FemReader(ReaderBase):
                             try:
                                 #print("--" + line)
                                 for x in [1,2,3,4,5,6,7,8]:
-                                   bulkdata.append(int(self.GetField(line,x)))
+                                    bulkdata.append(int(self.GetField(line,x)))
                                 line = self.ReadCleanLine()
                             except Exception as inst:
                                 #print(inst)
@@ -541,63 +563,63 @@ class FemReader(ReaderBase):
                         continue
 
                     if key == 'GRID' :
-                      NLP.structured = True
-                      key,oid,_,x,y,z = NLP.ParseTypes(line,[str,int,str,float,float,float])
-                      ids.append(oid)
-                      csystem= self.GetField(line,2)
-                      if csystem != " "*8:
-                          x,y,z = resdic["CordinateSystems"][int(csystem)].GetPointInOriginalSystem([x,y,z])
-                      xs.append(x)
-                      ys.append(y)
-                      zs.append(z)
-                      filetointernalid[oid] = cpt
-                      cpt +=1
-                      continue
+                        NLP.structured = True
+                        key,oid,_,x,y,z = NLP.ParseTypes(line,[str,int,str,float,float,float])
+                        ids.append(oid)
+                        csystem= self.GetField(line,2)
+                        if csystem != " "*8:
+                            x,y,z = resdic["CordinateSystems"][int(csystem)].GetPointInOriginalSystem([x,y,z])
+                        xs.append(x)
+                        ys.append(y)
+                        zs.append(z)
+                        filetointernalid[oid] = cpt
+                        cpt +=1
+                        continue
 
                     if key ==  'CTRIA3':
-                      oid = int(line[8:8*2])
-                      idd2 = str(int(line[8*2:8*3]))
-                      P1 = int(line[8*3:8*4])
-                      P2 = int(line[8*4:8*5])
-                      P3 = int(line[8*5:8*6])
+                        oid = int(line[8:8*2])
+                        idd2 = str(int(line[8*2:8*3]))
+                        P1 = int(line[8*3:8*4])
+                        P2 = int(line[8*4:8*5])
+                        P3 = int(line[8*5:8*6])
 
-                      conn = [filetointernalid[xx] for xx in  [P1, P2,P3 ] ]
-                      elements = res.GetElementsOfType(ElementNames.Triangle_3)
+                        conn = [filetointernalid[xx] for xx in  [P1, P2,P3 ] ]
+                        elements = res.GetElementsOfType(ElementNames.Triangle_3)
 
-                      localid = elements.AddNewElement(conn,oid)
-                      filetointernalidElement[oid] = (elements,localid-1)
+                        localid = elements.AddNewElement(conn,oid)
+                        filetointernalidElement[oid] = (elements,localid-1)
 
-                      elements.tags.CreateTag("ET"+idd2,False).AddToTag(localid-1)
-                      #res.AddElementToTagUsingOriginalId(oid,)
-                      continue
+                        elements.tags.CreateTag("ET"+idd2,False).AddToTag(localid-1)
+                        #res.AddElementToTagUsingOriginalId(oid,)
+                        continue
                     if key ==  'CTETRA':
-                      oid = int(line[8:8*2])
-                      idd2 = str(int(line[8*2:8*3]))
-                      points = []
-                      for i in range(3,9):
-                          try:
-                             points.append(int(line[8*i:8*(i+1)]))
-                          except:
-                             pass
+                        oid = int(line[8:8*2])
+                        idd2 = str(int(line[8*2:8*3]))
+                        points = []
+                        for i in range(3,9):
+                            try:
+                                points.append(int(line[8*i:8*(i+1)]))
+                            except:
+                                pass
 
-                      if len(points) > 4:
-                          line = self.ReadCleanLine()
-                          for i in range(1,5):
-                             points.append(int(line[8*i:8*(i+1)]))
+                        if len(points) > 4:
+                            line = self.ReadCleanLine()
+                            for i in range(1,5):
+                                points.append(int(line[8*i:8*(i+1)]))
 
-                      conn = [filetointernalid[xx] for xx in  points ]
+                        conn = [filetointernalid[xx] for xx in  points ]
 
-                      if len(conn) == 4:
-                          elements = res.GetElementsOfType(ElementNames.Tetrahedron_4)
-                      elif len(conn) == 10:
-                          elements = res.GetElementsOfType(ElementNames.Tetrahedron_10)
+                        if len(conn) == 4:
+                            elements = res.GetElementsOfType(ElementNames.Tetrahedron_4)
+                        elif len(conn) == 10:
+                            elements = res.GetElementsOfType(ElementNames.Tetrahedron_10)
 
-                      localid = elements.AddNewElement(conn,oid)
-                      filetointernalidElement[oid] = (elements,localid-1)
+                        localid = elements.AddNewElement(conn,oid)
+                        filetointernalidElement[oid] = (elements,localid-1)
 
-                      elements.tags.CreateTag("ET"+idd2,False).AddToTag(localid-1)
-                      #res.AddElementToTagUsingOriginalId(oid,)
-                      continue
+                        elements.tags.CreateTag("ET"+idd2,False).AddToTag(localid-1)
+                        #res.AddElementToTagUsingOriginalId(oid,)
+                        continue
 
 
                     if key == 'ENDDATA' : break

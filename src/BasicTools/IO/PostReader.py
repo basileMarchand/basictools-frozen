@@ -3,7 +3,9 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
+"""Post file reader
+"""
 import re
 import numpy as np
 
@@ -15,6 +17,13 @@ class PostReader(ReaderBase):
         self.refsAsAField = True
 
     def Read(self):
+        """Function that performs the reading of a post file
+
+        Returns
+        -------
+        dict
+            read data
+        """
         self.StartReading()
         res = {}
 
@@ -50,7 +59,6 @@ class PostReader(ReaderBase):
                     l = line.strip('\n')
                     if len(l) == 0:
                         break
-
 
                     l= l.replace("VI","")
                     data = np.vstack((data,np.fromstring(l,sep=" ") ))

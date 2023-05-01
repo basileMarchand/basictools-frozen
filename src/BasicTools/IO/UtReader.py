@@ -3,6 +3,8 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
+"""Ut file reader (Zset result file)
+"""
 import os
 
 import numpy as np
@@ -10,7 +12,29 @@ import numpy as np
 from BasicTools.IO.ReaderBase import ReaderBase
 from BasicTools.NumpyDefs import PBasicFloatType
 
-def ReadFieldFromUt(fileName=None, fieldname=None, time=None, timeIndex=None, string=None, atIntegrationPoints=False):
+def ReadFieldFromUt(fileName = None, fieldname = None, time = None, timeIndex = None, string = None, atIntegrationPoints = False):
+    """Function API for reading a field defined in an ut file
+
+    Parameters
+    ----------
+    fileName : str, optional
+        name of the file to be read, by default None
+    fieldname : str, optional
+        name of the field to be read, by default None
+    time : float, optional
+        time at which the field is read, by default None
+    timeIndex : int, optional
+        time index at which the field is read, by default None
+    string : str, optional
+        data to be read as a string instead of a file, by default None
+    atIntegrationPoints : bool, optional
+        if True, field is read at integration points (from .integ file), by default False
+
+    Returns
+    -------
+    np.ndarray
+        field read
+    """
     reader = UtReader()
     reader.SetFileName(fileName)
     reader.SetStringToRead(string)
@@ -22,6 +46,18 @@ def ReadFieldFromUt(fileName=None, fieldname=None, time=None, timeIndex=None, st
 
 
 def ReadUTMetaData(fileName):
+    """Function API for reading of metadate of an ut file
+
+    Parameters
+    ----------
+    fileName : str, optional
+        name of the file to be read, by default None
+
+    Returns
+    -------
+    dict
+        metadate of the ut file
+    """
     reader = UtReader()
     reader.SetFileName(fileName)
     reader.ReadUTMetaData()
@@ -36,6 +72,8 @@ def ReadUTMetaData(fileName):
 
 
 class UtReader(ReaderBase):
+    """Ut Reader class
+    """
     def __init__(self):
         super(UtReader,self).__init__()
         self.commentChar ="#"
@@ -55,18 +93,40 @@ class UtReader(ReaderBase):
         self.canHandleTemporal = True
 
     def Reset(self):
+        """Resets the reader
+        """
         self.meshfile = None
         self.node = []
         self.integ = []
         self.element =[]
         self.time = []
 
-    def SetFieldNameToRead(self,fieldname):
+    def SetFieldNameToRead(self, fieldname):
+        """Sets the name of the field to read
+
+        Parameters
+        ----------
+        fieldname : str
+            name of the field to read
+        """
         if fieldname is not None:
             self.fieldNameToRead = fieldname
 
-    def SetTimeToRead(self, time=None, timeIndex=None):
+    def SetTimeToRead(self, time = None, timeIndex = None):
+        """Sets the time at which the data is read
 
+        Parameters
+        ----------
+        time : float, optional
+            time at which the data is read, by default None
+        timeIndex : int, optional
+            time index at which the data is read, by default None
+
+        Returns
+        -------
+        int
+            time index at which the data is read
+        """
         if (time is None) and (timeIndex is None):
             if self.timeToRead == -1:
                 self.timeToRead = self.time[-1][4]
@@ -89,9 +149,18 @@ class UtReader(ReaderBase):
 
 
     def GetAvailableTimes(self):
-           return self.time[:,4]
+        """Returns the available times at which data can be read
+
+        Returns
+        -------
+        np.ndarray
+            available times at which data can be read
+        """
+        return self.time[:,4]
 
     def ReadUTMetaData(self):
+        """Function that performs the reading of the metadata of an ut file
+        """
         self.StartReading()
 
         self.Reset()
@@ -133,7 +202,13 @@ class UtReader(ReaderBase):
 
 
     def ReadMetaData(self):
+        """Function that performs the reading of the metadata of an ut file, and of the mesh defined in it
 
+        Returns
+        -------
+        dict
+            global information on the mesh defined in the ut file
+        """
         self.ReadUTMetaData()
 
         if self.meshMetadata is not None : return self.meshMetadata
@@ -161,6 +236,13 @@ class UtReader(ReaderBase):
 
 
     def Read(self):
+        """Function that performs the reading of the data defined in an ut file
+
+        Returns
+        -------
+        UnstructuredMesh
+            output unstructured mesh object containing reading result
+        """
         if self.meshfile[-5:] == ".geof":
             from BasicTools.IO.GeofReader import GeofReader
             GR = GeofReader()
@@ -168,7 +250,7 @@ class UtReader(ReaderBase):
             from BasicTools.IO.GeoReader import GeoReader
             GR = GeoReader()
 
-        GR.SetFileName(self.filePath +self.meshfile )
+        GR.SetFileName(self.filePath + self.meshfile)
 
         mesh = GR.Read()
         for nodefield in self.node:
@@ -177,7 +259,23 @@ class UtReader(ReaderBase):
         return mesh
 
 
-    def ReadField(self,fieldname=None,time=None,timeIndex=None):
+    def ReadField(self,fieldname = None, time = None, timeIndex = None):
+        """Function that performs the reading of a field defined in an ut file
+
+        Parameters
+        ----------
+        fieldname : str, optional
+            name of the field to be read, by default None
+        time : float, optional
+            time at which the field is read, by default None
+        timeIndex : int, optional
+            time index at which the field is read, by default None
+
+        Returns
+        -------
+        np.ndarray
+            field read
+        """
         self.ReadMetaData()
         postfix = ""
         if self.fileName[-1] == "p":
@@ -216,40 +314,40 @@ class UtReader(ReaderBase):
             self.PrintVerbose("Opening file : " + str(ffn) )
             res = np.empty(count,dtype=PBasicFloatType)
             try:
-              if len(self.integ)==1 :
-                with open(ffn+postfix,"rb") as datafile:
-                   datafile.seek(offset*4)
-                   res = np.fromfile(datafile ,count=count, dtype=np.float32).byteswap()
-              elif np.min(IPPerElement) == np.max(IPPerElement)  :
-                  # the .intef file is homogenius
-                with open(ffn+postfix,"rb") as datafile:
-                    datafile.seek(offset*4)
-                    nip = IPPerElement[0]
+                if len(self.integ)==1 :
+                    with open(ffn+postfix,"rb") as datafile:
+                        datafile.seek(offset*4)
+                        res = np.fromfile(datafile ,count=count, dtype=np.float32).byteswap()
+                elif np.min(IPPerElement) == np.max(IPPerElement)  :
+                    # the .intef file is homogenius
+                    with open(ffn+postfix,"rb") as datafile:
+                        datafile.seek(offset*4)
+                        nip = IPPerElement[0]
 
-                    if self.cache is None:
-                        self.cache = np.fromfile(datafile ,count=nip*nbElements* len(self.integ), dtype=np.float32).byteswap()
-                        self.cache.shape = (nbElements,nip* len(self.integ))
+                        if self.cache is None:
+                            self.cache = np.fromfile(datafile ,count=nip*nbElements* len(self.integ), dtype=np.float32).byteswap()
+                            self.cache.shape = (nbElements,nip* len(self.integ))
 
-                    res = self.cache[:,idx*nip:(idx+1)*nip].flatten()
-              else:
-                with open(ffn+postfix,"rb") as datafile:
-                    self.PrintDebug("Offset : " + str(offset*4))
-                    self.PrintDebug("count : " + str(count))
-                    datafile.seek(offset*4)
-                    cpt =0
-                    oldStep = 0
-                    for el in range(nbElements):
-                        #for sv in range(len(self.integ)):
-                            #for ip in range(IPPerElement[el]):
-                                #res[cpt] = np.fromfile(datafile ,count=1, dtype=np.float32).byteswap()
+                        res = self.cache[:,idx*nip:(idx+1)*nip].flatten()
+                else:
+                    with open(ffn+postfix,"rb") as datafile:
+                        self.PrintDebug("Offset : " + str(offset*4))
+                        self.PrintDebug("count : " + str(count))
+                        datafile.seek(offset*4)
+                        cpt =0
+                        oldStep = 0
+                        for el in range(nbElements):
+                            #for sv in range(len(self.integ)):
+                                #for ip in range(IPPerElement[el]):
+                                    #res[cpt] = np.fromfile(datafile ,count=1, dtype=np.float32).byteswap()
 
-                        nip = IPPerElement[el]
-                        oldStep += nip*idx
-                        datafile.seek(4*(oldStep),1)
-                        res[cpt:cpt +nip] = np.fromfile(datafile ,count=nip, dtype=np.float32).byteswap()
-                        cpt += nip
+                            nip = IPPerElement[el]
+                            oldStep += nip*idx
+                            datafile.seek(4*(oldStep),1)
+                            res[cpt:cpt +nip] = np.fromfile(datafile ,count=nip, dtype=np.float32).byteswap()
+                            cpt += nip
 
-                        oldStep = (len(self.integ)-idx-1)*nip
+                            oldStep = (len(self.integ)-idx-1)*nip
 
             except:
                 print("Error Reading field : " + str(self.fieldNameToRead) + " (not read)")
@@ -338,10 +436,10 @@ def CheckIntegrity():
 
     ipdata = np.empty((nbElements,numberOfIntegVariables,27)  ,dtype=int)
     for el in range(nbElements):
-         nip = IPPerElement[el]
-         for sv in range(numberOfIntegVariables):
+        nip = IPPerElement[el]
+        for sv in range(numberOfIntegVariables):
             for ip in range(nip):
-                     ipdata[el,sv,ip] = el*10000+ sv*100+ip
+                ipdata[el,sv,ip] = el*10000+ sv*100+ip
 
     #print(ipdata[:,0,:] )
     #ipdata.astype(np.float32).byteswap().tofile(TestTempDir.GetTempPath() + "UtReaderTest.integ")
@@ -350,12 +448,12 @@ def CheckIntegrity():
 
 
     with open(TestTempDir.GetTempPath() + "UtReaderTest.integ","wb") as datafile:
-      for i in range(2):
-        for el in range(nbElements):
-            nip = IPPerElement[el]
-            for sv in range(numberOfIntegVariables):
-                for ip in range(nip):
-                    np.array(ipdata[el,sv,ip] + i *1000000).astype(np.float32).byteswap().tofile(datafile)
+        for i in range(2):
+            for el in range(nbElements):
+                nip = IPPerElement[el]
+                for sv in range(numberOfIntegVariables):
+                    for ip in range(nip):
+                        np.array(ipdata[el,sv,ip] + i *1000000).astype(np.float32).byteswap().tofile(datafile)
 
     offset = 0
     for t in [0., 1.]:
@@ -402,5 +500,4 @@ if __name__ == '__main__':# pragma: no cover
     import time
     a =  time.time()
     print(CheckIntegrity())# pragma: no cover
-    print(time.time() -a)
-
+    print(time.time() - a)

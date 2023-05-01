@@ -17,21 +17,21 @@ from BasicTools.NumpyDefs import PBasicIndexType
 from BasicTools.IO.GmshTools import gmshNumber,PermutationGmshToBasicTools
 
 def ReadGmsh(fileName: Optional[str]=None, string: Optional[str]=None, out=None, **kwargs) -> UnstructuredMesh:
-    """Function to read Gmsh files into a UnstructuredMesh
+    """Function API for reading a gmsh file
 
     Parameters
     ----------
-    fileName : Optional[str], optional
-        FileName of the file to be read, by default None
-    string : Optional[str], optional
-        the string with the data in format gmsh, by default None
+    fileName : str, optional
+        name of the file to be read, by default None
+    string : str, optional
+        data to be read as a string instead of a file, by default None
     out : UnstructuredMesh, optional
-        a empty UnstructuredMesh, by default None
+        output unstructured mesh object containing reading result, by default None
 
     Returns
     -------
     UnstructuredMesh
-        The mesh
+        output unstructured mesh object containing reading result
     """
     reader = GmshReader()
     reader.SetFileName(fileName)
@@ -68,28 +68,28 @@ class GmshReader(ReaderBase):
         self.readFormat = 'r'
 
     def Read(self, fileName: Optional[str]=None, string: Optional[str]=None, out: Optional[UnstructuredMesh]=None) -> UnstructuredMesh:
-        """Function to read Gmsh files into a UnstructuredMesh
+        """Function that performs the reading of a gmsh mesh file
 
         Parameters
         ----------
-        fileName : Optional[str], optional
-            FileName of the file to be read, by default None
-        string : Optional[str], optional
-            the string with the data in format gmsh, by default None
+        fileName : str, optional
+            name of the file to be read, by default None
+        string : str, optional
+            data to be read as a string instead of a file, by default None
         out : UnstructuredMesh, optional
-            a empty UnstructuredMesh, by default None
+            output unstructured mesh object containing reading result, by default None
 
         Returns
         -------
         UnstructuredMesh
-            The mesh
+            output unstructured mesh object containing reading result
         """
 
         if fileName is not None:
-          self.SetFileName(fileName)
+            self.SetFileName(fileName)
 
         if string is not None:
-          self.SetStringToRead(string)
+            self.SetStringToRead(string)
 
         self.StartReading()
 

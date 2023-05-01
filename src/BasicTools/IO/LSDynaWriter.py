@@ -4,6 +4,11 @@
 # file 'LICENSE.txt', which is part of this source code package.
 #
 
+"""LSDyna file writer.
+    Documentation of the format:
+    http://ftp.lstc.com/anonymous/outgoing/jday/manuals/DRAFT_Vol_I.pdf
+"""
+
 import numpy as np
 
 from BasicTools.IO.WriterBase import WriterBase as WriterBase
@@ -12,25 +17,60 @@ from BasicTools.NumpyDefs import PBasicIndexType
 from BasicTools.NumpyDefs import PBasicFloatType
 import os
 
-def WriteMeshToK(filename,mesh, normals= None):
-    OW = KWriter()
-    OW.Open(filename)
-    OW.Write(mesh, normals=normals)
-    OW.Close()
+def WriteMeshToK(fileName, mesh, useOriginalId = False):
+    """Function API for writing data into a LSDyna file
+
+    Parameters
+    ----------
+    fileName : str
+        name of the file to be written
+    mesh : UnstructuredMesh
+        support of the data to be written
+    useOriginalId : bool, optional
+        If True, Original Id for the number of nodes and elements are used
+        (the user is responsible of the consistency of this data), by default False
+    """
+    KW = KWriter()
+    KW.Open(fileName)
+    KW.Write(mesh, useOriginalId = useOriginalId)
+    KW.Close()
 
 BasicToolToLSDyna = dict()
 BasicToolToLSDyna[EN.Tetrahedron_4] = [0,1,2,3,3,3,3,3]
 
 class KWriter(WriterBase):
+    """Class to write an LSDyna file
+    """
     def __init__(self):
         super(KWriter,self).__init__()
+
     def __str__(self):
         res  = 'KWriter : \n'
         res += '   FileName : '+str(self.fileName)+'\n'
         return res
 
-    def Write(self,meshObject,useOriginalId=False,PointFieldsNames=None,PointFields=None,CellFieldsNames=None,CellFields=None,GridFieldsNames=None,GridFields=None):
+    def Write(self, meshObject, useOriginalId = False, PointFieldsNames = None, PointFields = None, CellFieldsNames = None, CellFields = None, GridFieldsNames = None, GridFields = None):
+        """Write data to a LSDyna file
 
+        Parameters
+        ----------
+        meshObject : _type_
+            _description_
+        useOriginalId : bool, optional
+            _description_, by default False
+        PointFieldsNames : None
+            Not Used, by default None
+        PointFields : None
+            Not Used, by default None
+        CellFieldsNames : None
+            Not Used, by default None
+        CellFields : None
+            Not Used, by default None
+        GridFieldsNames : None
+            Not Used, by default None
+        GridFields : None
+            Not Used, by default None
+        """
         #Header
         self.writeText("$# LS-DYNA Keyword file\n*KEYWORD\n*TITLE\n"+str(os.path.basename(self.fileName))+"\n")
 
@@ -129,12 +169,12 @@ def CheckIntegrity():
 
     mymesh = UM.UnstructuredMesh()
     mymesh.nodes = np.array([[0.1,0,0],
-                             [1,0,0],
-                             [0,1,0],
-                             [1,1,0],
-                             [0.5,0,0.1],
-                             [0,0.5,0.1],
-                             [0.5,0.5,0.1],
+                            [1,0,0],
+                            [0,1,0],
+                            [1,1,0],
+                            [0.5,0,0.1],
+                            [0,0.5,0.1],
+                            [0.5,0.5,0.1],
     ],dtype=PBasicFloatType)
     mymesh.originalIDNodes = np.array([1, 3, 4, 5, 6, 7, 8],dtype=PBasicIndexType)
 
@@ -150,10 +190,10 @@ def CheckIntegrity():
     mymesh.AddElementToTagUsingOriginalId(0,"canonical:4")
     mymesh.AddElementToTagUsingOriginalId(3,"canonical:6")
 
-    OW = KWriter()
-    OW.Open(tempdir+"Test_LSDynaWriter.k")
-    OW.Write(mymesh)
-    OW.Close()
+    KW = KWriter()
+    KW.Open(tempdir+"Test_LSDynaWriter.k")
+    KW.Write(mymesh)
+    KW.Close()
 
     res = open(tempdir+"Test_LSDynaWriter.k").read()
 
@@ -209,10 +249,7 @@ $#   nid               x               y               z      tc      rc
        8             0.5             0.5             0.1       0       0
 *END"""
 
-    OW = KWriter()
-    OW.Open(tempdir+"Test_LSDynaWriter2.k")
-    OW.Write(mymesh, useOriginalId = True)
-    OW.Close()
+    WriteMeshToK(tempdir+"Test_LSDynaWriter2.k", mymesh, useOriginalId = True)
 
     res = open(tempdir+"Test_LSDynaWriter2.k").read()
 

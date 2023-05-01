@@ -4,6 +4,8 @@
 # file 'LICENSE.txt', which is part of this source code package.
 #
 
+"""Mesh tools
+"""
 
 import BasicTools.Containers.ElementNames as EN
 
@@ -168,6 +170,18 @@ BinaryFields = {}
 BinaryFields[BinaryKeywords["GmfSolAtVertices"]] = ("SolAtVertices")
 
 def GetTypesForVersion(version:int):
+    """get data types from mesh format version
+
+    Parameters
+    ----------
+    version : int
+        format version
+
+    Returns
+    -------
+    tuple, tuple, tuple
+        size, format and type for pos, int and float
+    """
     import numpy as np
 
     posSize = 4

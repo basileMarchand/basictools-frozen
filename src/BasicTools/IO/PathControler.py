@@ -3,7 +3,9 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-                       
+
+"""Class for handling paths
+"""
 
 from os import path
 import os
@@ -11,6 +13,7 @@ from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 from BasicTools.Helpers.Tests import TestTempDir
 
 class TemporalChdir(BaseOutputObject):
+
     def __init__(self,targetPath):
         super(TemporalChdir,self).__init__()
         self.originalPath = os.getcwd()+os.sep
@@ -24,6 +27,7 @@ class TemporalChdir(BaseOutputObject):
 
 
 class PathControler(BaseOutputObject):
+
     currentDirectory = os.getcwd()+os.sep
     workingDirectory = os.getcwd()+os.sep
 
@@ -120,4 +124,4 @@ def CheckIntegrity():
 
     return("ok")
 if __name__ == '__main__':
-   print(CheckIntegrity())# pragma: no cover
+    print(CheckIntegrity())# pragma: no cover

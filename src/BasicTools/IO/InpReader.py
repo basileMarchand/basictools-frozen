@@ -4,7 +4,7 @@
 # file 'LICENSE.txt', which is part of this source code package.
 #
 
-""" Inp file reader (Abaqus simulation file)
+"""Inp file reader (Abaqus simulation file)
 """
 import re
 
@@ -19,36 +19,36 @@ from BasicTools.IO.ReaderBase import ReaderBase
 from BasicTools.IO.AbaqusTools import InpNameToBasicTools, permutation
 
 KeywordToIgnore = ["INITIAL CONDITIONS",
-                   "AMPLITUDE",
-                   "EXPANSION",
-                   "DISTRIBUTION TABLE",
-                   "COUPLING",
-                   "SOLID SECTION",
-                   "CONNECTOR SECTION",
-                   "SURFACE",
-                   "SURFACE INTERACTION",
-                   "FRICTION",
-                   "CONTACT PAIR",
-                   "CLEARANCE",
-                   "PARAMETER",
-                   "PART",
-                   "END PART",
-                   "ASSEMBLY",
-                   "INSTANCE",
-                   "END INSTANCE",
-                   "END ASSEMBLY",
-                   "PREPRINT",
-                   "Step",
-                   "Static",
-                   "SOLVER",
-                   "Output",
-                   "NODE OUTPUT",
-                   "Element Output",
-                   "LOAD CASE",
-                   "Boundary",
-                   "End Step",
-                   "SOLVER CONTROLS",
-                   ]
+                    "AMPLITUDE",
+                    "EXPANSION",
+                    "DISTRIBUTION TABLE",
+                    "COUPLING",
+                    "SOLID SECTION",
+                    "CONNECTOR SECTION",
+                    "SURFACE",
+                    "SURFACE INTERACTION",
+                    "FRICTION",
+                    "CONTACT PAIR",
+                    "CLEARANCE",
+                    "PARAMETER",
+                    "PART",
+                    "END PART",
+                    "ASSEMBLY",
+                    "INSTANCE",
+                    "END INSTANCE",
+                    "END ASSEMBLY",
+                    "PREPRINT",
+                    "Step",
+                    "Static",
+                    "SOLVER",
+                    "Output",
+                    "NODE OUTPUT",
+                    "Element Output",
+                    "LOAD CASE",
+                    "Boundary",
+                    "End Step",
+                    "SOLVER CONTROLS",
+                    ]
 
 intFilter = re.compile("^[0-9]*$")
 
@@ -72,10 +72,10 @@ def SplitInp(filename):
     fII = open("split_"+filename,"w")
     f.StartReading()
     pairs = {"PART":"*END PART",
-              "INSTANCE":"*END INSTANCE",
-              "STEP":"*END STEP",
-              "Step":"*End Step",
-              "ASSEMBLY":"*END ASSEMBLY",}
+                "INSTANCE":"*END INSTANCE",
+                "STEP":"*END STEP",
+                "Step":"*End Step",
+                "ASSEMBLY":"*END ASSEMBLY",}
 
 
     def WriteOnFile(inputFile, outputFile, waitFor="*", pwd="./"):
@@ -128,14 +128,14 @@ def LineToDic(text):
                 res["KEYWORD"] = f[1:]
             else:
                 if f.find("=") >-1:
-                  s = f.split("=")
-                  res[s[0].lstrip().rstrip().upper()] = s[1].lstrip().rstrip().lstrip('"').rstrip('"')
+                    s = f.split("=")
+                    res[s[0].lstrip().rstrip().upper()] = s[1].lstrip().rstrip().lstrip('"').rstrip('"')
                 else:
-                  res[f.lstrip().rstrip().upper()] = True
+                    res[f.lstrip().rstrip().upper()] = True
     return res
 
 def LineToList(text):
-   return  list(csv.reader([text], delimiter=',', quotechar='"'))[0]
+    return  list(csv.reader([text], delimiter=',', quotechar='"'))[0]
 
 def LineToListNoQuote(text):
     return [s.strip() for s in text.split(",")]
@@ -146,11 +146,27 @@ def DiscardTillNextStar(func):
         if currentText is None:
             break
         if len(currentText) > 1 and currentText[0] == "*":
-           break
+            break
 
     return  currentText
 
 def ReadInp(fileName=None,string=None,out=None,**kwargs):
+    """Function API for reading an Abaqus inp file
+
+    Parameters
+    ----------
+    fileName : str, optional
+        name of the file to be read, by default None
+    string : str, optional
+        data to be read as a string instead of a file, by default None
+    out : UnstructuredMesh, optional
+        output unstructured mesh object containing reading result, by default None
+
+    Returns
+    -------
+    UnstructuredMesh
+        output unstructured mesh object containing reading result
+    """
     reader = InpReader()
     reader.SetFileName(fileName)
     reader.SetStringToRead(string)
@@ -158,6 +174,8 @@ def ReadInp(fileName=None,string=None,out=None,**kwargs):
     return reader.output
 
 class InpReader(ReaderBase):
+    """Inp Reader class
+    """
     def __init__(self):
         super(InpReader,self).__init__()
         self.commentChar= "**"
@@ -179,15 +197,31 @@ class InpReader(ReaderBase):
         return res
 
     def Read(self,fileName=None,string=None, out=None):
+        """Function that performs the reading of an Inp file
+
+        Parameters
+        ----------
+        fileName : str, optional
+            name of the file to be read, by default None
+        string : str, optional
+            data to be read as a string instead of a file, by default None
+        out : UnstructuredMesh, optional
+            output unstructured mesh object containing reading result, by default None
+
+        Returns
+        -------
+        UnstructuredMesh
+            output unstructured mesh object containing reading result
+        """
         import BasicTools.FE.ProblemData as ProblemData
         from BasicTools.Linalg.Transform  import Transform
         import BasicTools.Containers.UnstructuredMesh as UM
 
         if fileName is not None:
-          self.SetFileName(fileName)
+            self.SetFileName(fileName)
 
         if string is not None:
-          self.SetStringToRead(string)
+            self.SetStringToRead(string)
 
         self.StartReading()
 
@@ -410,7 +444,7 @@ class InpReader(ReaderBase):
                             # multiline data
                             buffer[len(s)-1:] = np.fromstring(self.ReadCleanLine(), dtype =PBasicFloatType, sep="," )
                             #s.extend( )
-                                     #map(float,self.ReadCleanLine().replace(',', ' ').split()) )
+                                    #map(float,self.ReadCleanLine().replace(',', ' ').split()) )
 
                         #else :
                         #    s = np.array(s[1:], dtype = PBasicFloatType )        list(map(float,s[1:]))

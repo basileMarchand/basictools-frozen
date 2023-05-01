@@ -4,6 +4,8 @@
 # file 'LICENSE.txt', which is part of this source code package.
 #
 
+"""Mesh file Convertor
+"""
 
 from BasicTools.IO.UniversalReader import ReadMesh
 from BasicTools.IO.UniversalWriter import WriteMesh
@@ -50,40 +52,40 @@ def PrintHelp(ops):
 
 from BasicTools.Helpers.PrintBypass import PrintBypass
 
-def Convert(inputfilename,outputfilename,ops):
+def Convert(inputfilename, outputfilename, ops):
 
     LoadReadersAndWriters(ops)
 
     with PrintBypass() as f:
 
-          if ".PIPE" in outputfilename :
-              f.ToDisk("MeshFileConverter.log")
+        if ".PIPE" in outputfilename :
+            f.ToDisk("MeshFileConverter.log")
 
-          print("Start Reading...", inputfilename)
+        print("Start Reading...", inputfilename)
 
-          from BasicTools.IO.IOFactory import CreateReader
-          if ops["printTimes"]:
-              from BasicTools.IO.IOFactory import InitAllReaders
-              InitAllReaders()
-              import os
-              basename,extention = os.path.splitext(os.path.basename(inputfilename))
+        from BasicTools.IO.IOFactory import CreateReader
+        if ops["printTimes"]:
+            from BasicTools.IO.IOFactory import InitAllReaders
+            InitAllReaders()
+            import os
+            basename,extention = os.path.splitext(os.path.basename(inputfilename))
 
-              reader = CreateReader("."+inputfilename.split(".")[-1].lower())
-              reader.SetFileName(inputfilename)
-              if reader.canHandleTemporal :
-                  reader.ReadMetaData()
-                  print("Available Times in files:")
-                  print(reader.GetAvailableTimes())
-                  import sys
-                  sys.exit(0)
+            reader = CreateReader("."+inputfilename.split(".")[-1].lower())
+            reader.SetFileName(inputfilename)
+            if reader.canHandleTemporal :
+                reader.ReadMetaData()
+                print("Available Times in files:")
+                print(reader.GetAvailableTimes())
+                import sys
+                sys.exit(0)
 
-          if ops["timeToRead"] == -10:
+        if ops["timeToRead"] == -10:
             reader = CreateReader("."+inputfilename.split(".")[-1].lower())
             reader.SetFileName(inputfilename)
             if reader.canHandleTemporal :
                 reader.ReadMetaData()
             times = reader.GetAvailableTimes()
-          else:
+        else:
             mesh = ReadMesh(inputfilename,timeToRead = ops["timeToRead"])
             if ops["PlotOnScreen"]:
                 from BasicTools.Bridges.vtkBridge import PlotMesh
@@ -98,26 +100,26 @@ def Convert(inputfilename,outputfilename,ops):
             else:
                 print(mesh)
 
-          print("Start Writing to "+  str(outputfilename))
-          writer = None
+        print("Start Writing to "+  str(outputfilename))
+        writer = None
 
 
-          from BasicTools.IO.IOFactory import CreateWriter
-          if ".PIPE" in outputfilename :
-              writer = CreateWriter("."+outputfilename.split(".")[-1])
-              writer.outbuffer = f.stdout_.buffer
+        from BasicTools.IO.IOFactory import CreateWriter
+        if ".PIPE" in outputfilename :
+            writer = CreateWriter("."+outputfilename.split(".")[-1])
+            writer.outbuffer = f.stdout_.buffer
 
-          if ops["timeToRead"] == -10:
-              writer = CreateWriter("."+outputfilename.split(".")[-1])
-              writer.SetFileName(outputfilename)
-              writer.SetTemporal()
-              writer.SetBinary(ops["binary"])
-              writer.Open(outputfilename)
-              reader = CreateReader("."+inputfilename.split(".")[-1].lower())
-              reader.SetFileName(inputfilename)
-              reader.ReadMetaData()
+        if ops["timeToRead"] == -10:
+            writer = CreateWriter("."+outputfilename.split(".")[-1])
+            writer.SetFileName(outputfilename)
+            writer.SetTemporal()
+            writer.SetBinary(ops["binary"])
+            writer.Open(outputfilename)
+            reader = CreateReader("."+inputfilename.split(".")[-1].lower())
+            reader.SetFileName(inputfilename)
+            reader.ReadMetaData()
 
-              for t in times:
+            for t in times:
                 print("Treating time : {}".format(t))
                 reader.SetTimeToRead(t)
 
@@ -136,10 +138,10 @@ def Convert(inputfilename,outputfilename,ops):
                     CellFields = list(mesh.elemFields.values())
 
                 writer.Write(mesh,PointFieldsNames=PointFieldsNames,PointFields=PointFields,CellFieldsNames=CellFieldsNames,CellFields=CellFields, Time=t )
-              writer.Close()
-          else:
+            writer.Close()
+        else:
             WriteMesh(outputfilename,mesh,writer=writer,binary=ops["binary"])
-          print("DONE")
+        print("DONE")
 
 
 
@@ -148,19 +150,19 @@ def CheckIntegrity(GUI=False):
     from BasicTools.TestData import GetTestDataPath
 
     inputfiles = ["coneAscii.stl",
-                  "coneBinary.stl",
-                  "cube.geof",
-                  "GCodeTest.gcode",
-                  "mesh1.msh",
-                  #"Structured.xmf",
-                  #"Unstructured.xmf"
+                "coneBinary.stl",
+                "cube.geof",
+                "GCodeTest.gcode",
+                "mesh1.msh",
+                #"Structured.xmf",
+                #"Unstructured.xmf"
             ]
 
     outputext = [ "geof",
-                  "mesh",
-                  "msh",
-                  "stl",
-                  "xdmf"
+                "mesh",
+                "msh",
+                "stl",
+                "xdmf"
             ]
 
     for iff in inputfiles:
@@ -186,50 +188,50 @@ def Main():
         PrintHelp({})
         sys.exit()
     else:
-      #try:
-      if True:
-          opts, args = getopt.getopt(sys.argv[1:],"bsvphmaTt:i:o:")
-      #except getopt.GetoptError:
-      #    PrintHelp()
-      #    sys.exit(2)
+        #try:
+        if True:
+            opts, args = getopt.getopt(sys.argv[1:],"bsvphmaTt:i:o:")
+        #except getopt.GetoptError:
+        #    PrintHelp()
+        #    sys.exit(2)
 
-      outputfilename = ""
-      ops= {}
-      ops["timeToRead"] = -1
-      ops["printTimes"] = False
-      ops["PlotOnScreen"] = False
-      ops["OnlyAbaqusReader"] = False
-      ops["OnHelp"] = False
-      ops["MeshIO"] = False
-      ops["binary"] = None
-      for opt, arg in opts:
-         if opt == '-h':
-             ops["OnHelp"] = True
-         elif opt in ("-i",):
-            inputfilename = arg
-         elif opt in ("-o",):
-            outputfilename = arg
-         elif opt in ("-t",):
-            ops["timeToRead"] = float(arg)
-         elif opt in ("-T",):
-            ops["timeToRead"] = -10
-         elif opt in ("-p",):
-            ops["printTimes"] = bool(True)
-         elif opt in ("-v",):
-            from BasicTools.Helpers.BaseOutputObject import BaseOutputObject as BOO
-            BOO.SetGlobalDebugMode(True)
-         elif opt in ("-c",):
-            print(CheckIntegrity(GUI=True))
-            sys.exit(0)
-         elif opt in ("-m",):
-             ops["MeshIO"] = True
+        outputfilename = ""
+        ops= {}
+        ops["timeToRead"] = -1
+        ops["printTimes"] = False
+        ops["PlotOnScreen"] = False
+        ops["OnlyAbaqusReader"] = False
+        ops["OnHelp"] = False
+        ops["MeshIO"] = False
+        ops["binary"] = None
+        for opt, arg in opts:
+            if opt == '-h':
+                ops["OnHelp"] = True
+            elif opt in ("-i",):
+                inputfilename = arg
+            elif opt in ("-o",):
+                outputfilename = arg
+            elif opt in ("-t",):
+                ops["timeToRead"] = float(arg)
+            elif opt in ("-T",):
+                ops["timeToRead"] = -10
+            elif opt in ("-p",):
+                ops["printTimes"] = bool(True)
+            elif opt in ("-v",):
+                from BasicTools.Helpers.BaseOutputObject import BaseOutputObject as BOO
+                BOO.SetGlobalDebugMode(True)
+            elif opt in ("-c",):
+                print(CheckIntegrity(GUI=True))
+                sys.exit(0)
+            elif opt in ("-m",):
+                ops["MeshIO"] = True
 
-         elif opt in ("-s",):
-             ops["PlotOnScreen"] = True
-         elif opt in ("-a",):
-             ops["OnlyAbaqusReader"] = True
-         elif opt in ("-b",):
-             ops["binary"] = True
+            elif opt in ("-s",):
+                ops["PlotOnScreen"] = True
+            elif opt in ("-a",):
+                ops["OnlyAbaqusReader"] = True
+            elif opt in ("-b",):
+                ops["binary"] = True
 
     if ops["OnHelp"]:
         PrintHelp(ops)

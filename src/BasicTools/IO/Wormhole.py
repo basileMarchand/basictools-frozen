@@ -30,7 +30,7 @@ def _resolve_name(name, package, level):
             dot = package.rindex('.', 0, dot)
         except ValueError:
             raise ValueError("attempted relative import beyond top-level "
-                              "package")
+                            "package")
     return "%s.%s" % (package[:dot], name)
 
 
@@ -69,40 +69,40 @@ class WormholeBase(BaseOutputObject):
         self.timeout = timeout
 
     def Receive(self):
-      if not (self.timeout is None):
-          alarm = threading.Timer(self.timeout, TimeOutHandler)
-          alarm.start()
+        if not (self.timeout is None):
+            alarm = threading.Timer(self.timeout, TimeOutHandler)
+            alarm.start()
 
-      try:
-          sizestream = ""
-          while (len(sizestream) < 64):
-              if self.socket is None:
-                  sizestream += self.otherSideR.read(1).decode('utf8')
-              else:
-                  sizestream += self.otherSideR.recv(1).decode('utf8')
-          size = int(sizestream)
+        try:
+            sizestream = ""
+            while (len(sizestream) < 64):
+                if self.socket is None:
+                    sizestream += self.otherSideR.read(1).decode('utf8')
+                else:
+                    sizestream += self.otherSideR.recv(1).decode('utf8')
+            size = int(sizestream)
 
-          if self.socket is None:
-              datastream = self.otherSideR.read(size)
-          else:
-              datastream = self.otherSideR.recv(size)
-          ldata = len(datastream )
-          while ldata < size:
-              if self.socket is None:
-                  datastream += self.otherSideR.read(size-ldata)
-              else:
-                  datastream += self.otherSideR.recv(size-ldata)
-              ldata = len(datastream )
-          if int(sys.version_info.major) >= 3:
-              data = pickle.loads(datastream,encoding = 'latin1')
-          else:
-              data = pickle.loads(datastream,)
-      except Exception:
-          exit(1)
+            if self.socket is None:
+                datastream = self.otherSideR.read(size)
+            else:
+                datastream = self.otherSideR.recv(size)
+            ldata = len(datastream )
+            while ldata < size:
+                if self.socket is None:
+                    datastream += self.otherSideR.read(size-ldata)
+                else:
+                    datastream += self.otherSideR.recv(size-ldata)
+                ldata = len(datastream )
+            if int(sys.version_info.major) >= 3:
+                data = pickle.loads(datastream,encoding = 'latin1')
+            else:
+                data = pickle.loads(datastream,)
+        except Exception:
+            exit(1)
 
-      if not (self.timeout is None):
-          alarm.cancel()
-      return data
+        if not (self.timeout is None):
+            alarm.cancel()
+        return data
 
     def Send(self,data):
         self.PrintDebug("Sending data")
@@ -128,40 +128,40 @@ class WormholeBase(BaseOutputObject):
 
 class WormholeServer(BaseOutputObject):
     def __init__(self,port = None, cmd=None ,dry=False,timeout=3600,autoStart=True):
-       super(WormholeServer,self).__init__()
-       self.globals = {}
-       self.ready = False
+        super(WormholeServer,self).__init__()
+        self.globals = {}
+        self.ready = False
 
-       # no code is executes only print it
-       self.drymode = dry
+        # no code is executes only print it
+        self.drymode = dry
 
-       self.port = port
-       self.cmd= cmd
-       self.timeout = timeout
-       if autoStart:
-           self.Start()
+        self.port = port
+        self.cmd= cmd
+        self.timeout = timeout
+        if autoStart:
+            self.Start()
 
     def Start(self):
-       if self.port is not None:
-           self.communicator = WormholeBase(timeout=self.timeout)
-           self.ListenUsingPort(self.port)
-           self.MainLoop()
-           self.communicator.socket.close()
-           self.ready = False
-       elif self.cmd is not None:
-           #from BasicTools.IO.Proxy import ServerProxy
-           self.communicator = WormholeBase(timeout=self.timeout)
-           from BasicTools.Helpers.PrintBypass import PrintBypass
-           self.printBypass = PrintBypass()
-           from BasicTools.Helpers.Tests import GetUniqueTempFile
-           out = GetUniqueTempFile(".log","output_")[1]
-           err = GetUniqueTempFile(".log2","output_")[1]
-           self.printBypass.ToDisk(out,err)
-           #self.printBypass.ToSink()
-           self.StartUsingPipe()
-           self.MainLoop()
-           self.ready = False
-           self.printBypass.Restore()
+        if self.port is not None:
+            self.communicator = WormholeBase(timeout=self.timeout)
+            self.ListenUsingPort(self.port)
+            self.MainLoop()
+            self.communicator.socket.close()
+            self.ready = False
+        elif self.cmd is not None:
+            #from BasicTools.IO.Proxy import ServerProxy
+            self.communicator = WormholeBase(timeout=self.timeout)
+            from BasicTools.Helpers.PrintBypass import PrintBypass
+            self.printBypass = PrintBypass()
+            from BasicTools.Helpers.Tests import GetUniqueTempFile
+            out = GetUniqueTempFile(".log","output_")[1]
+            err = GetUniqueTempFile(".log2","output_")[1]
+            self.printBypass.ToDisk(out,err)
+            #self.printBypass.ToSink()
+            self.StartUsingPipe()
+            self.MainLoop()
+            self.ready = False
+            self.printBypass.Restore()
 
     def StartUsingPipe(self):
         if int(sys.version_info.major) >= 3:
@@ -174,7 +174,7 @@ class WormholeServer(BaseOutputObject):
 
     def ListenUsingPort(self,port=None):
         if port is None:
-              port = 12345
+            port = 12345
 
         self.communicator.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.communicator.socket.bind(('', port))
@@ -247,16 +247,16 @@ class WormholeServer(BaseOutputObject):
 
 class WormholeClient(BaseOutputObject):
     def __init__(self,port = None,host=None,proc=None):
-       super(WormholeClient,self).__init__()
-       self.communicator = None
+        super(WormholeClient,self).__init__()
+        self.communicator = None
 
-       if port is not None:
-           self.communicator = WormholeBase()
-           self.Connect(port=port, host=host)
-       elif proc is not None:
-           #from BasicTools.IO.Proxy import ServerProxy
-           self.communicator = WormholeBase()
-           self.StartUsingPipe(proc)
+        if port is not None:
+            self.communicator = WormholeBase()
+            self.Connect(port=port, host=host)
+        elif proc is not None:
+            #from BasicTools.IO.Proxy import ServerProxy
+            self.communicator = WormholeBase()
+            self.StartUsingPipe(proc)
 
     def StartUsingPipe(self,proc):
         self.communicator.otherSideS = proc.stdin
@@ -325,48 +325,48 @@ class WormholeClient(BaseOutputObject):
 
 def CheckIntegrityNetWork():
 
-   import time
-   testport = GetAnFreePortNumber()
+    import time
+    testport = GetAnFreePortNumber()
 
-   import threading
-   #try:
-   if True:
-     data = {"server":None}
-     def runServer():
-         print("(s) Starting Server Side ",testport)
-         data["server"] = WormholeServer(testport,dry=False,timeout=None,autoStart=False)
-         data["server"].Start()
-     from functools import partial
+    import threading
+    #try:
+    if True:
+        data = {"server":None}
+        def runServer():
+            print("(s) Starting Server Side ",testport)
+            data["server"] = WormholeServer(testport,dry=False,timeout=None,autoStart=False)
+            data["server"].Start()
+        from functools import partial
 
-     TT = threading.Thread(target=runServer )
-     TT.start()
-     cpt = 0
-     while True:
-         server = data.get("server",None)
-         if server is not None:
-             print(server.ready)
-             if server.ready:
-                 break
-         time.sleep(0.01)
-         if cpt > 50:
-             break
-         cpt +=1
+        TT = threading.Thread(target=runServer )
+        TT.start()
+        cpt = 0
+        while True:
+            server = data.get("server",None)
+            if server is not None:
+                print(server.ready)
+                if server.ready:
+                    break
+            time.sleep(0.01)
+            if cpt > 50:
+                break
+            cpt +=1
 
-     print("(c) Starting Client Side ",testport)
-     client = WormholeClient(testport)
-     client.SendData("Hola",5)
-     client.RemoteExec("Hola += 3")
-     newhola = client.RetrieveData("Hola")
-     client.Exit()
-     print("Done")
-     if newhola == 8:
-         return 'ok'
-     return "Not ok"
-   try:
-      pass
-   except:
-     TT.join(0)
-     return "Not  OK"
+        print("(c) Starting Client Side ",testport)
+        client = WormholeClient(testport)
+        client.SendData("Hola",5)
+        client.RemoteExec("Hola += 3")
+        newhola = client.RetrieveData("Hola")
+        client.Exit()
+        print("Done")
+        if newhola == 8:
+            return 'ok'
+        return "Not ok"
+    try:
+        pass
+    except:
+        TT.join(0)
+        return "Not  OK"
 
 def GetPipeWormholeScript():
     from BasicTools.Helpers.Tests import TestTempDir
@@ -381,37 +381,37 @@ exit()
 
 def CheckIntegrityPipe():
 
-   import time
+    import time
 
-   #try:
-   if True:
-     def runServerPipe(cmd):
+    #try:
+    if True:
+        def runServerPipe(cmd):
 
-         script = GetPipeWormholeScript()
-         print("(s) Starting Server Side")
-         import subprocess, os
-         proc = subprocess.Popen([cmd, '-c', script], cwd=os.getcwd(),
-                 stdout=subprocess.PIPE, stdin=subprocess.PIPE)
-         return proc
+            script = GetPipeWormholeScript()
+            print("(s) Starting Server Side")
+            import subprocess, os
+            proc = subprocess.Popen([cmd, '-c', script], cwd=os.getcwd(),
+                    stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+            return proc
 
-     proc = runServerPipe(sys.executable)
-     print("(c) Starting Client Side")
-     time.sleep(0.1)
+        proc = runServerPipe(sys.executable)
+        print("(c) Starting Client Side")
+        time.sleep(0.1)
 
-     client = WormholeClient(proc=proc)
-     client.SendData("Hola",5)
-     client.RemoteExec("Hola += 3")
-     newhola = client.RetrieveData("Hola")
-     client.Exit()
-     print("Done")
-     if newhola == 8:
-         return 'ok'
-     return "Not ok"
-   try:
-       pass
-   except:
-     TT.join(0)
-     return "Not  OK"
+        client = WormholeClient(proc=proc)
+        client.SendData("Hola",5)
+        client.RemoteExec("Hola += 3")
+        newhola = client.RetrieveData("Hola")
+        client.Exit()
+        print("Done")
+        if newhola == 8:
+            return 'ok'
+        return "Not ok"
+    try:
+        pass
+    except:
+        TT.join(0)
+        return "Not  OK"
 
 
 def GetAnFreePortNumber():
@@ -430,45 +430,45 @@ def CheckIntegrity(GU=False):
 
 if __name__ == '__main__':
 
-  def RunClient(testport ):
-    print("Client Side")
-    client = WormholeClient(testport)
+    def RunClient(testport ):
+        print("Client Side")
+        client = WormholeClient(testport)
 
-    client.SendData("Hola",5)
-    client.RemoteExec("Hola += 3")
-    newhola = client.RetrieveData("Hola")
-    print("new Hola :",newhola )
-    #client.ImportModule("BasicTools.IO.XdmfWriter","XdmfWriter")
-    client.RemoteExec("from BasicTools.IO import XdmfWriter")
-    client.RemoteExec("from BasicTools.IO.XdmfWriter import WriteMeshToXdmf")
-    import numpy as np
-    client.SendData("p",np.array([5, 10, 4]))
-    #client.RemoteEval("v","XdmfWriter.ArrayToString(p)")
-    client.RemoteExec("v =  XdmfWriter.ArrayToString(p)")
-    client.RemoteExec("a =2 ")
-    v = client.RetrieveData("v")
-    print(type(v))
-    print("v " + str(v))
-    p = client.RetrieveData("p")
-    print(type(p))
-    print("p " + str(p))
-    client.Exit()
+        client.SendData("Hola",5)
+        client.RemoteExec("Hola += 3")
+        newhola = client.RetrieveData("Hola")
+        print("new Hola :",newhola )
+        #client.ImportModule("BasicTools.IO.XdmfWriter","XdmfWriter")
+        client.RemoteExec("from BasicTools.IO import XdmfWriter")
+        client.RemoteExec("from BasicTools.IO.XdmfWriter import WriteMeshToXdmf")
+        import numpy as np
+        client.SendData("p",np.array([5, 10, 4]))
+        #client.RemoteEval("v","XdmfWriter.ArrayToString(p)")
+        client.RemoteExec("v =  XdmfWriter.ArrayToString(p)")
+        client.RemoteExec("a =2 ")
+        v = client.RetrieveData("v")
+        print(type(v))
+        print("v " + str(v))
+        p = client.RetrieveData("p")
+        print(type(p))
+        print("p " + str(p))
+        client.Exit()
 
-  testport = 12348
-  if len(sys.argv) > 1 and  sys.argv[1]  == "-s":
-     print("Server Side")
-     WormholeServer(testport,dry=False)
-  elif len(sys.argv) > 1 and  sys.argv[1]  == "-c":
-     RunClient(testport)
-  else:
-    testport = GetAnFreePortNumber()
+    testport = 12348
+    if len(sys.argv) > 1 and  sys.argv[1]  == "-s":
+        print("Server Side")
+        WormholeServer(testport,dry=False)
+    elif len(sys.argv) > 1 and  sys.argv[1]  == "-c":
+        RunClient(testport)
+    else:
+        testport = GetAnFreePortNumber()
 
-    import threading
-    t = threading.Thread(target=WormholeServer,name="WormHoleServer",kwargs={"port":testport,"timeout":None})
-    t.daemon = True
-    t.start()
-    import time
-    time.sleep(1)
+        import threading
+        t = threading.Thread(target=WormholeServer,name="WormHoleServer",kwargs={"port":testport,"timeout":None})
+        t.daemon = True
+        t.start()
+        import time
+        time.sleep(1)
 
-    RunClient(testport)
-    t.join(5)
+        RunClient(testport)
+        t.join(5)

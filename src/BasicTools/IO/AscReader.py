@@ -4,7 +4,7 @@
 # file 'LICENSE.txt', which is part of this source code package.
 #
 
-""" ASC file reader
+"""ASC file reader
 """
 
 import numpy as np
@@ -24,6 +24,22 @@ AscNumber['3010'] = EN.Tetrahedron_10
 AscNumber['1002'] = EN.Bar_2
 
 def ReadAsc(fileName=None,string=None,out=None,**kwargs):
+    """Function API for reading an ASC result file
+
+    Parameters
+    ----------
+    fileName : str, optional
+        name of the file to be read, by default None
+    string : str, optional
+        data to be read as a string instead of a file, by default None
+    out : UnstructuredMesh, optional
+        output unstructured mesh object containing reading result, by default None
+
+    Returns
+    -------
+    UnstructuredMesh
+        output unstructured mesh object containing reading result
+    """
     reader = AscReader()
     reader.SetFileName(fileName)
     reader.SetStringToRead(string)
@@ -32,12 +48,30 @@ def ReadAsc(fileName=None,string=None,out=None,**kwargs):
 
 
 class AscReader(ReaderBase):
+    """ASC Reader class
+    """
     def __init__(self):
         super(AscReader,self).__init__()
         self.commentChar= "%"
         self.readFormat = 'r'
 
     def Read(self,fileName=None,string=None, out=None):
+        """Function that performs the reading of an ASC file
+
+        Parameters
+        ----------
+        fileName : str, optional
+            name of the file to be read, by default None
+        string : str, optional
+            data to be read as a string instead of a file, by default None
+        out : UnstructuredMesh, optional
+            output unstructured mesh object containing reading result, by default None
+
+        Returns
+        -------
+        UnstructuredMesh
+            output unstructured mesh object containing reading result
+        """
 
         if fileName is not None:
           self.SetFileName(fileName)
@@ -80,7 +114,7 @@ class AscReader(ReaderBase):
                 dim = int(l.split()[2])
                 res.nodes = np.empty((nbNodes,dim))
                 res.originalIDNodes= np.empty((nbNodes,),dtype=int)
-                cpt =0;
+                cpt =0
                 while(True):
                     l = self.ReadCleanLine()
                     if l.find("END_NODES") > -1:

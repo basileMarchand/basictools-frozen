@@ -4,6 +4,9 @@
 # file 'LICENSE.txt', which is part of this source code package.
 #
 
+"""Xdmf file writer
+"""
+
 import numpy as np
 import os
 
@@ -72,8 +75,36 @@ def WriteMeshToXdmf(filename,
                     IntegrationRule=None,
                     Binary= True,
                     HDF5 = True):
-    """
-    Functional version of the Xdmf Writer
+    """Function API for writing mesh in the xdmf format file.
+
+    Parameters
+    ----------
+    fileName : str
+        name of the file to be written
+    baseMeshObject : UnstructuredMesh
+        the mesh to be written
+    PointFields : list[np.ndarray], optional
+        fields to write defined at the vertices of the mesh, by default None
+    CellFields : list[np.ndarray], optional
+        fields to write defined at the elements of the mesh, by default None
+    GridFields : list[np.ndarray], optional
+        grid fields to write, by default None
+    IntegrationPointData : list[np.ndarray], optional
+        fields defined at the integration points, by default None
+    PointFieldsNames : list[str], optional
+        names of the fields to write defined at the vertices of the mesh, by default None
+    CellFieldsNames : list[str], optional
+        names of the fields to write defined at the elements of the mesh, by default None
+    GridFieldsNames : list[str], optional
+        names of the grid fields to write, by default None
+    IntegrationPointDataNames : list[str], optional
+        names of the fields defined at the integration points, by default None
+    IntegrationRule : dict[IntegrationRuleType], optional
+        integration rules associated to the integration point data, by default None
+    Binary : bool, optional
+        if True, file is written as binary, by default True
+    HDF5 : bool, optional
+        if True, file is written as hdf5 format, by default True
     """
 
     if PointFields is None:
@@ -105,39 +136,39 @@ def WriteMeshToXdmf(filename,
     writer.SetHdf5(HDF5)
     writer.Open()
     writer.Write(baseMeshObject,
-                 PointFields= PointFields,
-                 CellFields = CellFields,
-                 GridFields = GridFields,
-                 IntegrationPointData=IntegrationPointData,
-                 PointFieldsNames = PointFieldsNames,
-                 CellFieldsNames = CellFieldsNames,
-                 GridFieldsNames = GridFieldsNames,
-                 IntegrationPointDataNames=IntegrationPointDataNames,
-                 IntegrationRule=IntegrationRule,
-                 )
+                PointFields= PointFields,
+                CellFields = CellFields,
+                GridFields = GridFields,
+                IntegrationPointData=IntegrationPointData,
+                PointFieldsNames = PointFieldsNames,
+                CellFieldsNames = CellFieldsNames,
+                GridFieldsNames = GridFieldsNames,
+                IntegrationPointDataNames=IntegrationPointDataNames,
+                IntegrationRule=IntegrationRule,
+                )
     writer.Close()
 #
 
 class InMemoryFile():
-   """
-   Helper class to write the xmf part of the file into memory
-   """
-   def __init__(self,saveFilePointer):
-       self.data = ""
-       self.saveFilePointer = saveFilePointer
-   def write(self,data):
-       self.data += data
-   def tell(self):
-       return 0
-   def seek(self,pos):
-       return 0
-   def close(self):
-       pass
-   def flush():
-       pass
+    """
+    Helper class to write the xmf part of the file into memory
+    """
+    def __init__(self,saveFilePointer):
+        self.data = ""
+        self.saveFilePointer = saveFilePointer
+    def write(self,data):
+        self.data += data
+    def tell(self):
+        return 0
+    def seek(self,pos):
+        return 0
+    def close(self):
+        pass
+    def flush():
+        pass
 
 class BinaryStorage(object):
-
+    """Class to deal with binary storage"""
     def __init__(self,data=None, filePointer=None):
         self.filename = ""
         self.offset = 0
@@ -163,11 +194,11 @@ class BinaryStorage(object):
         self.filename = newPath + os.sep + os.path.basename(self.filename)
 
     def GetData(self):
-       f = open(self.filename,'rb')
-       f.seek(self.offset,0)
-       data = np.fromfile(f,self.type,self.vectorSize,sep="")
-       f.close()
-       return data
+        f = open(self.filename,'rb')
+        f.seek(self.offset,0)
+        data = np.fromfile(f,self.type,self.vectorSize,sep="")
+        f.close()
+        return data
 
     def UpdateHeavyStorage(self,data):
         if self.usedByNInstances > 1:
@@ -238,7 +269,14 @@ class XdmfWriter(WriterBase):
     def IsHdf5(self):
         return self.GetHdf5()
 
-    def SetBinary(self, val=True):
+    def SetBinary(self, val = True):
+        """Sets the binary status of the file to read
+
+        Parameters
+        ----------
+        val : bool, optional
+            if True, sets the file to read as binary, by default True
+        """
         super(XdmfWriter,self).SetBinary(val)
 
     def isBinary(self):
@@ -261,21 +299,27 @@ class XdmfWriter(WriterBase):
         res += '   FileName : '+ str(self.fileName) +'\n'
         res += '   isParafacFormat : '+ ('True' if self.__isParafacFormat else "False") +'\n'
         if self.isBinary():
-           res += '   Binary output Active \n'
-           if self.__binFileName is not None:
-               res += '   Binary FileName : '+ self.__binFileName +'\n'
+            res += '   Binary output Active \n'
+            if self.__binFileName is not None:
+                res += '   Binary FileName : '+ self.__binFileName +'\n'
         if self.IsHdf5():
-           res += '   Hdf5 output Active \n'
-           res += '   Hdf5 FileName : '+ self.__hdf5FileName +'\n'
+            res += '   Hdf5 output Active \n'
+            res += '   Hdf5 FileName : '+ self.__hdf5FileName +'\n'
         if self.IsTemporalOutput():
-           res += '   Temporal output Active \n'
-           res += '   TimeSteps : '+ str(self.timeSteps) + '\n'
+            res += '   Temporal output Active \n'
+            res += '   TimeSteps : '+ str(self.timeSteps) + '\n'
         if self.isOpen():
-           res += '   The File is Open!! \n'
+            res += '   The File is Open!! \n'
         return res
 
     def SetFileName(self, fileName ):
+        """Sets the fileName parameter of the class
 
+        Parameters
+        ----------
+        string : str
+            fileName to set
+        """
         if fileName is None :
             self.fileName = None
             self.__path = None
@@ -324,6 +368,13 @@ class XdmfWriter(WriterBase):
         self.__XmlSizeLimit= val
 
     def Open(self, filename = None):
+        """Open file for writing
+
+        Parameters
+        ----------
+        filename : str, optional
+            name of the file to write
+        """
 
         # we don't use the open from WriterBase because the set binary is used
         # for the .bin file and not for the .xdmf file
@@ -349,41 +400,41 @@ class XdmfWriter(WriterBase):
                 lines = self.filePointer.readlines()
                 for line in lines:
                     if line.find("<!--Temporal") != -1:
-                         l = line.find('pos="')
-                         r = line.find('" ',l+1)
-                         pos = int(line[l+5:r])
+                        l = line.find('pos="')
+                        r = line.find('" ',l+1)
+                        pos = int(line[l+5:r])
 
 
-                         #__binFileCounter
-                         l = line.find('ter="')
-                         r = line.find('" ',l+1)
-                         binFileCounter = int(line[l+5:r])
+                        #__binFileCounter
+                        l = line.find('ter="')
+                        r = line.find('" ',l+1)
+                        binFileCounter = int(line[l+5:r])
 
-                         self.NewBinaryFilename()
-                         self.__binaryFilePointer = open (self.__binFileName, "wb")
-                         self.__binaryCpt = 0
+                        self.NewBinaryFilename()
+                        self.__binaryFilePointer = open (self.__binFileName, "wb")
+                        self.__binaryCpt = 0
 
-                         #time
-                         l = line.find('ime="')
-                         r = line.find('" ',l+1)
-                         currentTime = float(line[l+5:r])
+                        #time
+                        l = line.find('ime="')
+                        r = line.find('" ',l+1)
+                        currentTime = float(line[l+5:r])
 
-                         self.filePointer.seek(pos)
-                         self._isOpen = True
-                         self.__binFileCounter = binFileCounter
-                         self.currentTime = currentTime
-                         return
+                        self.filePointer.seek(pos)
+                        self._isOpen = True
+                        self.__binFileCounter = binFileCounter
+                        self.currentTime = currentTime
+                        return
                 raise Exception("Unable Open file in append mode ")
             else:
-               mpi = MPI()
-               if mpi.IsParallel():
-                   self.__keepXmlFileInSaneState = False
-                   if mpi.rank > 0:
-                       self.filePointer = InMemoryFile(self.filePointer)
-                   else:
-                       self.filePointer = open(self.fileName, 'w')
-               else:
-                self.filePointer = open(self.fileName, 'w')
+                mpi = MPI()
+                if mpi.IsParallel():
+                    self.__keepXmlFileInSaneState = False
+                    if mpi.rank > 0:
+                        self.filePointer = InMemoryFile(self.filePointer)
+                    else:
+                        self.filePointer = open(self.fileName, 'w')
+                else:
+                    self.filePointer = open(self.fileName, 'w')
 
         except: # pragma: no cover
             print(TFormat.InRed("Error File Not Open"))
@@ -419,24 +470,26 @@ class XdmfWriter(WriterBase):
 
     def _OpenParallelWriter(self):
 
-         mpi = MPI()
-         if mpi.mpiOK:
-           self.__keepXmlFileInSaneState = False
-           if mpi.rank > 0:
-             self.filePointer = InMemoryFile(self.filePointer )
+        mpi = MPI()
+        if mpi.mpiOK:
+            self.__keepXmlFileInSaneState = False
+            if mpi.rank > 0:
+                self.filePointer = InMemoryFile(self.filePointer )
 
     def _CloseParallelWriter(self):
 
         mpi = MPI()
         if mpi.mpiOK and mpi.rank > 0:
-             mpi.comm.send(self.filePointer.data, dest=0)
-             self.filePointer = self.filePointer.saveFilePointer
+            mpi.comm.send(self.filePointer.data, dest=0)
+            self.filePointer = self.filePointer.saveFilePointer
         else:
-             for i in range(1,mpi.size):
-                 data = mpi.comm.recv( source=i)
-                 self.filePointer.write(data)
+            for i in range(1,mpi.size):
+                data = mpi.comm.recv( source=i)
+                self.filePointer.write(data)
 
     def Close(self):
+        """Closes writen file after writing operations are done
+        """
         if self.isOpen():
             self.WriteTail()
             self.filePointer.close()
@@ -448,6 +501,8 @@ class XdmfWriter(WriterBase):
             #print("File : '" + self.fileName + "' is close.")
 
     def WriteTail(self):
+        """Writes the end of the file
+        """
         if self.isOpen():
 
             filePosition  = self.filePointer.tell()
@@ -535,20 +590,20 @@ class XdmfWriter(WriterBase):
                 dataArray = np.empty((nbTotalEntries,),dtype=PBasicIndexType)
                 cpt =0
                 for elemType, data in baseMeshObject.elements.items():
-                   xdmfElemTypeNumber = XdmfNumber[elemType]
-                   for i in range(data.GetNumberOfElements() ):
-                       dataArray[cpt] = xdmfElemTypeNumber
-                       cpt += 1
-                       if xdmfElemTypeNumber == 0x2 :
-                           dataArray[cpt] = 2
-                           cpt += 1
-                       elif xdmfElemTypeNumber == 0x1 :
-                           dataArray[cpt] = 1
-                           cpt += 1
+                    xdmfElemTypeNumber = XdmfNumber[elemType]
+                    for i in range(data.GetNumberOfElements() ):
+                        dataArray[cpt] = xdmfElemTypeNumber
+                        cpt += 1
+                        if xdmfElemTypeNumber == 0x2 :
+                            dataArray[cpt] = 2
+                            cpt += 1
+                        elif xdmfElemTypeNumber == 0x1 :
+                            dataArray[cpt] = 1
+                            cpt += 1
 
-                       for j in range(data.GetNumberOfNodesPerElement()):
-                           dataArray[cpt] = data.connectivity[i,j]
-                           cpt += 1
+                        for j in range(data.GetNumberOfNodesPerElement()):
+                            dataArray[cpt] = data.connectivity[i,j]
+                            cpt += 1
 
                 self.__WriteDataItem(dataArray, name="Topo_U_"+str(name) )
             elif len(baseMeshObject.elements):
@@ -571,142 +626,143 @@ class XdmfWriter(WriterBase):
             raise Exception                                                    # pragma: no cover
 
     def __WriteAttribute(self,data,name,center,baseMeshObject):
-       data = data.view()
+        data = data.view()
 
-       shape = None
-       if center == "Node":
-           nbData = baseMeshObject.GetNumberOfNodes()
-       elif center == "Cell":
-           nbData = baseMeshObject.GetNumberOfElements()
-       elif center == "Grid":
-           nbData = 1
-       else:
-          raise Exception('Cant treat this type of field support' + center )    # pragma: no cover
+        shape = None
+        if center == "Node":
+            nbData = baseMeshObject.GetNumberOfNodes()
+        elif center == "Cell":
+            nbData = baseMeshObject.GetNumberOfElements()
+        elif center == "Grid":
+            nbData = 1
+        else:
+            raise Exception('Cant treat this type of field support' + center )    # pragma: no cover
 
-       if data.size == nbData:
-           arrayType = "Scalar"
-           #print(shape)
-           #print(data.shape)
-           if baseMeshObject.IsConstantRectilinear():
-             if center == "Node":
-                  shape = baseMeshObject.GetDimensions()
-             elif center == "Cell":
-                  shape = baseMeshObject.GetDimensions() -1
-             else:
-                  shape = [1]
+        if data.size == nbData:
+            arrayType = "Scalar"
+            #print(shape)
+            #print(data.shape)
+            if baseMeshObject.IsConstantRectilinear():
+                if center == "Node":
+                    shape = baseMeshObject.GetDimensions()
+                elif center == "Cell":
+                    shape = baseMeshObject.GetDimensions() -1
+                else:
+                    shape = [1]
 
-             if len(shape)>1 :
-               if len(data.shape) <= 2:
-                   data.shape = tuple(shape)
-                   data = data.T
-               else:
-                   data = data.T
+                if len(shape)>1 :
+                    if len(data.shape) <= 2:
+                        data.shape = tuple(shape)
+                        data = data.T
+                    else:
+                        data = data.T
 
 
-           if baseMeshObject.IsConstantRectilinear():
-             shape = np.array(shape)
-             if center == "Node":
-                  shape = shape.T
-             elif center == "Cell":
-                  shape = shape.T
+            if baseMeshObject.IsConstantRectilinear():
+                shape = np.array(shape)
+                if center == "Node":
+                    shape = shape.T
+                elif center == "Cell":
+                    shape = shape.T
 
-       elif data.size == nbData*3:
+        elif data.size == nbData*3:
 
-           arrayType = "Vector"
-           if baseMeshObject.IsConstantRectilinear() :
-             if center == "Node":
-                  shape = baseMeshObject.GetDimensions()
-             elif center == "Cell":
-                  shape = baseMeshObject.GetDimensions() - 1
-             else:
-                  shape = [1]
+            arrayType = "Vector"
+            if baseMeshObject.IsConstantRectilinear() :
+                if center == "Node":
+                    shape = baseMeshObject.GetDimensions()
+                elif center == "Cell":
+                    shape = baseMeshObject.GetDimensions() - 1
+                else:
+                    shape = [1]
 
-             if len(shape)>1:
-               if baseMeshObject.GetDimensionality() == 2:
-                   shape = tuple(shape) + (1,3,)
-               else:
-                  shape = tuple(shape) + (3,)
+                if len(shape)>1:
+                    if baseMeshObject.GetDimensionality() == 2:
+                        shape = tuple(shape) + (1,3,)
+                    else:
+                        shape = tuple(shape) + (3,)
 
-               if len(data.shape) <= 2:
-                  data.shape = shape
-               data = data.transpose(2,1,0,3)
+                    if len(data.shape) <= 2:
+                        data.shape = shape
+                    data = data.transpose(2,1,0,3)
 
-           if baseMeshObject.IsConstantRectilinear():
-             shape = np.array(shape)
-             if center == "Node":
-                  shape = shape[[2,1,0,3]]
-             elif center == "Cell":
-                  shape = shape[[2,1,0,3]]
+            if baseMeshObject.IsConstantRectilinear():
+                shape = np.array(shape)
+                if center == "Node":
+                    shape = shape[[2,1,0,3]]
+                elif center == "Cell":
+                    shape = shape[[2,1,0,3]]
 
-       elif data.size == nbData*6:
-           arrayType = "Vector"
-           if baseMeshObject.IsConstantRectilinear() :
-             if center == "Node":
-                  shape = baseMeshObject.GetDimensions()
-             elif center == "Cell":
-                  shape = baseMeshObject.GetDimensions() - 1
-             else:
-                  shape = [1]
+        elif data.size == nbData*6:
+            arrayType = "Vector"
+            if baseMeshObject.IsConstantRectilinear():
+                if center == "Node":
+                    shape = baseMeshObject.GetDimensions()
+                elif center == "Cell":
+                    shape = baseMeshObject.GetDimensions() - 1
+                else:
+                    shape = [1]
 
-       elif data.size == nbData*9:
+        elif data.size == nbData*9:
 
-           arrayType = "Vector"
-           if baseMeshObject.IsConstantRectilinear() :
-             if center == "Node":
-                  shape = baseMeshObject.GetDimensions()
-             elif center == "Cell":
-                  shape = baseMeshObject.GetDimensions() - 1
-             else:
-                  shape = [1]
+            arrayType = "Vector"
+            if baseMeshObject.IsConstantRectilinear() :
+                if center == "Node":
+                    shape = baseMeshObject.GetDimensions()
+                elif center == "Cell":
+                    shape = baseMeshObject.GetDimensions() - 1
+                else:
+                    shape = [1]
 
-       elif data.size == nbData*2:
-           if baseMeshObject.IsConstantRectilinear() :
-             if center == "Node":
-                  shape = baseMeshObject.GetDimensions()
-             elif center == "Cell":
-                  shape = baseMeshObject.GetDimensions() - 1
-             else:
-                  shape = [1]
+        elif data.size == nbData*2:
+            if baseMeshObject.IsConstantRectilinear() :
+                if center == "Node":
+                    shape = baseMeshObject.GetDimensions()
+                elif center == "Cell":
+                    shape = baseMeshObject.GetDimensions() - 1
+                else:
+                    shape = [1]
 
-           # add an extra zeros to the data and print it out as Vector 3
-           if baseMeshObject.GetDimensionality() == 2:
-                 shape = (data.size//2,1,2,)
-           else:
-                 shape = (data.size//2,2,)
+            # add an extra zeros to the data and print it out as Vector 3
+            if baseMeshObject.GetDimensionality() == 2:
+                    shape = (data.size//2,1,2,)
+            else:
+                    shape = (data.size//2,2,)
 
-           if len(data.shape) <= 2:
-               data.shape = shape
+            if len(data.shape) <= 2:
+                data.shape = shape
 
-           #data = data.transpose(1,0,2)
+            #data = data.transpose(1,0,2)
 
-           shape = list(data.shape)
-           shape [-1] = 3
-           shape = tuple(shape)
-           data1 = np.zeros(shape, dtype=data.dtype)
+            shape = list(data.shape)
+            shape [-1] = 3
+            shape = tuple(shape)
+            data1 = np.zeros(shape, dtype=data.dtype)
 
-           data1[...,0:2] = data
+            data1[...,0:2] = data
 
-           self.__WriteAttribute(data1.ravel(),name,center,baseMeshObject)
+            self.__WriteAttribute(data1.ravel(),name,center,baseMeshObject)
 
-           return
-       else:
-           print(TFormat.InRed("I don't kow how to treat fields '"+ str(name)+"' with " +str(data.size/nbData) +" components"))  # pragma: no cover
-           print(TFormat.InRed("Data has size : " + str(data.size) ))  # pragma: no cover
-           print(TFormat.InRed("But support has size : " + str(nbData) ))  # pragma: no cover
+            return
+        else:
+            print(TFormat.InRed("I don't kow how to treat fields '"+ str(name)+"' with " +str(data.size/nbData) +" components"))  # pragma: no cover
+            print(TFormat.InRed("Data has size : " + str(data.size) ))  # pragma: no cover
+            print(TFormat.InRed("But support has size : " + str(nbData) ))  # pragma: no cover
 
-           raise Exception                                                                                    # pragma: no cover
-       self.filePointer.write('    <Attribute Center="'+center+'" Name="'+name+'" Type="'+arrayType+'">\n')#
+            raise Exception                                                                                    # pragma: no cover
+        self.filePointer.write('    <Attribute Center="'+center+'" Name="'+name+'" Type="'+arrayType+'">\n')#
 
-       try:
-           self.__WriteDataItem(data.ravel(),shape,name=name)
-       except:
-           print("Error Writing heavy data of field: " + str(name))
-           raise
+        try:
+            self.__WriteDataItem(data.ravel(),shape,name=name)
+        except:
+            print("Error Writing heavy data of field: " + str(name))
+            raise
 
-       self.filePointer.write('    </Attribute>\n')
+        self.filePointer.write('    </Attribute>\n')
 
     def WriteIntegrationsPoints(self, allData):
-
+        """Writes integration points information to file
+        """
         for elemName, data in allData.items():
             points, weight = data
             npData = np.asarray(points,dtype=float).copy()
@@ -725,6 +781,8 @@ class XdmfWriter(WriterBase):
             self.filePointer.write('</Information> \n')#
 
     def WriteIntegrationsPointData(self, names, allData):
+        """Writes integration points data to file
+        """
         for i, name in enumerate(names):
             data = allData[i]
             self.filePointer.write('    <Information Name="IPF" Value="'+str(name)+'" > \n')#
@@ -736,201 +794,239 @@ class XdmfWriter(WriterBase):
         self.ddmCpt += 1
         if self.IsMultidomainOutput() :
             if self.IsParafacOutput():
-                 self.filePointer.write('</Grid> <!-- Parafac grid -->\n')
-                 self.filePointer.write('<Grid Name="Grid_P" GridType="Collection" CollectionType="None" >\n')
+                self.filePointer.write('</Grid> <!-- Parafac grid -->\n')
+                self.filePointer.write('<Grid Name="Grid_P" GridType="Collection" CollectionType="None" >\n')
         else:
             raise Exception("Cant make a new domain without a multi domain output")
 
-    def MakeStep(self,Time=None,TimeStep=None):
+    def MakeStep(self, Time = None, TimeStep = None):
+        """Increases time step in output files
 
+        Parameters
+        ----------
+        Time : float, optional
+            time value of the time step, by default None
+        TimeStep : int, optional
+            number of the time step, by default None
+        """
         if self.IsMultidomainOutput():
             self.filePointer.write('</Grid> <!-- collection grid -->\n')
             self.filePointer.write('<Grid Name="Collection" GridType="Collection" CollectionType="Spatial" >\n')
 
         dt = 1
         if Time is not None:
-           dt = Time - self.currentTime
+            dt = Time - self.currentTime
         elif TimeStep is not None:
-           dt = TimeStep
+            dt = TimeStep
 
         if self.IsTemporalOutput():
-           self.Step(dt)
+            self.Step(dt)
 
         if self.IsTemporalOutput() and self.__printTimeInsideEachGrid and (self.IsMultidomainOutput() == False) :
-             self.filePointer.write('    <Time Value="'+str(self.currentTime)+'" /> \n')
+            self.filePointer.write('    <Time Value="'+str(self.currentTime)+'" /> \n')
 
     def Write(self,baseMeshObject, PointFields = None, CellFields = None, GridFields= None, PointFieldsNames = None, CellFieldsNames= None, GridFieldsNames=None , Time= None, TimeStep = None,domainName=None, IntegrationRule=None, IntegrationPointData=None, IntegrationPointDataNames=None ):
+        """Write data to file in xdmf format
 
-         if (Time is not None or TimeStep is not None) and self.IsMultidomainOutput():
-             raise(Exception("set time using MakeStep, not the Write option") )
+        Parameters
+        ----------
+        baseMeshObject : UnstructuredMesh
+            the mesh to be written
+        PointFields : list[np.ndarray], optional
+            fields to write defined at the vertices of the mesh, by default None
+        CellFields : list[np.ndarray], optional
+            fields to write defined at the elements of the mesh, by default None
+        GridFields : list[np.ndarray], optional
+            grid fields to write, by default None
+        PointFieldsNames : list[str], optional
+            names of the fields to write defined at the vertices of the mesh, by default None
+        CellFieldsNames : list[str], optional
+            names of the fields to write defined at the elements of the mesh, by default None
+        GridFieldsNames : list[str], optional
+            names of the grid fields to write, by default None
+        Time : float, optional
+            time at which the data is read, by default None
+        TimeStep : int, optional
+            time index at which the data is read, by default None
+        domainName : str, optional
+            Not Used, by default None
+        IntegrationRule : dict[IntegrationRuleType], optional
+            integration rules associated to the integration point data, by default None
+        IntegrationPointData : list[np.ndarray], optional
+            fields defined at the integration points, by default None
+        IntegrationPointDataNames : list[str], optional
+            names of the fields defined at the integration points, by default None
+        """
+        if (Time is not None or TimeStep is not None) and self.IsMultidomainOutput():
+            raise(Exception("set time using MakeStep, not the Write option") )
 
-         if PointFields is None:
-             PointFields = []
+        if PointFields is None:
+            PointFields = []
 
-         if CellFields  is None:
+        if CellFields  is None:
             CellFields   = []
 
-         if GridFields is None:
+        if GridFields is None:
             GridFields  = []
 
-         if PointFieldsNames is None:
+        if PointFieldsNames is None:
             PointFieldsNames  = []
 
-         if CellFieldsNames is None:
+        if CellFieldsNames is None:
             CellFieldsNames  = []
 
-         if GridFieldsNames is None:
+        if GridFieldsNames is None:
             GridFieldsNames  = []
 
-         if IntegrationRule is None:
+        if IntegrationRule is None:
             IntegrationRule  = {}
 
-         if IntegrationPointData is None:
+        if IntegrationPointData is None:
             IntegrationPointData  = []
 
-         if IntegrationPointDataNames is None:
+        if IntegrationPointDataNames is None:
             IntegrationPointDataNames  = []
 
-         self.pointFieldsStorage = {}
-         self.cellFieldsStorage = {}
-         self.gridFieldsStorage = {}
-         self.ipStorage = {}
+        self.pointFieldsStorage = {}
+        self.cellFieldsStorage = {}
+        self.gridFieldsStorage = {}
+        self.ipStorage = {}
 
-         if not self.isOpen() :
+        if not self.isOpen() :
             if self.automaticOpen:
                 self.Open()
             else:
                 print(TFormat.InRed("Please Open The writer First!!!"))
                 raise Exception
 
-         if not self.IsMultidomainOutput():
-             dt = 1
-             if Time is not None:
-                 dt = Time - self.currentTime
-             elif TimeStep is not None:
-                 dt = TimeStep
-             if self.IsTemporalOutput():
-                 self.Step(dt)
+        if not self.IsMultidomainOutput():
+            dt = 1
+            if Time is not None:
+                dt = Time - self.currentTime
+            elif TimeStep is not None:
+                dt = TimeStep
+            if self.IsTemporalOutput():
+                self.Step(dt)
 
-         if self.IsParafacOutput ():
-             suffix = "P" + str(self.parafacCpt)
-             self.parafacCpt += 1
-         else:
-             suffix = str(len(self.timeSteps))
+        if self.IsParafacOutput ():
+            suffix = "P" + str(self.parafacCpt)
+            self.parafacCpt += 1
+        else:
+            suffix = str(len(self.timeSteps))
 
-         if self.IsMultidomainOutput():
-             if MPI.IsParallel():
-               suffix += "_D" + str(MPI.Rank())
-             else:
-               suffix += "_D" + str(self.ddmCpt)
+        if self.IsMultidomainOutput():
+            if MPI.IsParallel():
+                suffix += "_D" + str(MPI.Rank())
+            else:
+                suffix += "_D" + str(self.ddmCpt)
 
-         #if we have a constantRectilinear mesh with more than only "bulk"
-         # elements, we add a collection to add all the rest of the elements
+        #if we have a constantRectilinear mesh with more than only "bulk"
+        # elements, we add a collection to add all the rest of the elements
 
-         if baseMeshObject.IsConstantRectilinear() and len(baseMeshObject.elements) > 1:
-             self.filePointer.write('<Grid Name="Grid_S'+suffix+'" GridType="Collection" CollectionType="Spatial" >\n')
-             if self.IsTemporalOutput() and self.__printTimeInsideEachGrid and (self.IsMultidomainOutput() == False) :
+        if baseMeshObject.IsConstantRectilinear() and len(baseMeshObject.elements) > 1:
+            self.filePointer.write('<Grid Name="Grid_S'+suffix+'" GridType="Collection" CollectionType="Spatial" >\n')
+            if self.IsTemporalOutput() and self.__printTimeInsideEachGrid and (self.IsMultidomainOutput() == False) :
                 self.filePointer.write('    <Time Value="'+str(self.currentTime)+'" /> \n')
-             self.filePointer.write('    <Grid Name="Bulk">\n')
-         else:
-             self.filePointer.write('    <Grid Name="Grid_'+suffix+'">\n')
-             if self.IsTemporalOutput() and self.__printTimeInsideEachGrid and (self.IsMultidomainOutput() == False) :
-                 self.filePointer.write('    <Time Value="'+str(self.currentTime)+'" /> \n')
+            self.filePointer.write('    <Grid Name="Bulk">\n')
+        else:
+            self.filePointer.write('    <Grid Name="Grid_'+suffix+'">\n')
+            if self.IsTemporalOutput() and self.__printTimeInsideEachGrid and (self.IsMultidomainOutput() == False) :
+                self.filePointer.write('    <Time Value="'+str(self.currentTime)+'" /> \n')
 
-         self.__WriteGeoAndTopo(baseMeshObject,name=suffix)
-         self.__WriteNodesTagsElementsTags(baseMeshObject,PointFieldsNames,CellFieldsNames)
-         self.__WriteNodesFieldsElementsFieldsGridFields(baseMeshObject,
-                                                   PointFieldsNames,PointFields,
-                                                   CellFieldsNames,CellFields,
-                                                   GridFieldsNames,GridFields)
+        self.__WriteGeoAndTopo(baseMeshObject,name=suffix)
+        self.__WriteNodesTagsElementsTags(baseMeshObject,PointFieldsNames,CellFieldsNames)
+        self.__WriteNodesFieldsElementsFieldsGridFields(baseMeshObject,
+                                                PointFieldsNames,PointFields,
+                                                CellFieldsNames,CellFields,
+                                                GridFieldsNames,GridFields)
 
-         self.WriteIntegrationsPoints(IntegrationRule)
-         self.WriteIntegrationsPointData(IntegrationPointDataNames,IntegrationPointData)
+        self.WriteIntegrationsPoints(IntegrationRule)
+        self.WriteIntegrationsPointData(IntegrationPointDataNames,IntegrationPointData)
 
-         if baseMeshObject.IsConstantRectilinear() and len(baseMeshObject.elements) > 1:
-             self.filePointer.write('    </Grid>\n')
-             from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
-             tempMesh = UnstructuredMesh()
-             tempMesh.nodes = baseMeshObject.nodes
-             tempMesh.originalIDNodes = baseMeshObject.originalIDNodes
-             for name, data in baseMeshObject.elements.items():
-                 if data.mutable :
-                     tempMesh.elements[name] =  data
-             self.filePointer.write('    <Grid Name="Sets">\n')
-             self.__WriteGeoAndTopo(tempMesh)
-             self.__WriteNodesTagsElementsTags(tempMesh,[],[])
-             self.filePointer.write('    </Grid>\n')
+        if baseMeshObject.IsConstantRectilinear() and len(baseMeshObject.elements) > 1:
+            self.filePointer.write('    </Grid>\n')
+            from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
+            tempMesh = UnstructuredMesh()
+            tempMesh.nodes = baseMeshObject.nodes
+            tempMesh.originalIDNodes = baseMeshObject.originalIDNodes
+            for name, data in baseMeshObject.elements.items():
+                if data.mutable :
+                    tempMesh.elements[name] =  data
+            self.filePointer.write('    <Grid Name="Sets">\n')
+            self.__WriteGeoAndTopo(tempMesh)
+            self.__WriteNodesTagsElementsTags(tempMesh,[],[])
+            self.filePointer.write('    </Grid>\n')
 
-         self.filePointer.write('    </Grid>\n')
+        self.filePointer.write('    </Grid>\n')
 
-         if(self.__keepXmlFileInSaneState):
-             self.WriteTail()
+        if(self.__keepXmlFileInSaneState):
+            self.WriteTail()
 
-         self.filePointer.flush()
+        self.filePointer.flush()
 
-         if self.isBinary() :# pragma: no cover
-           self.__binaryFilePointer.flush()
+        if self.isBinary() :# pragma: no cover
+            self.__binaryFilePointer.flush()
     def __WriteNodesFieldsElementsFieldsGridFields(self,baseMeshObject,
-                                                   PointFieldsNames,PointFields,
-                                                   CellFieldsNames,CellFields,
-                                                   GridFieldsNames,GridFields):
+                                                PointFieldsNames,PointFields,
+                                                CellFieldsNames,CellFields,
+                                                GridFieldsNames,GridFields):
 
-         for i in range(len(PointFields)):
-           name = 'PField'+str(i)
-           if len(PointFields)  == len(PointFieldsNames):
-               name = PointFieldsNames[i]
-           self.pointFieldsStorage[name] = self.__WriteAttribute(np.asarray(PointFields[i]), name, "Node",baseMeshObject)
+        for i in range(len(PointFields)):
+            name = 'PField'+str(i)
+            if len(PointFields)  == len(PointFieldsNames):
+                name = PointFieldsNames[i]
+            self.pointFieldsStorage[name] = self.__WriteAttribute(np.asarray(PointFields[i]), name, "Node",baseMeshObject)
 
-         for i in range(len(CellFields)):
-           name = 'CField'+str(i)
-           if len(CellFields) == len(CellFieldsNames):
-               name = CellFieldsNames[i]
+        for i in range(len(CellFields)):
+            name = 'CField'+str(i)
+            if len(CellFields) == len(CellFieldsNames):
+                name = CellFieldsNames[i]
 
-           self.cellFieldsStorage[name] = self.__WriteAttribute(np.asarray(CellFields[i]), name, "Cell",baseMeshObject)
+            self.cellFieldsStorage[name] = self.__WriteAttribute(np.asarray(CellFields[i]), name, "Cell",baseMeshObject)
 
-         for i in range(len(GridFields)):
+        for i in range(len(GridFields)):
 
-           name = 'GField'+str(i)
-           if len(GridFields) == len(GridFieldsNames):
-               name = GridFieldsNames[i]
+            name = 'GField'+str(i)
+            if len(GridFields) == len(GridFieldsNames):
+                name = GridFieldsNames[i]
 
-           self.gridFieldsStorage[name] = self.__WriteAttribute(np.asarray(GridFields[i]), name, "Grid",baseMeshObject)
+            self.gridFieldsStorage[name] = self.__WriteAttribute(np.asarray(GridFields[i]), name, "Grid",baseMeshObject)
 
     def __WriteNodesTagsElementsTags(self,baseMeshObject,PointFieldsNames,CellFieldsNames):
-         for tag in baseMeshObject.nodesTags:
-             if tag.name in PointFieldsNames:
-                 name = "Tag_" + tag.name
-             else:
-                 name = tag.name
+        for tag in baseMeshObject.nodesTags:
+            if tag.name in PointFieldsNames:
+                name = "Tag_" + tag.name
+            else:
+                name = tag.name
 
-             data = np.zeros((baseMeshObject.GetNumberOfNodes(),1),dtype=np.int8)
-             data[baseMeshObject.nodesTags[tag.name].GetIds()] = 1
-             self.__WriteAttribute(np.asarray(data), name, "Node",baseMeshObject)
+            data = np.zeros((baseMeshObject.GetNumberOfNodes(),1),dtype=np.int8)
+            data[baseMeshObject.nodesTags[tag.name].GetIds()] = 1
+            self.__WriteAttribute(np.asarray(data), name, "Node",baseMeshObject)
 
-         #Cell Tags
-         baseMeshObject.PrepareForOutput()
+        #Cell Tags
+        baseMeshObject.PrepareForOutput()
 
-         if baseMeshObject.IsConstantRectilinear():
-             cellTags = baseMeshObject.GetNamesOfElemTagsBulk()
-             GetElementsInTag = baseMeshObject.GetElementsInTagBulk
-         else:
-             cellTags = baseMeshObject.GetNamesOfElemTags()
-             GetElementsInTag = baseMeshObject.GetElementsInTag
+        if baseMeshObject.IsConstantRectilinear():
+            cellTags = baseMeshObject.GetNamesOfElemTagsBulk()
+            GetElementsInTag = baseMeshObject.GetElementsInTagBulk
+        else:
+            cellTags = baseMeshObject.GetNamesOfElemTags()
+            GetElementsInTag = baseMeshObject.GetElementsInTag
 
-         for tagname in cellTags:
-             if tagname in CellFieldsNames:
-                 name = "Tag_" + tagname
-             else:
-                 name = tagname
-             data = GetElementsInTag(tagname)
-             res = np.zeros((baseMeshObject.GetNumberOfElements(),1),dtype=np.int8)
-             res[data] = 1
+        for tagname in cellTags:
+            if tagname in CellFieldsNames:
+                name = "Tag_" + tagname
+            else:
+                name = tagname
+            data = GetElementsInTag(tagname)
+            res = np.zeros((baseMeshObject.GetNumberOfElements(),1),dtype=np.int8)
+            res[data] = 1
 
-             self.__WriteAttribute(np.asarray(res), name, "Cell", baseMeshObject)
+            self.__WriteAttribute(np.asarray(res), name, "Cell", baseMeshObject)
 
     def __WriteTime(self):
         """ this function is called by the WriteTail, this function must NOT change
-         the state of the instance, also no writing to binary neither hdf5 files """
+        the state of the instance, also no writing to binary neither hdf5 files """
         if self.isOpen() and self.__printTimeInsideEachGrid == False:
             #self.filePointer.write('<Time TimeType="List">\n')
             #self.__WriteDataItem(self.timeSteps)
@@ -1059,7 +1155,7 @@ from BasicTools.IO.IOFactory import RegisterWriterClass
 RegisterWriterClass(".xdmf",XdmfWriter)
 RegisterWriterClass(".xmf",XdmfWriter)
 
-def WriteTest(tempdir,Temporal, Binary, Hdf5 ):
+def WriteTest(tempdir, Temporal, Binary, Hdf5 ):
 
     from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearMesh
 
@@ -1087,7 +1183,7 @@ def WriteTest(tempdir,Temporal, Binary, Hdf5 ):
     writer.Write(myMesh,GridFields=[0, 1], GridFieldsNames=['K','P'], TimeStep = 1)
     writer.Close()
 
-def WriteTestAppend(tempdir,Temporal, Binary):
+def WriteTestAppend(tempdir, Temporal, Binary):
 
     from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearMesh
 
@@ -1307,9 +1403,9 @@ def CheckIntegrity(GUI=False):
 
     IntegrationPointAllData = [IntegrationPointData]
     writer.Write(mesh2DParameters,
-                 IntegrationRule=LagrangeIsoParam,
-                 IntegrationPointData=IntegrationPointAllData,
-                 IntegrationPointDataNames=["IPId_0"])
+                IntegrationRule=LagrangeIsoParam,
+                IntegrationPointData=IntegrationPointAllData,
+                IntegrationPointDataNames=["IPId_0"])
 
     print(IntegrationPointAllData)
     writer.ipStorage["IPId_0"].UpdateHeavyStorage(IntegrationPointData+10)
@@ -1429,4 +1525,3 @@ if __name__ == '__main__':
     #from BasicTools.Helpers.Tests import TestTempDir
     #TestTempDir.SetTempPath("/tmp/BasicTools_Test_Directory__is42mzi_safe_to_delete/")
     print(CheckIntegrity(GUI=False)) # pragma: no cover
-

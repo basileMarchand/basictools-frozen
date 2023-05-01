@@ -4,6 +4,8 @@
 # file 'LICENSE.txt', which is part of this source code package.
 #
 
+"""Odb file writer (Abaqus result file)
+"""
 
 import numpy as np
 
@@ -37,11 +39,11 @@ def WriteSection(odb, section):
 
     ##Creating section for odb
     if  section is None:
-         sectionName = 'Homogeneous Solid Section'
-         mySection = odb.HomogeneousSolidSection( name = sectionName,
-         material = 'Elastic Material',
-         thickness = 1.0)
-         pCat = odb.SectionCategory(name='odbSection',description = 'Section for odb')
+        sectionName = 'Homogeneous Solid Section'
+        mySection = odb.HomogeneousSolidSection( name = sectionName,
+        material = 'Elastic Material',
+        thickness = 1.0)
+        pCat = odb.SectionCategory(name='odbSection',description = 'Section for odb')
 
     else:
         raise
@@ -335,11 +337,11 @@ def CheckIntegrity():
 
     tempdir = "./"
     try:
-       WriteOdb(tempdir+"Test_OdbWriter.odb",mymesh)
+        WriteOdb(tempdir+"Test_OdbWriter.odb",mymesh)
     except RuntimeError as e:
-       #raise
-       import sys
-       raise UserWarning(str(e),sys.exc_info()[2])
+        #raise
+        import sys
+        raise UserWarning(str(e),sys.exc_info()[2])
 
 
     return "ok"

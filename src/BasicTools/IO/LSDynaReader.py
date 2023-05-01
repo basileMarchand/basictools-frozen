@@ -4,7 +4,7 @@
 # file 'LICENSE.txt', which is part of this source code package.
 #
 
-""" LSDynaa file reader.
+""" LSDyna file reader.
     Documentation of the format:
     http://ftp.lstc.com/anonymous/outgoing/jday/manuals/DRAFT_Vol_I.pdf
 """
@@ -15,14 +15,30 @@ from BasicTools.IO.ReaderBase import ReaderBase
 from BasicTools.NumpyDefs import PBasicIndexType, PBasicFloatType
 
 
-
 LSDynaNumber = {
-  4:'tet4' # 4-point tetraedron
+    4:'tet4' # 4-point tetraedron
 }
 
 
-
 def ReadLSDyna(fileName=None,string=None,out=None,printNotRead=True):
+    """Function API for reading a LSDyna mesh file
+
+    Parameters
+    ----------
+    fileName : str, optional
+        name of the file to be read, by default None
+    string : str, optional
+        data to be read as a string instead of a file, by default None
+    out : UnstructuredMesh, optional
+        output unstructured mesh object containing reading result, by default None
+    printNotRead : bool, optional
+        if True, prints in console the lines dot understood by the reader, by default True
+
+    Returns
+    -------
+    UnstructuredMesh
+        output unstructured mesh object containing reading result
+    """
     reader = LSDynaReader()
     reader.SetFileName(fileName)
     reader.SetStringToRead(string)
@@ -36,7 +52,7 @@ def LineToListNoQuote(text):
 
 def ListToNumber(list):
     """hack where the element type is defined by inspecting the number of identical
-       columns at the end of the connectivity list.
+    columns at the end of the connectivity list.
     """
     l = len(list)
     val = list[-1]
@@ -46,131 +62,150 @@ def ListToNumber(list):
     return i+2
 
 class LSDynaReader(ReaderBase):
-  def __init__(self):
+    """LSDyna Reader class
+    """
+    def __init__(self):
         super(LSDynaReader,self).__init__()
         self.commentChar= "$"
         self.readFormat = 'r'
 
-  def Read(self, fileName=None,string=None,out=None,printNotRead=True):
-    import BasicTools.Containers.UnstructuredMesh as UM
-    if fileName is not None:
-      self.SetFileName(fileName)
+    def Read(self, fileName=None,string=None,out=None,printNotRead=True):
+        """Function that performs the reading of a LSDyna mesh file
 
-    if string is not None:
-      self.SetStringToRead(string)
+        Parameters
+        ----------
+        fileName : str, optional
+            name of the file to be read, by default None
+        string : str, optional
+            data to be read as a string instead of a file, by default None
+        out : UnstructuredMesh, optional
+            output unstructured mesh object containing reading result, by default None
+        printNotRead : bool, optional
+            if True, prints in console the lines dot understood by the reader, by default True
 
-    self.StartReading()
+        Returns
+        -------
+        UnstructuredMesh
+            output unstructured mesh object containing reading result
+        """
+        import BasicTools.Containers.UnstructuredMesh as UM
+        if fileName is not None:
+            self.SetFileName(fileName)
 
-    if out is None:
-        res = UM.UnstructuredMesh()
-    else:
-        res = out
+        if string is not None:
+            self.SetStringToRead(string)
 
-    filetointernalid = {}
+        self.StartReading()
 
-    oidToElementContainer = {}
-    oidToLocalElementNumber = {}
-    l = self.ReadCleanLine()
+        if out is None:
+            res = UM.UnstructuredMesh()
+        else:
+            res = out
 
-    originalIds = []
-    nodes= []
+        filetointernalid = {}
 
-    nodeSetCounter = 0
+        oidToElementContainer = {}
+        oidToLocalElementNumber = {}
+        l = self.ReadCleanLine()
 
-    while(True):
+        originalIds = []
+        nodes= []
 
-      #premature EOF
-      if l is None:
-          print("ERROR premature EOF: please check the integrity of your .k file") # pragma: no cover
-          break # pragma: no cover
-      #if len(l) == 0: l = string.readline().strip('\n').lstrip().rstrip(); continue
+        nodeSetCounter = 0
 
-      if l.find("*ELEMENT")>-1:
         while(True):
-          l  = self.ReadCleanLine()
-          if l.find("*") > -1:
-               break
-          s = LineToListNoQuote(l)
-          n = ListToNumber(s[2:])
-          try:
-              nametype = LSDynaNumber[n]
-          except KeyError:
-              raise("Elements with "+str(n)+"vertices not compatible with reader")
-          conn = [x for x in  map(int,s[2:6])]
-          elements = res.GetElementsOfType(nametype)
-          oid = int(s[0])
-          cpt = elements.AddNewElement(conn,oid)
-          oidToElementContainer[oid] = elements
-          oidToLocalElementNumber[oid] = cpt
 
-          elTag = "canonical:"+s[1]
-          elements.tags.CreateTag(elTag,False).AddToTag(cpt-1)
-        continue
+            #premature EOF
+            if l is None:
+                print("ERROR premature EOF: please check the integrity of your .k file") # pragma: no cover
+                break # pragma: no cover
+            #if len(l) == 0: l = string.readline().strip('\n').lstrip().rstrip(); continue
 
-      if l.find("*NODE")>-1:
-        dim = 3
-        s = None
-        cpt = 0
-        while(True):
-            l  = self.ReadCleanLine()
-            if l.find("*") > -1:
+            if l.find("*ELEMENT")>-1:
+                while(True):
+                    l  = self.ReadCleanLine()
+                    if l.find("*") > -1:
+                        break
+                    s = LineToListNoQuote(l)
+                    n = ListToNumber(s[2:])
+                    try:
+                        nametype = LSDynaNumber[n]
+                    except KeyError:
+                        raise("Elements with "+str(n)+"vertices not compatible with reader")
+                    conn = [x for x in  map(int,s[2:6])]
+                    elements = res.GetElementsOfType(nametype)
+                    oid = int(s[0])
+                    cpt = elements.AddNewElement(conn,oid)
+                    oidToElementContainer[oid] = elements
+                    oidToLocalElementNumber[oid] = cpt
+
+                    elTag = "canonical:"+s[1]
+                    elements.tags.CreateTag(elTag,False).AddToTag(cpt-1)
+                continue
+
+            if l.find("*NODE")>-1:
+                dim = 3
+                s = None
+                cpt = 0
+                while(True):
+                    l  = self.ReadCleanLine()
+                    if l.find("*") > -1:
+                        break
+                    s = LineToListNoQuote(l)
+                    oid = int(s[0])
+                    filetointernalid[oid] = cpt
+                    originalIds.append(oid)
+                    nodes.append(list(map(float,s[1:dim+1])))
+                    cpt += 1
+                continue
+
+            if l.find("*SET_NODE_LIST")>-1:
+                tag = res.GetNodalTag(str(nodeSetCounter))
+                nodeSetCounter += 1
+                self.ReadCleanLine()
+                while(True):
+                    l  = self.ReadCleanLine()
+                    if l.find("*") > -1:
+                        break
+                    s = np.array(l.split(), dtype=int)
+                    for oid in s[s>0]:
+                        tag.AddToTag(int(oid))
+                continue
+
+            if l.find("*END")>-1:
+                self.PrintDebug("End file")
                 break
-            s = LineToListNoQuote(l)
-            oid = int(s[0])
-            filetointernalid[oid] = cpt
-            originalIds.append(oid)
-            nodes.append(list(map(float,s[1:dim+1])))
-            cpt += 1
-        continue
 
-      if l.find("*SET_NODE_LIST")>-1:
-        tag = res.GetNodalTag(str(nodeSetCounter))
-        nodeSetCounter += 1
-        self.ReadCleanLine()
-        while(True):
-          l  = self.ReadCleanLine()
-          if l.find("*") > -1:
-              break
-          s = np.array(l.split(), dtype=int)
-          for oid in s[s>0]:
-              tag.AddToTag(int(oid))
-        continue
+            # case not treated
+            if printNotRead == True:
+                self.PrintDebug("line starting with <<"+l[:20]+">> not considered in the reader")
+            l = self.ReadCleanLine()
+            continue
 
-      if l.find("*END")>-1:
-        self.PrintDebug("End file")
-        break
+        self.EndReading()
 
-      # case not treated
-      if printNotRead == True:
-        self.PrintDebug("line starting with <<"+l[:20]+">> not considered in the reader")
-      l = self.ReadCleanLine()
-      continue
+        res.nodes = np.array(nodes,dtype=PBasicFloatType)
+        res.nodes.shape = (cpt,dim)
+        res.originalIDNodes = np.array(originalIds,dtype=PBasicIndexType)
 
-    self.EndReading()
+        updateIDsFunc = lambda x: filetointernalid[x]
 
-    res.nodes = np.array(nodes,dtype=PBasicFloatType)
-    res.nodes.shape = (cpt,dim)
-    res.originalIDNodes = np.array(originalIds,dtype=PBasicIndexType)
-
-    updateIDsFunc = lambda x: filetointernalid[x]
-
-    for tag in res.nodesTags:
-      tag.SetIds(np.vectorize(updateIDsFunc)(tag.GetIds()))
+        for tag in res.nodesTags:
+            tag.SetIds(np.vectorize(updateIDsFunc)(tag.GetIds()))
 
 
-    for _, data in res.elements.items():
-      data.tighten()
-      data.connectivity = np.vectorize(updateIDsFunc)(data.connectivity)
+        for _, data in res.elements.items():
+            data.tighten()
+            data.connectivity = np.vectorize(updateIDsFunc)(data.connectivity)
 
-    res.PrepareForOutput()
+        res.PrepareForOutput()
 
-    self.output = res
-    return res
+        self.output = res
+        return res
 
 
 from BasicTools.IO.IOFactory import RegisterReaderClass
 RegisterReaderClass(".k",LSDynaReader)
-
 
 def CheckIntegrity():
 

@@ -7,8 +7,8 @@ import os
 import numpy as np
 from BasicTools.NumpyDefs import PBasicFloatType
 
-"""incomplete reader; only field are read at given time step
-    no mesh reader
+"""OpenFoam file reader.
+Partial reader; only field are read at given time step, no mesh reader
 """
 
 

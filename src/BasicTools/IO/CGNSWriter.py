@@ -4,8 +4,7 @@
 # file 'LICENSE.txt', which is part of this source code package.
 #
 
-""" CGNS mesh file writer
-
+"""CGNS file writer
 """
 import os
 import numpy as np
@@ -20,7 +19,7 @@ except:
     cgnsLoaded = False
 
 class CGNSWriter(WriterBase):
-    """Class to writes a CGNS File on disk
+    """Class to writes a CGNS file on disk
     """
     def __init__(self):
         super(CGNSWriter,self).__init__()
@@ -32,12 +31,12 @@ class CGNSWriter(WriterBase):
         return res
 
     def Write(self, mesh, fileName, outpuPyTree = None, baseNumberOrName = 0, zoneNumberOrName = 0):
-        """Class to writes a CGNS File on disk
+        """Function to writes a CGNS File on disk
 
         Parameters
         ----------
         mesh : UnstructuredMesh
-            unstructuredMesh to be converted in cgns and written on disk
+            support of the data to be written
         fileName : str
             filename of the file to be read
         outpuPyTree : list

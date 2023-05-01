@@ -4,6 +4,9 @@
 # file 'LICENSE.txt', which is part of this source code package.
 #
 
+"""Base reader object from which all the readers of BasicTools inherit
+"""
+
 import os
 import sys
 import struct
@@ -14,7 +17,7 @@ import numpy as np
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 
 class ReaderBase(BaseOutputObject):
-
+    """ ReaderBase class"""
     def __init__(self,fileName = None)    :
         super(ReaderBase,self).__init__()
         self.fileName = None
@@ -35,7 +38,14 @@ class ReaderBase(BaseOutputObject):
 
         self.SetFileName(fileName)
 
-    def SetBinary(self,binary=True):
+    def SetBinary(self, binary = True):
+        """Sets the binary status of the file to read
+
+        Parameters
+        ----------
+        binary : bool, optional
+            if True, sets the file to read as binary, by default True
+        """
         self.binary = binary
         if binary:
             if self.readFormat.find("b") >= 0:
@@ -47,7 +57,6 @@ class ReaderBase(BaseOutputObject):
 
 
     def StartReading(self):
-
         if not(self.fileName is None):
             if self.readFormat.find('b') > -1 :
                 self.filePointer = open(self.fileName, self.readFormat)
@@ -90,19 +99,22 @@ class ReaderBase(BaseOutputObject):
         else:
             raise ('Need a file or a string to read')
 
-
-
-
         self.lineCounter = 0
 
     def GetFilePointer(self):
-         return self.filePointer
+        return self.filePointer
 
     def EndReading(self):
         self.filePointer.close()
 
-    def SetFileName(self,fileName):
+    def SetFileName(self, fileName):
+        """Sets the name of file to read
 
+        Parameters
+        ----------
+        fileName : str
+            file name to set
+        """
         if  not(fileName is None) and len(fileName) >= 4 and fileName[0:4] == "PIPE" :
             self.SetReadFromPipe()
         else:
@@ -116,6 +128,13 @@ class ReaderBase(BaseOutputObject):
                 self.pipe = False
 
     def SetStringToRead(self,string):
+        """Sets data to be read as a string instead of a file
+
+        Parameters
+        ----------
+        string : str
+            data to be read
+        """
         self.string = string
         if string is not None:
             self.fileName = None
@@ -180,19 +199,19 @@ class ReaderBase(BaseOutputObject):
 
         res = self.filePointer.read(cpt)
         if withError and len(res) == 0:
-           raise EOFError("Problem reading file :" +str(self.fileName) + " EOF")
+            raise EOFError("Problem reading file :" +str(self.fileName) + " EOF")
         else:
-           return res
+            return res
 
     def readInt32(self):
-       rawdata = self.rawread(4,withError=True)
-       data = struct.unpack("i", rawdata)[0]
-       return data
+        rawdata = self.rawread(4,withError=True)
+        data = struct.unpack("i", rawdata)[0]
+        return data
 
     def readInt64(self):
-       rawdata = self.rawread(8,withError=True)
-       data = struct.unpack("q", rawdata)[0]
-       return data
+        rawdata = self.rawread(8,withError=True)
+        data = struct.unpack("q", rawdata)[0]
+        return data
 
     def readData(self,cpt,datatype):
         try:

@@ -4,8 +4,8 @@
 # file 'LICENSE.txt', which is part of this source code package.
 #
 
-
-import BasicTools.Containers.ElementNames as ElementNames
+"""Universal file reader
+"""
 
 def InitAllReaders():
     from BasicTools.IO.IOFactory import InitAllReaders as IAR

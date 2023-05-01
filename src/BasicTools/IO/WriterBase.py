@@ -5,9 +5,14 @@
 #
 
 
+"""Base writer object from which all the writer of BasicTools inherit
+"""
+
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 from BasicTools.Helpers.TextFormatHelper import TFormat as TFormat
+
 class WriterBase(BaseOutputObject):
+    """ WriterBase class"""
     def __init__(self, fileName = None):
         super(WriterBase,self).__init__()
         self.fileName = None;
@@ -63,6 +68,13 @@ class WriterBase(BaseOutputObject):
         return self.__isMultidomainOutput
 
     def SetBinary(self, val = True):
+        """Sets the binary status of the file to read
+
+        Parameters
+        ----------
+        val : bool, optional
+            if True, sets the file to read as binary, by default True
+        """
         if self._isOpen :
             print(TFormat.InRed("Please SetBinary before opening"))
             raise Exception("Please SetBinary before opening")
@@ -79,7 +91,14 @@ class WriterBase(BaseOutputObject):
         return self._isOpen
 
 
-    def SetFileName(self,fileName):
+    def SetFileName(self, fileName):
+        """Sets the name of file to read
+
+        Parameters
+        ----------
+        fileName : str
+            file name to set
+        """
         self.fileName = fileName;
 
     def Open(self, filename = None):

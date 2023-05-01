@@ -4,8 +4,7 @@
 # file 'LICENSE.txt', which is part of this source code package.
 #
 
-""" Geof file reader (Zset mesh file)
-
+"""Geof file reader (Zset mesh file)
 """
 import numpy as np
 
@@ -17,7 +16,30 @@ from BasicTools.IO.ZsetTools import GeofNumber, PermutationZSetToBasicTools, nbI
 
 from BasicTools.NumpyDefs import PBasicIndexType
 
+
 def ReadGeof(fileName=None,string=None,out=None,readElset=True,readFaset=True,printNotRead=True):
+    """Function API for reading a geof mesh file
+
+    Parameters
+    ----------
+    fileName : str, optional
+        name of the file to be read, by default None
+    string : str, optional
+        data to be read as a string instead of a file, by default None
+    out : UnstructuredMesh, optional
+        output unstructured mesh object containing reading result, by default None
+    readElset : bool, optional
+        if False, ignores the elset informations, by default True
+    readFaset : bool, optional
+        if False, ignores the faset informations, by default True
+    printNotRead : bool, optional
+        if True, prints in console the lines dot understood by the reader, by default True
+
+    Returns
+    -------
+    UnstructuredMesh
+        output unstructured mesh object containing reading result
+    """
     reader = GeofReader()
     reader.SetFileName(fileName)
     reader.SetStringToRead(string)
@@ -26,206 +48,251 @@ def ReadGeof(fileName=None,string=None,out=None,readElset=True,readFaset=True,pr
 
 
 def ReadMetaData(fileName=None,string=None):
+    """Function API for reading the metadata of a geof mesh file
+
+    Parameters
+    ----------
+    fileName : str, optional
+        name of the file to be read, by default None
+    string : str, optional
+        data to be read as a string instead of a file, by default None
+
+    Returns
+    -------
+    dict
+        global information on the mesh to read
+    """
     reader = GeofReader()
     reader.SetFileName(fileName)
     reader.SetStringToRead(string)
     return reader.ReadMetaData()
 
 class GeofReader(ReaderBase):
-  def __init__(self):
+    """Geof Reader class
+    """
+    def __init__(self):
         super(GeofReader,self).__init__()
         self.commentChar= "%"
         self.readFormat = 'r'
 
-  def ReadMetaData(self):
-    res = {}
-    self.StartReading()
-    nbIP  = 0
-    l = self.ReadCleanLine()
+    def ReadMetaData(self):
+        """Function that performs the reading of the metadata of a geof mesh file
 
-    while(True):
-      if l == None :
-          break
-      if l[0] != "*":
-          pass
-      elif l.find("**node")>-1:
-        l       = self.ReadCleanLine()
-        s       = l.split()
-        res["nbNodes"] = int(s[0])
-        res["dimensionality"] = int(s[1])
-      elif l.find("**element")>-1:
-        l  = self.ReadCleanLine()
-        res['nbElements'] = int(l.split()[0])
-        IPPerElement = np.empty(res['nbElements'],dtype= PBasicIndexType)
-        cpt = 0
-        while(True):
-          l  = self.ReadCleanLine()
-          if l.find("**") > -1:
-               break
-          s = l.split()
-          IPPerElement[cpt] = nbIntegrationsPoints[s[1]]
-          cpt +=1
-        continue
-      l = self.ReadCleanLine()
-
-    res['nbIntegrationPoints'] = np.sum(IPPerElement)
-    res['IPPerElement'] = IPPerElement
-    self.EndReading()
-
-    return res
-
-
-  def Read(self, fileName=None,string=None,out=None,readElset=True,readFaset=True,printNotRead=True):
-    import BasicTools.Containers.UnstructuredMesh as UM
-    if fileName is not None:
-      self.SetFileName(fileName)
-
-    if string is not None:
-      self.SetStringToRead(string)
-
-    self.StartReading()
-
-    if out is None:
-        res = UM.UnstructuredMesh()
-    else:
-        res = out
-
-    filetointernalid = {}
-    FENames = {}
-
-    oidToElementContainer = {}
-    oidToLocalElementNumber = {}
-    l = self.ReadCleanLine()
-    while(True):
-
-      #premature EOF
-      if l is None:
-          print("ERROR premature EOF: please check the integrity of your geof file") # pragma: no cover
-          break # pragma: no cover
-      #if len(l) == 0: l = string.readline().strip('\n').lstrip().rstrip(); continue
-
-      if l.find("**node")>-1:
-        l       = self.ReadCleanLine()
-        s       = l.split()
-        nbNodes = int(s[0])
-        dim     = int(s[1])
-        self.PrintDebug("Reading "+str(nbNodes)+ " Nodes in dimension "+str(dim))
-        res.nodes = np.empty((nbNodes,dim))
-        res.originalIDNodes= np.empty((nbNodes,),dtype=PBasicIndexType)
-        cpt = 0
-        while(True):
-            l  = self.ReadCleanLine()
-            if l.find("**") > -1:
-                break
-            s = l.split()
-            oid = int(s[0])
-            filetointernalid[oid] = cpt
-            res.originalIDNodes[cpt] = int(s[0])
-            res.nodes[cpt,:] = list(map(float,s[1:]))
-            cpt += 1
-        continue
-
-
-      if l.find("**element")>-1:
-        l  = self.ReadCleanLine()
-        nbElements = int(l.split()[0])
-        self.PrintVerbose( "nbElements {}".format(nbElements) )
-        while(True):
-          l  = self.ReadCleanLine()
-          if l.find("**") > -1:
-               break
-          s = l.split()
-          nametype = GeofNumber[s[1]]
-          conn = [filetointernalid[x] for x in  map(int,s[2:]) ]
-          elements = res.GetElementsOfType(nametype)
-          oid = int(s[0])
-          if s[1] in PermutationZSetToBasicTools:
-              conn =  [conn[x] for x in PermutationZSetToBasicTools[s[1]] ]
-          cpt = elements.AddNewElement(conn,oid)
-          oidToElementContainer[oid] = elements
-          oidToLocalElementNumber[oid] = cpt-1
-          if nametype not in FENames:
-            FENames[nametype] = []
-          FENames[nametype].append(s[1])
-        continue
-
-      if l.find("**nset")>-1:
-        nsetname = l.split()[1]
-        self.PrintDebug( "nset {}".format(nsetname) )
-
-        tag = res.GetNodalTag(nsetname)
-
-        while(True):
-          l  = self.ReadCleanLine()
-          if l.find("**") > -1:
-               break
-          s = l.split()
-          for oid in s:
-              tag.AddToTag(filetointernalid[int(oid)])
-        continue
-
-      if l.find("**elset")>-1:
-        elsetname = l.split()[1]
-        self.PrintDebug( "elset {}".format(elsetname) )
-
-        while(True):
-          l  = self.ReadCleanLine()
-          if l.find("**") > -1 or readElset == False:
-               break
-          s = l.split()
-
-          for soid in s:
-              oid = int(soid)
-              #res.AddElementToTagUsingOriginalId(int(oid),elsetname)
-              oidToElementContainer[oid].tags.CreateTag(elsetname,False).AddToTag(oidToLocalElementNumber[oid])
-        continue
-
-      if l.find("**faset")>-1 or l.find("**liset")>-1:
-        fasetName = l[8:]
-        self.PrintDebug("Reading Group " + fasetName)
-        while(True):
-          l  = self.ReadCleanLine()
-          if l.find("**") > -1 or readFaset == False:
-               break
-          s = l.split()
-          nametype = GeofNumber[s[0]]
-          conn = [filetointernalid[x] for x in  map(int,s[1:])]
-
-          if s[0] in PermutationZSetToBasicTools:
-              conn =  [conn[x] for x in PermutationZSetToBasicTools[s[0]] ]
-
-          elements = res.GetElementsOfType(nametype)
-          localId = elements.AddNewElement(conn,-1)
-          elements.GetTag(fasetName).AddToTag(localId-1)
-        continue
-
-      if l.find("***return")>-1:
-        self.PrintDebug("End file")
-        break
-
-      if l.find("***geometry")>-1 or l.find("***group")>-1:
+        Returns
+        -------
+        dict
+            global information on the mesh to read
+        """
+        res = {}
+        self.StartReading()
+        nbIP  = 0
         l = self.ReadCleanLine()
-        continue
 
-      #case not treated
-      if printNotRead == True:
-        self.PrintDebug("line starting with <<"+l[:20]+">> not considered in the reader")
-      l = self.ReadCleanLine()
-      continue
+        while(True):
+            if l == None :
+                break
+            if l[0] != "*":
+                pass
+            elif l.find("**node")>-1:
+                l = self.ReadCleanLine()
+                s = l.split()
+                res["nbNodes"] = int(s[0])
+                res["dimensionality"] = int(s[1])
+            elif l.find("**element")>-1:
+                l  = self.ReadCleanLine()
+                res['nbElements'] = int(l.split()[0])
+                IPPerElement = np.empty(res['nbElements'],dtype= PBasicIndexType)
+                cpt = 0
+                while(True):
+                    l  = self.ReadCleanLine()
+                    if l.find("**") > -1:
+                        break
+                    s = l.split()
+                    IPPerElement[cpt] = nbIntegrationsPoints[s[1]]
+                    cpt +=1
+                continue
+            l = self.ReadCleanLine()
 
-    self.EndReading()
-    res.PrepareForOutput()
-    fenames = []
-    for elname in res.elements:
-      if elname not in FENames:
-        fenames.extend(["NA"]*res.elements[elname].GetNumberOfElements())
-      else:
-        fenames.extend(FENames[elname])
+        res['nbIntegrationPoints'] = np.sum(IPPerElement)
+        res['IPPerElement'] = IPPerElement
+        self.EndReading()
 
-    res.elemFields["FE Names"] = np.array(fenames)
+        return res
 
-    self.output = res
-    return res
+
+    def Read(self, fileName=None,string=None,out=None,readElset=True,readFaset=True,printNotRead=True):
+        """Function that performs the reading of a geof mesh file
+
+        Parameters
+        ----------
+        fileName : str, optional
+            name of the file to be read, by default None
+        string : str, optional
+            data to be read as a string instead of a file, by default None
+        out : UnstructuredMesh, optional
+            output unstructured mesh object containing reading result, by default None
+        readElset : bool, optional
+            if False, ignores the elset informations, by default True
+        readFaset : bool, optional
+            if False, ignores the faset informations, by default True
+        printNotRead : bool, optional
+            if True, prints in console the lines dot understood by the reader, by default True
+
+        Returns
+        -------
+        UnstructuredMesh
+            output unstructured mesh object containing reading result
+        """
+        import BasicTools.Containers.UnstructuredMesh as UM
+        if fileName is not None:
+            self.SetFileName(fileName)
+
+        if string is not None:
+            self.SetStringToRead(string)
+
+        self.StartReading()
+
+        if out is None:
+            res = UM.UnstructuredMesh()
+        else:
+            res = out
+
+        filetointernalid = {}
+        FENames = {}
+
+        oidToElementContainer = {}
+        oidToLocalElementNumber = {}
+        l = self.ReadCleanLine()
+        while(True):
+
+            #premature EOF
+            if l is None:
+                print("ERROR premature EOF: please check the integrity of your geof file") # pragma: no cover
+                break # pragma: no cover
+            #if len(l) == 0: l = string.readline().strip('\n').lstrip().rstrip(); continue
+
+            if l.find("**node")>-1:
+                l       = self.ReadCleanLine()
+                s       = l.split()
+                nbNodes = int(s[0])
+                dim     = int(s[1])
+                self.PrintDebug("Reading "+str(nbNodes)+ " Nodes in dimension "+str(dim))
+                res.nodes = np.empty((nbNodes,dim))
+                res.originalIDNodes= np.empty((nbNodes,),dtype=PBasicIndexType)
+                cpt = 0
+                while(True):
+                    l  = self.ReadCleanLine()
+                    if l.find("**") > -1:
+                        break
+                    s = l.split()
+                    oid = int(s[0])
+                    filetointernalid[oid] = cpt
+                    res.originalIDNodes[cpt] = int(s[0])
+                    res.nodes[cpt,:] = list(map(float,s[1:]))
+                    cpt += 1
+                continue
+
+
+            if l.find("**element")>-1:
+                l  = self.ReadCleanLine()
+                nbElements = int(l.split()[0])
+                self.PrintVerbose( "nbElements {}".format(nbElements) )
+                while(True):
+                    l  = self.ReadCleanLine()
+                    if l.find("**") > -1:
+                        break
+                    s = l.split()
+                    nametype = GeofNumber[s[1]]
+                    conn = [filetointernalid[x] for x in  map(int,s[2:]) ]
+                    elements = res.GetElementsOfType(nametype)
+                    oid = int(s[0])
+                    if s[1] in PermutationZSetToBasicTools:
+                        conn =  [conn[x] for x in PermutationZSetToBasicTools[s[1]] ]
+                    cpt = elements.AddNewElement(conn,oid)
+                    oidToElementContainer[oid] = elements
+                    oidToLocalElementNumber[oid] = cpt-1
+                    if nametype not in FENames:
+                        FENames[nametype] = []
+                    FENames[nametype].append(s[1])
+                continue
+
+            if l.find("**nset")>-1:
+                nsetname = l.split()[1]
+                self.PrintDebug( "nset {}".format(nsetname) )
+
+                tag = res.GetNodalTag(nsetname)
+
+                while(True):
+                    l  = self.ReadCleanLine()
+                    if l.find("**") > -1:
+                        break
+                    s = l.split()
+                    for oid in s:
+                        tag.AddToTag(filetointernalid[int(oid)])
+                continue
+
+            if l.find("**elset")>-1:
+                elsetname = l.split()[1]
+                self.PrintDebug( "elset {}".format(elsetname) )
+
+                while(True):
+                    l  = self.ReadCleanLine()
+                    if l.find("**") > -1 or readElset == False:
+                        break
+                    s = l.split()
+
+                    for soid in s:
+                        oid = int(soid)
+                        #res.AddElementToTagUsingOriginalId(int(oid),elsetname)
+                        oidToElementContainer[oid].tags.CreateTag(elsetname,False).AddToTag(oidToLocalElementNumber[oid])
+                continue
+
+            if l.find("**faset")>-1 or l.find("**liset")>-1:
+                fasetName = l[8:]
+                self.PrintDebug("Reading Group " + fasetName)
+                while(True):
+                    l  = self.ReadCleanLine()
+                    if l.find("**") > -1 or readFaset == False:
+                        break
+                    s = l.split()
+                    nametype = GeofNumber[s[0]]
+                    conn = [filetointernalid[x] for x in  map(int,s[1:])]
+
+                    if s[0] in PermutationZSetToBasicTools:
+                        conn =  [conn[x] for x in PermutationZSetToBasicTools[s[0]] ]
+
+                    elements = res.GetElementsOfType(nametype)
+                    localId = elements.AddNewElement(conn,-1)
+                    elements.GetTag(fasetName).AddToTag(localId-1)
+                continue
+
+            if l.find("***return")>-1:
+                self.PrintDebug("End file")
+                break
+
+            if l.find("***geometry")>-1 or l.find("***group")>-1:
+                l = self.ReadCleanLine()
+                continue
+
+            #case not treated
+            if printNotRead == True:
+                self.PrintDebug("line starting with <<"+l[:20]+">> not considered in the reader")
+            l = self.ReadCleanLine()
+            continue
+
+        self.EndReading()
+        res.PrepareForOutput()
+        fenames = []
+        for elname in res.elements:
+            if elname not in FENames:
+                fenames.extend(["NA"]*res.elements[elname].GetNumberOfElements())
+            else:
+                fenames.extend(FENames[elname])
+
+        res.elemFields["FE Names"] = np.array(fenames)
+
+        self.output = res
+        return res
 
 
 from BasicTools.IO.IOFactory import RegisterReaderClass

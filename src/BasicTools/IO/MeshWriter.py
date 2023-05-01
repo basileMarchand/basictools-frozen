@@ -4,6 +4,9 @@
 # file 'LICENSE.txt', which is part of this source code package.
 #
 
+"""Mesh file writer
+"""
+
 from BasicTools.IO.IOFactory import RegisterWriterClass
 import struct
 import numpy as np
@@ -18,16 +21,41 @@ import BasicTools.IO.MeshTools as MT
 from BasicTools.NumpyDefs import PBasicFloatType, PBasicIndexType
 
 
-def WriteMesh(filename, mesh, PointFields=None, solutionOnOwnFile=False, binary=True, nodalRefNumber=None, elemRefNumber=None):
+
+def WriteMesh(fileName, mesh, PointFields=None, solutionOnOwnFile=False, binary=True, nodalRefNumber=None, elemRefNumber=None):
+    """Export Mesh to disk in the mesh format file.
+        A file is created using the path and name of fileName
+
+    Parameters
+    ----------
+    fileName : str
+        name with path to the file to be created (relative or absolute)
+    mesh : UnstructuredMesh
+        the mesh to be written
+    PointFields : list[np.ndarray], optional
+        list of fields defined at the vertices of the mesh, to be included
+        in the output file, by default None
+    solutionOnOwnFile : bool, optional
+        if True, the solution is written in a separate file, by default False
+    binary : bool, optional
+        if True, a binary file is produced, by default True
+    nodalRefNumber : np.ndarray, optional
+        a provided numbering for the vertices, by default None
+    elemRefNumber : np.ndarray, optional
+        a provided numbering for the elements, by default None
+    """
+
     OW = MeshWriter()
     OW.SetBinary(binary)
-    OW.Open(filename)
+    OW.Open(fileName)
     OW.Write(mesh, PointFields=PointFields, solutionOnOwnFile=solutionOnOwnFile,
-             nodalRefNumber=nodalRefNumber, elemRefNumber=elemRefNumber)
+            nodalRefNumber=nodalRefNumber, elemRefNumber=elemRefNumber)
     OW.Close()
 
 
 class MeshWriter(WriterBase):
+    """Class to write Unstructured mesh on disk in the mesh format file
+    """
     def __init__(self):
         super(MeshWriter, self).__init__()
 
@@ -40,13 +68,34 @@ class MeshWriter(WriterBase):
         return res
 
     def SetFileName(self, fileName):
+        """Sets the name of the output file
+
+        Parameters
+        ----------
+        fileName : str
+            name of the output file
+        """
         self.fileName = fileName
 
     def SetSinglePrecision(self, single=True):
+        """Sets the output precision to single precision
+
+        Parameters
+        ----------
+        single : bool, optional
+            if True, output is save in singe precision, by default True
+        """
         if single :
             self.SetVersion(1)
 
     def SetVersion(self, version: int ):
+        """Sets the output file format version
+
+        Parameters
+        ----------
+        version : int
+            format version
+        """
         self.version = version
         posData, intData, floatData = GetTypesForVersion(version)
 
@@ -56,12 +105,46 @@ class MeshWriter(WriterBase):
 
 
     def Write(self, meshObject, PointFields=None, solutionOnOwnFile=False, nodalRefNumber=None, elemRefNumber=None, PointFieldsNames=None, CellFieldsNames=None, CellFields=None):
+        """Write mesh to file in mesh format
+
+        Parameters
+        ----------
+        meshObject : UnstructuredMesh
+            the mesh to be written
+        PointFields : list[np.ndarray], optional
+            list of fields defined at the vertices of the mesh, to be included
+            in the output file, by default None
+        solutionOnOwnFile : bool, optional
+            if True, the solution is written in a separate file, by default False
+        nodalRefNumber : np.ndarray, optional
+            a provided numbering for the vertices, by default None
+        elemRefNumber : np.ndarray, optional
+            a provided numbering for the elements, by default None
+        PointFieldsNames : None
+            Not Used, by default None
+        CellFieldsNames : None
+            Not Used, by default None
+        CellFields : None
+            Not Used, by default None
+        """
         if self.isBinary():
             return self.WriteBINARY(meshObject, PointFields=PointFields, solutionOnOwnFile=solutionOnOwnFile, nodalRefNumber=nodalRefNumber, elemRefNumber=elemRefNumber)
         else:
             return self.WriteASCII(meshObject, PointFields=PointFields, solutionOnOwnFile=solutionOnOwnFile, nodalRefNumber=nodalRefNumber, elemRefNumber=elemRefNumber)
 
     def GetDimensionFromMesh(self, meshObject):
+        """Returns dimension of the mesh
+
+        Parameters
+        ----------
+        meshObject : UnstructuredMesh
+            mesh for which the dimension is returned
+
+        Returns
+        -------
+        int
+            dimension of the mesh
+        """
         flat = True
         if meshObject.nodes.shape[1] == 3:
             mmax = np.max(meshObject.nodes[:, 2])
@@ -99,7 +182,22 @@ class MeshWriter(WriterBase):
         self.CheckPos(endOfInformation)
 
     def WriteBINARY(self, meshObject, PointFields=None, solutionOnOwnFile=False, nodalRefNumber=None, elemRefNumber=None):
+        """Write mesh to file in binary mesh format
 
+        Parameters
+        ----------
+        meshObject : UnstructuredMesh
+            the mesh to be written
+        PointFields : list[np.ndarray], optional
+            list of fields defined at the vertices of the mesh, to be included
+            in the output file, by default None
+        solutionOnOwnFile : bool, optional
+            if True, the solution is written in a separate file, by default False
+        nodalRefNumber : np.ndarray, optional
+            a provided numbering for the vertices, by default None
+        elemRefNumber : np.ndarray, optional
+            a provided numbering for the elements, by default None
+        """
         # key MeshVersionFormatted  (always int32)
         self.WriteKeyWord("GmfVersionFormatted")
         self.filePointer.write(struct.pack('i', self.version))
@@ -335,10 +433,9 @@ class MeshWriter(WriterBase):
                                             SolsAtTriangles=SolsAtTriangles, SolsAtTetrahedra=SolsAtTetrahedra)
         else:
             self.WriteSolutionsFieldsAscii(meshObject, PointFields=PointFields,
-                                           SolsAtTriangles=SolsAtTriangles, SolsAtTetrahedra=SolsAtTetrahedra)
+                                        SolsAtTriangles=SolsAtTriangles, SolsAtTetrahedra=SolsAtTetrahedra)
 
     def Close(self):
-
         if self.isBinary():
             self.CloseSolutionFileBinary()
         else:
@@ -426,6 +523,22 @@ class MeshWriter(WriterBase):
         self.WriteKeyWord("GmfEnd")
 
     def WriteASCII(self, meshObject, PointFields=None, solutionOnOwnFile=False, nodalRefNumber=None, elemRefNumber=None):
+        """Write mesh to file in binary mesh format
+
+        Parameters
+        ----------
+        meshObject : UnstructuredMesh
+            the mesh to be written
+        PointFields : list[np.ndarray], optional
+            list of fields defined at the vertices of the mesh, to be included
+            in the output file, by default None
+        solutionOnOwnFile : bool, optional
+            if True, the solution is written in a separate file, by default False
+        nodalRefNumber : np.ndarray, optional
+            a provided numbering for the vertices, by default None
+        elemRefNumber : np.ndarray, optional
+            a provided numbering for the elements, by default None
+        """
         meshObject.ComputeGlobalOffset()
         self.filePointer.write("MeshVersionFormatted 2 \n")
 
@@ -571,9 +684,9 @@ def CheckIntegrity(GUI=False):
     elemRefNumber = np.arange(mymesh.GetNumberOfElements())
 
     WriteMesh(tempdir+"CheckIntegrity_with_refs.mesh", mymesh,
-              PointFields=[nodalRefNumber*10], elemRefNumber=elemRefNumber, nodalRefNumber=nodalRefNumber, solutionOnOwnFile=True)
+            PointFields=[nodalRefNumber*10], elemRefNumber=elemRefNumber, nodalRefNumber=nodalRefNumber, solutionOnOwnFile=True)
     WriteMesh(tempdir+"CheckIntegrity_with_refs.mesh", mymesh, binary=False,
-              PointFields=[nodalRefNumber*10], elemRefNumber=elemRefNumber, nodalRefNumber=nodalRefNumber, solutionOnOwnFile=True)
+            PointFields=[nodalRefNumber*10], elemRefNumber=elemRefNumber, nodalRefNumber=nodalRefNumber, solutionOnOwnFile=True)
 
     OW = MeshWriter()
     OW.SetBinary(False)

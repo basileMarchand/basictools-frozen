@@ -4,8 +4,7 @@
 # file 'LICENSE.txt', which is part of this source code package.
 #
 
-""" Gmsh  File Writer (gmesh mesh files)
-
+"""Gmsh  File Writer (gmesh mesh files)
 """
 from itertools import combinations
 
@@ -21,15 +20,31 @@ PermutationBasicToolsToGmsh = {key:np.argsort(value) for key, value in Permutati
 class OverlappingTagException(Exception):
     pass
 
-def WriteMeshToGmsh(filename,mesh,useOriginalId=False,tagMapping=None):
+def WriteMeshToGmsh(filename, mesh, useOriginalId = False, tagMapping = None):
+    """Function API for writing data into a gmsh file
+
+    Parameters
+    ----------
+    fileName : str
+        name of the file to be written
+    mesh : UnstructuredMesh
+        the mesh to be written
+    useOriginalId : bool, optional
+        If True, Original Id for the number of nodes and elements are used
+        (the user is responsible of the consistency of this data), by default False
+    tagMapping : dict, optional
+        tags of geometric objects defined in the mesh, by default None
+    """
     OW = GmshWriter()
     if tagMapping is not None:
         OW.tagMapping=tagMapping
     OW.Open(filename)
-    OW.Write(mesh,useOriginalId = useOriginalId)
+    OW.Write(mesh, useOriginalId = useOriginalId)
     OW.Close()
 
 class GmshWriter(WriterBase):
+    """Class to writes a gmsh file on disk
+    """
     def __init__(self):
         super(GmshWriter,self).__init__()
         self.SetBinary(False)
@@ -42,10 +57,41 @@ class GmshWriter(WriterBase):
         res += '   FileName : '+str(self.fileName)+'\n'
         return res
 
-    def SetFileName(self,fileName):
+    def SetFileName(self, fileName):
+        """Sets the fileName parameter of the class
+
+        Parameters
+        ----------
+        string : str
+            fileName to set
+        """
         self.fileName = fileName
 
     def Write(self,meshObject,useOriginalId=False,PointFieldsNames=None,PointFields=None,CellFieldsNames=None,CellFields=None):
+        """Function to writes a gmsh file on disk
+
+        Parameters
+        ----------
+        meshObject : UnstructuredMesh
+            support of the data to be written
+        useOriginalId : bool, optional
+            If True original ids of vertices and elements, by default False
+        PointFieldsNames : _type_, optional
+            Not Used, by default None
+        PointFields : _type_, optional
+            Not Used, by default None
+        CellFieldsNames : _type_, optional
+            Not Used, by default None
+        CellFields : _type_, optional
+            Not Used, by default None
+
+        Raises
+        ------
+        OverlappingTagException
+            when at least 2 tags are overlapping
+        """
+
+
         self.filePointer.write("$MeshFormat\n")
         self.filePointer.write("2.2 0 8\n")
         self.filePointer.write("$EndMeshFormat\n")
@@ -55,15 +101,15 @@ class GmshWriter(WriterBase):
 
         posn = meshObject.GetPosOfNodes()
         if useOriginalId:
-           for n in range(numberofpoints):
-               self.filePointer.write("{} ".format(int(meshObject.originalIDNodes[n])))
-               posn[np.newaxis,n,:].tofile(self.filePointer, sep=" ")
-               self.filePointer.write("\n")
+            for n in range(numberofpoints):
+                self.filePointer.write("{} ".format(int(meshObject.originalIDNodes[n])))
+                posn[np.newaxis,n,:].tofile(self.filePointer, sep=" ")
+                self.filePointer.write("\n")
         else:
-           for n in range(numberofpoints):
-               self.filePointer.write(f"{n+1} ")
-               posn[np.newaxis,n,:].tofile(self.filePointer, sep=" ")
-               self.filePointer.write("\n")
+            for n in range(numberofpoints):
+                self.filePointer.write(f"{n+1} ")
+                posn[np.newaxis,n,:].tofile(self.filePointer, sep=" ")
+                self.filePointer.write("\n")
         self.filePointer.write("$EndNodes\n")
         self.filePointer.write("$Elements\n")
         self.filePointer.write(f"{meshObject.GetNumberOfElements()}\n")
@@ -104,7 +150,7 @@ class GmshWriter(WriterBase):
                     elemIds = data.tags[tagName].GetIds()
                     phyGeoTags[elemIds] = self.tagMapping[tagName]
             if useOriginalId:
-                 for i in range(data.GetNumberOfElements() ):
+                for i in range(data.GetNumberOfElements() ):
                     self.filePointer.write(f"{data.originalIds[i]} {elemtype} 2 {phyGeoTags[i]} {phyGeoTags[i]} ")
                     self.filePointer.write(" ".join([str(meshObject.originalIDNodes[x]) for x in data.connectivity[i,:].ravel()]))
                     cpt += 1
@@ -112,16 +158,16 @@ class GmshWriter(WriterBase):
             else:
                 #for connectivity in meshObject.elements[elementContainer].connectivity[meshObject.elements[elementContainer].tags[tagname].id-1]:
                 for i in range(data.GetNumberOfElements() ):
-                  connectivity = data.connectivity[i,:]
-                  if elementContainer in PermutationBasicToolsToGmsh:
-                      connectivity = [connectivity[x] for x in PermutationBasicToolsToGmsh[elementContainer]]
-                  self.filePointer.write(f"{cpt} {elemtype} 2 {phyGeoTags[i]} {phyGeoTags[i]} ")
-                  self.filePointer.write(" ".join([str(x+1) for x in connectivity]))
-                  cpt += 1
-                  self.filePointer.write("\n")
+                    connectivity = data.connectivity[i,:]
+                    if elementContainer in PermutationBasicToolsToGmsh:
+                        connectivity = [connectivity[x] for x in PermutationBasicToolsToGmsh[elementContainer]]
+                    self.filePointer.write(f"{cpt} {elemtype} 2 {phyGeoTags[i]} {phyGeoTags[i]} ")
+                    self.filePointer.write(" ".join([str(x+1) for x in connectivity]))
+                    cpt += 1
+                    self.filePointer.write("\n")
             #except KeyError:
             #  continue
-          #tagcounter += 1
+            #tagcounter += 1
 
         self.filePointer.write("$EndElements\n")
 
@@ -250,7 +296,7 @@ def CheckIntegrity():
     CheckIntegrity_SeparatedTags,
     CheckIntegrity_OriginalIdsForTags,
     CheckIntegrity_OverlappingTags
-              ]
+            ]
 
     for test in totest:
         res =  test()

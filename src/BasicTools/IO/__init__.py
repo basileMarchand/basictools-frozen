@@ -24,7 +24,6 @@ _test = [
 'GmshWriter',
 'GReader',
 'InpReader',
-'InputFile',
 'JsonReader',
 'LSDynaReader',
 'LSDynaWriter',

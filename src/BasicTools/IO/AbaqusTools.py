@@ -4,6 +4,9 @@
 # file 'LICENSE.txt', which is part of this source code package.
 #
 
+"""Abaqus tools
+"""
+
 import BasicTools.Containers.ElementNames as EN
 
 
@@ -39,5 +42,3 @@ for k,v in InpNameToBasicTools.items():
     if k in BasicToolsToInpName:
         continue
     BasicToolsToInpName[v] = k
-
-

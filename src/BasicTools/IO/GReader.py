@@ -4,8 +4,7 @@
 # file 'LICENSE.txt', which is part of this source code package.
 #
 
-""" Gcode file reader
-
+"""Gcode file reader
 """
 
 import numpy as np
@@ -18,6 +17,20 @@ from BasicTools.NumpyDefs import PBasicFloatType, PBasicIndexType
 
 
 def ReadGCode(fileName=None,string=None ):
+    """Function API for reading a Gcode mesh file
+
+    Parameters
+    ----------
+    fileName : str, optional
+        name of the file to be read, by default None
+    string : str, optional
+        data to be read as a string instead of a file, by default None
+
+    Returns
+    -------
+    UnstructuredMesh
+        output unstructured mesh object containing reading result
+    """
     reader = GReader()
     reader.SetFileName(fileName)
     reader.SetStringToRead(string)
@@ -25,11 +38,20 @@ def ReadGCode(fileName=None,string=None ):
     return reader.output
 
 class GReader(ReaderBase):
+    """Gcode Reader class
+    """
     def __init__(self):
         super(GReader,self).__init__()
 
 
     def Read(self):
+        """Function that performs the reading of an Gcode file
+
+        Returns
+        -------
+        UnstructuredMesh
+            output unstructured mesh object containing reading result
+        """
         extrudeur = 0
 
         self.StartReading()

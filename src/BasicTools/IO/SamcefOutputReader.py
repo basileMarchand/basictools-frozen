@@ -3,6 +3,10 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
+
+"""Samcef output file reader
+"""
+
 import subprocess
 import os
 
@@ -15,6 +19,8 @@ import BasicTools.Helpers.ParserHelper as PH
 samresExec = "samres"
 
 class SamcefOuputReader(BOO):
+    """Samcef output Reader class
+    """
     def __init__(self):
         super(SamcefOuputReader,self).__init__()
         self.canHandleTemporal = True
@@ -26,6 +32,13 @@ class SamcefOuputReader(BOO):
         self.encoding = None
 
     def SetFileName(self, fileName):
+        """Sets the name of the file to read
+
+        Parameters
+        ----------
+        fileName : str
+            name of the file to read
+        """
         self.PrintDebug(fileName)
         if len(fileName) > 4 and fileName[-4:] == ".fac":
             fileName = fileName[0:-4]
@@ -34,7 +47,16 @@ class SamcefOuputReader(BOO):
             fileName = fileName[0:-3]
         self.filename = fileName
 
-    def SetTimeToRead(self,time= None,timeIndex=None):
+    def SetTimeToRead(self, time = None, timeIndex = None):
+        """Sets the time at which the data is read
+
+        Parameters
+        ----------
+        time : float, optional
+            time at which the data is read, by default None
+        timeIndex : int, optional
+            time index which the data is read, by default None
+        """
         if timeIndex is not None:
             self.timeToRead = self.times[timeIndex]
         elif time is not None:
@@ -62,6 +84,8 @@ class SamcefOuputReader(BOO):
             self.subprocess = None
 
     def ReadMetaData(self):
+        """Function that performs the reading of the metadata of a samcef output file
+        """
         needToClose = self.OpenIfNeeded()
         self.times = []
         self._writeCommand('$$GET_VALUE "code 26" " " " "')
@@ -78,9 +102,23 @@ class SamcefOuputReader(BOO):
         self.Close(needToClose)
 
     def GetAvailableTimes(self):
+        """Returns available times to read
+
+        Returns
+        -------
+        list
+            time values available to read
+        """
         return self.times
 
     def Read(self):
+        """Function that performs the reading of a samcef output file
+
+        Returns
+        -------
+        UnstructuredMesh
+            output unstructured mesh object containing reading result
+        """
         self.PrintDebug("start reading")
         from BasicTools.IO.SamcefReader import DatReader
         dreader = DatReader()
@@ -130,7 +168,23 @@ class SamcefOuputReader(BOO):
 
         return mesh
 
-    def ReadField(self,fieldname=None,time=None,timeIndex=None):
+    def ReadField(self, fieldname = None, time = None, timeIndex = None):
+        """Function that performs the reading of a field in a samcef output file
+
+        Parameters
+        ----------
+        fieldname : str, optional
+            name of the field to read, by default None
+        time : float, optional
+            time at which the data is read, by default None
+        timeIndex : int, optional
+            time index which the data is read, by default None
+
+        Returns
+        -------
+        np.ndarray, np.ndarray
+            indices and values of the field to read
+        """
         needToClose = self.OpenIfNeeded()
         # file:///softs/samcef/16.1-03/doc/m024/samres-m024.pdf
         #page 25
@@ -158,7 +212,7 @@ class SamcefOuputReader(BOO):
 
         if entityname not in ['"Node %"','"Element %"']:
             raise(Exception("Dont know how to treat->"+ entityname+"<-"))
-        return oid,data
+        return oid, data
 
     def _writeCommand(self,cmd):
         self.PrintDebug("Command:"+cmd)
@@ -273,7 +327,23 @@ InternalCodes["Element_Stress_VM"] =  SamcefDataE(arg1='Code 3411',arg2="Von Mis
  "Code 9850" "[Code 9850] Number of Cycles" ".TOSCALAR_9850" ".SUPPORT_9850"
 """
 
-def ReadFieldFromDataBase(fieldname,field, time=None):
+def ReadFieldFromDataBase(fieldname, field, time=None):
+    """Function API for reading a field in a samcef output file
+
+    Parameters
+    ----------
+    fieldname : str
+        name of the file to be read
+    field : str
+        name of the field to read in the file
+    time : float, optional
+        time at which the data is read, by default None
+
+    Returns
+    -------
+    np.ndarray, np.ndarray
+        indices and values of the field to read
+    """
     reader = SamcefOuputReader()
     reader.SetFileName(fieldname)
     reader.Open()

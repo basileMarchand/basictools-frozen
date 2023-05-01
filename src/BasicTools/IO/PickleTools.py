@@ -19,12 +19,12 @@ class IOHelper:
         res += " unamed : " + str(self.unamed) + "\n"
         return res
 
-def SaveData(filename,  *argv,**kwargs):
+def SaveData(filename,  *argv, **kwargs):
     """Save the variables into the disk and return 0 if all ok
 
-       Save variables into the disk, you can use unamed or named variables (keyword)
+    Save variables into the disk, you can use unamed or named variables (keyword)
     """
-    with open(filename,'wb') as pickle_file:
+    with open(filename, 'wb') as pickle_file:
         pickler = __pickle.Pickler(pickle_file)
         pickler.dump([argv, kwargs])
         return 0
@@ -33,12 +33,12 @@ def SaveData(filename,  *argv,**kwargs):
 def LoadData(filename):
     """Load data from disk using pickle format
 
-       Load data saved with the 'saveData' from file
-       return an instance of IOHelper if ok
-       return None if not ok
+    Load data saved with the 'saveData' from file
+    return an instance of IOHelper if ok
+    return None if not ok
     """
     with open(filename,'rb') as pickle_file:
-        unpickler = __pickle.Unpickler(pickle_file,encoding='latin1')
+        unpickler = __pickle.Unpickler(pickle_file, encoding = 'latin1')
         data = unpickler.load()
         return  IOHelper(data)
     return None # pragma: no cover
@@ -46,16 +46,28 @@ def LoadData(filename):
 from BasicTools.IO.ReaderBase import ReaderBase
 
 class PickleReader(ReaderBase):
+    """Class handling the reading of data using pickle
+    """
     def __init__(self,fileName = None):
         super(PickleReader,self).__init__(fileName=fileName)
         self.canHandleTemporal = False
 
     def Read(self):
+        """Reads data using pickle
+
+        Returns
+        -------
+        any
+            read data
+        """
         internalReader = LoadData(self.fileName)
         self.output = internalReader.named["mesh"]
         return self.output
 
+
 class PickleWriter(object):
+    """Class handling the writing of data using pickle
+    """
     def __init__(self):
         super(PickleWriter,self).__init__()
         self.filename = ""
@@ -64,10 +76,17 @@ class PickleWriter(object):
     def SetBinary(self,val=True):
         pass
 
-    def SetFileName(self,filename):
-        self.filename = filename;
+    def SetFileName(self, filename):
+        """Sets filename
 
-    def Open(self,fileName=None):
+        Parameters
+        ----------
+        filename : str
+            name of the file to write
+        """
+        self.filename = filename
+
+    def Open(self, fileName=None):
         if not fileName is None:
             self.SetFileName(fileName)
 
@@ -76,7 +95,8 @@ class PickleWriter(object):
 
 
     def Write(self,mesh, PointFields = None, CellFields = None, GridFields= None, PointFieldsNames = None, CellFieldsNames= None, GridFieldsNames=None):
-
+        """Writes data using pickle
+        """
         if PointFieldsNames is not None:
             nodeFields = {k:v for k,v in zip(PointFieldsNames,PointFields)}
         else:

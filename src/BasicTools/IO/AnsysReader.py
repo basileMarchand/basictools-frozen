@@ -4,9 +4,9 @@
 # file 'LICENSE.txt', which is part of this source code package.
 #
 
-""" Ansys Workbench Mechanical input file reader
-
+"""Ansys Workbench Mechanical input file reader
 """
+
 import numpy as np
 
 import BasicTools.Containers.ElementNames as EN
@@ -17,6 +17,22 @@ from BasicTools.NumpyDefs import PBasicIndexType
 from BasicTools.IO.AnsysTools import PermutationAnsysToBasicTools
 
 def ReadAnsys(fileName=None, string=None, out=None, **kwargs):
+    """Function API for reading an Ansys result file
+
+    Parameters
+    ----------
+    fileName : str, optional
+        name of the file to be read, by default None
+    string : str, optional
+        data to be read as a string instead of a file, by default None
+    out : UnstructuredMesh, optional
+        output unstructured mesh object containing reading result, by default None
+
+    Returns
+    -------
+    UnstructuredMesh
+        output unstructured mesh object containing reading result
+    """
     reader = AnsysReader()
     reader.SetFileName(fileName)
     reader.SetStringToRead(string)
@@ -25,6 +41,9 @@ def ReadAnsys(fileName=None, string=None, out=None, **kwargs):
 
 
 class AnsysReader(ReaderBase):
+    """Ansys Reader class
+    """
+
     def __init__(self):
         super(AnsysReader, self).__init__()
         self.commentChar = '!'
@@ -32,6 +51,22 @@ class AnsysReader(ReaderBase):
         self.encoding = "latin-1"
 
     def Read(self, fileName=None, string=None, out=None):
+        """Function that performs the reading of an Ansys result file
+
+        Parameters
+        ----------
+        fileName : str, optional
+            name of the file to be read, by default None
+        string : str, optional
+            data to be read as a string instead of a file, by default None
+        out : UnstructuredMesh, optional
+            output unstructured mesh object containing reading result, by default None
+
+        Returns
+        -------
+        UnstructuredMesh
+            output unstructured mesh object containing reading result
+        """
         if fileName is not None:
             self.SetFileName(fileName)
         if string is not None:
