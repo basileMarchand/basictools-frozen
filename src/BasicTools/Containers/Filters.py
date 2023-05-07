@@ -413,6 +413,9 @@ class FilterOP(BOO):
 
     @property
     def zoneTreatment(self, zt):
+        """Can't recover the zoneTreatment for a FilterOP.
+        But the user can set the zone treatment for the internal filters (with the setter)
+        """
         raise Exception("Cant ask zoneTreatment to a FilterOP")
 
     @zoneTreatment.setter
@@ -420,13 +423,33 @@ class FilterOP(BOO):
         for f in self.filters:
             f.zoneTreatment = zt
 
-    def Complementary(self):
-        # the complementary of the complementary is the original filter
+    def Complementary(self) -> ComplementaryObject:
+        """Return a filter with the complementary part this filter.
+        """
         if isinstance(self,ComplementaryObject):
             return self.filters[0]
         return ComplementaryObject(mesh=self.mesh,filters=[self])
 
-    def GetFrozenFilter(self, mesh=None):
+    def GetFrozenFilter(self, mesh=None) -> FrozenFilter:
+        """Return a frozen filter
+
+        Parameters
+        ----------
+        mesh : _type_, optional
+            _description_, by default None
+
+        Returns
+        -------
+        FrozenFilter
+            the frozen filter
+
+        Raises
+        ------
+        Exception
+            if this filter is a FrozenFilter and the user provide a different mesh
+        Exception
+            if no mesh is available to evaluate the filter
+        """
         if isinstance(self,FrozenFilter):
             if mesh is None:
                 return self
@@ -449,7 +472,7 @@ class FilterOP(BOO):
 
         :example:
 
-            myFilter = DerivedElementFilterName(myMesh)
+            myFilter = FilterOP(myMesh)             # <- UnionElementFilter for example
             myFilter.filters.append(myOtherFilter1)
             myFilter.filters.append(myOtherFilter2)
 
@@ -469,14 +492,23 @@ class FilterOP(BOO):
         if elementsFound is False and self.withError:
             raise Exception("Error!! Zero element in the element filter : \n" + str(self))
 
-    def ApplyOnElements(self,op):
-        """
-        Function to apply the filter  using an operator
+    def ApplyOnElements(self,op: Callable):
+        """Function to apply the filter  using an operator
 
-        :param callable op: An instance of a callable object, the object can have
+        :param callable op:
+
+        Parameters
+        ----------
+        op : Callable
+            An instance of a callable object, the object can have
             the PreCondition function and/or the post-condition function. Theses
             functions are called (if exist) (with the mesh as the first argument)
             before and after the main call ( op(name,elements,ids) )
+
+        Returns
+        -------
+        Callable
+            the operator passed
         """
         op.PreCondition(self.mesh)
         for name,elements,ids in self:
@@ -484,11 +516,13 @@ class FilterOP(BOO):
         op.PostCondition(self.mesh)
         return op
 
-    def ApplyOnNodes(self,op):
-        """
-        Function to apply filter using an operator
+    def ApplyOnNodes(self, op: Callable):
+        """Function to apply filter using an operator
 
-        :param callable op: An instance of a callable object, the object can have
+        Parameters
+        ----------
+        op : Callable
+            An instance of a callable object, the object can have
             the PreCondition function and/or the post-condition function. Theses
             functions are called (if exist) (with the mesh as the first argument)
             before and after the main call ( op(mesh,nodes,ids) )
@@ -512,7 +546,20 @@ class UnionElementFilter(FilterOP):
     def __init__(self,mesh=None,filters=None):
         super(UnionElementFilter,self).__init__(mesh=mesh,filters=filters)
 
-    def GetIdsToTreat(self, data):
+    def GetIdsToTreat(self, data:ElementContainer) -> np.ndarray:
+        """return the ids of the element selected by the filter for the ElementContainer
+
+        Parameters
+        ----------
+        data : ElementContainer
+            the elementContainer to work on
+
+        Returns
+        -------
+        np.ndarray
+            the ids selected by the filter
+        """
+
         return reduce(np.union1d, (np.asarray(ff.GetIdsToTreat(data),dtype=PBasicIndexType) for ff in self.filters))
 
 class IntersectionElementFilter(FilterOP):
@@ -522,7 +569,19 @@ class IntersectionElementFilter(FilterOP):
     def __init__(self,mesh=None,filters=None):
         super(IntersectionElementFilter,self).__init__(mesh=mesh,filters=filters)
 
-    def GetIdsToTreat(self, data):
+    def GetIdsToTreat(self, data: ElementContainer) -> np.ndarray:
+        """return the ids of the element selected by the filter for the ElementContainer
+
+        Parameters
+        ----------
+        data : ElementContainer
+            the elementContainer to work on
+
+        Returns
+        -------
+        np.ndarray
+            the ids selected by the filter
+        """
         ids = None
         for ff in self.filters:
             if ids is None:
@@ -530,10 +589,10 @@ class IntersectionElementFilter(FilterOP):
             else:
                 ids = np.intersect1d(ids,ff.GetIdsToTreat(data),assume_unique=True )
             if len(ids) == 0:
-                return []
+                return np.array([], dtype=PBasicIndexType)
         if ids is None :
-            return []
-        return list(ids)
+            return np.array([], dtype=PBasicIndexType)
+        return np.asarray(ids, dtype=PBasicIndexType)
 
 class DifferenceElementFilter(FilterOP):
     """
@@ -544,21 +603,67 @@ class DifferenceElementFilter(FilterOP):
             raise Exception("Need exactly 2 filter to compute the difference")
         super(DifferenceElementFilter,self).__init__(mesh=mesh,filters=filters)
 
-    def GetIdsToTreat(self, data):
+    def GetIdsToTreat(self, data: ElementContainer) -> np.ndarray:
+        """return the ids of the element selected by the filter for the ElementContainer
+
+        Parameters
+        ----------
+        data : ElementContainer
+            the elementContainer to work on
+
+        Returns
+        -------
+        np.ndarray
+            the ids selected by the filter
+        """
         ids = None
 
         idsA = self.filters[0].GetIdsToTreat(data)
         idsB = self.filters[1].GetIdsToTreat(data)
 
-        return np.setdiff1d(idsA, idsB)
+        return np.setdiff1d(idsA, idsB, assume_unique= True)
 
 class ComplementaryObject(FilterOP):
-    def __init__(self,mesh=None,filters=None):
+    """Class to generate the complementary part of a filter
+
+    """
+    def __init__(self, mesh: UnstructuredMesh=None, filters=None):
+        """Create a complementary filter
+
+        Parameters
+        ----------
+        mesh : UnstructuredMesh, optional
+            The mesh to work on, by default None
+        filters : list, optional
+            A list containing only one filter to compute the complementary part, by default None
+
+        Raises
+        ------
+        Exception
+            if the list contains more than one filter
+        """
         super(ComplementaryObject,self).__init__(mesh=mesh,filters=filters)
         if len(self.filters) > 1 :
             raise Exception("ComplementaryObject Error!: filters must be of len = 1")
 
-    def GetIdsToTreat(self, data):
+    def GetIdsToTreat(self, data: ElementContainer) -> np.ndarray:
+        """return the ids of the element selected by the filter for the ElementContainer
+
+        Parameters
+        ----------
+        data : ElementContainer
+            the elementContainer to work on
+
+        Returns
+        -------
+        np.ndarray
+            the ids selected by the filter
+
+        Raises
+        ------
+        Exception
+            if the list contains more than one filter
+        """
         if len(self.filters)  > 1:
             raise Exception("ComplementaryObject Error!: filters must be of len = 1")
 
@@ -569,20 +674,59 @@ class ComplementaryObject(FilterOP):
         mask[ids] = False
         return np.where(mask)[0]
 
-
 class PartialElementFilter(FilterOP):
-    """ Utility class to create a partition of a ElementFilter"""
+    """ Utility class to create a partition of a ElementFilter
+    """
 
-    def __init__(self, elementFilter, partitions, partitionNumber):
+    def __init__(self, elementFilter, partitions:int, partitionNumber:int):
+        """Create a Partial Element Filter. The partition is done using
+        the numpy.array_split over the ids, so no geometrical compacity of
+        the ids.
+
+        Parameters
+        ----------
+        elementFilter :
+            a filter to extract the ids to treat
+        partitions : int
+            the number of partition.
+        partitionNumber : int
+            the selected partition for this instance
+        """
         super().__init__(self,[elementFilter])
         self.partitions = partitions
         self.partitionNumber = partitionNumber
 
-    def GetIdsToTreat(self,elements):
+    def GetIdsToTreat(self,elements: ElementContainer) -> np.ndarray:
+        """return the ids of the element selected by the filter for the ElementContainer
+
+        Parameters
+        ----------
+        data : ElementContainer
+            the elementContainer to work on
+
+        Returns
+        -------
+        np.ndarray
+            the ids selected by the filter
+
+        Raises
+        ------
+        Exception
+            if the list contains more than one filter
+        """
         res = self.filters[0].GetIdsToTreat(elements)
         return np.array_split(res,self.partitions)[self.partitionNumber]
 
     def Complementary(self):
+        """Complementary if this filter is a partial filter over the complementary.
+        This means the complementary use the number of partition and the partition number
+        to generate a partial filter.
+
+        Yields
+        ------
+        (str, ElementContainer, np.ndarray)
+            _description_
+        """
         for name,data,ids  in self.filters[0].Complementary():
             ids = np.array_split(ids,self.partitions)[self.partitionNumber]
             if len(ids) == 0:
@@ -590,6 +734,13 @@ class PartialElementFilter(FilterOP):
             yield name, data, ids
 
 class IdsAsNumpyMask(FilterOP):
+    """Class to wrap the output ids of a filter into a numpy mask
+
+    Parameters
+    ----------
+    FilterOP : _type_
+        _description_
+    """
     def __init__(self,mesh=None,filters=None):
         super(IdsAsNumpyMask,self).__init__(mesh=mesh,filters=filters)
         if len(self.filters) > 1 :
@@ -1124,10 +1275,33 @@ class FrozenFilter(FilterOP):
 
         return self.filters[0].IsEquivalent(other)
 
-    def SetIdsToTreatFor(self, elements, localIds):
-        self.__frozenData[elements.elementType] = (elements, localIds)
+    def SetIdsToTreatFor(self, elements: ElementsContainer, localIds:ArrayLike):
+        """Set the ids for a specific element type.
+        this filter keeps a reference to elements internally
 
-    def GetIdsToTreat(self, elements):
+        Parameters
+        ----------
+        elements : ElementsContainer
+            ElementsContainer to extract the element type
+        localIds : ArrayLike
+            the ids to be stored
+        """
+        self.__frozenData[elements.elementType] = (elements, np.asarray(localIds,dtype=PBasicIndexType))
+
+    def GetIdsToTreat(self, elements: ElementsContainer) -> np.ndarray:
+        """Return the ids stored fot eh elements. We use only the elements.elementType
+        attribute to retrieve the ids/
+
+        Parameters
+        ----------
+        elements : ElementsContainer
+            _description_
+
+        Returns
+        -------
+        np.ndarray
+            the ids to selected by this filter
+        """
         return self.__frozenData[elements.elementType][1] # (data, ids)
 
     def __iter__(self)-> Iterator[Tuple[str,ElementsContainer,ArrayLike]]:
@@ -1149,13 +1323,21 @@ class FrozenFilter(FilterOP):
 class ElementFilterBaseOperator():
     """Template for the creation of operators
     """
-    def PreCondition(self,mesh):
+    def PreCondition(self, mesh:UnstructuredMesh) -> None:
+        """Condition executed at the beginning
+
+        Parameters
+        ----------
+        mesh : UnstructuredMesh
+            _description_
+        """
+
         pass
 
-    def __call__(self,name,data,ids):
+    def __call__(self,name: str, data: ElementsContainer, ids: ArrayLike) -> None:
         pass
 
-    def PostCondition(self,mesh):
+    def PostCondition(self,mesh) -> None:
         pass
 
 class ElementCounter(ElementFilterBaseOperator):
