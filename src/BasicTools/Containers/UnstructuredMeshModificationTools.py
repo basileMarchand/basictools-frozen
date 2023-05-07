@@ -502,8 +502,8 @@ def ComputeFeatures(inputMesh: UnstructuredMesh, featureAngle:PBasicFloatType=90
     Returns
     -------
     Tuple[UnstructuredMesh,UnstructuredMesh]
-       edgeMesh: a mesh containing the edges
-       skinMesh: a mesh containing the skin
+        edgeMesh: a mesh containing the edges
+        skinMesh: a mesh containing the skin
     """
 
 
@@ -676,7 +676,7 @@ def NodesPermutation(mesh: UnstructuredMesh, per:ArrayLike):
 
 def AddTagPerBody(inmesh:UnstructuredMesh)-> np.ndarray:
     """Generate nodal tag (in the form of "Body_"+int) per body
-     a body is defined by all the nodes connected by the elements (connectivity filter in vtk )
+    a body is defined by all the nodes connected by the elements (connectivity filter in vtk )
 
     Parameters
     ----------
@@ -1072,7 +1072,7 @@ def CheckIntegrity_ComputeFeatures(GUI =False):
         OpenInParaView(mesh=skin,filename="skin.xmf")
 
         for name,data in edges.elements.items():
-           res2.GetElementsOfType(name).Merge(data)
+            res2.GetElementsOfType(name).Merge(data)
 
         OpenInParaView(res2,filename="all+edges.xmf")
         print(res2)
@@ -1195,8 +1195,8 @@ def CheckIntegrity_RigidBodyTransformation(GUI=False):
 
     theta = np.pi/2.
     A = np.array([[1, 0, 0],
-                  [0, np.cos(theta), -np.sin(theta)],
-                  [0, np.sin(theta), np.cos(theta)]])
+                    [0, np.cos(theta), -np.sin(theta)],
+                    [0, np.sin(theta), np.cos(theta)]])
     b = np.array([1,0,0])
     RigidBodyTransformation(mesh, A, b)
     return "ok"
@@ -1215,8 +1215,8 @@ def CheckIntegrity_ComputeRigidBodyTransformationBetweenTwoSetOfPoints(GUI=False
 
     theta = np.pi/3.
     A = np.array([[1, 0, 0],
-                  [0, np.cos(theta), -np.sin(theta)],
-                  [0, np.sin(theta), np.cos(theta)]])
+                    [0, np.cos(theta), -np.sin(theta)],
+                    [0, np.sin(theta), np.cos(theta)]])
     b = np.array([1,0,0])
 
     RigidBodyTransformation(mesh2, A, b)

@@ -43,7 +43,7 @@ def GetListOfPartialElementFilter(elementFilter, nbPartitions:int, frozen=True) 
 
 def VerifyExclusiveFilters(listOfFilters: List[Union[ElementFilter,FilterOP]], mesh: UnstructuredMesh) -> bool :
     """Function to check if a list of ElementFilter is exclusive.
-       (each element is present at the most in one filter)
+        (each element is present at the most in one filter)
 
     Parameters
     ----------
@@ -135,7 +135,6 @@ def FilterToETag(mesh: UnstructuredMesh, elementFilter: Union[ElementFilter,Filt
         the name of tag to create
 
     if the tag already exists, an exception is raised.
-
     """
 
     elementFilter.mesh = mesh

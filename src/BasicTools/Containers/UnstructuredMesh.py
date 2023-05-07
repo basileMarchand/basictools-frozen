@@ -288,8 +288,8 @@ class AllElements(object):
     This class is sorted by keys, in lexicographic order, so the retrieving order is stable.
 
     note:
-      FB: the number of different types of elements is low, I don't think
-      this is gonna add a lot of overhead to the library
+        FB: the number of different types of elements is low, I don't think
+        this is gonna add alot of overhead to the library
     """
 
     def __init__(self):

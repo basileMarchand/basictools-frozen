@@ -126,8 +126,8 @@ class Tag(BaseOutputObject):
 
     def Allocate(self, allocationSize:int):
         """Allocate the memory for n objects
-           the user is responsible of filling each individual position.
-           Internally numpy.resize is used.
+        the user is responsible of filling each individual position.
+        Internally numpy.resize is used.
 
         Parameters
         ----------

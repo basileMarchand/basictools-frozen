@@ -134,11 +134,11 @@ def GetFieldTransferOp(inputField: FEField, targetPoints: ArrayLike, method: Uni
         a tuple with 2 object containing:
             op, sparse matrix with the operator to make the transfer
             status: vector of ints with the status transfer for each target point :
-               0: "Nearest"
-               1: "Interp"
-               2: "Extrap"
-               3: "Clamp"
-               4: "ZeroFill"
+                0: "Nearest"
+                1: "Interp"
+                2: "Extrap"
+                3: "Clamp"
+                4: "ZeroFill"
         return op, status
 
     """
@@ -726,7 +726,6 @@ def PointToCellData(mesh: UnstructuredMesh, pointfield : ArrayLike, dim:int=None
     np.ndarray
         a numpy array with the field on the elements
     """
-
     nbelemtns = 0
     filt = ElementFilter(mesh,dimensionality=dim)
     for name,data,ids in filt:
@@ -807,7 +806,6 @@ def QuadFieldToLinField(quadMesh:UnstructuredMesh, quadField:ArrayLike, linMesh:
     np.ndarray
         _description_
     """
-
     if linMesh == None:
         linMesh = QuadToLin(quadMesh)
 

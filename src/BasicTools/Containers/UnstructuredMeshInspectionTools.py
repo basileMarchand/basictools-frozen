@@ -193,7 +193,7 @@ def GetElementsFractionInside(field:ArrayLike, points:ArrayLike, name:str, eleme
                 else:
                     res[cpt] = 1-abs(vals[0])/np.sup(abs(vals))
             elif ElementNames.dimension[name] == 2 and len(vals) == 3:
-               # triangles
+                # triangles
                 signs = extract_signs(vals)
                 minuses, pluses = split_signs(signs)
 
@@ -546,26 +546,26 @@ def ExtractElementsByMask(inElementContainer: ElementsContainer, mask: ArrayLike
     if mask.dtype == bool:
         nbElements =0
         for i in range(inElementContainer.GetNumberOfElements()):
-           newIndex[i] = nbElements
-           nbElements += 1 if mask[i] else 0
+            newIndex[i] = nbElements
+            nbElements += 1 if mask[i] else 0
         iMask = mask
     else:
         nbElements = len(mask)
         iMask = np.zeros(inElementContainer.GetNumberOfElements(),dtype=bool)
         cpt =0
         for index in mask:
-           newIndex[index ] = cpt
-           iMask[index] = True
-           cpt += 1
+            newIndex[index ] = cpt
+            iMask[index] = True
+            cpt += 1
 
     outElements.Allocate(nbElements)
     outElements.connectivity = inElementContainer.connectivity[iMask,:]
     outElements.originalIds = np.where(iMask)[0]
 
     for tag in inElementContainer.tags  :
-       temp = np.extract(iMask[tag.GetIds()],tag.GetIds())
-       newid = newIndex[temp]
-       outElements.tags.CreateTag(tag.name).SetIds(newid)
+        temp = np.extract(iMask[tag.GetIds()],tag.GetIds())
+        newid = newIndex[temp]
+        outElements.tags.CreateTag(tag.name).SetIds(newid)
 
     return outElements
 
@@ -605,60 +605,57 @@ def ExtractElementByTags(inmesh: UnstructuredMesh, tagsToKeep:List[str], allNode
     nodalMask = np.zeros(inmesh.GetNumberOfNodes(),dtype = bool)
     for name, elements in inmesh.elements.items():
 
-       #if dimensionalityFilter is not None:
-       #    if dimensionalityFilter !=  ElementNames.dimension[name]:
-       #        continue
+        #if dimensionalityFilter is not None:
+        #    if dimensionalityFilter !=  ElementNames.dimension[name]:
+        #        continue
 
-       if (np.any([x in elements.tags for x in tagsToKeep] ) == False) and (dimensionalityFilter is None) :
-           if np.any([x in inmesh.nodesTags for x in tagsToKeep]) == False:
-               continue# pragma: no cover
-
-
-       toKeep = np.zeros(elements.GetNumberOfElements(), dtype=bool)
-       # check elements tags
-       for tagToKeep in tagsToKeep:
-           if tagToKeep in elements.tags:
-               toKeep[elements.tags[tagToKeep].GetIds()] = True
-
-       # check for nodes tags
-       for tagToKeep in tagsToKeep:
-           if tagToKeep in inmesh.nodesTags:
-             nodalMask.fill(False)
-             tag = inmesh.GetNodalTag(tagToKeep)
-             nodalMask[tag.GetIds()] = True
-             elemMask = np.sum(nodalMask[elements.connectivity],axis=1)
-             if allNodes :
-                 toKeep[elemMask == elements.GetNumberOfNodesPerElement()] = True
-             else:
-                 toKeep[elemMask > 0] = True
-
-       # if dimensionality is ok and no tag to keep, we keep all elements
-       if dimensionalityFilter is not None:
-           if dimensionalityFilter ==  ElementNames.dimension[name]:
-               toKeep[:] = True
-           #if len(tagsToKeep)  == 0:
-           #    toKeep[:] = True
-
-       newIndex = np.empty(elements.GetNumberOfElements(), dtype=PBasicIndexType )
-       cpt =0
-       for i in range(elements.GetNumberOfElements()):
-           newIndex[i] = cpt
-           cpt += 1 if toKeep[i] else 0
+        if (np.any([x in elements.tags for x in tagsToKeep] ) == False) and (dimensionalityFilter is None) :
+            if np.any([x in inmesh.nodesTags for x in tagsToKeep]) == False:
+                continue# pragma: no cover
 
 
+        toKeep = np.zeros(elements.GetNumberOfElements(), dtype=bool)
+        # check elements tags
+        for tagToKeep in tagsToKeep:
+            if tagToKeep in elements.tags:
+                toKeep[elements.tags[tagToKeep].GetIds()] = True
+
+        # check for nodes tags
+        for tagToKeep in tagsToKeep:
+            if tagToKeep in inmesh.nodesTags:
+                nodalMask.fill(False)
+                tag = inmesh.GetNodalTag(tagToKeep)
+                nodalMask[tag.GetIds()] = True
+                elemMask = np.sum(nodalMask[elements.connectivity],axis=1)
+                if allNodes :
+                    toKeep[elemMask == elements.GetNumberOfNodesPerElement()] = True
+                else:
+                    toKeep[elemMask > 0] = True
+
+        # if dimensionality is ok and no tag to keep, we keep all elements
+        if dimensionalityFilter is not None:
+            if dimensionalityFilter ==  ElementNames.dimension[name]:
+                toKeep[:] = True
+            #if len(tagsToKeep)  == 0:
+            #    toKeep[:] = True
+
+        newIndex = np.empty(elements.GetNumberOfElements(), dtype=PBasicIndexType )
+        cpt =0
+        for i in range(elements.GetNumberOfElements()):
+            newIndex[i] = cpt
+            cpt += 1 if toKeep[i] else 0
 
 
+        outElements = outMesh.GetElementsOfType(name)
+        nbToKeep = np.sum(toKeep)
+        outElements.Allocate(nbToKeep)
+        outElements.connectivity = elements.connectivity[toKeep,:]
+        outElements.originalIds = np.where(toKeep)[0]
 
-       outElements = outMesh.GetElementsOfType(name)
-       nbToKeep = np.sum(toKeep)
-       outElements.Allocate(nbToKeep)
-       outElements.connectivity = elements.connectivity[toKeep,:]
-       outElements.originalIds = np.where(toKeep)[0]
-
-       for tag in elements.tags  :
-           temp = np.extract(toKeep[tag.GetIds()],tag.GetIds())
-           newId = newIndex[temp]
-           outElements.tags.CreateTag(tag.name,errorIfAlreadyCreated=False).SetIds(newId)
+        for tag in elements.tags:
+            temp = np.extract(toKeep[tag.GetIds()],tag.GetIds())
+            newId = newIndex[temp]
+            outElements.tags.CreateTag(tag.name,errorIfAlreadyCreated=False).SetIds(newId)
 
     if cleanLonelyNodes:
         outMesh.originalIDNodes = np.arange(inmesh.GetNumberOfNodes(), dtype=PBasicIndexType)
@@ -773,46 +770,46 @@ def MeshQualityAspectRatioBeta(mesh: UnstructuredMesh):
             pass
         elif ElementNames.dimension[name] == 3:
             if name == ElementNames.Tetrahedron_4:
-               mMax = 0
-               for el in range(data.GetNumberOfElements()):
-                   n = data.connectivity[el,:]
-                   nodes = mesh.nodes[n,:]
-                   p0 = nodes[0,:]
-                   p1 = nodes[1,:]
-                   p2 = nodes[2,:]
-                   p3 = nodes[3,:]
+                mMax = 0
+                for el in range(data.GetNumberOfElements()):
+                    n = data.connectivity[el,:]
+                    nodes = mesh.nodes[n,:]
+                    p0 = nodes[0,:]
+                    p1 = nodes[1,:]
+                    p2 = nodes[2,:]
+                    p3 = nodes[3,:]
 
-                   a = np.linalg.norm(p1-p0)
-                   b = np.linalg.norm(p2-p0)
-                   normal = np.cross(p1-p0,p2-p0)
-                   #https://math.stackexchange.com/questions/128991/how-to-calculate-area-of-3d-triangle
-                   base_area = 0.5*a*b*np.sqrt(1-(np.dot(p1-p0,p2-p0)/(a*b))**2)
+                    a = np.linalg.norm(p1-p0)
+                    b = np.linalg.norm(p2-p0)
+                    normal = np.cross(p1-p0,p2-p0)
+                    #https://math.stackexchange.com/questions/128991/how-to-calculate-area-of-3d-triangle
+                    base_area = 0.5*a*b*np.sqrt(1-(np.dot(p1-p0,p2-p0)/(a*b))**2)
 
-                   normal /= np.linalg.norm(normal)
+                    normal /= np.linalg.norm(normal)
 
-                   # distance to the opposite point
-                   d = np.dot(normal,p3-p0)
+                    # distance to the opposite point
+                    d = np.dot(normal,p3-p0)
 
-                   volume = base_area*d
-                   inscribed_sphere_radius = d/3
-                   #https://math.stackexchange.com/questions/2820212/circumradius-of-a-tetrahedron
+                    volume = base_area*d
+                    inscribed_sphere_radius = d/3
+                    #https://math.stackexchange.com/questions/2820212/circumradius-of-a-tetrahedron
 
-                   c = np.linalg.norm(p3-p0)
+                    c = np.linalg.norm(p3-p0)
 
-                   A = np.linalg.norm(p3-p2)
-                   B = np.linalg.norm(p1-p3)
-                   C = np.linalg.norm(p2-p1)
+                    A = np.linalg.norm(p3-p2)
+                    B = np.linalg.norm(p1-p3)
+                    C = np.linalg.norm(p2-p1)
 
-                   circumRadius_sphere_radius = np.sqrt((a*A+b*B+c*C)*
-                                                         (a*A+b*B-c*C)*
-                                                         (a*A-b*B+c*C)*
-                                                         (-a*A+b*B+c*C))/(24*volume)
+                    circumRadius_sphere_radius = np.sqrt((a*A+b*B+c*C)*
+                                                            (a*A+b*B-c*C)*
+                                                            (a*A-b*B+c*C)*
+                                                            (-a*A+b*B+c*C))/(24*volume)
 
-                   AspectRatioBeta = circumRadius_sphere_radius/(3.0 * inscribed_sphere_radius)
+                    AspectRatioBeta = circumRadius_sphere_radius/(3.0 * inscribed_sphere_radius)
 
-                   mMax = max([mMax,AspectRatioBeta])
-                   if AspectRatioBeta > 1000:
-                       raise Exception("Element " +str(el) + " has quality of " +str(AspectRatioBeta))
+                    mMax = max([mMax,AspectRatioBeta])
+                    if AspectRatioBeta > 1000:
+                        raise Exception("Element " +str(el) + " has quality of " +str(AspectRatioBeta))
         else:
             raise
 
@@ -979,10 +976,10 @@ def CheckIntegrity_EnsureUniquenessElements(GUI=False):
 
     # This function must not work
     try:
-       EnsureUniquenessElements(mesh)
-       return "No ok"
+        EnsureUniquenessElements(mesh)
+        return "No ok"
     except :
-       pass
+        pass
     return "ok"
 
 def CheckIntegrity_GetElementsFractionInside(GUI=False):

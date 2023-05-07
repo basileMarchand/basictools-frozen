@@ -71,7 +71,7 @@ class node():
             Zlowerlimit, Zupperlimit = zzz[k],zzz[k+1]
 
             if self.feather[i][j][k] is None:
-                 self.feather[i][j][k] = node(self, Xupperlimit, Yupperlimit, Zupperlimit, Xlowerlimit, Ylowerlimit, Zlowerlimit)
+                self.feather[i][j][k] = node(self, Xupperlimit, Yupperlimit, Zupperlimit, Xlowerlimit, Ylowerlimit, Zlowerlimit)
             self.feather[i][j][k].OpOnFeather(coord, level,op,*args )
 
         else :
@@ -413,9 +413,9 @@ def CheckIntegrity():
 
     cpt =0
     for i in entries:
-      print(cpt),
-      print(i)
-      cpt += 1
+        print(cpt),
+        print(i)
+        cpt += 1
 
     print(len(i))
     if len(entries) != 4:# pragma: no cover
@@ -428,9 +428,9 @@ def CheckIntegrity():
     print("-------")
     cpt =0
     for i in entries:
-      print(cpt),
-      print(i)
-      cpt += 1
+        print(cpt),
+        print(i)
+        cpt += 1
 
     if len(entries) != 3:# pragma: no cover
         raise(Exception("Error") )
@@ -438,4 +438,3 @@ def CheckIntegrity():
 
 if __name__ == '__main__':
     print((CheckIntegrity()))# pragma: no cover
-

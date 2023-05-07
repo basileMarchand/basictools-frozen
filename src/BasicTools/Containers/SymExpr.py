@@ -245,10 +245,10 @@ def CheckIntegrity(GUI=False):
 
     for name,data in mesh.elements.items():
         if EN.dimension[name] == 3:
-             data.tags.CreateTag("Inside3D",False).SetIds(np.arange(data.GetNumberOfElements()))
-             data.tags.CreateTag("Outside3D",False)
+            data.tags.CreateTag("Inside3D",False).SetIds(np.arange(data.GetNumberOfElements()))
+            data.tags.CreateTag("Outside3D",False)
         if EN.dimension[name] == 2:
-             data.tags.CreateTag("InterSurf",False).SetIds(np.arange(data.GetNumberOfElements()))
+            data.tags.CreateTag("InterSurf",False).SetIds(np.arange(data.GetNumberOfElements()))
 
     return "ok"
 

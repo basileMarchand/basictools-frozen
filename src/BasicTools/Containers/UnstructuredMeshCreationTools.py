@@ -166,9 +166,9 @@ def CreateSquare(dimensions: ArrayLike=[2,2], origin: ArrayLike=[-1.0,-1.0], spa
     d = np.array(dimensions)-1
     s = spacing
     indices = [[   0,   0,   0],
-              [d[0],   0,   0],
-              [   0,d[1],   0],
-              [d[0],d[1],   0]]
+                [d[0],   0,   0],
+                [   0,d[1],   0],
+                [d[0],d[1],   0]]
 
     for n in indices:
         idx = myMesh.GetMonoIndexOfNode(n)
@@ -213,7 +213,7 @@ def CreateDisk(nr: PBasicIndexType=10, nTheta: PBasicIndexType=10, r0: PBasicFlo
     nr : PBasicIndexType, optional
         number of points in the radial direction, by default 10
     nTheta : PBasicIndexType, optional
-         number of point in the angular direction, by default 10
+        number of point in the angular direction, by default 10
     r0 : PBasicFloatType, optional
         internal radius, by default 0.5
     r1 : PBasicFloatType, optional
@@ -257,7 +257,7 @@ def CreateMeshFromConstantRectilinearMesh(CRM: ConstantRectilinearMesh, ofSimple
     Returns
     -------
     UnstructuredMesh
-       An UnstructuredMesh instance of the input mesh
+        An UnstructuredMesh instance of the input mesh
     """
     res = UnstructuredMesh()
 
@@ -321,13 +321,13 @@ def CreateCube(dimensions: ArrayLike=[2,2,2], origin: ArrayLike=[-1.0,-1.0,-1.0]
     d = np.array(dimensions)-1
     s = spacing
     indices = [[   0,   0,   0],
-              [d[0],   0,   0],
-              [   0,d[1],   0],
-              [d[0],d[1],   0],
-              [   0,   0,d[2]],
-              [d[0],   0,d[2]],
-              [   0,d[1],d[2]],
-              [d[0],d[1],d[2]]]
+                [d[0],   0,   0],
+                [   0,d[1],   0],
+                [d[0],d[1],   0],
+                [   0,   0,d[2]],
+                [d[0],   0,d[2]],
+                [   0,d[1],d[2]],
+                [d[0],d[1],d[2]]]
 
     for n in indices:
         idx = myMesh.GetMonoIndexOfNode(n)
@@ -915,12 +915,12 @@ def SubDivideMesh(mesh: UnstructuredMesh, level: PBasicIndexType=1) -> Unstructu
     subdivisionAlmanac = {}
     subdivisionAlmanac[ElementNames.Point_1] = [(ElementNames.Point_1, [0]) ]
     subdivisionAlmanac[ElementNames.Bar_2] = [(ElementNames.Bar_2, [0,2]),
-                                              (ElementNames.Bar_2, [2,1])]
+                                                (ElementNames.Bar_2, [2,1])]
 
     subdivisionAlmanac[ElementNames.Quadrangle_4] = [(ElementNames.Quadrangle_4, [0,4,8,7]),
-                                                     (ElementNames.Quadrangle_4, [4,1,5,8]),
-                                                     (ElementNames.Quadrangle_4, [8,5,2,6]),
-                                                     (ElementNames.Quadrangle_4, [7,8,6,3])]
+                                                    (ElementNames.Quadrangle_4, [4,1,5,8]),
+                                                    (ElementNames.Quadrangle_4, [8,5,2,6]),
+                                                    (ElementNames.Quadrangle_4, [7,8,6,3])]
 
     subdivisionAlmanac[ElementNames.Hexaedron_8] = [(ElementNames.Hexaedron_8, [ 0, 8,24,11,16,22,26,20]),
                                                     (ElementNames.Hexaedron_8, [ 8, 1, 9,24,22,17,21,26]),
@@ -937,16 +937,16 @@ def SubDivideMesh(mesh: UnstructuredMesh, level: PBasicIndexType=1) -> Unstructu
                                                     (ElementNames.Triangle_3, [ 5, 4, 2])]
 
     subdivisionAlmanac[ElementNames.Tetrahedron_4] =  [(ElementNames.Tetrahedron_4, [ 0, 4, 6, 7]),
-                                                       (ElementNames.Tetrahedron_4, [ 1, 5, 4, 8]),
-                                                       (ElementNames.Tetrahedron_4, [ 2, 6, 5, 9]),
-                                                       (ElementNames.Tetrahedron_4, [ 7, 8, 9, 3]),
+                                                    (ElementNames.Tetrahedron_4, [ 1, 5, 4, 8]),
+                                                    (ElementNames.Tetrahedron_4, [ 2, 6, 5, 9]),
+                                                    (ElementNames.Tetrahedron_4, [ 7, 8, 9, 3]),
 
-                                                       (ElementNames.Tetrahedron_4, [ 5, 6, 7, 9]),
-                                                       (ElementNames.Tetrahedron_4, [ 5, 6, 4, 7]),
-                                                       (ElementNames.Tetrahedron_4, [ 5, 7, 4, 8]),
-                                                       (ElementNames.Tetrahedron_4, [ 5, 9, 7, 8]),
+                                                    (ElementNames.Tetrahedron_4, [ 5, 6, 7, 9]),
+                                                    (ElementNames.Tetrahedron_4, [ 5, 6, 4, 7]),
+                                                    (ElementNames.Tetrahedron_4, [ 5, 7, 4, 8]),
+                                                    (ElementNames.Tetrahedron_4, [ 5, 9, 7, 8]),
 
-                                                       ]
+                                                    ]
 
 
     from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo, LagrangeSpaceP2
@@ -986,7 +986,7 @@ def SubDivideMesh(mesh: UnstructuredMesh, level: PBasicIndexType=1) -> Unstructu
             for c in range(3):
                 res.nodes[nP2[:,sf], c] = np.sum(mesh.nodes[:,c][nGeo]*geoNs,axis=1)
 
-       #generation of elements
+        #generation of elements
         for t, nn in subdivisionAlmanac[elemType]:
             newElements = res.GetElementsOfType(t)
             offset = newElements.GetNumberOfElements()
@@ -1008,13 +1008,13 @@ def CheckIntegrity_CreateDisk(GUI=False):
 
 def CheckIntegrity_SubDivideMesh(GUI=False):
     points = [[0,0,0],
-              [1,0,0],
-              [1,1,0],
-              [0,1,0],
-              [0,0,1],
-              [1,0,1.5],
-              [1,1,1],
-              [0,1,1.5]]
+                [1,0,0],
+                [1,1,0],
+                [0,1,0],
+                [0,0,1],
+                [1,0,1.5],
+                [1,1,1],
+                [0,1,1.5]]
     hexahedrons = [[0,1,2,3,4,5,6,7],]
     mesh = CreateMeshOf(points, hexahedrons, ElementNames.Hexaedron_8)
     mesh.nodesTags.CreateTag("FirstPoint").AddToTag(0)

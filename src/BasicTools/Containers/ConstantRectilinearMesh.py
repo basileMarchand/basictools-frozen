@@ -81,7 +81,7 @@ class ConstantRectilinearElementContainer(BaseOutputObject):
             self.elementType = ElementNames.Quadrangle_4
             self.space =  LagrangeSpaceP1[ElementNames.Quadrangle_4]
         else:
-             raise(Exception("cant build a mesh of this dimensionality"))
+            raise(Exception("cant build a mesh of this dimensionality"))
         self.space.Create()
         self.originalIds = np.arange(self.GetNumberOfElements(),dtype=PBasicIndexType)
 
@@ -276,9 +276,8 @@ class ConstantRectilinearMesh(MeshBase):
             the dimensionality of the mesh (2 or 3), by default 3
         """
         super(ConstantRectilinearMesh,self).__init__()
-        #Number of nodes
         self.__dimensions = np.ones((dim,),dtype=PBasicIndexType)*2
-        self.__origin = np.zeros((dim,) )
+        self.__origin = np.zeros((dim,))
         self.__spacing = np.ones((dim,))
         self.nodes = None
         self.originalIDNodes = None
@@ -684,13 +683,13 @@ class ConstantRectilinearMesh(MeshBase):
             x = np.arange(self.__dimensions[0])*self.__spacing[0]+self.__origin[0]
             y = np.arange(self.__dimensions[1])*self.__spacing[1]+self.__origin[1]
             if self.GetDimensionality() == 2:
-              xv, yv = np.meshgrid(x, y,indexing='ij')
-              self.nodes = np.empty((self.GetNumberOfNodes(),2),dtype=PBasicFloatType)
-              self.nodes[:,0] = xv.ravel()
-              self.nodes[:,1] = yv.ravel()
+                xv, yv = np.meshgrid(x, y,indexing='ij')
+                self.nodes = np.empty((self.GetNumberOfNodes(),2),dtype=PBasicFloatType)
+                self.nodes[:,0] = xv.ravel()
+                self.nodes[:,1] = yv.ravel()
 
-              self.originalIDNodes = np.arange(self.GetNumberOfNodes(),dtype=PBasicIndexType)
-              return self.nodes
+                self.originalIDNodes = np.arange(self.GetNumberOfNodes(),dtype=PBasicIndexType)
+                return self.nodes
 
             z = np.arange(self.__dimensions[2])*self.__spacing[2]+self.__origin[2]
             xv, yv, zv = np.meshgrid(x, y,z,indexing='ij')
@@ -768,8 +767,8 @@ class ConstantRectilinearMesh(MeshBase):
         if self.GetDimensionality() == 3:
             #the faces, the edges, the corners
             res = np.empty(dim[0]*dim[1]*2+
-                           dim[1]*d2[2]*2+
-                           d2[0]*d2[2]*2,dtype=PBasicIndexType)
+                        dim[1]*d2[2]*2+
+                        d2[0]*d2[2]*2,dtype=PBasicIndexType)
 
 
             face = GetMonoIndexOfIndexTensorProduct3D(range(f,l[0]),range(f,l[1]),[f, l[2]-1])
@@ -784,8 +783,7 @@ class ConstantRectilinearMesh(MeshBase):
             cpt += face.size
         else:
             #the faces, the edges, the corners
-            res = np.empty(dim[0]*2+
-                           d2[1]*2,dtype=PBasicIndexType)
+            res = np.empty(dim[0]*2 + d2[1]*2,dtype=PBasicIndexType)
 
 
             face = GetMonoIndexOfIndexTensorProduct2D(range(f,l[0]),[f, l[1]-1])
@@ -937,15 +935,15 @@ def CheckIntegrity():
     # Error checking tests
     try:
         # not implemented for dim = 1 this line must fail
-        myMesh = ConstantRectilinearMesh( dim=1)
+        myMesh = ConstantRectilinearMesh(dim=1)
         raise("Error detecting bad argument") # pragma: no cover
     except:
         pass
 
     # Error checking tests
     try:
-        # not implemented for dim = 1 this line must fail
-        myMesh = ConstantRectilinearMesh( dim=2)
+        # this line must fail
+        myMesh = ConstantRectilinearMesh(dim=2)
         myMesh.SetDimensions([1,2,3])
         raise("Error detecting bad argument") # pragma: no cover
     except:
@@ -957,7 +955,7 @@ def CheckIntegrity():
     myMesh.SetSpacing([1, 1, 1])
 
     try:
-        # not implemented for dim = 1 this line must fail
+        # this line must fail
         myMesh.GetNodalIndicesOfBorder()
         raise("Error detecting bad mesh props")# pragma: no cover
     except:

@@ -220,7 +220,7 @@ class NodeFilter(Filter):
     mesh : Optional[UnstructuredMesh], optional
         The mesh to be used, by default None
     etags : Optional[List[str]], optional
-       The element tags to be used to filter the nodes, by default None
+        The element tags to be used to filter the nodes, by default None
     etag : Optional[str], optional
         A element tag name to be used to filter the nodes, by default None
     """

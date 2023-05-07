@@ -168,9 +168,9 @@ def CreateSquare(dimensions:ArrayLike=[2,2], origin:ArrayLike=[-1.0,-1.0], spaci
     d = np.array(dimensions)-1
     s = spacing
     indexs = [[   0,   0,   0],
-              [d[0],   0,   0],
-              [   0,d[1],   0],
-              [d[0],d[1],   0]]
+            [d[0],   0,   0],
+            [   0,d[1],   0],
+            [d[0],d[1],   0]]
 
     for n in indexs:
         idx = myMesh.GetMonoIndexOfNode(n)

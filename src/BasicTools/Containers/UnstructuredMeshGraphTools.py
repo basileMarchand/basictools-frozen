@@ -1176,9 +1176,9 @@ def CheckIntegrity_FloaterMesh3DParametrizationStarDomain(GUI=False):
     np.testing.assert_almost_equal(infos['maxEdge'], 0.8023930268619969)
 
     refNodes = np.asarray([[-0.36304405, -0.36304405, -0.36304405],
-                         [-0.39871955, -0.39871955,  0.01773299],
-                         [-0.40280694, -0.40280694,  0.43490912],
-                         [-0.39871955,  0.01773299, -0.39871955]])
+                        [-0.39871955, -0.39871955,  0.01773299],
+                        [-0.40280694, -0.40280694,  0.43490912],
+                        [-0.39871955,  0.01773299, -0.39871955]])
 
     np.testing.assert_almost_equal(meshParam.nodes[:4,:], refNodes)
 
@@ -1190,9 +1190,9 @@ def CheckIntegrity_FloaterMesh3DParametrizationStarDomain(GUI=False):
     np.testing.assert_almost_equal(infos['maxEdge'], 0.09354143466934872)
 
     refNodes = np.asarray([[0.975, 0.45,  0.025],
-                         [0.975, 0.45,  0.1  ],
-                         [0.975, 0.45,  0.175],
-                         [0.975, 0.5 ,  0.025]])
+                        [0.975, 0.45,  0.1  ],
+                        [0.975, 0.45,  0.175],
+                        [0.975, 0.5 ,  0.025]])
 
     np.testing.assert_almost_equal(meshParam.nodes[:4,:], refNodes)
 
@@ -1219,17 +1219,17 @@ def CheckIntegrity_FloaterMesh3DParametrization(GUI=False):
     np.testing.assert_almost_equal(infos['maxEdge'], 0.7653668647301797)
 
     refNodes = np.asarray([[ 3.5847384e-01, -9.0205621e-17,  4.5861232e-01],
-       [ 9.1039013e-02,  3.3700249e-01,  4.5766116e-01],
-       [-2.0588015e-01,  6.0548442e-01,  4.1107971e-01],
-       [ 5.5611111e-01, -1.5308935e-16,  1.1640921e-02]])
+        [ 9.1039013e-02,  3.3700249e-01,  4.5766116e-01],
+        [-2.0588015e-01,  6.0548442e-01,  4.1107971e-01],
+        [ 5.5611111e-01, -1.5308935e-16,  1.1640921e-02]])
 
     np.testing.assert_almost_equal(meshParam.nodes[:4,:], refNodes)
 
     positions1 = np.asarray(
     [[0.2 , 0.],
-     [0.  , 0.2],
-     [-0.2, 0.],
-     [0.  , -0.2]])
+    [0.  , 0.2],
+    [-0.2, 0.],
+    [0.  , -0.2]])
 
     positions2 = np.asarray(
     [[0.45,0.05]])
@@ -1248,9 +1248,9 @@ def CheckIntegrity_FloaterMesh3DParametrization(GUI=False):
     np.testing.assert_almost_equal(infos['maxEdge'], 0.7653668647301799)
 
     refNodes = np.asarray([[ 0.2157777, -0.0394311,  0.5044662],
-       [-0.0523037,  0.3038109,  0.4818311],
-       [-0.312202 ,  0.5807106,  0.4138475],
-       [ 0.5126741, -0.0293534,  0.0382572]])
+        [-0.0523037,  0.3038109,  0.4818311],
+        [-0.312202 ,  0.5807106,  0.4138475],
+        [ 0.5126741, -0.0293534,  0.0382572]])
 
     np.testing.assert_almost_equal(meshParam.nodes[:4,:], refNodes)
 

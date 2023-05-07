@@ -113,7 +113,7 @@ class MeshBase(BaseOutputObject):
 
     def GetNodalTag(self, tagName:str):
         """return the Tag (instance of the class) with name tagName.
-         If the tag does not exist a new is created """
+        If the tag does not exist a new is created """
         return self.nodesTags.CreateTag(tagName,False)
 
     def GetNumberOfNodes(self) -> int :
@@ -166,9 +166,9 @@ class MeshBase(BaseOutputObject):
 
         counter = 0
         for key, value in self.elements.items():
-           value.originalIds = np.arange(counter,counter+value.GetNumberOfElements(),dtype=PBasicIndexType)
-           value.originalIds += offset
-           counter += value.GetNumberOfElements()
+            value.originalIds = np.arange(counter,counter+value.GetNumberOfElements(),dtype=PBasicIndexType)
+            value.originalIds += offset
+            counter += value.GetNumberOfElements()
 
 
     def WithModification(self) -> ClosingMeshAutomatically:
