@@ -10,6 +10,9 @@ import numpy as np
 from typing import Dict, Tuple, List
 
 class GeoSupport():
+    """Class to store basic information about the geometrical support.
+    This class in not intender for end user.
+    """
     def __init__(self,data: Tuple[str,int])-> None:
         super().__init__()
         self.name = data[0]
@@ -32,35 +35,51 @@ class GeoSupport():
         return id(self.name)
 
 GeoPoint = GeoSupport(("point",0))   #0
+"""Point geometrical support : name point, dimensionality = 0"""
 GeoBar   = GeoSupport(("bar"  ,1))   #1
+"""Bar geometrical support : name bar, dimensionality = 1"""
 GeoTri   = GeoSupport(("tri"  ,2))   #2
+"""Triangle geometrical support : name tri, dimensionality = 2"""
 GeoQuad  = GeoSupport(("quad" ,2))   #3
+"""Quadrangle geometrical support : name quad, dimensionality = 2"""
 GeoTet   = GeoSupport(("tet"  ,3))   #4
+"""Tetrahedral geometrical support : name tet, dimensionality = 3"""
 GeoPyr   = GeoSupport(("pyr"  ,3))   #5
+"""Pyramidal (square base) geometrical support : name pyr, dimensionality = 3"""
 GeoWed   = GeoSupport(("wed"  ,3))   #6
-GeoHex   = GeoSupport(("hex"  ,3 ))  #
+"""Wedge geometrical support : name wed, dimensionality = 3"""
+GeoHex   = GeoSupport(("hex"  ,3 ))  #7
+"""Hexahedral geometrical support : name hex, dimensionality = 3"""
 
 class ElementInformation():
-    def __init__(self, name, geosupport):
+    """Class to store information about the different type of elements.
+    """
+    def __init__(self, name, geoSupport):
         self.name = name
-        # the geometrical support of this element
-        self.geoSupport = geosupport
-        # dimensionality 0,1,2,3
-        self.dimension = geosupport.dimensionality
-        #number of points
+        """Element Name """
+
+        self.geoSupport = geoSupport
+        """ the geometrical support of this element """
+        self.dimension = geoSupport.dimensionality
+        """Dimensionality 0,1,2,3 """
+
         self.numberOfNodes = 0
-        # if the jacobian matrix is constant in the element
+        """number of nodes of this elements"""
         self.linear = True
-        # the higher degree of the polynomial
+        """ true if the the jacobian matrix is constant in the element"""
         self.degree = 1
-        # first level faces
-        self.faces = []
-        # second level level faces
+        """ the higher degree of the polynomial """
+        self.faces:List[Tuple[str, np.ndarray]]  = []
+        """First level faces. (triangles for a tetra for example)
+        A list containing a tuples of the elements name and the local connectivity """
         self.faces2 = []
-        # thirdt level level faces
+        """Second level faces. (bars for a tetra for example)
+        A list containing a tuples of the elements name and the local connectivity """
         self.faces3 = []
-        # permutation of index to make a valid element again after a mirror operation
+        """third level faces. (points for a tetra for example)
+        A list containing a tuples of the elements name and the local connectivity """
         self.mirrorPermutation = []
+        """Permutation of index to make a valid element again after a mirror operation"""
 
 
 numberOfNodes = {}     # type: Dict[str, int]
@@ -485,7 +504,14 @@ faces3[Hexaedron_27] = [(Point_1,[0]),
                         (Point_1,[6]),
                         (Point_1,[7])]
 
-ElementsInfo = {}
+ElementsInfo:Dict[str, ElementInformation] = {}
+
+"""Module variable to store ElementInformation for every type of element
+
+The key is the element name,
+The value is an instance of ElementInformation
+"""
+
 for name,geo in geoSupport.items():
     ei = ElementInformation(name,geo)
     ei.numberOfNodes = numberOfNodes[name]
@@ -498,6 +524,18 @@ for name,geo in geoSupport.items():
     ElementsInfo[name] = ei
 
 def CheckIntegrity(GUI=False):
+    """CheckIntegrity function. Tests
+
+    Parameters
+    ----------
+    GUI : bool, optional
+        if True, generate (in some case) an output on a new window, by default False
+
+    Returns
+    -------
+    str
+        ok if all ok
+    """
     print(GeoPoint)
     print(GeoPoint==GeoBar)
     print(GeoPoint==1)
