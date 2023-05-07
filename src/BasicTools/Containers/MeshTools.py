@@ -3,14 +3,34 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-
+from typing import Optional
 import numpy as np
 
+from BasicTools.NumpyDefs import ArrayLike
 from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshOfTriangles
 import BasicTools.Containers.ConstantRectilinearMesh as CRM
 import BasicTools.Containers.ElementNames as EN
 
-def IsClose(mesh1,mesh2):
+def IsClose(mesh1, mesh2)-> bool:
+    """Verified if two meshes are close (in the sense of numpy.isclose)
+    meshes must have the same :
+    - nodes
+    - nodes tags
+    - elements
+    - element tags
+
+    Parameters
+    ----------
+    mesh1 : _type_
+        first mesh to be compare
+    mesh2 : _type_
+        second mesh to be compare
+
+    Returns
+    -------
+    bool
+        True if mesh1 and mesh2 are close enough
+    """
     if type(mesh1) != type(mesh2):
         print("types not equal")
         return False
@@ -38,8 +58,6 @@ def IsClose(mesh1,mesh2):
             print("Nodal tag  "+ str(tag1.name) + " not equal")
             return False
 
-    
-
     for name, data1 in mesh1.elements.items():
         data2 = mesh2.elements[name]
         if not np.all(np.isclose(data1.connectivity,data2.connectivity)):
@@ -55,15 +73,15 @@ def IsClose(mesh1,mesh2):
         for name,data1 in fields1.items():
             data2 = fields2[name]
             if len(data1) !=  len(data2):
-                print("Field "+ str(name) + " has different size")    
+                print("Field "+ str(name) + " has different size")
                 return False
 
             if data1.dtype == data2.dtype and data1.dtype == object:
                 if not np.all([ d1==d2 for d1,d2 in zip(data1,data2) ]):
                     print("Field "+ str(name) + " not equal")
                     return False
-                continue    
-            
+                continue
+
             if not np.all(np.isclose(data1,data2)):
                 print("Field "+ str(name) + " not equal")
                 return False
@@ -76,10 +94,31 @@ def IsClose(mesh1,mesh2):
 
     return True
 
-def GetElementsCenters(mesh=None,nodes=None,elements=None, dim=None):
-    # this function is used in the filters implementation
-    # no Filter can appear in this implementation
+def GetElementsCenters(mesh=None, nodes: Optional[ArrayLike]=None, elements=None, dim:Optional[int]=None)-> np.ndarray:
+    """Internal function to compute the element centers.
+    Waring!!!! This function is used in the filters implementation
+    no Filter can appear in this implementation
 
+
+    Parameters
+    ----------
+    mesh : _type_, optional
+        if mesh is not none the element center for all the element is calculated, by default None
+    nodes : _type_, optional
+        if mesh is non, nodes and elements must be supplied to compute the element center only for
+        the ElementContainer, by default None
+    elements : ElementContainer, optional
+        if mesh is non, nodes and elements must be supplied to compute the element center only for
+        the ElementContainer, by default None
+    dim : int, optional
+        the dimensionality (int) to filter element to be treated, by default None
+
+    Returns
+    -------
+    np.ndarray
+        the center for each element
+    """
+    #
     if mesh is not None and elements is not None:
         raise(Exception("Cant trat mesh and element at the same time" ) )
 
