@@ -11,7 +11,23 @@ from numpy.typing import ArrayLike
 from BasicTools.Containers.Filters import ElementFilter, FilterOP, FrozenFilter, PartialElementFilter
 from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
 
-def GetListOfPartialElementFilter(elementFilter, nbPartitions, frozen=True):
+def GetListOfPartialElementFilter(elementFilter, nbPartitions:int, frozen=True) -> List[PartialElementFilter]:
+    """Generate a list of PartialElementFilter for a number of partitions
+
+    Parameters
+    ----------
+    elementFilter : ElementFilter
+        _description_
+    nbPartitions : int
+        Number of partitions
+    frozen : bool, optional
+        if True the filters are frozen (evaluated at the moment of creation), no more modification is allowed, by default True
+
+    Returns
+    -------
+    List[PartialElementFilter]
+        a list of partialElementFilter or frozen filter. the union of all the element of the list matches the original elementFilter
+    """
     if frozen:
         elementFilterFrozen = elementFilter.GetFrozenFilter()
         res = [ FrozenFilter(elementFilter.mesh) for f in range(nbPartitions) ]
@@ -78,7 +94,6 @@ def ListOfElementFiltersFromETagList(tagList: List[Union[str,List[str]]], mesh: 
 
     return listOfFilters
 
-
 def ListOfElementFiltersFromMask(maskVector: ArrayLike, mesh: Optional[UnstructuredMesh]=None) -> List[ElementFilter]:
     """Function to construct a list of filter from a mask vector
 
@@ -126,7 +141,6 @@ def FilterToETag(mesh: UnstructuredMesh, elementFilter: Union[ElementFilter,Filt
     elementFilter.mesh = mesh
     for name, data, ids in elementFilter:
         data.tags.CreateTag(tagname).SetIds(ids)
-
 
 def ReadElementFilter(string: str) -> ElementFilter:
     """Function to read from a string all the parameter of a ElementFiler
@@ -219,7 +233,6 @@ def CheckIntegrityReadElementFilter(GUI=False):
     print(ReadElementFilter(""))
     return "ok"
 
-
 def CheckIntegrity_FilterToETag(GUI=False):
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateSquare
     from BasicTools.Containers.ElementNames import Quadrangle_4
@@ -285,7 +298,6 @@ def CheckIntegrity_ListOfElementFiltersFromETagList(GUI=False):
 
     return "OK"
 
-
 def CheckIntegrity(GUI=False):
     toTest= [
         CheckIntegrityReadElementFilter,
@@ -300,7 +312,6 @@ def CheckIntegrity(GUI=False):
         if str(res).lower() != "ok": # pragma: no cover
             return "error in "+str(f) + " res"
     return "ok"
-
 
 if __name__ == '__main__':
     print(CheckIntegrity(True)) # pragma: no cover
