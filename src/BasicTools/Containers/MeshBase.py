@@ -3,7 +3,8 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-
+from __future__ import annotations
+from typing import Dict
 
 import numpy as np
 
@@ -13,16 +14,25 @@ import BasicTools.Containers.ElementNames as ElementNames
 from BasicTools.Containers.Tags import Tag, Tags
 
 class MeshBase(BaseOutputObject):
+    """This is the base mesh of all the meshe classes in BasicTools
+    """
     def __init__(self):
         super(MeshBase,self).__init__()
         self.nodesTags = Tags()
-        self.nodeFields = {}
+        """Tags for the nodes """
+        self.nodeFields: Dict[str,np.ndarray] = {}
+        """ This is a dictionary containing fields defined over the nodes (all the nodes).
+        The keys are the names of the fields
+        the values are the actual data of size (nb nodes, nb of components)"""
         self.elemFields = {}
+        """ This is a dictionary containing fields defined over the elements (all the elements).
+        The keys are the names of the fields
+        the values are the actual data of size (nb elements, nb of components)"""
+        self.props = {}
         """Metadata this is just a dictionary that can be used to transport
         information with the mesh, please use the class name as key of the
         object using/setting the information
         """
-        self.props = {}
 
     def __copy__(self):
         res = MeshBase()
@@ -67,15 +77,28 @@ class MeshBase(BaseOutputObject):
 
         return True
 
-    def GetElementsOfType(self,typename):
-        """
-        return the element container for the typename element
+    def GetElementsOfType(self, typename:str):
+        """return the element container for the element name (typename)
+
+        Parameters
+        ----------
+        typename : str
+            the name of the elements to extract
+
+        Returns
+        -------
+        ElementContainer
+            The Element Container for element
         """
         return self.elements.GetElementsOfType(typename)
 
-    def GetNamesOfElemTags(self):
-        """
-        return a list containing all the element tags present in the mehs
+    def GetNamesOfElemTags(self) -> List[str]:
+        """return a list containing all the element tags present in the mesh
+
+        Returns
+        -------
+        List[str]
+            the list of all the name of the element tags present in the mesh
         """
         res = set()
         for ntype, data in self.elements.items():
@@ -84,21 +107,29 @@ class MeshBase(BaseOutputObject):
 
         return list(res)
 
-    def CopyProperties(self,other):
+    def CopyProperties(self, other):
         import copy
         self.props = copy.deepcopy(self.props)
 
+    def GetNodalTag(self, tagName:str):
+        """return the Tag (instance of the class) with name tagName.
+         If the tag does not exist a new is created """
+        return self.nodesTags.CreateTag(tagName,False)
 
-    def GetNodalTag(self, tagName):
-        if tagName not in self.nodesTags:
-           res = Tag(tagName)
-           self.nodesTags.AddTag(res)
-           return res
-        else:
-           return self.nodesTags[tagName]
+    def GetNumberOfNodes(self) -> int :
+        """Return the number of nodes
 
-    def GetNumberOfNodes(self):
-        raise Exception()# pragma: no cover
+        Returns
+        -------
+        int
+            the number of nodes
+
+        Raises
+        ------
+        NotImplemented
+            if not implemented in derived class
+        """
+        raise NotImplemented() # pragma: no cover
 
     def ComputeBoundingBox(self):
         pass
@@ -107,14 +138,13 @@ class MeshBase(BaseOutputObject):
         pass    # pragma: no cover
 
     def GetElementsDimensionality(self) -> int:
-        """return the maximal dimension of the elements
+        """Return the maximal dimension of the elements
 
         Returns
         -------
         int
             the max of all elements dimensionality
         """
-
         return int(np.max([ElementNames.dimension[elemtype] for elemtype in self.elements.keys() ]) )
 
     def IsConstantRectilinear(self): return False
@@ -122,9 +152,14 @@ class MeshBase(BaseOutputObject):
     def IsStructured(self): return False
     def IsUnstructured(self): return False
 
-    def GenerateManufacturedOriginalIDs(self,offset=0):
-        """
-        function to generate a valid originalid data
+    def GenerateManufacturedOriginalIDs(self, offset:int=0) :
+        """function to generate a valid originalids for the nodes and the data
+
+        Parameters
+        ----------
+        offset : int, optional
+            offset to use to start counting nodes and elements.
+            This is useful for code needing numbering stating from 1, by default 0
         """
         self.originalIDNodes = np.arange(self.GetNumberOfNodes(),dtype=PBasicIndexType)
         self.originalIDNodes += offset
@@ -136,7 +171,18 @@ class MeshBase(BaseOutputObject):
            counter += value.GetNumberOfElements()
 
 
-    def WithModification(self):
+    def WithModification(self) -> ClosingMeshAutomatically:
+        """Context manager to release all the extra memory of the mesh after modification.
+        this context manager call mesh.PrepareForOutput() automatically at the end of the block
+
+        Example
+        -------
+        with mesh.WithModification():
+            # mesh.PrepareForOutput() is called at the end of this block,
+            # even if code in the block raises an exception
+
+        """
+
         class ClosingMeshAutomatically():
             def __init__(self,mesh):
                 self.mesh = mesh
