@@ -3,14 +3,15 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-from typing import Dict
+from __future__ import annotations
+from typing import Dict, Union
 
 import numpy as np
 
-from BasicTools.NumpyDefs import PBasicFloatType, PBasicIndexType
+from BasicTools.NumpyDefs import PBasicFloatType, PBasicIndexType, ArrayLike
 import BasicTools.Containers.ElementNames as ElementNames
 from BasicTools.Containers.MeshBase import MeshBase
-from BasicTools.Containers.MeshBase import Tags
+from BasicTools.Containers.MeshBase import Tags, Tag
 
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject, froze_it
 
@@ -19,15 +20,17 @@ class ElementsContainer(BaseOutputObject):
     """
     Class to hold a list of element of the same type
 
-    * elementType : a string form BasicTools.Containers.ElementNames
+    * elementType : a string from BasicTools.Containers.ElementNames
     * connectivity : the connectivity matrix starting form 0
     * tags : the tags holder class
     * originalIds : the id or number from the previous mesh/file
 
-    The user can use this data to find the mapping from the inintial mesh/file
-    to the currect mesh (self).
+    The user can use this data to find the mapping from the initial mesh/file
+    to the current mesh (self).
 
-    * self.globaloffset  : this value is calculate automaticaly by the mesh
+    * self.globaloffset  : this value is calculate automatically by the mesh
+    .. deprecated:: 2.0.0
+
     * self.cpt : an internal counter to do efficient add of elements one by one
 
     The user is responsible to call self.tighten() to compact the connectivity
@@ -45,7 +48,19 @@ class ElementsContainer(BaseOutputObject):
         self.originalOffset = 0
         self.mutable = True
 
-    def __eq__(self, other):
+    def __eq__(self, other:ElementsContainer) -> bool:
+        """return True if 2 container are equal
+
+        Parameters
+        ----------
+        other : ElementsContainer
+            _description_
+
+        Returns
+        -------
+        bool
+            True if the 2 containers are equal, False ir not
+        """
 
         if self.elementType != other.elementType:
             return False
@@ -67,18 +82,22 @@ class ElementsContainer(BaseOutputObject):
 
         return True
 
-    def GetNumberOfElements(self):
-        """
-        return the number of elements in this container
+    def GetNumberOfElements(self)->int :
+        """return the number of elements in this container
+
+        Returns
+        -------
+        int
+            Number of elements
         """
         return self.cpt
         #return self.connectivity.shape[0]
 
-    def Merge(self,other,offset=None):
+    def Merge(self,other:ElementsContainer, offset:int=None):
         """
         Merge the elements from the other container into this.
 
-        Non elimination of double elements is done
+        Warning!!! Non elimination of double elements is done
 
         if an offset is supplied the connectivity of the other container is
         shifted by the value of the offset during the merge
@@ -100,15 +119,20 @@ class ElementsContainer(BaseOutputObject):
 
         self.cpt += other.cpt
 
-    def AddNewElements(self,conn,originalids=None):
-        """
-        append a new element to the connectivity
+    def AddNewElements(self, conn: ArrayLike, originalids: ArrayLike=None) -> int:
+        """Append a new elements to the connectivity
 
-        inputs:
-        conn : connectivity of the added element
-        originalid : the original id of the added element
+        Parameters
+        ----------
+        conn : ArrayLike
+            connectivity of the added elements
+        originalids : ArrayLike, optional
+            the original id of the added element, by default -1 is used
 
-        return the total number of elements in the container
+        Returns
+        -------
+        int
+            the total number of elements in the container
         """
         onoe = self.GetNumberOfElements()
         self.Allocate(onoe+conn.shape[0])
@@ -122,15 +146,20 @@ class ElementsContainer(BaseOutputObject):
 
         return self.cpt
 
-    def AddNewElement(self,conn,originalid):
-        """
-        append a new element to the connectivity
+    def AddNewElement(self, conn: ArrayLike, originalid:int)-> int:
+        """append a single element to the connectivity
 
-        inputs:
-        conn : connectivity of the added element
-        originalid : the original id of the added element
+        Parameters
+        ----------
+        conn : ArrayLike
+            connectivity of the added element
+        originalid : int
+            the original id of the added element
 
-        return the total number of elements in the container
+        Returns
+        -------
+        int
+            the total number of elements in the container
         """
         if self.cpt >= self.connectivity.shape[0]:
             self.Reserve(2*self.cpt+1)
@@ -141,72 +170,109 @@ class ElementsContainer(BaseOutputObject):
 
         return self.cpt
 
-    def GetNumberOfNodesPerElement(self):
-        """
-        return the number of nodes per element for the elements in this container
+    def GetNumberOfNodesPerElement(self) -> int :
+        """return the number of nodes per element for the elements in this container
+
+        Returns
+        -------
+        int
+            the number of nodes per element for the elements in this container
         """
         if  self.connectivity.shape[1]:
             return self.connectivity.shape[1]
         return ElementNames.numberOfNodes[self.elementType]
 
-    def GetNodesIdFor(self,ids):
-        """
-        return the nodes used by the list of elements
+    def GetNodesIdFor(self, ids:Union[int,ArrayLike] ) -> np.ndarray:
+        """return the nodes used by the list of elements
 
         input:
-            ids : list of ids of element to treat (always a local id list)
+            ids :
+
+        Parameters
+        ----------
+        ids : Union[int,ArrayLike]
+            the id or a list of ids of elements to treat (always a local id list)
+
+        Returns
+        -------
+        np.ndarray
+            the ids of the nodes used by the elements ids
         """
+
         return np.unique(self.connectivity[ids,:])
 
-    def GetTag(self, tagName):
-        """
-        return the tag based is a name
-        if the tag does not exist a new tag is created
+    def GetTag(self, tagName:str)->Tag:
+        """ return the tag by name.
+        If the tag does not exist a new tag is created
+
+        Parameters
+        ----------
+        tagName : str
+            the name of the tag to retrieve
+
+        Returns
+        -------
+        Tag
+            a tag with the name tagName
         """
         return self.tags.CreateTag(tagName,False)
 
-    def Reserve(self,nbElements):
-        """
-        Reserve the storage for nbElements
+    def Reserve(self,nbElements:int):
+        """Reserve the storage for nbElements
 
-        the user is responsible to call self.tighten() to compact the connectivity
+        The user is responsible to call self.tighten() to compact the connectivity
+        and the originalIds.
         matrix after the population
 
+        Parameters
+        ----------
+        nbElements : int
+            Number of element to reserve
         """
+
         if nbElements != self.connectivity.shape[0]:
             self.connectivity =  np.resize(self.connectivity, (nbElements,self.GetNumberOfNodesPerElement()))
             self.originalIds =  np.resize(self.originalIds, (nbElements,))
 
-    def Allocate(self,nbElements):
-        """
-        Allocate the storage for nbElements
+    def Allocate(self,nbElements:int):
+        """Allocate the storage for nbElements
 
-        the user is responsible of filling the connectivity and the originalid
+        the user is responsible of filling the connectivity and the originalIds
         with valid values
 
+        Parameters
+        ----------
+        nbElements : int
+            Number of element to Allocate
         """
         self.Reserve(nbElements)
         self.cpt = nbElements
 
-    def tighten(self):
-        """
-        to compact the storage an free non used space
+    def tighten(self)-> None:
+        """Compact the storage and free non used space.
         """
         self.Reserve(self.cpt)
         self.tags.Tighten()
 
+    def AddElementToTag(self, globalElemNumber:int, tagname:str)-> bool:
 
-    def AddElementToTag(self,globalElemNumber,tagname):
-        """
-        Add an element to a tag using a global element number
+        """Add an element to a tag using a global element number, if the global number
         The user must compute the globaloffset first to make this function work
 
+        .. deprecated:: 2.0.0
+       This function is to complex and to many side effects.
+
+        Returns
+        -------
+        bool
+            True if the element is added to the tag (in the case globalElemNumber element is in this
+             ElementContainers ).
         """
         if globalElemNumber -self.globaloffset <  self.GetNumberOfElements():
             self.tags.CreateTag(tagname,False).AddToTag(globalElemNumber-self.globaloffset)
-            return 1
+            return True
         else:
-            return 0
+            return False
 
     def __str__(self):
         res  = "    ElementsContainer, "
@@ -217,12 +283,13 @@ class ElementsContainer(BaseOutputObject):
 @froze_it
 class AllElements(object):
     """
-    Class to store a list of element containers
-    This class is a sorted by keys dictioniary to keep all the always in order
+    Class to store a list of element containers. This class is mostly a re-implementation of dict
+    but with ordered keys.
+    This class is sorted by keys, in lexicographic order, so the retrieving order is stable.
 
     note:
       FB: the number of different types of elements is low, I don't think
-      this is gonna add alot of overhead to the library
+      this is gonna add a lot of overhead to the library
     """
 
     def __init__(self):
@@ -269,12 +336,31 @@ class AllElements(object):
     def __delitem__(self,key):
         del self.storage[key]
 
-    def GetElementsOfType(self,typename):
+    def GetElementsOfType(self, typename:str) -> ElementsContainer:
+        """return a ElementContainer by name
+
+        Parameters
+        ----------
+        typename : str
+            the name of the elements to retrieve
+
+        Returns
+        -------
+        ElementsContainer
+            the container
+        """
         if not typename in self:
             self[typename] = ElementsContainer(typename)
         return self[typename]
 
-    def GetTagsNames(self):
+    def GetTagsNames(self)-> List[str]:
+        """return a list with all the tags in this container
+
+        Returns
+        -------
+        List[str]
+            the list of the tag names
+        """
         res = set()
         for data in self.values():
             res.update(data.tags.keys() )
@@ -290,15 +376,15 @@ class AllElements(object):
 @froze_it
 class UnstructuredMesh(MeshBase):
     """
-    Class storing an unstructured (i.e. general) mesh:
+    Class to store an unstructured (i.e. general) mesh:
 
     * self.nodes : the points positions
-    * self.orignilaIdNodes : the ids of the previous mesh/file
-    * self.elements : the list of all the elememnt in the mesh
+    * self.originalIdNodes : the ids of the previous mesh/file
+    * self.elements : the list of all the element in the mesh
     * self.boundingMin/Max : the bounding box of the mesh (use ComputeBoundingBox to compute it)
 
     The manual construction of this class must always end with a call to the
-    function.
+    function PrepareForOutput or with the context manager mesh.WithModification().
     """
     def IsUnstructured(self):
         return True
@@ -337,22 +423,36 @@ class UnstructuredMesh(MeshBase):
         return True
 
     def ConvertDataForNativeTreatment(self):
+        """Ensure all the data is compatible with the cpp treatment (continuous in C order)
+        """
         self.originalIDNodes = np.asarray(self.originalIDNodes, dtype=PBasicIndexType, order="C")
         self.nodes = np.asarray(self.nodes, dtype=PBasicFloatType, order="C")
         for data in self.elements.values():
             data.connectivity = np.asarray(data.connectivity, dtype=PBasicIndexType, order="C")
 
-    def GetNumberOfNodes(self):
-        """
-        return the total number of nodes in the mesh
+    def GetNumberOfNodes(self) -> int:
+        """return the total number of nodes in the mesh
+
+        Returns
+        -------
+        int
+            Number of node in the mesh
         """
         return self.nodes.shape[0]
 
-    def SetNodes(self, arrayLike, originalIDNodes=None, generateOriginalIDs = False):
+    def SetNodes(self, nodes:ArrayLike, originalIDNodes:ArrayLike=None, generateOriginalIDs:bool = False):
+        """Set nodes and original Ids in the correct internal format.
+
+        Parameters
+        ----------
+        nodes : ArrayLike
+            Nodes positions of size (number of node, space dimensionality )
+        originalIDNodes : ArrayLike, optional
+            original Ids, by default None
+        generateOriginalIDs : bool, optional
+            if True to generate original ids with numpy.arange, by default False
         """
-        Set nodes and original Ids in the correct internal data
-        """
-        self.nodes = np.require(arrayLike,dtype=float,requirements=['C','A'])
+        self.nodes = np.require(nodes, dtype=PBasicFloatType, requirements=['C','A'])
         if originalIDNodes is not None:
             self.originalIDNodes = np.require(originalIDNodes,dtype=PBasicIndexType,requirements=['C','A'])
         elif generateOriginalIDs:
@@ -370,15 +470,25 @@ class UnstructuredMesh(MeshBase):
 
     def GetDimensionality(self):
         """
-        DEPRECATED: please use GetPointsDimensionality()
+        .. deprecated:: 2.0.0
+        Please use GetPointsDimensionality()
 
         return the dimensionality 2/3
         """
         return self.nodes.shape[1]
 
-    def GetNumberOfElements(self, dim = None):
-        """
-        Compute and return the total number of elements in the mesh
+    def GetNumberOfElements(self, dim : int= None) -> int:
+        """Compute and return the total number of elements in the mesh
+
+        Parameters
+        ----------
+        dim : int, optional
+            dimensionality filter, by default None
+
+        Returns
+        -------
+        int
+            number of element in the mesh (filtered by dim if dim != None)
         """
         numberOfElements = 0
         if dim == None:
@@ -390,12 +500,18 @@ class UnstructuredMesh(MeshBase):
                     numberOfElements += data.GetNumberOfElements()
         return numberOfElements
 
-    def MergeElements(self,other,force=False):
-        """
-        Merge the element for a second mesh into this
+    def MergeElements(self, other:UnstructuredMesh, force:bool=False):
+        """Merge the elements for a second mesh into this
         the nodes array must be the same (not only equal)
 
         the user can force the merge if needed (force variable)
+
+        Parameters
+        ----------
+        other : UnstructuredMesh
+            the other mesh
+        force : bool, optional
+            True to force the merge even if the nodes are not the same, by default False
         """
         if (self.nodes is not other.nodes) and (not force) :
             raise(RuntimeError("the two meshes does not share the same nodes fields (potentially dangerous)"))
@@ -408,6 +524,9 @@ class UnstructuredMesh(MeshBase):
         Recompute the Global Offset,
         This is necessary for some operation.
         Recomendation : Call it after changing the topology
+
+        .. deprecated:: 2.0.0
+        The globaloffset variable will be deprecated
         """
         offsets = dict()
         cpt = 0
@@ -417,16 +536,26 @@ class UnstructuredMesh(MeshBase):
             cpt += data.GetNumberOfElements()
         return offsets
 
-    def ComputeBoundingBox(self):
-        """
-        to recumpute the bounding box
+    def ComputeBoundingBox(self)->None:
+        """to recompute the bounding box (min and max)
         """
         self.boundingMin = np.amin(self.nodes, axis=0)
         self.boundingMax = np.amax(self.nodes, axis=0)
 
-    def AddNodeToTagUsingOriginalId(self,oid,tagname):
-        """
-        add a node (using the original id ) to a tag (tagname)
+    def AddNodeToTagUsingOriginalId(self, oid:int, tagname:str)->None:
+        """add a node (using the original id ) to a tag (tagname)
+
+        Parameters
+        ----------
+        oid : int
+            Original id node
+        tagname : str
+            Tag name
+
+        Raises
+        ------
+        Exception
+            if the original id is not found
         """
         w = np.where(self.originalIDNodes == oid)
         if len(w[0]) > 0 :
@@ -434,10 +563,21 @@ class UnstructuredMesh(MeshBase):
         else:
             raise Exception("No node with id " + str(oid)) #pragma: no cover
 
+    def AddElementToTagUsingOriginalId(self, oid:int, tagname:str):
+        """Add an element (using the originalId) to a tag (tagname)
 
-    def AddElementToTagUsingOriginalId(self,oid,tagname):
-        """
-        add a element (using the originalid) to a tag (tagname)
+
+        Parameters
+        ----------
+        oid : int
+            the original id of the element
+        tagname : str
+            Tag name
+
+        Raises
+        ------
+        Exception
+            if the element with the original id is not found
         """
         for data in self.elements.values():
             w = np.where(data.originalIds[:data.cpt] == oid)
@@ -447,10 +587,21 @@ class UnstructuredMesh(MeshBase):
         else:
             raise Exception("No element with id " + str(oid)) #pragma: no cover
 
-    def AddElementsToTag(self,globalElemNumbers,tagname):
-        """
-        add elements (using the global element number) to a tag (tagname)
-        # you must compute the globaloffset first to make this function work
+    def AddElementsToTag(self, globalElemNumbers:ArrayLike, tagname:str):
+        """Add elements (using the global element number) to a tag (tagname)
+        you must compute the globaloffset first to make this function work
+
+        Parameters
+        ----------
+        globalElemNumbers : ArrayLike
+            the list of the global ids of the element
+        tagname : str
+            Tag name
+
+        Raises
+        ------
+        Exception
+            if some elementid are greater than the number of elements.
         """
         elementNotTreated = np.unique(globalElemNumbers)
         cpt = 0
@@ -467,40 +618,77 @@ class UnstructuredMesh(MeshBase):
             raise Exception("No element found") #pragma: no cover
 
 
-    def AddElementToTag(self,globalElemNumber,tagname):
-        """
-        add a element (using the global element number) to a tag (tagname)
+    def AddElementToTag(self, globalElemNumber:int, tagname:str):
+        """Add an element (using the global element number) to a tag (tagname)
         # you must compute the globaloffset first to make this function work
+
+        Parameters
+        ----------
+        globalElemNumber : int
+            the element number
+        tagname : str
+            Tag name
+
+        Raises
+        ------
+        Exception
+            if the the element is not found
         """
         for data in self.elements.values():
             if data.AddElementToTag(globalElemNumber,tagname):
                 return
         raise Exception("No element found") #pragma: no cover
 
-    def DeleteElemTags(self, tagNames):
-        """
-        delete element tags
+    def DeleteElemTags(self, tagNames: List[str]):
+        """Delete element tags
+
+        Parameters
+        ----------
+        tagNames : List[str]
+            List of element tags to be deleted
         """
         #check not a string but a list like
         assert not isinstance(tagNames, str)
         for data in self.elements.values():
             data.tags.DeleteTags(tagNames)
 
-    def GetPosOfNode(self, i ):
-        """
-        return the position of the point i
+    def GetPosOfNode(self, i:int ) -> np.ndarray:
+        """Return the position of the node i
+
+        Parameters
+        ----------
+        i : int
+            id of the node
+
+        Returns
+        -------
+        np.ndarray
+            position of the point
         """
         return self.nodes[i,:]
 
-    def GetPosOfNodes(self):
-        """
-        return the position of all the nodes
+    def GetPosOfNodes(self) -> np.ndarray:
+        """return the position of all the nodes
+
+        Returns
+        -------
+        np.ndarray
+            The position for all the nodes in the mesh
         """
         return self.nodes
 
-    def GetElementsOriginalIDs(self,dim = None):
-        """
-        return a single list with all the originalid concatenated
+    def GetElementsOriginalIDs(self,dim:int = None)-> np.ndarray:
+        """return a single list with all the originalid concatenated
+
+        Parameters
+        ----------
+        dim : int, optional
+            dimensionality filter, by default None
+
+        Returns
+        -------
+        np.ndarray
+            array with all the originalId for the selected elements
         """
         if dim is None:
             res = np.empty(self.GetNumberOfElements(),dtype=PBasicIndexType)
@@ -518,21 +706,35 @@ class UnstructuredMesh(MeshBase):
                 cpt += len(ids)
         return res
 
-    def SetElementsOriginalIDs(self,originalIDs):
-        """
-        Set from a single list all the originalid
+    def SetElementsOriginalIDs(self, originalIDs:ArrayLike):
+        """Set from a single list all the element original Ids
+
+        Parameters
+        ----------
+        originalIDs : ArrayLike
+            the list of all the original ids in the order of the mesh
         """
         cpt = 0
         for data in self.elements.values():
             data.originalIds = originalIDs[cpt:data.GetNumberOfElements()+cpt]
             cpt += data.GetNumberOfElements()
 
+    def GetElementsInTag(self, tagname:str, useOriginalId:bool=False) ->np.ndarray:
+        """return a list with the ids of the elements in a tag
 
-    def GetElementsInTag(self,tagname,useOriginalId=False) :
+        Parameters
+        ----------
+        tagname : str
+            the tag name
+        useOriginalId : bool, optional
+            to return the list of original ids and not the global numbers, by default False
+
+        Returns
+        -------
+        np.ndarray
+            the list off all the element in the tag named "tagname"
         """
-        return a list with the ids of the elements in a tag
-        The user must compute the globaloffset first to make this function work
-        """
+
         res = np.zeros((self.GetNumberOfElements(),),dtype=PBasicIndexType)
         cpt =0
         offsets = self.ComputeGlobalOffset()
@@ -546,10 +748,9 @@ class UnstructuredMesh(MeshBase):
                 cpt +=  len(tag)
         return res[0:cpt]
 
-    def PrepareForOutput(self):
-        """
-        function to free the extra memory used during a incremental creation of a mesh
-        and final treatement (offset computation)
+    def PrepareForOutput(self) -> None:
+        """Function to free the extra memory used after the incremental creation of a mesh
+        and final treatment (offset computation).
         """
         self.nodesTags.Tighten()
         for data in self.elements.values():
@@ -558,7 +759,14 @@ class UnstructuredMesh(MeshBase):
         self.ComputeGlobalOffset()
         self.VerifyIntegrity()
 
-    def __str__(self):
+    def __str__(self) -> str:
+        """Return a string with a summary of the mesh
+
+        Returns
+        -------
+        str
+            summary of the mesh
+        """
         res  = "UnstructuredMesh \n"
         res += "  Number Of Nodes    : {} \n".format(self.GetNumberOfNodes())
         res += "    Tags : " + " ".join( ["("+x.name+":"+str(len(x))+")" for x in  self.nodesTags ]) + "\n"
@@ -573,10 +781,9 @@ class UnstructuredMesh(MeshBase):
         return res
 
     def Clean(self)->None:
-        """Remove superflu data :
+        """Remove unnecessary data :
             1) empty tags
             2) empty element containers
-
         """
         self.nodesTags.RemoveEmptyTags()
         for k in list(self.elements.keys()):
@@ -585,7 +792,14 @@ class UnstructuredMesh(MeshBase):
                 continue
             self.elements[k].tags.RemoveEmptyTags()
 
-    def VerifyIntegrity(self):
+    def VerifyIntegrity(self) -> None:
+        """Integrity verification  of the mesh.,
+
+        Raises
+        ------
+        Exception
+            if the integrity of the mesh is compromised
+        """
         #verification nodes an originalIdNodes are compatible
         if len(self.nodes.shape) !=2:
             raise Exception("Error in the shape of nodes")
