@@ -11,7 +11,7 @@ from typing import Iterable, Optional,  List, Tuple, Iterator, Collection
 import numpy as np
 
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject, froze_it
-from BasicTools.NumpyDefs import PBasicIndexType
+from BasicTools.NumpyDefs import PBasicIndexType, ArrayLike
 
 @froze_it
 class Tag(BaseOutputObject):
@@ -26,9 +26,9 @@ class Tag(BaseOutputObject):
         self._id = np.empty(0,dtype=PBasicIndexType)
         self.cpt = 0
 
-    def __eq__(self, other:object) -> bool:
-        """Equal operator, return True only if names and ids are equal
-            internals this function calls Tighten
+    def __eq__(self, other:Tag) -> bool:
+        """Equal operator, return True only if names and ids are equal,
+        internally this function calls Tighten
 
         Parameters
         ----------
@@ -77,22 +77,31 @@ class Tag(BaseOutputObject):
             self.cpt += 1
 
     def __len__(self) -> int :
+        """return the number of ids in this tag. The internal memory
+        can be larger
+
+        Returns
+        -------
+        int
+            number of ids
+        """
         return self.cpt
 
-    def Tighten(self):
+    def Tighten(self)->None:
         """Release non used memory
         """
         if self._id.shape[0] != self.cpt:
             self._id = np.resize(self._id, (self.cpt,))
 
-    def RemoveDoubles(self):
+    def RemoveDoubles(self)->None:
         """Remove doubles and release non used memory
         """
         self.SetIds(self._id[0:self.cpt])
 
-    def SetIds(self, ids:np.typing.ArrayLike):
+    def SetIds(self, ids:ArrayLike):
         """Set the ids of this tag, a copy is made and a
-        RemoveDoubles is executed to ensure ids are present only once
+        RemoveDoubles is executed to ensure ids are present only once.
+        old data is lost.
 
         Parameters
         ----------
@@ -103,7 +112,8 @@ class Tag(BaseOutputObject):
         self.cpt = len(self._id)
 
     def SetId(self, pos:int, idd:int):
-        """set the value of the id in the position  pos
+        """Set the value of the id in the position pos.
+        The user is responsible to allocate the memory first
 
         Parameters
         ----------
@@ -116,7 +126,8 @@ class Tag(BaseOutputObject):
 
     def Allocate(self, allocationSize:int):
         """Allocate the memory for n objects
-           the user is responsible of filling each individual position
+           the user is responsible of filling each individual position.
+           Internally numpy.resize is used.
 
         Parameters
         ----------
@@ -182,8 +193,6 @@ class Tag(BaseOutputObject):
         ----------
         other : Tag, optional
             _description_, by default None
-        ids : np.typing.ArrayLike, optional
-            _description_, by default None
         """
         if other is not None:
             self.AddToTag(other.GetIds())
@@ -218,13 +227,13 @@ class Tags(BaseOutputObject):
         super(Tags,self).__init__()
         self.storage = []
 
-    def Tighten(self):
+    def Tighten(self)->None:
         """Call Tag.Tighten on every tag """
 
         for tag in self:
             tag.Tighten()
 
-    def RemoveDoubles(self):
+    def RemoveDoubles(self)->None:
         """Call Tag.RemoveDoubles on every tag """
         for tag in self:
             tag.RemoveDoubles()
