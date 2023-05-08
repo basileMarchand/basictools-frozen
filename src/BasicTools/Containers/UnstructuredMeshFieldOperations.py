@@ -3,7 +3,7 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-from typing import Tuple, Optional, Union
+from typing import Tuple, Optional, Union, List, Dict
 
 import numpy as np
 
@@ -11,12 +11,35 @@ from BasicTools.NumpyDefs import PBasicFloatType, PBasicIndexType, ArrayLike
 import BasicTools.Containers.ElementNames as ElementNames
 from BasicTools.Containers.Filters import ElementFilter
 from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
+from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearMesh
 from BasicTools.Containers.UnstructuredMeshCreationTools import QuadToLin
 from BasicTools.Containers.UnstructuredMeshInspectionTools import ExtractElementsByElementFilter
 from BasicTools.Linalg.Transform import Transform
 from BasicTools.FE.Fields.FEField import FEField
 
-def ApplyRotationMatrixTensorField(fields, fieldsToTreat, baseNames=["v1","v2"], inPlace=False, prefix="new_", inverse=False):
+def ApplyRotationMatrixTensorField(fields:Dict, fieldsToTreat:ArrayLike, baseNames:List=["v1","v2"], inPlace:bool=False, prefix:str="new_", inverse:bool=False)-> Dict:
+    """Apply a rotation operation on the fields
+
+    Parameters
+    ----------
+    fields : dict[ArrayLike]
+        dictionary of field. Keys are names, values are data
+    fieldsToTreat : ArrayLike
+        is a 3x3 list of list with the names of the fields to create the local tensor. For example [["S00","S01","S02"]["S01","S11","S12"]["S02","S12","S22"]]
+    baseNames : List, optional
+        the names of the fields to extract the direction (each field must be on size (nb entries, 3) ), by default ["v1","v2"]
+    inPlace : bool, optional
+        True to put the output back to the field dictionary,  by default False
+    prefix : str, optional
+        prefix to prepend to the new field, by default "new_"
+    inverse : bool, optional
+        True to apply the inverse transform, by default False
+
+    Returns
+    -------
+    dict
+        a dictionary containing the field after the rotation operation
+    """
     nbEntries = fields[fieldsToTreat[0][0]].shape[0]
 
     bs =  Transform()
@@ -49,7 +72,7 @@ def ApplyRotationMatrixTensorField(fields, fieldsToTreat, baseNames=["v1","v2"],
     return output
 
 def CopyFieldsFromOriginalMeshToTargetMesh(inMesh: UnstructuredMesh, outMesh: UnstructuredMesh):
-    """ Function to copy fields for the original mesh to the
+    """ Function to copy fields (nodeFields and elemFields) for the original mesh to the
         derivated mesh ( f(inMesh) -> outMesh )
 
     Parameters
@@ -78,7 +101,6 @@ def CopyFieldsFromOriginalMeshToTargetMesh(inMesh: UnstructuredMesh, outMesh: Un
         cpt1 += data.GetNumberOfElements()
 
     Work(inMesh.elemFields, outMesh.elemFields, oid )
-
 
 def GetFieldTransferOp(inputField: FEField, targetPoints: ArrayLike, method: Union[str,None]=None, verbose:bool=False, elementFilter: Optional[ElementFilter]=None)-> Tuple[np.ndarray,np.ndarray]:
     """Compute the transfer operator from the inputField to the target points so:
@@ -331,7 +353,31 @@ def GetFieldTransferOp(inputField: FEField, targetPoints: ArrayLike, method: Uni
     s = np.s_[0:cooData[3]]
     return coo_matrix((cooData[2][s], (cooData[1][s], cooData[0][s])), shape=(nbTargetPoints , inputField.numbering["size"])), status
 
-def ComputeInterpolationExtrapolationsBarycentricCoordinates(TP,elementType,coordAtDofs,posspace):
+def ComputeInterpolationExtrapolationsBarycentricCoordinates(TP:ArrayLike, elementType:str, coordAtDofs:ArrayLike, posspace):
+    """Function to compute the interpolation extrapolation shape function for an element for the target point
+    This function is not intended to be used by the final users
+
+    Parameters
+    ----------
+    TP : ArrayLike
+        the target point
+    elementType : str
+        the element type
+    coordAtDofs : _type_
+        The coordinate in the real space for all the nodes of the element
+    posspace : _type_
+        The space used to interpolate the position
+
+    Returns
+    -------
+    tuple of len 4
+        True          : if the target point is inside the element (None if error in the computation)
+        numpy.ndarray : the distance vector between the best point using the barycentric coordinates and the target point
+        numpy.ndarray : the closes barycentric coordinates of the target point using the shape function of the elements
+        numpy.ndarray : the clamped barycentric coordinates of the target point using the shape function of the elements ()
+
+
+    """
     if ElementNames.dimension[elementType]==0:
         distv = coordAtDofs[0,:] - TP
         inside = np.all(distv == 0)
@@ -369,7 +415,11 @@ def ComputeInterpolationExtrapolationsBarycentricCoordinates(TP,elementType,coor
         raise
     return None, 0, 0,0
 
-def ComputeInterpolationCoefficients(mask, TP, elementsdata, coordAtDofs, posspace, localspace):
+def ComputeInterpolationCoefficients(mask:ArrayLike, TP:ArrayLike, elementsdata, coordAtDofs:ArrayLike, posspace, localspace):
+    """Compute the interpolation coefficients for the element.
+    Warning!! This function is not intended for the final user. function used by (GetFieldTransferOp)
+
+    """
     ft = True
     for cpt, (faceElementType, faceLocalConnectivity) in enumerate(elementsdata):
 
@@ -403,13 +453,15 @@ def ComputeInterpolationCoefficients(mask, TP, elementsdata, coordAtDofs, posspa
         baryClamped = fshapeFunc.dot(localspace.posN[faceLocalConnectivityMem,:])
         return True, faceDistvMem,  baryClamped
 
-def ComputeShapeFunctionsOnElement(coordAtDofs, localspace, localnumbering, point, faceElementType):
+def ComputeShapeFunctionsOnElement(coordAtDofs:ArrayLike, localspace, localnumbering, point:ArrayLike, faceElementType):
     inside, xiEtaPhi, xiEtaPhiClamped = ComputeBarycentricCoordinateOnElement(coordAtDofs,localspace,point,faceElementType)
     N = localspace.GetShapeFunc(xiEtaPhi)
     NClamped = localspace.GetShapeFunc(xiEtaPhiClamped)
     return inside, N , NClamped
 
 def ddf(f, xiEtaPhi, dN, GetShapeFuncDerDer, coordAtDofs, linear):
+    """Warning!! This function is not intended for the final user. function used by (GetFieldTransferOp)
+    """
     dNX = dN.dot(coordAtDofs)
     res = dNX.dot(dNX.T)
     # After some investigation the Newton is more stable using only the first part
@@ -435,17 +487,46 @@ def ddf(f, xiEtaPhi, dN, GetShapeFuncDerDer, coordAtDofs, linear):
     return res
 
 def df(f,dN,coordAtDofs):
+    """ Warning!! This function is not intended for the final user. function used by (GetFieldTransferOp)
+    """
     dNX = dN.dot(coordAtDofs)
     res = -f.dot(dNX.T)
     return res
 
-def vdet(A):
+def vdet(A:ArrayLike) -> PBasicFloatType:
+    """Compute the determinant of a 3x3 matrix
+    Warning!! This function is not intended for the final user. function used by (GetFieldTransferOp)
+
+    Parameters
+    ----------
+    A : ArrayLike
+        a 3x3 matrix
+
+    Returns
+    -------
+    PBasicFloatType
+        the determinant
+    """
     detA = A[0, 0] * (A[1, 1] * A[2, 2] - A[1, 2] * A[2, 1]) -\
            A[0, 1] * (A[2, 2] * A[1, 0] - A[2, 0] * A[1, 2]) +\
            A[0, 2] * (A[1, 0] * A[2, 1] - A[2, 0] * A[1, 1])
     return detA
 
-def hdinv(A):
+def hdinv(A:ArrayLike)-> np.ndarray:
+    """Compute the inverse of a 3x3 matrix
+    Warning!! This function is not intended for the final user. function used by (GetFieldTransferOp)
+
+
+    Parameters
+    ----------
+    A : ArrayLike
+        a 3x3 matrix
+
+    Returns
+    -------
+    np.ndarray
+        the inverse of A
+    """
     invA = np.zeros_like(A)
     detA = vdet(A)
 
@@ -469,7 +550,21 @@ def hdinv(A):
                   A[0, 0] * A[1, 1]) / detA
     return invA
 
-def inv22(A):
+def inv22(A: ArrayLike) -> np.ndarray:
+    """Compute the inverse of a 2x2 matrix
+    Warning!! This function is not intended for the final user. function used by (GetFieldTransferOp)
+
+
+    Parameters
+    ----------
+    A : ArrayLike
+        a 2x2 matrix
+
+    Returns
+    -------
+    np.ndarray
+        the inverse of A
+    """
     a = A[0,0]
     b = A[0,1]
     c = A[1,0]
@@ -482,7 +577,26 @@ def inv22(A):
     invA /= (a*d-b*c)
     return invA
 
-def ComputeBarycentricCoordinateOnElement(coordAtDofs,localspace,targetPoint,elementType):
+def ComputeBarycentricCoordinateOnElement(coordAtDofs:ArrayLike, localspace, targetPoint:ArrayLike, elementType:str):
+    """Newton to compute the best baricentric coordinates on an element for the target point
+    Warning!! This function is not intended for the final user. function used by (GetFieldTransferOp)
+
+    Parameters
+    ----------
+    coordAtDofs : ArrayLike
+        Coordinates of the node of the element
+    localspace : _type_
+        _description_
+    targetPoint : ArrayLike
+        Target Point
+    elementType : str
+        Element type
+
+    Returns
+    -------
+    _type_
+        _description_
+    """
 
     linear = ElementNames.linear[elementType]
     spacedim = localspace.GetDimensionality()
@@ -521,10 +635,40 @@ def ComputeBarycentricCoordinateOnElement(coordAtDofs,localspace,targetPoint,ele
     inside = normsquared(xichietaClamped-xietaphi) < 1e-5
     return inside, xietaphi, xichietaClamped
 
-def normsquared(v):
+def normsquared(v:ArrayLike) -> np.number:
+    """sqared norm of a vector
+
+    Parameters
+    ----------
+    v : ArrayLike
+        a vector
+
+    Returns
+    -------
+    np.number
+        the squared norm
+    """
     return sum([x*x for x in v])
 
-def TransportPosToPoints(imesh,points,method="Interp/Clamp",verbose=None):
+def TransportPosToPoints(imesh : UnstructuredMesh, points:ArrayLike, method:str="Interp/Clamp", verbose:bool=None):
+    """For each point in points compute the position of the source data by tranporting the position field
+
+    Parameters
+    ----------
+    imesh : UnstructuredMesh
+        the input mesh from where we
+    points : ArrayLike
+        the target points
+    method : str, optional
+        Transfer method, by default "Interp/Clamp"
+    verbose : bool, optional
+        True to print more output during the computation of the transfer operator, by default None
+
+    Returns
+    -------
+    np.array
+        for each point in points the position of the source data
+    """
     from BasicTools.FE.Fields.FEField import FEField
     from BasicTools.FE.FETools import PrepareFEComputation
     space, numberings, offset, NGauss = PrepareFEComputation(imesh,numberOfComponents=1)
@@ -532,10 +676,29 @@ def TransportPosToPoints(imesh,points,method="Interp/Clamp",verbose=None):
     op, status = GetFieldTransferOp(field,points,method=method, verbose=verbose, elementFilter = ElementFilter(imesh) )
     return op.dot(imesh.nodes)
 
-def TransportPos(imesh,tmesh,tspace,tnumbering,method="Interp/Clamp",verbose=None):
-    """
-    Function to transport the position from the input mesh (imesh)
+def TransportPos(imesh : UnstructuredMesh, tmesh : UnstructuredMesh, tspace, tnumbering, method:str ="Interp/Clamp", verbose:bool=None)->np.ndarray:
+    """Function to transport the position from the input mesh (imesh)
     to a target FEField target mesh, target space, tnumbering
+
+    Parameters
+    ----------
+    imesh : UnstructuredMesh
+        input mesh
+    tmesh : UnstructuredMesh
+        target mesh
+    tspace : _type_
+        target space
+    tnumbering : _type_
+        target numbering
+    method : str, optional
+        method for the interpolation/extrapolation, by default "Interp/Clamp"
+    verbose : bool, optional
+         True to print more output during the computation of the transfer operator, by default None
+
+    Returns
+    -------
+    np.ndarray
+        a numpy.array with 3 FEField for each component of the position
     """
     from BasicTools.FE.Fields.FEField import FEField
     pos = TransportPosToPoints(imesh, tmesh.nodes,method=method,verbose=verbose)
@@ -544,7 +707,25 @@ def TransportPos(imesh,tmesh,tspace,tnumbering,method="Interp/Clamp",verbose=Non
     return posFields
 
 
-def PointToCellData(mesh,pointfield,dim=None):
+def PointToCellData(mesh: UnstructuredMesh, pointfield : ArrayLike, dim:int=None) -> np.ndarray:
+    """Convert a point field to cell field. the cell values are compute the average
+    of the values on the nodes for each element
+
+    Parameters
+    ----------
+    mesh : UnstructuredMesh
+        mesh support of the field
+    pointfield : ArrayLike
+        a field defined on the points
+    dim : int, optional
+        dimensionality filter. if dim != the result array contain only values for the selected element
+        ( len(result) is smaller than mesh.GetNumberOfElements() ) , by default None
+
+    Returns
+    -------
+    np.ndarray
+        a numpy array with the field on the elements
+    """
 
     nbelemtns = 0
     filt = ElementFilter(mesh,dimensionality=dim)
@@ -572,7 +753,7 @@ def PointToCellData(mesh,pointfield,dim=None):
 
 
 def CellDataToPoint(mesh:UnstructuredMesh, cellfields:np.ndarray) -> np.ndarray:
-    """Applies the CellDataToPointData from paraview.
+    """Applies the CellDataToPointData from vtk.
     Supported only for the dimensionality of the mesh (no mix of elements of different
     dimensions)
 
@@ -609,7 +790,23 @@ def CellDataToPoint(mesh:UnstructuredMesh, cellfields:np.ndarray) -> np.ndarray:
     return np.array(res)
 
 
-def QuadFieldToLinField(quadMesh, quadField, linMesh = None):
+def QuadFieldToLinField(quadMesh:UnstructuredMesh, quadField:ArrayLike, linMesh:UnstructuredMesh = None) -> np.ndarray:
+    """Extract the linear part of the field quadField.
+
+    Parameters
+    ----------
+    quadMesh : UnstructuredMesh
+        the quadratic mesh supporting the quad field
+    quadField : ArrayLike
+        the field to be converted to linear
+    linMesh : UnstructuredMesh, optional
+        the support of the linear field, if None a linear convertion of the quadMesh is done (with QuandTolin), by default None
+
+    Returns
+    -------
+    np.ndarray
+        _description_
+    """
 
     if linMesh == None:
         linMesh = QuadToLin(quadMesh)
@@ -618,9 +815,25 @@ def QuadFieldToLinField(quadMesh, quadField, linMesh = None):
 
     return(quadField[extractIndices])
 
-def GetValueAtPosLinearSymplecticMesh(fields,mesh,constantRectilinearMesh, verbose=False):
-    """
-    Works only for linear symplectic meshes
+def GetValueAtPosLinearSymplecticMesh(fields:ArrayLike, mesh:UnstructuredMesh, constantRectilinearMesh:ConstantRectilinearMesh, verbose:bool=False)->Tuple:
+    """ Transport point fields from a symplectic mesh into a ConstantRectilinearMesh
+
+    Parameters
+    ----------
+    fields : ArrayLike
+        the nodes fields to be transported to the constantRectilinearMesh
+    mesh : UnstructuredMesh
+        the support mesh for the fields
+    constantRectilinearMesh : ConstantRectilinearMesh
+        the target mesh
+    verbose : bool, optional
+        true to print extra output by default False
+
+    Returns
+    -------
+    tuple
+        numpy array (output fields) with 3 or 4 dimension first dimension is the field number and the last 2/3 are the indexing in the constantRectilinearMesh (for 2D or 3D)
+        numpy array (mask) mask with 1. if the point are inside the input mesh
     """
     import math
     from BasicTools.FE.Spaces.FESpaces import LagrangeSpaceGeo
