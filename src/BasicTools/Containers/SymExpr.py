@@ -3,16 +3,27 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
-
+from typing import List, Dict
 import numpy as np
 
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 
 class SymExprBase(BaseOutputObject):
+    """Store read from string and store a symbolic expression.
+    the expression read using sympy. the first and the second derivative
+    are automatically computed.
+    """
     def __init__(self, string=None, symbols=None):
+        """create and set a symbolic expression. A list of symbols (list[str]) can be provided
+         to determine the free variable of the expression. if no symbols are provided the symbol
+         't' (for time) with value 0.0 is defined by default. """
         super(SymExprBase,self).__init__()
+
         self._expression = ""
+        """The string representation of the expression. """
         self.constants = {}
+        """Constants used to evaluate the expression. (free variables). """
+
         if symbols is None:
             self.SetConstant("t",0.0)
         else:
@@ -22,7 +33,18 @@ class SymExprBase(BaseOutputObject):
         if string is not None:
             self.SetExpression(string)
 
-    def SetExpression(self,string,_symbols=None):
+    def SetExpression(self, string:str, _symbols: List[str]=None):
+        """Set the expression to be used. A list of symbols (list[str]) can be provided
+         to determine the free variable of the expression. if no symbols are provided the symbol
+         't' (for time) with value 0.0 is defined by default.
+
+        Parameters
+        ----------
+        string : str
+            the string representation of the expression to be parsed by sympy
+        _symbols : list[str], optional
+            List of symbol to be used to parse the expression, by default None
+        """
         from sympy import Symbol
         from sympy import symbols
         from sympy import lambdify
@@ -42,22 +64,92 @@ class SymExprBase(BaseOutputObject):
             for s2 in  self.stringSymbols:
                 self.d2funcd2[(s,s2)] = lambdify(symbols(self.stringSymbols),_expr.diff(Symbol(s)).diff(Symbol(s)))
 
-    def SetConstant(self,name,value):
+    def SetConstant(self, name:str, value:np.number):
+        """Add/Set the value of the free variable of the expression
+
+        Parameters
+        ----------
+        name : str
+            name of the variable
+        value : np.number
+            value
+        """
         self.constants[name]= value
 
-    def GetValue(self,pos=None):
+    def GetValue(self, pos=None)-> np.number:
+        """Return the evaluated expression
+
+        Parameters
+        ----------
+        pos : _type_, optional
+            Not Used, by default None
+
+        Returns
+        -------
+        np.number
+            the evaluated expression
+        """
+
         return self.func(**self.constants)
 
-    def GetValueDerivative(self,coor,pos=None):
+    def GetValueDerivative(self, coor:str, pos=None) -> np.number:
+        """Return the first derivative of the expression with respect to coor
+
+        Parameters
+        ----------
+        coor : str
+            the name of the variable to be used by the derivative
+        pos : _type_, optional
+            Not Used, by default None
+
+        Returns
+        -------
+        np.number
+            the evaluation of the derivative of the expression with respect to coor.
+        """
         return self.dfuncd[coor](**self.constants)
 
-    def GetValueSecondDerivative(self,coor1,coor2,pos=None):
+    def GetValueSecondDerivative(self, coor1: str, coor2: str, pos=None) -> np.number:
+        """Return the second derivative of the expression with respect to coor1 and coor2
+
+        Parameters
+        ----------
+        coor1 : str
+            the name of the variable to be used by the derivative
+        coor2 : str
+            the name of the variable to be used by the derivative
+        pos : _type_, optional
+            Not Used, by default None
+
+        Returns
+        -------
+        np.number
+            the evaluation of the derivative of the expression with respect to coor1 and coord2.
+            d/dcoord1 * d/dcoord2 * expr
+        """
         return self.d2funcd2[(coor1,coor2)](**self.constants)
 
-    def __call__(self,pos=None):
+    def __call__(self,pos=None) -> np.number:
+        """Wrapper for the GetValue.
+        Return the evaluated expression
+
+        Parameters
+        ----------
+        pos : _type_, optional
+            Not used, by default None
+
+        Returns
+        -------
+        np.number
+            the evaluated expression
+        """
         return self.GetValue(pos)
 
 class SymExprWithPos(SymExprBase):
+    """Store read from string and store a symbolic expression depending implicitly on (x,y,z).
+    the expression read using sympy. the first and the second derivative
+    are automatically computed.
+    """
     def __init__(self, string=None, symbols=None):
         super(SymExprWithPos,self).__init__(string=string, symbols=symbols)
 
@@ -94,8 +186,21 @@ class SymExprWithPos(SymExprBase):
     def __repr__(self):
         return self.__str__()
 
-def CreateSymExprWithPos(ops):
+def CreateSymExprWithPos(ops:Dict)->SymExprWithPos:
+    """Simple wrapper to create a SymExprWithPos from a dict.
+    ["val"] is used to extract the expression to be used for the contruction of
+    the SymExprWithPos
 
+    Parameters
+    ----------
+    ops : Dict
+        _description_
+
+    Returns
+    -------
+    SymExprWithPos
+        the Symbolic expression dependent of the position
+    """
     sym = SymExprWithPos()
     sym.SetExpression(ops["val"])
     return sym
