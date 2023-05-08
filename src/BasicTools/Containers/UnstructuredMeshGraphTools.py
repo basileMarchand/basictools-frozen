@@ -3,6 +3,8 @@
 # This file is subject to the terms and conditions defined in
 # file 'LICENSE.txt', which is part of this source code package.
 #
+from typing import Callable, Dict, List
+
 import numpy as np
 from scipy import sparse
 import warnings
@@ -12,7 +14,7 @@ from scipy import sparse, optimize
 
 import BasicTools.Containers.UnstructuredMeshModificationTools as UMMT
 import BasicTools.Containers.UnstructuredMeshInspectionTools as UMIT
-from BasicTools.Containers import UnstructuredMesh
+from BasicTools.Containers.UnstructuredMesh  import UnstructuredMesh
 from BasicTools.NumpyDefs import PBasicIndexType, PBasicFloatType
 import BasicTools.Containers.ElementNames as ElementNames
 import BasicTools.Containers.Filters as Filters
@@ -20,9 +22,19 @@ import BasicTools.Containers.Tags as T
 
 
 
-def PartitionMesh(inmesh, nbSubdomains, driver="Metis"): # TBD: add other drivers
-    '''Generates a subdomain vector providing labels ordered for each element of the input mesh
-    based on a third party graph partitionning solver. Current working options are: Metis'''
+def PartitionMesh(inmesh:UnstructuredMesh, nbSubdomains:int, driver:str="Metis"):
+    """Generates a partition vector providing labels ordered for each element of the input mesh
+    based on a third party graph partitioning solver. Current working options are: Metis
+
+    Parameters
+    ----------
+    inmesh : UnstructuredMesh
+        the mesh to compute the partition on
+    nbSubdomains : int
+        Number of subdomain, must be > 1
+    driver : str, optional
+        library to use for the partition, for the moment only Metis is available, default "Metis"
+    """
 
     elemGraph, usedCells = UMIT.ComputeElementToElementConnectivity(inmesh)
 
@@ -39,13 +51,10 @@ def PartitionMesh(inmesh, nbSubdomains, driver="Metis"): # TBD: add other driver
         raise ValueError("""The driver option you have selected is not implemented or incorrectly spelled!
             Choose between Scotch, Metis, or Chaco.""")
 
-    #elementsBySubdomain = [np.argwhere(np.asarray(maskVector) == sd).ravel() for sd in [i for i in range(nbSubdomains)]]
     return subdomainMap
 
-
-
-def InitializeGraphPointsFromMeshPoints(inMesh):
-    '''Initializes a networkx graph with nodes consistant with the number of nodes of an UnstructuredMesh.
+def InitializeGraphPointsFromMeshPoints(inMesh:UnstructuredMesh):
+    """Initializes a networkx graph with nodes consistent with the number of nodes of an UnstructuredMesh.
     This enables further edge addition compatible with the connectivity of the elements of the UnstructuredMesh.
 
     Parameters
@@ -57,14 +66,13 @@ def InitializeGraphPointsFromMeshPoints(inMesh):
     -------
     networkx.Graph
         initialized graph
-    '''
+    """
     G = networkx.Graph()
     G.add_nodes_from(np.arange(inMesh.GetNumberOfNodes()))
     return G
 
-
-def InitializeGraphPointsFromMeshElements(inMesh, dimensionality = None):
-    '''Initializes a networkx graph with nodes consistant with the number of elements of an UnstructuredMesh.
+def InitializeGraphPointsFromMeshElements(inMesh:UnstructuredMesh, dimensionality = None):
+    """Initializes a networkx graph with nodes consistent with the number of elements of an UnstructuredMesh.
     This enables further edge addition compatible with a chosen global numbering of the elements of the UnstructuredMesh.
 
     Parameters
@@ -72,13 +80,13 @@ def InitializeGraphPointsFromMeshElements(inMesh, dimensionality = None):
     inMesh : UnstructuredMesh
         input mesh
     dimensionality : int
-        dimension of the elements considered to initalize the graph
+        dimension of the elements considered to initialize the graph
 
     Returns
     -------
     networkx.Graph
         initialized graph
-    '''
+    """
     if dimensionality == None:
         dimensionality = inMesh.GetDimensionality()
 
@@ -87,32 +95,30 @@ def InitializeGraphPointsFromMeshElements(inMesh, dimensionality = None):
 
     return G
 
-
-def ComputeNodeToNodeGraph(inMesh, dimensionality = None, distFunc = None):
-    '''Creates a networkx graph from the node connectivity on an UnstructuredMesh through edges
+def ComputeNodeToNodeGraph(inMesh:UnstructuredMesh, dimensionality:int = None, distFunc:Callable = None):
+    """Creates a networkx graph from the node connectivity on an UnstructuredMesh through edges
 
     Parameters
     ----------
     inMesh : UnstructuredMesh
         input mesh
     dimensionality : int
-        dimension of the elements considered to initalize the graph
-    distFunc : func
-        function applied to the lengh of the edges of the mesh, and attached of the
+        dimension of the elements considered to initialize the graph
+    distFunc : Callable
+        function applied to the length of the edges of the mesh, and attached of the
         corresponding edge of the graph of the mesh
 
     Returns
     -------
     networkx.Graph
         Element to element graph
-    '''
+    """
     if dimensionality == None:
         dimensionality = inMesh.GetDimensionality()
 
     if distFunc == None:
         def distFunc(x):
             return x
-
 
     elFilter = Filters.ElementFilter(inMesh, dimensionality = dimensionality)
     mesh = UMIT.ExtractElementsByElementFilter(inMesh, elFilter)
@@ -129,9 +135,8 @@ def ComputeNodeToNodeGraph(inMesh, dimensionality = None, distFunc = None):
 
     return G
 
-
-def ComputeElementToElementGraph(inMesh, dimensionality = None, connectivityDimension = None):
-    '''Creates a networkx graph from the element connectivity on an UnstructuredMesh in the following sense:
+def ComputeElementToElementGraph(inMesh:UnstructuredMesh, dimensionality:int = None, connectivityDimension:int = None):
+    """Creates a networkx graph from the element connectivity on an UnstructuredMesh in the following sense:
     an element is linked to another in the graph if they share:
         - a face   if connectivityDimension = 2
         - an edge  if connectivityDimension = 1
@@ -143,7 +148,7 @@ def ComputeElementToElementGraph(inMesh, dimensionality = None, connectivityDime
     inMesh : UnstructuredMesh
         input mesh
     dimensionality : int
-        dimension of the elements considered to initalize the graph
+        dimension of the elements considered to initialize the graph
     connectivityDimension : int
         dimension of the connectivity
 
@@ -151,7 +156,7 @@ def ComputeElementToElementGraph(inMesh, dimensionality = None, connectivityDime
     -------
     networkx.Graph
         Element to element graph
-    '''
+    """
     elementConnectivity, _ = UMIT.ComputeElementToElementConnectivity(inMesh, dimensionality, connectivityDimension)
 
     G = InitializeGraphPointsFromMeshElements(inMesh)
@@ -163,9 +168,8 @@ def ComputeElementToElementGraph(inMesh, dimensionality = None, connectivityDime
 
     return G
 
-
-def ComputeMeshLaplacianEigenmaps(inMesh, dimensionality = None, nEigenmaps = 10, distFunc = None, normalizedLaplacian = False):
-    '''Computes the Laplacian engenmaps of a mesh
+def ComputeMeshLaplacianEigenmaps(inMesh:UnstructuredMesh, dimensionality:int = None, nEigenmaps:int = 10, distFunc:Callable  = None, normalizedLaplacian:bool = False):
+    """Computes the Laplacian engenmaps of a mesh
 
     Parameters
     ----------
@@ -176,7 +180,7 @@ def ComputeMeshLaplacianEigenmaps(inMesh, dimensionality = None, nEigenmaps = 10
     nEigenmaps : int
         number of computed eigenmaps (less or equal to the number of nodes of mesh)
     distFunc : func
-        function applied to the lengh of the edges of the mesh, and attached of the
+        function applied to the length of the edges of the mesh, and attached of the
         corresponding edge of the graph of the mesh
     normalizedLaplacian : bool
         if "True", the normalized Laplacian matrix is taken
@@ -187,7 +191,7 @@ def ComputeMeshLaplacianEigenmaps(inMesh, dimensionality = None, nEigenmaps = 10
         eigenvalues
     ndarray(numberOfNodes, nEigenmaps)
         Laplacian eigenmaps
-    '''
+    """
 
     G = ComputeNodeToNodeGraph(inMesh, dimensionality = dimensionality, distFunc = distFunc)
 
@@ -204,8 +208,7 @@ def ComputeMeshLaplacianEigenmaps(inMesh, dimensionality = None, nEigenmaps = 10
 
     return w, v
 
-
-def RenumberMeshForParametrization(inMesh, inPlace = True, boundaryOrientation = "direct", fixedBoundaryPoints = None, startingPointRankOnBoundary = None):
+def RenumberMeshForParametrization(inMesh:UnstructuredMesh, inPlace = True, boundaryOrientation = "direct", fixedBoundaryPoints = None, startingPointRankOnBoundary = None):
     """
     Only for linear triangle meshes
     Renumber the node IDs, such that the points on the boundary are placed at the
@@ -219,10 +222,10 @@ def RenumberMeshForParametrization(inMesh, inPlace = True, boundaryOrientation =
         if "True", inMesh is modified
         if "False", inMesh is let unmodified, and a new mesh is produced
     boundaryOrientation : str
-        if "direct, the boundary of the parametrisation is constructed in the direct trigonometric order
-        if "indirect", the boundary of the parametrisation is constructed in the indirect trigonometric orderc order
+        if "direct, the boundary of the parametrization is constructed in the direct trigonometric order
+        if "indirect", the boundary of the parametrization is constructed in the indirect trigonometric  order
     fixedBoundaryPoints : list
-        list containing lists of two np.ndarrays. Each 2-member list is used to identify one
+        list containing lists of two np.ndarray. Each 2-member list is used to identify one
         point on the boundary: the first array contains the specified components, and the second the
     startingPointRankOnBoundary : int
         node id (in the complete mesh) of the point on the boundary where the mapping starts
@@ -353,9 +356,7 @@ def RenumberMeshForParametrization(inMesh, inPlace = True, boundaryOrientation =
 
     return mesh, renumb, nBoundary
 
-
-
-def FloaterMeshParametrization(inMesh, nBoundary, outShape = "circle", boundaryOrientation = "direct", curvAbsBoundary = True, fixedInteriorPoints = None, fixedBoundaryPoints = None):
+def FloaterMeshParametrization(inMesh, nBoundary:int, outShape:str = "circle", boundaryOrientation:str = "direct", curvAbsBoundary:bool = True, fixedInteriorPoints:Dict = None, fixedBoundaryPoints:List = None):
     """
     STILL LARGELY EXPERIMENTAL
 
@@ -594,9 +595,8 @@ def FloaterMeshParametrization(inMesh, nBoundary, outShape = "circle", boundaryO
 
     return mesh, infos
 
-
-def FloaterMesh3DParametrizationStarDomain(inMesh: UnstructuredMesh, boundaryTag: str, shape = None):
-    """
+def FloaterMesh3DParametrizationStarDomain(inMesh: UnstructuredMesh, boundaryTag: str, shape:Dict = None):
+    """Floater algorithm for 3D Mesh (Star Domain)
     Naive implementation only for linear tetrahedral meshes and 3D star domains
 
     Parameters
@@ -732,8 +732,6 @@ def FloaterMesh3DParametrizationStarDomain(inMesh: UnstructuredMesh, boundaryTag
 
 
     return mesh, renumb2, infos
-
-
 
 def FloaterMesh3DParametrization(inMesh: UnstructuredMesh, boundaryTag: str, inPlace: bool = True, fixedInteriorPoints = None, fixedBoundaryPoints = None):
     """
@@ -926,9 +924,7 @@ def FloaterMesh3DParametrization(inMesh: UnstructuredMesh, boundaryTag: str, inP
 
     return meshTemp, renumb, infos
 
-
-
-def ComputeStretchMetric(originMesh, parametrizedMesh):
+def ComputeStretchMetric(originMesh: UnstructuredMesh, parametrizedMesh: UnstructuredMesh):
     """
     Computes the texture stretch metric between an inital triangle mesh
     and its parametrization, as defined in [1].
@@ -992,9 +988,7 @@ def ComputeStretchMetric(originMesh, parametrizedMesh):
 
     return stretchMetric, area
 
-
-
-def ComputeNodalAveragedStretchMetric(originMesh, parametrizedMesh):
+def ComputeNodalAveragedStretchMetric(originMesh: UnstructuredMesh, parametrizedMesh: UnstructuredMesh):
     """
     Computes a nodal-averaged stretch metric between an inital triangle mesh
     and its parametrization, as defined in [1].
@@ -1036,10 +1030,7 @@ def ComputeNodalAveragedStretchMetric(originMesh, parametrizedMesh):
 
     return nodalStretchMetric
 
-
-
 # INTEGRITY CHECKS # -----------------------------------------------------------------------------------
-
 
 def CreateMeshForCheckIntegrity():
     from BasicTools.Containers import UnstructuredMeshCreationTools as UMCT
@@ -1051,8 +1042,6 @@ def CreateMeshForCheckIntegrity():
 
     return UMCT.CreateMeshFromConstantRectilinearMesh(myMesh, ofSimplex = True)
 
-
-
 def Create3DMeshForCheckIntegrity():
     from BasicTools.Containers import UnstructuredMeshCreationTools as UMCT
     from BasicTools.Containers import ConstantRectilinearMesh as CRM
@@ -1062,7 +1051,6 @@ def Create3DMeshForCheckIntegrity():
     myMesh.SetSpacing([1, 1, 1])
 
     return UMCT.CreateMeshFromConstantRectilinearMesh(myMesh, ofSimplex = True)
-
 
 def CheckIntegrity_PartitionMesh_Metis(GUI=False):
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshOfTriangles
@@ -1074,7 +1062,6 @@ def CheckIntegrity_PartitionMesh_Metis(GUI=False):
     print("test to complete")
     return "ok"
 
-
 def CheckIntegrity_InitializeGraphPointsFromMeshPoints(GUI=False):
 
     mesh = CreateMeshForCheckIntegrity()
@@ -1084,7 +1071,6 @@ def CheckIntegrity_InitializeGraphPointsFromMeshPoints(GUI=False):
 
     return "ok"
 
-
 def CheckIntegrity_InitializeGraphPointsFromMeshElements(GUI=False):
 
     mesh = CreateMeshForCheckIntegrity()
@@ -1092,7 +1078,6 @@ def CheckIntegrity_InitializeGraphPointsFromMeshElements(GUI=False):
     np.testing.assert_almost_equal(G.nodes, np.arange(8))
 
     return "ok"
-
 
 def CheckIntegrity_ComputeNodeToNodeGraph(GUI=False):
 
@@ -1103,7 +1088,6 @@ def CheckIntegrity_ComputeNodeToNodeGraph(GUI=False):
     np.testing.assert_almost_equal(G.edges, [(0, 1), (0, 3), (0, 4), (1, 2), (1, 4), (1, 5), (2, 5), (3, 4), (3, 6), (3, 7), (4, 5), (4, 7), (4, 8), (5, 8), (6, 7), (7, 8)])
 
     return "ok"
-
 
 def CheckIntegrity_ComputeElementToElementGraph(GUI=False):
 
@@ -1134,7 +1118,6 @@ def CheckIntegrity_ComputeElementToElementGraph(GUI=False):
 
     return "ok"
 
-
 def CheckIntegrity_ComputeMeshLaplacianEigenmaps(GUI=False):
 
     mesh = CreateMeshForCheckIntegrity()
@@ -1148,9 +1131,7 @@ def CheckIntegrity_ComputeMeshLaplacianEigenmaps(GUI=False):
     [ 3.33333333e-01, -5.77350269e-01, -5.77775050e-01]])
     np.testing.assert_almost_equal(v[:3,:], refV)
 
-
     return "ok"
-
 
 
 def CheckIntegrity_FloaterMeshParametrization(GUI=False):
@@ -1180,7 +1161,6 @@ def CheckIntegrity_FloaterMeshParametrization(GUI=False):
 
     return "ok"
 
-
 def CheckIntegrity_FloaterMesh3DParametrizationStarDomain(GUI=False):
 
     mesh = Create3DMeshForCheckIntegrity()
@@ -1192,7 +1172,6 @@ def CheckIntegrity_FloaterMesh3DParametrizationStarDomain(GUI=False):
 
     print("infos FloaterMesh3DParametrizationStarDomain ellipsoid:", infos)
 
-
     np.testing.assert_almost_equal(infos['minEdge'], 0.27477100047357156)
     np.testing.assert_almost_equal(infos['maxEdge'], 0.8023930268619969)
 
@@ -1202,7 +1181,6 @@ def CheckIntegrity_FloaterMesh3DParametrizationStarDomain(GUI=False):
                          [-0.39871955,  0.01773299, -0.39871955]])
 
     np.testing.assert_almost_equal(meshParam.nodes[:4,:], refNodes)
-
 
     meshParam, renumb, infos = FloaterMesh3DParametrizationStarDomain(mesh, boundaryTag = 'Skin', shape = {"type":"cuboid", "center":[1.,0.5,0.1], "dimension":[0.1,0.2,0.3]})
 
@@ -1220,14 +1198,12 @@ def CheckIntegrity_FloaterMesh3DParametrizationStarDomain(GUI=False):
 
     return "ok"
 
-
 def CheckIntegrity_FloaterMesh3DParametrization(GUI=False):
 
     mesh = Create3DMeshForCheckIntegrity()
 
     from BasicTools.Containers import UnstructuredMeshCreationTools as UMCT
     UMCT.ComputeSkin(mesh, md = 3, inPlace = True)
-
 
     mesh.ComputeBoundingBox()
 
@@ -1280,7 +1256,6 @@ def CheckIntegrity_FloaterMesh3DParametrization(GUI=False):
 
     return "ok"
 
-
 def CheckIntegrity_ComputeNodalAveragedStretchMetric(GUI=False):
 
     mesh = CreateMeshForCheckIntegrity()
@@ -1294,9 +1269,6 @@ def CheckIntegrity_ComputeNodalAveragedStretchMetric(GUI=False):
     np.testing.assert_almost_equal(res, ref)
 
     return "ok"
-
-
-
 
 def CheckIntegrity(GUI=False):
     totest= [
