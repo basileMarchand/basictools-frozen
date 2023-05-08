@@ -24,7 +24,7 @@ def CleanDoubleNodes(mesh: UnstructuredMesh, tol: Optional[PBasicFloatType]=None
         the tolerance, by default value is = np.linalg.norm(mesh.boundingMax - mesh.boundingMin)*1e-7
         if tol is zero a faster algorithm is used
     nodesToTestMask : ArrayLike, optional
-        _description_, by default None
+        a mask of len number of nodes with the value True for nodes to be tested (this can increase the speed of the algorithm), by default None
 
     """
 
@@ -130,7 +130,7 @@ def CleanLonelyNodes(mesh:UnstructuredMesh, inPlace:bool=True)-> Tuple[np.ndarra
     mesh : UnstructuredMesh
         the input mesh
     inPlace : bool, optional
-        if true the nodes are removed in place , by default True
+        if true the nodes are removed in place, by default True
 
     Returns
     -------
@@ -188,7 +188,7 @@ def CleanLonelyNodes(mesh:UnstructuredMesh, inPlace:bool=True)-> Tuple[np.ndarra
         return usedNodes, res
 
 def CleanDoubleElements(mesh: UnstructuredMesh):
-    """Remove double elements on the mesh, even if a permutation exist
+    """Remove double elements on the mesh (inplace), even if a permutation exist
 
     Parameters
     ----------
@@ -281,7 +281,7 @@ def CopyElementTags(sourceMesh: UnstructuredMesh, targetMesh: UnstructuredMesh, 
             tag2.RemoveDoubles()
 
 def DeleteElements(mesh: UnstructuredMesh, mask: ArrayLike):
-    """Delete elements on the input mesh
+    """Delete elements on the input mesh (inplace)
 
     Parameters
     ----------
@@ -312,7 +312,7 @@ def DeleteElements(mesh: UnstructuredMesh, mask: ArrayLike):
     mesh.PrepareForOutput()
 
 def DeleteInternalFaces(mesh:UnstructuredMesh):
-    """Delete faces not present on the skin (internal faces)
+    """Delete faces not present on the skin (internal faces) (inplace)
 
     Parameters
     ----------
@@ -881,7 +881,6 @@ def RigidBodyTransformation(mesh: UnstructuredMesh, rotationMatrix: np.ndarray, 
     mesh.nodes = np.dot(rotationMatrix, mesh.nodes.T).T
     for i in range(3):
         mesh.nodes[:,i] += translationVector[i]
-
 
 def ComputeRigidBodyTransformationBetweenTwoSetOfPoints(setPoints1: np.ndarray, setPoints2: np.ndarray)-> Tuple[np.ndarray, np.ndarray]:
     """ Compute the rotation and the translation operator from two sets of points
