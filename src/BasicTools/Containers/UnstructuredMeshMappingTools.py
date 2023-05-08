@@ -1,15 +1,27 @@
 import math
-import numpy as np
+from typing import Tuple
 
+import numpy as np
 from scipy.optimize import fmin_l_bfgs_b
 
 from BasicTools.Containers.Filters import ElementFilter
 from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
-from BasicTools.NumpyDefs import PBasicFloatType
+from BasicTools.NumpyDefs import PBasicFloatType, ArrayLike
 
 class FoldOverFreeMaps():
+    """BasicTools  implementation of the Fold Over Free Maps algorithm
+    """
 
     def __init__(self,mesh: UnstructuredMesh, boundaryEF:ElementFilter):
+        """Create an instance of FoldOverFreeMaps
+
+        Parameters
+        ----------
+        mesh : UnstructuredMesh
+            The mesh to work on
+        boundaryEF : ElementFilter
+            an element filter to define the border of the mesh
+        """
         self.eps = 1
         self.pdim = mesh.GetPointsDimensionality()
         self.edim = mesh.GetElementsDimensionality()
@@ -27,12 +39,17 @@ class FoldOverFreeMaps():
         self.theta = 0.5
 
         self.callback = None
+        """callback function to be called at each interaction of the algorithm with the current mesh as argument """
 
     def CallCallback(self):
+        """Call Back wrapper
+        """
         if self.callback is not None:
             self.callback(self.mesh)
 
     def Start(self):
+        """Start the computation of the algorithm
+        """
         n =0
         while True: # outer L-BFGS loop, Alg. 1, line 2
             [Fprev, grad] = self.ComputePotential(self.mesh.nodes.flatten()) # compute $F(U^k, \varepsilon^k)$
@@ -54,7 +71,23 @@ class FoldOverFreeMaps():
             if n > 200:
                 break
 
-    def ComputePotential(self,U): # compute the energy $F$ and its gradient $\nabla F$ for the map $\vec{u}$, Eq. (5)
+    def ComputePotential(self,U:ArrayLike)-> Tuple[np.number, np.ndarray]:
+        """Compute the potential to be minimized
+
+        Parameters
+        ----------
+        U : ArrayLike
+            The positions of the points
+
+        Returns
+        -------
+        Tuple[np.number, np.ndarray]
+            F the potential value
+            G the gradient of the potential
+        """
+
+
+         # compute the energy $F$ and its gradient $\nabla F$ for the map $\vec{u}$, Eq. (5)
 
         F = 0  # zero out the energy and the gradient
         G = np.zeros( (self.nbNodes,self.pdim), dtype=PBasicFloatType )
@@ -90,8 +123,14 @@ class FoldOverFreeMaps():
         G[self.nodeMask] = 0
         return F, G.flatten()
 
+    def MinDetJacobian(self) -> np.number:
+        """Compute the minimal jacobian on the mesh
 
-    def MinDetJacobian(self):
+        Returns
+        -------
+        np.number
+            the min of the jacobian
+        """
         res  = np.inf
         for name, data , ids in ElementFilter(self.mesh,dimensionality=self.edim):
             ipv, ipw = self.ip[name]
