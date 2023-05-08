@@ -87,7 +87,28 @@ def GetDataOverALine(startPoint: ArrayLike, stopPoint: ArrayLike, nbPoints: int,
     lineMesh.nodeFields = res
     return lineMesh
 
-def GetElementsFractionInside(field, points, name, elements, ids):
+def GetElementsFractionInside(field:ArrayLike, points:ArrayLike, name:str, elements:ElementsContainer, ids:ArrayLike)-> np.ndarray:
+    """Compute the volume fraction for each element in ids, based in the level-set field field.
+    Function valid for simplices (bars, triangles, tetrahedrons)
+
+    Parameters
+    ----------
+    field : ArrayLike
+        the levelset field
+    points : ArrayLike
+        the points of the mesh
+    name : str
+        the element name
+    elements : ElementsContainer
+        the element data
+    ids : ArrayLike
+        the ids to treat
+
+    Returns
+    -------
+    np.ndarray
+        the volume fraction for each element in ids
+    """
 
     from scipy.spatial import Delaunay
 
@@ -188,7 +209,7 @@ def GetElementsFractionInside(field, points, name, elements, ids):
     return res
 
 def GetVolumePerElement(inmesh: UnstructuredMesh, elementFilter: Optional[ElementFilter]=None ) -> np.ndarray:
-    """Compute the volume (surface for 2D element and length for 1De elements) for each element selected by the elementFilter
+    """Compute the volume (surface for 2D element and length for 1D elements) for each element selected by the elementFilter
 
     Parameters
     ----------
@@ -220,8 +241,8 @@ def GetVolumePerElement(inmesh: UnstructuredMesh, elementFilter: Optional[Elemen
     return f
 
 def GetMeasure(inmesh: UnstructuredMesh, elementFilter:Optional[ElementFilter] = None):
-    """Compute the measure of the mesh (volume in 3D, surface in 2D)
-    Only element of the higher dimensionality are taken into account if no element filter
+    """Compute the measure of the mesh (volume in 3D, surface in 2D, ...)
+    Only elements of the higher dimensionality are taken into account if no element filter
     is supplied
 
     Attention: if the element filter contain dimensionality mixed elements the result is the
@@ -264,7 +285,6 @@ def GetMeasure(inmesh: UnstructuredMesh, elementFilter:Optional[ElementFilter] =
     _,f  = IntegrateGeneral( mesh=inmesh, wform=wform, constants={}, fields=[F], unkownFields=unkownFields, elementFilter=elementFilter)
     return f[0]
 
-
 def GetVolume(inmesh: UnstructuredMesh) -> PBasicFloatType:
     """Compute the volume of the mesh
     Only element of the bigger dimensionality are taken into account
@@ -288,7 +308,22 @@ def GetVolume(inmesh: UnstructuredMesh) -> PBasicFloatType:
     """
     return GetMeasure(inmesh)
 
-def ComputeNodeToElementConnectivity(inmesh, maxNumConnections=200):
+def ComputeNodeToElementConnectivity(inmesh: UnstructuredMesh, maxNumConnections:int=200)-> Tuple[np.ndarray,np.ndarray]:
+    """Compute the node to connectivity connection for every point
+
+    Parameters
+    ----------
+    inmesh : UnstructuredMesh
+        the mesh
+    maxNumConnections : int, optional
+        the number of potential connection to a single node, normally 200 is more than enough, by default 200
+
+    Returns
+    -------
+    Tuple
+        numpy.ndarray, (nb point, max nb connections) item, the connectivity for each node -> element
+        numpy.array,  the number of connections per point
+    """
     # generation of the dual graph
     dualGraph = np.zeros((inmesh.GetNumberOfNodes(),maxNumConnections), dtype=PBasicIndexType )-1
     usedPoints = np.zeros(inmesh.GetNumberOfNodes(), dtype=PBasicIndexType )
@@ -308,8 +343,22 @@ def ComputeNodeToElementConnectivity(inmesh, maxNumConnections=200):
     dualGraph = dualGraph[:,0:maxsize]
     return dualGraph,usedPoints
 
-def ComputeNodeToNodeConnectivity(inmesh, maxNumConnections=200):
+def ComputeNodeToNodeConnectivity(inmesh: UnstructuredMesh, maxNumConnections=200)-> Tuple[np.ndarray,np.ndarray]:
+    """Compute the node to node connection for every node in the mesh
 
+    Parameters
+    ----------
+    inmesh : UnstructuredMesh
+        the mesh
+    maxNumConnections : int, optional
+        the number of potential connection to a single node, normally 200 is more than enough, by default 200
+
+    Returns
+    -------
+    Tuple
+        numpy.ndarray, (nb point, max nb connections) item, the connectivity for each node -> node
+        numpy.array,  the number of connections per point
+    """
     # generation of the dual graph
     dualGraph = np.zeros((inmesh.GetNumberOfNodes(),maxNumConnections), dtype=PBasicIndexType )-1
     usedPoints = np.zeros(inmesh.GetNumberOfNodes(), dtype=PBasicIndexType )
@@ -347,18 +396,34 @@ def ComputeNodeToNodeConnectivity(inmesh, maxNumConnections=200):
     dualGraph = dualGraph[:,0:maxsize]
     return dualGraph,usedPoints
 
-
-
-def ComputeElementToElementConnectivity(inmesh, dimensionality = None, connectivityDimension = None, maxNumConnections = 200):
-    '''Generates the elements to element connectivity of an UnstructuredMesh in the following sense:
+def ComputeElementToElementConnectivity(inmesh:UnstructuredMesh, dimensionality:int = None, connectivityDimension:int = None, maxNumConnections:int = 200)-> Tuple[np.ndarray,np.ndarray]:
+    """Generates the elements to element connectivity of an UnstructuredMesh in the following sense:
     an element is linked to another in the graph if they share:
         - a face   if connectivityDimension = 2
         - an edge  if connectivityDimension = 1
         - a vertex if connectivityDimension = 0
         (if connectivityDimension is initialized to None, it will be set to dimensionality - 1)
 
-    Also provides the array of cells used.
-    '''
+    Also provides the array of number of connection per cell.
+
+    Parameters
+    ----------
+    inmesh : UnstructuredMesh
+        the input mesh
+    dimensionality : int, optional
+        dimensionality filter, by default inmesh.GetDimensionality()
+    connectivityDimension : int, optional
+        type of connectivity, by default dimensionality - 1
+    maxNumConnections : int, optional
+        the number of potential connection to a single node, normally 200 is more than enough, by default 200
+
+    Returns
+    -------
+    Tuple
+        numpy.ndarray, (nb elements, max nb connections) item, the connections for each element -> element
+        numpy.array,  the number of connections per elements
+    """
+
 
     if dimensionality == None:
         dimensionality = inmesh.GetDimensionality()
@@ -407,7 +472,6 @@ def ComputeElementToElementConnectivity(inmesh, dimensionality = None, connectiv
     maxsize = np.max(np.sum(elemGraph>=0,axis=1)) # crop output data
     elemGraph = elemGraph[:,0:maxsize]
     return elemGraph, usedCells
-
 
 def ExtractElementsByElementFilter(inmesh: UnstructuredMesh, elementFilter: ElementFilter, copy:bool=True) -> UnstructuredMesh:
     """Create a new mesh with the selected element by elementFilter
@@ -460,7 +524,6 @@ def ExtractElementsByElementFilter(inmesh: UnstructuredMesh, elementFilter: Elem
 
 def ExtractElementsByMask(inElementContainer: ElementsContainer, mask: ArrayLike) -> ElementsContainer:
     """Create a new ElementContainer with the element selected by the mask
-    Note: The connectivity of the element is not changed.
 
     Parameters
     ----------
@@ -506,7 +569,28 @@ def ExtractElementsByMask(inElementContainer: ElementsContainer, mask: ArrayLike
 
     return outElements
 
-def ExtractElementByTags(inmesh,tagsToKeep, allNodes=False,dimensionalityFilter= None, cleanLonelyNodes=True):
+def ExtractElementByTags(inmesh: UnstructuredMesh, tagsToKeep:List[str], allNodes:bool=False, dimensionalityFilter:int= None, cleanLonelyNodes:bool=True)-> UnstructuredMesh:
+    """Extract element by tags. create a new UnstructuredMesh with element present in the tags
+
+    Parameters
+    ----------
+    inmesh : UnstructuredMesh
+        the input mesh
+    tagsToKeep : List[str]
+        List of Tag name to extract element can contain tag name for nodes tags
+    allNodes : bool, optional
+        if tagsToKeep point to a node tags then this option controls if all the nodes of the element must be in the tag to select the element , by default False
+    dimensionalityFilter : int, optional
+        keep all the element of dimensionality dimensionalityFilter, by default None
+    cleanLonelyNodes : bool, optional
+        true to apply a after the extraction, by default True
+
+    Returns
+    -------
+    UnstructuredMesh
+        a new UnstructuredMesh with the extracted elements (the tags are updated)
+    """
+
 
     outMesh = UnstructuredMesh()
     outMesh.CopyProperties(inmesh)
