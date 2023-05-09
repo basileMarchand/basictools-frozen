@@ -501,6 +501,8 @@ def ToQuadraticMesh(inputMesh: UnstructuredMesh) -> UnstructuredMesh:
     toQuad[ElementNames.Wedge_15] = ElementNames.Wedge_15
 
     for name, data in inputMesh.elements.items():
+        if data.GetNumberOfElements() == 0:
+            continue
         elements = res.elements.GetElementsOfType(toQuad[name])
         elements.AddNewElements(numbering[name],data.originalIds)
         for tag in data.tags:
