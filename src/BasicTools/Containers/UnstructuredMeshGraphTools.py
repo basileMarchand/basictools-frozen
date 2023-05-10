@@ -356,7 +356,7 @@ def RenumberMeshForParametrization(inMesh:UnstructuredMesh, inPlace = True, boun
 
     return mesh, renumb, nBoundary
 
-def FloaterMeshParametrization(inMesh, nBoundary:int, outShape:str = "circle", boundaryOrientation:str = "direct", curvAbsBoundary:bool = True, fixedInteriorPoints:Dict = None, fixedBoundaryPoints:List = None):
+def FloaterMeshParametrization(inMesh, nBoundary:int, outShape:str = "circle", boundaryOrientation:str = "direct", curvAbsBoundary:bool = True, fixedInteriorPoints:dict = None, fixedBoundaryPoints:list = None):
     """
     STILL LARGELY EXPERIMENTAL
 

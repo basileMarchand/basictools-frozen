@@ -541,7 +541,7 @@ class FilterOP(BOO):
 
 class UnionElementFilter(FilterOP):
     """
-      Specialized class to compute the union of filter (add)
+    Specialized class to compute the union of filter (add)
     """
     def __init__(self,mesh=None,filters=None):
         super(UnionElementFilter,self).__init__(mesh=mesh,filters=filters)
@@ -564,7 +564,7 @@ class UnionElementFilter(FilterOP):
 
 class IntersectionElementFilter(FilterOP):
     """
-      Specialized class to compute the intersection of filters
+    Specialized class to compute the intersection of filters
     """
     def __init__(self,mesh=None,filters=None):
         super(IntersectionElementFilter,self).__init__(mesh=mesh,filters=filters)
@@ -596,7 +596,7 @@ class IntersectionElementFilter(FilterOP):
 
 class DifferenceElementFilter(FilterOP):
     """
-      Specialized class to compute the difference between two filters
+    Specialized class to compute the difference between two filters
     """
     def __init__(self,mesh=None,filters=None):
         if filters is not None and len(filters) != 2:
@@ -755,9 +755,9 @@ class IdsAsNumpyMask(FilterOP):
 class ElementFilter(Filter):
     """Class for element filtering by dimensionality, zone, mask,elementType, and tag
     for the zones three types of treatments are possible:
-      if the the center of the element is inside the zone   : self.zoneTreatment = "center"
-      if all nodes of the element are inside the zone       : self.zoneTreatment = "allnodes"
-      if at least one node of the element is inside the zone: self.zoneTreatment = "leastonenode"
+        if the the center of the element is inside the zone   : self.zoneTreatment = "center"
+        if all nodes of the element are inside the zone       : self.zoneTreatment = "allnodes"
+        if at least one node of the element is inside the zone: self.zoneTreatment = "leastonenode"
 
     Parameters
     ----------
@@ -779,12 +779,12 @@ class ElementFilter(Filter):
         ["allnodes" | "leastonenode"], by default "allnodes"
     """
     def __init__(self, mesh:UnstructuredMesh=None,
-                 dimensionality:Optional[int]=None,
-                 elementTypes:Optional[List[str]]=None,
-                 elementType:Optional[str]=None,
-                 zoneTreatment:str="center",
-                 nTags:Optional[List[str]] = None,
-                 nTagsTreatment:str="allnodes", **kwargs):
+                dimensionality:Optional[int]=None,
+                elementTypes:Optional[List[str]]=None,
+                elementType:Optional[str]=None,
+                zoneTreatment:str="center",
+                nTags:Optional[List[str]] = None,
+                nTagsTreatment:str="allnodes", **kwargs):
 
         super(ElementFilter,self).__init__(mesh=mesh,**kwargs)
         self.dimensionality = dimensionality
@@ -1457,7 +1457,7 @@ def ElementFilterToImplicitField(elementFilter:ElementFilter, pseudoDistance:int
 def CheckIntegrity( GUI=False):
     """
     .. literalinclude:: ../../src/BasicTools/Containers/Filters.py
-       :pyobject: CheckIntegrity
+        :pyobject: CheckIntegrity
     """
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateCube
     nNodesX = 11
