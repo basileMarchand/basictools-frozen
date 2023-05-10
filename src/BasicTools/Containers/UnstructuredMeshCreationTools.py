@@ -458,15 +458,17 @@ def ToQuadraticMesh(inputMesh: UnstructuredMesh) -> UnstructuredMesh:
     from BasicTools.Containers.Filters import ElementFilter
     from BasicTools.FE.Fields.FieldTools import FillFEField
 
+    dim = inputMesh.GetDimensionality()
+
     numbering = ComputeDofNumbering(inputMesh, LagrangeSpaceP2)
 
     res = UnstructuredMesh()
-    res.nodes = np.empty((numbering.size,3), dtype=PBasicFloatType)
+    res.nodes = np.empty((numbering.size,dim), dtype=PBasicFloatType)
 
     def GetPos(j):
         return lambda x: x[j]
 
-    for i in range(3):
+    for i in range(dim):
         newPos_ =  FEField("newPos_", inputMesh, LagrangeSpaceP2, numbering)
         newPos_.data = res.nodes[:,i]
         FillFEField(newPos_,[(ElementFilter(inputMesh),GetPos(i))])
