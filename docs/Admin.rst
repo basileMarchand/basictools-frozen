@@ -12,6 +12,7 @@ BasicTools comes with two ways of executing the automated tests.
 First, pytest [#pytestdoc]_ by simply executing in root directory of the library:
 
 .. code-block::
+
     pytest
 
 A file ``conftest.py`` present at the root of the repository is responsible of the pytest configuration.
