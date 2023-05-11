@@ -16,7 +16,7 @@ from BasicTools.FE.IntegrationsRules import LagrangeIsoParam
 from BasicTools.Helpers.TextFormatHelper import TFormat
 
 class UtMerger(WriterBase):
-    "This class can generate monolithic .ut, .goef, .ctnod, .node, .integ from files obtained from a parallel computation"
+    "This class can generate monolithic .ut, .goef, .ctnod, .node, .integ from files obtained from a parallel Z-set computation"
     def __init__(self):
         super(UtMerger,self).__init__()
         self.timeSteps = "all"
@@ -37,21 +37,21 @@ class UtMerger(WriterBase):
         temp2 = []
         count = 0
         for f in temp:
-          temp2.append([])
-          for fi in f:
-            splitted = fi.split("-")
-            for fil in splitted:
-              try:
-                temp2[count].append(int(fil))
-              except ValueError:
-                temp2[count].append(fil)
-          count += 1
+            temp2.append([])
+            for fi in f:
+                splitted = fi.split("-")
+                for fil in splitted:
+                    try:
+                        temp2[count].append(int(fil))
+                    except ValueError:
+                        temp2[count].append(fil)
+            count += 1
         subdomains = []
         for f in temp2:
-          if 'ut' in f and self.name in f:
-            for fi in f:
-              if type(fi) == int:
-                subdomains.append(fi)
+            if 'ut' in f and self.name in f:
+                for fi in f:
+                    if type(fi) == int:
+                        subdomains.append(fi)
         self.nbsd = np.max(subdomains)
         print("Number of found subdomains:", self.nbsd)
 
@@ -169,47 +169,47 @@ class UtMerger(WriterBase):
         #write .ut
         __string = "**meshfile " + os.path.relpath(self.dataFolder, self.outputFolder) + os.sep + cutGeof+"\n"
         with open(self.dataFolder + self.name + "-001.ut", 'r') as inFile:
-          inFile.readline()
-          for i in range(3):
-            __string += inFile.readline()
+            inFile.readline()
+            for i in range(3):
+                __string += inFile.readline()
 
         with open(self.outputFolder + self.name + ".ut", "w") as outFile:
-          outFile.write(__string)
-          for timeStep in range(nbeTimeSteps):
-            line = ""
-            for i in range(4):
-              line += str(int(reader.time[timeStep,i]))+" "
-            line += str(reader.time[timeStep,4])+"\n"
-            outFile.write(line)
+            outFile.write(__string)
+            for timeStep in range(nbeTimeSteps):
+                line = ""
+                for i in range(4):
+                    line += str(int(reader.time[timeStep,i]))+" "
+                line += str(reader.time[timeStep,4])+"\n"
+                outFile.write(line)
 
 
 def GeofFromCut(dataFolder, cutName):
-  cutFile = open(dataFolder+cutName+".cut", 'r')
-  strings = cutFile.readlines()
-  return strings[1].split()[1]
+    cutFile = open(dataFolder+cutName+".cut", 'r')
+    strings = cutFile.readlines()
+    return strings[1].split()[1]
 
 
 def Tag3D(mesh):
-  for name, data in mesh.elements.items():
-    if EN.dimension[name] == 3:
-      mesh.GetElementsOfType(name).tags.CreateTag('3D').SetIds(mesh.GetElementsOfType(name).originalIds-1)
+    for name, data in mesh.elements.items():
+        if EN.dimension[name] == 3:
+            mesh.GetElementsOfType(name).tags.CreateTag('3D').SetIds(mesh.GetElementsOfType(name).originalIds-1)
 
 
 def Return3DElements(mesh):
-  class metaDataMesh3DClass():
-      pass
-  for name, data in mesh.elements.items():
-    if '3D' in data.tags:
-      idstotreat = data.tags['3D'].GetIds()
-      metaDataMesh3D = metaDataMesh3DClass()
-      metaDataMesh3D.NnodeperEl = EN.numberOfNodes[name]
-      metaDataMesh3D.p, metaDataMesh3D.w =  LagrangeIsoParam[name]
-      metaDataMesh3D.NGaussperEl = len(metaDataMesh3D.w)
-      metaDataMesh3D.NGauss = data.GetNumberOfElements()*metaDataMesh3D.NGaussperEl
-      metaDataMesh3D.nbElements = data.GetNumberOfElements()
-      metaDataMesh3D.Nodes = mesh.GetNumberOfNodes()
-      return idstotreat, metaDataMesh3D
-  raise('no 3D tag detected')
+    class metaDataMesh3DClass():
+            pass
+    for name, data in mesh.elements.items():
+        if '3D' in data.tags:
+            idstotreat = data.tags['3D'].GetIds()
+            metaDataMesh3D = metaDataMesh3DClass()
+            metaDataMesh3D.NnodeperEl = EN.numberOfNodes[name]
+            metaDataMesh3D.p, metaDataMesh3D.w =  LagrangeIsoParam[name]
+            metaDataMesh3D.NGaussperEl = len(metaDataMesh3D.w)
+            metaDataMesh3D.NGauss = data.GetNumberOfElements()*metaDataMesh3D.NGaussperEl
+            metaDataMesh3D.nbElements = data.GetNumberOfElements()
+            metaDataMesh3D.Nodes = mesh.GetNumberOfNodes()
+            return idstotreat, metaDataMesh3D
+    raise('no 3D tag detected')
 
 def CheckIntegrity():
 

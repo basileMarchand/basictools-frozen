@@ -17,7 +17,7 @@ from BasicTools.Helpers.TextFormatHelper import TFormat
 from BasicTools.IO.Parallel.UtMerger import Tag3D, Return3DElements
 
 class UtSplitter(WriterBase):
-    "This class can plit .ut, .goef, .ctnod, .node, .integ files frpù a monolithic Zset solution"
+    "This class can split .ut, .goef, .ctnod, .node, .integ files from a monolithic Z-set solution"
     def __init__(self):
         super(UtSplitter,self).__init__()
         self.timeSteps = "all"
@@ -38,21 +38,21 @@ class UtSplitter(WriterBase):
         temp2 = []
         count = 0
         for f in temp:
-          temp2.append([])
-          for fi in f:
-            splitted = fi.split("-")
-            for fil in splitted:
-              try:
-                temp2[count].append(int(fil))
-              except ValueError:
-                temp2[count].append(fil)
-          count += 1
+            temp2.append([])
+            for fi in f:
+                splitted = fi.split("-")
+                for fil in splitted:
+                    try:
+                        temp2[count].append(int(fil))
+                    except ValueError:
+                        temp2[count].append(fil)
+            count += 1
         subdomains = []
         for f in temp2:
-          if 'geof' in f and self.name in f:
-            for fi in f:
-              if type(fi) == int:
-                subdomains.append(fi)
+            if 'geof' in f and self.name in f:
+                for fi in f:
+                    if type(fi) == int:
+                        subdomains.append(fi)
         self.nbsd = np.max(subdomains)
         print("Number of found subdomains:", self.nbsd)
 
@@ -64,105 +64,105 @@ class UtSplitter(WriterBase):
 
     def Split(self):
 
-      reader = UR.UtReader()
-      reader.SetFileName(self.dataFolder + self.name + ".ut")
-      reader.ReadMetaData()
+        reader = UR.UtReader()
+        reader.SetFileName(self.dataFolder + self.name + ".ut")
+        reader.ReadMetaData()
 
 
-      if self.timeSteps != "all":
-        reader.time = reader.time[self.timeSteps,:]
-        if len(reader.time.shape) == 1:
-          reader.time.shape = (1,reader.time.shape[0])
+        if self.timeSteps != "all":
+            reader.time = reader.time[self.timeSteps,:]
+            if len(reader.time.shape) == 1:
+                reader.time.shape = (1,reader.time.shape[0])
 
 
-      reader.atIntegrationPoints = True
-      globaldataInteg = {}
-      for din in reader.integ:
-        globaldataInteg[din] = np.empty((reader.meshMetadata['nbIntegrationPoints'],reader.time.shape[0]))
-        for timeStep in range(reader.time.shape[0]):
-          globaldataInteg[din][:,timeStep] = reader.ReadField(fieldname=din, timeIndex=int(reader.time[timeStep,0])-1)
+        reader.atIntegrationPoints = True
+        globaldataInteg = {}
+        for din in reader.integ:
+            globaldataInteg[din] = np.empty((reader.meshMetadata['nbIntegrationPoints'],reader.time.shape[0]))
+            for timeStep in range(reader.time.shape[0]):
+                globaldataInteg[din][:,timeStep] = reader.ReadField(fieldname=din, timeIndex=int(reader.time[timeStep,0])-1)
 
-      reader.atIntegrationPoints = False
-      globaldataNode = {}
-      for din in reader.node:
-          globaldataNode[din] = np.empty((reader.meshMetadata['nbNodes'],reader.time.shape[0]))
-          for timeStep in range(reader.time.shape[0]):
-            globaldataNode[din][:,timeStep] = reader.ReadField(fieldname=din, timeIndex=int(reader.time[timeStep,0])-1)
-
-
-      globalMesh = GR.ReadGeof(fileName = self.dataFolder + self.name + ".geof",readElset=False,readFaset=False,printNotRead=False)
-      Tag3D(globalMesh)
-      globalIdstotreat, metaDataglobalMesh3D = Return3DElements(globalMesh)
-      globalMesh.originalIDNodes = np.array(globalMesh.originalIDNodes-1, dtype=int)
-
-      nGpE = metaDataglobalMesh3D.NGaussperEl
+        reader.atIntegrationPoints = False
+        globaldataNode = {}
+        for din in reader.node:
+            globaldataNode[din] = np.empty((reader.meshMetadata['nbNodes'],reader.time.shape[0]))
+            for timeStep in range(reader.time.shape[0]):
+                globaldataNode[din][:,timeStep] = reader.ReadField(fieldname=din, timeIndex=int(reader.time[timeStep,0])-1)
 
 
-      from BasicTools.Helpers.ProgressBar import printProgressBar
-      printProgressBar(0, self.nbsd, prefix = 'Progress:', suffix = 'Complete', length = 50)
+        globalMesh = GR.ReadGeof(fileName = self.dataFolder + self.name + ".geof",readElset=False,readFaset=False,printNotRead=False)
+        Tag3D(globalMesh)
+        globalIdstotreat, metaDataglobalMesh3D = Return3DElements(globalMesh)
+        globalMesh.originalIDNodes = np.array(globalMesh.originalIDNodes-1, dtype=int)
 
-      for sd in range(1,self.nbsd+1):
-        sdString = "-" + str(sd).zfill(3)
-        localMesh = GR.ReadGeof(fileName = self.dataFolder+self.name + "-pmeshes" + os.sep + self.name + sdString + ".geof",readElset=False,readFaset=False,printNotRead=False)
-        Tag3D(localMesh)
-        localIdstotreat, metaDatalocalMesh3D = Return3DElements(localMesh)
-        localOriginalIDNodes = np.array(localMesh.originalIDNodes-1, dtype=int)
+        nGpE = metaDataglobalMesh3D.NGaussperEl
 
 
-        #write .integ
-        data_integ = np.empty(len(reader.integ)*metaDatalocalMesh3D.NGauss*(reader.time.shape[0]))
+        from BasicTools.Helpers.ProgressBar import printProgressBar
+        printProgressBar(0, self.nbsd, prefix = 'Progress:', suffix = 'Complete', length = 50)
 
-        count0 = 0
-        for timeStep in range(reader.time.shape[0]):
-          field = np.empty((len(reader.integ),metaDatalocalMesh3D.NGauss))
-          count = 0
-          for k in range(len(reader.integ)):
-            count = 0
-            for el in localIdstotreat:
-              field[k,count:count+nGpE] = globaldataInteg[reader.integ[k]][el*nGpE:(el+1)*nGpE,timeStep]
-              count += nGpE
-          for m in range(len(localIdstotreat)):
-            for k in range(len(reader.integ)):
-              data_integ[count0:count0+nGpE] = field[k,nGpE*m:nGpE*(m+1)]
-              count0 += nGpE
-        data_integ.astype(np.float32).byteswap().tofile(self.outputFolder + self.name + sdString + ".integ")
+        for sd in range(1,self.nbsd+1):
+            sdString = "-" + str(sd).zfill(3)
+            localMesh = GR.ReadGeof(fileName = self.dataFolder+self.name + "-pmeshes" + os.sep + self.name + sdString + ".geof",readElset=False,readFaset=False,printNotRead=False)
+            Tag3D(localMesh)
+            localIdstotreat, metaDatalocalMesh3D = Return3DElements(localMesh)
+            localOriginalIDNodes = np.array(localMesh.originalIDNodes-1, dtype=int)
 
 
-        #write .node
-        count0 = 0
-        data_node = np.zeros(len(reader.node)*metaDatalocalMesh3D.Nodes*(reader.time.shape[0]))
-        for timeStep in range(reader.time.shape[0]):
-          for k in range(len(reader.node)):
-            data_node[count0:count0+metaDatalocalMesh3D.Nodes] = globaldataNode[reader.node[k]][localOriginalIDNodes,timeStep]
-            count0 += metaDatalocalMesh3D.Nodes
-        data_node.astype(np.float32).byteswap().tofile(self.outputFolder + self.name + sdString +".node")
+            #write .integ
+            data_integ = np.empty(len(reader.integ)*metaDatalocalMesh3D.NGauss*(reader.time.shape[0]))
+
+            count0 = 0
+            for timeStep in range(reader.time.shape[0]):
+                field = np.empty((len(reader.integ),metaDatalocalMesh3D.NGauss))
+                count = 0
+                for k in range(len(reader.integ)):
+                    count = 0
+                    for el in localIdstotreat:
+                        field[k,count:count+nGpE] = globaldataInteg[reader.integ[k]][el*nGpE:(el+1)*nGpE,timeStep]
+                        count += nGpE
+                for m in range(len(localIdstotreat)):
+                    for k in range(len(reader.integ)):
+                        data_integ[count0:count0+nGpE] = field[k,nGpE*m:nGpE*(m+1)]
+                        count0 += nGpE
+            data_integ.astype(np.float32).byteswap().tofile(self.outputFolder + self.name + sdString + ".integ")
 
 
-        #write .ut
-        __string = "**meshfile " + os.path.relpath(self.dataFolder, self.outputFolder) + os.sep + self.name + "-pmeshes" + os.sep + self.name + sdString + ".geof\n"
-        with open(self.dataFolder + self.name + ".ut", 'r') as inFile:
-          #next(inFile)
-          inFile.readline()
-          for i in range(3):
-            __string += inFile.readline()
-
-        with open(self.outputFolder + self.name + sdString + ".ut", "w") as outFile:
-          outFile.write(__string)
-          for timeStep in range(reader.time.shape[0]):
-            line = ""
-            for i in range(4):
-              line += str(int(reader.time[timeStep,i]))+" "
-            line += str(reader.time[timeStep,4])+"\n"
-            outFile.write(line)
-
-        printProgressBar(sd, self.nbsd, prefix = 'Progress:', suffix = 'Complete', length = 50)
+            #write .node
+            count0 = 0
+            data_node = np.zeros(len(reader.node)*metaDatalocalMesh3D.Nodes*(reader.time.shape[0]))
+            for timeStep in range(reader.time.shape[0]):
+                for k in range(len(reader.node)):
+                    data_node[count0:count0+metaDatalocalMesh3D.Nodes] = globaldataNode[reader.node[k]][localOriginalIDNodes,timeStep]
+                    count0 += metaDatalocalMesh3D.Nodes
+            data_node.astype(np.float32).byteswap().tofile(self.outputFolder + self.name + sdString +".node")
 
 
+            #write .ut
+            __string = "**meshfile " + os.path.relpath(self.dataFolder, self.outputFolder) + os.sep + self.name + "-pmeshes" + os.sep + self.name + sdString + ".geof\n"
+            with open(self.dataFolder + self.name + ".ut", 'r') as inFile:
+                #next(inFile)
+                inFile.readline()
+                for i in range(3):
+                    __string += inFile.readline()
 
-      #write .cut
-      __string = "***decomposition\n" + "  **global_mesh " + os.path.relpath(self.dataFolder, self.outputFolder) + os.sep + self.name + ".geof\n" + "  **domains "+str(self.nbsd)+"\n"
-      with open(self.outputFolder + self.name + ".cut", "w") as outFile:
-        outFile.write(__string)
+            with open(self.outputFolder + self.name + sdString + ".ut", "w") as outFile:
+                outFile.write(__string)
+                for timeStep in range(reader.time.shape[0]):
+                    line = ""
+                    for i in range(4):
+                        line += str(int(reader.time[timeStep,i]))+" "
+                    line += str(reader.time[timeStep,4])+"\n"
+                    outFile.write(line)
+
+            printProgressBar(sd, self.nbsd, prefix = 'Progress:', suffix = 'Complete', length = 50)
+
+
+
+        #write .cut
+        __string = "***decomposition\n" + "  **global_mesh " + os.path.relpath(self.dataFolder, self.outputFolder) + os.sep + self.name + ".geof\n" + "  **domains "+str(self.nbsd)+"\n"
+        with open(self.outputFolder + self.name + ".cut", "w") as outFile:
+            outFile.write(__string)
 
 
 def CheckIntegrity():
@@ -185,9 +185,9 @@ def CheckIntegrity():
 
     import filecmp
     for i in range(splitter.nbsd):
-      sdString = "-" + str(i+1).zfill(3)
-      print(TFormat.InRed("node files for subdomain "+str(i+1)+" equals  ? "+ str(filecmp.cmp(tempdir + "cube"+sdString+".node",  BasicToolsTestData.GetTestDataPath() + "UtParExample/cube"+sdString+".node", shallow=False))))
-      print(TFormat.InRed("integ files for subdomain "+str(i+1)+" equals ? "+ str(filecmp.cmp(tempdir + "cube"+sdString+".integ", BasicToolsTestData.GetTestDataPath() + "UtParExample/cube"+sdString+".integ", shallow=False))))
+        sdString = "-" + str(i+1).zfill(3)
+        print(TFormat.InRed("node files for subdomain "+str(i+1)+" equals  ? "+ str(filecmp.cmp(tempdir + "cube"+sdString+".node",  BasicToolsTestData.GetTestDataPath() + "UtParExample/cube"+sdString+".node", shallow=False))))
+        print(TFormat.InRed("integ files for subdomain "+str(i+1)+" equals ? "+ str(filecmp.cmp(tempdir + "cube"+sdString+".integ", BasicToolsTestData.GetTestDataPath() + "UtParExample/cube"+sdString+".integ", shallow=False))))
 
     print(tempdir)
     return "ok"
