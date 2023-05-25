@@ -54,7 +54,7 @@ try:
         MeshIOBridge.AddReadersToBasicToolsFactory()
         PrintDebug("loading meshio readers Done")
     except:
-        print("Error in the registration of meshio readers")
+        PrintDebug("Error in the registration of meshio readers")
         if debug:
             raise
 
@@ -216,7 +216,7 @@ try:
         MeshIOBridge.AddWritersToBasicToolsFactory()
         PrintDebug("loading meshio writers Done")
     except:
-        print("Error in the registration of meshio writers")
+        PrintDebug("Error in the registration of meshio writers")
         if debug:
             raise
 
