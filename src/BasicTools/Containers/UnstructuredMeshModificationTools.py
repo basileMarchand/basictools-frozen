@@ -6,12 +6,21 @@
 import copy
 from typing import Optional, Tuple
 import numpy as np
+from scipy.spatial import KDTree
 
 import BasicTools.Containers.ElementNames as ElementNames
 from BasicTools.Containers.Filters import ElementFilter
 from BasicTools.Containers.MeshBase import Tags
 from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
 from BasicTools.NumpyDefs import PBasicIndexType, PBasicFloatType, ArrayLike
+
+def find_duplicates(nodes, tol=1e-16):
+    index = KDTree(nodes)
+    dists, inds = index.query(nodes, k=2, workers=-1)
+    duplicate_inds = inds[(dists[:,1]<tol).nonzero()[0]]
+    duplicate_inds = np.sort(duplicate_inds, axis=1) # such that duplicate_inds[:,1]>duplicate_inds[:,0]
+    duplicate_inds = np.unique(duplicate_inds, axis=0).reshape((-1,2))
+    return duplicate_inds
 
 def CleanDoubleNodes(mesh: UnstructuredMesh, tol: Optional[PBasicFloatType]=None, nodesToTestMask: ArrayLike=None):
     """Remove double nodes for the input mesh
@@ -33,82 +42,28 @@ def CleanDoubleNodes(mesh: UnstructuredMesh, tol: Optional[PBasicFloatType]=None
         tol = np.linalg.norm(mesh.boundingMax - mesh.boundingMin)*1e-7
 
     nbNodes = mesh.GetNumberOfNodes()
-    toKeep = np.zeros(nbNodes, dtype=bool )
+    toKeep = np.zeros(nbNodes, dtype=bool)
     newIndex = np.zeros(nbNodes, dtype=PBasicIndexType)
-    tol2 = tol**2
-    def dist2(array,value):
-        d = array-value
-        return np.inner(d,d)
 
-    if nodesToTestMask is None and tol == 0:
-        # optimized version for tol = 0.0
-        database = {}
-        cpt  = 0
-        for i in range(nbNodes):
-            point = tuple(mesh.nodes[i,:])
-            ni = database.get(point)
-            if ni is None:
-                database[point] = cpt
-                newIndex[i] = cpt
-                cpt +=1
-                toKeep[i] = True
-            else:
-                newIndex[i] = ni
+    #---# find duplicates
+    duplicate_inds = find_duplicates(mesh.nodes, tol=tol)
+    keep_ids = np.setdiff1d(np.arange(nbNodes), duplicate_inds[:,1])
+    toKeep[keep_ids] = True
 
-    elif nodesToTestMask is None :
+    #---# associate each futurely removed point to its duplicate
+    map_duplicates = {}
+    for dup in duplicate_inds:
+        map_duplicates[dup[1]] = dup[0] # by construction dup[1]>dup[0]
 
-        from BasicTools.Containers.Octree import Octree
-        cpt  = 0
-
-        Ma = mesh.boundingMax
-        Mi = mesh.boundingMin
-        diag2 = np.linalg.norm(mesh.boundingMax-mesh.boundingMin)**2
-        tree = Octree(Ma[0],Ma[1],Ma[2], Mi[0], Mi[1], Mi[2])
-
-        for i in range(nbNodes):
-            point = tuple(mesh.nodes[i,:])
-            entries = tree.find_within_range_cube(point, tol)
-
-            oDist = diag2
-            if len(entries):
-                for entry in entries:
-                    dist = (point[0] - entry[0][0])**2   +(point[1] - entry[0][1])**2+(point[2] - entry[0][2])**2
-                    if dist < oDist:
-                        oDist = dist
-                        index = entry[1]
-
-            if oDist <= tol2:
-                newIndex[i] = index
-            else:
-                tree.add_item(cpt, point )
-                newIndex[i] = cpt
-                cpt += 1
-                toKeep[i] = True
-
-
-    else:
-        cpt =0
-        for i in range(nbNodes):
-            if not nodesToTestMask[i]:
-                newIndex[i] = cpt
-                cpt += 1
-                toKeep[i] = True
-                continue
-
-            posI = mesh.nodes[i,:]
-
-            for j in range(i):
-                if not nodesToTestMask[j]:
-                    continue
-                if toKeep[j]:
-                    dist = dist2(posI,mesh.nodes[j,:] )
-                    if dist < tol2 :
-                        newIndex[i] = newIndex[j]
-                        break
-            else:
-                newIndex[i] = cpt
-                cpt += 1
-                toKeep[i] = True
+    #---# fill newIndex
+    cpt  = 0
+    for i in range(nbNodes):
+        if i not in map_duplicates:
+            newIndex[i] = cpt
+            cpt +=1
+            assert(toKeep[i]) # toKeep[i] = True
+        else:
+            newIndex[i] = newIndex[map_duplicates[i]]
 
     mesh.nodes = mesh.nodes[toKeep,:]
     mesh.originalIDNodes = np.where(toKeep)[0]
