@@ -14,9 +14,12 @@ from BasicTools.Containers.MeshBase import Tags
 from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
 from BasicTools.NumpyDefs import PBasicIndexType, PBasicFloatType, ArrayLike
 
-def find_duplicates(nodes, tol=1e-16):
+def find_duplicates(nodes:ArrayLike, tol:Optional[PBasicFloatType]=1e-16, nodesToTestMask:ArrayLike=None):
     index = KDTree(nodes)
-    dists, inds = index.query(nodes, k=2, workers=-1)
+    if nodesToTestMask is None:
+        dists, inds = index.query(nodes, k=2, workers=-1)
+    else:
+        dists, inds = index.query(nodes[nodesToTestMask], k=2, workers=-1)
     duplicate_inds = inds[(dists[:,1]<tol).nonzero()[0]]
     duplicate_inds = np.sort(duplicate_inds, axis=1) # such that duplicate_inds[:,1]>duplicate_inds[:,0]
     duplicate_inds = np.unique(duplicate_inds, axis=0).reshape((-1,2))
@@ -33,7 +36,9 @@ def CleanDoubleNodes(mesh: UnstructuredMesh, tol: Optional[PBasicFloatType]=None
         the tolerance, by default value is = np.linalg.norm(mesh.boundingMax - mesh.boundingMin)*1e-7
         if tol is zero a faster algorithm is used
     nodesToTestMask : ArrayLike, optional
-        a mask of len number of nodes with the value True for nodes to be tested (this can increase the speed of the algorithm), by default None
+        a mask of len number of nodes with the value True for nodes to be tested (this can increase the speed of the algorithm),
+        only tests all pairs of nodes with at least a node in the mask
+        by default None
 
     """
 
@@ -46,7 +51,7 @@ def CleanDoubleNodes(mesh: UnstructuredMesh, tol: Optional[PBasicFloatType]=None
     newIndex = np.zeros(nbNodes, dtype=PBasicIndexType)
 
     #---# find duplicates
-    duplicate_inds = find_duplicates(mesh.nodes, tol=tol)
+    duplicate_inds = find_duplicates(mesh.nodes, tol=tol, nodesToTestMask=nodesToTestMask)
     keep_ids = np.setdiff1d(np.arange(nbNodes), duplicate_inds[:,1])
     toKeep[keep_ids] = True
 
