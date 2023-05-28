@@ -53,18 +53,13 @@ cpp_generators = ["cpp_generators/IntegrationRuleGenerator.py",
 
 def GetBasicToolsIncludeDirs():
     include_dirs = []
-    if "CONDA_PREFIX" in os.environ:
-        conda_prefix = os.environ["CONDA_PREFIX"]
-        include_dirs.append(os.path.join(conda_prefix, "include"))
-        include_dirs.append(os.path.join(conda_prefix, "include", "eigen3"))
-        include_dirs.append(os.path.join(conda_prefix, "Library", "include"))
-        include_dirs.append(os.path.join(conda_prefix, "Library", "include", "eigen3"))
-    if "PREFIX" in os.environ:
-        conda_prefix = os.environ["PREFIX"]
-        include_dirs.append(os.path.join(conda_prefix, "include"))
-        include_dirs.append(os.path.join(conda_prefix, "include", "eigen3"))
-        include_dirs.append(os.path.join(conda_prefix, "Library", "include"))
-        include_dirs.append(os.path.join(conda_prefix, "Library", "include", "eigen3"))
+    for packageManager in ["VIRTUAL_ENV", "CONDA_PREFIX","PREFIX" ]:
+        if packageManager in os.environ:
+            pmPrefix = os.environ[packageManager]
+            include_dirs.append(os.path.join(pmPrefix, "include"))
+            include_dirs.append(os.path.join(pmPrefix, "include", "eigen3"))
+            include_dirs.append(os.path.join(pmPrefix, "Library", "include"))
+            include_dirs.append(os.path.join(pmPrefix, "Library", "include", "eigen3"))
     import numpy
     include_dirs.extend([numpy.get_include(),"cpp_src" ,"."])
     import eigency
