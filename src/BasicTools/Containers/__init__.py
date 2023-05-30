@@ -15,7 +15,6 @@ _test = [
            'ConstantRectilinearMesh',
            'ConstantRectilinearMeshTools',
            'MeshBase',
-           'Octree',
            'ElementNames',
            'MeshTools',
            'Filters',
