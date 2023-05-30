@@ -5,11 +5,11 @@
 #
 
 import numpy as np
+from scipy.spatial import KDTree
 
 from BasicTools.Containers.Filters import ElementFilter
 from BasicTools.FE.KR.KRBase import KRBaseVector
-from BasicTools.Containers.Octree import Octree
-
+import BasicTools.Helpers.CPU  as CPU
 
 
 class KRConformalTieVector(KRBaseVector):
@@ -83,11 +83,8 @@ class KRConformalTieVector(KRBaseVector):
         offsets  , fieldOffsetsI, totalNumberOfDofsI  = self._ComputeOffsets(fields)
         offsetsII, fieldOffsetsII, totalNumberOfDofsII = self._ComputeOffsets(fieldsII)
 
-        oc1 = Octree(bmax1[0],bmax1[1],bmax1[2],bmin1[0],bmin1[1],bmin1[2])
-        oc2 = Octree(bmax2[0],bmax2[1],bmax2[2],bmin2[0],bmin2[1],bmin2[2])
+        def FillOctree(mesh, tags, base ):
 
-
-        def FillOctree(mesh,oc, tags, base ):
             usedNodes = set()
 
             ef = ElementFilter(mesh,tags=tags)
@@ -97,13 +94,11 @@ class KRConformalTieVector(KRBaseVector):
 
             usedNodes = list(usedNodes)
             nodes = base.ApplyTransform(mesh.nodes[usedNodes,:])
-            for cpt,nid in enumerate(usedNodes):
-                oc.add_item(nid,nodes[cpt])
 
-            return (usedNodes, nodes)
+            return ( KDTree(nodes), usedNodes, nodes)
 
-        usedNodesMeshI, nodesI  = FillOctree(meshI,oc1, self.on, self.originSystem.GetOrthoNormalBase())
-        usedNodesMeshII, nodesII = FillOctree(meshII,oc2,self.onII, self.targetSystem.GetOrthoNormalBase())
+        kdTree1, usedNodesMeshI, nodesI  = FillOctree(meshI, self.on, self.originSystem.GetOrthoNormalBase())
+        kdTree2, usedNodesMeshII, nodesII = FillOctree(meshII, self.onII, self.targetSystem.GetOrthoNormalBase())
 
         ffI = []
         usedOffsetsI = []
@@ -134,9 +129,11 @@ class KRConformalTieVector(KRBaseVector):
 
         for cpt,nidI in enumerate(usedNodesMeshI):
             posI = nodesI[cpt,:]
-            entries = oc2.find_within_range_cube(nodesI[cpt,:], self.tol)
+            entries = kdTree2.query_ball_point(x=nodesI[cpt,:], r=self.tol, workers= CPU.GetNumberOfAvailableCpus())
+
             for entry in entries:
-                posII, nidII = entry
+                nidII = entry
+                posII = usedNodesMeshII[entry]
                 dist = np.linalg.norm(posII - posI)
                 if dist > self.tol:
                     continue
