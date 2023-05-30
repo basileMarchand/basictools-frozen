@@ -8,19 +8,32 @@ from typing import Optional, Tuple
 import numpy as np
 from scipy.spatial import KDTree
 
+import BasicTools.Helpers.CPU as CPU
 import BasicTools.Containers.ElementNames as ElementNames
 from BasicTools.Containers.Filters import ElementFilter
 from BasicTools.Containers.MeshBase import Tags
 from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
 from BasicTools.NumpyDefs import PBasicIndexType, PBasicFloatType, ArrayLike
 
-def find_duplicates(nodes:ArrayLike, tol:Optional[PBasicFloatType]=1e-16, nodesToTestMask:ArrayLike=None):
+def FindDuplicates(nodes:ArrayLike, tol:Optional[PBasicFloatType]=1e-16) -> np.ndarray:
+    """Find duplicate pairs of points. Two points are coincident if the distance between is lower than tol
+
+    Parameters
+    ----------
+    nodes : ArrayLike
+        array of with the position of the nodes (number of nodes x number of coordinates)
+    tol : Optional[PBasicFloatType], optional
+        tolerance to detect duplicated nodes, by default 1e-16
+
+    Returns
+    -------
+    np.ndarray
+        nx2 array of coincident pairs
+    """
+
     index = KDTree(nodes)
-    if nodesToTestMask is None:
-        dists, inds = index.query(nodes, k=2, workers=-1)
-    else:
-        dists, inds = index.query(nodes[nodesToTestMask], k=2, workers=-1)
-    duplicate_inds = inds[(dists[:,1]<tol).nonzero()[0]]
+    dists, inds = index.query(nodes, k=2, workers=CPU.GetNumberOfAvailableCpus())
+    duplicate_inds = inds[(dists[:,1]<=tol).nonzero()[0]]
     duplicate_inds = np.sort(duplicate_inds, axis=1) # such that duplicate_inds[:,1]>duplicate_inds[:,0]
     duplicate_inds = np.unique(duplicate_inds, axis=0).reshape((-1,2))
     return duplicate_inds
@@ -37,7 +50,7 @@ def CleanDoubleNodes(mesh: UnstructuredMesh, tol: Optional[PBasicFloatType]=None
         if tol is zero a faster algorithm is used
     nodesToTestMask : ArrayLike, optional
         a mask of len number of nodes with the value True for nodes to be tested (this can increase the speed of the algorithm),
-        only tests all pairs of nodes with at least a node in the mask
+        tests all pairs of nodes present in the mask
         by default None
 
     """
@@ -51,11 +64,15 @@ def CleanDoubleNodes(mesh: UnstructuredMesh, tol: Optional[PBasicFloatType]=None
     newIndex = np.zeros(nbNodes, dtype=PBasicIndexType)
 
     #---# find duplicates
-    duplicate_inds = find_duplicates(mesh.nodes, tol=tol, nodesToTestMask=nodesToTestMask)
+    if nodesToTestMask is None:
+        duplicate_inds = FindDuplicates(mesh.nodes, tol=tol)
+    else:
+        duplicate_inds = FindDuplicates(mesh.nodes[nodesToTestMask], tol=tol)
+        duplicate_inds = np.arange(mesh.GetNumberOfNodes(), dtype=PBasicIndexType)[nodesToTestMask][duplicate_inds]
     keep_ids = np.setdiff1d(np.arange(nbNodes), duplicate_inds[:,1])
     toKeep[keep_ids] = True
 
-    #---# associate each futurely removed point to its duplicate
+    #---# associate each future removed point to its duplicate
     map_duplicates = {}
     for dup in duplicate_inds:
         map_duplicates[dup[1]] = dup[0] # by construction dup[1]>dup[0]
@@ -66,7 +83,6 @@ def CleanDoubleNodes(mesh: UnstructuredMesh, tol: Optional[PBasicFloatType]=None
         if i not in map_duplicates:
             newIndex[i] = cpt
             cpt +=1
-            assert(toKeep[i]) # toKeep[i] = True
         else:
             newIndex[i] = newIndex[map_duplicates[i]]
 
@@ -970,6 +986,7 @@ def CheckIntegrity_CleanDoubleNodes(GUI=False):
     mesh.nodesTags.CreateTag("OnePoint").SetIds([0,1])
 
     CleanDoubleNodes(mesh,tol =0)
+    print(mesh.nodes)
     if mesh.GetNumberOfNodes() != 4:
         raise# pragma: no cover
 
