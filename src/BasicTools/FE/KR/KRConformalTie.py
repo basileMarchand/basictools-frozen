@@ -126,10 +126,10 @@ class KRConformalTieVector(KRBaseVector):
                     else:
                         break
 
-
+        neighboors = kdTree2.query_ball_point(x=nodesI[:len(usedNodesMeshI)], r=self.tol, workers=CPU.GetNumberOfAvailableCpus())
         for cpt,nidI in enumerate(usedNodesMeshI):
             posI = nodesI[cpt,:]
-            entries = kdTree2.query_ball_point(x=nodesI[cpt,:], r=self.tol, workers= CPU.GetNumberOfAvailableCpus())
+            entries = neighboors[cpt]
 
             for entry in entries:
                 nidII = entry
