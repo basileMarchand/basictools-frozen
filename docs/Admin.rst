@@ -9,13 +9,15 @@ Testing Infrastructure
 ######################
 
 BasicTools comes with two ways of executing the automated tests.
+Remember that if not all de optional dependencies are installed some tests will fail.
 First, pytest [#pytestdoc]_ by simply executing in root directory of the library:
 
 .. code-block::
 
     pytest
 
-A file ``conftest.py`` present at the root of the repository is responsible of the pytest configuration.
+A files ``conftest.py``  and ``pytest.ini`` present at the root of the repository is responsible of the pytest configuration.
+
 
 Second, a simple in-house tool: every module must have a function called ``CheckIntegrity`` that takes no
 argument and returns the string ``"ok"`` if and only if the test was successful.
