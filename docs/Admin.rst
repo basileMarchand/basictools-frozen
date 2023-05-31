@@ -45,6 +45,13 @@ For more in formation about the options use the command :
 
     python -m BasicTools.Helpers.Tests -h
 
+>Some test will fail on some configuration
+Some packages are not available on some platform and some classes must be used inside a specific enviroments (paraview for example)
+>The current know issues are :
+>- networkx version 3.x not available on conda-forge for windows and OsX ([Gitlab Issue](https://gitlab.com/drti/basic-tools/-/issues/10)). You can uses pip to install it.
+>- pycgns not working on windows with pip installation ([Gitlab Issue](https://gitlab.com/drti/basic-tools/-/issues/11)).
+>- BasicTools.IO.Catalyst is intended to be used inside a python console in ParaView ([More about](https://www.paraview.org/Wiki/ParaView/Catalyst/Overview)).
+
 
 Coverage
 ########
