@@ -13,7 +13,16 @@ from setuptools import setup, Extension, Command
 from distutils.command.build import build
 import configparser
 
-# Compilation options
+'''
+Compilation options for advance users
+
+BASICTOOLS_DISABLE_MKL : set this env variable to disable the use of the mkl
+BASICTOOLS_USE_EIGENCYEIGEN : set this env variable to use the eigen headers inside the eigency package (for pip install)
+if BASICTOOLS_USE_EIGENCYEIGEN is not set the user can set EIGEN_INC to point to the eigen headers
+PREFIX : Set this variable to point to the external libraries (if the mkl or eigen are installed with pip install --user for example)
+to activate debug compilation set the variable debug in the file setup.cfg to True
+'''
+
 enable_MKL = "BASICTOOLS_DISABLE_MKL" not in os.environ
 annotate = False # to generate annotation (HTML files)
 useEigencyEigen = "BASICTOOLS_USE_EIGENCYEIGEN" in os.environ
