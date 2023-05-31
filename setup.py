@@ -53,6 +53,7 @@ cpp_generators = ["cpp_generators/IntegrationRuleGenerator.py",
 
 def GetBasicToolsIncludeDirs():
     include_dirs = []
+    envfound = False
     for packageManager in ["VIRTUAL_ENV", "CONDA_PREFIX","PREFIX" ]:
         if packageManager in os.environ:
             pmPrefix = os.environ[packageManager]
@@ -60,6 +61,15 @@ def GetBasicToolsIncludeDirs():
             include_dirs.append(os.path.join(pmPrefix, "include", "eigen3"))
             include_dirs.append(os.path.join(pmPrefix, "Library", "include"))
             include_dirs.append(os.path.join(pmPrefix, "Library", "include", "eigen3"))
+            envfound = True
+
+    if not envfound:
+        pmPrefix = sys.exec_prefix
+        include_dirs.append(os.path.join(pmPrefix, "include"))
+        include_dirs.append(os.path.join(pmPrefix, "include", "eigen3"))
+        include_dirs.append(os.path.join(pmPrefix, "Library", "include"))
+        include_dirs.append(os.path.join(pmPrefix, "Library", "include", "eigen3"))
+
     import numpy
     include_dirs.extend([numpy.get_include(),"cpp_src" ,"."])
     import eigency
