@@ -42,17 +42,18 @@ To compile and install BasicTools (version 1.9.4 in this case) with pip:
 
 .. code-block::
 
-    set BASICTOOLS_USE_EIGENCYEIGEN=True
-    pip install eigency mkl numpy sympy mkl-include cython wheel
+    set BASICTOOLS_USE_EIGENCYEIGEN=True                                # or "export" depending on your shell
+    pip install eigency mkl numpy sympy mkl-include cython wheel        # add pycgns on linux for the cgns functionalities
     pip install BasicTools@https://gitlab.com/drti/basic-tools/-/archive/1.9.4/basic-tools-1.9.4.tar.bz2
-
 or for the latest master version:
 
 .. code-block::
 
-    set BASICTOOLS_USE_EIGENCYEIGEN=True
-    pip install eigency mkl numpy sympy mkl-include cython wheel
+    set BASICTOOLS_USE_EIGENCYEIGEN=True                                # or "export" depending on your shell
+    pip install eigency mkl numpy sympy mkl-include cython wheel        # add pycgns on linux for the cgns functionalities
     pip install BasicTools@git+https://gitlab.com/drti/basic-tools.git
+
+The user can set the environment variable `PREFIX` to point to external libraries (like mkl and eigen header). for advance configuration please read the setup.py file on the git repository.
 
 It is also good practice to use a virtual environment when using pip.
 
@@ -65,7 +66,7 @@ It is also good practice to use a virtual environment when using pip.
 
 
 Manual installation (from sources) for developers
-=================================================
+-------------------------------------------------
 
 In the case you want to make changes to BasicTools (and potentially contribute), an installation from sources is mandatory.
 The sources can be downloaded from Gitlab.com [#gitlaburlpublic]_.
@@ -143,7 +144,6 @@ Python packages:
 * mkl
 * mkl-include
 * psutil
-* networkx
 
 Optionals Python packages (some functionalities may not be available without these packages):
 
@@ -156,9 +156,10 @@ Optionals Python packages (some functionalities may not be available without the
 * setuptools-scm
 * pyvista
 * sksparse
-* CGNS
+* pycgns [not available on windows for pip installation]
 * paraview
 * pywin32 [Only for windows]
+* networkx >=3
 
 C++ OPEN-SOURCE DEPENDENCIES:
 

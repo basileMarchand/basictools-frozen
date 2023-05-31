@@ -45,15 +45,18 @@ PIP
 The pip installation requires a local compilation, so you need to have a C++ (C++17 compatible) compiler installed locally on your system.
 To compile and install BasicTools (version 1.9.4 in this case) with pip:
 
-    set BASICTOOLS_USE_EIGENCYEIGEN=True      # or "export" depending on your shell
-    pip install eigency mkl numpy sympy mkl-include cython wheel
+    set BASICTOOLS_USE_EIGENCYEIGEN=True                                # or "export" depending on your shell
+    pip install eigency mkl numpy sympy mkl-include cython wheel        # add pycgns on linux for the cgns functionalities
     pip install BasicTools@https://gitlab.com/drti/basic-tools/-/archive/1.9.4/basic-tools-1.9.4.tar.bz2
 
 or for the latest master version:
 
-    set BASICTOOLS_USE_EIGENCYEIGEN=True      # or "export" depending on your shell
-    pip install eigency mkl numpy sympy mkl-include cython wheel
+    set BASICTOOLS_USE_EIGENCYEIGEN=True                                # or "export" depending on your shell
+    pip install eigency mkl numpy sympy mkl-include cython wheel        # add pycgns on linux for the cgns functionalities
     pip install BasicTools@git+https://gitlab.com/drti/basic-tools.git
+
+
+The user can set the environment variable `PREFIX` to point to external libraries (like mkl and eigen header). For advance configuration please read the setup.py file on the git repository.
 
 It is also good practice to use a virtual environment when using pip.
 
@@ -61,9 +64,8 @@ It is also good practice to use a virtual environment when using pip.
 >Note
 We can not guarantee that all combinations of OS, Python Versions, packaging systems works.
 >The current know issues are :
->- networkx version 3.x not available on conda-forge for windows and OsX ([Gitlab Issue](https://gitlab.com/drti/basic-tools/-/issues/10)).
+>- networkx version 3.x not available on conda-forge for windows and OsX ([Gitlab Issue](https://gitlab.com/drti/basic-tools/-/issues/10)), you can installed usings pip.
 >- pycgns not working on windows with pip insallation ([Gitlab Issue](https://gitlab.com/drti/basic-tools/-/issues/11)).
-
 
 For more complex installation (from sources) for developers please read the documentation.
 
@@ -93,8 +95,6 @@ Dependencies
     * mkl
     * mkl-include
     * psutil
-    * networkx >=3
-
 
     Optionals Python packages (some functionalities may not be available without this packages):
 
@@ -106,11 +106,10 @@ Dependencies
     * sphinx-rtd-theme
     * setuptools-scm
     * pyvista
-    * sksparse
-    * CGNS
+    * pycgns [not available on windows for pip installation]
     * paraview
     * pywin32 [Only for windows]
-
+    * networkx >=3
 
     C++ OPEN-SOURCE DEPENDENCIES:
 
