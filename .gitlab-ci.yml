@@ -20,14 +20,13 @@ stages:
 
 # default linux environment parameters
 .linux_env:
-  image: "continuumio/miniconda3:latest"
+  image: "condaforge/mambaforge:latest"
   before_script:
     - conda config --add channels conda-forge
     - conda config --add channels drti
     - conda init bash
     - source $HOME/.bashrc
     - conda activate
-    - conda install -y mamba -c conda-forge
     - apt update
     - apt install -y  $SYSTEM_PACKAGE_DEPS
   tags:
@@ -36,7 +35,7 @@ stages:
 .build_script:
   script:
     - mamba create -y -n $PACKAGE_NAME python=$PYTHON_VERSION
-    - conda activate $PACKAGE_NAME
+    - mamba activate $PACKAGE_NAME
     - mamba install -y $CONDA_BUILD_PACKAGE_DEPS $CONDA_DOC_PACKAGE_DEPS $CONDA_RUN_PACKAGE_DEPS $CONDA_DOCKER_PACKAGE_DEPS
     - pip install $PIP_DOC_PACKAGE_DEPS
     - python setup.py build_clib
