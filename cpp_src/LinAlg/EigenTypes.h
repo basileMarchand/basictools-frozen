@@ -23,7 +23,10 @@ typedef Eigen::Matrix<CBasicFloatType, 2, 1> MatrixD21;
 
 typedef Eigen::Matrix<CBasicFloatType, 3, 3> MatrixD33;
 typedef Eigen::Matrix<CBasicFloatType, 3, 1> MatrixD31;
+typedef Eigen::Matrix<CBasicFloatType, 3, 1> MatrixD13;
 typedef Eigen::Matrix<CBasicFloatType, Eigen::Dynamic, 1> MatrixDD1;
+typedef Eigen::Matrix<CBasicFloatType, 1, Eigen::Dynamic> MatrixD1D;
+
 typedef Eigen::Matrix<CBasicFloatType, Eigen::Dynamic, 3,Eigen::RowMajor> MatrixDD3;
 typedef Eigen::Matrix<CBasicFloatType, Eigen::Dynamic, Eigen::Dynamic,Eigen::RowMajor> MatrixDDD;
 
