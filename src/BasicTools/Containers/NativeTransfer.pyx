@@ -12,16 +12,6 @@ import numpy as np
 cimport numpy as np
 from libcpp cimport bool
 
-#cdef extern from "Containers/FieldTransfer.h" namespace "BasicTools":
-#    cdef cppclass TransferClass:
-#       string ToStr()
-
-cdef normsquared(x):
-    return x.dot(x)
-
-
-
-
 
 cdef class NativeTransfer:
 #    def __init__(self):
@@ -79,12 +69,12 @@ cdef class NativeTransfer:
         self.cpp_object.SetTargetPoints(FlattenedMapWithOrder[Matrix, CBasicFloatType, Dynamic, Dynamic, RowMajor](targetPoints))
 
     def Compute(self):
-        print("Start Compute cython ")
+        #print("Start Compute cython ")
         self.cpp_object.Compute()
-        print("Done Compute cython")
+        #print("Done Compute cython")
 
     def GetOperator(self):
-        print("Start GetOperator")
+        #print("Start GetOperator")
         from scipy.sparse import coo_matrix
         cdef CBasicIndexType nb_source_Dofs
         nb_source_Dofs  = self.cpp_object.nb_source_Dofs
@@ -92,16 +82,19 @@ cdef class NativeTransfer:
         targetPoints =   self.cpp_object.nb_targetPoints
 
         if self.cpp_object.data.size() == 0:
-            print( (targetPoints,nb_source_Dofs) )
+            #print( (targetPoints,nb_source_Dofs) )
             res = coo_matrix(([],([],[])), shape= (targetPoints,nb_source_Dofs), copy=True)
-            print("Done GetOperator empty")
+            #print("Done GetOperator empty")
             return res
 
         cdef CBasicFloatType[::1] d = <CBasicFloatType[:self.cpp_object.data.size()]>self.cpp_object.data.data()
         cdef CBasicIndexType[::1] r = <CBasicIndexType[:self.cpp_object.rows.size()]>self.cpp_object.rows.data()
         cdef CBasicIndexType[::1] c = <CBasicIndexType[:self.cpp_object.cols.size()]>self.cpp_object.cols.data()
 
-        print( (targetPoints,nb_source_Dofs) )
+        #print( (targetPoints,nb_source_Dofs) )
         res = coo_matrix((d,(r,c)), shape= (targetPoints,nb_source_Dofs), copy=True)
-        print("Done GetOperator")
+        #print("Done GetOperator")
         return res
+
+    def GetStatus(self):
+        return ndarray_copy(self.cpp_object.GetStatus())

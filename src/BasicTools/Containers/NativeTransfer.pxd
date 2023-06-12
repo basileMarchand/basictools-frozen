@@ -33,9 +33,12 @@ cdef extern from "Containers/FieldTransfer.h" namespace "BasicTools":
 
         void SetTargetPoints(FlattenedMapWithOrder[Matrix, CBasicFloatType, Dynamic, Dynamic, RowMajor]& )
         void Compute() nogil
+        PlainObjectBase& GetStatus();
+
         vector[CBasicIndexType] rows;
         vector[CBasicIndexType] cols;
         vector[CBasicFloatType] data;
+
         CBasicIndexType nb_source_Dofs;
         CBasicIndexType nb_targetPoints;
 
