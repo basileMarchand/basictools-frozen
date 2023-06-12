@@ -25,7 +25,7 @@ class WedgeSpaceBase(SymSpaceBase):
             res[1] = 1.-res[0]
         res[0] = max(min(res[0],1),0)
         res[1] = max(min(res[1],1),0)
-        res[1] = max(min(res[2],1),0)
+        res[2] = max(min(res[2],1),0)
         return res
 
 class Wedge_P0_Global(WedgeSpaceBase):
