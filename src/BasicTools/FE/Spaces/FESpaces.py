@@ -98,6 +98,15 @@ LagrangeSpaceP2[EN.Hexaedron_20] = HexaSpaces.Hexa_P2_Lagrange()
 LagrangeSpaceP2[EN.Hexaedron_27] = HexaSpaces.Hexa_P2_Lagrange()
 LagrangeSpaceP2[EN.Wedge_6] = WedgeSpaces.Wedge_P2_Lagrange()
 
+AllSpacesType = NewType('AllSpacesType', Dict[str, FESpaceType])
+
+AllSpaces = AllSpacesType({'LagrangeSpaceGeo':LagrangeSpaceGeo,
+             'ConstantSpaceGlobal':ConstantSpaceGlobal,
+             'LagrangeSpaceP0':LagrangeSpaceP0,
+             'LagrangeSpaceP1':LagrangeSpaceP1,
+             'LagrangeSpaceP2':LagrangeSpaceP2,
+             })
+
 def InitAllSpaces() -> None:
     """Function to create all the spaces, this need to be called at the beginning of the app in a multi threated app
     """
