@@ -92,6 +92,7 @@ std::string TransferClass::ToStr() { return "TransferClass"; };
 //
 
 void TransferClass::SetVerbose(bool verbose) { this->verbose = verbose; };
+MatrixID1& TransferClass::GetStatus(){return this->status;}
 
 std::string TransferClass::GetTransferMethod(){
   std::array<std::string, 5> options{
@@ -127,17 +128,17 @@ void TransferClass::SetTransferMethod(const std::string& method) {
     exit(1);
   }
   this->outsideMethod = i;
-  std::cout << "-------------" << this->insideMethod << this->outsideMethod << std::endl;
+ //std::cout << "-------------" << this->insideMethod << this->outsideMethod << std::endl;
 };
 
 void TransferClass::SetSourceMesh(UnstructuredMesh* sourceMesh){
-  std::cout << "start SetSourceMesh" << std::endl;
+ //std::cout << "start SetSourceMesh" << std::endl;
   this->sourceMesh = sourceMesh;
   this->nodeRTree = BuildRTree(this->sourceMesh->GetNodesMatrix(), this->sourceMesh->GetOriginalIdsMatrix());
   //    kdt = cKDTree(iNodes)
 
     //TODO Compute KDTree on inputPoints (sourceMesh.nodes)
-  std::cout << "End SetSourceMesh" << std::endl;
+ //std::cout << "End SetSourceMesh" << std::endl;
 
   // ComputeNodeToElementConnectivity
   this->dualGraph.resize(sourceMesh->GetNumberOfNodes(),200);
@@ -227,7 +228,7 @@ struct BestCandidate{
 };
 
 void TransferClass::Compute(){
-  std::cout << "Start Compute**" << std::endl;
+  //std::cout << "Start Compute**" << std::endl;
 
   CBasicIndexType nbTargetPoints = (CBasicIndexType) this->targetPoints->rows();
 
@@ -256,7 +257,7 @@ void TransferClass::Compute(){
 
   if( (this->insideMethod == 0) && (this->outsideMethod == 0) ){
     for( int tp = 0; tp < nbTargetPoints; ++tp ){
-      std::cout << "Inside point " << tp << std::endl;
+      //std::cout << "Inside point " << tp << std::endl;
       id = FindNearest(this->nodeRTree, this->targetPoints->row(tp) );
       id = originalIdsPoints(id,0);
 
@@ -270,7 +271,7 @@ void TransferClass::Compute(){
       data.push_back(1.);
     }
 
-    std::cout << "End Compute c++ nearest" << std::endl;
+    //std::cout << "End Compute c++ nearest" << std::endl;
     return;
   }
   //we build de Dual Connectivity
@@ -291,18 +292,18 @@ void TransferClass::Compute(){
   //CEBCResult resultMem;
   BestCandidate bestCandidate;
   for(int p= 0; p < nbTargetPoints; ++p){
-    if (this->verbose){
-      std::cout << "|" ;
-    }
+    //if (this->verbose){
+    //  std::cout << "|" ;
+    //}
     const MatrixD1D TP = this->targetPoints->row(p);             // target point position
-    std::cout << " TP : "  << TP << std::endl;
+    //std::cout << " TP : "  << TP << std::endl;
     const auto cp_id = FindNearest(this->nodeRTree, TP );   // closest point id
-    const auto CP =  sourceNodes.row(cp_id);                // closest point position
-    std::cout << " cp_id : "  << cp_id << std::endl;
+    //const auto CP =  sourceNodes.row(cp_id);                // closest point position
+    //std::cout << " cp_id : "  << cp_id << std::endl;
 
     const auto ce_id = FindNearest(this->centerRTree, TP );  // closest element id
     auto elementData_and_id = GetElement(ce_id);
-    std::cout << " ce_id : "  << ce_id << std::endl;
+    //std::cout << " ce_id : "  << ce_id << std::endl;
     //Element connected to the closest point
     potentialElements.clear();
 
@@ -322,16 +323,16 @@ void TransferClass::Compute(){
     it = std::unique(potentialElements.begin(), potentialElements.end());
     potentialElements.erase(it,potentialElements.end());
 
-    std::cout << "potentialElementsD : " ;
-    for(int i =0; i<potentialElements.size(); ++i){std::cout << potentialElements[i]; }
-    std::cout << std::endl; ;
+    //std::cout << "potentialElementsD : " ;
+    //for(long unsigned int i =0; i<potentialElements.size(); ++i){std::cout << potentialElements[i]; }
+    //std::cout << std::endl; ;
 
     // compute distance**2 to elements
     // for the moment we use the distance to the center, this gives a good estimate
     // of the order to check the elements
     potentialElementsDistances.clear();
     potentialElementIndex.clear();
-    for( int potential_element_cpt=0; potential_element_cpt< potentialElements.size(); ++potential_element_cpt){
+    for( long unsigned int potential_element_cpt=0; potential_element_cpt< potentialElements.size(); ++potential_element_cpt){
         const int e = potentialElements[potential_element_cpt];
         const auto diff = this->cellsCenters.row(e)-TP;
         potentialElementsDistances.push_back(diff.squaredNorm() );
@@ -342,14 +343,14 @@ void TransferClass::Compute(){
       return potentialElementsDistances[i]<potentialElementsDistances[j];
       });
 
-    std::cout << "potentialElementsDistances : " ;
-    for(int i =0; i<potentialElementsDistances.size(); ++i){std::cout << potentialElementsDistances[i] << " "; } std::cout << std::endl; ;
-    for(int i =0; i<potentialElementIndex.size(); ++i){std::cout << potentialElementIndex[i] << " "; } std::cout << std::endl; ;
+    //std::cout << "potentialElementsDistances : " ;
+    //for(long unsigned int i =0; i<potentialElementsDistances.size(); ++i){std::cout << potentialElementsDistances[i] << " "; } std::cout << std::endl; ;
+    //for(long unsigned int i =0; i<potentialElementIndex.size(); ++i){std::cout << potentialElementIndex[i] << " "; } std::cout << std::endl; ;
 
     distmem = 1e10;
     //resultMem.rese()
     //computation for the real distance
-    int tecpt;
+    long unsigned int tecpt;
     for(tecpt=0; tecpt< potentialElements.size(); ++tecpt){
       const CBasicIndexType potential_element_cpt = potentialElementIndex[tecpt];
       const CBasicIndexType peGlobalId = potentialElements[potential_element_cpt];
@@ -360,7 +361,7 @@ void TransferClass::Compute(){
 
       auto const pEConnectivity = elementData_and_id.first.GetConnectivityMatrix().row(peLocalId);
       const auto xcoor = sourceNodes(pEConnectivity,Eigen::all);
-      std::cout << " xcoor " << xcoor << std::endl;
+      //std::cout << " xcoor " << xcoor << std::endl;
 
 
       const CEBCResult result = ComputeInterpolationExtrapolationsBarycentricCoordinates(xcoor, localspace, TP);
@@ -368,33 +369,30 @@ void TransferClass::Compute(){
       //update the distance**2 with a *exact* distance
       potentialElementsDistances[potential_element_cpt] = result.distv.squaredNorm();
 
-      std::cout << "bary " << result.bary << std::endl;
-      std::cout << "bary Clamped " << result.baryClamped << std::endl;
-      std::cout << "inside " << result.inside << std::endl;
-      std::cout << "error " << result.error << std::endl;
-      std::cout << "real distance " << potentialElementsDistances[potential_element_cpt] << std::endl;
+     //std::cout << "------------   bary " << result.bary << std::endl;
+     //std::cout << "bary Clamped " << result.baryClamped << std::endl;
+     //std::cout << "inside " << result.inside << std::endl;
+     //std::cout << "error " << result.error << std::endl;
+     //std::cout << "real distance " << potentialElementsDistances[potential_element_cpt] << std::endl;
       //exit(1);
       //#compute shape function of the incomming space using the xi eta phi
       const auto shapeFunc = localspace.GetValOfShapeFunctionsAt(result.bary);
       const auto shapeFuncClamped =  localspace.GetValOfShapeFunctionsAt(result.baryClamped);
-
-
       // need to add a tolerance over the distv (real distance). this is needed because
       // we can have a point that the projection is inside an element (surface or line)
       // but not on the surface/line. Need to add a better test
-      if (result.inside && (normsquared(result.distv) <= 1e-14) ){
-        std::cout << " ---------------------------------------- inside" << std::endl;
+      if (result.inside && (result.distv.squaredNorm() <= 1e-10) ){
+        //std::cout << " ---------------------------------------- inside" << std::endl;
         bestCandidate.shapeFunc =  shapeFunc;
         bestCandidate.shapeFuncClamped =  shapeFuncClamped;
         bestCandidate.memlenb = elementData_and_id.first.GetOriginalIdsMatrix()(peLocalId,0);
-        //bestCandidate.localnumbering = localnumbering.row(bestCandidate.memlenb);
         bestCandidate.localnumbering = localnumbering.row(bestCandidate.memlenb);
         status[p] = 1;
         break;
         }
       // store the best element (closest)
       if(potentialElementsDistances[potential_element_cpt] < distmem ){
-        std::cout << " not found yet -------------------------------------"  << std::endl;
+        //std::cout << " not found yet -------------------------------------"  << std::endl;
         distmem = potentialElementsDistances[potential_element_cpt];
         bestCandidate.error = result.error;
         bestCandidate.shapeFunc =  shapeFunc;
@@ -404,47 +402,61 @@ void TransferClass::Compute(){
       }
     }
     //# we are outside
-    std::cout << tecpt << " -*-*-*-* " <<  status[p] << std::endl;
+   //std::cout << tecpt << " -*-*-*-* " <<  status[p] << std::endl;
     if( tecpt == potentialElements.size()){
       // no element found
       // or outsideMethod == Nearest
       // or extrapolation but error
+     //std::cout << " ----------------------------------------------------------------------------------- "  << std::endl;
+     //std::cout << " distmem "  << distmem << std::endl;
+     //std::cout << " this->outsideMethod "  << this->outsideMethod << std::endl;
+     //std::cout << " bestCandidate.error "  << bestCandidate.error << std::endl;
+      //std::cout << " "  << << std::endl;
+
       if (distmem == 1e10 || this->outsideMethod == TransferMethods::Nearest || (outsideMethod == TransferMethods::Extrap && bestCandidate.error) ) {
+       //std::cout << " AAAAAAAAA "  << std::endl;
         rows.push_back(p);
         cols.push_back(this->sourceNumbering->GetDofOfPoint(cp_id));
         data.push_back(1.);
         continue;
         }
       if (outsideMethod == TransferMethods::Extrap && bestCandidate.error == false){
+       //std::cout << " BBBBBBBBB "  << std::endl;
         rows.insert(rows.end(),bestCandidate.shapeFunc.size(), p);
         cols.insert(cols.end(),bestCandidate.localnumbering.begin(), bestCandidate.localnumbering.end() );
         data.insert(data.end(), bestCandidate.shapeFunc.begin(), bestCandidate.shapeFunc.end()) ;
+       //std::cout << " bestCandidate.shapeFunc "  << bestCandidate.shapeFunc << std::endl;
+
         status[p] = 2;
       } else if( outsideMethod == TransferMethods::Clamp){
+       //std::cout << " CCCCCCCCCCCCCCCC "  << std::endl;
+
         rows.insert(rows.end(),bestCandidate.shapeFuncClamped.size(), p);
         cols.insert(cols.end(),bestCandidate.localnumbering.begin(), bestCandidate.localnumbering.end() );
         data.insert(data.end(), bestCandidate.shapeFuncClamped.begin(), bestCandidate.shapeFuncClamped.end()) ;
         status[p] = 3;
       } else if( outsideMethod == TransferMethods::ZeroFill){
+       //std::cout << " DDDDDDDDDDDDDD "  << std::endl;
+
         //zero fill
         status[p] = 4;
       }
     } else {
       // found one element
-      std::cout << " adding point  : " <<  rows.size() << std::endl;
-      std::cout << " lenb------->" <<  bestCandidate.memlenb <<  "<-"<< std::endl;
-      std::cout << " col------->" <<  bestCandidate.localnumbering <<  "<-"<< std::endl;
-      std::cout << " adding point  : " <<  rows.size() << std::endl;
+     //std::cout << " adding point  : " <<  rows.size() << std::endl;
+     //std::cout << " lenb------->" <<  bestCandidate.memlenb <<  "<-"<< std::endl;
+     //std::cout << " col------->" <<  bestCandidate.localnumbering <<  "<-"<< std::endl;
+     //std::cout << " adding point  : " <<  rows.size() << std::endl;
       rows.insert(rows.end(),bestCandidate.shapeFunc.size(), p);
       cols.insert(cols.end(),bestCandidate.localnumbering.begin(), bestCandidate.localnumbering.end() );
       data.insert(data.end(), bestCandidate.shapeFunc.begin(), bestCandidate.shapeFunc.end()) ;
     }
 
   }
-  std::cout << "  rows  : " <<  rows.size() << std::endl;
-  std::cout << "  cols  : " <<  cols.size() << std::endl;
-  std::cout << "  data  : " <<  data.size() << std::endl;
-  std::cout << "End Compute c++ rest" << std::endl;
+ //std::cout << "  rows  : " <<  rows.size() << std::endl;
+ //std::cout << "  cols  : " <<  cols.size() << std::endl;
+ //std::cout << "  data  : " <<  data.size() << std::endl;
+ //std::cout << "End Compute c++ rest" << std::endl;
 
 };
 
@@ -457,8 +469,8 @@ auto ddf(const MatrixD1D& f, const B& xiEtaPhi, const C& dN, const D& coordAtDof
 
 template <typename B, typename C>
 auto df(const MatrixD1D& f, const B& dN, const C& coordAtDofs) {
-  const auto temp = (dN*coordAtDofs).transpose();
-  std::cout << "temp" << temp << std::endl;
+  //const auto temp = (dN*coordAtDofs).transpose();
+ //std::cout << "temp" << temp << std::endl;
   return -f*((dN*coordAtDofs).transpose());
 }
 
@@ -468,62 +480,61 @@ CEBCResult ComputeInterpolationExtrapolationsBarycentricCoordinates(const Matrix
   if (localspace.dimensionality == 0){
     CEBCResult result;
     result.error = false;
-    //result.bary.resize(0,1);
-    //result.baryClamped.resize(0,1);
-    result.distv = xcoor.row(0) - targetPoint;
+    result.distv = (xcoor.row(0) - targetPoint).transpose();
     result.inside = result.distv.isZero();
     return result;
   }
 
   // we compute the baricentric coordinate of the target point (TP) on the current element
   CEBCResult temp_result = ComputeBarycentricCoordinateOnElement(xcoor, localspace, targetPoint);
-  std::cout << "---***---------" << std::endl;
-  std::cout << "inside " << temp_result.inside << std::endl;
+  //std::cout << "---***---------" << std::endl;
+  //std::cout << "inside " << temp_result.inside << std::endl;
   if (temp_result.inside){
+    // the point is inside, we compute the distance vector
     temp_result.distv = (localspace.GetValOfShapeFunctionsAt(temp_result.bary).transpose()*xcoor).row(0)- targetPoint;
-    // - targetPoint;
     return temp_result;
   } else {
     // compute distance to the corner points
-    auto dist2 = ((xcoor.rowwise() - targetPoint).array().square()).rowwise().sum();
-    std::cout << " ======xcoor=====  " << xcoor << std::endl;
-    std::cout << " ======targetPoint=====  " << targetPoint << std::endl;
-    std::cout << " ===========  " << dist2 << std::endl;
-    std::cout << " =====-======  " << (xcoor.rowwise() - targetPoint) << std::endl;
+    MatrixDD1 dist2 = (xcoor.rowwise() - targetPoint).array().square().rowwise().sum();
+    //std::cout << " ======xcoor=====  " << xcoor << std::endl;
+    //std::cout << " ======targetPoint=====  " << targetPoint << std::endl;
+    //std::cout << " ===========  " << dist2 << std::endl;
+    //std::cout << " =====-======  " << (xcoor.rowwise() - targetPoint) << std::endl;
     Eigen::Index minRow, minCol;
     dist2.minCoeff(&minRow, &minCol);
     MatrixID1 mask;
     mask.resize(dist2.rows(),1);
     mask.fill(0);
     mask(minRow,0) = 1;
-    std::cout << " =====mask=====  " << mask << std::endl;
+    //std::cout << " =====mask=====  " << mask << std::endl;
 
-    for(int faceNb =1 ; faceNb <3 ; ++faceNb){
-      std::cout << " ===== !!!!!1111 !!!!!!!!! =====  " << std::endl;
-      const std::vector<std::pair<ElementInfo,MatrixID1> > faces  = ElementNames[localspace.elementType].GetFacesLevel(faceNb);
-      std::cout << " ===== !!!!!!!!!!!!!! =====  " << std::endl;
-      if (faces.size() ==0){
-        std::cout << " ===== Break =====  " << std::endl;
+    for(int faceNb =1 ; faceNb < 4 ; ++faceNb){
+      //std::cout << " ===== !!!!! 1111 !!!!!!!!! =====  " << std::endl;
+      const std::vector<std::pair<ElementInfo,MatrixID1> >& faces  = ElementNames[localspace.elementType].GetFacesLevel(faceNb);
+      //std::cout << " ===== !!!!!!!!!!!!!! =====  " << std::endl;
+      if (faces.size() == 0){
+        //std::cout << " ===== Break =====  " << std::endl;
 
         break;
       }
       if ( faces[0].first.name == Point_1 ){
+        // in this case we have in minRow the closes point
         CEBCResult result;
         result.error = false;
-        //result.bary.resize(0,1);
-        result.baryClamped =  localspace.posN.row(minRow);
-        result.distv =  xcoor.row(minRow) - targetPoint;
+        result.bary = temp_result.bary;
+        result.baryClamped.block(0,0,localspace.posN.cols(),1) =  localspace.posN.block(minRow,0,1,localspace.posN.cols()).transpose();// .row(minRow);
+        result.distv =  (xcoor.row(minRow) - targetPoint).transpose();
         result.inside = false;
-        std::cout << " ===== point =====  " << std::endl;
+       //std::cout << " ===== point =====  " << std::endl;
         return result;
       }
 
       //faceInside, faceDistv, fbaryClamped ;
-      CEBCResult temp_result = ComputeInterpolationCoefficients(xcoor, localspace, targetPoint, mask,  faces );
-
-      if(temp_result.inside){
-        temp_result.inside = false;
-        return temp_result;
+      CEBCResult result = ComputeInterpolationCoefficients(xcoor, localspace, targetPoint, mask,  faces );
+      result.bary = temp_result.bary;
+      if(result.inside){
+        result.inside = false;
+        return result;
       }
     }
     assert(0);
@@ -546,32 +557,34 @@ CEBCResult ComputeInterpolationCoefficients(const A& xcoor,
     result.error = true;
     result.inside = false;
 
-    for( int cpt =0; cpt < faces.size(); ++cpt){
+    for( long unsigned int cpt =0; cpt < faces.size(); ++cpt){
       const std::string& faceElementType = faces[cpt].first.name;
       const MatrixID1& faceLocalConnectivity= faces[cpt].second;
       // work only on element touching the mask
-      if ( indexingi(mask,faceLocalConnectivity,0).isZero()){
+      //if ( indexingi(mask,faceLocalConnectivity,0).isZero()){
+      if ( mask(faceLocalConnectivity,Eigen::all).isZero()){
+
         continue;
       }
       const BasicTools::ElementSpace& lspace = GetFESpaceFor("LagrangeSpaceGeo").GetSpaceFor(faceElementType);
-      CEBCResult temp_result = ComputeBarycentricCoordinateOnElement(xcoor(faceLocalConnectivity,Eigen::all), lspace, targetPoint);
+      const MatrixDDD localxcoor = xcoor(faceLocalConnectivity,Eigen::all);
+      CEBCResult temp_result = ComputeBarycentricCoordinateOnElement(localxcoor, lspace, targetPoint);
 
-      const auto faceDistv = (lspace.GetValOfShapeFunctionsAt(temp_result.bary).transpose()*xcoor(faceLocalConnectivity,Eigen::all)).row(0) - targetPoint;
+      const MatrixDD1 faceDistv = ((lspace.GetValOfShapeFunctionsAt(temp_result.bary).transpose()*localxcoor).row(0) - targetPoint).transpose();
 
       CBasicFloatType  faceDist = faceDistv.squaredNorm();
-      if (temp_result.inside){
-        if (faceDist < faceDistMem){
+      if (temp_result.inside && faceDist < faceDistMem){
 
           faceDistMem = faceDist;
           result.error = false;
           result.inside = true;
           result.distv = faceDistv;
           result.bary = temp_result.bary;
-          result.baryClamped =  temp_result.baryClamped;
+          //result.baryClamped =  temp_result.baryClamped;
           //flocalspace = posspace[faceElementTypeMem]
-          //fshapeFunc = flocalspace.GetShapeFunc(fbaryMem)
-          //baryClamped = fshapeFunc.dot(localspace.posN[faceLocalConnectivityMem,:])
-        }
+          const auto fshapeFunc = lspace.GetValOfShapeFunctionsAt(result.bary);
+          const int elemDim = localspace.dimensionality;
+          result.baryClamped.block(0,0,elemDim,1) = (fshapeFunc.transpose()*localspace.posN(faceLocalConnectivity,Eigen::all)).transpose();
       }
     }
     return result;
@@ -579,75 +592,88 @@ CEBCResult ComputeInterpolationCoefficients(const A& xcoor,
 
 template<typename A, typename C>
 CEBCResult ComputeBarycentricCoordinateOnElement(const A& xcoor, const BasicTools::ElementSpace& localspace, const C& targetPoint){
-
+  /*compute element iternal coordinate on target point (targetPoint)*/
   CEBCResult result;
   const int elemDim = localspace.dimensionality;
   const int spaceDim = localspace.GetDimensionality();
   const int nbShapeFunctions = localspace.GetNumberOfShapeFunctions();
-  std::cout << "elemDim " << elemDim << std::endl;
-  std::cout << "spaceDim " << spaceDim << std::endl;
-  std::cout << "nbShapeFunctions " << nbShapeFunctions << std::endl;
+  //std::cout << "elemDim " << elemDim << std::endl;
+  //std::cout << "spaceDim " << spaceDim << std::endl;
+  //std::cout << "nbShapeFunctions " << nbShapeFunctions << std::endl;
   const bool linear = ElementNames[localspace.elementType].linear;
-  std::cout << "linear " << linear << std::endl;
+  //std::cout << "linear " << linear << std::endl;
 
-  MatrixD1D xietaphi; xietaphi.resize(1,spaceDim); xietaphi.fill(0.5);
+  MatrixD13 xietaphi;// xietaphi.resize(1,3);
+  xietaphi.fill(0.5);
+
   MatrixD1D N = localspace.GetValOfShapeFunctionsAt(xietaphi).transpose().row(0);
   MatrixD1D currentPoint = N*xcoor;
   MatrixD1D f =  currentPoint - targetPoint ;
   MatrixDD1 dxietaphi;
   int x=0;
-  for(x; x < 10; ++x){
-    std::cout << "----------- in iteration "<< x << std::endl;
-    auto dN = localspace.GetValOfShapeFunctionsDerAt(xietaphi).block(0,0,elemDim,nbShapeFunctions);
-    std::cout << " dN "<< MatrixDDD(dN) << std::endl;
-    std::cout << " f "<< MatrixDDD(f) << std::endl;
-    std::cout << " xcoor "<< MatrixDDD(xcoor) << std::endl;
-    auto df_num = df(-f,dN,xcoor);
-    std::cout << " df_num "<< df_num << std::endl;
-    auto H = ddf(-f, xcoor, dN,  xcoor, linear);
-    std::cout << " H "<< H << std::endl;
+  for(; x < 10; ++x){
+    //std::cout << "----------- in iteration "<< x << std::endl;
+    MatrixDDD dN = localspace.GetValOfShapeFunctionsDerAt(xietaphi).block(0,0,elemDim,nbShapeFunctions);
+    //std::cout << " dN "<< MatrixDDD(dN) << std::endl;
+    //std::cout << " f "<< MatrixDDD(f) << std::endl;
+    //std::cout << " xcoor "<< MatrixDDD(xcoor) << std::endl;
+    MatrixDDD df_num = df(-f,dN,xcoor).transpose();
+    //std::cout << " df_num "<< df_num << std::endl;
+    MatrixDDD H = ddf(-f, xcoor, dN,  xcoor, linear);
+    //std::cout << " H "<< H << std::endl;
     if(spaceDim == 2){
       MatrixDDD Hinv;
       Hinv.resize(2,2);
       CBasicFloatType det;
       inv22(H,Hinv,det);
-      dxietaphi =Hinv*df_num;
+      dxietaphi = Hinv*df_num;
     } else if( spaceDim == 3 ){
       MatrixDDD Hinv;
       Hinv.resize(3,3);
       CBasicFloatType det;
       inv33(H,Hinv,det);
-      dxietaphi =Hinv*df_num;
-
+      dxietaphi = Hinv*df_num;
     } else{
       dxietaphi = df_num/H(0,0);
     }
 
-    std::cout << " dxietaphi "<< dxietaphi << std::endl;
+    //std::cout << " dxietaphi "<< dxietaphi << std::endl;
 
-    xietaphi -= dxietaphi    ;
+    xietaphi.block(0,0,elemDim,1) -= dxietaphi.block(0,0,elemDim,1)    ;
     //# if the cell is linear only one iteration is needed
     if (linear){
       f *= 0;
-      std::cout << " linear break " << std::endl;
+      //std::cout << " linear break " << std::endl;
       break;
     }
     N = localspace.GetValOfShapeFunctionsAt(xietaphi).transpose().row(0);
     f = N*xcoor - targetPoint;
-    if( dxietaphi.squaredNorm() < 1e-3 && normsquared(f) < 1e-3 ){
-      std::cout << " tolerance break " << std::endl;
+    //std::cout << "********************N*********************" << std::endl;
+    //std::cout <<  N << std::endl;
+    //std::cout << "********************N*xcoor *********************" << std::endl;
+    //std::cout <<  N*xcoor  << std::endl;
+    //std::cout << "********************targetPoint *********************" << std::endl;
+    //std::cout <<  targetPoint  << std::endl;
+    //std::cout << "********************xietaphi*********************" << std::endl;
+    //std::cout <<  xietaphi<< std::endl;
+    //std::cout << "********************dxietaphi*********************" << std::endl;
+    //std::cout <<  dxietaphi<< std::endl;
+    //std::cout << "***********************f******************" << std::endl;
+    //std::cout <<  f << std::endl;
+    //std::cout << "*****************************************" << std::endl;
+    if( dxietaphi.squaredNorm() < 1e-3 && f.squaredNorm() < 1e-3 ){
+      //std::cout << " tolerance break " << std::endl;
       break;
     }
   }
-  if( x == 10){
+  if( x == 15){
     result.error = true;
     result.inside = false;
-    throw "error";
+    //throw "error";
     return result;
   }
   result.error = false;
-  std::cout << " xietaphi "<< xietaphi << std::endl;
-
+  //std::cout << " xietaphi "<< xietaphi << std::endl;
   result.distv = f;
   result.bary = xietaphi;
   result.baryClamped = ClampParamCoordinates(localspace.geoSupport, xietaphi);
@@ -655,8 +681,9 @@ CEBCResult ComputeBarycentricCoordinateOnElement(const A& xcoor, const BasicTool
     result.baryClamped(p,0) = 0;
     result.bary(p,0) = 0;
   }
+  // we need a tolerance here because in the case the source and the targe mesh are the same
+  // we want to clasify all the point inside
   result.inside = (result.baryClamped-result.bary).squaredNorm() < 1e-5;
-
 
   return result;
 }

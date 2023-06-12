@@ -1,9 +1,9 @@
 
 #pragma once
 #include <string>
-#include <Containers\UnstructuredMesh.h>
-#include <FE\DofNumbering.h>
-#include <Containers\ElementFilter.h>
+#include <Containers/UnstructuredMesh.h>
+#include <FE/DofNumbering.h>
+#include <Containers/ElementFilter.h>
 
 
 #include <boost/geometry.hpp>
@@ -24,11 +24,6 @@ typedef bg::model::point<BasicTools::CBasicFloatType, 3, bg::cs::cartesian> poin
 typedef std::pair<point, BasicTools::CBasicIndexType> value;
 
 namespace BasicTools {
-
-template<typename T>
-double normsquared(const T& v){
-    return v.dot(v);
-};
 
 
 enum TransferMethods{
@@ -62,6 +57,7 @@ public:
     std::vector<CBasicIndexType> cols;
     std::vector<CBasicFloatType> data;
     MatrixID1 status;
+    MatrixID1& GetStatus();
 
     CBasicIndexType nb_source_Dofs;
     CBasicIndexType nb_targetPoints;
