@@ -169,13 +169,10 @@ def GetFieldTransferOp(inputField: FEField, targetPoints: ArrayLike, method: Uni
     iMesh = ExtractElementsByElementFilter(originalMesh, elementFilter )
     CleanLonelyNodes(iMesh)
 
-    iNodes = iMesh.nodes
-
     numbering = inputField.numbering
     space = inputField.space
     iNodes = iMesh.nodes
     nbTargetPoints = targetPoints.shape[0]
-
 
     kdt = cKDTree(iNodes)
 
@@ -578,6 +575,11 @@ def inv22(A: ArrayLike) -> np.ndarray:
     return invA
 
 def ComputeBarycentricCoordinateOnElement(coordAtDofs:ArrayLike, localspace, targetPoint:ArrayLike, elementType:str):
+    from BasicTools.Containers.NativeTransfer import NativeTransfer
+    nt = NativeTransfer()
+    return nt.ComputeBarycentricCoordinateOnElement(coordAtDofs,localspace,targetPoint,elementType)
+
+def ComputeBarycentricCoordinateOnElementOLD(coordAtDofs:ArrayLike, localspace, targetPoint:ArrayLike, elementType:str):
     """Newton to compute the best baricentric coordinates on an element for the target point
     Warning!! This function is not intended for the final user. function used by (GetFieldTransferOp)
 
@@ -597,7 +599,6 @@ def ComputeBarycentricCoordinateOnElement(coordAtDofs:ArrayLike, localspace, tar
     _type_
         _description_
     """
-
     linear = ElementNames.linear[elementType]
     spacedim = localspace.GetDimensionality()
 
