@@ -47,15 +47,15 @@ def Generate(prefix:str = "cpp_src") :
 
 namespace BasicTools{
 
-GeoSupport GeoNA("NA",-1);
-GeoSupport GeoPoint("point",0);
-GeoSupport GeoBar("bar"  ,1);
-GeoSupport GeoTri("tri"  ,2);
-GeoSupport GeoQuad("quad" ,2);
-GeoSupport GeoTet("tet"  ,3);
-GeoSupport GeoPyr("pyr"  ,3);
-GeoSupport GeoWed("wed"  ,3);
-GeoSupport GeoHex("hex"  ,3 );
+const GeoSupport GeoNA("NA",-1);
+const GeoSupport GeoPoint("point",0);
+const GeoSupport GeoBar("bar"  ,1);
+const GeoSupport GeoTri("tri"  ,2);
+const GeoSupport GeoQuad("quad" ,2);
+const GeoSupport GeoTet("tet"  ,3);
+const GeoSupport GeoPyr("pyr"  ,3);
+const GeoSupport GeoWed("wed"  ,3);
+const GeoSupport GeoHex("hex"  ,3 );
 
 std::map<std::string,ElementInfo> InitElementNames() {
     std::map<std::string,ElementInfo> ElementNames;
@@ -71,6 +71,7 @@ std::map<std::string,ElementInfo> InitElementNames() {
             PrintFillMatrix(cppFile,f"""    ElementNames["{elementType}"].mirrorPermutation""",ei.mirrorPermutation)
             PrintBool(cppFile,f"""    ElementNames["{elementType}"].linear """, ei.linear)
             PrintToFile(cppFile,f"""    ElementNames["{elementType}"].degree = {ei.degree}; """ )
+
             for e,n in ei.faces:
                 PrintToFile(cppFile,"    {")
                 PrintToFile(cppFile,"        MatrixID1 faces;")
@@ -83,6 +84,14 @@ std::map<std::string,ElementInfo> InitElementNames() {
                 PrintFillVMatrix(cppFile,"""        faces2""",n)
                 PrintToFile(cppFile,f"""        ElementNames["{elementType}"].faces2.push_back(std::pair<ElementInfo,MatrixID1>(ElementNames["{e}"],faces2) );""" )
                 PrintToFile(cppFile,"    }")
+            for e,n in ei.faces3:
+                PrintToFile(cppFile,"    {")
+                PrintToFile(cppFile,"        MatrixID1 faces3;")
+                PrintFillVMatrix(cppFile,"""        faces3""",n)
+                PrintToFile(cppFile,f"""        ElementNames["{elementType}"].faces3.push_back(std::pair<ElementInfo,MatrixID1>(ElementNames["{e}"],faces3) );""" )
+                PrintToFile(cppFile,"    }")
+
+
         PrintToFile(cppFile,"""
     return ElementNames;
 };
@@ -91,3 +100,11 @@ std::map<std::string,ElementInfo> InitElementNames() ;
 std::map<std::string,ElementInfo> ElementNames = InitElementNames();
 
 }; // namespace BasicTools""")
+
+if __name__ == '__main__':# pragma: no cover
+    import sys
+    sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
+    if len(sys.argv) == 3  and sys.argv[1] == "-n":
+        print(GetGeneratedFiles()[int(sys.argv[2])])
+    elif len(sys.argv) == 3  and sys.argv[1] == "-g":
+        Generate(sys.argv[2])
