@@ -78,4 +78,10 @@ std::map<std::string,SpaceIntegrationRule> IntegrationRulesAlmanac = GetPythonDe
 """)
 
 if __name__ == '__main__':# pragma: no cover
-    Generate()
+    import sys
+    sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
+    if len(sys.argv) == 3  and sys.argv[1] == "-n":
+        print(GetGeneratedFiles()[int(sys.argv[2])])
+    elif len(sys.argv) == 3  and sys.argv[1] == "-g":
+        Generate(sys.argv[2])
+
