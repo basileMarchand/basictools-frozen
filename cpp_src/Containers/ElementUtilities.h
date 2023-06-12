@@ -4,46 +4,61 @@
 
 namespace BasicTools {
 
-MatrixDDD ClampParamCoordinates(const GeoSupport& geoSupport, MatrixD1D coord){
 
-std::cout << "*-*-*-*------>"<< GeoBar.name  << "*"<< GeoBar.dimensionality  <<"<----------------------------" << coord<< std::endl;
-std::cout << "coods original ------------------------>"<< geoSupport.name  << "*"<< geoSupport.dimensionality  <<"<----------------------------" << coord<< std::endl;
+template<int dim>
+void ClampComplex( MatrixD31& coord){
+    for(int i =0; i < dim;++i){
+        coord(i,0) = coord(i,0)>1. ? 1. :  coord(i,0);
+        coord(i,0) = coord(i,0)<0. ? 0. :  coord(i,0);
+    }
+}
+
+MatrixD31 ClampParamCoordinates(const GeoSupport& geoSupport, MatrixD31 coord){
+
+//std::cout << "*-*-*-*------>"<< GeoBar.name  << "*"<< GeoBar.dimensionality  <<"<----------------------------==" << coord<< std::endl;
+//std::cout << "coods original ------------------------>"<< geoSupport.name  << "*"<< geoSupport.dimensionality  <<"<----------------------------===" << coord<< std::endl;
 if (geoSupport.name == "point" ) {
-    assert(false);
     return coord;
 } else if (geoSupport.name == "bar" ) {
-    coord(0,0) = coord(0,0)>1. ? 1. :  coord(0,0);
-    coord(0,0) = coord(0,0)<0. ? 0. :  coord(0,0);
-    std::cout << "coods clamped "<< coord << std::endl;
+    ClampComplex<1>(coord);
     return coord;
 } else if (geoSupport.name == "tri" ) {
-    assert(false);
+    if(coord(0,0) + coord(1,0)  > 1 ){
+        const double dif = coord(0,0)-coord(1,0);
+        coord(0,0) = (1+dif)/2.;
+        coord(1,0) = 1.-coord(0,0);
+    }
+    ClampComplex<2>(coord);
     return coord;
 } else if (geoSupport.name == "quad" ) {
-    for(int i =0; i < 2;++i){
-        coord(0,i) = coord(0,i)>1. ? 1. :  coord(0,i);
-        coord(0,i) = coord(0,i)<0. ? 0. :  coord(0,i);
-    }
+    ClampComplex<2>(coord);
     return coord;
 } else if (geoSupport.name == "tet" ) {
-    assert(false);
+    const double s = coord(0,0) + coord(1,0) + coord(2,0);
+    if(s > 1){
+       coord.array() += (1.-s)/3.;
+    }
+    ClampComplex<3>(coord);
     return coord;
 } else if (geoSupport.name == "pyr" ) {
-    assert(false);
+    throw "pyr not implemente in the field transfer";
     return coord;
 } else if (geoSupport.name == "wed" ) {
-    assert(false);
+     if(coord(0,0) + coord(1,0)  > 1 ){
+        const double dif = coord(0,0)-coord(1,0);
+        coord(0,0) = (1+dif)/2.;
+        coord(1,0) = 1.-coord(0,0);
+    }
+    ClampComplex<3>(coord);
     return coord;
 } else if (geoSupport.name == "hex" ) {
-    for(int i =0; i < 3;++i){
-        coord(0,i) = coord(0,i)>1. ? 1. :  coord(0,i);
-        coord(0,i) = coord(0,i)<0. ? 0. :  coord(0,i);
-    }
+    ClampComplex<3>(coord);
     return coord;
 } else if (geoSupport.name == "NA" ) {
-    assert(false);
+    throw "NON NON NON!!!!";
     return coord;
 }
+throw "NON NON NON!!!!";
 return coord;
 }
 
