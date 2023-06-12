@@ -1,29 +1,110 @@
 
+#pragma once
 #include <string>
+#include <Containers\UnstructuredMesh.h>
+#include <FE\DofNumbering.h>
+#include <Containers\ElementFilter.h>
+
+
+#include <boost/geometry.hpp>
+#include <boost/geometry/geometries/point.hpp>
+#include <boost/geometry/geometries/box.hpp>
+#include <boost/geometry/index/rtree.hpp>
+// to store queries results
+#include <vector>
+// just for output
+#include <iostream>
+#include <boost/foreach.hpp>
+namespace bg = boost::geometry;
+namespace bgi = boost::geometry::index;
+typedef bg::model::point<BasicTools::CBasicFloatType, 3, bg::cs::cartesian> point;
+//CBasicFloatType
+//typedef bg::model::box<point> box;
+//typedef std::pair<box, BasicTools::CBasicIndexType> value;
+typedef std::pair<point, BasicTools::CBasicIndexType> value;
+
+
+
+
+
+
+namespace BasicTools {
+
 
 template<typename T>
 double normsquared(const T& v){
     return v.dot(v);
 };
 
+
+enum TransferMethods{
+    Nearest=0,
+    Interp,
+    Extrap,
+    Clamp,
+    ZeroFill
+    };
+
 class TransferClass {
-    std::string ToStr(){ return "TransferClass"; }
+
+public:
+    TransferClass();
+    std::string ToStr();
+    void SetVerbose(bool verbose= false);
+//    void SetSourceFEField();
+    void SetSourceMesh(UnstructuredMesh* sourceMesh);
+    void SetSourceSpace(const std::string& space);
+    void SetSourceNumbering(DofNumbering* numbering);
+
+    void SetTransferMethod(const std::string& method);
+    std::string GetTransferMethod();
+//
+    void SetElementFilter(const ElementFilterEvaluated& filter);
+    MAPSETGET_MatrixDDD(TargetPoints,targetPoints)
+
+    void Compute();
+//  GetProjectorOperator()
+    std::vector<CBasicIndexType> rows;
+    std::vector<CBasicIndexType> cols;
+    std::vector<CBasicFloatType> data;
+    CBasicIndexType nb_source_Dofs;
+    CBasicIndexType nb_targetPoints;
+private:
+    bool verbose;
+    int insideMethod;
+    int outsideMethod;
+    UnstructuredMesh* sourceMesh;
+    Space sourceSpace;
+    DofNumbering* sourceNumbering;
+    ElementFilterEvaluated elementfilter;
+    bool elementFilterSet;
+    std::shared_ptr<MapMatrixDDD > targetPoints;
+
+    bgi::rtree< value, bgi::quadratic<16> > nodeRTree;
+    bgi::rtree< value, bgi::quadratic<16> > centerRTree;
+    MatrixIDD dualGraph;
+    MatrixID1 usedPoints;
+    MatrixDDD cellsCenters;
+    void ComputeBarycentricCoordinateOnElement(){}
+
+
 };
 
 
-template<typename A, typename B, typename C, typename D, typename S1, typename S2, typename S3>
-void  ComputeBarycentricCoordinateOnElement(const A& coordAtDofs, const B& localspace, const C& targetPoint, const D& elementType,
-                                            S1& inside, S2& xietaphi, S3& xichietaClamped){
+
+template<typename A, typename B, typename C, typename D, typename S2, typename S3>
+void  ComputeBarycentricCoordinateOnElementTemplate(const A& coordAtDofs, const B& localspace, const C& targetPoint, const std::string& elementType,
+                                            bool& inside,
+                                            S2& xietaphi,
+                                            S3& xichietaClamped){
 
 
 const int elemDim = localspace[this->geoSpaceNumber].dimensionality;
 const int spaceDim = static_cast<int>(this->nodes->cols());
 
 
-/*
-    linear = ElementNames.linear[elementType]
-    spacedim = localspace.GetDimensionality()
 
+/*
     xietaphi = np.array([0.5]*spacedim)
     N = localspace.GetShapeFunc(xietaphi)
     currentPoint = N.dot(coordAtDofs)
@@ -61,4 +142,4 @@ const int spaceDim = static_cast<int>(this->nodes->cols());
 
 }
 
-
+}
