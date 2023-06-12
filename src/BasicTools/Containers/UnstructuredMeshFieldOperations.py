@@ -995,9 +995,21 @@ def RunTransfer(inputFEField,data,outmesh):
         PointFields.append(newdataPython)
         PointFieldsNames.append(method+"Status"+"Python")
         PointFields.append(statusPython)
+        newPosPython = opPython.dot(inputFEField.mesh.nodes)
+        PointFieldsNames.append(method+"Pos"+"Python")
+        PointFields.append(newPosPython)
 
-        if np.all(np.isclose(newdataCpp.ravel(),newdataPython.ravel())):
-            raise Exception("Cpp and python version of the field transfer gives differents solutions")
+        if not np.all(np.isclose(newdataCpp.ravel(),newdataPython.ravel())):
+            print(newdataCpp.shape)
+            print(newdataPython.shape)
+            print(newdataCpp)
+            print(newdataPython)
+            WriteMeshToXdmf(tempdir+"GetFieldTransferOp_TargetMesh"+inputFEField.name+".xdmf",
+                    outmesh,
+                    PointFields = PointFields,
+                    PointFieldsNames = PointFieldsNames)
+            print(f"Last file with the data : \n {tempdir}GetFieldTransferOp_TargetMesh{inputFEField.name}.xdmf")
+            raise Exception(f"Cpp and python version of the field transfer gives differents solutions for method : {method}")
 
     WriteMeshToXdmf(tempdir+"GetFieldTransferOp_TargetMesh"+inputFEField.name+".xdmf",
                     outmesh,
@@ -1100,7 +1112,7 @@ def CheckIntegrity2DTo3D(GUI=False):
     from BasicTools.FE.Fields.FEField import FEField
     inputFEField = FEField(name="2DTo3D",mesh=inputmesh,space=space,numbering=numberings[0])
     N = 10
-    b = CreateCube(dimensions = [N,N,N],origin=[-0.5]*3,spacing=[2/(N-1),2/(N-1),2/(N-1)])
+    b = CreateCube(dimensions = [N,N,N],origin=[-0.501]*3,spacing=[2/(N-1),2/(N-1),2/(N-1)])
 
     x = inputmesh.nodes[:,0]
     y = inputmesh.nodes[:,1]
