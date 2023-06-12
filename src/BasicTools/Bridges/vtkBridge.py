@@ -578,7 +578,7 @@ def AddCellsFromVtkCellArrayToMesh(cells:vtkCellArray, cellTypesArray:ArrayLike,
     Parameters
     ----------
     cells : vtkCellArray
-        the cell to be created in the mehs
+        the cell to be created in the mesh
     cellTypesArray : ArrayLike
         the vtk cell type to use for in the vtkCellArray. In the case is none we infer
         the type of cell from the number of nodes (for the polys in a vtkPolyData)
@@ -648,11 +648,11 @@ def VtkToMesh(vtkmesh, meshobject=None, FieldsAsTags=True):
 
         lines = vtkmesh.GetLines()
         if lines.GetNumberOfCells() != 0 :
-            AddCellsFromVtkCellArrayToMesh(lines,  np.full(verts.GetNumberOfCells(),3),out)
+            AddCellsFromVtkCellArrayToMesh(lines,  np.full(lines.GetNumberOfCells(),3),out)
 
         strips = vtkmesh.GetStrips()
         if strips.GetNumberOfCells() != 0 :
-            AddCellsFromVtkCellArrayToMesh(strips, np.full(verts.GetNumberOfCells(),5), out)
+            AddCellsFromVtkCellArrayToMesh(strips, np.full(strips.GetNumberOfCells(),5), out)
 
         polys = vtkmesh.GetPolys()
         if polys.GetNumberOfCells() != 0 :
