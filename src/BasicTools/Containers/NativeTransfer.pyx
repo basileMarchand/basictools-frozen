@@ -6,6 +6,8 @@ import BasicTools.Containers.NativeUnstructuredMesh as NUM
 cimport BasicTools.FE.Numberings.NativeDofNumbering as cNDN
 import BasicTools.FE.Numberings.NativeDofNumbering as NDN
 
+cimport BasicTools.CythonDefs as CD
+import BasicTools.NumpyDefs as ND
 cimport BasicTools.Containers.NativeTransfer as cNT
 import BasicTools.Containers.ElementNames as ElementNames
 import numpy as np
@@ -46,6 +48,12 @@ cdef class NativeTransfer:
 
         iMesh = ExtractElementsByElementFilter(sourceField.mesh, elementFilter, copy=False )
         CleanLonelyNodes(iMesh)
+
+        if iMesh.nodes.shape[1] < 3 :
+            newNodes = np.zeros((iMesh.nodes.shape[0],3), dtype= ND.PBasicFloatType, order="c")
+            newNodes[0:,:iMesh.nodes.shape[1]] = iMesh.nodes
+            iMesh.nodes = newNodes
+
         self.pythonmesh = iMesh
 
         self.sourceMesh.SetDataFromPython(iMesh)
@@ -66,7 +74,15 @@ cdef class NativeTransfer:
         self.cpp_object.SetSourceNumbering(dn)
 
     def SetTargetPoints(self, cnp.ndarray[CBasicFloatType, ndim=2,mode="c"] targetPoints not None ):
-        self.cpp_object.SetTargetPoints(FlattenedMapWithOrder[Matrix, CBasicFloatType, Dynamic, Dynamic, RowMajor](targetPoints))
+
+        if targetPoints.shape[1] == 3 :
+            self.cpp_object.SetTargetPoints(FlattenedMapWithOrder[Matrix, CBasicFloatType, Dynamic, Dynamic, RowMajor](targetPoints))
+            return
+
+        cdef cnp.ndarray[CBasicFloatType, ndim=2,mode="c"]  newTargetPoints = np.zeros((targetPoints.shape[0],3), dtype= ND.PBasicFloatType, order="c")
+        newTargetPoints[0:,:targetPoints.shape[1]] = targetPoints
+        self.pythonNewTargetPoints = newTargetPoints
+        self.cpp_object.SetTargetPoints(FlattenedMapWithOrder[Matrix, CBasicFloatType, Dynamic, Dynamic, RowMajor](newTargetPoints))
 
     def Compute(self):
         #print("Start Compute cython ")
