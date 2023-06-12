@@ -104,19 +104,23 @@ def CopyFieldsFromOriginalMeshToTargetMesh(inMesh: UnstructuredMesh, outMesh: Un
 
 def GetFieldTransferOp(inputField: FEField, targetPoints: ArrayLike, method: Union[str,None]=None, verbose:bool=False, elementFilter: Optional[ElementFilter]=None)-> Tuple[np.ndarray,np.ndarray]:
     try:
-        from BasicTools.Containers.NativeTransfer import NativeTransfer
-        nt = NativeTransfer()
-        nt.SetVerbose(verbose)
-        nt.SetSourceFEField(inputField,elementFilter)
-        nt.SetTargetPoints(targetPoints)
-        nt.SetTransferMethod(method)
-        nt.Compute()
-        op = nt.GetOperator()
-        status = nt.GetStatus()
-        return op, status
+        return GetFieldTransferOpCpp(inputField, targetPoints, method, verbose=verbose, elementFilter=elementFilter)
     except :
         print("Error in the cpp version GetFieldTransferOp. Using Python (slow) version ")
         return GetFieldTransferOpPython(inputField, targetPoints, method, verbose=verbose, elementFilter=elementFilter)
+
+def GetFieldTransferOpCpp(inputField: FEField, targetPoints: ArrayLike, method: Union[str,None]=None, verbose:bool=False, elementFilter: Optional[ElementFilter]=None)-> Tuple[np.ndarray,np.ndarray]:
+    from BasicTools.Containers.NativeTransfer import NativeTransfer
+    nt = NativeTransfer()
+    nt.SetVerbose(verbose)
+    nt.SetSourceFEField(inputField,elementFilter)
+    nt.SetTargetPoints(targetPoints)
+    nt.SetTransferMethod(method)
+    nt.Compute()
+    op = nt.GetOperator()
+    status = nt.GetStatus()
+    return op, status
+
 
 def GetFieldTransferOpPython(inputField: FEField, targetPoints: ArrayLike, method: Union[str,None]=None, verbose:bool=False, elementFilter: Optional[ElementFilter]=None)-> Tuple[np.ndarray,np.ndarray]:
     """Compute the transfer operator from the inputField to the target points so:
@@ -972,12 +976,22 @@ def RunTransfer(inputFEField,data,outmesh):
     PointFields = []
     PointFieldsNames = []
     for method in ["Interp/Nearest","Nearest/Nearest","Interp/Clamp","Interp/Extrap"]:
-        op,status = GetFieldTransferOp(inputFEField,outmesh.nodes,method = method,verbose=True)
-        newdata = op.dot(data)
-        PointFieldsNames.append(method)
-        PointFields.append(newdata)
-        PointFieldsNames.append(method+"Status")
-        PointFields.append(status)
+        opCpp, statusCpp = GetFieldTransferOpCpp(inputFEField,outmesh.nodes,method = method,verbose=True)
+        newdataCpp = opCpp.dot(data)
+        PointFieldsNames.append(method+"Cpp")
+        PointFields.append(newdataCpp)
+        PointFieldsNames.append(method+"Status"+"Cpp")
+        PointFields.append(statusCpp)
+
+        opPython, statusPython = GetFieldTransferOpPython(inputFEField,outmesh.nodes,method = method,verbose=True)
+        newdataPython = opPython.dot(data)
+        PointFieldsNames.append(method+"Python")
+        PointFields.append(newdataPython)
+        PointFieldsNames.append(method+"Status"+"Python")
+        PointFields.append(statusPython)
+
+        if np.all(np.isclose(newdataCpp.ravel(),newdataPython.ravel())):
+            raise Exception("Cpp and python version of the field transfer gives differents solutions")
 
     WriteMeshToXdmf(tempdir+"GetFieldTransferOp_TargetMesh"+inputFEField.name+".xdmf",
                     outmesh,
