@@ -23,13 +23,7 @@ typedef bg::model::point<BasicTools::CBasicFloatType, 3, bg::cs::cartesian> poin
 //typedef std::pair<box, BasicTools::CBasicIndexType> value;
 typedef std::pair<point, BasicTools::CBasicIndexType> value;
 
-
-
-
-
-
 namespace BasicTools {
-
 
 template<typename T>
 double normsquared(const T& v){
@@ -67,6 +61,8 @@ public:
     std::vector<CBasicIndexType> rows;
     std::vector<CBasicIndexType> cols;
     std::vector<CBasicFloatType> data;
+    MatrixID1 status;
+
     CBasicIndexType nb_source_Dofs;
     CBasicIndexType nb_targetPoints;
 private:
@@ -85,61 +81,12 @@ private:
     MatrixIDD dualGraph;
     MatrixID1 usedPoints;
     MatrixDDD cellsCenters;
-    void ComputeBarycentricCoordinateOnElement(){}
+    //void ComputeBarycentricCoordinateOnElement(){}
+    std::pair<ElementsContainer,int> GetElement(int enb );
 
 
 };
 
 
-
-template<typename A, typename B, typename C, typename D, typename S2, typename S3>
-void  ComputeBarycentricCoordinateOnElementTemplate(const A& coordAtDofs, const B& localspace, const C& targetPoint, const std::string& elementType,
-                                            bool& inside,
-                                            S2& xietaphi,
-                                            S3& xichietaClamped){
-
-
-const int elemDim = localspace[this->geoSpaceNumber].dimensionality;
-const int spaceDim = static_cast<int>(this->nodes->cols());
-
-
-
-/*
-    xietaphi = np.array([0.5]*spacedim)
-    N = localspace.GetShapeFunc(xietaphi)
-    currentPoint = N.dot(coordAtDofs)
-    f = targetPoint - currentPoint
-
-    for x in range(10):
-        dN = localspace.GetShapeFuncDer(xietaphi)
-        df_num = df(f,dN,coordAtDofs)
-        H = ddf(f, xietaphi, dN, localspace.GetShapeFuncDerDer, coordAtDofs, linear)
-        if spacedim == 2:
-            dxietaphi = inv22(H).dot(df_num)
-        elif spacedim == 3:
-            dxietaphi = hdinv(H).dot(df_num)
-        else:
-            dxietaphi = df_num/H[0,0]
-        xietaphi -= dxietaphi
-
-        # if the cell is linear only one iteration is needed
-        if linear :
-            break
-
-        N = localspace.GetShapeFunc(xietaphi)
-        f = targetPoint - N.dot(coordAtDofs)
-
-        if normsquared(dxietaphi) < 1e-3 and normsquared(f) < 1e-3 :
-            break
-    else:
-        return None, xietaphi,localspace.ClampParamCoorninates(xietaphi)
-
-    xichietaClamped = localspace.ClampParamCoorninates(xietaphi)
-    # we treat very closes point as inside
-    inside = normsquared(xichietaClamped-xietaphi) < 1e-5
-    return inside, xietaphi, xichietaClamped
-*/
-
-}
 
 }
