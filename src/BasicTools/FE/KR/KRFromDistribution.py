@@ -152,16 +152,16 @@ class KRFromDistribution(KRBase):
 
         for fieldToTreat in fieldsToTreat:
             totalNumberOfShapeFuntions = fieldToTreat.unknownField.numbering.size
-            treated = np.zeros(totalNumberOfShapeFuntions*totalNumberOfDofs, dtype=bool)
+            treated = np.zeros(totalNumberOfShapeFuntions, dtype=bool)
             offset = fieldToTreat.offset
             for name, data, elementIds in ef:
                 numberOfShapeFuntions = fieldToTreat.unknownField.space[name].GetNumberOfShapeFunctions()
                 for elemId in elementIds:
                     for i in range(numberOfShapeFuntions):
                         dofIid = fieldToTreat.unknownField.numbering[name][elemId,i]
-                        if treated[dofIid+offset]:
+                        if treated[dofIid]:
                             continue
-                        treated[dofIid+offset] = True
+                        treated[dofIid] = True
                         dataValue = fieldToTreat.dataField.data[fieldToTreat.dataField.numbering[name][elemId,i]]
                         if fieldToTreat.solutionField is not None:
                             solValue = fieldToTreat.solutionField.data[fieldToTreat.solutionField.numbering[name][elemId,i]]
