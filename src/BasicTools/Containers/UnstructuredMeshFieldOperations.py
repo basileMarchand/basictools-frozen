@@ -103,6 +103,22 @@ def CopyFieldsFromOriginalMeshToTargetMesh(inMesh: UnstructuredMesh, outMesh: Un
     Work(inMesh.elemFields, outMesh.elemFields, oid )
 
 def GetFieldTransferOp(inputField: FEField, targetPoints: ArrayLike, method: Union[str,None]=None, verbose:bool=False, elementFilter: Optional[ElementFilter]=None)-> Tuple[np.ndarray,np.ndarray]:
+    try:
+        from BasicTools.Containers.NativeTransfer import NativeTransfer
+        nt = NativeTransfer()
+        nt.SetVerbose(verbose)
+        nt.SetSourceFEField(inputField,elementFilter)
+        nt.SetTargetPoints(targetPoints)
+        nt.SetTransferMethod(method)
+        nt.Compute()
+        op = nt.GetOperator()
+        status = nt.GetStatus()
+        return op, status
+    except :
+        print("Error in the cpp version GetFieldTransferOp. Using Python (slow) version ")
+        return GetFieldTransferOpPython(inputField, targetPoints, method, verbose=verbose, elementFilter=elementFilter)
+
+def GetFieldTransferOpPython(inputField: FEField, targetPoints: ArrayLike, method: Union[str,None]=None, verbose:bool=False, elementFilter: Optional[ElementFilter]=None)-> Tuple[np.ndarray,np.ndarray]:
     """Compute the transfer operator from the inputField to the target points so:
     valueAtTargetPoints = op.dot(FEField.data)
 
@@ -241,7 +257,7 @@ def GetFieldTransferOp(inputField: FEField, targetPoints: ArrayLike, method: Uni
         printProgressBar(0, nbTargetPoints, prefix=f'Building Transfer  {method}:', suffix='Complete', length=50)
         verboseCpt = 0
 
-    status = np.zeros(nbTargetPoints)
+    status = np.zeros(nbTargetPoints,dtype=PBasicIndexType)
     ones = np.ones(50)
     for p in range(nbTargetPoints):
         if verbose:
@@ -575,11 +591,6 @@ def inv22(A: ArrayLike) -> np.ndarray:
     return invA
 
 def ComputeBarycentricCoordinateOnElement(coordAtDofs:ArrayLike, localspace, targetPoint:ArrayLike, elementType:str):
-    from BasicTools.Containers.NativeTransfer import NativeTransfer
-    nt = NativeTransfer()
-    return nt.ComputeBarycentricCoordinateOnElement(coordAtDofs,localspace,targetPoint,elementType)
-
-def ComputeBarycentricCoordinateOnElementOLD(coordAtDofs:ArrayLike, localspace, targetPoint:ArrayLike, elementType:str):
     """Newton to compute the best baricentric coordinates on an element for the target point
     Warning!! This function is not intended for the final user. function used by (GetFieldTransferOp)
 
@@ -599,8 +610,10 @@ def ComputeBarycentricCoordinateOnElementOLD(coordAtDofs:ArrayLike, localspace, 
     _type_
         _description_
     """
+
     linear = ElementNames.linear[elementType]
     spacedim = localspace.GetDimensionality()
+    #print("spacedim",spacedim)
 
     xietaphi = np.array([0.5]*spacedim)
     N = localspace.GetShapeFunc(xietaphi)
@@ -608,25 +621,34 @@ def ComputeBarycentricCoordinateOnElementOLD(coordAtDofs:ArrayLike, localspace, 
     f = targetPoint - currentPoint
 
     for x in range(10):
+        #print("----------- in iteration ",x)
         dN = localspace.GetShapeFuncDer(xietaphi)
+        #print(" dN ", dN)
+        #print(" f ", f)
+        #print(" coordAtDofs ", coordAtDofs)
         df_num = df(f,dN,coordAtDofs)
+        #print(" df_num ", df_num)
         H = ddf(f, xietaphi, dN, localspace.GetShapeFuncDerDer, coordAtDofs, linear)
+        #print(" H ", H)
         if spacedim == 2:
             dxietaphi = inv22(H).dot(df_num)
         elif spacedim == 3:
             dxietaphi = hdinv(H).dot(df_num)
         else:
             dxietaphi = df_num/H[0,0]
+        #print(" dxietaphi ", dxietaphi)
         xietaphi -= dxietaphi
 
         # if the cell is linear only one iteration is needed
         if linear :
+            #print(" linear break ")
             break
 
         N = localspace.GetShapeFunc(xietaphi)
         f = targetPoint - N.dot(coordAtDofs)
 
         if normsquared(dxietaphi) < 1e-3 and normsquared(f) < 1e-3 :
+            #print(" tolerance break ")
             break
     else:
         return None, xietaphi,localspace.ClampParamCoorninates(xietaphi)
@@ -634,6 +656,8 @@ def ComputeBarycentricCoordinateOnElementOLD(coordAtDofs:ArrayLike, localspace, 
     xichietaClamped = localspace.ClampParamCoorninates(xietaphi)
     # we treat very closes point as inside
     inside = normsquared(xichietaClamped-xietaphi) < 1e-5
+    #print(" xietaphi ", xietaphi)
+
     return inside, xietaphi, xichietaClamped
 
 def normsquared(v:ArrayLike) -> np.number:
