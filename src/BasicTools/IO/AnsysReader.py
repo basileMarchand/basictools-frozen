@@ -13,7 +13,7 @@ import BasicTools.Containers.ElementNames as EN
 import BasicTools.Containers.UnstructuredMesh as UM
 from BasicTools.IO.ReaderBase import ReaderBase
 from BasicTools.Helpers.ParserHelper import LocalVariables
-from BasicTools.NumpyDefs import PBasicIndexType
+from BasicTools.NumpyDefs import PBasicIndexType, PBasicFloatType
 from BasicTools.IO.AnsysTools import PermutationAnsysToBasicTools
 
 def ReadAnsys(fileName=None, string=None, out=None, **kwargs):
@@ -115,6 +115,7 @@ class Session:
         self.iterator = iterator
         self.result = UM.UnstructuredMesh() if out is None else out
         self.block_count = 0
+        self.CSDict = {}    #  to store co
 
         # Nodes
         self.result.nodes = np.empty((0, 3), dtype=np.double)
@@ -140,19 +141,97 @@ class Session:
                 'type': self.ParseElementTypeSelection,
                 'CMBLOCK': self.ParseTagDefinition,
                 'esel': self.ParseEselDefinition,
-                'cm': self.ParseCMDefinition
+                'cm': self.ParseCMDefinition,
+                '*Get':self.ParseGet,
+                'N': self.ParseN,
+                'CS': self.ParseCS,
+                'EMODIF': self.PaserEMODIF,
+
                 }
 
         def Pass(args): pass
 
-        for line in self.iterator:
-            tokens = line.split(',')
-            keyword = tokens[0]
-            arguments = tokens[1:]
-            commands.get(keyword, Pass)(arguments)
+        for multiline in self.iterator:
+            lines = multiline.split('$')
+            for line in lines:
+                line = line.strip()
+                tokens = line.split(',')
+                keyword = tokens[0]
+                arguments = tokens[1:]
+                commands.get(keyword, Pass)(arguments)
+
 
     def ParseAssignment(self, args):
         self.substitutions.SetVariable(args[0], args[1])
+
+    def ParseGet(self, args):
+        #https://www.mm.bme.hu/~gyebro/files/ans_help_v182/ans_cmd/Hlp_C_GET.html#get.prep.node
+        par = str(args[0])        # The name of the resulting parameter. See *SET for name restrictions.
+        entity = str(args[1])     # Entity keyword. Valid keywords are NODE, ELEM, KP, LINE, AREA, VOLU, etc., as shown for Entity = in the tables below.
+        ENTNUM = int(args[2])     # The number or label for the entity (as shown for ENTNUM = in the tables below). In some cases, a zero (or blank) ENTNUM represents all entities of the set.
+        Item1 =  str(args[3])     # The name of a particular item for the given entity. Valid items are as shown in the Item1 columns of the tables below.
+        IT1NUM =  str([4])     # The number (or label) for the specified Item1 (if any). Valid IT1NUM values are as shown in the IT1NUM columns of the tables below. Some Item1 labels do not require an IT1NUM value.
+        if len(args) >5 :
+            Item2 =  str(args[5])     # A second set of item labels and numbers to further qualify the item for which data are to be retrieved. Most items do not require this level of information.
+            IT2NUM =  str([6])
+
+        if entity == "NODE" and ENTNUM == 0 and Item1 == "NUM" and IT1NUM == "MAXD":
+            #normaly I must use the max id node
+            self.substitutions.SetVariable(par,self.result.nodes.shape[0])
+        else:
+            return
+
+    def ParseN(self,args):
+        NID= (self.substitutions.Apply(args[0]))
+        NX = float(self.substitutions.Apply(args[1]))
+        NY = float(self.substitutions.Apply(args[2]))
+        NZ = float(self.substitutions.Apply(args[3]))
+        self.CSDict["_Internal_N_"+NID] = [NX,NY,NZ]
+
+    def ParseCS(self,args):
+        KCN = int(args[0]) # Arbitrary reference number assigned to this coordinate system. Must be greater than 10. A coordinate system previously defined with this number will be redefined.
+        KCS = args[1] # Coordinate system type: 0 or CART - Cartesian
+                      #                         1 or CYLIN - Cylindrical (circular or elliptical)
+                      #                         2 or SPHE   — Spherical (or spheroidal)
+                      #                         3 or TORO   — Toroidal
+        NORIG = self.CSDict["_Internal_N_"+self.substitutions.Apply(args[2])] # Node defining the origin of this coordinate system. If NORIG = P, graphical picking is enabled and all remaining command fields are ignored (valid only in the GUI).
+        NXAX = self.CSDict["_Internal_N_"+self.substitutions.Apply(args[3])]  # Node defining the positive x-axis orientation of this coordinate system.
+        NXYPL = self.CSDict["_Internal_N_"+self.substitutions.Apply(args[4])] # Node defining the x-y plane (with NORIG and NXAX) in the first or second quadrant of this coordinate system.
+        if len(args) > 5:
+            PAR1 = args[5]  # Used for elliptical, spheroidal, or toroidal systems. If KCS = 1 or 2, PAR1 is the ratio of the ellipse Y-axis radius to X-axis radius (defaults to 1.0 (circle)). If KCS = 3, PAR1 is the major radius of the torus.
+            PAR2 = args[6]  # Used for spheroidal systems. If KCS = 2, PAR2 = ratio of ellipse Z-axis radius to X-axis radius (defaults to 1.0 (circle)).
+        if KCS == "0" or KCS == "CART":
+            origin =np.array(NORIG)
+            V0 = np.array(NXAX)
+            V0 /= np.linalg.norm(V0)
+            V1 = np.array(NXYPL)
+            V1 -= np.dot(V0,V1)*V0
+            V1 /= np.linalg.norm(V1)
+            self.CSDict[KCN] = [origin, V0,V1]
+        else:
+            raise
+
+    def PaserEMODIF(self, args):
+        #https://www.mm.bme.hu/~gyebro/files/ans_help_v182/ans_cmd/Hlp_C_EMODIF.html
+        IEL = args[0] #Modify nodes and/or attributes for element number IEL. If ALL, modify all selected elements [ESEL]. If IEL = P, graphical picking is enabled and all remaining command fields are ignored (valid only in the GUI). A component name may also be substituted for IEL.
+        STLOC = args[1]
+        if "V0" not in self.result.elemFields:
+            self.result.elemFields["origin"] = np.zeros((self.result.GetNumberOfElements(),3), dtype=PBasicFloatType )
+            self.result.elemFields["V0"] = np.zeros((self.result.GetNumberOfElements(),3), dtype=PBasicFloatType )
+            self.result.elemFields["V0"][:,0:3] = [1,0,0]
+            self.result.elemFields["V1"] = np.zeros((self.result.GetNumberOfElements(),3), dtype=PBasicFloatType )
+            self.result.elemFields["V1"][:,0:3] = [0,1,0]
+
+        if STLOC == "ESYS":
+            I1 = int(args[2])
+            element_type, rank = self.element_type_and_rank_from_id[int(IEL)]
+            container = self.result.GetElementsOfType(element_type)
+            self.result.ComputeGlobalOffset()
+
+            origin, V0, V1 = self.CSDict[I1]
+            self.result.elemFields["origin"][container.globaloffset + rank,:] =  origin
+            self.result.elemFields["V0"][container.globaloffset + rank,:] =  V0
+            self.result.elemFields["V1"][container.globaloffset + rank,:] =  V1
 
     def ParseNodeBlock(self, args):
         # Arguments: NUMFIELD,[Solkey,NDMAX[,NDSEL]]
@@ -211,6 +290,7 @@ class Session:
         elements = self.result.GetElementsOfType(EN.Point_1)
         internal_count = elements.AddNewElement([node_rank], element_id)
         internal_rank = internal_count - 1
+        self.element_type_and_rank_from_id[element_id] = (EN.Point_1, internal_rank)
         auto_etag = 'et_{}'.format(et)
         elements.AddElementToTag(internal_rank, auto_etag)
         # Figure out a nodal tag name from the element id
