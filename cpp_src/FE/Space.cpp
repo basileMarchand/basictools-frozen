@@ -22,7 +22,7 @@ void ElementSpace::AppendDofAttachment(const char& entity, const int& entityNumb
 }
 
 const MatrixDDD ElementSpace::GetValOfShapeFunctionsAt(const MatrixDDD& phiXiEta  ) const {
-    return this->GetValOfShapeFunctionsAt(phiXiEta.coeff(0,0), phiXiEta.coeff(1,0),phiXiEta.coeff(2,0));
+    return this->GetValOfShapeFunctionsAt(phiXiEta(0,0), phiXiEta(1,0),phiXiEta(2,0));
 };
 
 const MatrixDDD ElementSpace::GetValOfShapeFunctionsAt(const double phi, const double  xi, const double  eta  ) const {
@@ -30,7 +30,7 @@ const MatrixDDD ElementSpace::GetValOfShapeFunctionsAt(const double phi, const d
 };
 
 const MatrixDDD ElementSpace::GetValOfShapeFunctionsDerAt(const MatrixDDD& phiXiEta  ) const {
-    return this->GetValOfShapeFunctionsDerAt(phiXiEta.coeff(0,0), phiXiEta.coeff(1,0),phiXiEta.coeff(2,0));
+    return this->GetValOfShapeFunctionsDerAt(phiXiEta(0,0), phiXiEta(1,0),phiXiEta(2,0));
 };
 
 const MatrixDDD ElementSpace::GetValOfShapeFunctionsDerAt(const double phi, const double  xi, const double eta ) const {
