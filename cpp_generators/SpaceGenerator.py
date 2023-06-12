@@ -122,7 +122,9 @@ std::map<std::string,Space> SpacesAlmanac;
 \n""")
         for FESpaceName, FEspace in spaces:
             PrintToFile(cppFile,f"{{// working on space {FESpaceName}")
-            PrintToFile(cppFile,"    Space localsp;")
+            PrintToFile(cppFile, "    Space localsp;")
+            PrintToFile(cppFile,f'    localsp.name = "{FESpaceName}";')
+
 
             for spn in FEspace:
                 spd = FEspace[spn]

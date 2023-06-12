@@ -39,6 +39,7 @@ struct ElementSpace{
 
 class Space{
 public:
+    std::string name;
     std::map<std::string, ElementSpace > storage;
 public:
     CBasicIndexType GetNumberOfShapeFunctionsFor(const std::string& elementType) const ;
