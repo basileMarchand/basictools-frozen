@@ -622,17 +622,17 @@ def ComputeBarycentricCoordinateOnElement(coordAtDofs:ArrayLike, localspace, tar
     xietaphi = np.array([0.5]*spacedim)
     N = localspace.GetShapeFunc(xietaphi)
     currentPoint = N.dot(coordAtDofs)
-    f = targetPoint - currentPoint
+    f = currentPoint- targetPoint
 
-    for x in range(10):
+    for x in range(15):
         #print("----------- in iteration ",x)
         dN = localspace.GetShapeFuncDer(xietaphi)
         #print(" dN ", dN)
         #print(" f ", f)
         #print(" coordAtDofs ", coordAtDofs)
-        df_num = df(f,dN,coordAtDofs)
+        df_num = df(-f,dN,coordAtDofs)
         #print(" df_num ", df_num)
-        H = ddf(f, xietaphi, dN, localspace.GetShapeFuncDerDer, coordAtDofs, linear)
+        H = ddf(-f, xietaphi, dN, localspace.GetShapeFuncDerDer, coordAtDofs, linear)
         #print(" H ", H)
         if spacedim == 2:
             dxietaphi = inv22(H).dot(df_num)
@@ -649,9 +649,10 @@ def ComputeBarycentricCoordinateOnElement(coordAtDofs:ArrayLike, localspace, tar
             break
 
         N = localspace.GetShapeFunc(xietaphi)
-        f = targetPoint - N.dot(coordAtDofs)
+        f = N.dot(coordAtDofs) - targetPoint
 
-        if normsquared(dxietaphi) < 1e-3 and normsquared(f) < 1e-3 :
+        if normsquared(dxietaphi) < 1e-4  :
+            #and normsquared(f) < 1e-4
             #print(" tolerance break ")
             break
     else:
@@ -982,6 +983,11 @@ def RunTransfer(inputFEField,data,outmesh):
         PointFields.append(newdataCpp)
         PointFieldsNames.append(method+"Status"+"Cpp")
         PointFields.append(statusCpp)
+        newPosCpp = opCpp.dot(inputFEField.mesh.nodes)
+        PointFieldsNames.append(method+"Pos"+"Cpp")
+        PointFields.append(newPosCpp)
+
+
 
         opPython, statusPython = GetFieldTransferOpPython(inputFEField,outmesh.nodes,method = method,verbose=True)
         newdataPython = opPython.dot(data)
