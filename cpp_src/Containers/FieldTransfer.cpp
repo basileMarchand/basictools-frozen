@@ -73,7 +73,7 @@ BasicTools::CBasicIndexType FindNearest(bgi::rtree< value, bgi::quadratic<16> >&
   //std::cout << "second part" << std::endl;
   auto res  = rtree.qbegin(bgi::nearest(pp, 1));
   //std::cout << "--- " <<   std::endl;
-  rtree.qend();
+  //rtree.qend();
   //std::cout << "---- " <<   std::endl;
   if (res == rtree.qend()) std::cout << "error!!!!!!!!!!!!!" << std::endl;
   //std::cout << "---- second  " << res->second <<  std::endl;
@@ -135,6 +135,55 @@ void TransferClass::SetSourceMesh(UnstructuredMesh* sourceMesh){
  //std::cout << "start SetSourceMesh" << std::endl;
   this->sourceMesh = sourceMesh;
   this->nodeRTree = BuildRTree(this->sourceMesh->GetNodesMatrix(), this->sourceMesh->GetOriginalIdsMatrix());
+
+  if( this->useEdges){
+    std::set<std::pair<BasicTools::CBasicIndexType, BasicTools::CBasicIndexType> > pair_points_set;
+    const auto nodes = this->sourceMesh->GetNodesMatrix();
+    // loop over all the segment on the mesh and insert it
+    for (auto& x : this->sourceMesh->elements.storage){
+      const BasicTools::CBasicIndexType nbElements = x.second.GetNumberOfElements();
+      const auto connMatrix = x.second.GetConnectivityMatrix();
+      ElementInfo &eInfo = ElementNames[x.first];
+      if (eInfo.dimension() < 1 ){
+        continue;
+      }
+
+      if (eInfo.dimension() == 1 ){
+        for(int i=0; i < nbElements; ++i){
+          const CBasicIndexType ii0 = connMatrix(i,0);
+          const CBasicIndexType ii1 = connMatrix(i,1);
+          std::pair<BasicTools::CBasicIndexType, BasicTools::CBasicIndexType> seg_index = (ii0 < ii1) ? std::make_pair(ii0,ii1): std::make_pair(ii1,ii0);
+          if (pair_points_set.find(seg_index) == pair_points_set.end() ) {
+            const point p0 = point(nodes(ii0,0),nodes(ii0,1),nodes(ii0,2));
+            const point p1 = point(nodes(ii1,0),nodes(ii1,1),nodes(ii1,2));
+            this->segmentRTree.insert(std::make_pair(segment(p0,p1),seg_index));
+          }
+        }
+        continue;
+      }
+
+      const std::vector<std::pair<ElementInfo,MatrixID1> > edges = eInfo.GetFacesLevel(eInfo.dimension() - 1);
+      for(int e=0; e < edges.size(); ++e ){
+        const CBasicIndexType i0 = edges[e].second(0,0);
+        const CBasicIndexType i1 = edges[e].second(1,0);
+
+        for(int i=0; i < nbElements; ++i){
+          const CBasicIndexType ii0 = connMatrix(i,i0);
+          const CBasicIndexType ii1 = connMatrix(i,i1);
+          std::pair<BasicTools::CBasicIndexType,BasicTools::CBasicIndexType> seg_index = (ii0 < ii1) ? std::make_pair(ii0,ii1): std::make_pair(ii1,ii0);
+          if (pair_points_set.find(seg_index ) == pair_points_set.end() ) {
+            const point p0 = point(nodes(ii0,0),nodes(ii0,1),nodes(ii0,2));
+            const point p1 = point(nodes(ii1,0),nodes(ii1,1),nodes(ii1,2));
+            this->segmentRTree.insert(std::make_pair(segment(p0,p1),seg_index));
+          }
+        }
+      }
+    }
+
+
+  }
+
+
   //    kdt = cKDTree(iNodes)
 
     //TODO Compute KDTree on inputPoints (sourceMesh.nodes)
@@ -317,6 +366,25 @@ void TransferClass::Compute(){
           potentialElements.push_back(this->dualGraph(lcoon, dg_cpt) );
         }
     }
+
+
+    if( this->useEdges){
+      auto pp = point(TP(0),TP(1),TP(2));
+      auto res  = this->segmentRTree.qbegin(bgi::nearest(pp, 1));
+      if (res == this->segmentRTree.qend()){
+        std::cout << "error!!!!!!!!!!!!!" << std::endl;
+      } else {
+        const auto id_0 = res->second.first;
+        const auto id_1 = res->second.second;
+        for(int dg_cpt=0; dg_cpt< this->usedPoints[id_0] ; ++dg_cpt ){
+          potentialElements.push_back(this->dualGraph(id_0, dg_cpt) );
+        }
+        for(int dg_cpt=0; dg_cpt< this->usedPoints[id_1] ; ++dg_cpt ){
+          potentialElements.push_back(this->dualGraph(id_0, dg_cpt) );
+        }
+      }
+    }
+
 
     std::vector<CBasicIndexType>::iterator it;
     std::sort(potentialElements.begin(), potentialElements.end());

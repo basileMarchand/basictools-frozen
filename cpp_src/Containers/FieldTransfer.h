@@ -18,10 +18,12 @@
 namespace bg = boost::geometry;
 namespace bgi = boost::geometry::index;
 typedef bg::model::point<BasicTools::CBasicFloatType, 3, bg::cs::cartesian> point;
+typedef bg::model::segment<point> segment;
 //CBasicFloatType
 //typedef bg::model::box<point> box;
 //typedef std::pair<box, BasicTools::CBasicIndexType> value;
 typedef std::pair<point, BasicTools::CBasicIndexType> value;
+typedef std::pair<segment, std::pair<BasicTools::CBasicIndexType,BasicTools::CBasicIndexType> > sValue;
 
 namespace BasicTools {
 
@@ -61,6 +63,8 @@ public:
 
     CBasicIndexType nb_source_Dofs;
     CBasicIndexType nb_targetPoints;
+    bool useEdges = true;
+
 private:
     bool verbose;
     int insideMethod;
@@ -74,6 +78,7 @@ private:
 
     bgi::rtree< value, bgi::quadratic<16> > nodeRTree;
     bgi::rtree< value, bgi::quadratic<16> > centerRTree;
+    bgi::rtree< sValue, bgi::quadratic<16> > segmentRTree;
     MatrixIDD dualGraph;
     MatrixID1 usedPoints;
     MatrixDDD cellsCenters;

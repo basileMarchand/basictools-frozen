@@ -41,6 +41,7 @@ cdef extern from "Containers/FieldTransfer.h" namespace "BasicTools":
 
         CBasicIndexType nb_source_Dofs;
         CBasicIndexType nb_targetPoints;
+        bool useEdges;
 
 cdef class NativeTransfer:
 

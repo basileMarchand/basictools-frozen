@@ -98,3 +98,6 @@ cdef class NativeTransfer:
 
     def GetStatus(self):
         return ndarray_copy(self.cpp_object.GetStatus())
+
+    def SetUseEdges(self, val:bool):
+            self.cpp_object.useEdges = val;
