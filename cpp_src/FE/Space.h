@@ -10,6 +10,7 @@
 #include <memory>
 
 #include <LinAlg/EigenTypes.h>
+#include <Containers/ElementNames.h>
 #include <FE/IntegrationRule.h>
 
 namespace BasicTools
@@ -23,8 +24,13 @@ struct DofAttachment {
 };
 
 struct ElementSpace{
+    std::string elementType;
+    GeoSupport geoSupport;
     std::vector<DofAttachment > storage;
+    MatrixDDD posN;
+    int dimensionality;
     ElementSpace(){};
+    int GetDimensionality() const {return dimensionality;};
 
     MatrixDDD (*SFV)(const double, const double, const double );
     MatrixDDD (*SFDV)(const double, const double, const double );
