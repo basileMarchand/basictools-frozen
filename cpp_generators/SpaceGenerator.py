@@ -41,6 +41,7 @@ def Generate(prefix:str = "cpp_src"):
     hFileName = prefix + "/FE/GeneratedSpaces.h"
     with open(hFileName,"w", encoding="utf8") as hfile:
         PrintHeader(hfile)
+        PrintToFile(hfile,"#include <Containers/ElementNames.h>")
         PrintToFile(hfile,"#include <FE/Space.h>")
         PrintToFile(hfile,"namespace BasicTools {")
         PrintToFile(hfile,"")
@@ -133,6 +134,11 @@ std::map<std::string,Space> SpacesAlmanac;
                 PrintToFile(cppFile,f"    {{// working on space: {spn}")
                 PrintToFile(cppFile,"        ElementSpace fesp;")
                 numberOfShapeFunctions = spd.GetNumberOfShapeFunctions()
+                PrintToFile(cppFile,f'        fesp.elementType = "{spn}";')
+                PrintToFile(cppFile,f"        fesp.dimensionality = {spd.GetDimensionality()};")
+                PrintToFile(cppFile,f"        fesp.geoSupport = Geo{spd.geoSupport.name.capitalize()};")
+                PrintToFile(cppFile,f"        fesp.posN.resize({spd.posN.shape[0]},{spd.posN.shape[1]}) ;")
+                PrintToFile(cppFile,f"        fesp.posN <<  {', '.join(map(str,spd.posN.flatten())).replace('None','NAN')};")
 
                 for nsf in range(numberOfShapeFunctions):
                     on,idxI,idxII = spd.dofAttachments[nsf]
@@ -172,4 +178,10 @@ def CheckIntegrity(GUI=False):
     return "ok"
 
 if __name__ == '__main__':# pragma: no cover
-    print(CheckIntegrity(GUI=True))
+    sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
+    if len(sys.argv) == 3  and sys.argv[1] == "-n":
+        print(GetGeneratedFiles()[int(sys.argv[2])])
+    elif len(sys.argv) == 3  and sys.argv[1] == "-g":
+        Generate(sys.argv[2])
+    else:
+        print(CheckIntegrity(GUI=True))
