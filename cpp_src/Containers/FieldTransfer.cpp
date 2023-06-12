@@ -163,7 +163,7 @@ void TransferClass::SetSourceMesh(UnstructuredMesh* sourceMesh){
       }
 
       const std::vector<std::pair<ElementInfo,MatrixID1> > edges = eInfo.GetFacesLevel(eInfo.dimension() - 1);
-      for(int e=0; e < edges.size(); ++e ){
+      for(std::size_t e=0; e < edges.size(); ++e ){
         const CBasicIndexType i0 = edges[e].second(0,0);
         const CBasicIndexType i1 = edges[e].second(1,0);
 
