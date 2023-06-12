@@ -304,6 +304,10 @@ void TransferClass::Compute(){
   const auto originalIdsPoints =  this->sourceMesh->GetOriginalIdsMatrix();
   const auto& sourceNodes = this->sourceMesh->GetNodesMatrix();
 
+  if (this->verbose){
+    std::cout << "Starting c++ FieldTransfer" << std::endl;
+  }
+
   if( (this->insideMethod == 0) && (this->outsideMethod == 0) ){
     for( int tp = 0; tp < nbTargetPoints; ++tp ){
       //std::cout << "Inside point " << tp << std::endl;
@@ -321,13 +325,13 @@ void TransferClass::Compute(){
     }
 
     //std::cout << "End Compute c++ nearest" << std::endl;
+    if (this->verbose){
+      std::cout << "Done c++ FieldTransfer" << std::endl;
+    }
     return;
   }
   //we build de Dual Connectivity
 
-  if (this->verbose){
-    std::cout << "Starting c++ " << std::endl;
-  }
   std::vector<CBasicIndexType> potentialElements;
   potentialElements.reserve(50);
 
@@ -525,7 +529,9 @@ void TransferClass::Compute(){
  //std::cout << "  cols  : " <<  cols.size() << std::endl;
  //std::cout << "  data  : " <<  data.size() << std::endl;
  //std::cout << "End Compute c++ rest" << std::endl;
-
+  if (this->verbose){
+    std::cout << "Done c++ FieldTransfer" << std::endl;
+  }
 };
 
 
@@ -679,7 +685,7 @@ CEBCResult ComputeBarycentricCoordinateOnElement(const A& xcoor, const BasicTool
   MatrixD1D f =  currentPoint - targetPoint ;
   MatrixDD1 dxietaphi;
   int x=0;
-  for(; x < 10; ++x){
+  for(; x < 15; ++x){
     //std::cout << "----------- in iteration "<< x << std::endl;
     MatrixDDD dN = localspace.GetValOfShapeFunctionsDerAt(xietaphi).block(0,0,elemDim,nbShapeFunctions);
     //std::cout << " dN "<< MatrixDDD(dN) << std::endl;
@@ -729,7 +735,8 @@ CEBCResult ComputeBarycentricCoordinateOnElement(const A& xcoor, const BasicTool
     //std::cout << "***********************f******************" << std::endl;
     //std::cout <<  f << std::endl;
     //std::cout << "*****************************************" << std::endl;
-    if( dxietaphi.squaredNorm() < 1e-3 && f.squaredNorm() < 1e-3 ){
+    if( dxietaphi.squaredNorm() < 1e-4 ){
+      //&& f.squaredNorm() < 1e-3
       //std::cout << " tolerance break " << std::endl;
       break;
     }
