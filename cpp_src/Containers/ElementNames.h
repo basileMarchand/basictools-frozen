@@ -15,21 +15,22 @@ class GeoSupport {
 public:
     std::string name;
     int dimensionality;
+    GeoSupport(): name("NA"), dimensionality(-1) {}
     GeoSupport(const std::string& name, const int& dimensionality): name(name), dimensionality(dimensionality) {}
     std::string ToStr() const {
         return std::string("GeoSuport( " + this->name + ")");
     }
 };
 
-extern GeoSupport GeoNA;
-extern GeoSupport GeoPoint;
-extern GeoSupport GeoBar;
-extern GeoSupport GeoTri;
-extern GeoSupport GeoQuad;
-extern GeoSupport GeoTet;
-extern GeoSupport GeoPyr;
-extern GeoSupport GeoWed;
-extern GeoSupport GeoHex;
+extern const GeoSupport GeoNA;
+extern const GeoSupport GeoPoint;
+extern const GeoSupport GeoBar;
+extern const GeoSupport GeoTri;
+extern const GeoSupport GeoQuad;
+extern const GeoSupport GeoTet;
+extern const GeoSupport GeoPyr;
+extern const GeoSupport GeoWed;
+extern const GeoSupport GeoHex;
 
 class ElementInfo{
 public:
@@ -41,8 +42,19 @@ public:
     int degree;
     std::vector<std::pair<ElementInfo,MatrixID1> > faces;
     std::vector<std::pair<ElementInfo,MatrixID1> > faces2;
+    std::vector<std::pair<ElementInfo,MatrixID1> > faces3;
     ElementInfo(): geoSupport("NA",-1){}
     int dimension() const { return this->geoSupport.dimensionality; }
+    std::vector<std::pair<ElementInfo,MatrixID1> >& GetFacesLevel(int level){
+        assert(level >0 );
+        assert(level <3 );
+        if(level==1) return faces;
+        if(level==2) return faces2;
+        if(level==3) return faces3;
+
+        throw ;
+
+    }
 };
 
 inline const std::string Point_1 = "point1";
