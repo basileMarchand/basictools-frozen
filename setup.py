@@ -32,7 +32,8 @@ debug = True if __config["build_ext"]["debug"].lower()  in ["1","true"] else Fal
 force = True if __config["build_ext"]["force"].lower()  in ["1","true"] else False
 
 #Cpp sources (relative to the cpp_src folder)
-cpp_src = ("LinAlg/BasicOperations.cpp",
+cpp_src = ("Containers/FieldTransfer.cpp",
+           "LinAlg/BasicOperations.cpp",
            "LinAlg/EigenTools.cpp",
            "ImplicitGeometry/ImplicitGeometryBase.cpp",
            "Containers/ElementFilter.cpp",
@@ -47,6 +48,7 @@ cpp_src = ("LinAlg/BasicOperations.cpp",
 
 # Cython modules
 cython_src = (
+    "Containers/NativeTransfer.pyx",
     "Linalg/NativeEigenSolver.pyx",
     "FE/Integrators/NativeIntegration.pyx",
     "FE/WeakForms/NativeNumericalWeakForm.pyx",
