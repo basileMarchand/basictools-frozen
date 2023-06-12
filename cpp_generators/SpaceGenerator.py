@@ -118,27 +118,37 @@ MatrixDDD {FESpaceName}_{spn}_GetShapeFunctionsDer(const double {coord0}, const 
         cppFile.write("""
 
 std::map<std::string,Space> GetBasicSpaceAlmanac(){
-std::map<std::string,Space> SpacesAlmanac;
+    const GeoSupport GeoNA("NA",-1);
+    const GeoSupport GeoPoint("point",0);
+    const GeoSupport GeoBar("bar"  ,1);
+    const GeoSupport GeoTri("tri"  ,2);
+    const GeoSupport GeoQuad("quad" ,2);
+    const GeoSupport GeoTet("tet"  ,3);
+    const GeoSupport GeoPyr("pyr"  ,3);
+    const GeoSupport GeoWed("wed"  ,3);
+    const GeoSupport GeoHex("hex"  ,3 );
+
+    std::map<std::string,Space> SpacesAlmanac;
 
 \n""")
         for FESpaceName, FEspace in spaces:
-            PrintToFile(cppFile,f"{{// working on space {FESpaceName}")
-            PrintToFile(cppFile, "    Space localsp;")
-            PrintToFile(cppFile,f'    localsp.name = "{FESpaceName}";')
+            PrintToFile(cppFile,f"    {{// working on space {FESpaceName}")
+            PrintToFile(cppFile, "        Space localsp;")
+            PrintToFile(cppFile,f'        localsp.name = "{FESpaceName}";')
 
 
             for spn in FEspace:
                 spd = FEspace[spn]
                 spd.Create()
 
-                PrintToFile(cppFile,f"    {{// working on space: {spn}")
-                PrintToFile(cppFile,"        ElementSpace fesp;")
+                PrintToFile(cppFile,f"        {{// working on space: {spn}")
+                PrintToFile(cppFile,"            ElementSpace fesp;")
                 numberOfShapeFunctions = spd.GetNumberOfShapeFunctions()
-                PrintToFile(cppFile,f'        fesp.elementType = "{spn}";')
-                PrintToFile(cppFile,f"        fesp.dimensionality = {spd.GetDimensionality()};")
-                PrintToFile(cppFile,f"        fesp.geoSupport = Geo{spd.geoSupport.name.capitalize()};")
-                PrintToFile(cppFile,f"        fesp.posN.resize({spd.posN.shape[0]},{spd.posN.shape[1]}) ;")
-                PrintToFile(cppFile,f"        fesp.posN <<  {', '.join(map(str,spd.posN.flatten())).replace('None','NAN')};")
+                PrintToFile(cppFile,f'            fesp.elementType = "{spn}";')
+                PrintToFile(cppFile,f"            fesp.dimensionality = {spd.GetDimensionality()};")
+                PrintToFile(cppFile,f"            fesp.geoSupport = Geo{spd.geoSupport.name.capitalize()};")
+                PrintToFile(cppFile,f"            fesp.posN.resize({spd.posN.shape[0]},{spd.posN.shape[1]}) ;")
+                PrintToFile(cppFile,f"            fesp.posN <<  {', '.join(map(str,spd.posN.flatten())).replace('None','NAN')};")
 
                 for nsf in range(numberOfShapeFunctions):
                     on,idxI,idxII = spd.dofAttachments[nsf]
@@ -148,17 +158,17 @@ std::map<std::string,Space> SpacesAlmanac;
                         idxII = -1
                     if on == "F2" :
                         on = "E"
-                    PrintToFile(cppFile,f"        fesp.AppendDofAttachment('{on[0]}', {idxI},{idxII});")
-                PrintToFile(cppFile,f"        fesp.SFV = &{FESpaceName}_{spn}_GetShapeFunctions;")
-                PrintToFile(cppFile,f"        fesp.SFDV = &{FESpaceName}_{spn}_GetShapeFunctionsDer;")
-                PrintToFile(cppFile,f'        localsp.storage["{spn}"] = fesp;')
-                PrintToFile(cppFile,f"    }};// end of space: {spn}")
-            PrintToFile(cppFile,f'    SpacesAlmanac["{FESpaceName}"] = localsp;')
-            PrintToFile(cppFile,f"}};// end of space: {FESpaceName}")
-        PrintToFile(cppFile,"return SpacesAlmanac; \n}")
+                    PrintToFile(cppFile,f"            fesp.AppendDofAttachment('{on[0]}', {idxI},{idxII});")
+                PrintToFile(cppFile,f"            fesp.SFV = &{FESpaceName}_{spn}_GetShapeFunctions;")
+                PrintToFile(cppFile,f"            fesp.SFDV = &{FESpaceName}_{spn}_GetShapeFunctionsDer;")
+                PrintToFile(cppFile,f'            localsp.storage["{spn}"] = fesp;')
+                PrintToFile(cppFile,f"        }};// end of space: {spn}")
+            PrintToFile(cppFile,f'        SpacesAlmanac["{FESpaceName}"] = localsp;')
+            PrintToFile(cppFile,f"    }};// end of space: {FESpaceName}")
+        PrintToFile(cppFile,"    return SpacesAlmanac; \n};\n")
 
 
-        PrintToFile(cppFile,"std::map<std::string,Space> SpacesAlmanacI = GetBasicSpaceAlmanac();")
+        PrintToFile(cppFile,"std::map<std::string,Space> SpacesAlmanacI = GetBasicSpaceAlmanac();\n")
 
         PrintToFile(cppFile,"""const Space& GetFESpaceFor(const std::string& spaceName){
     return SpacesAlmanacI[spaceName];
@@ -169,6 +179,7 @@ const std::vector<std::string> GetAvailableSpaces(){
     for(auto const& item: SpacesAlmanacI ) res.push_back(item.first);
     return res;
 }
+
 }; // BasicTools Namespace
 """)
 
