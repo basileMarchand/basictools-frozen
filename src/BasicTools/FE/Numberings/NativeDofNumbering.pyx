@@ -24,39 +24,11 @@ cimport BasicTools.FE.Spaces.NativeSpace as cNS
 import BasicTools.Containers.NativeUnstructuredMesh as NUM
 import BasicTools.FE.Spaces.NativeSpace as NS
 
-cdef extern from "FE/DofNumbering.h" namespace "BasicTools" :
-    cdef cppclass DofNumbering:
-        DofNumbering() except +
-        CBasicIndexType GetSize()
-        CBasicIndexType GetDofOfPoint(int)
-        int GetFromConnectivity()
-        void SetFromConnectivity(bool )
-        void ComputeNumberingFromConnectivity(cNUM.UnstructuredMesh& ) nogil
-        void ComputeNumberingGeneral(cNUM.UnstructuredMesh&, cNS.Space&, cNF.ElementFilterBase&) nogil
-        void computeDofToPoint()
+cimport BasicTools.FE.Numberings.NativeDofNumbering as cNDN
 
-        MatrixXi & GetNumberingFor(const string & elemtype)
-        CBasicIndexType GetSizeOfDofToPoint()
-        PlainObjectBase & GetdoftopointLeft()
-        PlainObjectBase & GetdoftopointRight()
 
-        void computeDofToCell(cNUM.UnstructuredMesh)
-        CBasicIndexType GetSizeOfDofToCell()
-        PlainObjectBase & GetdoftocellLeft()
-        PlainObjectBase & GetdoftocellRight()
-        bool HasNumberingFor(const string & elemtype)
-        string ToStr()
 
 cdef class NativeDofNumbering:
-    cdef DofNumbering dn_cpp
-    cdef cnp.ndarray _doftopointLeft
-    cdef cnp.ndarray _doftopointRight
-    cdef cnp.ndarray _doftocellLeft
-    cdef cnp.ndarray _doftocellRight
-    cdef bool doftopointComputed
-    cdef dict __dict__
-    #def get(self,key,default=None):
-    #    return self.numbering.get(key,default)
     def __init__(self):
         self.doftopointComputed = False
         self.mesh = None
@@ -87,6 +59,9 @@ cdef class NativeDofNumbering:
         else:
             return None
             #raise KeyError
+
+    cdef cNDN.DofNumbering* GetCppPointer(self) nogil:
+        return &(self.dn_cpp)
 
     def get(self, key, default):
         return self[key]
