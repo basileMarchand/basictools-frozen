@@ -4,19 +4,23 @@
 //
 #pragma once
 
-#include <utility>
+#include <cassert>
+#include <map>
 #include <string>
+#include <utility>
+#include <vector>
+
 #include <LinAlg/EigenTypes.h>
 
-namespace BasicTools
-{
+namespace BasicTools {
 
-class GeoSupport {
-public:
-    std::string name;
-    int dimensionality;
-    GeoSupport(): name("NA"), dimensionality(-1) {}
-    GeoSupport(const std::string& name, const int& dimensionality): name(name), dimensionality(dimensionality) {}
+struct GeoSupport {
+    std::string name{"NA"};
+    int dimensionality{-1};
+
+    GeoSupport() = default;
+    GeoSupport(const std::string& name, const int& dimensionality) : name(name), dimensionality(dimensionality) {}
+
     std::string ToStr() const {
         return std::string("GeoSuport( " + this->name + ")");
     }
@@ -32,26 +36,27 @@ extern const GeoSupport GeoPyr;
 extern const GeoSupport GeoWed;
 extern const GeoSupport GeoHex;
 
-class ElementInfo{
-public:
+struct ElementInfo {
     int numberOfNodes;
     GeoSupport geoSupport;
     std::string name;
     MatrixI1D mirrorPermutation;
     bool linear;
     int degree;
-    std::vector<std::pair<ElementInfo,MatrixID1> > faces;
-    std::vector<std::pair<ElementInfo,MatrixID1> > faces2;
-    std::vector<std::pair<ElementInfo,MatrixID1> > faces3;
-    ElementInfo(): geoSupport("NA",-1){}
+    std::vector<std::pair<ElementInfo,MatrixID1>> faces;
+    std::vector<std::pair<ElementInfo,MatrixID1>> faces2;
+    std::vector<std::pair<ElementInfo,MatrixID1>> faces3;
+
+    ElementInfo() = default;
+
     int dimension() const { return this->geoSupport.dimensionality; }
-    const std::vector<std::pair<ElementInfo,MatrixID1> >& GetFacesLevel(int level){
-        assert(level >0 );
-        assert(level <3 );
-        if(level==1) return faces;
-        if(level==2) return faces2;
-        if(level==3) return faces3;
-        throw ;
+    const std::vector<std::pair<ElementInfo, MatrixID1>>& GetFacesLevel(int level) {
+        assert(level > 0);
+        assert(level < 3);
+        if (level==1) return faces;
+        if (level==2) return faces2;
+        if (level==3) return faces3;
+        throw;
     }
 };
 
@@ -73,7 +78,6 @@ inline const std::string Wedge_15 = "wed15";
 inline const std::string Wedge_18 = "wed18";
 inline const std::string Hexaedron_20 = "hex20";
 inline const std::string Hexaedron_27 = "hex27";
-
 
 extern std::map<std::string,ElementInfo> ElementNames;
 

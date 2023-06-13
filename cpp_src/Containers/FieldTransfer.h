@@ -1,20 +1,21 @@
 
 #pragma once
-#include <string>
+
 #include <Containers/UnstructuredMesh.h>
-#include <FE/DofNumbering.h>
 #include <Containers/ElementFilter.h>
 
+#include <FE/DofNumbering.h>
 
 #include <boost/geometry.hpp>
 #include <boost/geometry/geometries/point.hpp>
 #include <boost/geometry/geometries/box.hpp>
 #include <boost/geometry/index/rtree.hpp>
-// to store queries results
+
+#include <memory>
+#include <string>
+#include <utility>
 #include <vector>
-// just for output
-#include <iostream>
-#include <boost/foreach.hpp>
+
 namespace bg = boost::geometry;
 namespace bgi = boost::geometry::index;
 typedef bg::model::point<BasicTools::CBasicFloatType, 3, bg::cs::cartesian> point;
@@ -27,21 +28,19 @@ typedef std::pair<segment, std::pair<BasicTools::CBasicIndexType,BasicTools::CBa
 
 namespace BasicTools {
 
-
-enum TransferMethods{
+enum TransferMethods {
     Nearest=0,
     Interp,
     Extrap,
     Clamp,
     ZeroFill
-    };
+};
 
 class TransferClass {
-
 public:
     TransferClass();
     std::string ToStr();
-    void SetVerbose(bool verbose= false);
+    void SetVerbose(bool verbose=false);
 //    void SetSourceFEField();
     void SetSourceMesh(UnstructuredMesh* sourceMesh);
     void SetSourceSpace(const std::string& space);
@@ -51,7 +50,7 @@ public:
     std::string GetTransferMethod();
 //
     void SetElementFilter(const ElementFilterEvaluated& filter);
-    MAPSETGET_MatrixDDD(TargetPoints,targetPoints)
+    MAPSETGET_MatrixDDD(TargetPoints, targetPoints)
 
     void Compute();
 //  GetProjectorOperator()
@@ -76,18 +75,14 @@ private:
     bool elementFilterSet;
     std::shared_ptr<MapMatrixDDD > targetPoints;
 
-    bgi::rtree< value, bgi::quadratic<16> > nodeRTree;
-    bgi::rtree< value, bgi::quadratic<16> > centerRTree;
-    bgi::rtree< sValue, bgi::quadratic<16> > segmentRTree;
+    bgi::rtree<value, bgi::quadratic<16>> nodeRTree;
+    bgi::rtree<value, bgi::quadratic<16>> centerRTree;
+    bgi::rtree<sValue, bgi::quadratic<16>> segmentRTree;
     MatrixIDD dualGraph;
     MatrixID1 usedPoints;
     MatrixDDD cellsCenters;
     //void ComputeBarycentricCoordinateOnElement(){}
-    std::pair<ElementsContainer,int> GetElement(int enb );
-
-
+    std::pair<ElementsContainer,int> GetElement(int enb);
 };
 
-
-
-}
+} // namespace BasicTools
