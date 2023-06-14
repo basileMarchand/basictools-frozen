@@ -47,7 +47,7 @@ class ElementFilter : public ElementFilterBase {
     ZONE zoneTreatment;
     std::vector<std::string> tags;
     std::vector<std::string> elementTypes;
-    std::vector<std::shared_ptr<ImplicitGeometryBase> > zones;
+    std::vector<std::shared_ptr<ImplicitGeometryBase>> zones;
     //
     bool CheckDimensionality(const std::string& elemtype, bool& active) const;
     //
