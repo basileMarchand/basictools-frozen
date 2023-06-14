@@ -9,7 +9,7 @@ Testing Infrastructure
 ######################
 
 BasicTools comes with two ways of executing the automated tests.
-Remember that if not all de optional dependencies are installed some tests will fail.
+Remember that if not all the optional dependencies are installed some tests will fail.
 First, pytest [#pytestdoc]_ by simply executing in root directory of the library:
 
 .. code-block::
@@ -18,10 +18,20 @@ First, pytest [#pytestdoc]_ by simply executing in root directory of the library
 
 A files ``conftest.py``  and ``pytest.ini`` present at the root of the repository is responsible of the pytest configuration.
 
+And the in-house testing tool using.
 
-Second, a simple in-house tool: every module must have a function called ``CheckIntegrity`` that takes no
-argument and returns the string ``"ok"`` if and only if the test was successful.
+.. code-block::
+
+    python -m BasicTools.Helpers.Tests
+
+This module search all the modules recursively (in BasicTools) and collect all the functions named ``CheckIntegrity``
+that takes one boolean argument (True to to generate output in the for of GUI to ease the manual debugging).
+The ``CheckIntegrity``  function returns the string ``"ok"`` if and only if the test was successful (or ``"skip"`` to ignore the test).
 Any other return value (or a raised exception) will be interpreted as a failed test.
+
+.. note::
+    This tool can be used to test a installed version of BasicTools to check the integrity of the installation on the final user environment.
+
 
 The ``__init__.py`` must have a variable named ``_test`` (the use of the variable ``__all__`` is depreciated) listing all submodules to be tested so that the test infrastructure works as intended.
 
@@ -31,26 +41,20 @@ Two functions are available to help writing tests :
 *  GetTestDataPath() : Returns the path of the data directory (``from BasicTools.TestData import GetTestDataPath`` )
 *  TestTempDir: A class to handle the creation of a directory to hold temporary data (``from BasicTools.Helpers.Tests import TestTempDir``)
 
-The function TestAll() (in the module ``BasicTools.Helpers.Tests`` )is used to test the library (see documentation of this function for more information).
 
-This function can be executed using the command:
-
-.. code-block::
-
-    python -m BasicTools.Helpers.Tests
-
-For more in formation about the options use the command :
+For more in formation about the options, use the command :
 
 .. code-block::
 
     python -m BasicTools.Helpers.Tests -h
 
->Some test will fail on some configuration
-Some packages are not available on some platform and some classes must be used inside a specific enviroments (paraview for example)
->The current know issues are :
->- networkx version 3.x not available on conda-forge for windows and OsX ([Gitlab Issue](https://gitlab.com/drti/basic-tools/-/issues/10)). You can uses pip to install it.
->- pycgns not working on windows with pip installation ([Gitlab Issue](https://gitlab.com/drti/basic-tools/-/issues/11)).
->- BasicTools.IO.Catalyst is intended to be used inside a python console in ParaView ([More about](https://www.paraview.org/Wiki/ParaView/Catalyst/Overview)).
+.. note::
+    Some test will fail on some configuration
+    Some packages are not available on some platform and some classes must be used inside a specific enviroments (paraview for example)
+    The current know issues are :
+
+    -  pycgns not working on windows with pip installation ([Gitlab Issue](https://gitlab.com/drti/basic-tools/-/issues/11)).
+    -  BasicTools.IO.Catalyst is intended to be used inside a python console in ParaView ([More about](https://www.paraview.org/Wiki/ParaView/Catalyst/Overview)).
 
 
 Coverage

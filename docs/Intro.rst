@@ -61,7 +61,6 @@ It is also good practice to use a virtual environment when using pip.
     We can not guarantee that all combinations of OS, Python Versions, packaging systems works.
     The current know issues are :
 
-        - networkx version 3.x not available on conda-forge for windows and OsX (`Gitlab Issue <https://gitlab.com/drti/basic-tools/-/issues/10>`_).
         - pycgns not working on windows with pip insallation (`Gitlab Issue <https://gitlab.com/drti/basic-tools/-/issues/11>`_).
 
 
