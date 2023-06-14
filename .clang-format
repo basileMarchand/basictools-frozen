@@ -1,0 +1,11 @@
+BasedOnStyle: Google
+IndentWidth: '4'
+TabWidth: '4'
+AccessModifierOffset: '-2'
+SortIncludes: false # Do not sort includes in alphabetical order
+ColumnLimit: '0' # Do not impose a limit on column count
+PointerAlignment: Left # Attach the pointer sigil to the type rather than the identifier
+DerivePointerAlignment: false # Do not adopt an already prevalent style for pointer sigil placement
+ReferenceAlignment: Pointer # Align references as pointers
+QualifierAlignment: Custom # Use QualifierOrder
+QualifierOrder: ['inline', 'static', 'constexpr', 'const', 'volatile', 'type'] # Enforce west const
