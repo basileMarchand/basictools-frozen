@@ -6,10 +6,10 @@
 
 namespace BasicTools {
 
-template<int dim>
-void ClampComplex(MatrixD31& coord) {
+template <int dim>
+void ClampComplex(MatrixD31 &coord) {
     for (int i = 0; i < dim; ++i) {
-        coord(i, 0) = std::max(std::min(coord(i, 0), 1.0), 0.0);
+        coord(i, 0) = std::clamp(coord(i, 0), 0.0, 1.0);
     }
 }
 
