@@ -131,34 +131,31 @@ Python minimal version: 3.8
 
 Python packages:
 
-* numpy >= 1.20
-* scipy
-* sympy
-* pyparsing
-* cython
-* scikit-learn
-* scikit-sparse
-* vtk
-* eigency
-* mkl
-* mkl-include
-* psutil
+ * numpy >= 1.20
+ * scipy >= 1.9
+ * sympy
+ * cython
+ * scikit-learn
+ * vtk
+ * eigency >=2
+ * mkl
+ * mkl-include
+ * psutil
 
 Optionals Python packages (some functionalities may not be available without these packages):
 
-* matplotlib
-* pyamg
-* h5py
-* meshio
-* sphinx
-* sphinx-rtd-theme
-* setuptools-scm
-* pyvista
-* sksparse
-* pycgns [not available on windows for pip installation]
-* paraview
-* pywin32 [Only for windows]
-* networkx >=3
+  * scikit-sparse
+  * matplotlib
+  * pyamg
+  * h5py
+  * meshio
+  * sphinx
+  * sphinx-rtd-theme
+  * setuptools-scm
+  * pyvista
+  * pycgns [not available on windows for pip installation]
+  * networkx >=3
+  * mpi4py
 
 C++ OPEN-SOURCE DEPENDENCIES:
 

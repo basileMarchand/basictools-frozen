@@ -28,29 +28,29 @@ requirements:
   host:
     - python {{ python }}
     - numpy >=1.20
+    - sympy
     - cython
     - eigency
     - mkl
     - mkl-include
     - setuptools-scm
     - eigen
-    - sympy
+
   run:
-    - {{ pin_compatible('numpy') }}
-    - psutil
     - python
-    - pyparsing
+    - {{ pin_compatible('numpy') }}
     - scipy >=1.9
     - sympy
-    - eigency
-    - mkl
     - scikit-learn
     - vtk
-    - meshio
-    - h5py
-    - pyvista
+    - eigency
+    - mkl
+    - psutil
+
     - scikit-sparse
-    - pywin32 [win]
+    - h5py
+    - meshio
+    - pyvista
     - pycgns
     - networkx >=3.0 [not win]
 #networkx not available on conda-forge, can be installed using pip

@@ -85,10 +85,8 @@ Dependencies
     * numpy >= 1.20
     * scipy
     * sympy
-    * pyparsing
     * cython
     * scikit-learn
-    * scikit-sparse
     * vtk
     * eigency >=2
     * mkl
@@ -97,6 +95,7 @@ Dependencies
 
     Optionals Python packages (some functionalities may not be available without this packages):
 
+    * scikit-sparse
     * matplotlib
     * pyamg
     * h5py
@@ -106,9 +105,8 @@ Dependencies
     * setuptools-scm
     * pyvista
     * pycgns [not available on windows for pip installation]
-    * paraview
-    * pywin32 [Only for windows]
     * networkx >=3
+    * mpi4py
 
     C++ OPEN-SOURCE DEPENDENCIES:
 

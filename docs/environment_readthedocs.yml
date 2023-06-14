@@ -4,24 +4,30 @@ channels:
     - nodefaults
 dependencies:
     - python=3.8
-    - pyamg
-    - numpy
-    - cython
-    - eigency
-    - mkl-include
-    - setuptools-scm
-    - eigen
-    - sympy
-    - psutil
-    - pyparsing
     - numpy
     - scipy
-    - mkl
+    - sympy
+    - cython
     - scikit-learn
     - vtk
-    - meshio
+    - eigency
+    - mkl
+    - mkl-include
+
+    - psutil
+    - eigen
+
+#    - scikit-sparse #  [not win]
+#    - matplotlib
+    - pyamg
     - h5py
-#    - pyvista [not py==36]
-#    - scikit-sparse [not win]
+    - meshio
+    - breathe
+    - setuptools-scm
+#    - pyvista  [not py==36]
+    - pycgns
+    - networkx
+#    - mpi4py
+
     - compilers
     - breathe
