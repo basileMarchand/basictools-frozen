@@ -127,47 +127,96 @@ If you want to contribute some code you must:
 Requirements
 ************
 
-Python minimal version: 3.8
+Python Dependencies
+-------------------
 
-Python packages:
+Python minimal version: 3.8.
+Some functionalities may not be available of optional packages are not installed.
 
- * numpy >= 1.20
- * scipy >= 1.9
- * sympy
- * cython
- * scikit-learn
- * vtk
- * eigency >=2
- * mkl
- * mkl-include
- * psutil
++----------------+------------+-------+---+-----+---+--------+-------------------------------------------+
+|Module Name     |Version     |Compile|Run|Debug|Doc|Optional|Notes                                      |
+|                |Constraints |       |   |     |   |        |                                           |
++================+============+=======+===+=====+===+========+===========================================+
+|python          |>=3.8       |*      |*  |*    |*  |        |Supported distributions are: conda         |
++----------------+------------+-------+---+-----+---+--------+-------------------------------------------+
+|numpy           |>=1.20      |*      |*  |     |   |        |                                           |
++----------------+------------+-------+---+-----+---+--------+-------------------------------------------+
+|scipy           |>=1.9       |       |*  |     |   |        |sparse (coo_matrix),                       |
+|                |            |       |   |     |   |        |spatial ( KDTree, delaunay, ConvexHull)    |
++----------------+------------+-------+---+-----+---+--------+-------------------------------------------+
+|sympy           |            |*      |*  |     |   |        |matrices, Symbols, lambdify, Derivative,   |
+|                |            |       |   |     |   |        |symplify                                   |
++----------------+------------+-------+---+-----+---+--------+-------------------------------------------+
+|cython          |            |*      |   |     |   |        |Compilation of c++ extensions              |
++----------------+------------+-------+---+-----+---+--------+-------------------------------------------+
+|scikit-learn    |            |       |*  |     |   |        |Only for : Compute Interface Mesh (iso=0)  |
++----------------+------------+-------+---+-----+---+--------+-------------------------------------------+
+|vtk             |            |       |*  | *   |   |        |stlReader, UnstructuredMeshFieldOperations,|
+|                |            |       |   |     |   |        |ImplicitGeometryObjects, vtkBridge         |
++----------------+------------+-------+---+-----+---+--------+-------------------------------------------+
+|eigency         |>=2         |*      |*  |     |   |        |Compilation and run of c++ extensions      |
++----------------+------------+-------+---+-----+---+--------+-------------------------------------------+
+|mkl             |            |*      |*  |     |   |        |Can be deactivated at compilation using    |
+|                |            |       |   |     |   |        |the env variable : BASICTOOLS_DISABLE_MKL  |
++----------------+------------+-------+---+-----+---+--------+-------------------------------------------+
+|mkl-include     |            |*      |   |     |   |        |Can be deactivated at compilation using    |
+|                |            |       |   |     |   |        |the env variable : BASICTOOLS_DISABLE_MKL  |
++----------------+------------+-------+---+-----+---+--------+-------------------------------------------+
+|psutil          |            |       |   | *   | * |        |memory usagen and cpu_count()              |
++----------------+------------+-------+---+-----+---+--------+-------------------------------------------+
+|scikit-sparse   |            |       |*  |     |   |*       |Linear solver: Cholesky "cholesky"         |
++----------------+------------+-------+---+-----+---+--------+-------------------------------------------+
+|matplotlib      |            |       |   | *   |   |*       |plot shape function for debugin            |
++----------------+------------+-------+---+-----+---+--------+-------------------------------------------+
+|pyamg           |            |       | * |     |   |*       |linear solver: Algebraic Multigrid "AMG"   |
++----------------+------------+-------+---+-----+---+--------+-------------------------------------------+
+|h5py            |            |       | * |     |   |*       |xdmf Reader/Writer                         |
++----------------+------------+-------+---+-----+---+--------+-------------------------------------------+
+|meshio          |            |       | * |     |   |*       |main usage in MeshIOBridge.py (derivated   |
+|                |            |       |   |     |   |        |usage in Mesh File Converter)              |
++----------------+------------+-------+---+-----+---+--------+-------------------------------------------+
+|sphinx          |            |       |   |     | * |*       |Documentation Generation                   |
++----------------+------------+-------+---+-----+---+--------+-------------------------------------------+
+|sphinx-rtd-theme|            |       |   |     | * |*       |Documentation Generation                   |
++----------------+------------+-------+---+-----+---+--------+-------------------------------------------+
+|breathe         |            |       |   |     | * |        |cmake documentation integration            |
++----------------+------------+-------+---+-----+---+--------+-------------------------------------------+
+|setuptools-scm  |            |*      |   |     | * |*       |not sure we use it                         |
++----------------+------------+-------+---+-----+---+--------+-------------------------------------------+
+|pyvista         |            |       | * |     |   | *      |pyvista bridge                             |
++----------------+------------+-------+---+-----+---+--------+-------------------------------------------+
+|pycgns          |            |       | * |     |   | *      |cgns Reader/Writer/Bridge                  |
++----------------+------------+-------+---+-----+---+--------+-------------------------------------------+
+|networkx        |>=3         |       | * |     |   |        |only use in UnstructuredMeshGraphTools.py  |
++----------------+------------+-------+---+-----+---+--------+-------------------------------------------+
+|mpi4py          |            |       |   |     |   |       *|only use in MPIInterface.py                |
++----------------+------------+-------+---+-----+---+--------+-------------------------------------------+
 
-Optionals Python packages (some functionalities may not be available without these packages):
+C++ Dependencies
+----------------
 
-  * scikit-sparse
-  * matplotlib
-  * pyamg
-  * h5py
-  * meshio
-  * sphinx
-  * sphinx-rtd-theme
-  * setuptools-scm
-  * pyvista
-  * pycgns [not available on windows for pip installation]
-  * networkx >=3
-  * mpi4py
++----------------+------------+-------+---+-----+---+--------+------------------------------------------------------+
+|Name            |Version     |Compile|Run|Debug|Doc|Optional|Notes                                                 |
+|                |Constraints |       |   |     |   |        |                                                      |
++================+============+=======+===+=====+===+========+======================================================+
+|eigen           |>=3.4       | *     |   |     |   |        | For compilation of the C++ extensions                |
++----------------+------------+-------+---+-----+---+--------+------------------------------------------------------+
+|boost-cpp       |            | *     |   |     |   |        | For the compilation of the extension field transfer  |
++----------------+------------+-------+---+-----+---+--------+------------------------------------------------------+
 
-C++ OPEN-SOURCE DEPENDENCIES:
+External Dependencies
+---------------------
 
-* Eigen (http://eigen.tuxfamily.org)
-    (the pypi eigency package has the Eigen library already inside the package, used by setting the env variable BASICTOOLS_USE_EIGENCYEIGEN=True)
-    (Note: a conda-forge package is available for eigen)
-
-Optionals Proprietary packages (some functionalities may not be available without these packages) only for old version 1.7:
-
-* odbAccess
-* abaqusConstants
-
++----------------+------------+-------+---+-----+---+--------+------------------------------------------------------+
+|Name            |Version     |Compile|Run|Debug|Doc|Optional|Notes                                                 |
+|                |Constraints |       |   |     |   |        |                                                      |
++================+============+=======+===+=====+===+========+======================================================+
+|cmake           |>=3.8       | (*)   |   |     | * |        | for the cpp documentation generation (* experimental |
+|                |            |       |   |     |   |        | cmake extensions compilation)                        |
++----------------+------------+-------+---+-----+---+--------+------------------------------------------------------+
+|abaqus          |            |       |   |     |   | *      | odb reader. This feature is deprecated               |
+|                |            |       |   |     |   |        | (only available on python 2.7, BasicTools 1.7.2)     |
++----------------+------------+-------+---+-----+---+--------+------------------------------------------------------+
 
 .. rubric:: Footnotes
 .. [#gitlaburlpublic] https://gitlab.com/drti/basic-tools
