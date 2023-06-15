@@ -1,0 +1,11 @@
+.wy-nav-content {
+    max-width: 1200px !important;
+}
+
+/* override table no-wrap */
+.wy-table-responsive table td, .wy-table-responsive table th {
+   white-space: normal;
+   margin-bottom: 2px;
+/*    padding: 2px 16px; */
+}
+
