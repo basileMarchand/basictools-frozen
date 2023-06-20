@@ -86,7 +86,6 @@ Dependencies
     * scipy
     * sympy
     * cython
-    * scikit-learn
     * vtk
     * eigency >=2
     * mkl

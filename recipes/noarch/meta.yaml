@@ -32,7 +32,6 @@ requirements:
     - numpy
     - scipy
     - sympy
-    - scikit-learn
     - networkx
 
 test:

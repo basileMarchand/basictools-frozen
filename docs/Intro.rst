@@ -148,8 +148,6 @@ Some features may be unavailable when optional packages are not installed.
 +----------------+-------+-------+---+-----+---+--------+-------------------------------------------+
 |cython          |       |\*     |   |     |   |        |Compilation of c++ extensions              |
 +----------------+-------+-------+---+-----+---+--------+-------------------------------------------+
-|scikit-learn    |       |       |\* |     |   |        |Only for : Compute Interface Mesh (iso=0)  |
-+----------------+-------+-------+---+-----+---+--------+-------------------------------------------+
 |vtk             |       |       |\* |\*   |   |        |stlReader, UnstructuredMeshFieldOperations,|
 |                |       |       |   |     |   |        |ImplicitGeometryObjects, vtkBridge         |
 +----------------+-------+-------+---+-----+---+--------+-------------------------------------------+

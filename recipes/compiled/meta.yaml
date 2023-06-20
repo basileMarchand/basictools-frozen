@@ -41,7 +41,6 @@ requirements:
     - {{ pin_compatible('numpy') }}
     - scipy >=1.9
     - sympy
-    - scikit-learn
     - vtk
     - eigency
     - mkl

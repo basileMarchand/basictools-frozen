@@ -62,7 +62,6 @@ class IGToMesh:
         self.phi[abs(self.phi) < abs(phimax-phimin)*snapTol] = 0.
 
     def ComputeInterfaceMesh(self):
-        from sklearn.decomposition import PCA
         from scipy.spatial import Delaunay
 
         inputNodes = self.inputMesh.nodes
@@ -199,14 +198,28 @@ class IGToMesh:
                 elems.update(scp)
                 X = np.array([xyz[p] for p in cutpoints])
 
-                pca = PCA(n_components=2)
-                XX = pca.fit_transform(X)
+                #---# X is [n_pts x 3]
+                X_mean = X.mean(axis=0, keepdims=True) # [1 x 3]
+                X_centered = X - X_mean # [n_pts x 3]
+                valp, vecp = np.linalg.eigh(np.matmul(X_centered.T, X_centered))
+
+                assert(valp[0]<=valp[1]<=valp[2])
+                plane_base = vecp[:,1:] # [3 x 2]
+
+                XX = np.matmul(X_centered, plane_base) # [n_pts x 2]
+                def pca_transform(x):
+                    return np.matmul(x - X_mean, plane_base)
+
+                def pca_inverse_transform(x):
+                    return np.matmul(x, plane_base.T) + X_mean
                 # use this to check the orientation
 
                 if pos_id is not None:
-                    pcontrol_point =  pca.inverse_transform(pca.transform( inputNodes[[pos_id],:] ))[0]
+                    projected_point = pca_transform(inputNodes[[pos_id],:]) # [1 x 2]
+                    pcontrol_point =  pca_inverse_transform(projected_point)[0] # [1 x 3]
                 elif neg_id is not None:
-                    ncontrol_point =  pca.inverse_transform(pca.transform( inputNodes[[neg_id],:] ))[0]
+                    projected_point = pca_transform(inputNodes[[neg_id],:]) # [1 x 2]
+                    ncontrol_point =  pca_inverse_transform(projected_point)[0] # [1 x 3]
 
                 if len(cutpoints)==3 or len(cutpoints)==4:
                     ang = [np.arctan2(x,y) for x,y in XX]
