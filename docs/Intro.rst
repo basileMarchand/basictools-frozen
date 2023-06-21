@@ -43,14 +43,14 @@ To compile and install BasicTools (version 1.9.4 in this case) with pip:
 .. code-block::
 
     set BASICTOOLS_USE_EIGENCYEIGEN=True                                # or "export" depending on your shell
-    pip install eigency mkl numpy sympy mkl-include cython wheel        # add pycgns on linux for the cgns functionalities
+    pip install eigency mkl numpy sympy mkl-include cython wheel
     pip install BasicTools@git+https://gitlab.com/drti/basic-tools/-/archive/1.9.4/basic-tools-1.9.4.tar.bz2
 or for the latest master version:
 
 .. code-block::
 
     set BASICTOOLS_USE_EIGENCYEIGEN=True                                # or "export" depending on your shell
-    pip install eigency mkl numpy sympy mkl-include cython wheel        # add pycgns on linux for the cgns functionalities
+    pip install eigency mkl numpy sympy mkl-include cython wheel
     pip install BasicTools@git+https://gitlab.com/drti/basic-tools.git
 
 The user can set the environment variable `PREFIX` to point to external libraries (like mkl and eigen header). For advanced configuration please refer to the setup.py file on the git repository.
@@ -59,10 +59,6 @@ It is also a good practice to use a virtual environment when using pip.
 
 .. note::
     We can not guarantee that every combination of operating system, Python version and packaging system works.
-    The current known issues are:
-
-        - pycgns is not working on Windows with pip installation (`Gitlab Issue <https://gitlab.com/drti/basic-tools/-/issues/11>`_).
-
 
 Manual installation (from sources) for developers
 -------------------------------------------------
@@ -181,8 +177,6 @@ Some features may be unavailable when optional packages are not installed.
 |setuptools-scm  |       |\*     |   |     |\* |\*      |not sure we use it                         |
 +----------------+-------+-------+---+-----+---+--------+-------------------------------------------+
 |pyvista         |       |       |\* |     |   |\*      |pyvista bridge                             |
-+----------------+-------+-------+---+-----+---+--------+-------------------------------------------+
-|pycgns          |       |       |\* |     |   |\*      |cgns Reader/Writer/Bridge                  |
 +----------------+-------+-------+---+-----+---+--------+-------------------------------------------+
 |networkx        | >=3   |       |\* |     |   |        |only use in UnstructuredMeshGraphTools.py  |
 +----------------+-------+-------+---+-----+---+--------+-------------------------------------------+

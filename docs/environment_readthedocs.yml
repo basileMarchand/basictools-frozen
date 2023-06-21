@@ -24,7 +24,6 @@ dependencies:
     - breathe
     - setuptools-scm
 #    - pyvista  [not py==36]
-    - pycgns
     - networkx
 #    - mpi4py
 

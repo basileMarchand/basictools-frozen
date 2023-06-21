@@ -46,13 +46,13 @@ The pip installation requires a local compilation, so you need to have a C++ (C+
 To compile and install BasicTools (version 1.9.4 in this case) with pip:
 
     set BASICTOOLS_USE_EIGENCYEIGEN=True                                # or "export" depending on your shell
-    pip install eigency mkl numpy sympy mkl-include cython wheel        # add pycgns on linux for the cgns functionalities
+    pip install eigency mkl numpy sympy mkl-include cython wheel
     pip install BasicTools@git+https://gitlab.com/drti/basic-tools/-/archive/1.9.4/basic-tools-1.9.4.tar.bz2
 
 or for the latest master version:
 
     set BASICTOOLS_USE_EIGENCYEIGEN=True                                # or "export" depending on your shell
-    pip install eigency mkl numpy sympy mkl-include cython wheel        # add pycgns on linux for the cgns functionalities
+    pip install eigency mkl numpy sympy mkl-include cython wheel
     pip install BasicTools@git+https://gitlab.com/drti/basic-tools.git
 
 
@@ -64,7 +64,6 @@ It is also good practice to use a virtual environment when using pip.
 >Note
 We can not guarantee that all combinations of OS, Python Versions, packaging systems works.
 >The current know issues are :
->- pycgns not working on windows with pip insallation ([Gitlab Issue](https://gitlab.com/drti/basic-tools/-/issues/11)).
 
 For more complex installation (from sources) for developers please read the documentation.
 
@@ -103,7 +102,6 @@ Dependencies
     * sphinx-rtd-theme
     * setuptools-scm
     * pyvista
-    * pycgns [not available on windows for pip installation]
     * networkx >=3
     * mpi4py
 

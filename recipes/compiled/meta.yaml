@@ -50,7 +50,6 @@ requirements:
     - h5py
     - meshio
     - pyvista
-    - pycgns
     - networkx >=3.0 [not win]
 #networkx not available on conda-forge, can be installed using pip
 
