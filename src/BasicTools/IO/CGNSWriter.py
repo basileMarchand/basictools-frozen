@@ -12,11 +12,6 @@ import numpy as np
 from BasicTools.Bridges.CGNSBridge import MeshToCGNS
 from BasicTools.IO.WriterBase import WriterBase as WriterBase
 
-try:
-    from CGNS.MAP import save
-    cgnsLoaded = True
-except:
-    cgnsLoaded = False
 
 class CGNSWriter(WriterBase):
     """Class to writes a CGNS file on disk
@@ -48,10 +43,70 @@ class CGNSWriter(WriterBase):
         """
 
         newPyTree = MeshToCGNS(mesh, outpuPyTree, baseNumberOrName, zoneNumberOrName)
-        save(fileName, newPyTree)
 
+        from h5py import File, h5t
+        import  h5py
+        h5file = File(fileName, "w",libver=('v108', 'v108'), track_order=True)
+        h5file.create_dataset(" format", data=np.array([78, 65, 84, 73, 86, 69, 0], dtype=np.int8) )
+        h5file.create_dataset(" hdf5version", data=np.array([72, 68, 70, 53, 32, 86, 101, 114, 115, 105, 111, 110, 32, 49, 46, 49, 50, 46, 49, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],dtype=np.int8) )
+
+        buff_S33 = np.empty(1, '|S33')
+
+        def ToStrPadded(string, n):
+            return np.bytes_(bytes(string, "ascii").ljust(n, b"\x00"))
+
+        def WriteToH5File(file, node):
+            tid = h5t.C_S1.copy()
+            tid.set_size(33)
+            H5T_C_S1_33 = h5py.Datatype(tid)
+
+            tid = h5t.C_S1.copy()
+            tid.set_size(3)
+            H5T_C_S1_3 = h5py.Datatype(tid)
+            if node[3] == "CGNSTree_t":
+                file.attrs.create("name", "HDF5 MotherNode" , dtype=H5T_C_S1_33 )
+                file.attrs.create("label", "Root Node of HDF5 File" , dtype=H5T_C_S1_33 )
+            else:
+                file.attrs.create("name", node[0] , dtype=H5T_C_S1_33 )
+                file.attrs.create("label",node[3] , dtype=H5T_C_S1_33 )
+                file.attrs["flags"] = np.array([0], dtype=np.int32)
+
+            if node[1] is None:
+                file.attrs.create("type","MT" , dtype=H5T_C_S1_3 )
+
+            else:
+                numpyTypesToHdF5Types = {np.dtype("float32"):"R4", np.dtype("float64"):"R8", np.dtype("int32"):"I4", np.dtype("int64"):"I8", np.dtype("|S1"):"C1"}
+                data = node[1]
+                if node[1].dtype in numpyTypesToHdF5Types:
+                    file.attrs.create("type",ToStrPadded(numpyTypesToHdF5Types[node[1].dtype], 3) , dtype=H5T_C_S1_3 )
+                else:
+                    raise Exception("For the moment cgns does not support string field")
+
+                if node[1].dtype == np.dtype("|S1") :
+                    idx1 = np.nonzero(data != b"")
+                    idx2 = np.nonzero(data == b"")
+                    tmp = data.copy()
+                    data = np.zeros(data.shape, dtype=np.int8)
+                    data[idx1] = np.vectorize(ord)(tmp[idx1])
+                    data[idx2] = 0
+                    data = data.astype(np.int8)
+
+                data = data.transpose()
+                file.create_dataset(" data", data=data)
+
+            for child in node[2]:
+                sgrp = file.create_group(child[0],track_order=True)
+                WriteToH5File(sgrp, child)
+
+
+        WriteToH5File(h5file,newPyTree)
 
 def CheckIntegrity():
+
+    try:
+        import h5py
+    except:
+        return "skip! h5py module not available"
 
     from BasicTools.Helpers.Tests import TestTempDir
     tempdir = TestTempDir.GetTempPath()
@@ -71,8 +126,9 @@ def CheckIntegrity():
     for dn in myMesh.nodeFields:
         myMesh.nodeFields[dn] = reader.ReadField(fieldname=dn, timeIndex=1)
 
-    myMesh.elemFields["arange"] = np.arange(myMesh.GetNumberOfElements())
-
+    myMesh.nodeFields["Nodes arange"] = np.arange(myMesh.GetNumberOfNodes(),dtype=float)
+    myMesh.elemFields["Element arange"] = np.arange(myMesh.GetNumberOfElements(),dtype=float)
+    from BasicTools.Containers.Tags import Tags
 
     ##################################
     # EXEMPLE SYNTAXE DU WRITER

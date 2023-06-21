@@ -5,10 +5,6 @@
 #
 import numpy as np
 
-#from CGNS.MAP import load, save
-#import CGNS.PAT.cgnsutils as CGU
-#import CGNS.PAT.cgnslib as CGL
-
 from BasicTools.NumpyDefs import PBasicFloatType, PBasicIndexType
 from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh, ElementsContainer
 import BasicTools.Containers.ElementNames as EN
@@ -193,7 +189,7 @@ def CGNSToMesh(pyTree, baseNumberOrName= 0, zoneNumberOrName = 0)-> Unstructured
             if "".join(np.array(GetNodeByPath(datas,gl[0])[0][1], dtype=str) )== "Vertex":
                 store  = res.nodeFields
 
-        fieldPaths = GetAllNodesByTypeSet(datas, ["DataArray_t"])
+        fieldPaths = GetAllNodesByTypeSet(datas, "DataArray_t")
         for fieldPath in fieldPaths:
             fieldData = GetNodeByPath(datas,fieldPath)[0]
             dataName = fieldData[0]
@@ -205,29 +201,63 @@ def CGNSToMesh(pyTree, baseNumberOrName= 0, zoneNumberOrName = 0)-> Unstructured
             else:
                 res.nodeFields[dataName] = np.asarray(data)
 
-    ZoneBCPaths = GetAllNodesByTypeSet(zonePyTree, ["ZoneBC_t"])
+    ZoneBCPaths = GetAllNodesByTypeSet(zonePyTree, "ZoneBC_t")
     for ZoneBCPath in ZoneBCPaths:
         ZoneBC = GetNodeByPath(zonePyTree,ZoneBCPath)[0]
 
-        BCPaths = GetAllNodesByTypeSet(ZoneBC, ["BC_t"])
+        BCPaths = GetAllNodesByTypeSet(ZoneBC, "BC_t")
         for BCPath in BCPaths:
             BCNode = GetNodeByPath(ZoneBC,BCPath)[0]
             BCName = str(BCNode[0])
 
-
             indices = __ReadIndex(BCNode)
             if len(indices) == 0:
                 continue
-            if "Point" in BCNode[2][0][0]:
+
+            gl = GetAllNodesByTypeSet(BCNode, "GridLocation_t")
+            if "".join(np.array(GetNodeByPath(BCNode,gl[0])[0][1], dtype=str) )== "CellCenter":
+                #res.AddElementToTagUsingOriginalId(indices-1, BCName)
+                #res.AddElementsToTag(indices-1, BCName)
+                print(f"Reading Element selections is not supported. skiping {BCName}")
+                pass
+            if "".join(np.array(GetNodeByPath(BCNode,gl[0])[0][1], dtype=str) )== "Vertex":
                 res.nodesTags.CreateTag(BCName).SetIds(indices-1)
-            else:
-                res.AddElementToTagUsingOriginalId(indices, BCName)
 
     res.PrepareForOutput()
     return res
 
 def NewDataArray(father, name, data):
     res =  [name, data, [], 'DataArray_t']
+    father[2].append(res)
+    return res
+
+def NewBC(father,name,data, pttype, onPoints=True):
+    res =  [name, np.array([b'F', b'a', b'm', b'i', b'l', b'y', b'S', b'p', b'e', b'c', b'i', b'f', b'i', b'e', b'd'], dtype='|S1'), [], 'BC_t']
+
+    plist = ['PointList', data[None,:], [], pttype]
+    res[2].append(plist)
+
+    family = ['FamilyName', np.array([b'N', b'u', b'l', b'l'], dtype='|S1'), [], 'FamilyName_t']
+    res[2].append(family)
+
+    if onPoints:
+        glocation = ['GridLocation', np.array([b'V', b'e', b'r', b't', b'e', b'x'], dtype='|S1'), [], 'GridLocation_t']
+    else:
+        glocation = ['GridLocation', np.array([b'C', b'e', b'l', b'l', b'C', b'e', b'n', b't', b'e', b'r'], dtype='|S1'), [], 'GridLocation_t']
+    res[2].append(glocation)
+
+    father[2].append(res)
+    return res
+
+def NewElements(father, data):
+    name = data.elementType
+    nbelem = data.GetNumberOfElements()
+    res = ["Elements_"+ BasicToolsToCGNSNames[name], np.array([BasicToolsToCGNSNumber[name],  0], dtype=np.int32), [['ElementRange', np.array((data.globaloffset+1, data.globaloffset+nbelem) ), [], 'IndexRange_t'], ['ElementConnectivity', (data.connectivity+1).ravel(), [], 'DataArray_t']], 'Elements_t']
+    father[2].append(res)
+    return res
+
+def NewFlowSolution(father,name,gridlocation ):
+    res = [name, None,[['GridLocation', np.array([ c for c in gridlocation], dtype='|S1'), [], 'GridLocation_t']] , 'FlowSolution_t']
     father[2].append(res)
     return res
 
@@ -244,53 +274,77 @@ def MeshToCGNS( mesh: UnstructuredMesh, outputPyTree = None,  baseNumberOrName= 
         zoneName = f"{baseNumberOrName}"
 
     if outputPyTree is None:
-        outputPyTree=['CGNSTree', None, [['CGNSLibraryVersion', np.array([4.], dtype=np.float32), [], 'CGNSLibraryVersion_t']], 'CGNSTree_t']
+        outputPyTree=['CGNSTree', None, [], 'CGNSTree_t']
+        version = ['CGNSLibraryVersion', np.array([3.4], dtype=np.float32), [], 'CGNSLibraryVersion_t']
+        outputPyTree[2].append(version)
         physicalDim = mesh.GetPointsDimensionality()
         topologicalDim = mesh.GetElementsDimensionality()
+        nbElemTags = len(mesh.GetNamesOfElemTags())
+        nbNodesTags = len(mesh.nodesTags)
+        totalNumberOfTags = nbElemTags +nbNodesTags
+
         base = [baseName, np.array([physicalDim, topologicalDim], dtype=np.int32), [], 'CGNSBase_t']  # name, physical dim, topological dim
         outputPyTree[2].append(base)
 
-        s = np.array([mesh.GetNumberOfNodes(),mesh.GetNumberOfElements(),0],dtype=np.int32)
+        family = ['Bulk', np.array([b'B', b'u', b'l', b'k'], dtype='|S1'), [], 'FamilyName_t']
+        base[2].append(family)
 
-
+        s = np.array([[mesh.GetNumberOfNodes(),mesh.GetNumberOfElements(),totalNumberOfTags]],dtype=np.int32)
         grid = [zoneName, s, [['ZoneType', np.array([b'U', b'n', b's', b't', b'r', b'u', b'c', b't', b'u', b'r', b'e',b'd'], dtype='|S1'), [], 'ZoneType_t']], 'Zone_t']
         base[2].append(grid)
+        zone_family = ['FamilyName', np.array([b'B', b'u', b'l', b'k'], dtype='|S1'), [], 'FamilyName_t']
+        grid[2].append(zone_family)
+
     else:
         grid = GetNodeByPath(outputPyTree,f"/{baseName}/{zoneName}/")[0][1]
 
     #add nodes
-    import CGNS.PAT.cgnslib as CGL
-    gridCoordinates = CGL.newGridCoordinates(grid,"GridCoordinates")
+    gridCoordinates = ['GridCoordinates', None, [], 'GridCoordinates_t']
+    grid[2].append(gridCoordinates)
+
     for i,coord in enumerate(["X", "Y", "Z"]):
         da = NewDataArray(gridCoordinates, "Coordinate"+coord, np.copy(mesh.nodes[:,i]) )
 
-
     #nodes tags
     if len(mesh.nodesTags):
-        zbg = CGL.newZoneBC(grid)
+        zbg = ['Points_Selections', None, [], 'ZoneBC_t']
+        grid[2].append(zbg)
         for tag in mesh.nodesTags:
-           tt = CGL.newBC(zbg,tag.name,pttype="IndexArray_t")
-           tt[2][0][0] = "PointList"
-           tt[2][0][1] = tag.GetIds()+1
+           NewBC(zbg,tag.name,tag.GetIds()+1,pttype="IndexArray_t")
 
     for name, data in mesh.elements.items():
         #elem tags
         nbelem = data.GetNumberOfElements()
         if nbelem == 0:
             continue
-        CGL.newElements(grid,"Elements_"+ BasicToolsToCGNSNames[name],BasicToolsToCGNSNumber[name], np.array((data.globaloffset+1, data.globaloffset+nbelem) ), econnectivity= (data.connectivity+1).ravel() )
+        NewElements(grid, data)
 
+    ezbg = ['Elements_Selections', None, [], 'ZoneBC_t']
+    grid[2].append(ezbg)
 
-    flowSolution = CGL.newFlowSolution(grid, "PointData", gridlocation="Vertex")
-    da = NewDataArray(flowSolution, "OriginalIds", mesh.originalIDNodes )
-    for name, pointData in mesh.nodeFields.items():
-        da = NewDataArray(flowSolution, name,pointData)
+    for name in mesh.GetNamesOfElemTags():
+        ids = mesh.GetElementsInTag(name)+1
+        NewBC(ezbg,name,ids, pttype="IndexArray_t", onPoints=False)
+
+    flowSolution = NewFlowSolution(grid, "PointData", gridlocation="Vertex")
+    NewDataArray(flowSolution, "OriginalIds", mesh.originalIDNodes )
+    if len(mesh.nodeFields) > 0:
+        for name, pointData in mesh.nodeFields.items():
+            if pointData.dtype.char == "U":
+                print(f"skipping nodeFields '{name}' because if of type: {pointData.dtype}"  )
+                continue
+            NewDataArray(flowSolution, name,pointData)
 
     ## elem fields
-    flowSolutionCell = CGL.newFlowSolution(grid, "CellData", gridlocation="CellCenter")
-    da = NewDataArray(flowSolutionCell, "OriginalIds", mesh.GetElementsOriginalIDs() )
-    for name, cellData in mesh.elemFields.items():
-        NewDataArray(flowSolutionCell, name, np.copy(cellData))
+    flowSolutionCell = NewFlowSolution(grid, "CellData", gridlocation="CellCenter")
+    NewDataArray(flowSolutionCell, "OriginalIds", mesh.GetElementsOriginalIDs() )
+    if len(mesh.elemFields) > 0:
+        for name, cellData in mesh.elemFields.items():
+            if cellData.dtype.char == "U":
+                print(f"skipping elemFields '{name}' because if of type: {cellData.dtype}"  )
+                continue
+            NewDataArray(flowSolutionCell, name, np.copy(cellData))
+
 
     return outputPyTree
 

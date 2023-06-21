@@ -9,15 +9,10 @@
 
 import os
 
+import numpy as np
+
 from BasicTools.Bridges.CGNSBridge import CGNSToMesh
 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
-
-try:
-    from CGNS.MAP import load
-    cgnsLoaded = True
-except:
-    cgnsLoaded = False
-
 
 def ReadCGNS(fileName, time = None, baseNumberOrName = 0, zoneNumberOrName = 0):
     """Function API for reading a CGNS file
@@ -115,20 +110,43 @@ class CGNSReader(BaseOutputObject):
 
         self.SetTimeToRead(time)
 
-        pyTree =  load(self.fileName)[0]
-        res = CGNSToMesh(pyTree, baseNumberOrName, zoneNumberOrName)
 
+        from h5py import File
+        h5file =  File(self.fileName,"r")
+
+        def ConvertData(node):
+            res = [node.attrs["name"].decode('utf-8'), None, [], node.attrs["label"].decode('utf-8')]
+            if " data" in node:
+                dataitem = node[" data"]
+                res[1] = np.copy(dataitem[()].transpose(), order="F")
+                if node.attrs["type"] == b"C1":
+                    res[1] = np.vectorize(chr)(res[1]).astype(np.dtype("c"))
+
+            names = [x for x in node.keys() if x[0] != " "]
+            for name in names:
+                child = ConvertData(node[name])
+                if child is not None:
+                    res[2].append(child)
+            return res
+
+        node = ConvertData(h5file)
+        node[0] = "CGNSTree"
+        node[3] = "CGNSTree_t"
+        self.CGNSTree = node
+
+        res = CGNSToMesh(node, baseNumberOrName, zoneNumberOrName)
         res.PrepareForOutput()
-
         return res
 
-
-if cgnsLoaded:
-    from BasicTools.IO.IOFactory import RegisterReaderClass
-    RegisterReaderClass(".cgns", CGNSReader)
-
+from BasicTools.IO.IOFactory import RegisterReaderClass
+RegisterReaderClass(".cgns", CGNSReader)
 
 def CheckIntegrity(GUI=False):
+
+    try:
+        from h5py import File
+    except:
+        return "skip! h5py module not available"
 
     import BasicTools.IO.CGNSWriter as CW
     CW.CheckIntegrity()
