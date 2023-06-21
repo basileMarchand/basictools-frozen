@@ -82,9 +82,14 @@ def IsClose(mesh1, mesh2)-> bool:
                     return False
                 continue
 
-            if not np.all(np.isclose(data1,data2)):
-                print("Field "+ str(name) + " not equal")
-                return False
+            if data1.dtype.type is np.string_ or data1.dtype.char == 'U':
+                if not np.all(data1==data2):
+                    print("Field "+ str(name) + " not equal")
+                    return False
+            else:
+                if not np.all(np.isclose(data1,data2)):
+                    print("Field "+ str(name) + " not equal")
+                    return False
 
     if CompareFields(mesh1.nodeFields,mesh2.nodeFields) == False:
         return False
