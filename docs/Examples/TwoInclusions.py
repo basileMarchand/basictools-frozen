@@ -98,6 +98,7 @@ problem.mesh.elemFields["Energy"] = energyDensity
 
 import numpy as np
 print("Strain energy on the second inclusion:", np.sum(energyDensity) )
+# To visualize this xdmf file you can use ParaView (downloadable from https://www.paraview.org/)
 from BasicTools.IO import XdmfWriter as XW
 writer = XW.XdmfWriter('TwoInclusions_Output.xdmf')
 writer.SetHdf5(False)
