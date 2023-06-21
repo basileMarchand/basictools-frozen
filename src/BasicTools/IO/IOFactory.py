@@ -45,6 +45,7 @@ def InitAllReaders():
     from BasicTools.IO.SamcefReader import DatReader
     import BasicTools.IO.SamcefOutputReader
     import BasicTools.IO.PickleTools
+    import BasicTools.IO.CGNSReader
 
 def InitAllWriters():
     from BasicTools.IO.GeofWriter import GeofWriter
@@ -58,6 +59,8 @@ def InitAllWriters():
     import BasicTools.IO.PickleTools
     import BasicTools.IO.Catalyst
     import BasicTools.IO.InpWriter
+    import BasicTools.IO.CGNSWriter
+
 
 def RegisterWriterClass(name, classtype, constructor=None, withError = True):
     WriterFactory.RegisterClass(name,classtype, constructor=constructor, withError = withError )
