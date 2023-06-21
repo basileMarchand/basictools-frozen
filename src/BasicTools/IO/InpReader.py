@@ -596,7 +596,7 @@ class InpReader(ReaderBase):
         feNames = []
         for elementName in res.elements:
             feNames.extend(FENames[elementName])
-        res.elemFields["FE Names"] = np.array(feNames)
+        res.elemFields["FE Names"] = np.array(feNames,dtype=np.str_)
         res.PrepareForOutput()
         self.output = (res,meta)
         return res

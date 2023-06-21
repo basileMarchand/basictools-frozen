@@ -138,7 +138,7 @@ def VtkFieldToNumpyFieldWithDims(vtkField,dimensions=None):
     name = vtkField.GetName()
 
     if isinstance(vtkField, vtkStringArray):
-        return (name, np.array([vtkField.GetValue(x) for x in range(vtkField.GetNumberOfValues() )], dtype=object))
+        return (name, np.array([vtkField.GetValue(x) for x in range(vtkField.GetNumberOfValues() )], dtype=np.str_))
 
     data = numpy_support.vtk_to_numpy(vtkField)
 
@@ -795,7 +795,7 @@ def CheckIntegrity_MeshToVtk(GUI=False):
     res = CreateMeshOfTriangles([[0,0,0],[1,0,0],[0,1,0],[0,0,1] ], [[0,1,2],[0,2,3]])
     res.nodeFields = {"x": res.nodes[:,0].flatten(), "Pos":res.nodes}
     res.nodesTags.CreateTag("FirstPoint").AddToTag(0)
-    res.elemFields = {"SecondPoint": res.GetElementsOfType(ElementNames.Triangle_3).connectivity[:,1].flatten(), "conn": res.GetElementsOfType(ElementNames.Triangle_3).connectivity, "FE Names":np.array(['c2d3','c2d3'],dtype=object) }
+    res.elemFields = {"SecondPoint": res.GetElementsOfType(ElementNames.Triangle_3).connectivity[:,1].flatten(), "conn": res.GetElementsOfType(ElementNames.Triangle_3).connectivity, "FE Names":np.array(['c2d3','c2d3'],dtype=np.str_) }
     res.GetElementsOfType(ElementNames.Triangle_3).tags.CreateTag("FirstTriangle").AddToTag(0)
     sol = MeshToVtk(res,TagsAsFields= True)
     print(sol)

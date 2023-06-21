@@ -303,7 +303,7 @@ class GeoReader(ReaderBase):
                         else:
                             fenames.extend(FENames[elname])
 
-                    res.elemFields["FE Names"] = np.array(fenames)
+                    res.elemFields["FE Names"] = np.array(fenames,dtype=np.str_)
                     return res
             else:
                 print(res)

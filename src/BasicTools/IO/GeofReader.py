@@ -289,7 +289,7 @@ class GeofReader(ReaderBase):
             else:
                 fenames.extend(FENames[elname])
 
-        res.elemFields["FE Names"] = np.array(fenames)
+        res.elemFields["FE Names"] = np.array(fenames,dtype=np.str_)
 
         self.output = res
         return res
