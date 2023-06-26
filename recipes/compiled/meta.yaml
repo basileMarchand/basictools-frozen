@@ -1,66 +1,112 @@
 {% set data = load_setup_py_data() %}
 
 package:
-  name: "basictools"
+  name: "basictools-split"
   version: {{ GIT_DESCRIBE_TAG }}.{{ GIT_DESCRIBE_NUMBER }}
 
 source:
-  path: ../../.
+      path: ../../.
 
-build:
-  skip : True # [py==36 or py==37]
+outputs:
+  - name: basictools-core
+    version: {{ GIT_DESCRIBE_TAG }}.{{ GIT_DESCRIBE_NUMBER }}
+    script: build_core.sh #  [not win]
+    script: bld_core.bat  #  [win]
+    build:
+      number: 0
+      entry_points:
+        - "MeshFileConvert = BasicTools.IO.MeshFileConverter:Main"
+      skip_compile_pyc:
+        "BasicToolsParaViewBridge.py"
+      script_env:
+        - BASICTOOLS_DISABLE_MKL=0
+        - BASICTOOLS_USE_EIGENCYEIGEN=0
+    requirements:
+      build:
+        - {{ compiler('c') }}
+        - {{ compiler('cxx') }}
+      host:
+        - python {{ python }}
+        - numpy >=1.20
+        - sympy
+        - cython
+        - eigency
+        - mkl
+        - mkl-include
+        - setuptools-scm
+        - eigen
+        - boost-cpp
+        - pip
+      run:
+        - python
+        - {{ pin_compatible('numpy') }}
+        - scipy >=1.9
+        - sympy
+        - scikit-learn
+        - eigency
+        - mkl
+        - networkx >=3.0
+        - scikit-sparse
+    test:
+      imports:
+        - BasicTools
+      commands:
+        - python -u -m BasicTools.Helpers.Tests -k Catalyst -k PyVistaBridge -k MeshIO -k UnstructuredMeshFieldOperations -k Xdmf -k CGNS
+  - name: "basictools-extensions"
+    version: {{ GIT_DESCRIBE_TAG }}.{{ GIT_DESCRIBE_NUMBER }}
+    requirements:
+      - python
+      - vtk
+      - psutil
+      - scikit-sparse
+      - h5py
+      - meshio
+      - pyvista
+      - networkx >=3.0
+    test:
+      imports:
+        - vtk
+  - name: "basictools"
+    version: {{ GIT_DESCRIBE_TAG }}.{{ GIT_DESCRIBE_NUMBER }}
+    requirements:
+      run:
+        - {{ pin_subpackage('basictools-core', exact=True) }}
+        - {{ pin_subpackage('basictools-extensions', exact=True) }}
+    test:
+      imports:
+        - BasicTools
+      commands:
+        - python -u -m BasicTools.Helpers.Tests -k Catalyst
 
-  number: 0
-  entry_points:
-    - "MeshFileConvert = BasicTools.IO.MeshFileConverter:Main"
-
-  skip_compile_pyc:
-    "BasicToolsParaViewBridge.py"
-
-  script_env:
-    - BASICTOOLS_DISABLE_MKL
-    - BASICTOOLS_USE_EIGENCYEIGEN
-
-requirements:
-  build:
-    - {{ compiler('c') }}
-    - {{ compiler('cxx') }}
-  host:
-    - python {{ python }}
-    - numpy >=1.20
-    - sympy
-    - cython
-    - eigency
-    - mkl
-    - mkl-include
-    - setuptools-scm
-    - eigen
-
-  run:
-    - python
-    - {{ pin_compatible('numpy') }}
-    - scipy >=1.9
-    - sympy
-    - vtk
-    - eigency
-    - mkl
-    - psutil
-
-    - scikit-sparse
-    - h5py
-    - meshio
-    - pyvista
-    - networkx >=3.0 [not win]
-#networkx not available on conda-forge, can be installed using pip
-
-test:
-  requirements:
-    - coverage
-  imports:
-     -  BasicTools
-  commands :
-    - python -u -m BasicTools.Helpers.Tests -k Catalyst # [not py==36]
-
+  - name: "basictools-devenv"
+    version: {{ GIT_DESCRIBE_TAG }}.{{ GIT_DESCRIBE_NUMBER }}
+    requirements:
+      - {{ compiler('c') }}
+      - {{ compiler('cxx') }}
+      - python {{ python }}
+      - numpy >=1.20
+      - sympy
+      - cython
+      - eigency
+      - mkl
+      - mkl-include
+      - setuptools-scm
+      - eigen
+      - scipy >=1.9
+      - scikit-learn
+      - eigency
+      - scikit-sparse
+      - h5py
+      - pycgns
+      - networkx >=3.0
+      - boost-cpp
+      - pytest
+    test:
+      imports:
+        - numpy
+        - vtk
+        - sympy
+        - cython
 
 about:
     home: {{ data['url'] }}
