@@ -47,7 +47,7 @@ To compile and install BasicTools (version 1.9.4 in this case) with pip:
 
     set BASICTOOLS_USE_EIGENCYEIGEN=True                                # or "export" depending on your shell
     pip install eigency mkl numpy sympy mkl-include cython wheel
-    pip install BasicTools@git+https://gitlab.com/drti/basic-tools/-/archive/1.9.4/basic-tools-1.9.4.tar.bz2
+    pip install BasicTools@https://gitlab.com/drti/basic-tools/-/archive/1.9.4/basic-tools-1.9.4.tar.bz2
 
 or for the latest master version:
 
