@@ -707,59 +707,95 @@ class ImplicitGeometryStl(ImplicitGeometryBase):
 
     def LoadFromFile(self,filenameSTL):
 
-        from vtkmodules.vtkIOGeometry import vtkSTLReader
-        from vtkmodules.vtkIOXML import vtkXMLPolyDataReader
-        from vtkmodules.vtkCommonDataModel import vtkPolyData, vtkUnstructuredGrid
+        from BasicTools.IO.IOFactory import InitAllReaders
+        InitAllReaders()
 
-        if filenameSTL.split(".")[-1] == "stl":
-            readerSTL = vtkSTLReader()
-        else:
-            readerSTL = vtkXMLPolyDataReader()
-
-        readerSTL.SetFileName(filenameSTL)
-
-        self.filename = filenameSTL
-        # 'update' the reader i.e. read the .stl file
-        readerSTL.Update()
-        polydata = readerSTL.GetOutput()
-
-        if polydata.GetNumberOfPoints() == 0:# pragma: no cover
+        from BasicTools.IO.UniversalReader import ReadMesh
+        mesh = ReadMesh(filename=filenameSTL)
+        mesh.ConvertDataForNativeTreatment()
+        if mesh.GetNumberOfNodes() == 0:# pragma: no cover
             raise ValueError( "No point data could be loaded from '" + filenameSTL)
 
-        self.SetSurfaceUsingVtkPolyData(polydata)
-        return self
+        return self.SetMesh(mesh)
+
 
     def SetMesh(self,mesh):
         # check if we have only element of dimensionality 2 or less
-        from BasicTools.Containers.ElementNames import dimension
-        for name,data in mesh.elements.items():
-            if data.GetNumberOfElements() == 0:
-                continue
-            if dimension[name] == 3:
-                break
-        else:
+        from BasicTools.Containers.Filters import ElementFilter
+        if mesh.GetElementsDimensionality() == 2:
             return self.SetSurface(mesh)
 
-        from vtkmodules.vtkFiltersGeometry import vtkDataSetSurfaceFilter
-        from BasicTools.Bridges.vtkBridge import MeshToVtk
-        vtkmesh = MeshToVtk(mesh)
+        from BasicTools.Containers.UnstructuredMeshInspectionTools import ExtractElementsByElementFilter
+        bulkmesh = ExtractElementsByElementFilter(mesh,ElementFilter(mesh,dimensionality=mesh.GetElementsDimensionality()),copy=True)
+        from BasicTools.Containers.UnstructuredMeshModificationTools import ComputeSkin
+        ComputeSkin(bulkmesh, inPlace= True)
+        skin = ExtractElementsByElementFilter(bulkmesh,ElementFilter(bulkmesh, dimensionality=bulkmesh.GetElementsDimensionality()-1),copy=False)
+        return self.SetSurface(skin)
 
-        filt = vtkDataSetSurfaceFilter()
-        filt.SetInputData(vtkmesh)
-        filt.Update()
-        self.SetSurfaceUsingVtkPolyData(filt.GetOutput())
-
-    def SetSurface(self,mesh):
+    def SetSurface(self, mesh):
         # check if we have element of dimensionality 3
-        from BasicTools.Containers.ElementNames import dimension
-        for name,data in mesh.elements.items():
-            if data.GetNumberOfElements() == 0: continue
-            if dimension[name] >2:
-                return self.SetMesh(mesh)
+        if mesh.GetElementsDimensionality() == 3:
+            return self.SetMesh(mesh)
 
-        from BasicTools.Bridges.vtkBridge import MeshToVtk
-        vtkmesh = MeshToVtk(mesh)
-        self.SetSurfaceUsingVtkPolyData(vtkmesh)
+        from BasicTools.Containers.NativeTransfer import NativeTransfer
+        from BasicTools.Containers.Filters import ElementFilter
+        self.__nativeTransfer = NativeTransfer()
+        self.__nativeTransfer.SetVerbose(False)
+
+        from BasicTools.FE.Fields.FEField import FEField
+        from BasicTools.FE.FETools import PrepareFEComputation
+        space, numberings, offset, NGauss = PrepareFEComputation(mesh,numberOfComponents=1)
+        self.__field = FEField("", mesh=mesh, space=space, numbering=numberings[0])
+
+        self.__nativeTransfer.SetSourceFEField(self.__field, ElementFilter(mesh, dimensionality=mesh.GetElementsDimensionality() ) )
+        self.__nativeTransfer.SetTransferMethod("Interp/Extrap")
+
+        from BasicTools.NumpyDefs import PBasicFloatType
+
+        self.normals = np.zeros((mesh.GetNumberOfNodes(),3), dtype=PBasicFloatType)
+
+        nodes = mesh.nodes
+        for name, data, ids in ElementFilter(mesh, dimensionality=mesh.GetElementsDimensionality() ):
+            if len(data.connectivity.shape[1]>=3) :
+                for i in range(data.GetNumberOfElements()):
+                    p0 = nodes[data.connectivity[i,0],:]
+                    p1 = nodes[data.connectivity[i,1],:]
+                    p2 = nodes[data.connectivity[i,2],:]
+                    normal = np.cross(p1-p0,p2-p0)
+                    normal = normal/np.linalg.norm(normal)
+                    self.normals[data.connectivity[i,:],:] = [normal]
+            else:
+                for i in range(data.GetNumberOfElements()):
+                    dp = nodes[data.connectivity[i,1],:] - nodes[data.connectivity[i,0],:]
+                    normal = [dp[1]  - dp[0]]
+                    normal = normal/np.linalg.norm(normal)
+                    self.normals[data.connectivity[i,:],:2] = [normal]
+
+        self.normals /= np.linalg.norm(self.normals, axis=1)[:,None]
+
+    def GetDistanceToPoint(self, pos):
+        if len(pos.shape) == 1:
+            targetPoints = np.empty((1,3),dtype=float)
+            targetPoints[0,0:pos.shape[0]] = pos
+        elif pos.shape[1] != 3:
+            targetPoints = np.empty((pos.shape[1],3),dtype=float)
+            targetPoints[:,0:pos.shape[0]] = pos
+        else:
+            targetPoints = pos
+
+        self.__nativeTransfer.SetTargetPoints(targetPoints)
+        self.__nativeTransfer.Compute()
+        op = self.__nativeTransfer.GetOperator()
+
+        vdist = op.dot(self.__field.mesh.nodes)- pos
+        dist = np.sqrt(np.sum((vdist )**2,axis=1))
+
+        tnormals = op.dot(self.normals)
+        dist *= np.sign( np.sum(vdist*tnormals,axis=1))
+        dist *= -1.0
+
+
+        return self.ApplyInsideOut(dist)
 
     def SetSurfaceUsingVtkPolyData(self,polydata):
         from vtkmodules.vtkFiltersCore import vtkFeatureEdges, vtkImplicitPolyDataDistance
@@ -804,25 +840,6 @@ class ImplicitGeometryStl(ImplicitGeometryBase):
         else:
             raise(Exception("internal Error"))
 
-    def GetDistanceToPoint(self,pos):
-
-        if len(pos.shape) == 1:
-            res = np.zeros(1,dtype=float)
-            res[0]  =  self.implicitFunction.EvaluateFunction(pos)
-        else:
-            res = np.zeros(pos.shape[0],dtype=float)
-            from vtkmodules.vtkCommonCore import vtkDoubleArray
-            from vtkmodules.util import numpy_support
-
-            VTK_pos = numpy_support.numpy_to_vtk(num_array=pos, deep=False)
-            out = vtkDoubleArray()
-            self.implicitFunction.EvaluateFunction(VTK_pos,out)
-            res = numpy_support.vtk_to_numpy(out)
-
-        if not self.ismanifold:
-            np.abs(res,out=res)
-
-        return self.ApplyInsideOut(res)
 
     def __str__(self):
         res = "ImplicitGeometryStl \n"
@@ -1107,7 +1124,16 @@ def CheckIntegrity(GUI=False):
     IGStl.GetBoundingMin()
     IGStl.GetBoundingMax()
     IGStl(myMesh)
-    IGStl.SetFileName(testDataPath+"vtkPolySphere.vtp")
+    print(IGStl)
+
+    ######################## ImplicitGeometryStl with open stl #######################
+    IGStl = CreateImplicitGeometryStl({"filename":testDataPath+"stlOpenSphere.stl"})
+
+    dist = IGStl(myMesh)
+    myMesh.nodeFields["dist"] = dist
+    if GUI:
+        from BasicTools.Actions.OpenInParaView import OpenInParaView
+        OpenInParaView(myMesh,filename=TestTempDir().GetTempPath()+ "LsOpenSphere.xdmf",run=False)
     print(IGStl)
 
     ###################### ImplicitGeometryAnalytical ###################
