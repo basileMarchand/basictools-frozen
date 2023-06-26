@@ -137,7 +137,11 @@ RegisterWriterClass(".catalyst",Catalyst)
 def CheckIntegrity(GUI=False):
 
     from BasicTools.Helpers.Tests import SkipTest
-    if SkipTest("CATALYST_NO_FAIL"): return "skip"
+    if SkipTest("CATALYST_NO_FAIL"): return "OK"
+    try:
+        from paraview.catalyst import bridge
+    except:
+        return 'skip. paraview module not available'
 
     numsteps = 50
     delay = 0.05
