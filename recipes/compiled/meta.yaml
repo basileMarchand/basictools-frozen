@@ -42,7 +42,6 @@ outputs:
         - {{ pin_compatible('numpy') }}
         - scipy >=1.9
         - sympy
-        - scikit-learn
         - eigency
         - mkl
         - networkx >=3.0
@@ -93,7 +92,6 @@ outputs:
       - setuptools-scm
       - eigen
       - scipy >=1.9
-      - scikit-learn
       - eigency
       - scikit-sparse
       - h5py
