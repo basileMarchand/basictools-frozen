@@ -24,6 +24,10 @@ def PlotMesh(mesh,**kargs):# pragma: no cover
 def CheckIntegrity(GUI=False):
     from BasicTools.Helpers.Tests import SkipTest
     if SkipTest("PYVISTA_NO_FAIL"): return "ok"
+    try:
+        import pyvista
+    except:
+        return "skip : pyvista not installed"
 
     import BasicTools.Containers.ElementNames as ElementNames
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshOf
