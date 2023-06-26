@@ -939,7 +939,8 @@ def RunTransfer(inputFEField,data,outmesh):
     PointFields = []
     PointFieldsNames = []
     for method in ["Interp/Nearest","Nearest/Nearest","Interp/Clamp","Interp/Extrap"]:
-        opCpp, statusCpp = GetFieldTransferOpCpp(inputFEField,outmesh.nodes,method = method,verbose=True)
+        from BasicTools.Helpers.BaseOutputObject import BaseOutputObject as  BOO
+        opCpp, statusCpp = GetFieldTransferOpCpp(inputFEField,outmesh.nodes,method = method,verbose=BOO.GetVerboseLevel()>1)
         newdataCpp = opCpp.dot(data)
         PointFieldsNames.append(method+"Cpp")
         PointFields.append(newdataCpp)
@@ -951,7 +952,7 @@ def RunTransfer(inputFEField,data,outmesh):
 
 
 
-        opPython, statusPython = GetFieldTransferOpPython(inputFEField,outmesh.nodes,method = method,verbose=True)
+        opPython, statusPython = GetFieldTransferOpPython(inputFEField,outmesh.nodes,method = method,verbose=BOO.GetVerboseLevel()>1)
         newdataPython = opPython.dot(data)
         PointFieldsNames.append(method+"Python")
         PointFields.append(newdataPython)
@@ -1002,8 +1003,8 @@ def CheckIntegrity1D(GUI=False):
 
 
     for method,ax in zip(["Interp/Nearest","Nearest/Nearest","Interp/Clamp","Interp/Extrap","Interp/ZeroFill"],axis):
-
-        op = GetFieldTransferOp(inputFEField,b.nodes,method = method,verbose=True)[0]
+        from BasicTools.Helpers.BaseOutputObject import BaseOutputObject as  BOO
+        op = GetFieldTransferOp(inputFEField,b.nodes,method = method,verbose=BOO.GetVerboseLevel()>1)[0]
         result = op.dot(data)
         if GUI:
             ax.plot(inputmesh.nodes[:,0],data,"X-",label="Original Data")
@@ -1178,4 +1179,7 @@ def CheckIntegrity(GUI=False):
     return "ok"
 
 if __name__ == '__main__':
+
+    from BasicTools.Helpers.BaseOutputObject import BaseOutputObject as  BOO
+    BOO.SetVerboseLevel(2)
     print(CheckIntegrity(True))# pragma: no cover
