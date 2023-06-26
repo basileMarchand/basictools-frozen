@@ -34,7 +34,17 @@ class ConstantRectilinearElementContainer(BaseOutputObject):
         super(ConstantRectilinearElementContainer,self).__init__(None)
         #self.caller = caller
         self.__dimensions = None
-        self.SetDimensions(__dimensions)
+        if type(__dimensions) == str:
+            from BasicTools.Containers.ElementNames import Hexaedron_8, Quadrangle_4
+            if __dimensions in [Hexaedron_8, Quadrangle_4]:
+                if __dimensions == Hexaedron_8:
+                    self.SetDimensions([1,1,1])
+                else:
+                    self.SetDimensions([1,1])
+            else:
+                raise Exception(f"Unsuported ConstantRectilinearElementContainer for element type {__dimensions}")
+        else:
+            self.SetDimensions(__dimensions)
         self.tags = Tags()
         self._connectivity = None
         self.mutable = False
