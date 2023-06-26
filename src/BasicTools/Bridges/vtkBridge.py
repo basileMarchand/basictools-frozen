@@ -576,7 +576,8 @@ def VtkToMeshOnlyMeta(vtkmesh, FieldsAsTags=False):
                 res.nodeFields.append(name)
     return res
 
-def AddCellsFromVtkCellArrayToMesh(cells, cellTypesArray:ArrayLike, out:UnstructuredMesh):
+def AddCellsFromVtkCellArrayToMesh(cells, cellTypesArray:ArrayLike, out:UnstructuredMesh, originalIdsOffset=0):
+
     """Function to migrate cells from a vtkCellArray to a BasicTools Unstructured Mesh
 
     Parameters
@@ -588,6 +589,8 @@ def AddCellsFromVtkCellArrayToMesh(cells, cellTypesArray:ArrayLike, out:Unstruct
         the type of cell from the number of nodes (for the polys in a vtkPolyData)
     out : UnstructuredMesh
         the output mesh
+
+    originalIdsOffset: offset to apply to the original ids
     """
 
     offsets = numpy_support.vtk_to_numpy(cells.GetOffsetsArray())
@@ -595,27 +598,27 @@ def AddCellsFromVtkCellArrayToMesh(cells, cellTypesArray:ArrayLike, out:Unstruct
         cellTypesArray = nbPointsTo2DCells[offsets[1:] - offsets[:-1]]
 
     types, typeNB = np.unique(cellTypesArray,return_counts=True)
-    npmaxpoints = 0
     elemtype_index = dict()
     for t,tnb in zip(types, typeNB):
         et = elementNameByVtkNumber[t]
         elements = out.GetElementsOfType(et)
         elements.Reserve(tnb)
-        npmaxpoints = max(elements.GetNumberOfNodesPerElement(),npmaxpoints)
         elemtype_index[t] = (elements, np.where(cellTypesArray==t)[0] )
 
     connectivity = numpy_support.vtk_to_numpy(cells.GetConnectivityArray())
 
+    nbNewElements = 0
     for vtktype, (elements, index) in elemtype_index.items():
         cpt0 = elements.cpt
         numberOfNodesPerElement = elements.GetNumberOfNodesPerElement()
         nbNewElements = len(index)
         cpt1 = cpt0+nbNewElements
+
         mask=np.arange(numberOfNodesPerElement, dtype=PBasicIndexType)*np.ones((len(index),numberOfNodesPerElement), dtype=PBasicIndexType)+offsets[index,None]
         localConnectivity = connectivity[mask]
         localConnectivity.shape = (nbNewElements,numberOfNodesPerElement)
         elements.connectivity[cpt0:cpt1,:] = localConnectivity
-        elements.originalIds[cpt0:cpt1] = index
+        elements.originalIds[cpt0:cpt1] = index + originalIdsOffset
 
         if vtktype == 11:
             elements.connectivity[cpt0:cpt1,:] = elements.connectivity[cpt0:cpt1,[0,1,3,2,4,5,7,6]]
@@ -623,7 +626,9 @@ def AddCellsFromVtkCellArrayToMesh(cells, cellTypesArray:ArrayLike, out:Unstruct
             elements.connectivity[cpt0:cpt1,:] = elements.connectivity[cpt0:cpt1,[0,1,3,2]]
 
         elements.cpt += nbNewElements
+        nbNewElements += nbNewElements
 
+    return nbNewElements
 
 def VtkToMesh(vtkmesh, meshobject=None, FieldsAsTags=True):
 
@@ -646,21 +651,22 @@ def VtkToMesh(vtkmesh, meshobject=None, FieldsAsTags=True):
         out.originalIDNodes = None
         nc = vtkmesh.GetNumberOfCells()
 
+        cpt =0
         verts = vtkmesh.GetVerts()
         if verts.GetNumberOfCells() != 0 :
-            AddCellsFromVtkCellArrayToMesh(verts, np.full(verts.GetNumberOfCells(),1),out)
+            cpt += AddCellsFromVtkCellArrayToMesh(verts, np.full(verts.GetNumberOfCells(),1),out,originalIdsOffset=cpt)
 
         lines = vtkmesh.GetLines()
         if lines.GetNumberOfCells() != 0 :
-            AddCellsFromVtkCellArrayToMesh(lines,  np.full(lines.GetNumberOfCells(),3),out)
-
-        strips = vtkmesh.GetStrips()
-        if strips.GetNumberOfCells() != 0 :
-            AddCellsFromVtkCellArrayToMesh(strips, np.full(strips.GetNumberOfCells(),5), out)
+            cpt += AddCellsFromVtkCellArrayToMesh(lines,  np.full(lines.GetNumberOfCells(),3),out,originalIdsOffset=cpt)
 
         polys = vtkmesh.GetPolys()
         if polys.GetNumberOfCells() != 0 :
-            AddCellsFromVtkCellArrayToMesh(polys, None, out)
+            cpt += AddCellsFromVtkCellArrayToMesh(polys, None, out,originalIdsOffset=cpt)
+
+        strips = vtkmesh.GetStrips()
+        if strips.GetNumberOfCells() != 0 :
+            cpt += AddCellsFromVtkCellArrayToMesh(strips, np.full(strips.GetNumberOfCells(),5), out,originalIdsOffset=cpt)
     else:
 
         data = vtkmesh.GetPoints().GetData()
@@ -695,9 +701,10 @@ def VtkToMesh(vtkmesh, meshobject=None, FieldsAsTags=True):
             (name,field) = VtkFieldToNumpyField(out,data)
             Elfield = np.empty(field.shape,dtype=field.dtype)
             if len(field.shape) > 1:
-                Elfield[EOIds,:] = field[range(field.shape[0]),:]
+                Elfield[EOIds,:] = field
             else:
-                Elfield[EOIds] = field[:]
+                Elfield[EOIds] = field
+
             if name == "originalIds":
                 out.SetElementsOriginalIDs(Elfield)
             else:
