@@ -45,13 +45,13 @@ PIP
 The pip installation requires a local compilation, so you need to have a C++ (C++17 compatible) compiler installed locally on your system.
 To compile and install BasicTools (version 1.9.4 in this case) with pip:
 
-    set BASICTOOLS_USE_EIGENCYEIGEN=True                                # or "export" depending on your shell
+    set BASICTOOLS_USE_EIGENCYEIGEN=1                                   # or "export" depending on your shell
     pip install eigency mkl numpy sympy mkl-include cython wheel
     pip install BasicTools@https://gitlab.com/drti/basic-tools/-/archive/1.9.4/basic-tools-1.9.4.tar.bz2
 
 or for the latest master version:
 
-    set BASICTOOLS_USE_EIGENCYEIGEN=True                                # or "export" depending on your shell
+    set BASICTOOLS_USE_EIGENCYEIGEN=1                                   # or "export" depending on your shell
     pip install eigency mkl numpy sympy mkl-include cython wheel
     pip install BasicTools@git+https://gitlab.com/drti/basic-tools.git
 
