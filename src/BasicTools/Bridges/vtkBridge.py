@@ -18,7 +18,7 @@ except :
         from vtkmodules.util import numpy_support
     except:
         from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
-        BaseOutputObject.PrintVerbose("vtk not found, some functionalities will not be available")
+        BaseOutputObject().PrintVerbose("vtk not found, some functionalities will not be available")
 
 
 from BasicTools.NumpyDefs import ArrayLike, PBasicFloatType, PBasicIndexType
@@ -576,7 +576,7 @@ def VtkToMeshOnlyMeta(vtkmesh, FieldsAsTags=False):
                 res.nodeFields.append(name)
     return res
 
-def AddCellsFromVtkCellArrayToMesh(cells:vtkCellArray, cellTypesArray:ArrayLike, out:UnstructuredMesh):
+def AddCellsFromVtkCellArrayToMesh(cells, cellTypesArray:ArrayLike, out:UnstructuredMesh):
     """Function to migrate cells from a vtkCellArray to a BasicTools Unstructured Mesh
 
     Parameters
@@ -782,6 +782,12 @@ def CellDataToPoint(mesh:UnstructuredMesh, cellfields:np.ndarray) -> np.ndarray:
     res = [numpy_support.vtk_to_numpy(cellData.GetArray(i)) for i in range(nbArrays-nbFields, nbArrays)]
 
     return np.array(res)
+
+def ReadMeshAndPopulateVtkObject(filename, vtkobject= None,TagsAsFields=False):# pragma: no cover
+    from BasicTools.IO.UniversalReader import ReadMesh as UReadMesh
+    mesh = UReadMesh(filename)
+    from BasicTools.Bridges.vtkBridge import MeshToVtk
+    return MeshToVtk(mesh, vtkobject,TagsAsFields=TagsAsFields)
 
 def CheckIntegrity_VtkToMesh(GUI=False):
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshOf
