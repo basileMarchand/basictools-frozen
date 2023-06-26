@@ -63,10 +63,16 @@ class FieldNotFound(ValueError):
     def __str__(self):
         return repr(self.value) # pragma: no cover
 
+def HasHdf5Support():
+    try:
+        import h5py
+        return True
+    except:
+        return False
 
 def CheckIntegrity():
 
-    FieldNotFound('toto');
+    FieldNotFound('toto')
     return 'OK'
 
 if __name__ == '__main__':

@@ -13,10 +13,10 @@ import os
 from BasicTools.Helpers.TextFormatHelper import TFormat
 
 import BasicTools.Containers.ElementNames as EN
-from BasicTools.IO.XdmfTools import XdmfName,XdmfNumber
 from BasicTools.IO.WriterBase import WriterBase as WriterBase
 from BasicTools.Helpers.MPIInterface import MPIInterface as MPI
 from BasicTools.NumpyDefs import PBasicIndexType
+from BasicTools.IO.XdmfTools import XdmfName,XdmfNumber, HasHdf5Support
 
 def ArrayToString(data):
     return " ".join(str(x) for x in data)
@@ -237,7 +237,12 @@ class XdmfWriter(WriterBase):
         self.__chunkSize = 2**30
         self.automaticOpen = False
 
-        self.__isHdf5 = True
+        try:
+            import h5py
+            self.__isHdf5 = True
+        except:
+            self.__isHdf5 = False
+
         self.__hdf5FileName = ""
         self.__hdf5FileNameOnly = None
         self.__hdf5FilePointer = None
@@ -289,7 +294,13 @@ class XdmfWriter(WriterBase):
         if val :
             self.SetBinary(True)
 
-        self.__isHdf5 = val
+        try:
+            import h5py
+            self.__isHdf5 = val
+        except:
+            self.__isHdf5 = False
+            if val:
+                print("h5py not available using binary file for output")
 
     def SetChunkSize(self,size):
         self.__chunkSize = size
@@ -1518,7 +1529,10 @@ def CheckIntegrityDDM(GUI=False):
         writer.Write(mesh1D, CellFields = [np.arange(mesh1D.GetNumberOfElements())+0.1 ], CellFieldsNames=["IPId_0"])
 
     writer.Close()
-    return "ok"
+    if HasHdf5Support():
+        return "ok"
+    else:
+        return "ok, but no hdf5 support"
 
 
 if __name__ == '__main__':

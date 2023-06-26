@@ -13,10 +13,9 @@ import numpy as np
 import xml.sax
 
 from BasicTools.Helpers.TextFormatHelper import TFormat
-from BasicTools.IO.XdmfTools import FieldNotFound
 from BasicTools.NumpyDefs import PBasicFloatType
-
 import BasicTools.Containers.ElementNames as ElementNames
+from BasicTools.IO.XdmfTools import FieldNotFound, HasHdf5Support, XdmfNumber
 
 
 def ReadXdmf(fileName):
@@ -102,7 +101,7 @@ class XdmfDomain(Xdmfbase):
         if isinstance(nameornumber,str):
             for g in self.grids:
                 if g.Name == nameornumber : return g
-            raise
+            raise Exception(f" grid with name '{nameornumber}' not found")
         else:
             return self.grids[nameornumber]
 
@@ -906,105 +905,110 @@ def CheckIntegrity():
     except Exception as e :
         pass
 
-    res = XdmfReader(filename = TestDataPath + "Unstructured.xmf" )
-    res.lazy = False
-    res.Read()
+    for filename in ["Unstructured.xmf", "UnstructuredBinary.xmf", "UnstructuredAscii.xmf" ]:
 
-    res = XdmfReader(filename = TestDataPath + "Unstructured.xmf" )
-    # read only the xml part
-    res.Read()
+        if not HasHdf5Support() and filename == "Unstructured.xmf":
+            continue
 
+        res = XdmfReader(filename = TestDataPath + filename )
+        res.lazy = False
+        res.Read()
 
-    rep = res.__str__()
-    #print(rep)
-    #Test xdmf part***********************
-    a = res.xdmf.__str__()
-
-    try:
-        res.xdmf.GetDomain("Imaginary Domain")
-        return 'Not OK' # pragma: no cover
-    except Exception as e :
-        pass
-
-    res.xdmf.GetDomain("Dom 1")
-
-    domain = res.xdmf.GetDomain(0)
-    #Test domain part***********************
-    try :
-        domain.GetGrid("imaginary grid")
-        return 'Not OK' # pragma: no cover
-    except Exception as e :
-        pass
-
-    domain.GetGrid(0)
-    grid  = domain.GetGrid("Grid")
+        res = XdmfReader(filename = TestDataPath + filename )
+        # read only the xml part
+        res.Read()
 
 
-    #Test Grid part**************************************************************
+        rep = res.__str__()
+        #print(rep)
+        #Test xdmf part***********************
+        a = res.xdmf.__str__()
+
+        try:
+            res.xdmf.GetDomain("Imaginary Domain")
+            return 'Not OK' # pragma: no cover
+        except Exception as e :
+            pass
+
+        res.xdmf.GetDomain("Dom 1")
+
+        domain = res.xdmf.GetDomain(0)
+        #Test domain part***********************
+        try :
+            domain.GetGrid("imaginary grid")
+            return 'Not OK' # pragma: no cover
+        except Exception as e :
+            pass
+
+        domain.GetGrid(0)
+        grid  = domain.GetGrid("Grid")
 
 
-    names = grid.GetFieldsNames()
-    if names[0] != 'RTData': raise Exception()
-
-    grid.HasField(names[0])
-    grid.HasField('toto')
-
-    try:
-        data = res.xdmf.GetDomain("Dom 1").GetGrid("Grid").GetFieldData('ImaginaryField')
-        return 'Not OK' # pragma: no cover
-    except Exception as e :
-        pass
-
-    grid.GetFieldTermsAsColMatrix('term_')
-
-    try:
-        grid.GetFieldTermsAsColMatrix('ImaginaryField_')
-        return 'Not OK' # pragma: no cover
-    except Exception as e :
-        pass
+        #Test Grid part**************************************************************
 
 
-    grid.GetFieldTermsAsTensor('TensorField_',offsetj=1)
+        names = grid.GetFieldsNames()
+        if names[0] != 'RTData': raise Exception()
 
-    try:
-        grid.GetFieldTermsAsTensor('ImaginaryField_',offsetj=1)
-        return 'Not OK' # pragma: no cover
-    except Exception as e :
-        pass
+        grid.HasField(names[0])
+        grid.HasField('toto')
 
-    grid.GetFieldData('IntField')
+        try:
+            data = res.xdmf.GetDomain("Dom 1").GetGrid("Grid").GetFieldData('ImaginaryField')
+            return 'Not OK' # pragma: no cover
+        except Exception as e :
+            pass
 
-    try:
-        grid.GetFieldData('UnknownField')
-        return 'Not OK' # pragma: no cover
-    except Exception as e :
-        pass
+        grid.GetFieldTermsAsColMatrix('term_')
+
+        try:
+            grid.GetFieldTermsAsColMatrix('ImaginaryField_')
+            return 'Not OK' # pragma: no cover
+        except Exception as e :
+            pass
 
 
-    data = res.xdmf.domains[0].GetGrid("Grid").GetFieldData('RTData')
-    if  data[49] != 260.0: raise
+        grid.GetFieldTermsAsTensor('TensorField_',offsetj=1)
 
-    geo = res.xdmf.domains[0].GetGrid("Grid").geometry.dataitems[0].GetData()
-    #print(geo)
-    if geo[0,2] != -1: raise
+        try:
+            grid.GetFieldTermsAsTensor('ImaginaryField_',offsetj=1)
+            return 'Not OK' # pragma: no cover
+        except Exception as e :
+            pass
 
-    topo = res.xdmf.domains[0].GetGrid("Grid").topology.dataitems[0].GetData()
-    #print(topo)
-    if topo[2] != 1: raise
+        grid.GetFieldData('IntField')
 
-    ######################### Structured #########################
-    res = XdmfReader(filename = TestDataPath + "Structured.xmf" )
-    # read only the xml part
-    res.Read()
-    domain = res.xdmf.GetDomain(0)
-    #Test domain part***********************
+        try:
+            grid.GetFieldData('UnknownField')
+            return 'Not OK' # pragma: no cover
+        except Exception as e :
+            pass
 
-    grid  = domain.GetGrid(0)
-    #print(grid.GetFieldsOfType("Node"))
-    #print("--")
-    #print(grid.GetFieldsOfType("Cell"))
-    grid.geometry.GetOrigin()
-    grid.geometry.GetSpacing()
+
+        data = res.xdmf.domains[0].GetGrid("Grid").GetFieldData('RTData')
+        if  data[49] != 260.0: raise
+
+        geo = res.xdmf.domains[0].GetGrid("Grid").geometry.dataitems[0].GetData()
+        #print(geo)
+        if geo[0,2] != -1: raise
+
+        topo = res.xdmf.domains[0].GetGrid("Grid").topology.dataitems[0].GetData()
+        #print(topo)
+        if topo[0] != XdmfNumber[ElementNames.Hexaedron_8]: raise
+
+        ######################### Structured #########################
+        res = XdmfReader(filename = TestDataPath + "Structured.xmf" )
+        # read only the xml part
+        res.Read()
+        domain = res.xdmf.GetDomain(0)
+        #Test domain part***********************
+
+        grid  = domain.GetGrid(0)
+        #print(grid.GetFieldsOfType("Node"))
+        #print("--")
+        #print(grid.GetFieldsOfType("Cell"))
+        grid.geometry.GetOrigin()
+        grid.geometry.GetSpacing()
     ##################################
     Example1()
     Example2()
@@ -1016,7 +1020,7 @@ def CheckIntegrity():
 def Example1():
     import BasicTools.TestData as test
     # Create a Reader
-    reader = XdmfReader(filename = test.GetTestDataPath() + "Unstructured.xmf")
+    reader = XdmfReader(filename = test.GetTestDataPath() + "UnstructuredBinary.xmf")
     # Do the reading (only the xml part, to read all the data set lazy to False)
     #res.lazy = False
     reader.Read()
