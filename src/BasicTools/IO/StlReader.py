@@ -37,39 +37,6 @@ def ReadStl(fileName:str=None, string:str=None) -> UnstructuredMesh:
     res = obj.Read()
     return res
 
-
-def LoadSTLWithVTK(filenameSTL:str):
-    """Read Stl file using vtk. it return a vtk object
-
-    Parameters
-    ----------
-    filenameSTL : str
-        the file to read
-
-    Returns
-    -------
-    vtkPolyData
-        the mesh
-
-    Raises
-    ------
-    ValueError
-        in the case the file does not contain any points
-    """
-    from vtkmodules.vtkIOGeometry import vtkSTLReader
-    readerSTL = vtkSTLReader()
-    readerSTL.SetFileName(filenameSTL)
-    readerSTL.Update()
-
-    polydata = readerSTL.GetOutput()
-
-    # If there are no points in 'vtkPolyData' something went wrong
-    if polydata.GetNumberOfPoints() == 0:
-        raise ValueError("No point data could be loaded from '" + filenameSTL)  # pragma: no cover
-
-    return polydata
-
-
 class StlReader(ReaderBase):
     """Stl read class
     """
@@ -296,14 +263,6 @@ def CheckIntegrity():
     f.close()
     res = ReadStl(fileName=tempdir+"test_input_stl_data.stl")
 
-    try:
-        import vtk
-        print('reading mesh using vtk')
-        mesh = LoadSTLWithVTK(tempdir+"test_input_stl_data.stl")
-        print(mesh)
-    except:  # pragma: no cover
-        print("warning : error importing vtk, disabling some tests ")
-        pass
     from BasicTools.TestData import GetTestDataPath
 
     print("Binary reading")
