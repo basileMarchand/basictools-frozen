@@ -79,7 +79,7 @@ def RunListOfCheckIntegrities(  toTest: List[Callable[[bool],str] ], GUI:bool = 
     for func in toTest:
         print("running test : " + str(func))
         res = func(GUI)
-        if str(res).lower() in ["ok","skip"] :
+        if any([str(res).lower().startswith(x) for x  in ["ok","skip"]]) :
             continue
         return f"error in {func} res"
     return "ok"
@@ -281,9 +281,9 @@ res = CheckIntegrity()""".format(name)
                 raise
 
 
-        if r.lower() == 'ok':
+        if r.lower().startswith('ok'):
             bp.Print( TFormat.InGreen( f"OK {name} : {stop_time -start_time:.3f} seconds " ) )
-        elif r.lower() == 'skip':
+        elif r.lower().startswith('skip'):
             bp.Print(TFormat.InYellow( str(r) + " !!!! " + name )  )
         else:
             bp.Print(TFormat.InRed( str(r) + " !!!! " + name )  )
@@ -580,9 +580,9 @@ def RunTests() -> int:
     skipped = {}
 
     for x,y in res.items():
-        if str(y).lower() == "ok":
+        if str(y).lower().startswith("ok"):
             oks[x] = y
-        elif str(y).lower() == "skip":
+        elif str(y).lower().startswith("skip")  :
             skipped[x] = y
         else:
             errors[x] = y

@@ -11,8 +11,9 @@ import pytest
 def pytest_pyfunc_call(pyfuncitem):
     testfunction = pyfuncitem.obj
     res = testfunction()
-    assert (res.lower() in ["ok", "skip"] )
-    return True
+    if any([res.lower().startswith(x) for x in ["ok", "skip"]]):
+        return True
+    raise Exception(res)
 
 def pytest_pycollect_makeitem(collector, name, obj):
     if name == "CheckIntegrity" and hasattr(obj, "__call__"):
