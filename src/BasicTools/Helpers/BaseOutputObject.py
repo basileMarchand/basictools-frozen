@@ -111,6 +111,10 @@ class BaseOutputObject(object):
         BaseOutputObject.__verboseLevel = level
 
     @classmethod
+    def GetVerboseLevel(cls):
+        return BaseOutputObject.__verboseLevel
+
+    @classmethod
     def SetGlobalDebugMode(cls, mode = True):
         BaseOutputObject.__globalDebugMode = mode
 
@@ -216,7 +220,7 @@ class BaseOutputObject(object):
 def CheckIntegrity(GUI=False):
 
     myObj = BaseOutputObject()
-
+    VLevel = myObj.GetVerboseLevel()
     myObj.Print("Print 1")
     myObj.PrintVerbose("PrintVerbose 1")
     myObj.PrintDebug("PrintDebug 1")
@@ -302,6 +306,7 @@ def CheckIntegrity(GUI=False):
         obj.UnFrozen()
         obj.c = 7
 
+    myObj.SetVerboseLevel(VLevel)
     myObj.SetGlobalDebugMode(False)
     myObj.SetInstanceDebugMode(False)
     return "OK"
