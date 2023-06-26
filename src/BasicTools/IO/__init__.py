@@ -58,7 +58,7 @@ _test = [
 "IOFactory",
 "PipeIO",
 "ZsetTools",
-"VtuReader",
+"VtkReader",
 "InpWriter"
 ]
 

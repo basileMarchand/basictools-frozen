@@ -41,7 +41,7 @@ def InitAllReaders():
     from BasicTools.IO.PipeIO import PipeReader
     from BasicTools.IO.OdbReader import OdbReader
     from BasicTools.IO.UtReader import UtReader
-    from BasicTools.IO.VtuReader import VtuReader
+    from BasicTools.IO.VtkReader import VtkReader
     from BasicTools.IO.SamcefReader import DatReader
     import BasicTools.IO.SamcefOutputReader
     import BasicTools.IO.PickleTools
