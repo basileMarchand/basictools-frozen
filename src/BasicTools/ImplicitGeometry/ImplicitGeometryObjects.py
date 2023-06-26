@@ -76,10 +76,9 @@ class ImplicitGeometryExternalSurface(ImplicitGeometryBase):
     def SetSupport(self, support):
         self.internalImplicitGeometry = ImplicitGeometryStl()
         self.internalImplicitGeometry.SetMesh(support)
-        self.internalImplicitGeometry.ismanifold = True
+        self.internalImplicitGeometry.asVolume = True
         support.ComputeBoundingBox()
         self.offset = 1.*np.linalg.norm(support.boundingMax-support.boundingMin)/1000
-
 
     def GetDistanceToPoint(self,pos):
         return self.internalImplicitGeometry.GetDistanceToPoint(pos) + self.offset
@@ -683,6 +682,10 @@ os.environ["LANG"] = "en_UK"
 class ImplicitGeometryStl(ImplicitGeometryBase):
     """ImplicitGeometry based on a external stlfile
         filename : stl filename to be loaded
+        option 'asVolume' is on as default this means the surface represent a close volume.
+        The algorithm will try to generate a close representation of the levelset.
+        if asVolume is False the a positive levelset is generated around the surface.
+        Please use an offset to add 'volume to the surface'
     """
 
     def __init__(self):
@@ -693,7 +696,7 @@ class ImplicitGeometryStl(ImplicitGeometryBase):
         self.boundingMin = [0,0,0]
         self.boundingMax = [0,0,0]
         self.surface = None
-        self.ismanifold = True
+        self.asVolume = True
         self.onLines = False
 
     def GetBoundingMin(self):
@@ -756,7 +759,7 @@ class ImplicitGeometryStl(ImplicitGeometryBase):
 
         nodes = mesh.nodes
         for name, data, ids in ElementFilter(mesh, dimensionality=mesh.GetElementsDimensionality() ):
-            if len(data.connectivity.shape[1]>=3) :
+            if data.connectivity.shape[1] >=3 :
                 for i in range(data.GetNumberOfElements()):
                     p0 = nodes[data.connectivity[i,0],:]
                     p1 = nodes[data.connectivity[i,1],:]
@@ -790,62 +793,19 @@ class ImplicitGeometryStl(ImplicitGeometryBase):
         vdist = op.dot(self.__field.mesh.nodes)- pos
         dist = np.sqrt(np.sum((vdist )**2,axis=1))
 
-        tnormals = op.dot(self.normals)
-        dist *= np.sign( np.sum(vdist*tnormals,axis=1))
-        dist *= -1.0
-
+        if self.asVolume:
+            tnormals = op.dot(self.normals)
+            dist *= np.sign( np.sum(vdist*tnormals,axis=1))
+            dist *= -1.0
 
         return self.ApplyInsideOut(dist)
-
-    def SetSurfaceUsingVtkPolyData(self,polydata):
-        from vtkmodules.vtkFiltersCore import vtkFeatureEdges, vtkImplicitPolyDataDistance
-        from vtkmodules.vtkCommonDataModel import vtkSpheres
-
-        if polydata.GetNumberOfPoints() == 0:# pragma: no cover
-            raise ValueError( "No points " )
-
-        bounds = [0 for i in range(6)]
-        polydata.GetBounds(bounds)
-        self.boundingMin = np.array([bounds[0],  bounds[2], bounds[4]])
-        self.boundingMax = np.array([bounds[1],  bounds[3], bounds[5]])
-
-        # check if we have a closed surface or not
-        checkFilter = vtkFeatureEdges()
-        checkFilter.SetInputData(polydata)
-        checkFilter.SetFeatureEdges(False)
-        checkFilter.SetBoundaryEdges(True)
-        checkFilter.SetNonManifoldEdges(True)
-        checkFilter.SetManifoldEdges(False)
-        checkFilter.Update()
-
-        numberOfOpenEdges = checkFilter.GetOutput().GetNumberOfCells()
-        if numberOfOpenEdges > 0  :
-            self.ismanifold = False
-            self.PrintDebug("Warning the surface mesh is not close. ")
-        else:
-            self.ismanifold = True
-
-        if polydata.GetNumberOfPolys() > 0:
-            self.implicitFunction = vtkImplicitPolyDataDistance()
-            self.implicitFunction.SetNoValue(-100.)
-            self.implicitFunction.SetInput(polydata)
-            self.onLines = False
-        elif polydata.GetNumberOfLines() >0:
-            #we are working on lines only
-            # The current installation of tk does not have thevtkSpheres() class
-            self.implicitFunction = vtkSpheres()
-            self.implicitFunction.SetCenters(polydata.GetPoints())
-            self.onLines = True
-            self.ismanifold = False
-        else:
-            raise(Exception("internal Error"))
-
 
     def __str__(self):
         res = "ImplicitGeometryStl \n"
         res += "  fileName : " + str(self.filename)+"\n"
         res += "  InsideOut : " + str(self.insideOut)+"\n"
         res += "  surface : " + str(self.surface)+"\n"
+        res += "  asVolume : " + str(self.asVolume)+"\n"
         return res
 
 def CreateImplicitGeometryStl(ops):
