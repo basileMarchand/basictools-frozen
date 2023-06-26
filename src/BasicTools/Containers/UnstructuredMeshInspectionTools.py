@@ -494,7 +494,7 @@ def ExtractElementsByElementFilter(inmesh: UnstructuredMesh, elementFilter: Elem
     """
 
     inmesh.ComputeGlobalOffset()
-    outMesh = type(inmesh)()
+    outMesh = UnstructuredMesh()
     if copy:
         outMesh.CopyProperties(inmesh)
         outMesh.nodes = np.copy(inmesh.nodes)
