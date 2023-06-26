@@ -50,6 +50,7 @@ operator, status = GetFieldTransferOp(inputFEField, unstructuredRectMesh.nodes, 
 projectedU = operator.dot(U)
 
 # Export the structured mesh and projected field in xdmf format (in ASCII)
+# To visualize this xdmf file you can use ParaView (downloadable from https://www.paraview.org/)
 from BasicTools.IO import XdmfWriter as XW
 writer = XW.XdmfWriter('PrePostDeepLearning_OutputI.xdmf')
 writer.SetHdf5(False)
@@ -71,6 +72,7 @@ operator, status = GetFieldTransferOp(inputFEField, uMesh.nodes, method = method
 inverseProjected_ProjectedU = operator.dot(projectedU)
 
 # Export the unstructured mesh and inverse-projected projected field in xdmf format
+# To visualize this xdmf file you can use ParaView (downloadable from https://www.paraview.org/)
 writer = XW.XdmfWriter('PrePostDeepLearning_OutputII.xdmf')
 writer.SetHdf5(False)
 writer.Open()
