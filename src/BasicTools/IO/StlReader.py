@@ -89,8 +89,11 @@ class StlReader(ReaderBase):
         else:
             self.PrintVerbose("Binary File")
             res = self.ReadStlBinary()
+
         if self.runCleanDoubleNodes:
-            CleanDoubleNodes(res)
+            res.ComputeBoundingBox()
+            tol = np.linalg.norm(res.boundingMax -res.boundingMin)*1e-15
+            CleanDoubleNodes(res, tol=tol)
         self.output = res
         return res
 
@@ -251,7 +254,7 @@ def CheckIntegrity():
 
     res = ReadStl(string=data)
     print(res)
-    if res.GetNumberOfNodes() != 12:
+    if res.GetNumberOfNodes() != 4:
         raise Exception()
     if res.GetNumberOfElements() != 4:
         raise Exception()
