@@ -13,6 +13,7 @@ import numpy as np
 import BasicTools.Containers.ElementNames as EN
 from BasicTools.IO.ReaderBase import ReaderBase
 from BasicTools.NumpyDefs import PBasicIndexType
+from BasicTools.Containers.UnstructuredMeshModificationTools import CleanDoubleNodes
 
 
 def ReadStl(fileName:str=None, string:str=None) -> UnstructuredMesh:
@@ -74,6 +75,8 @@ class StlReader(ReaderBase):
     """
     def __init__(self, fileName=None):
         super(StlReader, self).__init__()
+        self.runCleanDoubleNodes = True
+
 
     def Read(self, fileName=None, string=None, out=None) -> UnstructuredMesh:
         """ Read a file or a string as a stl surface, ASCII and binary format are
@@ -115,10 +118,14 @@ class StlReader(ReaderBase):
 
         if header == "solid":
             self.PrintVerbose("Ascii File")
-            return self.ReadStlAscii()
+            res = self.ReadStlAscii()
         else:
             self.PrintVerbose("Binary File")
-            return self.ReadStlBinary()
+            res = self.ReadStlBinary()
+        if self.runCleanDoubleNodes:
+            CleanDoubleNodes(res)
+        self.output = res
+        return res
 
     def ReadStlBinary(self):
         # from https://en.wikipedia.org/wiki/STL_(file_format)#Binary_STL
