@@ -7,15 +7,19 @@ from typing import Callable
 
 import numpy as np
 
-
 try:
     from paraview.vtk import vtkPolyData, vtkUnstructuredGrid, vtkPoints,vtkIdList, vtkImageData, vtkCellArray
     from paraview.vtk.util import numpy_support
 except :
-    #faster import only needed classes
-    from vtkmodules.vtkCommonCore import vtkPoints, vtkIdList#, vtkUnsignedCharArray, , vtkIdTypeArray
-    from vtkmodules.vtkCommonDataModel import vtkPolyData, vtkUnstructuredGrid, vtkImageData, vtkCellArray
-    from vtkmodules.util import numpy_support
+    try:
+        #faster import only needed classes
+        from vtkmodules.vtkCommonCore import vtkPoints, vtkIdList#, vtkUnsignedCharArray, , vtkIdTypeArray
+        from vtkmodules.vtkCommonDataModel import vtkPolyData, vtkUnstructuredGrid, vtkImageData, vtkCellArray
+        from vtkmodules.util import numpy_support
+    except:
+        from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
+        BaseOutputObject.PrintVerbose("vtk not found, some functionalities will not be available")
+
 
 from BasicTools.NumpyDefs import ArrayLike, PBasicFloatType, PBasicIndexType
 import BasicTools.Containers.ElementNames as ElementNames
@@ -742,7 +746,42 @@ def VtkToMeshMultiblock(vtkObject,OP=VtkToMesh):
     else:
       return OP(input)
 
+def CellDataToPoint(mesh:UnstructuredMesh, cellfields:np.ndarray) -> np.ndarray:
+    """Applies the CellDataToPointData from vtk.
+    Supported only for the dimensionality of the mesh (no mix of elements of different
+    dimensions)
 
+    Parameters
+    ----------
+    mesh : UnstructuredMesh
+        Mesh containing the cells and vertices concerned by the conversion.
+    cellfield : np.ndarray
+        of size (number of fields, number of elements). Cell fields to convert to Point field.
+
+    Returns
+    -------
+    np.ndarray
+        of size (number of points, number of fields). Field converted at the vertices of the mesh.
+    """
+    from BasicTools.Bridges import vtkBridge as vB
+    from vtkmodules.util import numpy_support
+    from vtkmodules.vtkFiltersCore import vtkCellDataToPointData
+
+    vtkMesh = vB.MeshToVtk(mesh)
+
+    nbFields = cellfields.shape[0]
+    for i in range(nbFields):
+        vtkMesh.GetCellData().AddArray(vB.NumpyFieldToVtkField(mesh, cellfields[i,:], "field_"+str(i)))
+
+    cellToPoint = vtkCellDataToPointData()
+    cellToPoint.SetInputData(vtkMesh)
+    cellToPoint.Update()
+
+    nbArrays = vtkMesh.GetCellData().GetNumberOfArrays()
+    cellData = cellToPoint.GetOutput().GetPointData()
+    res = [numpy_support.vtk_to_numpy(cellData.GetArray(i)) for i in range(nbArrays-nbFields, nbArrays)]
+
+    return np.array(res)
 
 def CheckIntegrity_VtkToMesh(GUI=False):
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshOf
@@ -857,12 +896,27 @@ def checkIntegrity_ApplyVtkPipeline(GUI):
         PlotMesh(res)
 
 
+def CheckIntegrity_CellDataToPoint(GUI = False):
+    from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshOf
+    points = [[-0.5,-0.5,-0.5],[2.5,-0.5,-0.5],[-0.5,2.5,-0.5],[-0.5,-0.5,2.5],[2.5,2.5,2.5]]
+    tets = [[0,1,2,3]]
+    mesh = CreateMeshOf(points,tets,ElementNames.Tetrahedron_4)
+    cellField = np.array([[1.], [2.]])
+    CellDataToPoint(mesh, cellField)
+    return "ok"
+
 def CheckIntegrity(GUI=False):
+    try:
+        numpy_support
+    except:
+        return "skip"
+
     CheckIntegrity_MeshToVtk(GUI)
     CheckIntegrity_VtkToMesh2D(GUI)
     CheckIntegrity_VtkToMesh(GUI)
     CheckIntegrity_ConstantRectilinearMesh(GUI)
     checkIntegrity_ApplyVtkPipeline(GUI)
+    CheckIntegrity_CellDataToPoint(GUI)
     return 'ok'
 
 if __name__ == '__main__':
