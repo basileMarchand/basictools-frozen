@@ -254,6 +254,11 @@ def CheckIntegrity():
     from BasicTools.Helpers.Tests import SkipTest
     if SkipTest("MESHIO_NO_FAIL"): return "ok"
 
+    try:
+        import meshio
+    except:
+        return "skip! module meshio not available"
+
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshOfTriangles
 
     res = CreateMeshOfTriangles([[0,0,0],[1,2,3],[0,1,0]], [[0,1,2]])
