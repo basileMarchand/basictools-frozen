@@ -23,19 +23,24 @@ def FindDuplicates(nodes:ArrayLike, tol:Optional[PBasicFloatType]=1e-16) -> np.n
     nodes : ArrayLike
         array of with the position of the nodes (number of nodes x number of coordinates)
     tol : Optional[PBasicFloatType], optional
-        tolerance to detect duplicated nodes, by default 1e-16
+        tolerance with respect to the bounding box to detect duplicated nodes, by default 1e-16
 
     Returns
     -------
     np.ndarray
-        nx2 array of coincident pairs
+        nx2 array of coincident pairs (sorted such that res[:,1]>res[:,0] and res[:,0] is sorted)
     """
 
     index = KDTree(nodes)
-    dists, inds = index.query(nodes, k=2, workers=CPU.GetNumberOfAvailableCpus())
-    duplicate_inds = inds[(dists[:,1]<=tol).nonzero()[0]]
+
+    inds = index.query_pairs(r=tol)
+    if len(inds) == 0:
+        return np.empty((0,2), dtype=PBasicIndexType)
+
+    duplicate_inds = np.array(list(inds), dtype=PBasicIndexType)
     duplicate_inds = np.sort(duplicate_inds, axis=1) # such that duplicate_inds[:,1]>duplicate_inds[:,0]
-    duplicate_inds = np.unique(duplicate_inds, axis=0).reshape((-1,2))
+    idx = np.argsort(duplicate_inds[:,0]) # such that duplicate_inds[:,0] are sorted (masters first)
+    duplicate_inds = duplicate_inds[idx,:]
     return duplicate_inds
 
 def CleanDoubleNodes(mesh: UnstructuredMesh, tol: Optional[PBasicFloatType]=None, nodesToTestMask: ArrayLike=None):
@@ -69,22 +74,26 @@ def CleanDoubleNodes(mesh: UnstructuredMesh, tol: Optional[PBasicFloatType]=None
     else:
         duplicate_inds = FindDuplicates(mesh.nodes[nodesToTestMask], tol=tol)
         duplicate_inds = np.arange(mesh.GetNumberOfNodes(), dtype=PBasicIndexType)[nodesToTestMask][duplicate_inds]
-    keep_ids = np.setdiff1d(np.arange(nbNodes), duplicate_inds[:,1])
-    toKeep[keep_ids] = True
 
-    #---# associate each future removed point to its duplicate
-    map_duplicates = {}
-    for dup in duplicate_inds:
-        map_duplicates[dup[1]] = dup[0] # by construction dup[1]>dup[0]
+    if len(duplicate_inds) == 0:
+        return
+
+    master_slave = np.arange(nbNodes)
+    for master, slave in duplicate_inds:
+        if master_slave[master] != master:
+            master_slave[slave] = master_slave[master]
+        else:
+            master_slave[slave] = master
 
     #---# fill newIndex
     cpt  = 0
     for i in range(nbNodes):
-        if i not in map_duplicates:
+        if master_slave[i] == i:
             newIndex[i] = cpt
+            toKeep[i] = True
             cpt +=1
         else:
-            newIndex[i] = newIndex[map_duplicates[i]]
+            newIndex[i] = newIndex[master_slave[i]]
 
     mesh.nodes = mesh.nodes[toKeep,:]
     mesh.originalIDNodes = np.where(toKeep)[0]
@@ -974,13 +983,23 @@ def CheckIntegrity_AddTagPerBody(GUI=False):
 def CheckIntegrity_CleanDoubleNodes(GUI=False):
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshOf
 
-    points = [[0,0,0],[1,0,0],[0,1,0],[0,0,1],[0,0,0] ]
+    points = [[0,0,0],[1,0,0],[0,1,0],[0,0,1],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0] ]
     tets = [[0,1,2,3],]
     mesh = CreateMeshOf(points,tets,ElementNames.Tetrahedron_4)
-
     CleanDoubleNodes(mesh)
+    if mesh.GetNumberOfNodes() != 4:
+        raise Exception(f"{mesh.GetNumberOfNodes()} != 4")# pragma: no cover
 
-    points = [[0,0,0],[1,0,0],[0,1,0],[0,0,1],[0,0,0] ]
+
+    #test non double nodes
+    points = [[0,0,0],[1,0,0],[0,1,0],[0,0,1]]
+    tets = [[0,1,2,3],]
+    mesh = CreateMeshOf(points,tets,ElementNames.Tetrahedron_4)
+    CleanDoubleNodes(mesh)
+    if mesh.GetNumberOfNodes() != 4:
+        raise Exception(f"{mesh.GetNumberOfNodes()} != 4")# pragma: no cover
+
+    points = [[0,0,0],[1,0,0],[0,1,0],[0,0,1],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0] ]
     tets = [[0,1,2,3],]
     mesh = CreateMeshOf(points, tets, ElementNames.Tetrahedron_4)
     mesh.nodesTags.CreateTag("OnePoint").SetIds([0,1])
@@ -988,7 +1007,7 @@ def CheckIntegrity_CleanDoubleNodes(GUI=False):
     CleanDoubleNodes(mesh,tol =0)
     print(mesh.nodes)
     if mesh.GetNumberOfNodes() != 4:
-        raise# pragma: no cover
+        raise Exception(f"{mesh.GetNumberOfNodes()} != 4")# pragma: no cover
 
     points = [[0,0,0],[1,0,0],[0,1,0],[0,0,1],[0,0,0] ]
     tets = [[0,1,2,3],]
@@ -996,7 +1015,7 @@ def CheckIntegrity_CleanDoubleNodes(GUI=False):
 
     CleanDoubleNodes(mesh, nodesToTestMask= np.array([True,False,True,False,True], dtype=bool) )
     if mesh.GetNumberOfNodes() != 4:
-        raise# pragma: no cover
+        raise Exception(f"{mesh.GetNumberOfNodes()} != 4")# pragma: no cover
 
     return "ok"
 
