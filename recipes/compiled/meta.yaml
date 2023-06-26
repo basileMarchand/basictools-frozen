@@ -51,7 +51,7 @@ outputs:
       imports:
         - BasicTools
       commands:
-        - python -u -m BasicTools.Helpers.Tests -k Catalyst -k PyVistaBridge -k MeshIO -k UnstructuredMeshFieldOperations -k Xdmf -k CGNS
+        - python -u -m BasicTools.Helpers.Tests
   - name: "basictools-extensions"
     version: {{ GIT_DESCRIBE_TAG }}.{{ GIT_DESCRIBE_NUMBER }}
     requirements:
@@ -76,7 +76,7 @@ outputs:
       imports:
         - BasicTools
       commands:
-        - python -u -m BasicTools.Helpers.Tests -k Catalyst
+        - python -u -m BasicTools.Helpers.Tests
 
   - name: "basictools-devenv"
     version: {{ GIT_DESCRIBE_TAG }}.{{ GIT_DESCRIBE_NUMBER }}
