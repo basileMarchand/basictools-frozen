@@ -781,44 +781,6 @@ def PointToCellData(mesh: UnstructuredMesh, pointfield : ArrayLike, dim:int=None
     return res
 
 
-def CellDataToPoint(mesh:UnstructuredMesh, cellfields:np.ndarray) -> np.ndarray:
-    """Applies the CellDataToPointData from vtk.
-    Supported only for the dimensionality of the mesh (no mix of elements of different
-    dimensions)
-
-    Parameters
-    ----------
-    mesh : UnstructuredMesh
-        Mesh containing the cells and vertices concerned by the conversion.
-    cellfield : np.ndarray
-        of size (number of fields, number of elements). Cell fields to convert to Point field.
-
-    Returns
-    -------
-    np.ndarray
-        of size (number of points, number of fields). Field converted at the vertices of the mesh.
-    """
-    from BasicTools.Bridges import vtkBridge as vB
-    from vtkmodules.util import numpy_support
-    from vtkmodules.vtkFiltersCore import vtkCellDataToPointData
-
-    vtkMesh = vB.MeshToVtk(mesh)
-
-    nbFields = cellfields.shape[0]
-    for i in range(nbFields):
-        vtkMesh.GetCellData().AddArray(vB.NumpyFieldToVtkField(mesh, cellfields[i,:], "field_"+str(i)))
-
-    cellToPoint = vtkCellDataToPointData()
-    cellToPoint.SetInputData(vtkMesh)
-    cellToPoint.Update()
-
-    nbArrays = vtkMesh.GetCellData().GetNumberOfArrays()
-    cellData = cellToPoint.GetOutput().GetPointData()
-    res = [numpy_support.vtk_to_numpy(cellData.GetArray(i)) for i in range(nbArrays-nbFields, nbArrays)]
-
-    return np.array(res)
-
-
 def QuadFieldToLinField(quadMesh:UnstructuredMesh, quadField:ArrayLike, linMesh:UnstructuredMesh = None) -> np.ndarray:
     """Extract the linear part of the field quadField.
 
@@ -1197,21 +1159,10 @@ def CheckIntegrity_PointToCellData(GUI = False):
     return "ok"
 
 
-def CheckIntegrity_CellDataToPoint(GUI = False):
-    from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshOf
-    points = [[-0.5,-0.5,-0.5],[2.5,-0.5,-0.5],[-0.5,2.5,-0.5],[-0.5,-0.5,2.5],[2.5,2.5,2.5]]
-    tets = [[0,1,2,3]]
-    mesh = CreateMeshOf(points,tets,ElementNames.Tetrahedron_4)
-    cellField = np.array([[1.], [2.]])
-    CellDataToPoint(mesh, cellField)
-
-    return "ok"
-
 def CheckIntegrity(GUI=False):
     totest= [
     CheckIntegrity_GetValueAtPosLinearSymplecticMesh,
     CheckIntegrity_PointToCellData,
-    CheckIntegrity_CellDataToPoint,
     CheckIntegrity1DSecondOrderTo2D,
     CheckIntegrity1DTo2D,
     CheckIntegrity1D,
