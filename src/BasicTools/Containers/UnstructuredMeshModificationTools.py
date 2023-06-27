@@ -265,7 +265,7 @@ def CopyElementTags(sourceMesh: UnstructuredMesh, targetMesh: UnstructuredMesh, 
 
             tag2.RemoveDoubles()
 
-def DeleteElements(mesh: UnstructuredMesh, mask: ArrayLike):
+def DeleteElements(mesh: UnstructuredMesh, mask: ArrayLike, updateElementFields: bool= False):
     """Delete elements on the input mesh (inplace)
 
     Parameters
@@ -274,6 +274,8 @@ def DeleteElements(mesh: UnstructuredMesh, mask: ArrayLike):
         the input mesh
     mask : ArrayLike
         the mash of elements to delete
+    updateElementFields: bool
+        True to update Element fields
     """
     from BasicTools.Containers.UnstructuredMeshInspectionTools import ExtractElementsByMask
 
@@ -287,12 +289,23 @@ def DeleteElements(mesh: UnstructuredMesh, mask: ArrayLike):
         localMask = mask[offset:offset+data.GetNumberOfElements()]
         dataToChange[name] = ExtractElementsByMask(data, np.logical_not(localMask))
 
+    temp = UnstructuredMesh()
+    temp.elements.storage = dict(mesh.elements.storage)
+    temp.elemFields = dict(mesh.elemFields)
+
     for name, data in dataToChange.items():
         mesh.elements[name] = data
 
     if OriginalNumberOfElements != mesh.GetNumberOfElements():
-        print("Number Of Elements Changed: Dropping elemFields")
-        mesh.elemFields = {}
+        if updateElementFields:
+            from BasicTools.Containers.UnstructuredMeshFieldOperations import CopyFieldsFromOriginalMeshToTargetMesh
+            CopyFieldsFromOriginalMeshToTargetMesh(temp, mesh)
+        else:
+            print("Number Of Elements Changed: Dropping elemFields")
+            mesh.elemFields = {}
+
+    for name, data in mesh.elements.items():
+        data.originalIds = temp.elements[name].originalIds[data.originalIds]
 
     mesh.PrepareForOutput()
 
@@ -1225,9 +1238,19 @@ def CheckIntegrity_DeleteElements(GUI=False):
     points1 = [[0,0,0],[1,0,0],[0,1,0],[0,0,1],[1,1,1] ]
     tets = [[0,1,2],[1,2,3],[2,3,4]]
     mesh1 = CreateMeshOf(points1,tets,ElementNames.Triangle_3)
+    mesh1.elements[ElementNames.Triangle_3].originalIds += 10
     mask = np.zeros(3)
-    mask[1,2]
-    DeleteElements(mesh1, mask )
+    mask[[0,2] ] = 1
+    mesh1.elemFields["testField"] = np.arange(mesh1.GetNumberOfElements() , dtype=PBasicFloatType) +0.1
+
+    DeleteElements(mesh1, mask , True)
+    assert( len(mesh1.elemFields["testField"]) ==1 )
+    assert( mesh1.elemFields["testField"][0] == 1.1  )
+    print("toto",mesh1.elemFields["testField"] )
+
+    assert( len(mesh1.elements[ElementNames.Triangle_3].originalIds) == 1 )
+    assert( mesh1.elements[ElementNames.Triangle_3].originalIds[0] == 11 )
+    return "ok"
 
 def CheckIntegrity_CopyElementTags(GUI=False):
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshOf
@@ -1288,7 +1311,8 @@ def CheckIntegrity(GUI=False):
         CheckIntegrity_RigidBodyTransformation,
         CheckIntegrity_ComputeRigidBodyTransformationBetweenTwoSetOfPoints,
         CheckIntegrity_CleanDoubleElements,
-        CheckIntegrity_CopyElementTags
+        CheckIntegrity_CopyElementTags,
+        CheckIntegrity_DeleteElements
     ]
     for f in functionsToTest:
         print("running test : " + str(f))
