@@ -34,16 +34,30 @@ The actual install command is:
 
     conda install -c conda-forge basictools
 
+the Conda-Forge packages of BasicTools  are split in 4 packages :
+
+*  BasicTools-core: BasicTools package with the mandatory dependencies.
+*  BasicTools-extensions: a meta package with the extra dependencies to enable all functionalities of BasicTools
+*  BasicTools: this meta package install BasicTools-core and BasicTools-extensions to have a full installation in one shot
+*  BasicTools-envdev: is a meta package with the dependencies necessarily for the development, debugging, compilation and documentation generation.
+
+
 PIP
 ---
 
 The pip installation requires a local compilation, so you need to have a C++ (C++17 compatible) compiler installed locally on your system.
+Two C++ libraries, Eigen and boost, are needed during compilation (we onnly use the header only libraries part of this libraries).
+Eigen can be found inside the pip package eignecy. To use this embedded version the BASICTOOLS_USE_EIGENCYEIGEN must be set to 1.
+The C++ boost library is not present in PyPI so a manual installation is required.
+
 To compile and install BasicTools (version 1.9.4 in this case) with pip:
 
 .. code-block::
 
-
-    set BASICTOOLS_USE_EIGENCYEIGEN=1                                   # or "export" depending on your shell
+    wget https://boostorg.jfrog.io/artifactory/main/release/1.82.0/source/boost_1_82_0.zip
+    unzip boost_1_82_0.zip
+    set BASICTOOLS_USE_EIGENCYEIGEN=1
+    set BASICTOOLS_EXTERNAL_BOOST_DIR=%cd%\boost_1_82_0
     pip install eigency mkl numpy sympy mkl-include cython wheel
     pip install BasicTools@https://gitlab.com/drti/basic-tools/-/archive/1.9.4/basic-tools-1.9.4.tar.bz2
 
@@ -51,11 +65,17 @@ or for the latest master version:
 
 .. code-block::
 
-    set BASICTOOLS_USE_EIGENCYEIGEN=1                                   # or "export" depending on your shell
+    wget https://boostorg.jfrog.io/artifactory/main/release/1.82.0/source/boost_1_82_0.zip
+    unzip boost_1_82_0.zip
+    set BASICTOOLS_USE_EIGENCYEIGEN=1
+    set BASICTOOLS_EXTERNAL_BOOST_DIR=%cd%\boost_1_82_0
     pip install eigency mkl numpy sympy mkl-include cython wheel
-    set BASICTOOLS_USE_EIGENCYEIGEN=1                                   # or "export" depending on your shell
-
     pip install BasicTools@git+https://gitlab.com/drti/basic-tools.git
+
+.. note::
+    On linux/OsX you must:
+     - Change the `set` to `export` or `setenv` depending on your os/shell
+     - Change the `%cd%` to `$PWD`  depending on your os/shell
 
 The user can set the environment variable `PREFIX` to point to external libraries (like mkl and eigen header). For advanced configuration please refer to the setup.py file on the git repository.
 

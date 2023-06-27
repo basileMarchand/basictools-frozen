@@ -45,16 +45,28 @@ PIP
 The pip installation requires a local compilation, so you need to have a C++ (C++17 compatible) compiler installed locally on your system.
 To compile and install BasicTools (version 1.9.4 in this case) with pip:
 
-    set BASICTOOLS_USE_EIGENCYEIGEN=1                                   # or "export" depending on your shell
+    wget https://boostorg.jfrog.io/artifactory/main/release/1.82.0/source/boost_1_82_0.zip
+    unzip boost_1_82_0.zip
+    set BASICTOOLS_USE_EIGENCYEIGEN=1
+    set BASICTOOLS_EXTERNAL_BOOST_DIR=%cd%\boost_1_82_0
     pip install eigency mkl numpy sympy mkl-include cython wheel
     pip install BasicTools@https://gitlab.com/drti/basic-tools/-/archive/1.9.4/basic-tools-1.9.4.tar.bz2
 
+
+
 or for the latest master version:
 
-    set BASICTOOLS_USE_EIGENCYEIGEN=1                                   # or "export" depending on your shell
+    wget https://boostorg.jfrog.io/artifactory/main/release/1.82.0/source/boost_1_82_0.zip
+    unzip boost_1_82_0.zip
+    set BASICTOOLS_USE_EIGENCYEIGEN=1
+    set BASICTOOLS_EXTERNAL_BOOST_DIR=%cd%\boost_1_82_0
     pip install eigency mkl numpy sympy mkl-include cython wheel
     pip install BasicTools@git+https://gitlab.com/drti/basic-tools.git
 
+>Note
+On linux/OsX you must:
+>- Change the `set` to `export` or `setenv` depending on your os/shell
+>- Change the `%cd%` to `$PWD`  depending on your os/shell
 
 The user can set the environment variable `PREFIX` to point to external libraries (like mkl and eigen header). For advance configuration please read the setup.py file on the git repository.
 
@@ -63,7 +75,7 @@ It is also good practice to use a virtual environment when using pip.
 
 >Note
 We can not guarantee that all combinations of OS, Python Versions, packaging systems works.
->The current know issues are :
+
 
 For more complex installation (from sources) for developers please read the documentation.
 
@@ -85,7 +97,6 @@ Dependencies
     * scipy
     * sympy
     * cython
-    * vtk
     * eigency >=2
     * mkl
     * mkl-include
@@ -94,6 +105,7 @@ Dependencies
     Optionals Python packages (some functionalities may not be available without this packages):
 
     * scikit-sparse
+    * vtk
     * matplotlib
     * pyamg
     * h5py

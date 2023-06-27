@@ -25,8 +25,9 @@ to activate debug compilation set the variable debug in the file setup.cfg to Tr
 
 enable_MKL =  int(os.environ.get("BASICTOOLS_DISABLE_MKL",0)) ==  0
 annotate = False # to generate annotation (HTML files)
-useEigencyEigen = "BASICTOOLS_USE_EIGENCYEIGEN" in os.environ
 useEigencyEigen = int(os.environ.get("BASICTOOLS_USE_EIGENCYEIGEN",0)) == 1
+externalBOOST = os.environ.get("BASICTOOLS_EXTERNAL_BOOST_DIR","")
+
 __config = configparser.ConfigParser()
 __config.read('setup.cfg')
 debug = True if __config["build_ext"]["debug"].lower()  in ["1","true"] else False
@@ -89,6 +90,10 @@ def GetBasicToolsIncludeDirs():
     if not useEigencyEigen:
         if "EIGEN_INC" in os.environ:
             include_dirs.append(os.environ.get('EIGEN_INC'))
+
+    if len(externalBOOST) > 0:
+        include_dirs.append(externalBOOST)
+
     return list(set(include_dirs))
 
 class add_path():
