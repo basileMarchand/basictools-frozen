@@ -1,11 +1,10 @@
 variables:
     MYPROJECT : 'BasicTools'
     PACKAGE_NAME : "BTEnv"
-    CONDA_BUILD_PACKAGE_DEPS : "cxx-compiler mkl-include cython pytest pytest-cov"
-    CONDA_DOC_PACKAGE_DEPS : "sphinx<6.0 breathe doxygen"
+    CONDA_BUILD_PACKAGE_DEPS : "cxx-compiler mkl-include cython pytest pytest-cov boost-cpp"
+    CONDA_DOC_PACKAGE_DEPS : "sphinx<6.0 breathe doxygen sphinx-rtd-theme"
     CONDA_RUN_PACKAGE_DEPS : "mkl numpy sympy scipy meshio vtk pyvista networkx>=3.0 eigency"
     SYSTEM_PACKAGE_DEPS : "libgl1-mesa-glx"
-    PIP_DOC_PACKAGE_DEPS : "sphinx-rtd-theme"
 
 stages:
     - test
@@ -33,7 +32,6 @@ stages:
     - mamba create -y -n $PACKAGE_NAME python=$PYTHON_VERSION
     - source activate $PACKAGE_NAME
     - mamba install -y $CONDA_BUILD_PACKAGE_DEPS $CONDA_DOC_PACKAGE_DEPS $CONDA_RUN_PACKAGE_DEPS $CONDA_DOCKER_PACKAGE_DEPS
-    - pip install $PIP_DOC_PACKAGE_DEPS
     - python setup.py build_clib
     - python setup.py build_ext --inplace
     - export PYTHONPATH=$PWD/src/
@@ -52,7 +50,7 @@ stages:
     - export CATALYST_NO_FAIL="True"
     - export ABAQUS_NO_FAIL="True"
     - mkdir -p tesdata
-    - pytest --junitxml=tesdata/BasicToolsPyTests${PYTHON_VERSION_SHORT}.xml --cov=BasicTools --cov-report=html:public/coverage --ignore=src/BasicTools/IO/ParaViewBridge --ignore=src/BasicTools/IO/Wormhole.py src
+    - pytest --junitxml=tesdata/BasicToolsPyTests${PYTHON_VERSION_SHORT}.xml --cov=BasicTools --cov-report=html:public/coverage  --cov-report=xml:public/cobertura-coverage.xml  --ignore=src/BasicTools/IO/ParaViewBridge --ignore=src/BasicTools/IO/Wormhole.py src
     - python setup.py build_sphinx
   artifacts:
     paths:
@@ -63,6 +61,9 @@ stages:
       - docs/_build/html
     reports:
       junit: tesdata/BasicToolsPyTests$PYTHON_VERSION_SHORT.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: public/cobertura-coverage.xml
     expire_in: 1 day
 
 test_and_doc_py38:
