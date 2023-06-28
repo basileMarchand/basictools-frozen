@@ -500,6 +500,45 @@ class UnstructuredMesh(MeshBase):
                     numberOfElements += data.GetNumberOfElements()
         return numberOfElements
 
+    def Merge(self, other:UnstructuredMesh):
+        nbNodes = self.GetNumberOfNodes()
+        self.nodes = np.vstack((self.nodes,other.nodes))
+        self.originalIDNodes = np.hstack((self.originalIDNodes,-other.originalIDNodes))
+
+        for tagName in other.nodesTags.keys():
+            tag = other.nodesTags[tagName]
+            self.nodesTags.CreateTag(tagName,False).AddToTag(tag.GetIds()+nbNodes)
+
+        def MergeFields(dest, origin, dsize, osize):
+            names = set()
+            names.update(dest.keys())
+            names.update(origin.keys())
+
+            for name in names:
+                dv = dest.get(name,None)
+                ov = origin.get(name,None)
+                if dv is not None and ov is None:
+                    shape = list(dv.shape)
+                    shape[0] = osize
+                    ov = np.zeros(shape,dtype=dv.dtype)
+                elif dv is None and ov is not None:
+                    shape = list(ov.shape)
+                    shape[0] = dsize
+                    dv = np.zeros(shape,dtype=ov.dtype)
+                else:
+                    shape = list(ov.shape)
+
+                if len(shape) == 1:
+                    dest[name] = np.hstack((dv,ov))
+                else:
+                    dest[name] = np.vstack((dv,ov))
+
+        MergeFields(self.nodeFields, other.nodeFields, self.GetNumberOfNodes(), other.GetNumberOfNodes())
+        MergeFields(self.elemFields, other.elemFields, self.GetNumberOfElements(), other.GetNumberOfElements())
+
+        for name,data in other.elements.items():
+            self.GetElementsOfType(name).Merge(data,nbNodes)
+
     def MergeElements(self, other:UnstructuredMesh, force:bool=False):
         """Merge the elements for a second mesh into this
         the nodes array must be the same (not only equal)
@@ -953,6 +992,39 @@ def CheckIntegrity():
     print(resII.GetNumberOfElements(dim=2))
     print(resII.elements.GetTagsNames())
     del resII.elements[ElementNames.Triangle_3]
+
+    resII.nodeFields["scalarNF"] = np.zeros(resII.GetNumberOfNodes(), dtype=PBasicFloatType)
+    res.nodeFields["scalarNF"] = np.arange(res.GetNumberOfNodes(), dtype=PBasicFloatType)
+
+    resII.nodeFields["vectorNF"] = np.zeros((resII.GetNumberOfNodes(),2), dtype=PBasicFloatType)
+    res.nodeFields["vectorNF"] = np.ones((res.GetNumberOfNodes(),2), dtype=PBasicFloatType)
+
+
+    resII.elemFields["scalarEF"] = np.zeros(resII.GetNumberOfElements(), dtype=PBasicFloatType)
+    res.elemFields["scalarEF"] = np.zeros(res.GetNumberOfElements(), dtype=PBasicFloatType)
+
+
+    resII.elemFields["vectorEF"] = np.zeros((resII.GetNumberOfElements(),2), dtype=PBasicIndexType)
+    res.elemFields["vectorEF"] = np.ones((res.GetNumberOfElements(),2), dtype=PBasicIndexType)
+
+    resII.elemFields["vectorEF_X"] = np.zeros((resII.GetNumberOfElements(),2), dtype=PBasicFloatType)
+    res.elemFields["vectorEF_Y"] = np.ones((res.GetNumberOfElements(),2), dtype=PBasicFloatType)
+
+    nsize1 = resII.GetNumberOfNodes()
+    esize1 = resII.GetNumberOfElements()
+
+    nsize2 = res.GetNumberOfNodes()
+    esize2 = res.GetNumberOfElements()
+
+    resII.Merge(res)
+
+    for name, value in resII.elemFields.items():
+        assert(value.shape[0] == esize1 +esize2)
+
+    for name, value in resII.nodeFields.items():
+        assert(value.shape[0] == nsize1 +nsize2)
+
+
     return "ok"
 
 if __name__ == '__main__':
