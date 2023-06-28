@@ -222,6 +222,30 @@ def ReadElementFilter(string: str) -> ElementFilter:
 
     return res
 
+def GetNodesMaskForElementFilter(elementFilter: ElementFilter, mesh: UnstructuredMesh)-> np.ndarray:
+    """Generate a node mask of all the nodes used by the element filter
+
+    Parameters
+    ----------
+    elementFilter : ElementFilter
+        The element selection
+    mesh : UnstructuredMesh
+        the mesh to operate on
+
+    Returns
+    -------
+    np.ndarray
+        a array of size mesh.GetNumberOfNodes and True if the nodes is used by an element selected by the filter
+    """
+    elementFilter.SetMesh(mesh)
+
+    res = np.zeros(mesh.GetNumberOfNodes(), dtype =bool)
+
+    for name, data, ids in elementFilter:
+        res[np.unique(data.connectivity[ids,:].flatten())] = True
+
+    return res
+
 #--------------  CheckIntegrity ---------------
 def CheckIntegrityReadElementFilter(GUI=False):
     print(ReadElementFilter("Tags(Inside) & Dim(2) & nTags(Toto,Tata) & Exprs(x-1,y+3, x**2 +y**2 - 5)  "))
@@ -231,6 +255,15 @@ def CheckIntegrityReadElementFilter(GUI=False):
     print(ReadElementFilter(" Tags(toto,tata,titi)"))
     print(ReadElementFilter(""))
     return "ok"
+
+def CheckIntegrity_GetNodesMaskForElementFilter(GUI=False):
+    from BasicTools.Containers.UnstructuredMeshCreationTools import CreateSquare
+    mesh = CreateSquare(dimensions=[10,10])
+    print(mesh)
+
+    assert(len(np.where(GetNodesMaskForElementFilter(ElementFilter(mesh,tag="X0"),mesh))[0])==10)
+    return "ok"
+
 
 def CheckIntegrity_FilterToETag(GUI=False):
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateSquare
@@ -303,7 +336,8 @@ def CheckIntegrity(GUI=False):
         CheckIntegrity_FilterToETag,
         CheckIntegrity_VerifyExclusiveFilters,
         CheckIntegrity_ListOfElementFiltersFromETagList,
-        CheckIntegrity_ListOfElementFiltersFromMask
+        CheckIntegrity_ListOfElementFiltersFromMask,
+        CheckIntegrity_GetNodesMaskForElementFilter
     ]
     for f in toTest:
         print("running test : " + str(f))
