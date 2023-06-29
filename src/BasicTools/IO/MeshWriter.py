@@ -696,7 +696,6 @@ def CheckIntegrity(GUI=False):
     print(OW)
     OW.Write(mymesh)
     OW.Close()
-    OW.SetGlobalDebugMode()
     for v in [1,2,3,4]:
         print(f"-- {v} ------------------------------------------------------------------")
         OWB = MeshWriter()
