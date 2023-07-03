@@ -6,30 +6,36 @@ package:
 
 source:
       path: ../../.
+build:
+  number: 0
 
 outputs:
   - name: basictools-core
     version: {{ GIT_DESCRIBE_TAG }}.{{ GIT_DESCRIBE_NUMBER }}
-    script: build_core.sh #  [not win]
-    script: bld_core.bat  #  [win]
+    script: build_core.sh  # [not win]
+    script: bld_core.bat  # [win]
     build:
-      number: 0
+      script_env:
+        - BASICTOOLS_DISABLE_MKL=0
+        - BASICTOOLS_USE_EIGENCYEIGEN=0
       entry_points:
         - "MeshFileConvert = BasicTools.IO.MeshFileConverter:Main"
       skip_compile_pyc:
         "BasicToolsParaViewBridge.py"
-      script_env:
-        - BASICTOOLS_DISABLE_MKL=0
-        - BASICTOOLS_USE_EIGENCYEIGEN=0
+
     requirements:
       build:
+        - python
+        - cross-python_{{ target_platform }}     # [build_platform != target_platform]
         - {{ compiler('c') }}
         - {{ compiler('cxx') }}
+        - cython
       host:
         - python {{ python }}
         - numpy >=1.20
-        - sympy
+
         - cython
+        - sympy
         - eigency
         - mkl
         - mkl-include
@@ -64,7 +70,11 @@ outputs:
       - networkx >=3.0
     test:
       imports:
-        - vtk
+        - psutil
+        - sksparse.cholmod
+        - h5py
+        - meshio
+        - networkx
   - name: "basictools"
     version: {{ GIT_DESCRIBE_TAG }}.{{ GIT_DESCRIBE_NUMBER }}
     requirements:
@@ -99,12 +109,10 @@ outputs:
       - networkx >=3.0
       - boost-cpp
       - pytest
+      - vtk
     test:
       imports:
         - numpy
-        - vtk
-        - sympy
-        - cython
 
 about:
     home: {{ data['url'] }}
