@@ -289,6 +289,8 @@ void TransferClass::Compute() {
     std::cout << "Starting c++ FieldTransfer" << std::endl;
   }
 
+  bool multiple_closest_elements;
+
   if ((this->insideMethod == 0) && (this->outsideMethod == 0)) {
     for (int tp = 0; tp < nbTargetPoints; ++tp){
       //std::cout << "Inside point " << tp << std::endl;
@@ -401,6 +403,7 @@ void TransferClass::Compute() {
     //resultMem.rese()
     //computation for the real distance
     long unsigned int tecpt;
+    multiple_closest_elements = false;
     for (tecpt = 0; tecpt < potentialElements.size(); ++tecpt) {
       const CBasicIndexType potential_element_cpt = potentialElementIndex[tecpt];
       const CBasicIndexType peGlobalId = potentialElements[potential_element_cpt];
@@ -440,7 +443,12 @@ void TransferClass::Compute() {
         break;
       }
       // store the best element (closest)
-      if (potentialElementsDistances[potential_element_cpt] < distmem) {
+      if (potentialElementsDistances[potential_element_cpt] <= distmem) {
+        if ( abs(potentialElementsDistances[potential_element_cpt] - distmem) < 1e-14 ){
+          multiple_closest_elements = true;
+        } else {
+          multiple_closest_elements = false;
+        }
         //std::cout << " not found yet -------------------------------------"  << std::endl;
         distmem = potentialElementsDistances[potential_element_cpt];
         bestCandidate.error = result.error;
@@ -471,11 +479,18 @@ void TransferClass::Compute() {
       }
       if (outsideMethod == TransferMethods::Extrap && bestCandidate.error == false) {
         //std::cout << " BBBBBBBBB "  << std::endl;
-        rows.insert(rows.end(), bestCandidate.shapeFunc.size(), p);
-        cols.insert(cols.end(), bestCandidate.localnumbering.begin(), bestCandidate.localnumbering.end());
-        data.insert(data.end(), bestCandidate.shapeFunc.begin(), bestCandidate.shapeFunc.end());
-        //std::cout << " bestCandidate.shapeFunc "  << bestCandidate.shapeFunc << std::endl;
-        status[p] = 2;
+        if(multiple_closest_elements){
+          rows.insert(rows.end(),bestCandidate.shapeFuncClamped.size(), p);
+          cols.insert(cols.end(),bestCandidate.localnumbering.begin(), bestCandidate.localnumbering.end() );
+          data.insert(data.end(), bestCandidate.shapeFuncClamped.begin(), bestCandidate.shapeFuncClamped.end()) ;
+          status[p] = 3;
+        } else {
+          rows.insert(rows.end(), bestCandidate.shapeFunc.size(), p);
+          cols.insert(cols.end(), bestCandidate.localnumbering.begin(), bestCandidate.localnumbering.end());
+          data.insert(data.end(), bestCandidate.shapeFunc.begin(), bestCandidate.shapeFunc.end());
+          //std::cout << " bestCandidate.shapeFunc "  << bestCandidate.shapeFunc << std::endl;
+          status[p] = 2;
+        }
       } else if (outsideMethod == TransferMethods::Clamp) {
         //std::cout << " CCCCCCCCCCCCCCCC "  << std::endl;
         rows.insert(rows.end(),bestCandidate.shapeFuncClamped.size(), p);
