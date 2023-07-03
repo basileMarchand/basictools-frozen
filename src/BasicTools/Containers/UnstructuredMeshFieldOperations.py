@@ -1094,6 +1094,35 @@ def CheckIntegrity2DTo3D(GUI=False):
     RunTransfer(inputFEField,data,b)
     return "ok"
 
+def CheckIntegrity3DTo3D(GUI=False):
+    from BasicTools.Containers.UnstructuredMeshCreationTools import CreateCube
+
+    N = 10
+    inputmesh = CreateCube(dimensions = [N,N,N],origin=[-1.]*3,spacing=[2/(N-1),2/(N-1),2/(N-1)])
+
+    from BasicTools.FE.FETools import PrepareFEComputation
+    space, numberings, _offset, _NGauss = PrepareFEComputation(inputmesh)
+
+    from BasicTools.FE.Fields.FEField import FEField
+    inputFEField = FEField(name="3DTo3D",mesh=inputmesh,space=space,numbering=numberings[0])
+    N = 4
+    b = CreateCube(dimensions = [N,N,N],origin=[-1.]*3,spacing=[2/(N-1),2/(N-1),2/(N-1)])
+    from BasicTools.Linalg.Transform import Transform
+    op = Transform()
+    op.keepNormalised = False
+    op.keepOrthogonal = False
+    op.SetFirst([1.4,0.56,0])
+    op.SetSecond([-1.135,1.42486,1.6102])
+
+    b.nodes = np.ascontiguousarray(op.ApplyTransform(b.nodes))
+
+    x = inputmesh.nodes[:,0]
+    y = inputmesh.nodes[:,1]
+    data = (x -0.5)**2-y*0.5+x*y*0.25
+
+    RunTransfer(inputFEField,data,b)
+    return "ok"
+
 
 def CheckIntegrity1DSecondOrderTo2D(GUI=False):
     from BasicTools.Containers.UnstructuredMeshCreationTools import CreateSquare
@@ -1180,7 +1209,8 @@ def CheckIntegrity(GUI=False):
     CheckIntegrity1D,
     CheckIntegrity2D,
     CheckIntegrity2DTo3D,
-    CheckIntegrityApplyRotationMatrixTensorField
+    CheckIntegrityApplyRotationMatrixTensorField,
+    CheckIntegrity3DTo3D
     ]
     for f in totest:
         print("running test : " + str(f))
