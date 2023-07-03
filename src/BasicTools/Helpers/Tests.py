@@ -541,6 +541,7 @@ def RunTests() -> int:
                 from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
                 myObj = BaseOutputObject()
                 myObj.SetGlobalDebugMode(True)
+                myObj.SetVerboseLevel(2)
             elif opt in ("-p"):
                 profiling = True
             elif opt in ("-e"):
