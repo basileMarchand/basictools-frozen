@@ -297,7 +297,7 @@ def GetFieldTransferOpPython(inputField: FEField, targetPoints: ArrayLike, metho
         dist = dist[index]
         potentialElements = potentialElements[index]
         distmem = 1e10
-
+        multiple_closest_elements = False # to clamp in the case of
         for cpt,e in enumerate(potentialElements):
             original_data, lenb, imesh_data, imesh_elnb = GetElement(iMesh,e)
             localnumbering = numbering[original_data.elementType]
@@ -325,7 +325,11 @@ def GetFieldTransferOpPython(inputField: FEField, targetPoints: ArrayLike, metho
                 break
 
             # store the best element (closest)
-            if dist[cpt] < distmem:
+            if dist[cpt] <= distmem:
+                if abs(dist[cpt] - distmem) < 1e-14 :
+                    multiple_closest_elements = True
+                else:
+                    multiple_closest_elements = False
                 distmem = dist[cpt]
                 if inside is None:
                     # non is error in the inverse mapping, only clamp is available
@@ -346,8 +350,12 @@ def GetFieldTransferOpPython(inputField: FEField, targetPoints: ArrayLike, metho
                 continue
 
             if outsideMethod == 2 and memshapeFunc is not None:
-                sF = memshapeFunc
-                status[p] = 2
+                if multiple_closest_elements:
+                    sF = memshapeFuncClamped
+                    status[p] = 3
+                else:
+                    sF = memshapeFunc
+                    status[p] = 2
             elif outsideMethod == 3:
                 sF = memshapeFuncClamped
                 status[p] = 3
@@ -962,7 +970,9 @@ def RunTransfer(inputFEField,data,outmesh):
         PointFieldsNames.append(method+"Pos"+"Python")
         PointFields.append(newPosPython)
 
-        if not np.all(np.isclose(newdataCpp.ravel(),newdataPython.ravel())):
+        try:
+            np.testing.assert_allclose(newdataCpp, newdataPython)
+        except:
             print(newdataCpp.shape)
             print(newdataPython.shape)
             print(newdataCpp)
@@ -972,7 +982,8 @@ def RunTransfer(inputFEField,data,outmesh):
                     PointFields = PointFields,
                     PointFieldsNames = PointFieldsNames)
             print(f"Last file with the data : \n {tempdir}GetFieldTransferOp_TargetMesh{inputFEField.name}.xdmf")
-            raise Exception(f"Cpp and python version of the field transfer gives differents solutions for method : {method}")
+            print(f"Cpp and python version of the field transfer gives differents solutions for method : {method}")
+            raise
 
     WriteMeshToXdmf(tempdir+"GetFieldTransferOp_TargetMesh"+inputFEField.name+".xdmf",
                     outmesh,
