@@ -745,15 +745,16 @@ def CheckIntegrityTTC(ttc,GUI=False):
     diag[diag == 0] = 1.0
     M = sparse.dia_matrix((1./diag,0), shape=Kc.shape)
 
-    sol = linalg.gmres(op,Fc,atol=0.,tol=0., M=M)[0]
+    sol, gmres_info = linalg.gmres(op,Fc,atol=1e-15,tol=1e-15, M=M)
+    print(f"gmres_info = {gmres_info}")
     print("---------- Solution using gmres --------------  \n", sol )
     errorA = np.linalg.norm(Kc.dot(sol)- Fc)/np.linalg.norm(Fc)
     print('Error on the computed solution (using matricexs) |Kc(Uc)-Fc|/|Fc| \n', errorA)
-    if errorA > 10e-8:
+    if errorA > 1e-7:
         raise Exception("Error in CheckIntegrity")
     errorB = np.linalg.norm(CH.matvec(sol)- Fc)/np.linalg.norm(Fc)
     print('Error on the computed solution (using matvec) | Op(Uc)-Fc |/|Fc| \n', errorB)
-    if errorB > 10e-8:
+    if errorB > 1e-7:
         raise Exception("Error in CheckIntegrity")
 
     computed_solution = CH.RestoreSolution(sol)
