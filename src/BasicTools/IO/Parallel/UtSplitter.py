@@ -139,7 +139,13 @@ class UtSplitter(WriterBase):
 
 
             #write .ut
-            __string = "**meshfile " + os.path.relpath(self.dataFolder, self.outputFolder) + os.sep + self.name + "-pmeshes" + os.sep + self.name + sdString + ".geof\n"
+            try:
+                relativePath = os.path.relpath(self.dataFolder, self.outputFolder)
+            except:
+                print("Error using relative path. Using absolute path (files generated are not relocatable)")
+                relativePath = self.dataFolder
+
+            __string = "**meshfile "+ relativePath + os.sep + self.name + "-pmeshes" + os.sep + self.name + sdString + ".geof\n"
             with open(self.dataFolder + self.name + ".ut", 'r') as inFile:
                 #next(inFile)
                 inFile.readline()
@@ -160,7 +166,7 @@ class UtSplitter(WriterBase):
 
 
         #write .cut
-        __string = "***decomposition\n" + "  **global_mesh " + os.path.relpath(self.dataFolder, self.outputFolder) + os.sep + self.name + ".geof\n" + "  **domains "+str(self.nbsd)+"\n"
+        __string = "***decomposition\n" + "  **global_mesh " + relativePath + os.sep + self.name + ".geof\n" + "  **domains "+str(self.nbsd)+"\n"
         with open(self.outputFolder + self.name + ".cut", "w") as outFile:
             outFile.write(__string)
 
@@ -176,7 +182,7 @@ def CheckIntegrity():
     import BasicTools.IO.Parallel.UtSplitter as US
     splitter = US.UtSplitter()
     splitter.SetName("cube")
-    splitter.SetdataFolder(BasicToolsTestData.GetTestDataPath() + "UtParExample/")
+    splitter.SetdataFolder(BasicToolsTestData.GetTestDataPath() + "UtParExample"+os.sep)
     splitter.SetOutputFolder(tempdir)
     splitter.Split()
     ##################################
@@ -186,8 +192,8 @@ def CheckIntegrity():
     import filecmp
     for i in range(splitter.nbsd):
         sdString = "-" + str(i+1).zfill(3)
-        print(TFormat.InRed("node files for subdomain "+str(i+1)+" equals  ? "+ str(filecmp.cmp(tempdir + "cube"+sdString+".node",  BasicToolsTestData.GetTestDataPath() + "UtParExample/cube"+sdString+".node", shallow=False))))
-        print(TFormat.InRed("integ files for subdomain "+str(i+1)+" equals ? "+ str(filecmp.cmp(tempdir + "cube"+sdString+".integ", BasicToolsTestData.GetTestDataPath() + "UtParExample/cube"+sdString+".integ", shallow=False))))
+        print(TFormat.InRed("node files for subdomain "+str(i+1)+" equals  ? "+ str(filecmp.cmp(tempdir + "cube"+sdString+".node",  BasicToolsTestData.GetTestDataPath() + "UtParExample"+os.sep+"cube"+sdString+".node", shallow=False))))
+        print(TFormat.InRed("integ files for subdomain "+str(i+1)+" equals ? "+ str(filecmp.cmp(tempdir + "cube"+sdString+".integ", BasicToolsTestData.GetTestDataPath() + "UtParExample"+os.sep+"cube"+sdString+".integ", shallow=False))))
 
     print(tempdir)
     return "ok"
