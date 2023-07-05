@@ -167,7 +167,13 @@ class UtMerger(WriterBase):
         print("Global .node has been written")
 
         #write .ut
-        __string = "**meshfile " + os.path.relpath(self.dataFolder, self.outputFolder) + os.sep + cutGeof+"\n"
+        try:
+            relativePath = os.path.relpath(self.dataFolder, self.outputFolder)
+        except:
+            print("Error using relative path. Using absolute path (files generated are not relocatable)")
+            relativePath = self.dataFolder
+
+        __string = "**meshfile " + relativePath + os.sep + cutGeof+"\n"
         with open(self.dataFolder + self.name + "-001.ut", 'r') as inFile:
             inFile.readline()
             for i in range(3):
@@ -222,14 +228,14 @@ def CheckIntegrity():
     import BasicTools.IO.Parallel.UtMerger as UM
     merger = UM.UtMerger()
     merger.SetName("cube")
-    merger.SetdataFolder(BasicToolsTestData.GetTestDataPath() + "UtParExample/")
+    merger.SetdataFolder(BasicToolsTestData.GetTestDataPath() + "UtParExample"+os.sep)
     merger.SetOutputFolder(tempdir)
     merger.Merge()
     ##################################
 
     import filecmp
-    print(TFormat.InRed("node files equals  ? "+ str(filecmp.cmp(tempdir + "cube.node",  BasicToolsTestData.GetTestDataPath() + "UtParExample/cube.node", shallow=False))))
-    print(TFormat.InRed("integ files equals ? "+ str(filecmp.cmp(tempdir + "cube.integ", BasicToolsTestData.GetTestDataPath() + "UtParExample/cube.integ", shallow=False))))
+    print(TFormat.InRed("node files equals  ? "+ str(filecmp.cmp(tempdir + "cube.node",  BasicToolsTestData.GetTestDataPath() + "UtParExample"+os.sep+"cube.node", shallow=False))))
+    print(TFormat.InRed("integ files equals ? "+ str(filecmp.cmp(tempdir + "cube.integ", BasicToolsTestData.GetTestDataPath() + "UtParExample"+os.sep+"cube.integ", shallow=False))))
     print(tempdir)
     return "ok"
 
