@@ -28,7 +28,9 @@ cdef class NativeTransfer:
     def SetVerbose(self, verbose:bool):
         self.cpp_object.SetVerbose(verbose)
 
-    def SetTransferMethod(self, method):
+    def SetTransferMethod(self, method:str ):
+        if method is None:
+            method = "Interp/Clamp"
         self.cpp_object.SetTransferMethod(method.encode())
 
     def GetTransferMethod(self):

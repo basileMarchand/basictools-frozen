@@ -105,17 +105,21 @@ def CopyFieldsFromOriginalMeshToTargetMesh(inMesh: UnstructuredMesh, outMesh: Un
 def GetFieldTransferOp(inputField: FEField, targetPoints: ArrayLike, method: Union[str,None]=None, verbose:bool=False, elementFilter: Optional[ElementFilter]=None)-> Tuple[np.ndarray,np.ndarray]:
     try:
         return GetFieldTransferOpCpp(inputField, targetPoints, method, verbose=verbose, elementFilter=elementFilter)
-    except :
+    except ImportError:
         print("Error in the cpp version GetFieldTransferOp. Using Python (slow) version ")
         return GetFieldTransferOpPython(inputField, targetPoints, method, verbose=verbose, elementFilter=elementFilter)
+    except:
+        raise
 
 def GetFieldTransferOpCpp(inputField: FEField, targetPoints: ArrayLike, method: Union[str,None]=None, verbose:bool=False, elementFilter: Optional[ElementFilter]=None)-> Tuple[np.ndarray,np.ndarray]:
     from BasicTools.Containers.NativeTransfer import NativeTransfer
     nt = NativeTransfer()
     nt.SetVerbose(verbose)
-    nt.SetSourceFEField(inputField,elementFilter)
     nt.SetTargetPoints(targetPoints)
+    if method is None:
+        method = "Interp/Clamp"
     nt.SetTransferMethod(method)
+    nt.SetSourceFEField(inputField,elementFilter)
     nt.Compute()
     op = nt.GetOperator()
     status = nt.GetStatus()
