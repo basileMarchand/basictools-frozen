@@ -109,42 +109,33 @@ class add_path():
         except ValueError:
             pass
 
-try:
-    with add_path('./src/'):
-        for generator in cpp_generators:
-            code = compile(open(generator).read(),generator,"exec")
-            res = {}
-            exec(code,res)
-            generated_file  = res["GetGeneratedFiles"]("")
-            cpp_src = cpp_src + generated_file
+with add_path('./src/'):
+    for generator in cpp_generators:
+        code = compile(open(generator).read(),generator,"exec")
+        res = {}
+        exec(code,res)
+        generated_file  = res["GetGeneratedFiles"]("")
+        cpp_src = cpp_src + generated_file
 
-    modules = []
-    cpp_src_with_path = [os.path.join("cpp_src", src) for src in cpp_src]
+modules = []
+cpp_src_with_path = [os.path.join("cpp_src", src) for src in cpp_src]
 
 
-    if debug:
-        cpp_src_with_path = sorted(cpp_src_with_path,key=os.path.getmtime,reverse=True )
+if debug:
+    cpp_src_with_path = sorted(cpp_src_with_path,key=os.path.getmtime,reverse=True )
 
-    ext_libraries = [['libCppBasicTools', {
-               'sources': cpp_src_with_path,
-               }
-    ]]
+ext_libraries = [['libCppBasicTools', {
+            'sources': cpp_src_with_path,
+            }
+]]
 
-    cython_src_with_path  = [os.path.join("src", "BasicTools",src) for src in cython_src]
+cython_src_with_path  = [os.path.join("src", "BasicTools",src) for src in cython_src]
 
-    for n,m in zip(cython_src,cython_src_with_path):
-        modules.append(Extension("BasicTools."+n.split(".pyx")[0].replace("/","."), [m],
-        libraries=["libCppBasicTools"],
-        language="c++",
-        ))
-
-except ImportError as e:
-    print(f"Compilation disabled since {e.name} package is missing")
-    modules = []
-    ext_libraries = []
-except Exception as e:
-    print("Error during generation of cpp sources ")
-    print(e)
+for n,m in zip(cython_src,cython_src_with_path):
+    modules.append(Extension("BasicTools."+n.split(".pyx")[0].replace("/","."), [m],
+    libraries=["libCppBasicTools"],
+    language="c++",
+    ))
 
 extra_compile_args = {
             'unix': ['-fopenmp','-std=c++17' ],
