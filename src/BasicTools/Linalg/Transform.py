@@ -67,8 +67,8 @@ class Transform(BaseOutputObject):
             second -= first*np.dot(first,second)/np.dot(first,first)
 
         second_norm = np.linalg.norm(second)
-        if  second_norm == 0:
-            raise Exception("cat set second to " + str(data) + " This vector ir colinear to first :" + str(first))
+        if  second_norm == 0: # pragma: no cover
+            raise Exception("cant set second to " + str(data) + " This vector ir colinear to first :" + str(first))
 
         if self.keepNormalised :
             second /= second_norm
@@ -88,7 +88,7 @@ class Transform(BaseOutputObject):
                 third -= second*np.dot(second,third)/np.dot(second,second)
 
         third_norm = np.linalg.norm(third)
-        if  third_norm == 0:
+        if  third_norm == 0: # pragma: no cover
             raise Exception("cant set third to " + str(data) + " This vector ir colinear to first and/or sencond :" + str(first) + " " + str(second))
 
         if self.keepNormalised :
@@ -179,6 +179,88 @@ class Transform(BaseOutputObject):
         res += "    second : " + str(self.RMatrix[1,:])+ "\n"
         res += "    third : " + str(self.RMatrix[2,:]) + "\n"
         return res
+
+class Transform2D(BaseOutputObject):
+
+    def __init__(self, offset=None, first=None, second=None):
+        super().__init__()
+        offset = self.EnsureIn3D(offset)
+        first = self.EnsureIn3D(first)
+        second = self.EnsureIn3D(second)
+        self.transform3D = Transform(offset=offset, first=first, second=second)
+
+    def SetOffset(self,data):
+        self.transform3D.SetOffset(self.EnsureIn3D(data))
+
+    def SetFirst(self,data):
+        self.transform3D.SetFirst(self.EnsureIn3D(data))
+
+    @property
+    def keepOrthogonal(self):
+        return self.transform3D.keepOrthogonal
+
+    @property
+    def keepNormalised(self):
+        return self.transform3D.keepNormalised
+
+    @keepOrthogonal.setter
+    def keepOrthogonal(self, value):
+        self.transform3D.keepOrthogonal = value
+
+    @keepNormalised.setter
+    def keepNormalised(self, value):
+        self.transform3D.keepNormalised = value
+
+    def GetDirection(self,i, pos=None, direction=None):
+        return self.EnsureIn2D(self.transform3D.GetDirection(pos, direction))
+
+    def ApplyTransform(self, point):
+        return self.EnsureIn2D(self.transform3D.ApplyTransform(self.EnsureIn3D(point)))
+
+    def ApplyInvTransform(self, point):
+        return self.EnsureIn2D(self.transform3D.ApplyInvTransform(self.EnsureIn3D(point)))
+
+    def ApplyTransformDirection(self, point):
+        return self.EnsureIn2D(self.transform3D.ApplyTransformDirection(self.EnsureIn3D(point)))
+
+    def ApplyInvTransformDirection(self, point):
+        return self.EnsureIn2D(self.transform3D.ApplyInvTransformDirection(self.EnsureIn3D(point)))
+
+    def GetOrthoNormalBase(self):
+        return Transform2D(self.transform3D.offset, self.transform3D.RMatrix[0,:], self.transform3D.RMatrix[1,:])
+
+    def EnsureIn2D(self, data):
+        if data is None:
+            return None
+        data = np.asarray(data)
+
+        if len(data.shape) == 1:
+            return data[:2]
+        else:
+            return np.ascontiguousarray(data[:,:2])
+
+    def EnsureIn3D(self, data):
+
+        if data is None:
+            return None
+        data = np.asarray(data)
+
+        if len(data.shape) == 1:
+            if data.shape[0] == 3:
+                return data
+            res = np.empty((3),dtype=data.dtype)
+            res[:data.shape[0]] = data
+            res[data.shape[0]:] = 0
+            return res
+        else:
+            if data.shape[1] == 3:
+                return data
+            res = np.empty((data.shape[0],3),dtype=data.dtype)
+            res[:,:data.shape[1]] = data
+            res[:,data.shape[1]:] =0
+            return res
+
+
 def CheckIntegrity(GUI=False):
     orient = Transform()
     orient.SetOpUsingThird([5,2,1])
@@ -242,6 +324,48 @@ def CheckIntegrity(GUI=False):
             v = [1., 4., 5.]
             t = np.array([[1., 2., 3.],[4., 5., 6.],[7., 8., 9.]])
             CheckOperations(orient,p,v,t)
+
+    orient = Transform2D(offset=[1,1],
+                        first=[1,0],
+                        second =[1,1])
+
+    assert(orient.EnsureIn2D(None) == None)
+    np.testing.assert_equal(orient.EnsureIn2D([0,1,2]) , [0,1])
+
+    assert(orient.EnsureIn3D(None) == None)
+    np.testing.assert_equal(orient.EnsureIn3D([[0,1,2]]) , [[0,1,2]])
+
+    orient.keepOrthogonal = True
+    assert(orient.keepOrthogonal == True)
+
+    orient.keepNormalised = True
+    assert(orient.keepNormalised == True)
+
+    orient.SetOffset([1,1])
+    orient.SetOffset([1,1,0])
+
+    orient.SetFirst([1,0])
+    orient.SetFirst([1,0,0])
+
+
+
+    print(orient.GetDirection(0) )
+    #test with a list of points
+    data = np.array([[0,1],[3,4]],dtype=PBasicFloatType)
+    data_new = orient.ApplyTransform(data)
+    data_new_neo = orient.ApplyInvTransform(data_new)
+    np.testing.assert_allclose(data, data_new_neo)
+
+    dir_data = np.array([[0,1]],dtype=PBasicFloatType)
+    dir_data_new = orient.ApplyTransformDirection(dir_data)
+    dir_data_new_neo = orient.ApplyInvTransformDirection(dir_data_new)
+    np.testing.assert_allclose(dir_data, dir_data_new_neo)
+
+
+    print(orient.GetOrthoNormalBase())
+
+    print(orient )
+
 
     return "ok"
 
