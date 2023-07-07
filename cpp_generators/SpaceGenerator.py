@@ -4,7 +4,7 @@
 # file 'LICENSE.txt', which is part of this source code package.
 #
 #
-import os
+import os, sys
 from  typing import Tuple
 def GetGeneratedFiles(prefix:str = "cpp_src") -> Tuple[str]:
     """ Get the list of generated files for this generator
