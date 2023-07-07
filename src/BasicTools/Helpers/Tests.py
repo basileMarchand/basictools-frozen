@@ -36,6 +36,7 @@ options :
     -y    Generate .pyc when importing modules (default False)
     -L    Output Locally, Use the current path for all the outputs
     -P <dir> Set temporary output directory to
+    -g    to use the Froze decorator during testing
 """
 
 
@@ -496,7 +497,7 @@ def RunTests() -> int:
         res = TestAll(modulesToTreat=['ALL'],extraToolsBoxes= ["BasicTools"], fullOutput=False,coverage={"active":False},typing=False)# pragma: no cover
     else:
         try:
-            opts, args = getopt.getopt(sys.argv[1:],"thcblfsdpvyLe:m:k:P:")
+            opts, args = getopt.getopt(sys.argv[1:],"thcblfsdpvyLe:m:k:P:g")
         except getopt.GetoptError as e:
             print(e)
             print(Test_Help_String)
@@ -559,6 +560,12 @@ def RunTests() -> int:
                 TestTempDir().SetTempPath(os.getcwd())
                 from BasicTools.Helpers.Tests import TestTempDir as TestTempDir2
                 TestTempDir2().SetTempPath(os.getcwd())
+            elif  opt in ("-g"):
+                import BasicTools.Helpers.BaseOutputObject as BaseOutputObject
+                BaseOutputObject.useFroze_itDecorator = True
+                print("BaseOutputObject.useFroze_itDecorator =", BaseOutputObject.useFroze_itDecorator)
+
+
 
         if len(modulesToTreat) == 0:
             modulesToTreat.append("ALL")
