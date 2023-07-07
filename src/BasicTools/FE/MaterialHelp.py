@@ -76,21 +76,21 @@ class HookeLaw() :
         if dim == 1:
             return np.array([[E],])
 
+        if axisymetric:
+            k = nu/(1-nu)
+            s = (1-2*nu)/(2*(1-nu) )
+            return ((E*(1-nu)/ ((1.+nu)*(1-2*nu) ) )*
+            np.array([[1., k , k, 0],
+                        [k , 1., k, 0],
+                        [k , k , 1, 0],
+                        [0 , 0 , 0, s]]));
+
         if dim == 2:
             if planeStress:
               return ((E/(1.-nu**2.))*
               np.array([[1. , nu, 0     ],
                         [nu, 1. , 0     ],
                         [0 , 0 , (1.-nu)/2.]]));
-            if axisymetric:
-                k = nu/(1-nu)
-                s = (1-2*nu)/(2*(1-nu) )
-                return ((E*(1-nu)/ ((1.+nu)*(1-2*nu) ) )*
-                np.array([[1., k , k, 0],
-                          [k , 1., k, 0],
-                          [k , k , 1, 0],
-                          [0 , 0 , 0, s]]));
-
             else:
               return  ((E/((1.+nu)*(1-2*nu)))*
               np.array([[1.-nu, nu  , 0 ],
