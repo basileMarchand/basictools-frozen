@@ -49,6 +49,8 @@ def froze_it(cls):
     For the moment if a class is frozen no heritage is possible.
     """
     if not useFroze_itDecorator:
+        setattr(cls, "UnFrozen", lambda x: None )
+        setattr(cls, "IsFrozen", lambda x: False )
         return cls
 
     cls.__frozen = False
