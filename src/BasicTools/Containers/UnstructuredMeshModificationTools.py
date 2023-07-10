@@ -815,11 +815,7 @@ def Morphing(mesh: UnstructuredMesh, targetDisplacement, targetDisplacementMask,
             M[:,j]=Phi(d/r)
         op=M
         del M
-        try:
-            ab=np.linalg.solve(op,rhs)
-        except np.linalg.LinAlgError:
-            #print('Bad conditioning of RBF operator, using least square solution')
-            ab=np.linalg.lstsq(op,rhs,cond=10**(9))
+        ab=np.linalg.lstsq(op,rhs,rcond=10**(9))[0]
         del op
         alpha=ab
         ds=np.zeros((nb_nodes,mesh.GetDimensionality()))
