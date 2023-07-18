@@ -302,15 +302,22 @@ def MeshToCGNS( mesh: UnstructuredMesh, outputPyTree = None,  baseNumberOrName= 
     gridCoordinates = ['GridCoordinates', None, [], 'GridCoordinates_t']
     grid[2].append(gridCoordinates)
 
-    for i,coord in enumerate(["X", "Y", "Z"]):
+    if mesh.GetPointsDimensionality() == 2:
+        coordNames = ["X", "Y"]
+    elif mesh.GetPointsDimensionality() == 3:
+        coordNames = ["X", "Y", "Z"]
+    else:
+        raise('mesh.GetPointsDimensionality() should be 2 or 3')
+    for i,coord in enumerate(coordNames):
         da = NewDataArray(gridCoordinates, "Coordinate"+coord, np.copy(mesh.nodes[:,i]) )
+
 
     #nodes tags
     if len(mesh.nodesTags):
         zbg = ['Points_Selections', None, [], 'ZoneBC_t']
         grid[2].append(zbg)
         for tag in mesh.nodesTags:
-           NewBC(zbg,tag.name,tag.GetIds()+1,pttype="IndexArray_t")
+            NewBC(zbg,tag.name,tag.GetIds()+1,pttype="IndexArray_t")
 
     for name, data in mesh.elements.items():
         #elem tags
