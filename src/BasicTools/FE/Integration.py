@@ -321,9 +321,6 @@ class IntegrationClass(BaseOutputObject):
                     print(f.rule)
                     print("integrationRule")
                     print(self.integrationRule)
-                    if self.integrationRuleName is not None:
-                        print("integrationRuleName")
-                        print(self.integrationRuleName)
                     raise Exception(f"Integration rule of field {f.GetName()} not compatible with the integration" )
 
         from BasicTools.Containers.UnstructuredMesh import UnstructuredMesh
