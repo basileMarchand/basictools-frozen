@@ -176,7 +176,7 @@ try:
 
             reader.SetFileName(self._filename)
             mesh = reader.Read()
-            SetOutputBasicTools(request,inInfoVec,outInfoVec,mesh,TagsAsFields=self.__TagsAsFields)
+            SetOutputBasicTools(request,inInfoVec,outInfoVec,mesh, TagsAsFields=self.__TagsAsFields)
             return 1
 
         obj = type(wrapperClassName,
@@ -460,7 +460,8 @@ try:
 
             if self.onCellFields:
                 inMesh.elemFields =dict(filter(lambda x: x[0].find(self.prefix) == 0, inMesh.elemFields.items()))
-            SetOutputBasicTools(request,inInfoVec,outInfoVec,inMesh)
+
+            SetOutputBasicTools(request,inInfoVec,outInfoVec,inMesh, TagsAsFields =True)
             return 1
 
         @smproperty.xml("""<IntVectorProperty name="OnCellTags" command="SetOnCellTags"
@@ -521,7 +522,7 @@ try:
                              number_of_elements="1"
                              default_values="">
         <Documentation>
-          This property indicates if the prefix to be used by the filter
+          Text used to filter the data (data containing this text will be kept)
         </Documentation>
         </StringVectorProperty>""")
         def SetPrefix(self,val ):
@@ -554,9 +555,9 @@ try:
             mean0 = np.sum(input0.nodes,axis=0)/input0.GetNumberOfNodes()
             mean1 = np.sum(input1.nodes,axis=0)/input1.GetNumberOfNodes()
             # the user must not modify the inputs
-            outputmesh = copy.copy(input0)
-            outputmesh.nodes = input0.nodes + (mean1 - mean0)
-            SetOutputBasicTools(request, inInfoVec, outInfoVec,outputmesh )
+            outputMesh = copy.copy(input0)
+            outputMesh.nodes = input0.nodes + (mean1 - mean0)
+            SetOutputBasicTools(request, inInfoVec, outInfoVec, outputMesh, TagsAsFields=True)
             return 1
 
     @smproxy.filter(name="Transfer Data")
@@ -596,12 +597,12 @@ try:
             op,status = GetFieldTransferOp(field,input1.nodes,method=possibleMethods[self.__method], verbose= False,elementFilter=ElementFilter(input0))
 
             # the user must not modify the inputs
-            outputmesh = copy.copy(input1)
-            outputmesh.nodeFields["status"] = status
+            outputMesh = copy.copy(input1)
+            outputMesh.nodeFields["status"] = status
             for n,v in input0.nodeFields.items():
-                outputmesh.nodeFields[n] = op.dot(v)
-            outputmesh.nodeFields["SourceCoords"] = op.dot(input0.nodes)
-            SetOutputBasicTools(request, inInfoVec, outInfoVec,outputmesh )
+                outputMesh.nodeFields[n] = op.dot(v)
+            outputMesh.nodeFields["SourceCoords"] = op.dot(input0.nodes)
+            SetOutputBasicTools(request, inInfoVec, outInfoVec, outputMesh, TagsAsFields=True )
             return 1
 
         @smproperty.xml("""<IntVectorProperty
@@ -691,9 +692,7 @@ try:
                       name="Input" />
           </RequiredProperties>
         </ArrayListDomain>
-        <Documentation>
-Select the input array to use for orienting the glyphs.
-        </Documentation>
+        <Documentation> Select the input array to use for orienting the glyphs. </Documentation>
       </StringVectorProperty>""")
         def SetV1Array(self, *val):
             #PointData            vals  (1, 0, 0, 0, 'Normals')
@@ -718,9 +717,7 @@ Select the input array to use for orienting the glyphs.
                       name="Input" />
           </RequiredProperties>
         </ArrayListDomain>
-        <Documentation>
-Select the input array to use for orienting the glyphs.
-        </Documentation>
+        <Documentation> Select the input array to use for orienting the glyphs. </Documentation>
       </StringVectorProperty>""")
         def SetV2Array(self, *val):
             if self.V2Name != val[4] or self.WorkOnCells != val[3] :
@@ -742,9 +739,7 @@ Select the input array to use for orienting the glyphs.
                       name="Input" />
           </RequiredProperties>
         </ArrayListDomain>
-        <Documentation>
-Select the input array to use for orienting the glyphs.
-        </Documentation>
+        <Documentation> Select the input array to use for orienting the glyphs. </Documentation>
       </StringVectorProperty>""")
         def SetStressArray(self, *val):
             if self.__firstStressArray != val[4] or self.WorkOnCells != val[3] :
@@ -988,7 +983,7 @@ def WrapBasicToolsFunctionToVTK(function, inputs, outputs, options, description=
                 vtkoutputi = GetOutputVtk(request,inInfoVec, outInfoVec,False,i)
                 MeshToVtk(meshs[i], vtkoutputi,TagsAsFields=self.__TagsAsFields)
         else:
-            SetOutputBasicTools(request, inInfoVec, outInfoVec, meshs,TagsAsFields=self.__TagsAsFields)
+            SetOutputBasicTools(request, inInfoVec, outInfoVec, meshs, TagsAsFields=self.__TagsAsFields)
 
         return 1
 
