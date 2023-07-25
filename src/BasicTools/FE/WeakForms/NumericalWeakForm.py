@@ -223,7 +223,7 @@ def ConverTermToProd(arg):
         t.fieldName = str(arg.func)
         return t
 
-    raise
+    raise Exception(f"Error!! arg of type ({type(arg)}) not supported: {arg}")
 
 def SymWeakToNumWeak(exp):
     from  sympy.core.add import Add
