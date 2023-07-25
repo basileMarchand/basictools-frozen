@@ -323,7 +323,7 @@ class ConstraintsHolder(BOO):
                     slaves.extend(cols )
 
         # normalisation
-        res = coo_matrix((res_vals,(res_rows,res_cols)), shape=(rankcpt,len(usedDofs) ) )
+        res = coo_matrix((res_vals,(res_rows,res_cols)), dtype=PBasicFloatType, shape=(rankcpt,len(usedDofs) ) )
         rescsr = res.tocsr()
         norm = 1/splinalg.norm(rescsr[:,:-1],axis=1)
         res.data *= norm[res.row]
