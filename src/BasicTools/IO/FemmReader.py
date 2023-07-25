@@ -50,7 +50,6 @@ keysToIgnore = [ "[Format]",
                  "[MinAngle]",
                  "[DoSmartMesh]",
                  "[Depth]",
-                 "[LengthUnits]",
                  "[ProblemType]",
                  "[Coordinates]",
                  "[ACSolver]",
@@ -70,15 +69,9 @@ class FemmReader(ReaderBase):
     def __init__(self):
         super().__init__()
         self.readFormat = 'r'
+        self.rescaleToMeters = True
 
     def Read(self, fileName=None,string=None, blockAsFields = False):
-        """Function that performs the reading of the metadata of a geof mesh file
-
-        Returns
-        -------
-        dict
-            global information on the mesh to read
-        """
 
         import BasicTools.Containers.UnstructuredMesh as UM
         if fileName is not None:
@@ -109,6 +102,9 @@ class FemmReader(ReaderBase):
                 data[key] = value
             return data
 
+        factorsFromUnit = {"millimeters":0.001, "centimeters":0.01, "meters":1, "inches": 2.54*0.01}
+
+        factor = 1.
         while(True):
             l = self.ReadCleanLine()
             if l == None :
@@ -116,6 +112,10 @@ class FemmReader(ReaderBase):
             if l[0] != "[":
                 continue
             if any([ l.startswith(x) for x in  keysToIgnore ]):
+                continue
+
+            if l.startswith("[LengthUnits]"):
+                factor = factorsFromUnit[(l.split("=")[1].strip())]
                 continue
 
             if l.startswith("[BlockProps]"):
@@ -194,13 +194,16 @@ class FemmReader(ReaderBase):
             raise Exception(f" don't know how to treat this line: {l}" )
 
         self.EndReading()
+        if factor != 1. and self.rescaleToMeters:
+            print("Changing units of the file to meters")
+            res.nodes *= factor
         res.PrepareForOutput()
         self.output = res
         return res
 
 
 from BasicTools.IO.IOFactory import RegisterReaderClass
-RegisterReaderClass(".ans",FemmReader)
+RegisterReaderClass(".ans",FemmReader,)
 
 
 def CheckIntegrity():
