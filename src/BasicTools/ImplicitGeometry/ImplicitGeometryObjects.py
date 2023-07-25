@@ -696,8 +696,7 @@ class ImplicitGeometryStl(ImplicitGeometryBase):
         self.boundingMin = [0,0,0]
         self.boundingMax = [0,0,0]
         self.surface = None
-        self.asVolume = True
-        self.onLines = False
+        self.asVolume = None
 
     def GetBoundingMin(self):
         return self.boundingMin
@@ -733,13 +732,23 @@ class ImplicitGeometryStl(ImplicitGeometryBase):
         from BasicTools.Containers.UnstructuredMeshModificationTools import ComputeSkin
         ComputeSkin(bulkmesh, inPlace= True)
         skin = ExtractElementsByElementFilter(bulkmesh,ElementFilter(bulkmesh, dimensionality=bulkmesh.GetElementsDimensionality()-1),copy=False)
-        return self.SetSurface(skin)
+        return self.SetSurface(skin, asVolume=True)
 
-    def SetSurface(self, mesh):
+    def SetSurface(self, mesh, asVolume = None):
         # check if we have element of dimensionality 3
         if mesh.GetElementsDimensionality() == 3:
             return self.SetMesh(mesh)
 
+        if asVolume is None:
+            from BasicTools.Containers.UnstructuredMeshModificationTools import ComputeSkin
+            if ComputeSkin(mesh, md=2, inPlace=False).GetNumberOfElements() == 0 :
+                self.asVolume = True
+            else:
+                self.asVolume = False
+        else:
+            self.asVolume = asVolume
+
+        self.surface = mesh
         from BasicTools.Containers.NativeTransfer import NativeTransfer
         from BasicTools.Containers.Filters import ElementFilter
         self.__nativeTransfer = NativeTransfer()
@@ -751,7 +760,6 @@ class ImplicitGeometryStl(ImplicitGeometryBase):
         self.__field = FEField("", mesh=mesh, space=space, numbering=numberings[0])
 
         self.__nativeTransfer.SetSourceFEField(self.__field, ElementFilter(mesh, dimensionality=mesh.GetElementsDimensionality() ) )
-        self.__nativeTransfer.SetTransferMethod("Interp/Extrap")
 
         from BasicTools.NumpyDefs import PBasicFloatType
 
@@ -777,6 +785,11 @@ class ImplicitGeometryStl(ImplicitGeometryBase):
         self.normals /= np.linalg.norm(self.normals, axis=1)[:,None]
 
     def GetDistanceToPoint(self, pos):
+        if self.asVolume:
+            self.__nativeTransfer.SetTransferMethod("Interp/Extrap")
+        else:
+            self.__nativeTransfer.SetTransferMethod("Interp/Clamp")
+
         if len(pos.shape) == 1:
             targetPoints = np.empty((1,3),dtype=float)
             targetPoints[0,0:pos.shape[0]] = pos
@@ -809,10 +822,13 @@ class ImplicitGeometryStl(ImplicitGeometryBase):
         return res
 
 def CreateImplicitGeometryStl(ops):
-       res =  ImplicitGeometryStl()
-       if "filename" in ops:
+        res =  ImplicitGeometryStl()
+        if "filename" in ops:
            res.LoadFromFile(ops["filename"])
-       return res
+           del ops["filename"]
+
+        PH.ReadProperties(ops,ops.keys(),res)
+        return res
 
 RegisterClass("StlFile",ImplicitGeometryStl,CreateImplicitGeometryStl)
 
