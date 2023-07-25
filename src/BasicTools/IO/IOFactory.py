@@ -46,6 +46,7 @@ def InitAllReaders():
     import BasicTools.IO.SamcefOutputReader
     import BasicTools.IO.PickleTools
     import BasicTools.IO.CGNSReader
+    import BasicTools.IO.FemmReader
 
 def InitAllWriters():
     from BasicTools.IO.GeofWriter import GeofWriter

@@ -16,6 +16,7 @@ _test = [
 'CodeInterface',
 'CsvWriter',
 'FemReader',
+'FemmReader',
 'GeofReader',
 'GeoReader',
 'GeofWriter',
