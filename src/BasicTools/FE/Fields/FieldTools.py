@@ -287,6 +287,7 @@ class IntegrationPointWrapper(FieldBase):
         if cm not in self._diffIpCache:
             from BasicTools.FE.Fields.FieldTools import TransferFEFieldToIPField
             self._diffIpCache[cm] = TransferFEFieldToIPField(self.feField,der=cm,rule=self.rule, elementFilter= self.elementFilter)
+            self._diffIpCache[cm].name = "d"+self.feField.name +"d"+str(compName)
         return self._diffIpCache[cm]
 
     def GetIpField(self)-> Union[IPField, RestrictedIPField]:
