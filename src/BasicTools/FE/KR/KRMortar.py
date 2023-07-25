@@ -426,6 +426,9 @@ class KRMortar(KRBaseVector):
         self.weights_IPoints = weights_IPoints
         self.meshIOps = meshIOps
         self.meshIIOps = meshIIOps
+        self.meshI_IPoints = meshI_IPoints
+        self.meshII_IPoints = meshII_IPoints
+
         return CH
 
     def __computeNormalSurface(self,nodes,conn):
