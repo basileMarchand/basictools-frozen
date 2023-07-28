@@ -177,7 +177,7 @@ class IPField(FieldBase):
                 res_data[...] = op(self,other_data)
             return res
         elif np.isscalar(other):
-            res.data = { key:op(self.data[key],other) for key in self.data.keys()}
+            res.data = { key:op(data,other) for key,data in self.data.items()}
             return res
         else:
             raise Exception(f"operator {op} not valid for types :{type(self)} and {type(other)} ") # pragma: no cover
