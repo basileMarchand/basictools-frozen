@@ -17,6 +17,8 @@ binaryOps = {"__add__":np.add,
              "__sub__":np.subtract,
              "__rmul__":np.multiply,
              "__truediv__":np.divide,
+             "__isub__":np.ndarray.__isub__,
+             "__iadd__":np.ndarray.__iadd__,
 
              "__gt__":np.ndarray.__gt__,
              "__ge__":np.ndarray.__ge__,
@@ -81,6 +83,16 @@ class FieldBase(BaseOutputObject):
     def __rsub__(self,other):
         res = -self
         res += other
+        return res
+
+    def __iadd__(self,other):
+        res = self.binaryOp(other,binaryOps["__iadd__"])
+        res.name = self.name
+        return res
+
+    def __isub__(self,other):
+        res = self.binaryOp(other,binaryOps["__isub__"])
+        res.name = self.name
         return res
 
     def __truediv__(self,other):
