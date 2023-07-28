@@ -430,8 +430,8 @@ class BasicPhysics(Physics):
         if testName is None:
             testName = unknownName
         self.PrimalNameTest = (testName, testDim)
-        self.primalUnknown = GetField(self.PrimalNameTrial[0], self.PrimalNameTrial[1])
-        self.primalTest = GetTestField(self.PrimalNameTest[0], self.PrimalNameTest[1])
+        self.primalUnknown = GetField(self.PrimalNameTrial[0], self.PrimalNameTrial[1], sdim=self.spaceDimension)
+        self.primalTest = GetTestField(self.PrimalNameTest[0], self.PrimalNameTest[1], sdim=self.spaceDimension)
 
     def GetPrimalNames(self):
         return [self.PrimalNameTrial[0]]
