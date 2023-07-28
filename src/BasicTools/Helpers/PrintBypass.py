@@ -55,7 +55,7 @@ class PrintBypass():
 
         class CopyOutputToDisk():
             def __init__(self,buffertocopy,filename):
-                self.Fdout = open(filename, 'w')
+                self.Fdout = open(filename, 'w', encoding="utf-8")
                 self.sysout = buffertocopy
             def close(self):
                 self.Fdout.close()
