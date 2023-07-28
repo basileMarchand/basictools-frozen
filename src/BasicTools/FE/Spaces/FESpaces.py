@@ -110,7 +110,7 @@ AllSpaces = AllSpacesType({'LagrangeSpaceGeo':LagrangeSpaceGeo,
 def InitAllSpaces() -> None:
     """Function to create all the spaces, this need to be called at the beginning of the app in a multi threated app
     """
-    for spaces in [ConstantSpaceGlobal, LagrangeSpaceP0, LagrangeSpaceGeo, LagrangeSpaceP1, LagrangeSpaceP2]:
+    for spaces in AllSpaces.values():
         for s in spaces.values():
             s.Create()
 
