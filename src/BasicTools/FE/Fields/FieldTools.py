@@ -251,8 +251,8 @@ class IntegrationPointWrapper(FieldBase):
 
         self.feField = field
         self.rule = rule
-        self._ipCache = None
-        self._diffIpCache = {}
+        self._opipCache = None
+        self._opdiffCache = {}
         self.elementFilter = elementFilter
 
     @property
@@ -284,11 +284,13 @@ class IntegrationPointWrapper(FieldBase):
         else:
             cm = compName
 
-        if cm not in self._diffIpCache:
-            from BasicTools.FE.Fields.FieldTools import TransferFEFieldToIPField
-            self._diffIpCache[cm] = TransferFEFieldToIPField(self.feField,der=cm,rule=self.rule, elementFilter= self.elementFilter)
-            self._diffIpCache[cm].name = "d"+self.feField.name +"d"+str(compName)
-        return self._diffIpCache[cm]
+        from BasicTools.FE.Fields.FieldTools import TransferFEFieldToIPField
+        if cm not in self._opdiffCache:
+            op = GetTransferOpToIPField(self.feField, rule=self.rule, der=cm, elementFilter=self.elementFilter)
+            self._opdiffCache[cm] = op
+        res = TransferFEFieldToIPField(self.feField,der=cm,rule=self.rule, elementFilter= self.elementFilter, op= self._opdiffCache[cm])
+        res.name = "d"+self.feField.name +"d"+str(compName)
+        return res
 
     def GetIpField(self)-> Union[IPField, RestrictedIPField]:
         """Get the integration point representation of the field
@@ -299,9 +301,12 @@ class IntegrationPointWrapper(FieldBase):
             Depending on the presence of an elementFilter
         """
 
-        if self._ipCache is None:
-            from BasicTools.FE.Fields.FieldTools import TransferFEFieldToIPField
-            self._ipCache =  TransferFEFieldToIPField(self.feField,der=-1,rule=self.rule, elementFilter= self.elementFilter)
+        from BasicTools.FE.Fields.FieldTools import TransferFEFieldToIPField
+        if self._opipCache is None:
+            op = GetTransferOpToIPField(self.feField, rule=self.rule, der=-1, elementFilter=self.elementFilter)
+            self._opipCache = op
+        return TransferFEFieldToIPField(self.feField,der=-1,rule=self.rule, elementFilter= self.elementFilter, op= self._opipCache)
+
         return self._ipCache
 
     def unaryOp(self,op):
