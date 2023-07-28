@@ -160,6 +160,7 @@ cdef class PyMonoElementsIntegralCpp():
             self.constantsNames.append(name)
             with nogil:
                 self.NativeIntegrator.SetConstants(cpt,value)
+            cpt += 1
 
     def ComputeNumberOfVIJ(self,mesh,elementFilter)-> CBasicIndexType: # OK
        """

@@ -389,7 +389,7 @@ class MonoElementsIntegral(BOO):
         wform: (PyWeakForm) Python Or C++ version of the weak form to be integrated
         idstotreat:  list like (int) ids of the element to treat
         """
-        constantsNumerical = np.empty(len(self.__cfs__))
+        constantsNumerical = np.empty(len(self.__cfs__), dtype=PBasicFloatType)
         cpt =0
         for x in self.__cfs__:
             constantsNumerical[cpt] = self.__cfs__[x]
