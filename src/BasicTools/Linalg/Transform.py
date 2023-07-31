@@ -11,21 +11,21 @@ from BasicTools.Helpers.BaseOutputObject import BaseOutputObject
 
 class Transform(BaseOutputObject):
     def __init__(self, offset=None, first=None, second=None):
-       super(Transform,self).__init__()
-       self.offset  = np.array([0.0, 0.0, 0.0], dtype=PBasicFloatType)
-       self.RMatrix = np.array([[1.0,0,0],[0,1,0],[0,0,1]], dtype=PBasicFloatType)
-       self.keepOrthogonal = True
-       self.keepNormalised = True
+        super(Transform,self).__init__()
+        self.offset  = np.array([0.0, 0.0, 0.0], dtype=PBasicFloatType)
+        self.RMatrix = np.array([[1.0,0,0],[0,1,0],[0,0,1]], dtype=PBasicFloatType)
+        self.keepOrthogonal = True
+        self.keepNormalised = True
 
-       # offset off the new origin with respect to the old
-       if offset is not None:
-           self.SetOffset(offset)
+        # offset off the new origin with respect to the old
+        if offset is not None:
+            self.SetOffset(offset)
 
-       if first is not None:
-           self.SetFirst(first)
+        if first is not None:
+            self.SetFirst(first)
 
-       if second is not None:
-           self.SetSecond(second)
+        if second is not None:
+            self.SetSecond(second)
 
     def GetDirection(self,i, pos=None, direction=None):
         return self.RMatrix[i,:]
