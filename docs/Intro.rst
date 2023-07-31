@@ -50,7 +50,7 @@ Two C++ libraries, Eigen and boost, are needed during compilation (we onnly use 
 Eigen can be found inside the pip package eignecy. To use this embedded version the BASICTOOLS_USE_EIGENCYEIGEN must be set to 1.
 The C++ boost library is not present in PyPI so a manual installation is required.
 
-To compile and install BasicTools (version 1.9.7 in this case) with pip:
+To compile and install BasicTools (version 1.9.8 in this case) with pip:
 
 .. code-block::
 
@@ -59,7 +59,7 @@ To compile and install BasicTools (version 1.9.7 in this case) with pip:
     set BASICTOOLS_USE_EIGENCYEIGEN=1
     set BASICTOOLS_EXTERNAL_BOOST_DIR=%cd%\boost_1_82_0
     pip install eigency mkl numpy sympy mkl-include cython wheel
-    pip install BasicTools@https://gitlab.com/drti/basic-tools/-/archive/1.9.7/basic-tools-1.9.7.tar.bz2
+    pip install BasicTools@https://gitlab.com/drti/basic-tools/-/archive/1.9.8/basic-tools-1.9.8.tar.bz2
 
 or for the latest master version:
 

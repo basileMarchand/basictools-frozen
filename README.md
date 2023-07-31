@@ -43,14 +43,14 @@ PIP
 ---
 
 The pip installation requires a local compilation, so you need to have a C++ (C++17 compatible) compiler installed locally on your system.
-To compile and install BasicTools (version 1.9.7 in this case) with pip:
+To compile and install BasicTools (version 1.9.8 in this case) with pip:
 
     wget https://boostorg.jfrog.io/artifactory/main/release/1.82.0/source/boost_1_82_0.zip
     unzip boost_1_82_0.zip
     set BASICTOOLS_USE_EIGENCYEIGEN=1
     set BASICTOOLS_EXTERNAL_BOOST_DIR=%cd%\boost_1_82_0
     pip install eigency mkl numpy sympy mkl-include cython wheel
-    pip install BasicTools@https://gitlab.com/drti/basic-tools/-/archive/1.9.7/basic-tools-1.9.7.tar.bz2
+    pip install BasicTools@https://gitlab.com/drti/basic-tools/-/archive/1.9.8/basic-tools-1.9.8.tar.bz2
 
 
 
