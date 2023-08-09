@@ -7,4 +7,6 @@ This chapter present some examples of the uses of BasicTools for some common tas
 .. toctree::
    :glob:
 
-   Examples/*
+   Examples/WriteXdmf
+   Examples/TwoInclusions
+   Examples/PrePostDeepLearning
