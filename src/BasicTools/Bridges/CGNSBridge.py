@@ -340,7 +340,12 @@ def MeshToCGNS( mesh: UnstructuredMesh, outputPyTree = None,  baseNumberOrName= 
             if pointData.dtype.char == "U":
                 print(f"skipping nodeFields '{name}' because if of type: {pointData.dtype}"  )
                 continue
-            NewDataArray(flowSolution, name,pointData)
+            if name=='Normals':
+                assert(pointData.shape[1] == mesh.GetPointsDimensionality())
+                for i,coord in enumerate(coordNames):
+                    NewDataArray(flowSolution, "Normals"+coord, np.copy(pointData[:,i]) )
+            else:
+                NewDataArray(flowSolution, name, pointData)
 
     ## elem fields
     flowSolutionCell = NewFlowSolution(grid, "CellData", gridlocation="CellCenter")
@@ -350,7 +355,12 @@ def MeshToCGNS( mesh: UnstructuredMesh, outputPyTree = None,  baseNumberOrName= 
             if cellData.dtype.char == "U":
                 print(f"skipping elemFields '{name}' because if of type: {cellData.dtype}"  )
                 continue
-            NewDataArray(flowSolutionCell, name, np.copy(cellData))
+            if name=='Normals':
+                assert(cellData.shape[1] == mesh.GetPointsDimensionality())
+                for i,coord in enumerate(coordNames):
+                    NewDataArray(flowSolutionCell, "Normals"+coord, np.copy(cellData[:,i]) )
+            else:
+                NewDataArray(flowSolutionCell, name, np.copy(cellData))
 
 
     return outputPyTree
