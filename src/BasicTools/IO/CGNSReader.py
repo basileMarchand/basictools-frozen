@@ -86,7 +86,7 @@ class CGNSReader(BaseOutputObject):
             self.timeToRead = time
 
 
-    def Read(self, fileName=None, time=None, baseNumberOrName=0, zoneNumberOrName=0):
+    def Read(self, fileName=None, time=None):
         """Function that performs the reading of a CGNS result file
 
         Parameters
@@ -134,7 +134,7 @@ class CGNSReader(BaseOutputObject):
         node[3] = "CGNSTree_t"
         self.CGNSTree = node
 
-        res = CGNSToMesh(node, baseNumberOrName, zoneNumberOrName)
+        res = CGNSToMesh(node)
         res.PrepareForOutput()
         return res
 
@@ -154,7 +154,7 @@ def CheckIntegrity(GUI=False):
     from BasicTools.Helpers.Tests import TestTempDir
     tempdir = TestTempDir.GetTempPath()
 
-    mesh = ReadCGNS(fileName = tempdir+os.sep+"toto.cgns", baseNumberOrName = 0, zoneNumberOrName = 0)
+    mesh = ReadCGNS(fileName = tempdir+os.sep+"toto.cgns")
 
     print("Read mesh from cgns:", mesh)
 

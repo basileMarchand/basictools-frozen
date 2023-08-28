@@ -25,7 +25,7 @@ class CGNSWriter(WriterBase):
         res  = 'CGNSWriter'
         return res
 
-    def Write(self, mesh, fileName, outpuPyTree = None, baseNumberOrName = 0, zoneNumberOrName = 0):
+    def Write(self, mesh, fileName, outpuPyTree = None):
         """Function to writes a CGNS File on disk
 
         Parameters
@@ -36,13 +36,9 @@ class CGNSWriter(WriterBase):
             filename of the file to be read
         outpuPyTree : list
             existing pyTree in which the data structure in mesh will be appended
-        baseNumberOrName : int or str, optional
-            name of the base to use, by default 0 (first)
-        zoneNumberOrName : int or str, optional
-            name of the zone to be read, by default 0 (first)
         """
 
-        newPyTree = MeshToCGNS(mesh, outpuPyTree, baseNumberOrName, zoneNumberOrName)
+        newPyTree = MeshToCGNS(mesh, outpuPyTree)
 
         from h5py import File, h5t
         import  h5py
@@ -134,7 +130,7 @@ def CheckIntegrity():
     # EXEMPLE SYNTAXE DU WRITER
     import BasicTools.IO.CGNSWriter as CW
     CgW = CW.CGNSWriter()
-    CgW.Write(mesh = myMesh, fileName = tempdir+os.sep+"toto.cgns", baseNumberOrName = 0, zoneNumberOrName = 0)
+    CgW.Write(mesh = myMesh, fileName = tempdir+os.sep+"toto.cgns")
     ##################################
 
     return "ok"
