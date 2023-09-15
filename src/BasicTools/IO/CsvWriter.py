@@ -185,7 +185,17 @@ class CsvWriter(WriterBase):
             self.nodalFilter.mesh = mesh
 
             op = NodalOP()
-            self.nodalFilter.ApplyOnNodes(op)
+            try:
+                self.nodalFilter.ApplyOnNodes(op)
+            except IndexError:
+                notFoundTags=set(self.nodalFilter.tags).difference(set(mesh.nodesTags.keys()))
+                if len(notFoundTags):
+                    raise Exception("Nodal Tag(s) not found in the mesh: ",list(notFoundTags))
+                else:
+                    emptyNodalTags=[tagname for tagname in self.nodalTags if len(mesh.nodesTags[tagname]) == 0]
+                    raise Exception("Empty nodal tag(s) in mesh: ",emptyNodalTags)
+
+
             #conn = mesh.GetElementsOfType(op.name).connectivity[op.id,:]
             self.writeText("PointId")
             self.writeText(sep)
