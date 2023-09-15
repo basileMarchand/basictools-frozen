@@ -41,9 +41,8 @@ class StlReader(ReaderBase):
     """Stl read class
     """
     def __init__(self, fileName=None):
-        super(StlReader, self).__init__()
+        super().__init__(fileName=fileName)
         self.runCleanDoubleNodes = True
-
 
     def Read(self, fileName=None, string=None, out=None) -> UnstructuredMesh:
         """ Read a file or a string as a stl surface, ASCII and binary format are
@@ -169,7 +168,6 @@ class StlReader(ReaderBase):
         import BasicTools.Containers.UnstructuredMesh as UM
 
         resUM = UM.UnstructuredMesh()
-
         name = self.ReadCleanLine().split()[1]
 
         p = []

@@ -97,7 +97,7 @@ class ReaderBase(BaseOutputObject):
                 self.filePointer =  sys.stdin
                 #os.fdopen(r, self.readFormat)
         else:
-            raise ('Need a file or a string to read')
+            raise Exception('Need a file or a string to read')
 
         self.lineCounter = 0
 
