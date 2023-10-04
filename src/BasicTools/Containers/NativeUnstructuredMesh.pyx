@@ -34,15 +34,18 @@ cdef class CUnstructuredMesh():
         self.cpp_object.AddNodalTag(name, FlattenedMap[Matrix, CBasicIndexType, Dynamic, _1](ids))
 
     def SetDataFromPython(self,pyUM):
+
         pyUM.GetPosOfNodes()
+
         self.SetNodes(pyUM.nodes)
+
         self.SetOriginalIds(pyUM.originalIDNodes)
         pyUM.nodesTags.Tighten()
         for k in pyUM.nodesTags.keys():
             self.AddNodalTag(k.encode(),pyUM.nodesTags[k].GetIds())
 
         for k,v in pyUM.elements.items():
-            self.cpp_object.AddElemens(k.encode(),
+            self.cpp_object.AddElements(k.encode(),
                                     FlattenedMapWithOrder[Matrix, CBasicIndexType, Dynamic, Dynamic, RowMajor](v.connectivity),
                                     FlattenedMap[Matrix, CBasicIndexType, Dynamic, _1](v.originalIds) )
 

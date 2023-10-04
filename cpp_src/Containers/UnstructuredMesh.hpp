@@ -5,7 +5,7 @@
 
 namespace BasicTools
 {
-    
+
 template<typename T>
 void ElementsContainer::AddTag(std::string& name, T& arg1){
     Tag ntag;
@@ -25,7 +25,7 @@ void UnstructuredMesh::AddNodalTag(std::string& name, T& arg1){
 };
 
 template<typename T, typename T2>
-void UnstructuredMesh::AddElemens(std::string& elementType, T& arg1, T2& arg2){
+void UnstructuredMesh::AddElements(std::string& elementType, T& arg1, T2& arg2){
     ElementsContainer& ec = this->elements.GetElementsOfType(elementType);
     ec.SetConnectivity(arg1);
     ec.SetOriginalIds(arg2);

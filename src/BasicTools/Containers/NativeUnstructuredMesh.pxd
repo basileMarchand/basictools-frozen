@@ -22,7 +22,7 @@ cdef extern from "Containers/UnstructuredMesh.h" namespace "BasicTools":
        void SetOriginalIds(FlattenedMap[Matrix, CBasicIndexType, Dynamic, _1]& )
        void SetNodes(FlattenedMapWithOrder[Matrix, CBasicFloatType, Dynamic, Dynamic, RowMajor]& )
        void AddNodalTag(string& name, FlattenedMap[Matrix, CBasicIndexType, Dynamic, _1] &arg1)
-       void AddElemens(string& name,
+       void AddElements(string& name,
                        FlattenedMapWithOrder[Matrix, CBasicIndexType, Dynamic, Dynamic, RowMajor] &conn ,
                        FlattenedMap[Matrix, CBasicIndexType, Dynamic, _1] &ids)
 

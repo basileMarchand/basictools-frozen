@@ -75,7 +75,7 @@ public:
     void AddNodalTag(std::string& name, T& arg1);
 
     template<typename T, typename T2>
-    void AddElemens(std::string& elementType, T& arg1, T2& arg2);
+    void AddElements(std::string& elementType, T& arg1, T2& arg2);
 
     template<typename T>
     void AddElementTag(std::string& elementType, std::string& tagname, T& arg1);
