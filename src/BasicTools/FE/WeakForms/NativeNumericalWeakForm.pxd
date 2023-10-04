@@ -11,7 +11,7 @@ from BasicTools.CythonDefs cimport CBasicIndexType
 
 cdef extern from "FE/NativeNumericalWeakForm.h" namespace "BasicTools" :
     cdef cppclass WeakTerm:
-        WeakTerm() except     +
+        WeakTerm() except +
         string fieldName
         string derCoordName
         int derDegree
@@ -25,56 +25,45 @@ cdef extern from "FE/NativeNumericalWeakForm.h" namespace "BasicTools" :
         int spaceIndex_
         int modeIndex_
 
-
 cdef extern from "FE/NativeNumericalWeakForm.h" namespace "BasicTools" :
     cdef cppclass WeakMonom:
-        WeakMonom() except     +
-        double prefactor;
+        WeakMonom() except +
+        double prefactor
         vector[WeakTerm] prod
 
 cdef extern from "FE/NativeNumericalWeakForm.h" namespace "BasicTools" :
     cdef cppclass WeakForm:
-        WeakForm() except     +
+        WeakForm() except +
         vector[WeakMonom] form
         CBasicIndexType GetNumberOfTerms()
 
 cdef class PyWeakTerm:
-    cdef WeakTerm* _c_WeakTerm
+    cdef WeakTerm* cpp_object_pointer
     cdef bint pointerOwner
-    cdef WeakTerm* GetCppPointer(self)
-    @staticmethod
-    cdef PyWeakTerm create(WeakTerm* )
-    cdef PyWeakTerm copy(self)
-
+    cdef WeakTerm* GetCppPointer(self) nogil
+    cdef void SetPointer(self, WeakTerm* obj ) nogil
 
 cdef class PyWeakMonom:
-    cdef WeakMonom* _c_WeakMonom
+    cdef WeakMonom* cpp_object_pointer
     cdef bint pointerOwner
-    cpdef AddProd(self,PyWeakTerm)
+    cdef WeakMonom* GetCppPointer(self) nogil
+    cdef void SetPointer(self, WeakMonom* obj )
+
+    cpdef AddProd(self, PyWeakTerm)
     cpdef CBasicIndexType GetNumberOfProds(self)
     cdef PyWeakTerm GetProd(self, CBasicIndexType)
-    cdef WeakMonom* GetCppPointer(self)
-    cpdef hasVariable(self,str)
 
-    @staticmethod
-    cdef PyWeakMonom create(WeakMonom*)
-
+    cpdef hasVariable(self, str)
 
 cdef class PyWeakForm:
-    cdef WeakForm* _c_WeakForm
+    cdef WeakForm* cpp_object_pointer
     cdef bint pointerOwner
+    cdef WeakForm* GetCppPointer(self) nogil
+
     cpdef CBasicIndexType GetNumberOfTerms(self)
     cpdef PyWeakMonom GetMonom(self, int n)
-    cpdef AddTerm(self,PyWeakMonom)
-    cdef WeakForm* GetCppPointer(self)
-    @staticmethod
-    cdef PyWeakForm create(WeakForm*)
+    cpdef AddTerm(self, PyWeakMonom)
 
-cdef class PyWeakFormIter:
-    cdef int index
-    cdef PyWeakForm father
-
-cdef class PyWeakMonomIter:
-    cdef int index
-    cdef PyWeakMonom father
-
+cdef int TN_PyWeakTerm = 0
+cdef int TN_PyWeakMonom = 0
+cdef int TN_PyWeakForm = 0
