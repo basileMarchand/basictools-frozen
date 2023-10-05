@@ -115,16 +115,7 @@ struct MonoElementsIntegralCpp {
   MapConstMatrixIDD* connectivity;
 
   MonoElementsIntegralCpp();
-  ~MonoElementsIntegralCpp() {
-    if (this->nodes) delete this->nodes;
-    if (this->connectivity) delete this->connectivity;
-    for (unsigned int i = 0; i < this->lnumbering.size(); ++i) {
-      delete this->lnumbering[i];
-    }
-    for (unsigned int i = 0; i < this->values.size(); ++i) {
-      delete this->values[i];
-    }
-  }
+  ~MonoElementsIntegralCpp();
   int geoSpaceNumber;
 
   std::vector<LocalSpace> lspaces;

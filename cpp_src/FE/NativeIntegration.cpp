@@ -34,6 +34,22 @@ MonoElementsIntegralCpp::MonoElementsIntegralCpp()
   this->totalvijcpt = 0;
   this->onlyUpper = false;
 }
+
+MonoElementsIntegralCpp::~MonoElementsIntegralCpp() {
+  if (this->nodes) delete this->nodes;
+  if (this->connectivity) delete this->connectivity;
+  for (unsigned int i = 0; i < this->lnumbering.size(); ++i) {
+    delete this->lnumbering[i];
+  }
+  for (unsigned int i = 0; i < this->values.size(); ++i) {
+    delete this->values[i];
+  }
+  for (unsigned int i = 0; i < this->ipvalues.size(); ++i) {
+    delete this->ipvalues[i];
+  }
+
+}
+
 //////////////////////////////////////////
 void MonoElementsIntegralCpp::SetNumberOfValues(int i) {
   for (unsigned int i = 0; i < this->values.size(); ++i) {
@@ -53,12 +69,14 @@ void MonoElementsIntegralCpp::SetNumberOfIPValues(int i) {
 
 //
 void MonoElementsIntegralCpp::SetValueI(int i, int n, int m, CBasicFloatType* dp) {
-  if (this->values[i] != nullptr) delete this->values[i];
+  delete this->values[i];
+  this->values[i] = nullptr;
   this->values[i] = new MapMatrixDD1(dp, n, m);
 }
 //
 void MonoElementsIntegralCpp::SetIPValueI(int i, int n, int m, CBasicFloatType* dp) {
-  if (this->ipvalues[i] != nullptr) delete this->ipvalues[i];
+  delete this->ipvalues[i];
+  this->ipvalues[i] = nullptr;
   this->ipvalues[i] = new MapMatrixDDD(dp, n, m);
 }
 
