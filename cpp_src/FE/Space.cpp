@@ -18,7 +18,7 @@ const DofAttachment& ElementSpace::GetDofAttachment(const int& dofNumber) const 
 };
 
 void ElementSpace::AppendDofAttachment(const char& entity, const int& entityNumber, const int& extraKey){
-    storage.push_back( DofAttachment(entity,entityNumber, extraKey) ) ;
+    storage.emplace_back( entity, entityNumber, extraKey) ;
 }
 
 const MatrixDDD ElementSpace::GetValOfShapeFunctionsAt(const MatrixDDD& phiXiEta  ) const {
@@ -80,6 +80,3 @@ SpaceAtIP EvaluateSpaceAt(const ElementSpace& es , const IntegrationRule& ir ){
 };
 
 } // namespace BasicTools
-
-
-

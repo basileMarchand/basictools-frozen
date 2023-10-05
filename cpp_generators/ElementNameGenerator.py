@@ -76,19 +76,20 @@ std::map<std::string,ElementInfo> InitElementNames() {
                 PrintToFile(cppFile,"    {")
                 PrintToFile(cppFile,"        MatrixID1 faces;")
                 PrintFillVMatrix(cppFile,"""        faces""",n)
-                PrintToFile(cppFile,f"""        ElementNames["{elementType}"].faces.push_back(std::pair<ElementInfo,MatrixID1>(ElementNames["{e}"],faces) );""" )
+                #PrintToFile(cppFile,f"""        ElementNames["{elementType}"].faces.push_back(std::pair<ElementInfo,MatrixID1>(ElementNames["{e}"],faces) );""" )
+                PrintToFile(cppFile,f"""        ElementNames["{elementType}"].faces.emplace_back(ElementNames["{e}"], faces);""" )
                 PrintToFile(cppFile,"    }")
             for e,n in ei.faces2:
                 PrintToFile(cppFile,"    {")
                 PrintToFile(cppFile,"        MatrixID1 faces2;")
                 PrintFillVMatrix(cppFile,"""        faces2""",n)
-                PrintToFile(cppFile,f"""        ElementNames["{elementType}"].faces2.push_back(std::pair<ElementInfo,MatrixID1>(ElementNames["{e}"],faces2) );""" )
+                PrintToFile(cppFile,f"""        ElementNames["{elementType}"].faces2.emplace_back(ElementNames["{e}"], faces2);""" )
                 PrintToFile(cppFile,"    }")
             for e,n in ei.faces3:
                 PrintToFile(cppFile,"    {")
                 PrintToFile(cppFile,"        MatrixID1 faces3;")
                 PrintFillVMatrix(cppFile,"""        faces3""",n)
-                PrintToFile(cppFile,f"""        ElementNames["{elementType}"].faces3.push_back(std::pair<ElementInfo,MatrixID1>(ElementNames["{e}"],faces3) );""" )
+                PrintToFile(cppFile,f"""        ElementNames["{elementType}"].faces3.emplace_back(ElementNames["{e}"], faces3);""" )
                 PrintToFile(cppFile,"    }")
 
 
