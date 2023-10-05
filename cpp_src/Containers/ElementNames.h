@@ -52,7 +52,7 @@ struct ElementInfo {
     int dimension() const { return this->geoSupport.dimensionality; }
     const std::vector<std::pair<ElementInfo, MatrixID1>>& GetFacesLevel(int level) {
         assert(level > 0);
-        assert(level < 3);
+        assert(level <= 3);
         if (level==1) return faces;
         if (level==2) return faces2;
         if (level==3) return faces3;
