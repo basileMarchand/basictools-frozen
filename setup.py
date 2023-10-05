@@ -12,6 +12,7 @@ from setuptools.command.install import install
 from setuptools import setup, Extension, Command
 from distutils.command.build import build
 import configparser
+from Cython.Compiler import Options
 
 '''
 Compilation options for advance users
@@ -23,8 +24,10 @@ PREFIX : Set this variable to point to the external libraries (if the mkl or eig
 to activate debug compilation set the variable debug in the file setup.cfg to True
 '''
 
+Options.annotate = False  # to generate annotation (HTML files)
+Options.generate_cleanup_code  = True
+Options.fast_fail = True
 enable_MKL =  int(os.environ.get("BASICTOOLS_DISABLE_MKL",0)) ==  0
-annotate = False # to generate annotation (HTML files)
 useEigencyEigen = int(os.environ.get("BASICTOOLS_USE_EIGENCYEIGEN",0)) == 1
 externalBOOST = os.environ.get("BASICTOOLS_EXTERNAL_BOOST_DIR","")
 
