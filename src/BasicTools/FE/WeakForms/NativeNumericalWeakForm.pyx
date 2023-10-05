@@ -282,3 +282,16 @@ cdef class PyWeakForm:
 
     def __iter__(self):
         return (self.GetMonom(i) for i in range(self.GetNumberOfTerms()))
+
+def CheckIntegrity(GUI=False):
+    F = PyWeakForm()
+    M = PyWeakMonom()
+    T = PyWeakTerm()
+    T.fieldName = "u"
+    M.AddProd(T)
+    F.AddTerm(M)
+
+    for term in F:
+        print(term)
+
+    return 'OK'
