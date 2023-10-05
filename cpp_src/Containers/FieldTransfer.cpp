@@ -326,6 +326,8 @@ void TransferClass::Compute() {
 
   CBasicFloatType distmem;
   //CEBCResult resultMem;
+  Space geoSpace = GetFESpaceFor("LagrangeSpaceGeo");
+
   BestCandidate bestCandidate;
   for (int p = 0; p < nbTargetPoints; ++p) {
     //if (this->verbose){
@@ -415,8 +417,8 @@ void TransferClass::Compute() {
       auto const pEConnectivity = elementData_and_id.first.GetConnectivityMatrix().row(peLocalId);
       const auto xcoor = sourceNodes(pEConnectivity, Eigen::all);
       //std::cout << " xcoor " << xcoor << std::endl;
-
-      const CEBCResult result = ComputeInterpolationExtrapolationsBarycentricCoordinates(xcoor, localspace, TP);
+      const ElementSpace& localGeoSpace = geoSpace.GetSpaceFor(elementData_and_id.first.GetElementType());
+      const CEBCResult result = ComputeInterpolationExtrapolationsBarycentricCoordinates(xcoor, localGeoSpace, TP);
 
       //update the distance**2 with a *exact* distance
       potentialElementsDistances[potential_element_cpt] = result.distv.squaredNorm();
@@ -663,7 +665,7 @@ CEBCResult ComputeBarycentricCoordinateOnElement(const A& xcoor, const BasicTool
   MatrixD13 xietaphi;// xietaphi.resize(1,3);
   xietaphi.fill(0.5);
 
-  MatrixD1D N = localspace.GetValOfShapeFunctionsAt(xietaphi).transpose().row(0);
+  MatrixD1D N = localspace.GetValOfShapeFunctionsAt(xietaphi).transpose();
   MatrixD1D currentPoint = N*xcoor;
   MatrixD1D f = currentPoint - targetPoint ;
   MatrixDD1 dxietaphi;
@@ -703,7 +705,7 @@ CEBCResult ComputeBarycentricCoordinateOnElement(const A& xcoor, const BasicTool
       //std::cout << " linear break " << std::endl;
       break;
     }
-    N = localspace.GetValOfShapeFunctionsAt(xietaphi).transpose().row(0);
+    N = localspace.GetValOfShapeFunctionsAt(xietaphi).transpose();
     f = N * xcoor - targetPoint;
     //std::cout << "********************N*********************" << std::endl;
     //std::cout <<  N << std::endl;
