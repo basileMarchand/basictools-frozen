@@ -10,17 +10,14 @@
 
 #include <LinAlg/EigenTypes.h>
 
-
-namespace BasicTools
-{
+namespace BasicTools {
 
 struct WeakTerm {
-    WeakTerm ():fieldName("None"),derCoordName("None"),derDegree(0),constant(false),normal(false){};
-    std::string fieldName;
-    std::string derCoordName;
-    int derDegree;
-    bool constant;
-    bool normal;
+    std::string fieldName{"None"};
+    std::string derCoordName{"None"};
+    int derDegree{0};
+    bool constant{false};
+    bool normal{false};
 
     int spaceIndex_;
     int derCoordIndex_;
@@ -28,27 +25,21 @@ struct WeakTerm {
     int valuesIndex_;
     int modeIndex_;
     int internalType;
-    friend std::ostream& operator<< (std::ostream& stream, const WeakTerm& term);
-
 };
+
+std::ostream& operator<<(std::ostream& stream, const WeakTerm& term);
 
 struct WeakMonom {
-    WeakMonom():prefactor(1){};
-    double prefactor;
+    double prefactor{1.0};
     std::vector<WeakTerm> prod;
-    friend std::ostream& operator<< (std::ostream& stream, const WeakMonom& monom);
-
 };
 
-struct WeakForm{
+std::ostream& operator<<(std::ostream& stream, const WeakMonom& monom);
+
+struct WeakForm {
     std::vector<WeakMonom> form;
-    CBasicIndexType GetNumberOfTerms() const {return static_cast<CBasicIndexType>(this->form.size());}
-    friend std::ostream& operator <<(std::ostream& stream, const WeakForm& WeakForm) ;
+    CBasicIndexType GetNumberOfTerms() const { return static_cast<CBasicIndexType>(this->form.size()); }
 };
 
-std::ostream& operator <<(std::ostream& stream, const WeakTerm& term);
-
-std::ostream& operator <<(std::ostream& stream, const WeakMonom& monom) ;
-
-std::ostream& operator <<(std::ostream& stream, const WeakForm& wf) ;
-} // namespace BasicTools
+std::ostream& operator<<(std::ostream& stream, const WeakForm& WeakForm);
+}  // namespace BasicTools

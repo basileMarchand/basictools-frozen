@@ -9,37 +9,34 @@
 #include <iostream>
 #include <string>
 
-namespace BasicTools
-{
+namespace BasicTools {
 
-std::ostream& operator <<(std::ostream& stream, const WeakTerm& term) {
-
-if (term.derDegree){
-    stream << "Derivative(" << term.fieldName <<"," << term.derCoordName<< ")"  ;
-} else {
-    stream << term.fieldName ;
-}
-return stream;
+std::ostream& operator<<(std::ostream& stream, const WeakTerm& term) {
+    if (term.derDegree) {
+        stream << "Derivative(" << term.fieldName << "," << term.derCoordName << ")";
+    } else {
+        stream << term.fieldName;
+    }
+    return stream;
 }
 
-std::ostream& operator <<(std::ostream& stream, const WeakMonom& monom) {
-
+std::ostream& operator<<(std::ostream& stream, const WeakMonom& monom) {
     if (monom.prefactor != 0) {
         stream << monom.prefactor << "*";
     }
-    for(unsigned int prodn=0; prodn<  monom.prod.size(); ++prodn){
+    for (unsigned int prodn = 0; prodn < monom.prod.size(); ++prodn) {
         const WeakTerm& term = monom.prod[prodn];
-        if(prodn ) stream << "*";
+        if (prodn) stream << "*";
         stream << term;
     }
     return stream;
 }
 
-std::ostream& operator <<(std::ostream& stream, const WeakForm& wf){
+std::ostream& operator<<(std::ostream& stream, const WeakForm& wf) {
     stream << "Number of term : " << wf.GetNumberOfTerms() << std::endl;
-    for (const WeakMonom& monom : wf.form){
-        stream << monom << std::endl ;
+    for (const WeakMonom& monom : wf.form) {
+        stream << monom << std::endl;
     }
     return stream;
 };
-} // namespace BasicTools
+}  // namespace BasicTools
