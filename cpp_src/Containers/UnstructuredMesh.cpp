@@ -17,7 +17,7 @@ ElementsContainer::ElementsContainer(const std::string& elemtype ){
 }
 
 CBasicIndexType ElementsContainer::GetNumberOfElements() const {
-    return static_cast<CBasicIndexType>(this->connectivity->rows());
+    return static_cast<CBasicIndexType>(this->GetConnectivityMatrix().rows());
 }
 
 std::string ElementsContainer::GetElementType() const {

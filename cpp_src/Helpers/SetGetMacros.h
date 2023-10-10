@@ -4,25 +4,25 @@
 //
 #pragma once
 
-#define MAPSETGETTYPEII(Name,attribute,dtype,btype)                                   \
+#define MAPSETGETTYPEII(Name,attribute,dtype,btype)                             \
     template<typename T>                                                        \
     void Set##Name(Eigen::Map<T>  &arg1){                                       \
         this->attribute.reset(new dtype(arg1.data(), arg1.rows(), arg1.cols()));\
     };                                                                          \
-    void Set##Name(std::shared_ptr<btype>  &arg1){                                                   \
+    void Set##Name(std::shared_ptr<btype>  &arg1){                              \
         this->attribute.reset(new dtype(arg1->data(), arg1->rows(), arg1->cols()));\
     };                                                                          \
     template<typename T>                                                        \
     void Set##Name(std::shared_ptr<T>  &arg1){                                  \
         this->attribute = arg1;                                                 \
     };                                                                          \
-    std::shared_ptr<dtype>& Get ## Name ## Shared(){                            \
+    std::shared_ptr<dtype> Get ## Name ## Shared(){                             \
         return this->attribute;                                                 \
     };                                                                          \
-    dtype& Get ## Name ## Matrix(){                                             \
+    dtype Get ## Name ## Matrix(){                                              \
         return *(this->attribute.get());                                        \
     };                                                                          \
-    const dtype& Get ## Name ## Matrix() const {                                \
+    const dtype Get ## Name ## Matrix() const {                                 \
         return *(this->attribute.get());                                        \
     };
 
