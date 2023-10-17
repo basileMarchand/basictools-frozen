@@ -678,6 +678,7 @@ class MeshSolutionReaderWrapper():
         if 'SolAtTetrahedra0' in fields:
             if mesh.GetElementsOfType(EN.Tetrahedron_4).GetNumberOfElements() == mesh.GetNumberOfElements():
                 mesh.elemFields = {k: v for k, v in fields.items() if k.find("SolAtTetrahedra") != -1}
+        self.output = mesh
         return mesh
 
 
