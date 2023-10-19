@@ -1129,7 +1129,11 @@ def CheckIntegrity_ComputeMeshLaplacianEigenmaps(GUI=False):
     refV = np.asarray([[3.33333333e-01,  2.06105878e-16,  3.59572691e-01],
     [ 3.33333333e-01, -2.88675135e-01,  4.50452206e-02],
     [ 3.33333333e-01, -5.77350269e-01, -5.77775050e-01]])
-    np.testing.assert_almost_equal(v[:3,:], refV)
+    for i in range(3):
+        if np.sign(refV[2,i]) == np.sign(v[2,i]):
+            np.testing.assert_almost_equal(v[:3,i], refV[:,i])
+        else:
+            np.testing.assert_almost_equal(v[:3,i], -refV[:,i])
 
     return "ok"
 
