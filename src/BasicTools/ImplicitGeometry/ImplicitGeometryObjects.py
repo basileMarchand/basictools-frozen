@@ -12,7 +12,7 @@ import BasicTools.Helpers.ParserHelper as PH
 from BasicTools.ImplicitGeometry.ImplicitGeometryFactory import RegisterClass
 from BasicTools.ImplicitGeometry.ImplicitGeometryBase import ImplicitGeometryBase,dsin,dcos
 from BasicTools.ImplicitGeometry.ImplicitGeometryOperators import ImplicitGeometryIntersection,ImplicitGeometryUnion
-
+from BasicTools.Containers.Filters import ElementFilter
 
 
 class ImplicitGeometryWrapped(ImplicitGeometryBase):
@@ -68,20 +68,40 @@ class ImplicitGeometryExternalSurface(ImplicitGeometryBase):
     """
     def __init__(self,support = None):
         super(ImplicitGeometryExternalSurface,self).__init__()
-        self.internalImplicitGeometry = None
         self.offset = 1E-3
         if support is not None:
             self.SetSupport(support)
 
     def SetSupport(self, support):
-        self.internalImplicitGeometry = ImplicitGeometryStl()
-        self.internalImplicitGeometry.SetMesh(support)
-        self.internalImplicitGeometry.asVolume = True
-        support.ComputeBoundingBox()
-        self.offset = 1.*np.linalg.norm(support.boundingMax-support.boundingMin)/1000
+
+        from BasicTools.Containers.NativeTransfer import NativeTransfer
+        self.__nativeTransfer = NativeTransfer()
+        self.__nativeTransfer.SetVerbose(False)
+
+        from BasicTools.FE.Fields.FEField import FEField
+        from BasicTools.FE.FETools import PrepareFEComputation
+        space, numberings, offset, NGauss = PrepareFEComputation(support,numberOfComponents=1)
+        self.__field = FEField("", mesh=support, space=space, numbering=numberings[0])
+        self.__nativeTransfer.SetSourceFEField(self.__field, ElementFilter(support, dimensionality=support.GetElementsDimensionality() ) )
+        self.__nativeTransfer.SetTransferMethod("Interp/Clamp")
+
 
     def GetDistanceToPoint(self,pos):
-        return self.internalImplicitGeometry.GetDistanceToPoint(pos) + self.offset
+
+        self.__nativeTransfer.SetTargetPoints(pos)
+        self.__nativeTransfer.Compute()
+        op = self.__nativeTransfer.GetOperator()
+
+        # status must be 1 inside or 3 Clamp not other
+        status = np.unique(self.__nativeTransfer.GetStatus())
+        admissible = {1, 3}
+        if not admissible.issuperset(status):
+            raise RuntimeError("Error in field transfer.")
+
+        # the expression status -2 generate a -1 for the inside and 1 for the outside
+        vectorDistance = op.dot(self.__field.mesh.nodes)- pos
+        distance = np.sqrt(np.sum((vectorDistance )**2,axis=1))
+        return distance*(status.flatten()-2) + self.offset
 
 RegisterClass("All",ImplicitGeometryExternalSurface,CreateImplicitGeometryExternalSurface)
 ####################### objects ################################
@@ -119,20 +139,22 @@ class ImplicitGeometryByETag(ImplicitGeometryBase):
     """
     def __init__(self ):
         super(ImplicitGeometryByETag,self).__init__()
-        self.op = ImplicitGeometryStl()
+        self.op = None
         # we add an epsiloin to treat cases where all 4 nodes on one tetra are
         # in the iso (case of a tetra in a corrner/edge of a zone)
         self.eps = -1.e-4
         self.offset = 0.
-        self.dim = None
 
     def SetSupportAndZones(self,support, etags):
         from BasicTools.Containers.UnstructuredMeshInspectionTools import ExtractElementsByElementFilter
         from BasicTools.Containers.Filters import ElementFilter
-        sup = ExtractElementsByElementFilter(support, elementFilter=ElementFilter(mesh= support, tags= etags, dimensionality= self.dim) )
+        sup = ExtractElementsByElementFilter(support, elementFilter=ElementFilter(mesh= support, tags= etags) )
         if sup.GetElementsDimensionality() == support.GetElementsDimensionality():
-            self.op.SetMesh(sup)
+            self.op = ImplicitGeometryExternalSurface()
+            self.op.offset = 0
+            self.op.SetSupport(sup)
         else:
+            self.op = ImplicitGeometryStl()
             self.op.SetSurface(sup)
 
     def __str__(self):

@@ -510,7 +510,7 @@ def ExtractElementsByElementFilter(inmesh: UnstructuredMesh, elementFilter: Elem
     elementFilter.mesh = inmesh
     for name,data,ids in elementFilter:
         if len(ids) == data.GetNumberOfElements() and copy == False:
-            outElements = type(data)(name)
+            outElements = ElementsContainer(name)
             outElements.connectivity = data.connectivity
             outElements.originalIds = np.arange(data.GetNumberOfElements(), dtype=PBasicIndexType)
             outElements.cpt = data.GetNumberOfElements()
