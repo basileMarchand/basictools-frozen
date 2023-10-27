@@ -34,3 +34,14 @@ cdef class CSpace:
                 if on == "F2" :
                     on = "E"
                 self.cpp_object.AddDofTo(name.encode(),ord(on[0].encode()), PBasicIndexType(idxI), PBasicIndexType(idxII) )
+
+def CheckIntegrity(GUI=False):
+
+    from BasicTools.FE.Spaces.FESpaces import AllSpaces
+    for name, space in AllSpaces.items():
+        obj = CSpace()
+        obj.SetDataFromPython(space)
+    return "ok"
+
+if __name__ == '__main__':
+    print(CheckIntegrity(True))# pragma: no cover

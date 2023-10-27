@@ -87,7 +87,7 @@ cdef class NativeDofNumbering:
             self.dn_cpp.ComputeNumberingFromConnectivity(obj.GetCppPointer()[0])
         return self
 
-    def ComputeNumberingGeneral(self,mesh,space,elementFilter=None,discontinuous=False):
+    def ComputeNumberingGeneral(self, mesh, space, elementFilter=None, discontinuous=False):
         #self.fromConnectivity = False
         self.mesh = mesh
 
@@ -152,7 +152,7 @@ cdef class NativeDofNumbering:
 
 def CheckIntegrity(GUI=False):
     import BasicTools.FE.DofNumbering  as DN
-    return DN.CheckIntegrityUsingAlgo("DictBase",GUI)
+    return DN.CheckIntegrityUsingAlgo("CppBase",GUI)
 
 if __name__ == '__main__':
     print(CheckIntegrity(True))# pragma: no cover

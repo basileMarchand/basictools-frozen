@@ -18,6 +18,7 @@ _test = [
 "DofNumbering",
 "IntegrationsRules",
 "Integration",
+"Integrators",
 "ProblemData",
 "SymPhysics",
 "KR",

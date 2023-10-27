@@ -14,5 +14,6 @@ _test = [
 "QuadSpaces",
 "SymSpace",
 "TetSpaces",
-"TriSpaces"
+"TriSpaces",
+"NativeSpace",
 ]

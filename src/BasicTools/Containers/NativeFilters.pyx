@@ -44,3 +44,11 @@ cdef class CElementFilterEvaluated:
         res = self.cpp_object.ToStr().decode('UTF-8')
         res += "Done"
         return res
+
+def CheckIntegrity(GUI=False):
+
+    return "OK"
+
+
+if __name__ == '__main__':
+    print(CheckIntegrity(True))# pragma: no cover

@@ -548,13 +548,13 @@ class MonoElementsIntegral(BOO):
 
 def CheckIntegrity(GUI=False):
     import BasicTools.FE.Integration as Integration
+    from  BasicTools.FE.Integration import CheckIntegrityIntegrationWithIntegrationPointField
     backup  = Integration.UseCpp
 
     Integration.UseCpp = False
     res = "ok"
     try:
-        from BasicTools.FE.UnstructuredFeaSym import CheckIntegrity as CI
-        res = CI(GUI)
+        res = CheckIntegrityIntegrationWithIntegrationPointField(GUI)
     except:
         Integration.UseCpp = backup
         raise

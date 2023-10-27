@@ -7,6 +7,7 @@
 from libcpp.vector cimport vector
 from libcpp.string cimport string
 
+cimport cython
 import numpy as np
 cimport numpy as cnp
 cnp.import_array()
@@ -33,6 +34,8 @@ cdef class CUnstructuredMesh():
     def AddNodalTag(self, name,  cnp.ndarray[CBasicIndexType, ndim=1, mode="c"] ids not None):
         self.cpp_object.AddNodalTag(name, FlattenedMap[Matrix, CBasicIndexType, Dynamic, _1](ids))
 
+    @cython.boundscheck(False)  # Deactivate bounds checking
+    @cython.wraparound(False)   # Deactivate negative indexing.
     def SetDataFromPython(self,pyUM):
 
         pyUM.GetPosOfNodes()
@@ -65,6 +68,15 @@ cdef class CUnstructuredMesh():
 
 def CheckIntegrity(GUI=False):
     obj = CUnstructuredMesh()
+    import BasicTools.Containers.ElementNames as ElementNames
+    from BasicTools.Containers.UnstructuredMeshCreationTools import CreateCube
+    resII = CreateCube([20,20,20],[-1.0,-1.0,-1.0],[2./46, 2./46,2./46])
+
+    resII.nodesTags.CreateTag('nodesTags').SetIds([0,1])
+    elements = resII.GetElementsOfType(ElementNames.Triangle_3)
+    elements.GetTag("ElemementTag").SetIds([0])
+    resII.ConvertDataForNativeTreatment()
+    obj.SetDataFromPython(resII)
     print(obj)
     return "OK"
 
