@@ -195,7 +195,7 @@ def CheckIntegrity(GUI=False):
         def GetDistanceToPoint(self, pos):
             return self.ApplyInsideOut(np.zeros(pos.shape[0]))
 
-    RegisterClass("Dummy",DummyImplicitGeometry)
+    RegisterClass("Dummy",DummyImplicitGeometry,withError=False)
 
     TryToCreate("Dummy")(myMesh3D)
     TryToCreate("Dummy")(myMesh2D)
