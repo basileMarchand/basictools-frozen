@@ -321,7 +321,7 @@ def __tryImportRecursive(subModule, toCheck, stopAtFirstError, modulesToTreat, m
                 raise
 
             for subSubModule  in subSubModules:
-                if any([x.lower() in subSubModule.lower() for x in modulesToSkip]):
+                if any([x.lower() in ("."+subSubModule.lower()+".") for x in modulesToSkip]):
                     print("skip module :" +str(subSubModule))
                     continue
                 try:
