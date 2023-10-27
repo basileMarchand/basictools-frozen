@@ -58,9 +58,9 @@ def CheckIntegrity():
     class MyCustomWriter(WriterBase):
         pass
 
-    RegisterWriterClass(".myExtention",MyCustomWriter)
+    RegisterWriterClass(".myDummyExtention",MyCustomWriter,withError=False)
 
-    print(CreateWriter(".myExtention"))
+    print(CreateWriter(".myDummyExtention"))
 
     return "ok"
 
