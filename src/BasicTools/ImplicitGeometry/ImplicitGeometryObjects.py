@@ -774,13 +774,13 @@ class ImplicitGeometryStl(ImplicitGeometryBase):
                     p2 = nodes[data.connectivity[i,2],:]
                     normal = np.cross(p1-p0,p2-p0)
                     normal = normal/np.linalg.norm(normal)
-                    self.normals[data.connectivity[i,:],:] = [normal]
+                    self.normals[data.connectivity[i,:],:] += [normal]
             else:
                 for i in range(data.GetNumberOfElements()):
                     dp = nodes[data.connectivity[i,1],:] - nodes[data.connectivity[i,0],:]
-                    normal = [dp[1]  - dp[0]]
+                    normal = [dp[1], - dp[0]]
                     normal = normal/np.linalg.norm(normal)
-                    self.normals[data.connectivity[i,:],:2] = [normal]
+                    self.normals[data.connectivity[i,:],:2] += [normal]
 
         self.normals /= np.linalg.norm(self.normals, axis=1)[:,None]
 
