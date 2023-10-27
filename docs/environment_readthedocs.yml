@@ -1,9 +1,9 @@
-name: BasicTools3.8
+name: BasicTools3.9
 channels:
     - conda-forge
     - nodefaults
 dependencies:
-    - python=3.8
+    - python=3.9
     - numpy
     - scipy
     - sympy
@@ -25,6 +25,7 @@ dependencies:
     - setuptools-scm
 #    - pyvista  [not py==36]
     - networkx
+    - sphinx_rtd_theme
 #    - mpi4py
 
     - compilers
