@@ -47,6 +47,7 @@ struct LocalSpace {
     }
   }
   void SetvalNI(const int& integrationPoint, CBasicFloatType* pd) {
+    delete this->valN[integrationPoint];
     this->valN[integrationPoint] = new MapMatrixDDD(pd, this->numberOfShapeFunctions, 1);
   }
   void RelseaseData() {
@@ -63,6 +64,7 @@ struct LocalSpace {
   }
   ~LocalSpace() { this->RelseaseData(); }
   void SetvaldphidxiI(const int& integrationPoint, CBasicFloatType* pd) {
+    delete this->valdphidxi[integrationPoint];
     this->valdphidxi[integrationPoint] = new MapMatrixDDD(pd, this->dimensionality, this->numberOfShapeFunctions);
   }
 
