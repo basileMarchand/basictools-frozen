@@ -93,9 +93,9 @@ class ImplicitGeometryExternalSurface(ImplicitGeometryBase):
         op = self.__nativeTransfer.GetOperator()
 
         # status must be 1 inside or 3 Clamp not other
-        status = np.unique(self.__nativeTransfer.GetStatus())
+        status = self.__nativeTransfer.GetStatus()
         admissible = {1, 3}
-        if not admissible.issuperset(status):
+        if not admissible.issuperset(np.unique(status)):
             raise RuntimeError("Error in field transfer.")
 
         # the expression status -2 generate a -1 for the inside and 1 for the outside
