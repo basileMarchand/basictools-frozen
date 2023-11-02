@@ -592,11 +592,11 @@ class MeshReader(ReaderBase):
             fieldType = self.ReadBinaryInt()
             if fieldType == FieldTypes["GmfSca"]:
                 fieldSizes[i] = 1
-            elif fieldSizes[i] == FieldTypes["GmfVec"]:
+            elif fieldType == FieldTypes["GmfVec"]:
                 fieldSizes[i] = dim
-            elif fieldSizes[i] == FieldTypes["GmfSymMat"]:
+            elif fieldType == FieldTypes["GmfSymMat"]:
                 fieldSizes[i] = dim*(dim+1)//2
-            elif fieldSizes[i] == FieldTypes["GmfMat"]:
+            elif fieldType == FieldTypes["GmfMat"]:
                 fieldSizes[i] = dim*dim
             else:
                 raise Exception(f"Field {i} not conform to format")
