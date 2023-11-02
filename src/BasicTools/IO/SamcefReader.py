@@ -575,7 +575,6 @@ class DatReader(ReaderBase):
         res.originalIDNodes = np.array(originalsids,dtype=PBasicIndexType)
         res.PrepareForOutput()
 
-        self.output = res
 
         self.filetointernalidElement = filetointernalidElement
         self.filetointernalid = filetointernalid

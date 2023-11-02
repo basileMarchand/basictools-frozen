@@ -45,8 +45,7 @@ def ReadGmsh(fileName: Optional[str]=None, string: Optional[str]=None, out=None,
         reader.readPhyTags = kwargs["readPhyTags"]
         kwargs.pop("readPhyTags")
 
-    reader.Read(fileName=fileName, string=string,out=out,**kwargs)
-    return reader.output
+    return reader.Read(fileName=fileName, string=string,out=out,**kwargs)
 
 class GmshReader(ReaderBase):
     """Class to read Gmsh files into a UnstructuredMesh
@@ -224,7 +223,6 @@ class GmshReader(ReaderBase):
 
         self.EndReading()
         res.PrepareForOutput()
-        self.output = res
         return res
 
 from BasicTools.IO.IOFactory import RegisterReaderClass

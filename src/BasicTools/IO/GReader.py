@@ -34,8 +34,7 @@ def ReadGCode(fileName=None,string=None ):
     reader = GReader()
     reader.SetFileName(fileName)
     reader.SetStringToRead(string)
-    reader.Read()
-    return reader.output
+    return reader.Read()
 
 class GReader(ReaderBase):
     """Gcode Reader class
@@ -127,7 +126,6 @@ class GReader(ReaderBase):
 
         G.shape =  (res.GetNumberOfNodes()-1,1)
         res.elemFields['OnOff'] = G
-        self.output = res
         return res
 
 from BasicTools.IO.IOFactory import RegisterReaderClass

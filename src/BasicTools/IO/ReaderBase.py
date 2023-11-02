@@ -33,7 +33,6 @@ class ReaderBase(BaseOutputObject):
         self.encoding = locale.getpreferredencoding(False)
         self.canHandleTemporal = False
 
-        self.output = None
         self.extraOutput = None
 
         self.SetFileName(fileName)

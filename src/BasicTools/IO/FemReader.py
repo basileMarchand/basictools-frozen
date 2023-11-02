@@ -636,7 +636,6 @@ class FemReader(ReaderBase):
         res.SetNodes(np.array([xs,ys,zs],dtype=float).T, ids )
         self.EndReading()
         res.PrepareForOutput()
-        self.output = res
         self.data = resdic
         return res
 

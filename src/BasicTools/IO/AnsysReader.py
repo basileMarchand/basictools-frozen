@@ -36,8 +36,7 @@ def ReadAnsys(fileName=None, string=None, out=None, **kwargs):
     reader = AnsysReader()
     reader.SetFileName(fileName)
     reader.SetStringToRead(string)
-    reader.Read(fileName=fileName, string=string, out=out, **kwargs)
-    return reader.output
+    return reader.Read(fileName=fileName, string=string, out=out, **kwargs)
 
 
 class AnsysReader(ReaderBase):
@@ -77,7 +76,6 @@ class AnsysReader(ReaderBase):
 
         result = session.GetMesh()
         result.PrepareForOutput()
-        self.output = result
         return result
 
     def GetIterator(self):

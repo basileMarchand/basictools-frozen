@@ -42,9 +42,7 @@ def ReadLSDyna(fileName=None,string=None,out=None,printNotRead=True):
     reader = LSDynaReader()
     reader.SetFileName(fileName)
     reader.SetStringToRead(string)
-    reader.Read(fileName=fileName, string=string,out=out,printNotRead=printNotRead)
-    return reader.output
-
+    return reader.Read(fileName=fileName, string=string,out=out,printNotRead=printNotRead)
 
 def LineToListNoQuote(text):
     return [s.strip() for s in text.split()]
@@ -200,7 +198,6 @@ class LSDynaReader(ReaderBase):
 
         res.PrepareForOutput()
 
-        self.output = res
         return res
 
 

@@ -43,8 +43,7 @@ def ReadAsc(fileName=None,string=None,out=None,**kwargs):
     reader = AscReader()
     reader.SetFileName(fileName)
     reader.SetStringToRead(string)
-    reader.Read(fileName=fileName, string=string,out=out,**kwargs)
-    return reader.output
+    return reader.Read(fileName=fileName, string=string,out=out,**kwargs)
 
 
 class AscReader(ReaderBase):
@@ -208,7 +207,6 @@ class AscReader(ReaderBase):
             BaseOutputObject().PrintVerbose("Ignoring line : '" + str(l) + "'")
         self.EndReading()
         res.PrepareForOutput()
-        self.output = res
         return res
 
 from BasicTools.IO.IOFactory import RegisterReaderClass

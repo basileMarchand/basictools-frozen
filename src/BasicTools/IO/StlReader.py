@@ -93,7 +93,6 @@ class StlReader(ReaderBase):
             res.ComputeBoundingBox()
             tol = np.linalg.norm(res.boundingMax -res.boundingMin)*1e-15
             CleanDoubleNodes(res, tol=tol)
-        self.output = res
         return res
 
     def ReadStlBinary(self):

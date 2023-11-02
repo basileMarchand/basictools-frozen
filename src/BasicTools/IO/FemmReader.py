@@ -198,7 +198,6 @@ class FemmReader(ReaderBase):
             print("Changing units of the file to meters")
             res.nodes *= factor
         res.PrepareForOutput()
-        self.output = res
         return res
 
 

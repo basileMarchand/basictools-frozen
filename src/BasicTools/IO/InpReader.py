@@ -170,8 +170,7 @@ def ReadInp(fileName=None,string=None,out=None,**kwargs):
     reader = InpReader()
     reader.SetFileName(fileName)
     reader.SetStringToRead(string)
-    reader.Read(fileName=fileName, string=string,out=out,**kwargs)
-    return reader.output
+    return reader.Read(fileName=fileName, string=string,out=out,**kwargs)
 
 class InpReader(ReaderBase):
     """Inp Reader class
@@ -598,7 +597,7 @@ class InpReader(ReaderBase):
             feNames.extend(FENames[elementName])
         res.elemFields["FE Names"] = np.array(feNames,dtype=np.str_)
         res.PrepareForOutput()
-        self.output = (res,meta)
+        self.meta = meta
         return res
 
 from BasicTools.IO.IOFactory import RegisterReaderClass

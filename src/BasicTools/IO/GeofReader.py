@@ -43,8 +43,7 @@ def ReadGeof(fileName=None,string=None,out=None,readElset=True,readFaset=True,pr
     reader = GeofReader()
     reader.SetFileName(fileName)
     reader.SetStringToRead(string)
-    reader.Read(fileName=fileName, string=string,out=out,readElset=readElset,readFaset=readFaset,printNotRead=printNotRead)
-    return reader.output
+    return reader.Read(fileName=fileName, string=string,out=out,readElset=readElset,readFaset=readFaset,printNotRead=printNotRead)
 
 
 def ReadMetaData(fileName=None,string=None):
@@ -291,7 +290,6 @@ class GeofReader(ReaderBase):
 
         res.elemFields["FE Names"] = np.array(fenames,dtype=np.str_)
 
-        self.output = res
         return res
 
 

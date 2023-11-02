@@ -55,9 +55,9 @@ class VtkReader(ReaderBase):
         if res is None:
             res = reader.GetPolyDataOutput()
 
-        self.output = VtkToMesh(res)
-        self.output.ConvertDataForNativeTreatment()
-        return self.output
+        output = VtkToMesh(res)
+        output.ConvertDataForNativeTreatment()
+        return output
 
 try:
     import vtkmodules.vtkIOLegacy

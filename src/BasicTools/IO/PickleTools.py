@@ -61,8 +61,8 @@ class PickleReader(ReaderBase):
             read data
         """
         internalReader = LoadData(self.fileName)
-        self.output = internalReader.named["mesh"]
-        return self.output
+        return internalReader.named["mesh"]
+
 
 
 class PickleWriter(object):

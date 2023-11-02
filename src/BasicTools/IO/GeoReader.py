@@ -36,8 +36,7 @@ def ReadGeo(fileName=None,out=None,readElset=True,readFaset=True):
     """
     reader = GeoReader()
     reader.SetFileName(fileName)
-    reader.Read(fileName=fileName, out=out,readElset=readElset,readFaset=readFaset)
-    return reader.output
+    return reader.Read(fileName=fileName, out=out,readElset=readElset,readFaset=readFaset)
 
 def ReadMetaData(fileName=None):
     """Function API for reading the metadata of a geo mesh file
@@ -292,7 +291,6 @@ class GeoReader(ReaderBase):
                     res.PrepareForOutput()
                     return metadata
                 else:
-                    self.output  = res
                     self.EndReading()
                     res.PrepareForOutput()
 
