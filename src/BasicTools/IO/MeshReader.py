@@ -726,7 +726,7 @@ Dimension 3
 
 SolAtVertices
 4
-1 6
+1 3
 
 1. 1. 1. 1. 1. 1.
 2. 2. 2. 2. 2. 2.
@@ -781,7 +781,7 @@ End
     print(sol)
 
     newFileName = TestTempDir().GetTempPath()+"mshFileMatSym.meshb"
-    WriteMesh(newFileName, res, [resfieldmatsym.nodeFields["SolAtVertices0"]], binary=True)
+    WriteMesh(newFileName, res, [resfieldmatsym.nodeFields["SolAtVertices0"]], solutionOnOwnFile=True, binary=True)
     newFileName = TestTempDir().GetTempPath()+"mshFileMatSym.solb"
     resfieldmatsym = ReadSol(fileName=newFileName)
 
