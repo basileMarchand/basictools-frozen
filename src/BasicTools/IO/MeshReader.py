@@ -719,6 +719,22 @@ SolAtVertices
 End
 """
 
+    __teststringFieldMatSym = u"""
+MeshVersionFormatted 2
+
+Dimension 3
+
+SolAtVertices
+4
+1 6
+
+1. 1. 1. 1. 1. 1.
+2. 2. 2. 2. 2. 2.
+3. 3. 3. 3. 3. 3.
+4. 4. 4. 4. 4. 4.
+
+End
+"""
     res = ReadMesh(string=__teststring)
     print(res)
 
@@ -736,6 +752,20 @@ End
     print('Reading : ' + str(newFileName))
 
     resfield = MeshReader().ReadExtraFields(fileName=newFileName)
+    resfield = ReadSol(fileName=newFileName)
+
+    newFileName = TestTempDir().GetTempPath()+"mshFileMatSym.mesh"
+    open(newFileName, 'w').write(__teststring)
+
+    newFileName = TestTempDir().GetTempPath()+"mshFileMatSym.sol"
+    f = open(newFileName, 'w')
+    f.write(__teststringFieldMatSym)
+    f.close()
+
+    print('Reading : ' + str(newFileName))
+
+    resfieldmatsym = MeshReader().ReadExtraFields(fileName=newFileName)
+    resfieldmatsym = ReadSol(fileName=newFileName)
 
     from BasicTools.IO.MeshWriter import WriteMesh as WriteMesh
 
@@ -749,6 +779,11 @@ End
 
     sol = MeshReader().ReadExtraFields(TestTempDir().GetTempPath()+"mshFile.sol")
     print(sol)
+
+    newFileName = TestTempDir().GetTempPath()+"mshFileMatSym.meshb"
+    WriteMesh(newFileName, res, [resfieldmatsym.nodeFields["SolAtVertices0"]], binary=True)
+    newFileName = TestTempDir().GetTempPath()+"mshFileMatSym.solb"
+    resfieldmatsym = ReadSol(fileName=newFileName)
 
     from BasicTools.IO.MeshWriter import MeshWriter as MeshWriter
     mw = MeshWriter()
