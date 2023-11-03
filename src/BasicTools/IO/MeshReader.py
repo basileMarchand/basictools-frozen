@@ -509,27 +509,28 @@ class MeshReader(ReaderBase):
                 nbNodes = elements.GetNumberOfNodesPerElement()
                 nbElements = self.ReadBinaryInt()
                 self.PrintVerbose('Reading ' + str(nbElements) + " Elements ")
-                elements.Reserve(nbElements)
-                elements.cpt = 0
+                if nbElements > 0:
+                    elements.Reserve(nbElements)
+                    elements.cpt = 0
 
-                dt = np.dtype([('conn', self.intType, (nbNodes,)), ('ref', self.intType, (1,))])
+                    dt = np.dtype([('conn', self.intType, (nbNodes,)), ('ref', self.intType, (1,))])
 
-                data = np.fromfile(self.filePointer, dtype=dt, count=nbElements, sep="")
+                    data = np.fromfile(self.filePointer, dtype=dt, count=nbElements, sep="")
 
-                elements.connectivity = (data[:]["conn"]-1).astype(PBasicIndexType)
+                    elements.connectivity = (data[:]["conn"]-1).astype(PBasicIndexType)
 
-                elements.originalIds = np.arange(globalElementCounter, globalElementCounter+nbElements)
-                elements.cpt = nbElements
-                globalElementCounter += nbElements
+                    elements.originalIds = np.arange(globalElementCounter, globalElementCounter+nbElements)
+                    elements.cpt = nbElements
+                    globalElementCounter += nbElements
 
-                refs = data[:]["ref"]
-                if self.refsAsAField:
-                    elemRefsDic[elements.elementType] = refs
-                else:
-                    urefs = np.unique(refs)
-                    if len(urefs) > 1 or urefs[0] != 0:
-                        for ref in urefs:
-                            elements.GetTag("ETag"+str(ref)).SetIds(np.where(refs == ref)[0])
+                    refs = data[:]["ref"]
+                    if self.refsAsAField:
+                        elemRefsDic[elements.elementType] = refs
+                    else:
+                        urefs = np.unique(refs)
+                        if len(urefs) > 1 or urefs[0] != 0:
+                            for ref in urefs:
+                                elements.GetTag("ETag"+str(ref)).SetIds(np.where(refs == ref)[0])
                 continue
 
             if key == BKeys["GmfRequiredVertices"]:
