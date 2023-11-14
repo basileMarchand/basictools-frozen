@@ -21,7 +21,7 @@ __copyright_holder__ = "Safran"
 __copyright_years__ = "2016-2023"
 __copyright__ = "{}, {}".format(__copyright_years__,__copyright_holder__)
 __license__ = "BSD 3-Clause License"
-__version__ = "1.9.11"
+__version__ = "1.9.12"
 
 def Preload(subSubModule= "BasicTools"):
     import time
