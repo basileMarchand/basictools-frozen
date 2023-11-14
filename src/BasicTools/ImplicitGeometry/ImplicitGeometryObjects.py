@@ -85,21 +85,33 @@ class ImplicitGeometryExternalSurface(ImplicitGeometryBase):
         self.__nativeTransfer.SetSourceFEField(self.__field, ElementFilter(support, dimensionality=support.GetElementsDimensionality() ) )
         self.__nativeTransfer.SetTransferMethod("Interp/Clamp")
 
+        from BasicTools.Containers.UnstructuredMeshModificationTools import ComputeSkin, CleanLonelyNodes
+        skinmesh = ComputeSkin(support,inPlace=False)
+        CleanLonelyNodes(skinmesh,inPlace=True)
+        space, numberings, offset, NGauss = PrepareFEComputation(skinmesh,numberOfComponents=1)
+        self.__Sfield = FEField("", mesh=skinmesh, space=space, numbering=numberings[0])
+        self.__SnativeTransfer = NativeTransfer()
+        self.__SnativeTransfer.SetVerbose(False)
+        self.__SnativeTransfer.SetSourceFEField(self.__Sfield )
+        self.__SnativeTransfer.SetTransferMethod("Interp/Clamp")
 
     def GetDistanceToPoint(self,pos):
 
         self.__nativeTransfer.SetTargetPoints(pos)
         self.__nativeTransfer.Compute()
-        op = self.__nativeTransfer.GetOperator()
-
         # status must be 1 inside or 3 Clamp not other
         status = self.__nativeTransfer.GetStatus()
+
+        self.__SnativeTransfer.SetTargetPoints(pos)
+        self.__SnativeTransfer.Compute()
+        op = self.__SnativeTransfer.GetOperator()
+
         admissible = {1, 3}
         if not admissible.issuperset(np.unique(status)):
             raise RuntimeError("Error in field transfer.")
 
         # the expression status -2 generate a -1 for the inside and 1 for the outside
-        vectorDistance = op.dot(self.__field.mesh.nodes)- pos
+        vectorDistance = op.dot(self.__Sfield.mesh.nodes)- pos
         distance = np.sqrt(np.sum((vectorDistance )**2,axis=1))
         return distance*(status.flatten()-2) + self.offset
 
