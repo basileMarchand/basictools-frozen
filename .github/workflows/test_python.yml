@@ -33,7 +33,7 @@ jobs:
           export CATALYST_NO_FAIL="True"
           export ABAQUS_NO_FAIL="True"
           mkdir -p tesdata
-          pytest --junitxml=tesdata/BasicToolsPyTests${{ matrix.python-version }}.xml --cov=BasicTools --cov-report=html:public/coverage --cov-report=xml:public/cobertura-coverage.xml --ignore=src/BasicTools/IO/ParaViewBridge --ignore=src/BasicTools/IO/Wormhole.py src
+          pytest --junitxml=tesdata/BasicToolsPyTests${{ matrix.python-version }}.xml --ignore=src/BasicTools/IO/ParaViewBridge --ignore=src/BasicTools/IO/Wormhole.py src
           python setup.py build_sphinx
 
       - name: Upload coverage report
