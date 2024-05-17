@@ -1160,9 +1160,9 @@ def CheckIntegrity(GUI=False):
     res = FE.Compute(op,"FEField")
     print(res.data)
 
-    FE.Update("IPField")
-    res = FE.Compute(op,"IPField")
-    print(res.data)
+    # FE.Update("IPField")
+    # res = FE.Compute(op,"IPField")
+    # print(res.data)
 
 
     res = FE.Compute(op,"FEField", useSympy=True)
