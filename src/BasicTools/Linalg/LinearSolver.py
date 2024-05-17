@@ -264,57 +264,7 @@ except:
     pass
 
 
-class LinearSolverEigen(LinearSolverIterativeBase):
-    def __init__(self,subtype):
-        super().__init__()
-        self.SetSolver(subtype)
-        import BasicTools.Linalg.NativeEigenSolver as NativeEigenSolver
-        self.solver = NativeEigenSolver.CEigenSolvers()
-        from BasicTools.Helpers.CPU import GetNumberOfAvailableCpus
-        self.solver.ForceNumberOfThreads(GetNumberOfAvailableCpus())
-
-    def SetSolver(self, subtype):
-        self.name = "Eigen"+subtype
-        self.subtype = subtype
-        self.solver = None
-
-    def _setop_imp(self,op):
-        self.solver.SetSolverType(self.subtype)
-        self.solver.SetTolerance(self.tol)
-        self.solver.SetOp(op)
-
-    def _solve_imp(self, rhs, u0=None):
-        # for the eigen solver we must allocate on the python side
-        if u0 is None:
-            u0 = np.zeros_like(rhs)
-        return self.solver.Solve(rhs,u0)
-
-    def GetSPQRRank(self):
-        return self.solver.GetSPQRRank()
-
-    def GetSPQR_Q(self):
-        return self.solver.GetSPQR_Q()
-
-    def GetSPQR_R(self):
-        return self.solver.GetSPQR_R()
-
-    def GetSPQR_P(self):
-        return self.solver.GetSPQR_P()
-
-    @classmethod
-    def GetAvailableSolvers(cls):
-        return ['CG','LU','BiCGSTAB', 'SPQR']
-
-try:
-    import BasicTools.Linalg.NativeEigenSolver as NativeEigenSolver
-    for eigenSubTypes  in LinearSolverEigen.GetAvailableSolvers():
-        def GenerateEigenConstructor(type):
-            return lambda x :  LinearSolverEigen(type)
-        RegisterSolverClass("Eigen"+eigenSubTypes,LinearSolverEigen, GenerateEigenConstructor(eigenSubTypes) )
-    defaultIfError = "EigenCG"
-except:
-    print("WARNING! Error loading Eigen linear solver using CG as default")
-    defaultIfError = "CG"
+defaultIfError = "CG"
 
 ###############################################################################################################################
 class LinearProblem(BOO):
@@ -404,54 +354,6 @@ def CheckSolver(GUI,solver):
     if abs(sol[1] - 2.) > 1e-15 : raise Exception()
 
 
-def CheckSPQR(GUI):
-    realsolver = LinearSolverEigen("SPQR")
-
-
-    A = sps.csc_matrix(np.array([[0,0,0,1,1],
-                                    [0,0,0,1,1],
-                                    [0.51,0.5,0.5,0,10],
-                                    [0.5,0.5,0.5,0,10],
-                                    [0,1,0,0,5],
-                                    ]),dtype=PBasicFloatType)
-
-    def QRTest(A):
-        realsolver.SetTolerance(1e-5)
-        print(A.toarray())
-        realsolver.SetOp(A)
-        rank = realsolver.GetSPQRRank()
-        print("Rank",rank )
-        Q = realsolver.GetSPQR_Q()
-        print("Q")
-        print(Q.toarray())
-        R = realsolver.GetSPQR_R()
-        print("R")
-        print(R.toarray())
-        P = realsolver.GetSPQR_P()
-        print("P" ,P)
-        print("-------------------------------------------------")
-        print("AP")
-        print(A.toarray()[:,P])
-        print("QR")
-        print(Q.tocsr().dot(R.tocsr().toarray() ) )
-        print("norm A[:,P]-QR")
-        print(np.linalg.norm(A.toarray()[:,P] - Q.tocsr()[:,0:rank].dot(R.tocsr()[0:rank,:].toarray() ) ) )
-        print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
-        print("Q réduit")
-        print(Q.tocsr()[:,0:rank].toarray())
-        print("R réduit")
-        print(R.tocsr()[0:rank,0:rank].toarray())
-        print("QR reduit")
-        print(Q.tocsr()[:,0:rank].dot(R.tocsr()[0:rank,0:rank].toarray() ) )
-        print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
-        error = np.linalg.norm(A.toarray()[:,P[0:rank]] - Q.tocsr()[:,0:rank].dot(R.tocsr()[0:rank,0:rank].toarray() ) )
-        if abs(error) > 1e-10:
-            raise
-        print(error)
-
-        print ("OK EigenSPQR"  )
-
-    QRTest(A.T)
 
 def CheckIntegrity(GUI=False):
     obj =  SolverFactory()
@@ -459,8 +361,6 @@ def CheckIntegrity(GUI=False):
 
     for s in solvers:
         CheckSolver(GUI,s)
-
-    CheckSPQR(GUI)
 
     return "ok"
 

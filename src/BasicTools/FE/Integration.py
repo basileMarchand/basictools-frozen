@@ -30,7 +30,7 @@ from BasicTools.FE.IntegrationsRules import LagrangeIsoParam
 from BasicTools.FE.IntegrationsRules import IntegrationRulesAlmanac
 
 
-UseCpp = True
+UseCpp = False
 UseMultiThread =  True
 MultiThreadThreshold = 100
 
@@ -237,22 +237,8 @@ class IntegrationClass(BaseOutputObject):
     def SetIntegrator(self, userIntegrator=None):
         """Set the internal integrator (only for advance users) """
         if userIntegrator is None:
-            typeCpp = True
-            try:
-                from BasicTools.FE.WeakForms.NativeNumericalWeakForm import PyWeakForm
-                import BasicTools.FE.Integrators.NativeIntegration
-            except ImportError as err :
-                typeCpp = False
-                print("Error loading c++ integration")
-                print(str(err))
-                print("Warning : Using Python Integration (very slow)")
-
-            if typeCpp and UseCpp :
-                import BasicTools.FE.Integrators.NativeIntegration as NI
-                self.integrator = NI.PyMonoElementsIntegralCpp()
-            else:
-                import BasicTools.FE.Integrators.PythonIntegration as PI
-                self.integrator = PI.MonoElementsIntegral()
+            import BasicTools.FE.Integrators.PythonIntegration as PI
+            self.integrator = PI.MonoElementsIntegral()
         else:
             self.integrator = userIntegrator
 
@@ -852,14 +838,6 @@ def CheckIntegrityIntegrationWithIntegrationPointField(GUI=False):
 
 def CheckIntegrity(GUI=False):
     import BasicTools.FE.Integration as BTFEI
-    saveOldeStateOfUseCpp = BTFEI.UseCpp
-    BTFEI.UseCpp = False
-    if CheckIntegrityNormalFlux(GUI).lower() != "ok":
-        return "Not ok in the Normal Calculation"
-    if CheckIntegrityIntegrationWithIntegrationPointField() != "ok":
-        return "Not ok in the integration with IPField"
-
-    BTFEI.UseCpp = True
     if CheckIntegrityNormalFlux(GUI).lower() != "ok":
         return "Not ok in the Normal Calculation"
     if CheckIntegrityIntegrationWithIntegrationPointField() != "ok":
@@ -886,118 +864,20 @@ def CheckIntegrity(GUI=False):
         print("*-"*80)
         print((edim,sdim,testCase))
 
-        BTFEI.UseCpp = False
         print(" --- python  integration --")
         if CheckIntegrityKF(edim=edim,sdim = sdim,testCase=testCase).lower() !=  "ok":
             return "not ok python "
         else :
             print(" --- python  integration -- OK ")
-        print(" --- cpp integration --",(edim,sdim,testCase ))
-        BTFEI.UseCpp = True
-        if CheckIntegrityKF(edim=edim,sdim = sdim,testCase=testCase).lower() !=  "ok":
-            return "not ok cpp"
-        else:
-            print(" --- cpp integration -- OK")
 
     stopt = time.time() - startt
     print("Total time : ")
     print(stopt)
     print("ALL ok")
-    CheckIntegrityConstantRectilinearIntegration()
-    if CheckIntegrityConstantRectilinearIntegration().lower() !=  "ok":
-        return "CheckIntegrityConstantRectilinearIntegration not ok"
-    else:
-        print(" --- CheckIntegrityConstantRectilinearIntegration -- OK")
-    BTFEI.UseCpp = saveOldeStateOfUseCpp
-
     return "ok"
 
-def CheckIntegrityConstantRectilinearIntegrationII(GUI = False):
-    print("Test integrator on Constant rectilinear mesh")
-    from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearMesh
-    myCRMesh = ConstantRectilinearMesh(3)
-    nNodesX = 3
-    nNodesY = 4
-    nNodesZ =5
-
-    myCRMesh.SetDimensions([nNodesX,nNodesY,nNodesZ])
-    myCRMesh.SetSpacing([1./(nNodesX-1), 1./(nNodesY-1), 1./(nNodesZ-1)])
-    myCRMesh.SetOrigin([0, 0, 0])
-
-    from BasicTools.Containers.UnstructuredMeshCreationTools import CreateMeshFromConstantRectilinearMesh
-    mesh = CreateMeshFromConstantRectilinearMesh(myCRMesh)
-    from BasicTools.FE.Spaces.FESpaces import ConstantSpaceGlobal
-    testNumbering = ComputeDofNumbering(mesh,ConstantSpaceGlobal)
-
-    from BasicTools.FE.SymWeakForm import testcharacter
-    tFieldTest= GetTestField("T",1)
-
-    weakForm = 1*tFieldTest
-
-    constants = {}
-    fields = [ ]
-    testFields = [FEField("T"+testcharacter,mesh=mesh,space=ConstantSpaceGlobal,numbering=testNumbering) ]
-    startt = time.time()
-    elemFilter = ElementFilter(mesh)
-    print(startt)
-    K,F = IntegrateGeneral(mesh=mesh,
-                    wform=weakForm,
-                    constants=constants,
-                    fields=fields,
-                    testFields = testFields,
-                    integrationRuleName="LagrangeP1",
-                    elementFilter=elemFilter)
-    print("K " , K)
-    print("F " ,F)
-    return "ok"
-
-def CheckIntegrityConstantRectilinearIntegration(GUI=False):
-    print("Test integrator on Constant rectilinear mesh")
-    from BasicTools.Containers.ConstantRectilinearMesh import ConstantRectilinearMesh
-    myCRMesh = ConstantRectilinearMesh(3)
-    nNodesY = 3
-    nNodesY = 4
-    nNodesZ =5
-
-    myCRMesh.SetDimensions([nNodesY,nNodesY,nNodesZ])
-    myCRMesh.SetSpacing([1./(nNodesY-1), 1./(nNodesY-1), 1./(nNodesZ-1)])
-    myCRMesh.SetOrigin([0, 0, 0])
-
-    space, numberings, _offset, _NGauss = PrepareFEComputation(myCRMesh,numberOfComponents=1)
-
-    tField = GetField("T",1)
-    tFieldTest = GetTestField("T",1)
-
-    weakForm = tField.T*tFieldTest + 1*tFieldTest
-
-    constants = {}
-    fields = [ ]
-    unkownFields = [FEField("T",mesh=myCRMesh,space=space,numbering=numberings[0]) ]
-    startt = time.time()
-    elemFilter = ElementFilter(myCRMesh)
-    print(startt)
-    K,F = IntegrateGeneral(mesh=myCRMesh,
-                    wform=weakForm,
-                    constants=constants,
-                    fields=fields,
-                    unkownFields=unkownFields,
-                    integrationRuleName="LagrangeP1",
-                    elementFilter=elemFilter)
-
-    stopt = time.time() - startt
-    volk = np.sum(K)
-    print("volume (k): " + str(volk))
-    volf = np.sum(F)
-    print("volume (f): " + str(volf))
-    print(stopt)
-    if volk*1 - volf <   volf/100000000:
-        return "ok"
-    print("volk: "+str(volk))
-    print("volf: "+str(volf))
-
-    return "Not Ok"
 if __name__ == '__main__':
     #print("Start")# pragma: no cover
     print(CheckIntegrity(False))# pragma: no cover
     #print("Stop")# pragma: no cover
-    print(CheckIntegrityConstantRectilinearIntegrationII())
+    #print(CheckIntegrityConstantRectilinearIntegrationII())
