@@ -34,13 +34,7 @@ jobs:
           export ABAQUS_NO_FAIL="True"
           mkdir -p tesdata
           pytest --junitxml=tesdata/BasicToolsPyTests${{ matrix.python-version }}.xml --ignore=src/BasicTools/IO/ParaViewBridge --ignore=src/BasicTools/IO/Wormhole.py src
-          python setup.py build_sphinx
-
-      - name: Upload coverage report
-        uses: actions/upload-artifact@v2
-        with:
-          name: coverage-report
-          path: public/cobertura-coverage.xml
+          sphinx-build docs docs/_build/
 
       - name: Upload test results
         uses: actions/upload-artifact@v2
@@ -48,13 +42,9 @@ jobs:
           name: test-results
           path: tesdata/BasicToolsPyTests${{ matrix.python-version }}.xml
 
-      - name: Upload built libraries
+      - name: Upload documentation
         uses: actions/upload-artifact@v2
         with:
-          name: built-libraries
+          name: documentation
           path: |
-            src/BasicTools/Containers/*${{ matrix.python-version }}*.so*
-            src/BasicTools/FE/*/*${{ matrix.python-version }}*.so*
-            src/BasicTools/Linalg/*${{ matrix.python-version }}*.so*
-            src/libCppBasicTools.so
             docs/_build/html

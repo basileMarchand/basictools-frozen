@@ -7,14 +7,7 @@
 
 import os, sys
 from setuptools import setup
-from distutils.command.build import build
 import configparser
-
-'''
-PREFIX : Set this variable to point to the external libraries (if the mkl or eigen are installed with pip install --user for example)
-'''
-
-
 
 __config = configparser.ConfigParser()
 __config.read('setup.cfg')

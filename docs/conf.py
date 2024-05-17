@@ -11,15 +11,6 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-# Run doxygen for the c++ documentation
-import subprocess
-subprocess.call('doxygen', shell=True)
-
-import sys, os
-# If extensions (or modules to document with autodoc) are in another directory,
-# add these directories to sys.path here. If the directory is relative to the
-# documentation root, use os.path.abspath to make it absolute, like shown here.
-sys.path.insert(0, os.path.abspath('..'+os.sep+'src'))
 
 from BasicTools import __name__ as BasicTools__name__
 from BasicTools import __copyright__ as BasicTools__copyright__
@@ -44,20 +35,7 @@ extensions = [
         'sphinx.ext.mathjax',
         'sphinx.ext.todo',
         'sphinx_rtd_theme',
-        'breathe'
         ]
-
-breathe_projects = { "BasicToolsCpp": "./xml/" }
-
-#breathe_projects_source = {
-#    "BasicToolsCpp" : (
-#        "/home/fbordeu-weld/PythonLibs/BasicTools/cpp_src/", [ "/Containers/UnstructuredMesh.h"]
-#}    )
-#}}
-
-breathe_default_project = "BasicToolsCpp"
-breathe_show_include = True
-breathe_default_members = ('members', 'undoc-members')
 
 
 todo_include_todos=True
